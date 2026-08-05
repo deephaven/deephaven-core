@@ -94,6 +94,7 @@ public class UncoalescedTableTest {
         }
         // Static results require no liveness management, so they remain available after the creating scope is released
         assertSame(coalesced, uncoalesced.coalescedIfAvailable().orElseThrow(AssertionError::new));
+        assertEquals(1, uncoalesced.coalesceCount);
     }
 
     @Test
@@ -123,6 +124,7 @@ public class UncoalescedTableTest {
             // ...but releasing callerScope must.
             callerScope.release();
             assertNotLive(coalesced);
+            assertFalse(uncoalesced.coalescedIfAvailable().isPresent());
         } finally {
             tableHolder.release();
         }
