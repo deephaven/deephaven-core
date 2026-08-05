@@ -64,6 +64,7 @@ public class ReplicateSegmentedSortedMultiset {
                 ReplicateSegmentedSortedMultiset::fixupObjectHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
+                ReplicateSegmentedSortedMultiset::fixupObjectIterator,
                 ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
 
         final List<String> files = charToAllButBoolean(TASK,
@@ -362,6 +363,16 @@ public class ReplicateSegmentedSortedMultiset {
                 "new ObjectOpenHashSet\\(", "new ObjectOpenHashSet<>(",
                 // ObjectCollection.toArray() returns Object[] already; the typed toCharArray() rename doesn't exist.
                 "\\.toObjectArray\\(", ".toArray(");
+    }
+
+    private static List<String> fixupObjectIterator(List<String> lines) {
+        // There is no ValueIteratorOfObject; the Object variant iterates as a generic ValueIterator<Object>, whose
+        // element accessor is Iterator.next() rather than the primitive variants' nextObject().
+        return globalReplacements(lines,
+                "ValueIteratorOfObject iterator\\(", "ValueIterator<Object> iterator(",
+                "new ValueIteratorOfObject\\(\\)", "new ValueIterator<Object>()",
+                "public Object nextObject\\(\\)", "public Object next()",
+                "ValueIteratorOfObject", "ValueIterator");
     }
 
     private static List<String> fixupSsmConstructor(List<String> lines) {

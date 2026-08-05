@@ -77,6 +77,13 @@ public class ReplicateSegmentedSortedMultisetTests {
                 "new ObjectSegmentedSortedMultiset(nodeSize, Object.class)",
                 "new ObjectSegmentedSortedMultiset\\(desc.nodeSize\\(\\)\\)",
                 "new ObjectSegmentedSortedMultiset(desc.nodeSize(), Object.class)");
+        // there is no ValueIteratorOfObject; the Object SSM iterates as a generic ValueIterator<Object>, whose
+        // element accessor is Iterator.next() rather than the primitive variants' nextObject()
+        lines = globalReplacements(lines,
+                "import io\\.deephaven\\.engine\\.primitive\\.value\\.iterator\\.ValueIteratorOfObject;",
+                "import io.deephaven.engine.primitive.value.iterator.ValueIterator;",
+                "ValueIteratorOfObject", "ValueIterator<Object>",
+                "\\.nextObject\\(\\)", ".next()");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
         lines = removeRegion(lines, "SortFixupSanityCheck");
         // the null-sentinel equality semantics are specific to the primitive types

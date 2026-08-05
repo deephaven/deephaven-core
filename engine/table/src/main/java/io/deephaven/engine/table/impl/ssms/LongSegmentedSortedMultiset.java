@@ -13,6 +13,7 @@ import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.time.DateTimeUtils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
@@ -21,6 +22,7 @@ import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -2950,6 +2952,71 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         throw new IllegalStateException("Index " + index + " not found in this SSM");
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * The inherited implementation is positional, and {@link #get(long)} rescans the leaf directory on every element,
+     * making a traversal {@code O(size * leafCount)}. Walking the leaves instead makes it {@code O(size)}, which
+     * matters because the iterator-based {@link #hashCode()} and {@link #equals(Object)} run per row per cycle when an
+     * SSM-valued column is used as an aggregation key.
+     */
+    @Override
+    public ValueIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+
+        if (leafCount <= 1) {
+            // Empty, singleton, and single-leaf SSMs store their values contiguously, so get(long) is already O(1).
+            return LongVector.super.iterator(fromIndexInclusive, toIndexExclusive);
+        }
+
+        // Resolve the starting leaf once; from there each element is a constant-time step.
+        int firstLeaf = 0;
+        long firstOffset = fromIndexInclusive;
+        while (firstLeaf < leafCount && firstOffset >= leafSizes[firstLeaf]) {
+            firstOffset -= leafSizes[firstLeaf++];
+        }
+
+        final int startLeaf = firstLeaf;
+        final int startOffset = (int) firstOffset;
+
+        return new ValueIteratorOfLong() {
+
+            private int leaf = startLeaf;
+            private int offset = startOffset;
+            private long remaining = toIndexExclusive - fromIndexInclusive;
+
+            // Safe to cache: consumers drain the iterator synchronously, so no split can intervene.
+            private long[] values = startLeaf < leafCount ? leafValues[startLeaf] : null;
+            private int leafSize = startLeaf < leafCount ? leafSizes[startLeaf] : 0;
+
+            @Override
+            public long nextLong() {
+                while (offset >= leafSize) {
+                    if (++leaf >= leafCount) {
+                        throw new IllegalStateException(
+                                "Index " + (toIndexExclusive - remaining) + " not found in this SSM");
+                    }
+                    offset = 0;
+                    values = leafValues[leaf];
+                    leafSize = leafSizes[leaf];
+                }
+                --remaining;
+                return values[offset++];
+            }
+
+            @Override
+            public boolean hasNext() {
+                return remaining > 0;
+            }
+
+            @Override
+            public long remaining() {
+                return remaining;
+            }
+        };
+    }
+
     @Override
     public LongVector subVector(long fromIndexInclusive, long toIndexExclusive) {
         return new LongVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
@@ -3162,30 +3229,16 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * {@link #equals(Object)} accepts any Vector with matching contents, so this must hash exactly like one -- hence
+     * the shared helper rather than a scheme of our own.
+     */
     @Override
     public int hashCode() {
-        if (size == 1) {
-            return Objects.hash(size) * 31 + Objects.hash(get(0));
-        }
-
-        if (leafCount == 1) {
-            int result = Objects.hash(size);
-            for (int ii = 0; ii < size; ii++) {
-                result = result * 31 + Objects.hash(directoryValues[ii]);
-            }
-
-            return result;
-        }
-
-        int result = Objects.hash(leafCount, size);
-
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                result = result * 31 + Objects.hash(leafValues[li][ai]);
-            }
-        }
-
-        return result;
+        return LongVector.hashCode(this);
     }
 
     @Override

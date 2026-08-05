@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
+import io.deephaven.engine.primitive.value.iterator.ValueIterator;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
@@ -69,6 +71,40 @@ public class InstantSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
         @Override
         public Instant get(long index) {
             return epochNanosToInstant(underlying.get(index));
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * <p>
+         * Delegating keeps traversal linear. The inherited implementation is positional, and
+         * {@link LongSegmentedSortedMultiset#get(long)} rescans the leaf directory on every element.
+         */
+        @Override
+        public ValueIterator<Instant> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+            final ValueIteratorOfLong nanos = underlying.iterator(fromIndexInclusive, toIndexExclusive);
+            return new ValueIterator<>() {
+
+                @Override
+                public Instant next() {
+                    return epochNanosToInstant(nanos.nextLong());
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return nanos.hasNext();
+                }
+
+                @Override
+                public long remaining() {
+                    return nanos.remaining();
+                }
+
+                @Override
+                public void close() {
+                    nanos.close();
+                }
+            };
         }
 
         @Override

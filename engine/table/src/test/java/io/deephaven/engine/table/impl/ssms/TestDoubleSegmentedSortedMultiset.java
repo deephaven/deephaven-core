@@ -26,6 +26,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.vector.DoubleVectorDirect;
@@ -102,6 +103,14 @@ public class TestDoubleSegmentedSortedMultiset extends RefreshingTableTestCase {
         checkEqualsArray(1);
         checkEqualsArray(3);
         checkEqualsArray(20);
+    }
+
+    public void testIterator() {
+        // exercise the empty, singleton (size == 1), single-leaf, and multi-leaf representations
+        checkIterator(0);
+        checkIterator(1);
+        checkIterator(3);
+        checkIterator(20);
     }
 
     public void testMoveSingletonSource() {
@@ -749,6 +758,12 @@ public class TestDoubleSegmentedSortedMultiset extends RefreshingTableTestCase {
         assertTrue(ssm.equals(new DoubleVectorDirect(values)));
         assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
 
+        // ... and anything equal must hash alike, so the SSM has to use the same shared Vector helper that the
+        // *VectorDirect implementations use rather than a scheme of its own
+        assertEquals(ssm.hashCode(), ssm.getDirect().hashCode());
+        assertEquals(ssm.hashCode(), new DoubleVectorDirect(values).hashCode());
+        assertEquals(ssm.hashCode(), new ObjectVectorDirect<>(boxed).hashCode());
+
         // a Vector of a different length is not equal
         final double[] longer = new double[valueCount + 1];
         for (int ii = 0; ii < longer.length; ++ii) {
@@ -772,6 +787,41 @@ public class TestDoubleSegmentedSortedMultiset extends RefreshingTableTestCase {
                 final Double[] modifiedBoxed = boxed.clone();
                 modifiedBoxed[position] = different;
                 assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
+            }
+        }
+    }
+
+    private void checkIterator(int valueCount) {
+        final int nodeSize = 4;
+        final double[] values = new double[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (double) ('a' + ii);
+        }
+        final DoubleSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+
+        // a full traversal must visit every element in order
+        try (final ValueIteratorOfDouble it = ssm.iterator()) {
+            assertEquals(valueCount, it.remaining());
+            for (int ii = 0; ii < valueCount; ++ii) {
+                assertTrue(it.hasNext());
+                assertEquals(values[ii], it.nextDouble());
+            }
+            assertFalse(it.hasNext());
+        }
+
+        // every sub-range must resolve its starting leaf correctly and stop at the right position; for a multi-leaf
+        // SSM the start may land mid-leaf, on a leaf boundary, or past several whole leaves
+        for (int from = 0; from <= valueCount; ++from) {
+            for (int to = from; to <= valueCount; ++to) {
+                try (final ValueIteratorOfDouble it = ssm.iterator(from, to)) {
+                    assertEquals(to - from, it.remaining());
+                    for (int ii = from; ii < to; ++ii) {
+                        assertTrue(it.hasNext());
+                        assertEquals(values[ii], it.nextDouble());
+                        assertEquals(to - ii - 1, it.remaining());
+                    }
+                    assertFalse(it.hasNext());
+                }
             }
         }
     }

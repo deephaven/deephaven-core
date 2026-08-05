@@ -26,6 +26,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfByte;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.vector.ByteVectorDirect;
@@ -102,6 +103,14 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
         checkEqualsArray(1);
         checkEqualsArray(3);
         checkEqualsArray(20);
+    }
+
+    public void testIterator() {
+        // exercise the empty, singleton (size == 1), single-leaf, and multi-leaf representations
+        checkIterator(0);
+        checkIterator(1);
+        checkIterator(3);
+        checkIterator(20);
     }
 
     public void testMoveSingletonSource() {
@@ -749,6 +758,12 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
         assertTrue(ssm.equals(new ByteVectorDirect(values)));
         assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
 
+        // ... and anything equal must hash alike, so the SSM has to use the same shared Vector helper that the
+        // *VectorDirect implementations use rather than a scheme of its own
+        assertEquals(ssm.hashCode(), ssm.getDirect().hashCode());
+        assertEquals(ssm.hashCode(), new ByteVectorDirect(values).hashCode());
+        assertEquals(ssm.hashCode(), new ObjectVectorDirect<>(boxed).hashCode());
+
         // a Vector of a different length is not equal
         final byte[] longer = new byte[valueCount + 1];
         for (int ii = 0; ii < longer.length; ++ii) {
@@ -772,6 +787,41 @@ public class TestByteSegmentedSortedMultiset extends RefreshingTableTestCase {
                 final Byte[] modifiedBoxed = boxed.clone();
                 modifiedBoxed[position] = different;
                 assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
+            }
+        }
+    }
+
+    private void checkIterator(int valueCount) {
+        final int nodeSize = 4;
+        final byte[] values = new byte[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (byte) ('a' + ii);
+        }
+        final ByteSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+
+        // a full traversal must visit every element in order
+        try (final ValueIteratorOfByte it = ssm.iterator()) {
+            assertEquals(valueCount, it.remaining());
+            for (int ii = 0; ii < valueCount; ++ii) {
+                assertTrue(it.hasNext());
+                assertEquals(values[ii], it.nextByte());
+            }
+            assertFalse(it.hasNext());
+        }
+
+        // every sub-range must resolve its starting leaf correctly and stop at the right position; for a multi-leaf
+        // SSM the start may land mid-leaf, on a leaf boundary, or past several whole leaves
+        for (int from = 0; from <= valueCount; ++from) {
+            for (int to = from; to <= valueCount; ++to) {
+                try (final ValueIteratorOfByte it = ssm.iterator(from, to)) {
+                    assertEquals(to - from, it.remaining());
+                    for (int ii = from; ii < to; ++ii) {
+                        assertTrue(it.hasNext());
+                        assertEquals(values[ii], it.nextByte());
+                        assertEquals(to - ii - 1, it.remaining());
+                    }
+                    assertFalse(it.hasNext());
+                }
             }
         }
     }
