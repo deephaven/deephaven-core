@@ -78,7 +78,6 @@ test {
 def testSecurityManagerAllow = tasks.register('testSecurityManagerAllow', Test) {
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
-    dependsOn 'testClasses'
 
     useJUnitPlatform {
         includeTags("security-manager-allow")
