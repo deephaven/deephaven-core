@@ -474,6 +474,9 @@ public class ParquetSchemaReader {
                             return Optional.of(char.class);
                         case 32:
                             return Optional.of(long.class);
+                        // uint64 does not fit in any primitive, so it is promoted to BigInteger.
+                        case 64:
+                            return Optional.of(BigInteger.class);
                         default:
                             // fallthrough.
                     }

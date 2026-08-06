@@ -106,6 +106,7 @@ import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
+import java.nio.LongBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -2841,6 +2842,88 @@ public final class ParquetTableReadWriteTest {
                 charCol("uint16Col", (char) 65535, (char) 2, (char) 0, NULL_CHAR),
                 longCol("uint32Col", 4294967295L, 2L, 0L, NULL_LONG));
         assertTableEquals(expected, fromDisk);
+    }
+
+    /**
+     * An unsigned 64-bit parquet integer cannot be represented by any Java primitive, so it is promoted to
+     * {@link BigInteger}. This writes such a column directly (Deephaven's writer never emits {@code UINT_64}) and
+     * verifies both the inferred type and the values.
+     */
+    @Test
+    public void testReadUnsignedLongLogicalType() throws IOException {
+        final MessageType schema = Types.buildMessage()
+                .addFields(optional(INT64).as(intType(64, false)).named("uint64Col"))
+                .named("schema");
+        final File dest = new File(rootFile, "uint64_logical_type.parquet");
+
+        // Long.MAX_VALUE + 1 and -1L have the high bit set, so they only read back correctly when interpreted as
+        // unsigned. Note that NULL_LONG (Long.MIN_VALUE) is the writer's null sentinel, and therefore cannot be
+        // written as the unsigned value 2^63 here.
+        final long[] values = {0L, 1L, Long.MAX_VALUE, Long.MIN_VALUE + 1, -1L, NULL_LONG};
+        final Statistics<?> stats = Statistics.createStats(schema.getType("uint64Col"));
+        try (final java.io.OutputStream os = Files.newOutputStream(dest.toPath());
+                final ParquetFileWriter fileWriter = new ParquetFileWriter(dest.toURI(), os,
+                        EMPTY.getTargetPageSize(), new HeapByteBufferAllocator(), schema, "UNCOMPRESSED",
+                        Collections.emptyMap(), NullParquetMetadataFileWriter.INSTANCE, true)) {
+            final RowGroupWriter rowGroupWriter = fileWriter.addRowGroup(values.length);
+            try (final ColumnWriter columnWriter = rowGroupWriter.addColumn("uint64Col")) {
+                columnWriter.addPage(LongBuffer.wrap(values), values.length, stats);
+            }
+        }
+
+        final ParquetMetadata metadata =
+                new ParquetTableLocationKey(dest.toURI(), 0, null, EMPTY).getMetadata();
+        assertEquals(schema, metadata.getFileMetaData().getSchema());
+
+        final Table expected = newTable(col("uint64Col",
+                BigInteger.ZERO,
+                BigInteger.ONE,
+                BigInteger.valueOf(Long.MAX_VALUE),
+                new BigInteger("9223372036854775809"), // 2^63 + 1
+                new BigInteger("18446744073709551615"), // 2^64 - 1
+                null));
+        final Table fromDisk = checkSingleTable(expected, dest);
+        assertEquals(BigInteger.class, fromDisk.getDefinition().getColumn("uint64Col").getDataType());
+    }
+
+    /**
+     * Reading a {@code UINT_64} column as a primitive {@code long} would silently reinterpret large values as negative,
+     * so it is rejected instead.
+     */
+    @Test
+    public void testReadUnsignedLongLogicalTypeAsLongFails() throws IOException {
+        final MessageType schema = Types.buildMessage()
+                .addFields(optional(INT64).as(intType(64, false)).named("uint64Col"))
+                .named("schema");
+        final File dest = new File(rootFile, "uint64_logical_type_as_long.parquet");
+
+        final long[] values = {0L, -1L};
+        final Statistics<?> stats = Statistics.createStats(schema.getType("uint64Col"));
+        try (final java.io.OutputStream os = Files.newOutputStream(dest.toPath());
+                final ParquetFileWriter fileWriter = new ParquetFileWriter(dest.toURI(), os,
+                        EMPTY.getTargetPageSize(), new HeapByteBufferAllocator(), schema, "UNCOMPRESSED",
+                        Collections.emptyMap(), NullParquetMetadataFileWriter.INSTANCE, true)) {
+            final RowGroupWriter rowGroupWriter = fileWriter.addRowGroup(values.length);
+            try (final ColumnWriter columnWriter = rowGroupWriter.addColumn("uint64Col")) {
+                columnWriter.addPage(LongBuffer.wrap(values), values.length, stats);
+            }
+        }
+
+        final TableDefinition asLong = TableDefinition.of(ColumnDefinition.ofLong("uint64Col"));
+        try {
+            readTable(dest.getPath(), EMPTY.withTableDefinitionAndLayout(asLong,
+                    ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
+            fail("Expected an exception when reading a UINT_64 column as long");
+        } catch (final RuntimeException expected) {
+            boolean foundExpectedMessage = false;
+            for (Throwable cause = expected; cause != null; cause = cause.getCause()) {
+                if (cause.getMessage() != null && cause.getMessage().contains("unsigned long")) {
+                    foundExpectedMessage = true;
+                    break;
+                }
+            }
+            assertTrue("Unexpected exception " + expected, foundExpectedMessage);
+        }
     }
 
     @Test
