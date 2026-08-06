@@ -91,8 +91,7 @@ public final class LittleEndianDataInputStream extends FilterInputStream impleme
         byte b1 = readAndCheckByte();
         byte b2 = readAndCheckByte();
 
-        int result = b2;
-        result = (result << 8) | (b1 & 0xFF);
+        int result = (b2 << 8) | (b1 & 0xFF);
 
         return result;
     }
