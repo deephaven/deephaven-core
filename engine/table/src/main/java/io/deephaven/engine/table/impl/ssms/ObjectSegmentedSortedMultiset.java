@@ -3063,12 +3063,6 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     // endregion VectorEquals
 
     // region UnboxValue
-    /**
-     * There is nothing to unbox, and no null sentinel: an Object SSM stores nulls as null.
-     */
-    private static Object unboxValue(final Object value) {
-        return value;
-    }
     // endregion UnboxValue
 
     private boolean equalsArray(ObjectVector<?> o) {
@@ -3085,12 +3079,12 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         // iterate o exactly once; random access via get can be expensive for some Vector implementations
         try (final CloseableIterator<?> oit = o.iterator()) {
             if (size == 1) {
-                return ObjectComparisons.eq(get(0), unboxValue(oit.next()));
+                return ObjectComparisons.eq(get(0), oit.next());
             }
 
             if (leafCount == 1) {
                 for (int ii = 0; ii < size; ii++) {
-                    if (!ObjectComparisons.eq(directoryValues[ii], unboxValue(oit.next()))) {
+                    if (!ObjectComparisons.eq(directoryValues[ii], oit.next())) {
                         return false;
                     }
                 }
@@ -3100,7 +3094,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
             for (int li = 0; li < leafCount; ++li) {
                 for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    if (!ObjectComparisons.eq(leafValues[li][ai], unboxValue(oit.next()))) {
+                    if (!ObjectComparisons.eq(leafValues[li][ai], oit.next())) {
                         return false;
                     }
                 }

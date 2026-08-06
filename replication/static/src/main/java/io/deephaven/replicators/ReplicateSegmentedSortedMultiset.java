@@ -420,14 +420,10 @@ public class ReplicateSegmentedSortedMultiset {
                 "        if(getComponentType() != o.getComponentType()) {\n" +
                         "            return false;\n" +
                         "        }"));
-        lines = replaceRegion(lines, "UnboxValue", Collections.singletonList(
-                "    /**\n" +
-                        "     * There is nothing to unbox, and no null sentinel: an Object SSM stores nulls as null.\n"
-                        +
-                        "     */\n" +
-                        "    private static Object unboxValue(final Object value) {\n" +
-                        "        return value;\n" +
-                        "    }"));
+        // an Object SSM stores its elements exactly as the boxed vector supplies them -- nothing to unbox, and no null
+        // sentinel -- so drop the helper and read the iterator directly
+        lines = removeRegion(lines, "UnboxValue");
+        lines = globalReplacements(lines, "unboxValue\\(oit\\.next\\(\\)\\)", "oit.next()");
         return removeImport(lines, "\\s*import io\\.deephaven\\.util\\.type\\.TypeUtils;");
     }
 
