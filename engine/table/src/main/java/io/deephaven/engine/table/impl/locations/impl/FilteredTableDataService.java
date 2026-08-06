@@ -26,71 +26,68 @@ public class FilteredTableDataService extends AbstractTableDataService {
     private static final String IMPLEMENTATION_NAME = FilteredTableDataService.class.getSimpleName();
 
     private final TableDataService serviceToFilter;
-    private final LocationKeyFilter locationKeyFilter;
+    private final LocationKeyFilterProvider locationKeyFilterProvider;
 
+    /**
+     * A filter that has been bound to a table, and so can decide that table's locations.
+     */
     @FunctionalInterface
     public interface LocationKeyFilter {
 
-        /**
-         * Accepts every location of every table.
-         */
+        /** Accepts every location of the table. */
         LocationKeyFilter ALL = locationKey -> true;
 
         /**
-         * Accepts no location of any table. Returning this from {@link #forTable(TableKey)} lets the caller skip the
-         * filtered service entirely for that table.
+         * Accepts no location of the table. A provider that returns this is saying the table is entirely excluded,
+         * which lets the caller skip the filtered service for it.
          */
         LocationKeyFilter NONE = locationKey -> false;
 
         /**
-         * Determine whether a {@link TableLocationKey} should be visible via this service.
+         * Determine whether one location of the bound table should be visible via this service.
          *
-         * <p>
-         * A {@link TableLocationKey} holds partition values and no table identity, so it identifies a location only
-         * relative to its table. This method must therefore be asked only of a filter that has already been bound to a
-         * table with {@link #forTable(TableKey)}. A table-blind filter is its own binding, so for such a filter the
-         * distinction does not arise.
-         *
-         * @param locationKey The location key
+         * @param locationKey The location key, whose partition values are meaningful only within the bound table
          * @return True if the location key should be visible, false otherwise
          */
         boolean accept(@NotNull TableLocationKey locationKey);
+    }
+
+    /**
+     * Supplies the {@link LocationKeyFilter} for a table.
+     * <p>
+     * A filter that does not discriminate on the table is a provider that ignores its argument.
+     */
+    @FunctionalInterface
+    public interface LocationKeyFilterProvider {
 
         /**
-         * Bind this filter to a table, returning the filter that applies to that table's locations.
+         * Produce the filter that decides the locations of {@code tableKey}.
          *
-         * <p>
-         * {@link FilteredTableDataService} binds once, when it builds the {@link TableLocationProvider} for a table,
-         * and asks only the bound filter about locations. A filter whose decision depends on both the table and the
-         * location - one that does not factor into an independent table test and location test - overrides this to
-         * capture the table. A filter that does not discriminate on the table inherits the default and binds to itself.
-         *
-         * @param tableKey The table to bind to
-         * @return The filter for locations of {@code tableKey}; {@link #NONE} if no location of that table can be
-         *         accepted, which lets the caller avoid consulting the filtered service at all
+         * @param tableKey The table to filter the locations of
+         * @return The filter for locations of {@code tableKey}; {@link LocationKeyFilter#NONE} if no location of that
+         *         table can be accepted, which lets the caller avoid consulting the filtered service at all
          */
         @NotNull
-        default LocationKeyFilter forTable(@NotNull TableKey tableKey) {
-            return this;
-        }
+        LocationKeyFilter forTable(@NotNull TableKey tableKey);
     }
 
     /**
      * @param serviceToFilter The service that's being filtered
-     * @param locationKeyFilter The filter function
+     * @param locationKeyFilterProvider Supplies the filter for each table's locations
      */
     public FilteredTableDataService(@NotNull final TableDataService serviceToFilter,
-            @NotNull final LocationKeyFilter locationKeyFilter) {
+            @NotNull final LocationKeyFilterProvider locationKeyFilterProvider) {
         super("Filtered-" + Require.neqNull(serviceToFilter, "serviceToFilter").getName());
         this.serviceToFilter = Require.neqNull(serviceToFilter, "serviceToFilter");
-        this.locationKeyFilter = Require.neqNull(locationKeyFilter, "locationKeyFilter");
+        this.locationKeyFilterProvider =
+                Require.neqNull(locationKeyFilterProvider, "locationKeyFilterProvider");
     }
 
     @Override
     @Nullable
     public TableLocationProvider getRawTableLocationProvider(@NotNull final TableKey tableKey,
             @NotNull final TableLocationKey tableLocationKey) {
-        if (!locationKeyFilter.forTable(tableKey).accept(tableLocationKey)) {
+        if (!locationKeyFilterProvider.forTable(tableKey).accept(tableLocationKey)) {
             return null;
         }
 
@@ -112,7 +109,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
     @Override
     @NotNull
     protected TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
-        final LocationKeyFilter filterForTable = locationKeyFilter.forTable(tableKey);
+        final LocationKeyFilter filterForTable = locationKeyFilterProvider.forTable(tableKey);
         if (filterForTable == LocationKeyFilter.NONE) {
             // No location of this table can be accepted, so don't consult the filtered service at all. That service is
             // frequently remote, and consulting it would open a subscription whose every result would be discarded.
@@ -188,7 +185,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
         public void getTableLocationKeys(
                 final Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer,
                 final Predicate<ImmutableTableLocationKey> filter) {
-            // Apply this service's locationKeyFilter alongside the caller's, so that enumeration exposes the same
+            // Apply this table's bound filter alongside the caller's, so that enumeration exposes the same
             // set as hasTableLocationKey, getTableLocationIfPresent, and subscription delivery.
             inputProvider.getTableLocationKeys(consumer, filter.and(filterForTable::accept));
         }
@@ -302,7 +299,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
     public String toString() {
         return getImplementationName() + '{' +
                 (getName() != null ? "name=" + getName() + ", " : "") +
-                "locationKeyFilter=" + locationKeyFilter +
+                "locationKeyFilterProvider=" + locationKeyFilterProvider +
                 ", serviceToFilter=" + serviceToFilter +
                 '}';
     }
@@ -311,7 +308,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
     public String describe() {
         return getImplementationName() + '{' +
                 (getName() != null ? "name=" + getName() + ", " : "") +
-                "locationKeyFilter=" + locationKeyFilter +
+                "locationKeyFilterProvider=" + locationKeyFilterProvider +
                 ", serviceToFilter=" + serviceToFilter.describe() +
                 '}';
     }

@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.FilteredTableDataService.LocationKeyFilter;
+import io.deephaven.engine.table.impl.locations.impl.FilteredTableDataService.LocationKeyFilterProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -47,7 +48,7 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
         underlying.addKey(c);
 
         final FilteredTableDataService filtered =
-                new FilteredTableDataService(new FixedProviderService(underlying), key -> !key.equals(c));
+                new FilteredTableDataService(new FixedProviderService(underlying), tableKey -> key -> !key.equals(c));
 
         final Set<ImmutableTableLocationKey> visible =
                 new HashSet<>(filtered.getTableLocationProvider(TABLE).getTableLocationKeys());
@@ -71,7 +72,7 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
         underlying.addKey(c);
 
         final FilteredTableDataService filtered =
-                new FilteredTableDataService(new FixedProviderService(underlying), key -> !key.equals(c));
+                new FilteredTableDataService(new FixedProviderService(underlying), tableKey -> key -> !key.equals(c));
         final TableLocationProvider provider = filtered.getTableLocationProvider(TABLE);
 
         final Set<ImmutableTableLocationKey> enumerated = new HashSet<>(provider.getTableLocationKeys());
@@ -96,7 +97,7 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
         underlying.addKey(c);
 
         final FilteredTableDataService filtered =
-                new FilteredTableDataService(new FixedProviderService(underlying), key -> !key.equals(c));
+                new FilteredTableDataService(new FixedProviderService(underlying), tableKey -> key -> !key.equals(c));
 
         final Set<ImmutableTableLocationKey> visible = new HashSet<>();
         filtered.getTableLocationProvider(TABLE)
@@ -116,7 +117,7 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
         underlying.addKey(keyFor("B"));
         underlying.addKey(keyFor("C"));
 
-        final CountingFilter counting = new CountingFilter(LocationKeyFilter.ALL);
+        final CountingProvider counting = new CountingProvider(LocationKeyFilter.ALL);
         final FilteredTableDataService filtered =
                 new FilteredTableDataService(new FixedProviderService(underlying), counting);
 
@@ -141,19 +142,9 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
         underlying.addKey(a);
         underlying.addKey(b);
 
-        // Unbound accept() is never consulted; binding to TABLE yields a filter that keeps only A.
-        final LocationKeyFilter perTable = new LocationKeyFilter() {
-            @Override
-            public boolean accept(@NotNull final TableLocationKey locationKey) {
-                throw new UnsupportedOperationException("must be bound to a table first");
-            }
-
-            @Override
-            @NotNull
-            public LocationKeyFilter forTable(@NotNull final TableKey tableKey) {
-                return TABLE.equals(tableKey) ? key -> key.equals(a) : LocationKeyFilter.NONE;
-            }
-        };
+        // Binding to TABLE yields a filter that keeps only A; any other table is excluded outright.
+        final LocationKeyFilterProvider perTable =
+                tableKey -> TABLE.equals(tableKey) ? key -> key.equals(a) : LocationKeyFilter.NONE;
 
         final TableLocationProvider provider =
                 new FilteredTableDataService(new FixedProviderService(underlying), perTable)
@@ -174,7 +165,8 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
         underlying.addKey(keyFor("A"));
 
         final RecordingProviderService service = new RecordingProviderService(underlying);
-        final FilteredTableDataService filtered = new FilteredTableDataService(service, LocationKeyFilter.NONE);
+        final FilteredTableDataService filtered =
+                new FilteredTableDataService(service, tableKey -> LocationKeyFilter.NONE);
 
         final TableLocationProvider provider = filtered.getTableLocationProvider(TABLE);
 
@@ -185,42 +177,32 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
     }
 
     /**
-     * A table-blind filter binds to itself, so an existing single-method filter keeps working unchanged.
+     * A provider that ignores its argument supplies the same filter for every table, which is how a filter that does
+     * not discriminate on the table is expressed.
      */
     @Test
-    public void testTableBlindFilterBindsToItself() {
+    public void testTableBlindProviderSuppliesOneFilter() {
         final LocationKeyFilter blind = key -> true;
-        Assert.assertSame(blind, blind.forTable(TABLE));
-        Assert.assertSame(LocationKeyFilter.ALL, LocationKeyFilter.ALL.forTable(TABLE));
-        Assert.assertSame(LocationKeyFilter.NONE, LocationKeyFilter.NONE.forTable(TABLE));
+        final LocationKeyFilterProvider provider = tableKey -> blind;
+        Assert.assertSame(blind, provider.forTable(TABLE));
+        Assert.assertSame(blind, provider.forTable(new NamedTableKey("Other.Table")));
     }
 
     /**
-     * A {@link LocationKeyFilter} that counts how often it is bound to a table, delegating the location decision.
+     * A {@link LocationKeyFilterProvider} that counts how often it is asked to bind, supplying a fixed filter.
      */
-    private static final class CountingFilter implements LocationKeyFilter {
+    private static final class CountingProvider implements LocationKeyFilterProvider {
 
         private final LocationKeyFilter delegate;
         private int bindCount;
 
         /**
-         * Creates a counting filter over the given delegate.
+         * Creates a counting provider that always supplies the given filter.
          *
          * @param delegate the filter that decides locations once bound
          */
-        private CountingFilter(@NotNull final LocationKeyFilter delegate) {
+        private CountingProvider(@NotNull final LocationKeyFilter delegate) {
             this.delegate = delegate;
-        }
-
-        /**
-         * Delegates the location decision.
-         *
-         * @param locationKey the location key
-         * @return the delegate's answer
-         */
-        @Override
-        public boolean accept(@NotNull final TableLocationKey locationKey) {
-            return delegate.accept(locationKey);
         }
 
         /**
