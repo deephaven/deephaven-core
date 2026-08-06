@@ -19,14 +19,16 @@ import org.apache.iceberg.ManifestContent;
 import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.ManifestFiles;
 import org.apache.iceberg.ManifestReader;
-import org.apache.iceberg.PartitionStatistics;
 import org.apache.iceberg.PartitionStatisticsFile;
+import org.apache.iceberg.PartitionStats;
+import org.apache.iceberg.PartitionStatsUtil;
+import org.apache.iceberg.Partitioning;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.SnapshotRef;
 import org.apache.iceberg.StatisticsFile;
 import org.apache.iceberg.StructLike;
-import org.apache.iceberg.io.CloseableIterable;
 import org.apache.iceberg.io.FileIO;
+import org.apache.iceberg.types.Types;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -243,45 +245,40 @@ public final class Explore {
                 .view(properties.entrySet());
     }
 
-    public static Table partitionStats(org.apache.iceberg.Table table) throws IOException {
+    public static Table partitionStats(org.apache.iceberg.Table table) {
         return partitionStats(table, table.currentSnapshot());
     }
 
-    public static Table partitionStats(org.apache.iceberg.Table table, Snapshot snapshot) throws IOException {
-        final Collection<PartitionStatistics> partitionStats;
+    public static Table partitionStats(org.apache.iceberg.Table table, Snapshot snapshot) {
+        final Collection<PartitionStats> partitionStats;
         if (snapshot == null) {
             partitionStats = Collections.emptyList();
         } else {
-            // Note: an earlier version of this method computed stats dynamically; Iceberg has removed easy access to
-            // that functionality and replaced it with utility methods to computing and *write* stats. We don't want to
-            // write stats here; as such, this method will only read stats that have already been written. Callers can
-            // write their own stats with org.apache.iceberg.PartitionStatsHandler.
-            try (final CloseableIterable<PartitionStatistics> scan = table
-                    .newPartitionStatisticsScan()
-                    .useSnapshot(snapshot.snapshotId())
-                    .scan()) {
-                partitionStats = new ArrayList<>();
-                scan.forEach(partitionStats::add);
-            }
+            // Borrowed the same logic from
+            // org.apache.iceberg.data.PartitionStatsHandler.computeAndWriteStatsFile(org.apache.iceberg.Table, long),
+            // which is in the iceberg-data project (we don't depend on that). Moving to iceberg-core as part of
+            // https://github.com/apache/iceberg/pull/12946
+            final Collection<PartitionStats> stats = PartitionStatsUtil.computeStats(table, snapshot);
+            final Types.StructType partitionType = Partitioning.partitionType(table);
+            partitionStats = PartitionStatsUtil.sortStats(stats, partitionType);
         }
-        return new TableBuilder<>("PartitionStats", PartitionStatistics.class)
-                .add("Partition", StructLike.class, PartitionStatistics::partition)
-                .add("SpecId", int.class, PartitionStatistics::specId)
-                .add("DataRecordCount", long.class, PartitionStatistics::dataRecordCount)
-                .add("DataFileCount", int.class, PartitionStatistics::dataFileCount)
-                .add("TotalDataFileSizeInBytes", long.class, PartitionStatistics::totalDataFileSizeInBytes)
-                .add("PositionDeleteRecordCount", long.class, PartitionStatistics::positionDeleteRecordCount)
-                .add("PositionDeleteFileCount", int.class, PartitionStatistics::positionDeleteFileCount)
-                .add("EqualityDeleteRecordCount", long.class, PartitionStatistics::equalityDeleteRecordCount)
-                .add("EqualityDeleteFileCount", int.class, PartitionStatistics::equalityDeleteFileCount)
-                .add("TotalRecordCount", long.class, PartitionStatistics::totalRecords)
+        return new TableBuilder<>("PartitionStats", PartitionStats.class)
+                .add("Partition", StructLike.class, PartitionStats::partition)
+                .add("SpecId", int.class, PartitionStats::specId)
+                .add("DataRecordCount", long.class, PartitionStats::dataRecordCount)
+                .add("DataFileCount", int.class, PartitionStats::dataFileCount)
+                .add("TotalDataFileSizeInBytes", long.class, PartitionStats::totalDataFileSizeInBytes)
+                .add("PositionDeleteRecordCount", long.class, PartitionStats::positionDeleteRecordCount)
+                .add("PositionDeleteFileCount", int.class, PartitionStats::positionDeleteFileCount)
+                .add("EqualityDeleteRecordCount", long.class, PartitionStats::equalityDeleteRecordCount)
+                .add("EqualityDeleteFileCount", int.class, PartitionStats::equalityDeleteFileCount)
+                .add("TotalRecordCount", long.class, PartitionStats::totalRecords)
                 .add("LastUpdatedAt", Instant.class, Explore::lastUpdatedAt)
-                .add("LastUpdatedSnapshotId", long.class, PartitionStatistics::lastUpdatedSnapshotId)
-                .add("DvCount", int.class, PartitionStatistics::dvCount)
+                .add("LastUpdatedSnapshotId", long.class, PartitionStats::lastUpdatedSnapshotId)
                 .view(partitionStats);
     }
 
-    private static Instant lastUpdatedAt(PartitionStatistics x) {
+    private static Instant lastUpdatedAt(PartitionStats x) {
         return x.lastUpdatedAt() == null ? null : Instant.ofEpochMilli(x.lastUpdatedAt());
     }
 

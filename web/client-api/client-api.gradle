@@ -129,6 +129,9 @@ artifacts {
 }
 
 def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
+    t.testClassesDirs = sourceSets.test.output.classesDirs
+    t.classpath = sourceSets.test.runtimeClasspath
+
     t.group = 'verification'
     t.systemProperties = [
             'gwt.args': ['-sourceLevel auto',
@@ -202,6 +205,9 @@ def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer)
 }
 
 def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
+    t.testClassesDirs = sourceSets.test.output.classesDirs
+    t.classpath = sourceSets.test.runtimeClasspath
+
     t.group = 'verification'
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
     t.finalizedBy(deephavenDocker.endTask, stopSelenium)
@@ -229,6 +235,9 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
 }
 
 tasks.register('manualGwtTest', Test) {t ->
+    t.testClassesDirs = sourceSets.test.output.classesDirs
+    t.classpath = sourceSets.test.runtimeClasspath
+
     t.group = 'verification'
     t.description = '''Test wiring to run either unit or integration tests with a manual browser and an already-running server.
 This makes it easier to run a tests repeatedly, either one at a time or as a class/suite, without
