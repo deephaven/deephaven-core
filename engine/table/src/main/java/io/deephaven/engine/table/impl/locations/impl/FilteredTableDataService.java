@@ -62,6 +62,9 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
         /**
          * Produce the filter that decides the locations of {@code tableKey}.
+         * <p>
+         * This may be called more than once for the same table, so it must be a deterministic function of its argument:
+         * equal table keys must yield filters that accept the same locations.
          *
          * @param tableKey The table to filter the locations of
          * @return The filter for locations of {@code tableKey}; {@link LocationKeyFilter#NONE} if no location of that

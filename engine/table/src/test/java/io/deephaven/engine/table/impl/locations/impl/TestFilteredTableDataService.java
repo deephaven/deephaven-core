@@ -107,8 +107,8 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
     }
 
     /**
-     * The filter is bound to a table exactly once per table, when the provider is built, and not again per location or
-     * per discovery call.
+     * Building a table's provider binds the filter once, and neither a repeated provider lookup nor per-location
+     * discovery through that provider binds it again.
      */
     @Test
     public void testFilterIsBoundOncePerTable() {
