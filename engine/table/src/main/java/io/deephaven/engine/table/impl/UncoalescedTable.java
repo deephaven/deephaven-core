@@ -71,22 +71,14 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     /**
-     * Helper for {@link #coalescedIfAvailable()} implementations. Interprets a memoized coalesce input or result:
-     * <ul>
-     * <li>If {@code candidate} is itself an {@link UncoalescedTable}, recursively delegate to its
-     * {@link #coalescedIfAvailable()}, since coalescing this table means coalescing that one.</li>
-     * <li>Otherwise, {@link Liveness#verifyCachedObjectForReuse(Object) verify} it for reuse, which manages it with the
-     * enclosing liveness scope if necessary.</li>
-     * </ul>
+     * Helper for {@link #coalescedIfAvailable()} implementations. {@link Liveness#verifyCachedObjectForReuse(Object)
+     * Verifies} a memoized coalesced result for reuse, which manages it with the enclosing liveness scope if necessary.
      * A {@code null} candidate, or one that is no longer live, yields {@link Optional#empty()}.
      *
      * @param candidate The memoized {@link Table}, possibly {@code null} if nothing has been memoized
      * @return The coalesced result available for reuse, or {@link Optional#empty()}
      */
     protected static Optional<Table> verifyCoalescedForReuse(@Nullable final Table candidate) {
-        if (candidate instanceof UncoalescedTable) {
-            return ((UncoalescedTable<?>) candidate).coalescedIfAvailable();
-        }
         if (Liveness.verifyCachedObjectForReuse(candidate)) {
             return Optional.of(candidate);
         }
