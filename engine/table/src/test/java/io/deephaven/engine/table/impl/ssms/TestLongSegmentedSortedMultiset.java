@@ -29,6 +29,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
@@ -99,9 +100,12 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
     }
 
     public void testEqualsArray() {
-        // exercise the singleton (size == 1), single-leaf, and multi-leaf representations
+        // exercise the singleton (size == 1), single-leaf (partial, then exactly full), and multi-leaf (exactly two
+        // full leaves, then several with a partial tail) representations
         checkEqualsArray(1);
         checkEqualsArray(3);
+        checkEqualsArray(4);
+        checkEqualsArray(8);
         checkEqualsArray(20);
     }
 
@@ -111,6 +115,29 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
         checkIterator(1);
         checkIterator(3);
         checkIterator(20);
+    }
+
+    /**
+     * hashCode() walks the leaves directly instead of delegating to the shared Vector helper, which duplicates that
+     * helper's seed, multiplier, and per-element hash. Pin the two together across the empty, singleton, single-leaf,
+     * and multi-leaf representations so the copy cannot drift -- equals() accepts any Vector with matching contents,
+     * so a divergence here would silently break the hashCode contract.
+     */
+    public void testHashCodeMatchesVectorHelper() {
+        for (final int valueCount : new int[] {0, 1, 3, 4, 8, 20}) {
+            final long[] values = new long[valueCount];
+            for (int ii = 0; ii < valueCount; ++ii) {
+                values[ii] = (long) ('a' + ii);
+            }
+            final LongSegmentedSortedMultiset ssm = makeSsm(4, values);
+            final String message = "valueCount=" + valueCount;
+
+            // the helper applied to this SSM, to its materialized copy, and to an independently built Vector must all
+            // agree with the walk
+            assertEquals(message, LongVector.hashCode(ssm), ssm.hashCode());
+            assertEquals(message, LongVector.hashCode(ssm.getDirect()), ssm.hashCode());
+            assertEquals(message, new LongVectorDirect(values).hashCode(), ssm.hashCode());
+        }
     }
 
     public void testMoveSingletonSource() {
@@ -752,17 +779,38 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
             boxed[ii] = values[ii];
         }
 
-        // a Vector with identical contents is equal (the primitive Vector becomes an ObjectVector after Object
-        // replication, so this exercises both equalsArray overloads across the type variants)
-        assertTrue(ssm.equals(ssm.getDirect()));
-        assertTrue(ssm.equals(new LongVectorDirect(values)));
-        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
+        // a Vector with identical contents is equal, in both directions, and anything equal must hash alike -- so the
+        // SSM has to use the same shared Vector helper that the *VectorDirect implementations use, and compare
+        // elements the same way that helper hashes them, rather than either with a scheme of its own
+        assertEqualBothWays(ssm, ssm.getDirect());
+        assertEqualBothWays(ssm, new LongVectorDirect(values));
 
-        // ... and anything equal must hash alike, so the SSM has to use the same shared Vector helper that the
-        // *VectorDirect implementations use rather than a scheme of its own
-        assertEquals(ssm.hashCode(), ssm.getDirect().hashCode());
-        assertEquals(ssm.hashCode(), new LongVectorDirect(values).hashCode());
+        // the boxed comparison only runs in one direction for the primitive variants, because a primitive SSM is a
+        // LongVector rather than an ObjectVector and so is not a comparand ObjectVectorDirect will accept
+        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
         assertEquals(ssm.hashCode(), new ObjectVectorDirect<>(boxed).hashCode());
+
+        // another SSM holding the same values is equal however those values happen to be laid out: equality is a
+        // property of the contents, and identical contents can occupy different leaf structures, since leaves need
+        // not be full and the two node sizes need not agree
+        assertEqualBothWays(ssm, makeSsm(nodeSize, values));
+        assertEqualBothWays(ssm, makeSsm(nodeSize * 16, values));
+
+        // an SSM of the same length holding different values is not equal, under either layout
+        final long[] shifted = new long[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            shifted[ii] = (long) ('a' + ii + 1);
+        }
+        assertNotEqualBothWays(ssm, makeSsm(nodeSize, shifted));
+        assertNotEqualBothWays(ssm, makeSsm(nodeSize * 16, shifted));
+
+        // ... and neither is a longer one
+        final long[] longerValues = new long[valueCount + 1];
+        for (int ii = 0; ii < longerValues.length; ++ii) {
+            longerValues[ii] = (long) ('a' + ii);
+        }
+        assertNotEqualBothWays(ssm, makeSsm(nodeSize, longerValues));
+        assertNotEqualBothWays(ssm, makeSsm(nodeSize * 16, longerValues));
 
         // a Vector of a different length is not equal
         final long[] longer = new long[valueCount + 1];
@@ -789,6 +837,25 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
                 assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
             }
         }
+    }
+
+    /**
+     * Assert that two Vectors agree that they are equal no matter which is the receiver, and that they hash alike as
+     * {@link Object#hashCode()} then requires.
+     */
+    private void assertEqualBothWays(Object lhs, Object rhs) {
+        assertTrue(lhs + " should equal " + rhs, lhs.equals(rhs));
+        assertTrue(rhs + " should equal " + lhs, rhs.equals(lhs));
+        assertEquals("equal values must hash alike", lhs.hashCode(), rhs.hashCode());
+    }
+
+    /**
+     * Assert that two Vectors agree that they are unequal no matter which is the receiver. Their hash codes are
+     * unconstrained -- unequal values are permitted to collide.
+     */
+    private void assertNotEqualBothWays(Object lhs, Object rhs) {
+        assertFalse(lhs + " should not equal " + rhs, lhs.equals(rhs));
+        assertFalse(rhs + " should not equal " + lhs, rhs.equals(lhs));
     }
 
     private void checkIterator(int valueCount) {

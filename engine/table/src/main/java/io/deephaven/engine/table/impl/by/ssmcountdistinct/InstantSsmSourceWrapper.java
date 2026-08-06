@@ -173,10 +173,13 @@ public class InstantSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
+            }
             if (o instanceof ValueWrapper) {
-                return underlying.equals(((ValueWrapper) o).underlying);
+                // Compare the raw nanos rather than boxing an Instant per element. epochNanosToInstant is a pure
+                // function of the nanos, so this agrees with the ObjectVector path below and with hashCode().
+                return LongVector.equals(underlying, ((ValueWrapper) o).underlying);
             }
             // Equal to any ObjectVector with the same Instants, notably our own getDirect() result.
             return ObjectVector.equals(this, o);

@@ -32,7 +32,6 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 
 public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector<Object> {
@@ -3063,6 +3062,15 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     // region VectorEquals
     // endregion VectorEquals
 
+    // region UnboxValue
+    /**
+     * There is nothing to unbox, and no null sentinel: an Object SSM stores nulls as null.
+     */
+    private static Object unboxValue(final Object value) {
+        return value;
+    }
+    // endregion UnboxValue
+
     private boolean equalsArray(ObjectVector<?> o) {
         // region EqualsArrayTypeCheck
         if(getComponentType() != o.getComponentType()) {
@@ -3077,20 +3085,12 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         // iterate o exactly once; random access via get can be expensive for some Vector implementations
         try (final CloseableIterator<?> oit = o.iterator()) {
             if (size == 1) {
-                final Object val = (Object) oit.next();
-                // region VectorEquals
-                // endregion VectorEquals
-
-                return Objects.equals(get(0), val);
+                return ObjectComparisons.eq(get(0), unboxValue(oit.next()));
             }
 
             if (leafCount == 1) {
                 for (int ii = 0; ii < size; ii++) {
-                    final Object val = (Object) oit.next();
-                    // region VectorEquals
-                    // endregion VectorEquals
-
-                    if (!Objects.equals(directoryValues[ii], val)) {
+                    if (!ObjectComparisons.eq(directoryValues[ii], unboxValue(oit.next()))) {
                         return false;
                     }
                 }
@@ -3100,11 +3100,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
             for (int li = 0; li < leafCount; ++li) {
                 for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    final Object val = (Object) oit.next();
-                    // region VectorEquals
-                    // endregion VectorEquals
-
-                    if (!Objects.equals(leafValues[li][ai], val)) {
+                    if (!ObjectComparisons.eq(leafValues[li][ai], unboxValue(oit.next()))) {
                         return false;
                     }
                 }
@@ -3114,81 +3110,72 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Equal to any Vector holding the same values, including another SSM: an SSM <em>is</em> a Vector, so it takes the
+     * same element-wise path rather than a structural comparison of leaf layouts. Two SSMs can hold identical values in
+     * different layouts -- leaves need not be full, and the node sizes need not agree -- so layout is not a sound basis
+     * for equality.
+     */
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof ObjectSegmentedSortedMultiset)) {
-            // region VectorEquals
-            // endregion VectorEquals
-
-            if (o instanceof ObjectVector) {
-                return equalsArray((ObjectVector) o);
-            }
-            return false;
-        }
-        final ObjectSegmentedSortedMultiset that = (ObjectSegmentedSortedMultiset) o;
-
-        if (size() != that.size()) {
-            return false;
-        }
-
-        if (size == 1) {
-            // region SingletonEquals
-            return Objects.equals(get(0), that.get(0));
-            // endregion SingletonEquals
-        }
-
-        if (leafCount == 1) {
-            if (that.leafCount != 1 || size != that.size) {
-                return false;
-            }
-
-            for (int ii = 0; ii < size; ii++) {
-                // region DirObjectEquals
-                if(!Objects.equals(directoryValues[ii], that.directoryValues[ii])) {
-                    return false;
-                }
-                // endregion DirObjectEquals
-            }
-
+        if (this == o) {
             return true;
         }
+        // region VectorEquals
+        // endregion VectorEquals
 
-        int otherLeaf = 0;
-        int otherLeafIdx = 0;
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                // region LeafObjectEquals
-                if(!Objects.equals(leafValues[li][ai], that.leafValues[otherLeaf][otherLeafIdx++])) {
-                    return false;
-                }
-                // endregion LeafObjectEquals
-
-                if (otherLeafIdx >= that.leafSizes[otherLeaf]) {
-                    otherLeaf++;
-                    otherLeafIdx = 0;
-                }
-
-                if (otherLeaf >= that.leafCount) {
-                    return false;
-                }
-            }
+        if (o instanceof ObjectVector) {
+            return equalsArray((ObjectVector<?>) o);
         }
-
-        return true;
+        return false;
     }
 
     /**
      * {@inheritDoc}
      *
      * <p>
-     * {@link #equals(Object)} accepts any Vector with matching contents, so this must hash exactly like one -- hence
-     * the shared helper rather than a scheme of our own.
+     * {@link #equals(Object)} accepts any Vector with matching contents, so this must produce exactly the hash
+     * {@link ObjectVector#hashCode(ObjectVector)} would: the same seed, the same multiplier, and the same per-element
+     * {@link ObjectComparisons#hashCode(Object)}. That per-element hash is also why {@link #equals(Object)} must compare
+     * elements with {@link ObjectComparisons#eq(Object, Object)} rather than {@code ==}.
+     *
+     * <p>
+     * Walking the leaves here rather than delegating to the helper avoids an iterator per call, which is worth roughly
+     * 2x once the values span more than one leaf. Since that duplicates the helper's formula,
+     * {@code TestObjectSegmentedSortedMultiset#testHashCodeMatchesVectorHelper} pins the two against each other across
+     * every representation so they cannot drift apart.
      */
     @Override
     public int hashCode() {
-        return ObjectVector.hashCode(this);
+        int result = 1;
+        if (size == 0) {
+            return result;
+        }
+
+        if (leafCount == 1) {
+            if (directoryValues == null) {
+                return 31 * result + ObjectComparisons.hashCode(singletonValue);
+            }
+
+            for (int ii = 0; ii < size; ++ii) {
+                result = 31 * result + ObjectComparisons.hashCode(directoryValues[ii]);
+            }
+
+            return result;
+        }
+
+        for (int li = 0; li < leafCount; ++li) {
+            final Object[] values = leafValues[li];
+            final int leafSz = leafSizes[li];
+            for (int ai = 0; ai < leafSz; ++ai) {
+                result = 31 * result + ObjectComparisons.hashCode(values[ai]);
+            }
+        }
+
+        return result;
     }
 
     @Override

@@ -11,6 +11,7 @@ import io.deephaven.vector.CharVectorDirect;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.util.type.TypeUtils;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfChar;
@@ -25,7 +26,6 @@ import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
 import it.unimi.dsi.fastutil.chars.CharSet;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
@@ -3054,16 +3054,14 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         // iterate o exactly once; random access via get can be expensive for some Vector implementations
         try (final CloseablePrimitiveIteratorOfChar oit = o.iterator()) {
             if (size == 1) {
-                return get(0) == oit.nextChar();
+                return CharComparisons.eq(get(0), oit.nextChar());
             }
 
             if (leafCount == 1) {
                 for (int ii = 0; ii < size; ii++) {
-                    // region DirObjectEquals
-                    if (directoryValues[ii] != oit.nextChar()) {
+                    if (!CharComparisons.eq(directoryValues[ii], oit.nextChar())) {
                         return false;
                     }
-                    // endregion DirObjectEquals
                 }
 
                 return true;
@@ -3071,7 +3069,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
             for (int li = 0; li < leafCount; ++li) {
                 for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    if (leafValues[li][ai] != oit.nextChar()) {
+                    if (!CharComparisons.eq(leafValues[li][ai], oit.nextChar())) {
                         return false;
                     }
                 }
@@ -3081,6 +3079,16 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
     }
     // endregion VectorEquals
+
+    // region UnboxValue
+    /**
+     * Convert an element of a boxed {@link ObjectVector} into the primitive representation this SSM stores. A
+     * {@code null} element becomes the null sentinel, which is how the SSM itself stores nulls.
+     */
+    private static char unboxValue(final Object value) {
+        return TypeUtils.unbox((Character) value);
+    }
+    // endregion UnboxValue
 
     private boolean equalsArray(ObjectVector<?> o) {
         // region EqualsArrayTypeCheck
@@ -3096,32 +3104,12 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         // iterate o exactly once; random access via get can be expensive for some Vector implementations
         try (final CloseableIterator<?> oit = o.iterator()) {
             if (size == 1) {
-                final Character val = (Character) oit.next();
-                // region VectorEquals
-                if (val == null) {
-                    // a null value matches our stored null sentinel; comparing the boxed sentinel via Objects.equals
-                    // would incorrectly report inequality
-                    return get(0) == NULL_CHAR;
-                }
-                // endregion VectorEquals
-
-                return Objects.equals(get(0), val);
+                return CharComparisons.eq(get(0), unboxValue(oit.next()));
             }
 
             if (leafCount == 1) {
                 for (int ii = 0; ii < size; ii++) {
-                    final Character val = (Character) oit.next();
-                    // region VectorEquals
-                    if (val == null) {
-                        // a null value matches only our stored null sentinel
-                        if (directoryValues[ii] != NULL_CHAR) {
-                            return false;
-                        }
-                        continue;
-                    }
-                    // endregion VectorEquals
-
-                    if (!Objects.equals(directoryValues[ii], val)) {
+                    if (!CharComparisons.eq(directoryValues[ii], unboxValue(oit.next()))) {
                         return false;
                     }
                 }
@@ -3131,18 +3119,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
             for (int li = 0; li < leafCount; ++li) {
                 for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    final Character val = (Character) oit.next();
-                    // region VectorEquals
-                    if (val == null) {
-                        // a null value matches only our stored null sentinel
-                        if (leafValues[li][ai] != NULL_CHAR) {
-                            return false;
-                        }
-                        continue;
-                    }
-                    // endregion VectorEquals
-
-                    if (!Objects.equals(leafValues[li][ai], val)) {
+                    if (!CharComparisons.eq(leafValues[li][ai], unboxValue(oit.next()))) {
                         return false;
                     }
                 }
@@ -3152,84 +3129,75 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Equal to any Vector holding the same values, including another SSM: an SSM <em>is</em> a Vector, so it takes the
+     * same element-wise path rather than a structural comparison of leaf layouts. Two SSMs can hold identical values in
+     * different layouts -- leaves need not be full, and the node sizes need not agree -- so layout is not a sound basis
+     * for equality.
+     */
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof CharSegmentedSortedMultiset)) {
-            // region VectorEquals
-            if (o instanceof CharVector) {
-                return equalsArray((CharVector) o);
-            }
-            // endregion VectorEquals
-
-            if (o instanceof ObjectVector) {
-                return equalsArray((ObjectVector) o);
-            }
-            return false;
-        }
-        final CharSegmentedSortedMultiset that = (CharSegmentedSortedMultiset) o;
-
-        if (size() != that.size()) {
-            return false;
-        }
-
-        if (size == 1) {
-            // region SingletonEquals
-            return get(0) == that.get(0);
-            // endregion SingletonEquals
-        }
-
-        if (leafCount == 1) {
-            if (that.leafCount != 1 || size != that.size) {
-                return false;
-            }
-
-            for (int ii = 0; ii < size; ii++) {
-                // region DirObjectEquals
-                if (directoryValues[ii] != that.directoryValues[ii]) {
-                    return false;
-                }
-                // endregion DirObjectEquals
-            }
-
+        if (this == o) {
             return true;
         }
-
-        int otherLeaf = 0;
-        int otherLeafIdx = 0;
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                // region LeafObjectEquals
-                if (leafValues[li][ai] != that.leafValues[otherLeaf][otherLeafIdx++]) {
-                    return false;
-                }
-                // endregion LeafObjectEquals
-
-                if (otherLeafIdx >= that.leafSizes[otherLeaf]) {
-                    otherLeaf++;
-                    otherLeafIdx = 0;
-                }
-
-                if (otherLeaf >= that.leafCount) {
-                    return false;
-                }
-            }
+        // region VectorEquals
+        if (o instanceof CharVector) {
+            return equalsArray((CharVector) o);
         }
+        // endregion VectorEquals
 
-        return true;
+        if (o instanceof ObjectVector) {
+            return equalsArray((ObjectVector<?>) o);
+        }
+        return false;
     }
 
     /**
      * {@inheritDoc}
      *
      * <p>
-     * {@link #equals(Object)} accepts any Vector with matching contents, so this must hash exactly like one -- hence
-     * the shared helper rather than a scheme of our own.
+     * {@link #equals(Object)} accepts any Vector with matching contents, so this must produce exactly the hash
+     * {@link CharVector#hashCode(CharVector)} would: the same seed, the same multiplier, and the same per-element
+     * {@link CharComparisons#hashCode(char)}. That per-element hash is also why {@link #equals(Object)} must compare
+     * elements with {@link CharComparisons#eq(char, char)} rather than {@code ==}.
+     *
+     * <p>
+     * Walking the leaves here rather than delegating to the helper avoids an iterator per call, which is worth roughly
+     * 2x once the values span more than one leaf. Since that duplicates the helper's formula,
+     * {@code TestCharSegmentedSortedMultiset#testHashCodeMatchesVectorHelper} pins the two against each other across
+     * every representation so they cannot drift apart.
      */
     @Override
     public int hashCode() {
-        return CharVector.hashCode(this);
+        int result = 1;
+        if (size == 0) {
+            return result;
+        }
+
+        if (leafCount == 1) {
+            if (directoryValues == null) {
+                return 31 * result + CharComparisons.hashCode(singletonValue);
+            }
+
+            for (int ii = 0; ii < size; ++ii) {
+                result = 31 * result + CharComparisons.hashCode(directoryValues[ii]);
+            }
+
+            return result;
+        }
+
+        for (int li = 0; li < leafCount; ++li) {
+            final char[] values = leafValues[li];
+            final int leafSz = leafSizes[li];
+            for (int ai = 0; ai < leafSz; ++ai) {
+                result = 31 * result + CharComparisons.hashCode(values[ai]);
+            }
+        }
+
+        return result;
     }
 
     @Override
