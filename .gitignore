@@ -47,6 +47,7 @@ devopsLocal/
 pyclient/venv
 pyclient/dist
 .venv/
+.venv-devcontainer/
 *.egg-info/
 
 jenkins/failures
