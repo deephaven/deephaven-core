@@ -312,7 +312,7 @@ However, calling the same `print` statement as a second command produces the exp
 println result.isEmpty()
 ```
 
-All table updates emanate from the [Periodic Update Graph](/core/docs/conceptual/periodic-update-graph-configuration) <!--TODO: update with Groovy link when https://deephaven.atlassian.net/jira/software/projects/DOC/boards/8?selectedIssue=DOC-805 is complete-->. An understanding of how the Update Graph works can greatly improve query writing.
+All table updates emanate from the [Periodic Update Graph](../conceptual/periodic-update-graph-configuration.md). An understanding of how the Update Graph works can greatly improve query writing.
 
 ## Related documentation
 

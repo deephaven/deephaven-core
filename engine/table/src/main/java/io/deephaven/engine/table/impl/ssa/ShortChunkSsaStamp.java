@@ -258,4 +258,3 @@ public class ShortChunkSsaStamp implements ChunkSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

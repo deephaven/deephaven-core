@@ -15,7 +15,8 @@ Special variables inside the query language allow access to the row index of a t
 > [!NOTE]
 > The variables `i` and `ii` both represent row numbers. Integers are limited to values up to 2^31-1 (2,147,483,647), while longs can represent values up to 2^63-1. In other words, to avoid precision problems, use the `ii` variable, unless an `int` needs to be passed to another function. Using the `i` variable in a table with more than 2 billion rows will result in an error.
 
-> [!WARNING] > `k` does not correspond to traditional row numbers and should only be used in limited circumstances, such as debugging or advanced query operations.
+> [!WARNING]
+> `k` does not correspond to traditional row numbers and should only be used in limited circumstances, such as debugging or advanced query operations.
 
 ### Refreshing table restrictions
 

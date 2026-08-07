@@ -3,22 +3,7 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.qst.type.ArrayType;
-import io.deephaven.qst.type.BooleanType;
-import io.deephaven.qst.type.BoxedType;
-import io.deephaven.qst.type.ByteType;
-import io.deephaven.qst.type.CharType;
-import io.deephaven.qst.type.CustomType;
-import io.deephaven.qst.type.DoubleType;
-import io.deephaven.qst.type.FloatType;
-import io.deephaven.qst.type.GenericType;
-import io.deephaven.qst.type.InstantType;
-import io.deephaven.qst.type.IntType;
-import io.deephaven.qst.type.LongType;
-import io.deephaven.qst.type.PrimitiveType;
-import io.deephaven.qst.type.ShortType;
-import io.deephaven.qst.type.StringType;
-import io.deephaven.qst.type.Type;
+import io.deephaven.qst.type.*;
 import org.apache.iceberg.types.Types;
 import org.apache.iceberg.types.Type.TypeID;
 import org.jetbrains.annotations.NotNull;
@@ -91,6 +76,22 @@ public final class TypeCompatibility {
         }
 
         @Override
+        public Boolean visit(LocalTimeType localTimeType) {
+            return pt == Types.TimeType.get();
+        }
+
+        @Override
+        public Boolean visit(LocalDateType localDateType) {
+            return pt == Types.DateType.get();
+        }
+
+        @Override
+        public Boolean visit(DurationType durationType) {
+            // Iceberg does not have a native Duration type
+            return false;
+        }
+
+        @Override
         public Boolean visit(ArrayType<?, ?> arrayType) {
             if (pt.typeId() == TypeID.BINARY || pt.typeId() == TypeID.FIXED) {
                 return byte.class.equals(arrayType.componentType().clazz());
@@ -103,12 +104,6 @@ public final class TypeCompatibility {
             final Class<?> clazz = customType.clazz();
             if (pt == Types.TimestampType.withoutZone()) {
                 return LocalDateTime.class.equals(clazz);
-            }
-            if (pt == Types.DateType.get()) {
-                return LocalDate.class.equals(clazz);
-            }
-            if (pt == Types.TimeType.get()) {
-                return LocalTime.class.equals(clazz);
             }
             if (pt instanceof Types.DecimalType) {
                 return BigDecimal.class.equals(clazz);
@@ -215,6 +210,21 @@ public final class TypeCompatibility {
 
         @Override
         public Boolean visit(InstantType instantType) {
+            return false;
+        }
+
+        @Override
+        public Boolean visit(LocalTimeType localTimeType) {
+            return false;
+        }
+
+        @Override
+        public Boolean visit(LocalDateType localDateType) {
+            return false;
+        }
+
+        @Override
+        public Boolean visit(DurationType durationType) {
             return false;
         }
 

@@ -301,4 +301,3 @@ public class LongSsaSsaStamp implements SsaSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

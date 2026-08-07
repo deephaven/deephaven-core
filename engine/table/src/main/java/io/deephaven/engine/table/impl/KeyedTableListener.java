@@ -6,8 +6,10 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
-import gnu.trove.map.hash.TLongObjectHashMap;
-import gnu.trove.map.hash.TObjectLongHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import io.deephaven.tuple.ArrayTuple;
 
 import java.util.Arrays;
@@ -29,8 +31,8 @@ public class KeyedTableListener {
     }
 
     private final QueryTable table;
-    private final TObjectLongHashMap<ArrayTuple> keyToRowKeyHashMap;
-    private final TLongObjectHashMap<ArrayTuple> rowKeyToKeyHashMap;
+    private final Object2LongMap<ArrayTuple> keyToRowKeyHashMap;
+    private final Long2ObjectMap<ArrayTuple> rowKeyToKeyHashMap;
     private final HashMap<ArrayTuple, CopyOnWriteArrayList<KeyUpdateListener>> keyListenerHashMap;
     private final String[] keyColumnNames;
     private final String[] allColumnNames;
@@ -45,8 +47,9 @@ public class KeyedTableListener {
     public KeyedTableListener(QueryTable table, String... keyColumnNames) {
         this.table = table;
         final int tableSize = table.intSize("KeyedTableListener.initialize");
-        this.keyToRowKeyHashMap = new TObjectLongHashMap<>(tableSize, 0.75f, NULL_ROW_KEY);
-        this.rowKeyToKeyHashMap = new TLongObjectHashMap<>(tableSize, 0.75f, NULL_ROW_KEY);
+        this.keyToRowKeyHashMap = new Object2LongOpenHashMap<>(tableSize, 0.75f);
+        this.keyToRowKeyHashMap.defaultReturnValue(NULL_ROW_KEY);
+        this.rowKeyToKeyHashMap = new Long2ObjectOpenHashMap<>(tableSize, 0.75f);
         this.keyListenerHashMap = new HashMap<>();
         this.keyColumnNames = keyColumnNames;
         this.tableListener = new ShiftObliviousInstrumentedListenerAdapter(null, table, false) {
@@ -84,7 +87,7 @@ public class KeyedTableListener {
             long next = iterator.nextLong();
             ArrayTuple oldKey = rowKeyToKeyHashMap.remove(next);
             Assert.assertion(oldKey != null, "oldKey != null");
-            long oldRowKey = keyToRowKeyHashMap.remove(oldKey);
+            long oldRowKey = keyToRowKeyHashMap.removeLong(oldKey);
             Assert.assertion(oldRowKey != NULL_ROW_KEY, "oldRow != NULL_ROW_KEY");
             handleListeners(oldKey, next, KeyEvent.REMOVED);
         }
@@ -98,14 +101,14 @@ public class KeyedTableListener {
             // Check if the key values have changed
             if (!currentKey.equals(prevKey)) {
                 // only want to remove the old key if it was pointing to this rowKey
-                if (keyToRowKeyHashMap.get(prevKey) == next) {
-                    keyToRowKeyHashMap.remove(prevKey);
+                if (keyToRowKeyHashMap.getLong(prevKey) == next) {
+                    keyToRowKeyHashMap.removeLong(prevKey);
                     rowKeyToKeyHashMap.remove(next);
                     handleListeners(prevKey, next, KeyEvent.REMOVED);
                 }
 
                 // Check if this current key was used elsewhere and remove the rowKey->key mapping
-                long otherRowKey = keyToRowKeyHashMap.get(currentKey);
+                long otherRowKey = keyToRowKeyHashMap.getLong(currentKey);
                 if (otherRowKey != NULL_ROW_KEY) {
                     rowKeyToKeyHashMap.remove(otherRowKey);
                     handleListeners(currentKey, otherRowKey, KeyEvent.REMOVED);
@@ -141,7 +144,7 @@ public class KeyedTableListener {
     }
 
     public long getRowKey(ArrayTuple key) {
-        return keyToRowKeyHashMap.get(key);
+        return keyToRowKeyHashMap.getLong(key);
     }
 
     // Make sure these are in the same order as the keys defined on construction
@@ -191,8 +194,8 @@ public class KeyedTableListener {
             callBackList.add(listener);
 
             if (replayInitialData) {
-                long rowKey = keyToRowKeyHashMap.get(key);
-                if (rowKey != keyToRowKeyHashMap.getNoEntryValue()) {
+                long rowKey = keyToRowKeyHashMap.getLong(key);
+                if (rowKey != keyToRowKeyHashMap.defaultReturnValue()) {
                     listener.update(this, key, rowKey, KeyEvent.ADDED);
                 }
             }

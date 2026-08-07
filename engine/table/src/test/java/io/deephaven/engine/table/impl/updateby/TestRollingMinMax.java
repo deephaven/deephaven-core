@@ -1234,7 +1234,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                 ColumnDefinition.ofFloat("floatCol"),
                 ColumnDefinition.ofDouble("doubleCol"),
                 ColumnDefinition.ofString("stringCol"),
-                ColumnDefinition.fromGenericType("instantCol", Instant.class),
+                ColumnDefinition.ofTime("instantCol"),
                 ColumnDefinition.fromGenericType("ldtCol", LocalDateTime.class),
                 ColumnDefinition.fromGenericType("zdtCol", ZonedDateTime.class));
 

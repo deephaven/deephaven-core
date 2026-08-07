@@ -4,10 +4,10 @@
 package io.deephaven.util.metrics;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.io.logger.Logger;
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,7 +57,7 @@ public class MetricsManager {
         // They are updated atomically together when metrics are added.
         protected int count;
         protected final String[] names = new String[maxMetricsPerType];
-        protected final TObjectIntMap<String> nameToMetricId = new TObjectIntHashMap<>(maxMetricsPerType);
+        protected final Object2IntMap<String> nameToMetricId = new Object2IntOpenHashMap<>(maxMetricsPerType);
 
         // Threads have their own version of the counters in a ThreadLocal.
         // We need to know all of them to do updates and other operations,
@@ -178,13 +178,13 @@ public class MetricsManager {
                 return;
             }
             final StringBuilder sb = new StringBuilder(prefix);
-            final TObjectIntMap<String> nameToMetricIdCopy;
+            final Object2IntMap<String> nameToMetricIdCopy;
             synchronized (this) {
-                nameToMetricIdCopy = new TObjectIntHashMap<>(nameToMetricId);
+                nameToMetricIdCopy = new Object2IntOpenHashMap<>(nameToMetricId);
             }
             for (int i = 0; i < snapshotCount; ++i) {
                 final String name = namesSortedSnapshot[i];
-                final int metricId = nameToMetricIdCopy.get(name);
+                final int metricId = nameToMetricIdCopy.getInt(name);
                 final long v = get(countersSnapshot, metricId);
                 if (i != 0) {
                     sb.append(", ");
@@ -294,9 +294,9 @@ public class MetricsManager {
                 logger.accept(s);
                 return;
             }
-            final TObjectIntHashMap nameToMetricIdCopy;
+            final Object2IntMap<String> nameToMetricIdCopy;
             synchronized (this) {
-                nameToMetricIdCopy = new TObjectIntHashMap<>(nameToMetricId);
+                nameToMetricIdCopy = new Object2IntOpenHashMap<>(nameToMetricId);
             }
             for (int i = 0; i < snapshotCount; ++i) {
                 long nsamples = 0;
@@ -310,7 +310,7 @@ public class MetricsManager {
                 // In histogram terms, 7 values in the interval [ 2^3, 2^4 - 1 ] were sampled.
                 final String key = "|key: i:n => 2^i <= x < 2^(i+1), z:n => x = 0.| ";
                 sb.append(key).append(name).append("={ ");
-                final int metricId = nameToMetricIdCopy.get(name);
+                final int metricId = nameToMetricIdCopy.getInt(name);
                 boolean haveBefore = false;
                 for (int j = 64; j >= 0; --j) {
                     final int v = countersSnapshot[metricId][j];

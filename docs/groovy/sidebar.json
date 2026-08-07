@@ -43,8 +43,16 @@
                 "path": "getting-started/crash-course/table-ops.md"
               },
               {
+                "label": "Time and Calendars",
+                "path": "getting-started/crash-course/time-calendars.md"
+              },
+              {
                 "label": "Query Strings",
                 "path": "getting-started/crash-course/query-strings.md"
+              },
+              {
+                "label": "Recipes, not loops!",
+                "path": "getting-started/crash-course/vectorization-vs-loops.md"
               },
               {
                 "label": "Real-time Plots",
@@ -106,8 +114,16 @@
                 "path": "conceptual/table-types.md"
               },
               {
+                "label": "Column types",
+                "path": "conceptual/column-types.md"
+              },
+              {
                 "label": "Initialization and updates",
                 "path": "how-to-guides/initialization-and-updates.md"
+              },
+              {
+                "label": "Deephaven Vectors",
+                "path": "conceptual/arrays-vs-vectors.md"
               },
               {
                 "label": "Core API design",
@@ -116,6 +132,10 @@
               {
                 "label": "Servers & clients",
                 "path": "conceptual/client-server-model.md"
+              },
+              {
+                "label": "What is Barrage?",
+                "path": "conceptual/what-is-barrage.md"
               }
             ]
           },
@@ -147,7 +167,7 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
-                    "label": "Convert add-only tables to blink tables",
+                    "label": "Convert add- and append-only tables to blink tables",
                     "path": "how-to-guides/add-only-to-blink.md"
                   },
                   {
@@ -178,8 +198,25 @@
                 ]
               },
               {
+                "label": "HTML",
+                "items": [
+                  {
+                    "label": "Read HTML files",
+                    "path": "how-to-guides/data-import-export/html-import.md"
+                  },
+                  {
+                    "label": "Export HTML files",
+                    "path": "how-to-guides/data-import-export/html-export.md"
+                  }
+                ]
+              },
+              {
                 "label": "Arrow Flight",
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
+              },
+              {
+                "label": "Arrow/Barrage Schema",
+                "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
                 "label": "Iceberg",
@@ -239,6 +276,10 @@
               {
                 "label": "URI",
                 "path": "how-to-guides/use-uris.md"
+              },
+              {
+                "label": "Table data service",
+                "path": "how-to-guides/data-import-export/table-data-service.md"
               },
               {
                 "label": "Table listeners",
@@ -485,6 +526,10 @@
                 "path": "conceptual/liveness-scope-concept.md"
               },
               {
+                "label": "Systemic Object Marking",
+                "path": "conceptual/systemic-object-marking.md"
+              },
+              {
                 "label": "Generate query strings",
                 "path": "how-to-guides/generate-query-strings.md"
               }
@@ -508,6 +553,10 @@
                   {
                     "label": "Navigate the GUI",
                     "path": "how-to-guides/user-interface/navigating-the-ui.md"
+                  },
+                  {
+                    "label": "Upload a table from a file",
+                    "path": "how-to-guides/user-interface/upload-table-from-file.md"
                   },
                   {
                     "label": "Set date-time format",
@@ -777,6 +826,10 @@
                 "path": "conceptual/ninja.md"
               },
               {
+                "label": "Vectorization and the recipe paradigm",
+                "path": "conceptual/vectorization-and-recipes.md"
+              },
+              {
                 "label": "Performance",
                 "items": [
                   {
@@ -838,8 +891,8 @@
                     "path": "how-to-guides/triage-errors.md"
                   },
                   {
-                    "label": "Attach a JVM debugger",
-                    "path": "how-to-guides/attach-debugger.md"
+                    "label": "Decipher Groovy errors",
+                    "path": "how-to-guides/groovy-errors.md"
                   },
                   {
                     "label": "Get version information",
@@ -848,6 +901,27 @@
                   {
                     "label": "Retrieve logs",
                     "path": "how-to-guides/logs.md"
+                  },
+                  {
+                    "label": "Debugging",
+                    "items": [
+                      {
+                        "label": "Overview",
+                        "path": "how-to-guides/debugging/debugging-landing.md"
+                      },
+                      {
+                        "label": "Docker setup",
+                        "path": "how-to-guides/debugging/docker-setup.md"
+                      },
+                      {
+                        "label": "Source setup",
+                        "path": "how-to-guides/debugging/source-setup.md"
+                      },
+                      {
+                        "label": "Common problems",
+                        "path": "how-to-guides/debugging/common-problems.md"
+                      }
+                    ]
                   }
                 ]
               },
@@ -958,6 +1032,10 @@
                     "path": "how-to-guides/configuration/config-file.md"
                   },
                   {
+                    "label": "Configuration properties",
+                    "path": "how-to-guides/configuration/configuration-properties.md"
+                  },
+                  {
                     "label": "Web Defaults",
                     "path": "how-to-guides/configuration/configure-web.md"
                   },
@@ -1001,6 +1079,10 @@
               {
                 "label": "CSV",
                 "path": "reference/cheat-sheets/csv.md"
+              },
+              {
+                "label": "Kafka",
+                "path": "reference/cheat-sheets/kafka.md"
               },
               {
                 "label": "Parquet",
@@ -1086,6 +1168,10 @@
           {
             "label": "Create your own plugin",
             "path": "how-to-guides/create-plugins.md"
+          },
+          {
+            "label": "Create a JavaScript plugin",
+            "path": "how-to-guides/create-js-plugins.md"
           }
         ]
       },
@@ -1219,6 +1305,14 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
+                    "label": "addOnlyToBlink",
+                    "path": "reference/table-operations/create/addOnlyToBlink.md"
+                  },
+                  {
+                    "label": "blinkToAppendOnly",
+                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                  },
+                  {
                     "label": "FunctionGeneratedTableFactory",
                     "path": "reference/table-operations/create/create.md"
                   },
@@ -1235,16 +1329,12 @@
                     "path": "reference/table-operations/create/TablePublisher.md"
                   },
                   {
-                    "label": "blinkToAppendOnly",
-                    "path": "reference/table-operations/create/blink-to-append-only.md"
+                    "label": "removeBlink",
+                    "path": "reference/table-operations/create/remove-blink.md"
                   },
                   {
                     "label": "toBlink",
                     "path": "reference/table-operations/create/toBlink.md"
-                  },
-                  {
-                    "label": "removeBlink",
-                    "path": "reference/table-operations/create/remove-blink.md"
                   }
                 ]
               },
@@ -1288,6 +1378,10 @@
                   {
                     "label": "writeTable",
                     "path": "reference/data-import-export/Parquet/writeTable.md"
+                  },
+                  {
+                    "label": "writeKeyValuePartitionedTable",
+                    "path": "reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md"
                   }
                 ]
               },
@@ -1386,6 +1480,10 @@
                     "path": "reference/table-operations/metadata/getAttributes.md"
                   },
                   {
+                    "label": "getColumnSource",
+                    "path": "reference/table-operations/metadata/getColumnSource.md"
+                  },
+                  {
                     "label": "getDefinition",
                     "path": "reference/table-operations/metadata/getDefinition.md"
                   },
@@ -1396,6 +1494,10 @@
                   {
                     "label": "hasColumns",
                     "path": "reference/table-operations/metadata/hasColumns.md"
+                  },
+                  {
+                    "label": "isBlink",
+                    "path": "reference/table-operations/metadata/isBlink.md"
                   },
                   {
                     "label": "isEmpty",
@@ -2764,6 +2866,10 @@
                   {
                     "label": "Is docker compose required?",
                     "path": "reference/community-questions/is-docker-compose-required.md"
+                  },
+                  {
+                    "label": "Why do ticking tables stall on WSL 2?",
+                    "path": "reference/community-questions/wsl2-clock-drift.md"
                   }
                 ]
               },

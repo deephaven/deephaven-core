@@ -1,0 +1,5 @@
+<module>
+    <source path="">
+        <include name="BarrageMessage.java"/>
+    </source>
+</module>

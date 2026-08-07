@@ -66,3 +66,7 @@ artifacts {
         builtBy buildWheel
     }
 }
+
+tasks.named('assemble').configure {
+    dependsOn buildWheel
+}

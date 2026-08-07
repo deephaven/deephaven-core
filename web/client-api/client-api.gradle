@@ -39,8 +39,10 @@ configurations {
 
 dependencies {
     gwt libs.gwt.user
-    gwt platform(libs.grpc.bom)
-    gwt libs.grpc.api
+    api libs.protobuf.gwt
+    api libs.grpc.gwt
+    api libs.grpc.gwt.fetch
+    api libs.guava.gwt
 
     gwt project(':engine-chunk')
     gwt project(':extensions-barrage')
@@ -51,6 +53,7 @@ dependencies {
     gwt project(":IO")
 
     // Promote this to compile+runtime, so GWT can see it
+    api project(':util-annotations')
     api project(':util-immutables')
 
     gwt libs.flatbuffers.java
@@ -63,9 +66,12 @@ dependencies {
     gwt libs.vertispan.nio.gwt
     gwt libs.vertispan.flatbuffers.gwt
 
-    js project(path: ':proto:raw-js-openapi', configuration: 'js')
+    gwt project(':proto:proto-backplane-grpc')
+
+    gwt libs.arrow.flight.core
 
     gwt libs.guava
+    gwt libs.guava.gwt
 
     gwt libs.elemental.core
     gwt libs.elemental.promise
@@ -107,6 +113,10 @@ def tsDefs = tasks.register('typescriptDefinitions', Javadoc) {
     }
     destinationDir = dtsOutput.get().asFile
     options.doclet = 'com.vertispan.tsdefs.doclet.TsDoclet'
+    // TsDoclet doesn't recognize -notimestamp; its presence before -sourcepath causes the
+    // doclet's option parser to misinterpret the sourcepath value as a package name.
+    options.noTimestamp = false
+    options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }
 
 artifacts {
@@ -119,6 +129,9 @@ artifacts {
 }
 
 def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
+    t.testClassesDirs = sourceSets.test.output.classesDirs
+    t.classpath = sourceSets.test.runtimeClasspath
+
     t.group = 'verification'
     t.systemProperties = [
             'gwt.args': ['-sourceLevel auto',
@@ -192,6 +205,9 @@ def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer)
 }
 
 def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
+    t.testClassesDirs = sourceSets.test.output.classesDirs
+    t.classpath = sourceSets.test.runtimeClasspath
+
     t.group = 'verification'
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
     t.finalizedBy(deephavenDocker.endTask, stopSelenium)
@@ -219,6 +235,9 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
 }
 
 tasks.register('manualGwtTest', Test) {t ->
+    t.testClassesDirs = sourceSets.test.output.classesDirs
+    t.classpath = sourceSets.test.runtimeClasspath
+
     t.group = 'verification'
     t.description = '''Test wiring to run either unit or integration tests with a manual browser and an already-running server.
 This makes it easier to run a tests repeatedly, either one at a time or as a class/suite, without

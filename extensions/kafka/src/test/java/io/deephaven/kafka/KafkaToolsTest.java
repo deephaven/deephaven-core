@@ -7,13 +7,13 @@ import io.deephaven.engine.table.ColumnDefinition;
 import org.apache.avro.Schema;
 
 import org.apache.avro.util.Utf8;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class KafkaToolsTest {
     //
@@ -36,11 +36,11 @@ public class KafkaToolsTest {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithNull);
         final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
-        assertEquals(2, colDefs.size());
-        assertEquals("Symbol", colDefs.get(0).getName());
-        assertEquals(String.class, colDefs.get(0).getDataType());
-        assertEquals("Price", colDefs.get(1).getName());
-        assertEquals(double.class, colDefs.get(1).getDataType());
+        assertThat(colDefs.size()).isEqualTo(2);
+        assertThat(colDefs.get(0).getName()).isEqualTo("Symbol");
+        assertThat(colDefs.get(0).getDataType()).isEqualTo(String.class);
+        assertThat(colDefs.get(1).getName()).isEqualTo("Price");
+        assertThat(colDefs.get(1).getDataType()).isEqualTo(double.class);
     }
 
     @Test
@@ -48,11 +48,11 @@ public class KafkaToolsTest {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithNull);
         final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, null, avroSchema, KafkaTools.DIRECT_MAPPING, true);
-        assertEquals(2, colDefs.size());
-        assertEquals("Symbol", colDefs.get(0).getName());
-        assertEquals(Utf8.class, colDefs.get(0).getDataType());
-        assertEquals("Price", colDefs.get(1).getName());
-        assertEquals(double.class, colDefs.get(1).getDataType());
+        assertThat(colDefs.size()).isEqualTo(2);
+        assertThat(colDefs.get(0).getName()).isEqualTo("Symbol");
+        assertThat(colDefs.get(0).getDataType()).isEqualTo(Utf8.class);
+        assertThat(colDefs.get(1).getName()).isEqualTo("Price");
+        assertThat(colDefs.get(1).getDataType()).isEqualTo(double.class);
     }
 
     private static final String schemaWithNesting =
@@ -80,13 +80,13 @@ public class KafkaToolsTest {
         final Schema avroSchema = new Schema.Parser().parse(schemaWithNesting);
         final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
-        assertEquals(2, colDefs.size());
-        assertEquals("NestedField" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "Symbol",
-                colDefs.get(0).getName());
-        assertEquals(String.class, colDefs.get(0).getDataType());
-        assertEquals("NestedField" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "Price",
-                colDefs.get(1).getName());
-        assertEquals(double.class, colDefs.get(1).getDataType());
+        assertThat(colDefs.size()).isEqualTo(2);
+        assertThat(colDefs.get(0).getName())
+                .isEqualTo("NestedField" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "Symbol");
+        assertThat(colDefs.get(0).getDataType()).isEqualTo(String.class);
+        assertThat(colDefs.get(1).getName())
+                .isEqualTo("NestedField" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "Price");
+        assertThat(colDefs.get(1).getDataType()).isEqualTo(double.class);
     }
 
     private static final String schemaWithBasicTypes =
@@ -110,21 +110,21 @@ public class KafkaToolsTest {
         final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema);
         final int nCols = 6;
-        assertEquals(nCols, colDefs.size());
+        assertThat(colDefs.size()).isEqualTo(nCols);
         int c = 0;
-        assertEquals("BooleanField", colDefs.get(c).getName());
-        assertEquals(Boolean.class, colDefs.get(c++).getDataType());
-        assertEquals("IntField", colDefs.get(c).getName());
-        assertEquals(int.class, colDefs.get(c++).getDataType());
-        assertEquals("LongField", colDefs.get(c).getName());
-        assertEquals(long.class, colDefs.get(c++).getDataType());
-        assertEquals("FloatField", colDefs.get(c).getName());
-        assertEquals(float.class, colDefs.get(c++).getDataType());
-        assertEquals("DoubleField", colDefs.get(c).getName());
-        assertEquals(double.class, colDefs.get(c++).getDataType());
-        assertEquals("StringField", colDefs.get(c).getName());
-        assertEquals(String.class, colDefs.get(c++).getDataType());
-        assertEquals(nCols, c);
+        assertThat(colDefs.get(c).getName()).isEqualTo("BooleanField");
+        assertThat(colDefs.get(c++).getDataType()).isEqualTo(Boolean.class);
+        assertThat(colDefs.get(c).getName()).isEqualTo("IntField");
+        assertThat(colDefs.get(c++).getDataType()).isEqualTo(int.class);
+        assertThat(colDefs.get(c).getName()).isEqualTo("LongField");
+        assertThat(colDefs.get(c++).getDataType()).isEqualTo(long.class);
+        assertThat(colDefs.get(c).getName()).isEqualTo("FloatField");
+        assertThat(colDefs.get(c++).getDataType()).isEqualTo(float.class);
+        assertThat(colDefs.get(c).getName()).isEqualTo("DoubleField");
+        assertThat(colDefs.get(c++).getDataType()).isEqualTo(double.class);
+        assertThat(colDefs.get(c).getName()).isEqualTo("StringField");
+        assertThat(colDefs.get(c++).getDataType()).isEqualTo(String.class);
+        assertThat(c).isEqualTo(nCols);
     }
 
     private static final String schemaWithMoreNesting =
@@ -183,23 +183,19 @@ public class KafkaToolsTest {
         final List<ColumnDefinition<?>> colDefs = new ArrayList<>();
         KafkaTools.avroSchemaToColumnDefinitions(colDefs, avroSchema, mapping);
         final int nCols = 4;
-        assertEquals(nCols, colDefs.size());
+        assertThat(colDefs.size()).isEqualTo(nCols);
         int c = 0;
-        assertEquals("NestedFields1" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "field1",
-                colDefs.get(c).getName());
-        assertEquals(int.class, colDefs.get(c++).getDataType());
-        assertEquals("NestedFields1" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "field2",
-                colDefs.get(c).getName());
-        assertEquals(float.class, colDefs.get(c++).getDataType());
-        assertEquals("NestedFields2" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR +
-                "NestedFields3" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR +
-                "field3",
-                colDefs.get(c).getName());
-        assertEquals(long.class, colDefs.get(c++).getDataType());
-        assertEquals(
-                "field4",
-                colDefs.get(c).getName());
-        assertEquals(double.class, colDefs.get(c++).getDataType());
-        assertEquals(nCols, c);
+        assertThat(colDefs.get(c).getName())
+                .isEqualTo("NestedFields1" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "field1");
+        assertThat(colDefs.get(c++).getDataType()).isEqualTo(int.class);
+        assertThat(colDefs.get(c).getName())
+                .isEqualTo("NestedFields1" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "field2");
+        assertThat(colDefs.get(c++).getDataType()).isEqualTo(float.class);
+        assertThat(colDefs.get(c).getName()).isEqualTo("NestedFields2" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR
+                + "NestedFields3" + KafkaTools.NESTED_FIELD_COLUMN_NAME_SEPARATOR + "field3");
+        assertThat(colDefs.get(c++).getDataType()).isEqualTo(long.class);
+        assertThat(colDefs.get(c).getName()).isEqualTo("field4");
+        assertThat(colDefs.get(c++).getDataType()).isEqualTo(double.class);
+        assertThat(c).isEqualTo(nCols);
     }
 }

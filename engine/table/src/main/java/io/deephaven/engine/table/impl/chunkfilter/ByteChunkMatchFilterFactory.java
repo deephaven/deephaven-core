@@ -7,8 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TByteHashSet;
 import io.deephaven.engine.table.MatchOptions;
+import it.unimi.dsi.fastutil.bytes.ByteOpenHashSet;
+import it.unimi.dsi.fastutil.bytes.ByteSet;
 
 /**
  * Creates chunk filters for byte values.
@@ -138,10 +139,10 @@ public class ByteChunkMatchFilterFactory {
     }
 
     private final static class MultiValueByteChunkFilter extends ByteChunkFilter {
-        private final TByteHashSet values;
+        private final ByteSet values;
 
         private MultiValueByteChunkFilter(byte... values) {
-            this.values = new TByteHashSet(values);
+            this.values = new ByteOpenHashSet(values);
         }
 
         @Override
@@ -151,10 +152,10 @@ public class ByteChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueByteChunkFilter extends ByteChunkFilter {
-        private final TByteHashSet values;
+        private final ByteSet values;
 
         private InverseMultiValueByteChunkFilter(byte... values) {
-            this.values = new TByteHashSet(values);
+            this.values = new ByteOpenHashSet(values);
         }
 
         @Override

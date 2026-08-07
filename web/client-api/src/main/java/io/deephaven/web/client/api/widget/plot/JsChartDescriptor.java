@@ -25,8 +25,7 @@ public class JsChartDescriptor {
     public JsArray<JsSeriesDescriptor> series = new JsArray<>();
     public JsArray<JsAxisDescriptor> axes = new JsArray<>();
 
-    // TODO (deephaven-core#3442) change to some kind of String+int union type
-    public String chartType;
+    public StringOrNumber chartType;
 
     @JsNullable
     public String title;
@@ -82,7 +81,7 @@ public class JsChartDescriptor {
 
         colspan = JsData.getIntProperty(source, "colspan", 1);
         rowspan = JsData.getIntProperty(source, "rowspan", 1);
-        chartType = JsData.getRequiredStringProperty(source, "chartType");
+        chartType = JsData.getRequiredStringOrIntProperty(source, "chartType");
         title = JsData.getStringProperty(source, "title");
         titleFont = JsData.getStringProperty(source, "titleFont");
         titleColor = JsData.getStringProperty(source, "titleColor");

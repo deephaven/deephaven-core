@@ -3,51 +3,28 @@
 //
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.util.LongChunkAppender;
 import io.deephaven.chunk.util.LongChunkIterator;
-import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.ChunkSource;
 import org.jetbrains.annotations.NotNull;
 
-public class WrappedRowSetRowRedirection implements RowRedirection {
-
-    /**
-     * {@link TrackingRowSet} used to map from outer key (position in the RowSet) to inner key.
-     */
-    private final TrackingRowSet wrappedRowSet;
+public class WrappedRowSetRowRedirection extends StaticWrappedRowSetRowRedirection {
+    final TrackingRowSet wrappedRowSet;
 
     public WrappedRowSetRowRedirection(final TrackingRowSet wrappedRowSet) {
+        super(wrappedRowSet);
         this.wrappedRowSet = wrappedRowSet;
-    }
-
-    @Override
-    public synchronized long get(long outerRowKey) {
-        return wrappedRowSet.get(outerRowKey);
     }
 
     @Override
     public synchronized long getPrev(long outerRowKey) {
         return wrappedRowSet.getPrev(outerRowKey);
-    }
-
-    private static final class FillContext implements ChunkSource.FillContext {
-
-        private final WritableLongChunk<OrderedRowKeys> rowPositions;
-
-        private FillContext(final int chunkCapacity) {
-            rowPositions = WritableLongChunk.makeWritableChunk(chunkCapacity);
-        }
-
-        @Override
-        public void close() {
-            rowPositions.close();
-        }
     }
 
     /* @formatter:off
@@ -97,41 +74,15 @@ public class WrappedRowSetRowRedirection implements RowRedirection {
      */
 
     @Override
-    public ChunkSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        // NB: No need to implement sharing at this level. RedirectedColumnSource uses a SharedContext to share
-        // WritableRowRedirection lookup results.
-        return new FillContext(chunkCapacity);
-    }
-
-    @Override
-    public void fillChunk(@NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
-            @NotNull final RowSequence outerRowKeys) {
-        final WritableLongChunk<OrderedRowKeys> rowPositions = ((FillContext) fillContext).rowPositions;
-        final WritableLongChunk<? super RowKeys> innerRowKeysTyped = innerRowKeys.asWritableLongChunk();
-        outerRowKeys.fillRowKeyChunk(rowPositions);
-        wrappedRowSet.getKeysForPositions(
-                new LongChunkIterator(rowPositions), new LongChunkAppender(innerRowKeysTyped));
-        innerRowKeysTyped.setSize(outerRowKeys.intSize());
-    }
-
-    @Override
     public void fillPrevChunk(@NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
         final WritableLongChunk<OrderedRowKeys> rowPositions = ((FillContext) fillContext).rowPositions;
         final WritableLongChunk<? super RowKeys> innerRowKeysTyped = innerRowKeys.asWritableLongChunk();
         outerRowKeys.fillRowKeyChunk(rowPositions);
-        try (final RowSet prevWrappedRowSet = wrappedRowSet.copyPrev()) {
-            prevWrappedRowSet.getKeysForPositions(
-                    new LongChunkIterator(rowPositions), new LongChunkAppender(innerRowKeysTyped));
-        }
+        wrappedRowSet.prev().getKeysForPositions(new LongChunkIterator(rowPositions),
+                new LongChunkAppender(innerRowKeysTyped));
         innerRowKeysTyped.setSize(outerRowKeys.intSize());
-    }
-
-    @Override
-    public boolean ascendingMapping() {
-        return true;
     }
 
     /* @formatter:off
@@ -197,34 +148,4 @@ public class WrappedRowSetRowRedirection implements RowRedirection {
      * }
      * @formatter:on
      */
-
-    @Override
-    public String toString() {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("{");
-
-        long positionStart = 0;
-
-
-        for (final RowSet.RangeIterator rangeIterator = wrappedRowSet.rangeIterator(); rangeIterator.hasNext();) {
-            rangeIterator.next();
-
-            if (positionStart > 0) {
-                builder.append(", ");
-            }
-            final long rangeStart = rangeIterator.currentRangeStart();
-            final long length = rangeIterator.currentRangeEnd() - rangeStart + 1;
-            if (length > 1) {
-                builder.append(positionStart).append("-").append(positionStart + length - 1)
-                        .append(" -> ").append(rangeStart).append("-").append(rangeIterator.currentRangeEnd());
-            } else {
-                builder.append(positionStart).append(" -> ").append(rangeStart);
-            }
-            positionStart += length;
-        }
-
-        builder.append("}");
-
-        return builder.toString();
-    }
 }

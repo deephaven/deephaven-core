@@ -7,6 +7,7 @@ import com.google.protobuf.UnknownFieldSet;
 import com.google.protobuf.UnknownFieldSet.Field;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.AggSpec;
+import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecFormula;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecNonUniqueSentinel;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecUnique;
@@ -108,6 +109,45 @@ public class AggregateAllGrpcTest extends GrpcTableOperationTestBase<AggregateAl
                 .build();
         assertError(request, Code.INVALID_ARGUMENT,
                 "io.deephaven.proto.backplane.grpc.TableReference must have oneof ref. Note: this may also indicate that the server is older than the client and doesn't know about this new oneof option.");
+    }
+
+    @Test
+    public void formulaRejectsDisallowedExpression() {
+        final TableReference ref = ref(TableTools.emptyTable(100).view("Key=ii % 2", "I=ii"));
+        final AggregateAllRequest request = AggregateAllRequest.newBuilder()
+                .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .setSourceId(ref)
+                .setSpec(AggSpec.newBuilder()
+                        .setFormula(AggSpecFormula.newBuilder()
+                                .setFormula("Runtime.getRuntime().exec(\"touch /tmp/pwned\")")
+                                .setParamToken("each")
+                                .build())
+                        .build())
+                .addGroupByColumns("Key")
+                .build();
+        // Export-time errors are sanitized to "Details Logged w/ID" with the INVALID_ARGUMENT status preserved;
+        // the full ColumnExpressionValidator message is written to the server log.
+        assertError(request, Code.INVALID_ARGUMENT, "Details Logged w/ID");
+    }
+
+    @Test
+    public void formulaAcceptsBenignExpression() {
+        final TableReference ref = ref(TableTools.emptyTable(100).view("Key=ii % 2", "I=ii"));
+        final AggregateAllRequest request = AggregateAllRequest.newBuilder()
+                .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .setSourceId(ref)
+                .setSpec(AggSpec.newBuilder()
+                        .setFormula(AggSpecFormula.newBuilder()
+                                .setFormula("each.size()")
+                                .setParamToken("each")
+                                .build())
+                        .build())
+                .addGroupByColumns("Key")
+                .build();
+        final ExportedTableCreationResponse response = channel().tableBlocking().aggregateAll(request);
+        assertThat(response.getSuccess()).isTrue();
+        assertThat(response.getIsStatic()).isTrue();
+        assertThat(response.getSize()).isEqualTo(2);
     }
 
     @Test

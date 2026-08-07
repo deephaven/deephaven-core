@@ -11,7 +11,6 @@ import io.deephaven.base.ringbuffer.IntRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -27,6 +26,7 @@ import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper.IntRingBufferVectorWrapper;
 import io.deephaven.vector.IntVector;
+import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -193,7 +193,7 @@ public class IntRollingFormulaOperator extends BaseRollingFormulaOperator {
             final long forwardWindowScaleUnits,
             final Class<?> columnType,
             final Class<?> componentType,
-            final Class<?> vectorType,
+            final Class<? extends Vector<?>> vectorType,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef
     // region extra-constructor-args

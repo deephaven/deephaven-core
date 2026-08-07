@@ -7,8 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TShortHashSet;
 import io.deephaven.engine.table.MatchOptions;
+import it.unimi.dsi.fastutil.shorts.ShortOpenHashSet;
+import it.unimi.dsi.fastutil.shorts.ShortSet;
 
 /**
  * Creates chunk filters for short values.
@@ -138,10 +139,10 @@ public class ShortChunkMatchFilterFactory {
     }
 
     private final static class MultiValueShortChunkFilter extends ShortChunkFilter {
-        private final TShortHashSet values;
+        private final ShortSet values;
 
         private MultiValueShortChunkFilter(short... values) {
-            this.values = new TShortHashSet(values);
+            this.values = new ShortOpenHashSet(values);
         }
 
         @Override
@@ -151,10 +152,10 @@ public class ShortChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueShortChunkFilter extends ShortChunkFilter {
-        private final TShortHashSet values;
+        private final ShortSet values;
 
         private InverseMultiValueShortChunkFilter(short... values) {
-            this.values = new TShortHashSet(values);
+            this.values = new ShortOpenHashSet(values);
         }
 
         @Override

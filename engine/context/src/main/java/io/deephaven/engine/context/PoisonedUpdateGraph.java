@@ -11,6 +11,7 @@ import io.deephaven.util.ExecutionContextRegistrationException;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.Collection;
 
 public class PoisonedUpdateGraph implements UpdateGraph {
@@ -74,6 +75,16 @@ public class PoisonedUpdateGraph implements UpdateGraph {
     @Override
     public LogicalClock clock() {
         return frozenClock;
+    }
+
+    @Override
+    public long cycleStartNanoTime() {
+        return fail();
+    }
+
+    @Override
+    public Instant cycleStartTime() {
+        return fail();
     }
 
     @Override

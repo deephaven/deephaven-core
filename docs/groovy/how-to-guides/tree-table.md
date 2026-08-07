@@ -71,7 +71,7 @@ Non-root nodes where the parent is `null` _are not considered orphans_. They can
 
 Note that these rows appear on the same level as the root node, outside of the tree structure.
 
-Orphan nodes appear outside of the tree table's tree structure by default. In order to include orphans in a tree table as children of the root node, the `TreeTable` class's `promoteOrphans` method can be invoked before creating the tree table with `tree`.
+Orphan nodes appear outside of the tree table's tree structure by default. To include orphans in a tree table as children of the root node, invoke the `TreeTable` class's `promoteOrphans` method before creating the tree table with `tree`.
 
 The following example shows how the resulting tree table changes if orphans are promoted.
 

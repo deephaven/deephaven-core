@@ -464,7 +464,8 @@ fi
 
 BUILD_DIR=build_dir
 
-cmake_common_args="${cmake_pic_arg} ${cmake_shared_arg} -DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
+cmake_common_args="${cmake_pic_arg} ${cmake_shared_arg} -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
+
 # In some platforms (eg, fedora) some libraries (eg, arrow, abseil) end up installing
 # libraries in `lib64` instead of `lib`.  We want to keep our LD_LIBRARY_PATH simple.
 cmake_common_args+=" -DCMAKE_INSTALL_LIBDIR=lib"
@@ -488,10 +489,10 @@ fi
 ### abseil
 if [ "$CLONE_ABSEIL" = "yes" ]; then
   echo
-  echo "*** Clone abseil"
+  echo "*** Cloning abseil"
   cd $SRC
-  # Previously used version: 20240116.0
-  git clone $GIT_FLAGS -b 20240116.3 --depth 1 "${GITHUB_BASE_URL}/abseil/abseil-cpp.git"
+  # Previously used version: 20240116.3
+  git clone $GIT_FLAGS -b 20250127.0 --depth 1 "${GITHUB_BASE_URL}/abseil/abseil-cpp.git"
   echo "*** Cloning abseil DONE"
 fi
 if [ "$BUILD_ABSEIL" = "yes" ]; then
@@ -499,8 +500,7 @@ if [ "$BUILD_ABSEIL" = "yes" ]; then
   echo "*** Building abseil"
   cd $SRC/abseil-cpp
   mkdir -p "cmake/$BUILD_DIR" && cd "cmake/$BUILD_DIR"
-  cmake -DCMAKE_CXX_STANDARD=17 \
-	-DABSL_PROPAGATE_CXX_STD=ON \
+  cmake -DABSL_PROPAGATE_CXX_STD=ON \
         ${cmake_common_args} \
         -DCMAKE_INSTALL_PREFIX=$(prefix abseil) \
         ../..
@@ -516,7 +516,7 @@ fi
 ### zlib
 if [ "$CLONE_ZLIB" = "yes" ]; then
   echo
-  echo "*** Clone zlib"
+  echo "*** Cloning zlib"
   cd $SRC
   # Previously used version: v1.3
   git clone $GIT_FLAGS -b v1.3.1 --depth 1 "${GITHUB_BASE_URL}/madler/zlib"
@@ -549,8 +549,8 @@ if [ "$CLONE_PROTOBUF" = "yes" ]; then
   echo
   echo "*** Cloning protobuf"
   cd $SRC
-  # Previously used version: v25.3
-  git clone $GIT_FLAGS -b v28.1 --depth 1 "${GITHUB_BASE_URL}/protocolbuffers/protobuf.git"
+  # Previously used version: v28.1 (note change in versioning scheme to 5.x.y)
+  git clone $GIT_FLAGS -b v5.29.3 --depth 1 "${GITHUB_BASE_URL}/protocolbuffers/protobuf.git"
   echo "*** Cloning protobuf DONE"
 fi
 if [ "$BUILD_PROTOBUF" = "yes" ]; then
@@ -649,7 +649,7 @@ fi
 # mv Barrage_generated. $DHSRC/cpp-client/deephaven/dhcore/flatbuf/deephaven/flatbuf
 if [ "$CLONE_FLATBUFFERS" = "yes" ]; then
   echo
-  echo "*** Clone flatbuffers"
+  echo "*** Cloning flatbuffers"
   cd $SRC
   # Previously used version: v2.0.6
   git clone $GIT_FLAGS -b v23.5.26 --depth 1 "${GITHUB_BASE_URL}/google/flatbuffers.git"
@@ -675,7 +675,7 @@ fi
 ### c-ares
 if [ "$CLONE_CARES" = "yes" ]; then
   echo
-  echo "*** Clone ares"
+  echo "*** Cloning ares"
   cd $SRC
   # Previously used version: cares-1_28_1
   git clone $GIT_FLAGS -b v1.33.1 --depth 1 "${GITHUB_BASE_URL}/c-ares/c-ares.git"
@@ -708,10 +708,10 @@ fi
 ### grpc
 if [ "$CLONE_GRPC" = "yes" ]; then
   echo
-  echo "*** Clone grpc"
+  echo "*** Cloning grpc"
   cd $SRC
-  # Previously used version: v1.63.0
-  git clone $GIT_FLAGS -b v1.66.1 --depth 1 "${GITHUB_BASE_URL}/grpc/grpc"
+  # Previously used version: v1.66.1
+  git clone $GIT_FLAGS -b v1.71.0 --depth 1 "${GITHUB_BASE_URL}/grpc/grpc"
   echo "*** Cloning grpc DONE"
 fi
 if [ "$BUILD_GRPC" = "yes" ]; then
@@ -719,8 +719,7 @@ if [ "$BUILD_GRPC" = "yes" ]; then
   echo "*** Building grpc"
   cd $SRC/grpc
   mkdir -p "cmake/$BUILD_DIR" && cd "cmake/$BUILD_DIR"
-  cmake -DCMAKE_CXX_STANDARD=17 \
-        ${cmake_common_args} \
+  cmake ${cmake_common_args} \
         -DCMAKE_INSTALL_PREFIX=$(prefix grpc) \
         -DgRPC_INSTALL=ON \
         -DgRPC_ABSL_PROVIDER=package \
@@ -745,8 +744,8 @@ if [ "$CLONE_ARROW" = "yes" ]; then
   echo
   echo "*** Cloning arrow"
   cd $SRC
-  # Previously used version: apache-arrow-16.0.0
-  git clone $GIT_FLAGS -b apache-arrow-16.1.0 --depth 1 "${GITHUB_BASE_URL}/apache/arrow"
+  # Previously used version: apache-arrow-16.1.0
+  git clone $GIT_FLAGS -b apache-arrow-23.0.1 --depth 1 "${GITHUB_BASE_URL}/apache/arrow"
   echo "*** Cloning arrow DONE"
 fi
 if [ "$BUILD_ARROW" = "yes" ]; then
@@ -762,7 +761,6 @@ if [ "$BUILD_ARROW" = "yes" ]; then
   cd $SRC/arrow/cpp
   mkdir -p "$BUILD_DIR" && cd "$BUILD_DIR"
   cmake -DProtobuf_DIR=${PFX}/protobuf \
-        -DCMAKE_CXX_STANDARD=17 \
         ${cmake_common_args} \
         ${cmake_arrow_extra_args} \
         -DARROW_FLIGHT=ON \
@@ -793,12 +791,12 @@ fi
 ### immer
 if [ "$CLONE_IMMER" = "yes" ]; then
   echo
-  echo "*** Clone immer"
+  echo "*** Cloning immer"
   cd $SRC
   # Previously used version: v0.8.1
   git clone $GIT_FLAGS "${GITHUB_BASE_URL}/arximboldi/immer.git"
   (cd immer && git checkout df6ef46d97e1fe81f397015b9aeb32505cef653b)
-  echo "*** Clonning immer DONE"
+  echo "*** Cloning immer DONE"
 fi
 if [ "$BUILD_IMMER" = "yes" ]; then
   echo
@@ -807,7 +805,6 @@ if [ "$BUILD_IMMER" = "yes" ]; then
   mkdir -p "$BUILD_DIR" && cd "$BUILD_DIR"
   cmake ${cmake_common_args} \
         -DCMAKE_INSTALL_PREFIX=$(prefix immer) \
-        -DCMAKE_CXX_STANDARD=17 \
         -Dimmer_BUILD_EXTRAS=OFF \
         -Dimmer_BUILD_TESTS=OFF \
         -Dimmer_BUILD_EXAMPLES=OFF \

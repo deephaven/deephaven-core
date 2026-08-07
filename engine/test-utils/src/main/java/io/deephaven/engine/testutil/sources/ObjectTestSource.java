@@ -11,7 +11,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;

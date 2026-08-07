@@ -14,16 +14,22 @@ Deephaven can be configured to authenticate users with OIDC and Keycloak with so
 > [!NOTE]
 > OIDC and Keycloak are typically used to guard resources accessed by large numbers of people, such as those used by organizations. If you need to be granted access to a Deephaven instance guarded by OIDC and Keycloak, contact your system administrator. If you need to grant access to a Deephaven resource guarded by it, see [Granting access to users](#granting-access-to-users). For more detailed information about Keycloak than this guide provides, see [Keycloak's server administration documentation](https://www.keycloak.org/docs/latest/server_admin/).
 
-## Setup
+> [!WARNING]
+> The [example configuration](#example) given in this guide is _not_ recommended for use in a production environment. For instance, it creates two users: `admin` and `user`, with passwords the same as the usernames. Additionally, [fsync](https://man7.org/linux/man-pages/man2/fsync.2.html) is disabled, which is not encouraged. The example is only meant to show a basic implementation that can be used as a template.
+
+## Configuration
 
 This guide will first cover the configuration of Keycloak and a database for it.
 
-> [!NOTE]
-> The usernames and passwords given in files below are placeholders such as `username`, `admin`, and `password`. This is an unsafe security practice - these placeholders should _never_ be used in a production setup. For more information on best practices to safeguard secrets in Docker, see [Use Secrets in Docker](https://docs.docker.com/compose/use-secrets/).
+Docker will create three services: `deephaven`, `database`, and `keycloak`. It will also set up the bridge network between the Keycloak server and the database. Usernames and passwords in Keycloak are created with a JSON file, which will be mounted in a [Docker volume](../../conceptual/docker-data-volumes.md).
+
+## Example
+
+The examples given below create a Keycloak server with a single user named `user` with the password `user`.
 
 ### docker-compose.yml
 
-The `docker-compose` YAML file will set up three services: `deephaven`, `database`, and `keycloak`. It will also setup the bridge network between Keycloak and the database.
+The Docker Compose YAML file will set up three services: `deephaven`, `database`, and `keycloak`. It will also set up the bridge network between Keycloak and the database.
 
 <details>
 <summary> Expand the YAML file </summary>
@@ -35,13 +41,12 @@ services:
     build:
       context: docker/deephaven
     environment:
-      JAVA_OPTS: -Xmx4g
+      START_OPTS: -Xmx4g
         -DAuthHandlers=io.deephaven.authentication.oidc.OidcAuthenticationHandler
         -Dauthentication.oidc.keycloak.url=http://10.222.1.10:8080
         -Dauthentication.oidc.keycloak.realm=deephaven_core
         -Dauthentication.oidc.keycloak.clientId=deephaven
         -Dauthentication.client.configuration.list=AuthHandlers,authentication.oidc.keycloak.url,authentication.oidc.keycloak.realm,authentication.oidc.keycloak.clientId
-      START_OPS: -Ddeephaven.console.type=python
     ports:
       - "10000:10000"
     volumes:
@@ -114,9 +119,16 @@ networks:
 
 </details>
 
+There's a lot going on in this file. Here's what it all means:
+
+- The `deephaven` service is built from the Dockerfile in `docker/deephaven`. `START_OPTS` tells Deephaven to use its OIDC authentication handler, what the Keycloak server URL and port are, its realm, the client ID, and the configuration list. `data/deephaven` is mounted as `/data/storage`. Also, the service depends on the `keycloak` service.
+- The `database` service builds from the [`postgres`](https://hub.docker.com/_/postgres) image. It mounts the SQL file to initialize the Keycloak database, exposes port 5432, and sets the password for the database to `password` (not recommended). It also turns `fsync` and `sychronous_commit` off (also not recommended).
+- The `keycloak` service builds from this [keycloak image](https://quay.io/repository/keycloak/keycloak). It sets various environment variables, runs some commands, creates a health check that runs once per 3 seconds, exposes port 8080, and mounts the Deephaven realm file as read-only to the container.
+- Each service is dependent on the `dh_auth_ntw` network.
+
 ### Dockerfile
 
-In the `docker-compose.yml` file, it tells Docker to build images using the context found in the `docker/deephaven` directory. So, create that filepath, and create a `Dockerfile`. It should look like this:
+The `docker-compose.yml` file in the root directory tells Docker to build images using the Dockerfile found in the `docker/deephaven` directory. So, create that filepath, and create a `Dockerfile`. It should look like this:
 
 ```dockerfile
 FROM ghcr.io/deephaven/web-plugin-packager:latest as js-plugins

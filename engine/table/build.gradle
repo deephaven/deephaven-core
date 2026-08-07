@@ -18,6 +18,7 @@ dependencies {
     api project(':engine-stringset')
     api project(':engine-base')
     api project(':engine-context')
+    api project(':engine-read-tracker')
     api project(':deephaven-jpy-ext')
     api project(':hotspot')
     api project(':IO')
@@ -40,9 +41,9 @@ dependencies {
     implementation libs.f4b6a3.uuid.creator
     // TODO(deephaven-core#3204): t-digest 3.3 appears to have higher errors than 3.2
     implementation libs.tdunning.t.digest
-    implementation libs.squareup.javapoet
+    implementation libs.javapoet
     implementation libs.classgraph
-    implementation libs.dsi.fastutil
+    api libs.dsi.fastutil
 
     implementation project(':plugin')
     implementation libs.commons.lang3

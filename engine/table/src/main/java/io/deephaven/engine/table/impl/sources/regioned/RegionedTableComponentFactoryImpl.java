@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.ColumnSourceManager;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
@@ -13,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,8 +45,8 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
             final boolean isRefreshing,
             final boolean removeAllowed,
             @NotNull final ColumnToCodecMappings codecMappings,
-            @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
-        return new RegionedColumnSourceManager(isRefreshing, removeAllowed, this, codecMappings, columnDefinitions);
+            @NotNull final TableDefinition tableDefinition) {
+        return new RegionedColumnSourceManager(isRefreshing, removeAllowed, this, codecMappings, tableDefinition);
     }
 
     /**

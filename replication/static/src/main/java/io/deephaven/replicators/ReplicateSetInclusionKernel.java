@@ -29,8 +29,11 @@ public class ReplicateSetInclusionKernel {
                 "int checkValue", "long checkValue",
                 "doubleToIntBits", "doubleToLongBits",
                 "intBitsToDouble", "longBitsToDouble",
-                "TIntHashSet", "TLongHashSet",
-                "TIntIterator", "TLongIterator");
+                "IntOpenHashSet", "LongOpenHashSet",
+                "IntSet", "LongSet",
+                "IntIterator", "LongIterator",
+                "nextInt\\(", "nextLong(",
+                "it\\.unimi\\.dsi\\.fastutil\\.ints", "it.unimi.dsi.fastutil.longs");
         FileUtils.writeLines(objectFile, lines);
     }
 }

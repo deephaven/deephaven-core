@@ -4,18 +4,21 @@
 package io.deephaven.web.client.api.widget.plot.enums;
 
 import com.vertispan.tsdefs.annotations.TsTypeDef;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.AxisDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import jsinterop.annotations.JsType;
 
+/**
+ * A numeric enum indicating how axis values are interpreted for formatting and display.
+ */
 @JsType(name = "AxisFormatType", namespace = "dh.plot")
 @TsTypeDef(tsType = "number")
 public class JsAxisFormatType {
     /**
      * Indicates that this axis will have discrete values rather than be on a continuous numeric axis.
      */
-    public static final int CATEGORY = AxisDescriptor.AxisFormatType.getCATEGORY();
+    public static final int CATEGORY = FigureDescriptor.AxisDescriptor.AxisFormatType.CATEGORY.getNumber();
     /**
      * Indicates that the values are numeric, and should be plotted on a continuous axis.
      */
-    public static final int NUMBER = AxisDescriptor.AxisFormatType.getNUMBER();
+    public static final int NUMBER = FigureDescriptor.AxisDescriptor.AxisFormatType.NUMBER.getNumber();
 }

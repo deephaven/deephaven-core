@@ -30,6 +30,11 @@ public class WhereFilterWithDeclaredBarriersImpl extends WhereFilterDelegatingBa
         this.declaredBarriers = declaredBarriers;
     }
 
+    @Override
+    public WhereFilter maybeUnwrapFilter() {
+        return WhereFilterDelegating.maybeUnwrapFilter(filter);
+    }
+
     public Object[] declaredBarriers() {
         return declaredBarriers;
     }

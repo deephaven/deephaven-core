@@ -1,0 +1,4 @@
+<module>
+    <inherits name="io.grpc.Grpc" />
+    <source path="" />
+</module>

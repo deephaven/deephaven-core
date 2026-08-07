@@ -54,6 +54,7 @@ dependencies {
     annotationProcessor libs.autoservice.compiler
 
     testImplementation project(':engine-test-utils')
+    testImplementation libs.dsi.fastutil
 
     testImplementation libs.testcontainers
     testImplementation libs.testcontainers.junit.jupiter
@@ -80,6 +81,9 @@ test {
 }
 
 tasks.register('testOutOfBand', Test) {
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+
     useJUnitPlatform {
         includeTags("testcontainers")
     }

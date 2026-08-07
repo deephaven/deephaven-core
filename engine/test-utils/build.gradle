@@ -18,7 +18,6 @@ dependencies {
     implementation project(':extensions-source-support')
 
     implementation libs.commons.lang3
-    implementation libs.trove
 
     implementation libs.dsi.fastutil
 

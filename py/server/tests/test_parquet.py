@@ -476,8 +476,7 @@ class ParquetTestCase(BaseTestCase):
         )
         self.assert_table_equals(dh_table, from_disk)
 
-        # TODO dtype_backend=None is a workaround until https://github.com/deephaven/deephaven-core/issues/4823 is fixed
-        df_from_disk = to_pandas(from_disk, dtype_backend=None)
+        df_from_disk = to_pandas(from_disk)
         if pandas.__version__.split(".")[0] == "1":
             df_from_pandas = pandas.read_parquet(
                 "data_from_dh.parquet", use_nullable_dtypes=True
@@ -499,9 +498,7 @@ class ParquetTestCase(BaseTestCase):
         # dataframe to strings to compare the values
         df_from_disk_as_str = df_from_disk.astype(str)
         df_from_pandas_as_str = df_from_pandas.astype(str)
-        self.assertTrue(
-            (df_from_disk_as_str == df_from_pandas_as_str).all().values.all()
-        )
+        self.assertTrue(df_from_disk_as_str.equals(df_from_pandas_as_str))
 
         # Rewrite the dataframe back to parquet using pyarrow and read it back using deephaven.parquet to compare
         df_from_pandas.to_parquet("data_from_pandas.parquet", compression="SNAPPY")
@@ -531,13 +528,10 @@ class ParquetTestCase(BaseTestCase):
             pyarrow.parquet.write_table(pa_table.cast(new_schema), dest)
             from_disk = read(dest, file_layout=ParquetFileLayout.SINGLE_FILE)
 
-            # TODO dtype_backend=None is a workaround until https://github.com/deephaven/deephaven-core/issues/4823 is fixed
-            df_from_disk = to_pandas(from_disk, dtype_backend=None)
+            df_from_disk = to_pandas(from_disk)
             original_df = pa_table.to_pandas()
             # Compare the dataframes as strings
-            self.assertTrue(
-                (df_from_disk.astype(str) == original_df.astype(str)).all().values.all()
-            )
+            self.assertTrue(df_from_disk.astype(str).equals(original_df.astype(str)))
 
         # Test for nanoseconds, microseconds, and milliseconds
         schema_nsec = table.schema.set(

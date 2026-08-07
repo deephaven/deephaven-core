@@ -12,8 +12,11 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
+import io.deephaven.engine.table.impl.util.WritableRowRedirectionLockFree;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -2186,6 +2189,122 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
     }
 
+    /**
+     * The "DragonFruit" row on the left has no match on the right, so the row redirection backing the right-side
+     * columns must map that left row to {@link RowSequence#NULL_ROW_KEY} (-1). A regression caused the symbol-table
+     * path to store {@link QueryConstants#NULL_LONG} (Long.MIN_VALUE) instead, which sent downstream readers (e.g.
+     * Parquet) off to garbage offsets.
+     */
+    public void testSymbolTableJoinUnmatchedRowRedirection() throws IOException {
+        diskBackedTestHarness((left, right) -> {
+            // Flatten the left so JoinControl picks the Contiguous redirection. The Sparse path's
+            // LongColumnSourceRowRedirection.get() normalizes NULL_LONG to NULL_ROW_KEY on read, hiding the bug;
+            // ContiguousWritableRowRedirection.get() returns the raw stored value, so a buggy NULL_LONG surfaces.
+            final Table flatLeft = left.flatten();
+            final Table result = flatLeft.naturalJoin(right, "Symbol");
+
+            final Table expected = newTable(
+                    stringCol("Symbol", "Apple", "Banana", "Cantaloupe", "DragonFruit",
+                            "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"),
+                    intCol("LeftSentinel", 0, 1, 2, 3, 4, 5, 6, 7, 8),
+                    intCol("RightSentinel", 101, 102, 103, NULL_INT, 101, 103, 102, 102, 103));
+            assertTableEquals(expected, result);
+
+            final ColumnSource<?> rightSentinelSource = result.getColumnSource("RightSentinel");
+            assertTrue("RightSentinel must be a RedirectedColumnSource",
+                    rightSentinelSource instanceof RedirectedColumnSource);
+            final RowRedirection rowRedirection =
+                    ((RedirectedColumnSource<?>) rightSentinelSource).getRowRedirection();
+
+            // The 4th left row (index 3, "DragonFruit") has no match on the right.
+            final long unmatchedLeftRowKey = result.getRowSet().get(3);
+            final long innerRowKey = rowRedirection.get(unmatchedLeftRowKey);
+
+            assertEquals("Unmatched left row must redirect to NULL_ROW_KEY, not NULL_LONG",
+                    RowSequence.NULL_ROW_KEY, innerRowKey);
+        });
+    }
+
+    /**
+     * Same bug as {@link #testSymbolTableJoinUnmatchedRowRedirection()}, but exercises the Hash redirection path.
+     * <p>
+     * We write a large Parquet file (so the join sees a symbol-table-aware source), then read it back and filter to a
+     * small number of widely-scattered rows. The resulting row set has many sparse-array blocks containing a single
+     * row, so {@code JoinControl.getRedirectionType} picks {@code Hash} (sparse overhead exceeded). Unmatched left rows
+     * must redirect to {@link RowSequence#NULL_ROW_KEY}, not {@link QueryConstants#NULL_LONG}.
+     */
+    public void testSymbolTableJoinUnmatchedRowRedirectionHash() throws IOException {
+        final File leftDirectory = Files.createTempDirectory("QueryTableJoinTest-Left").toFile();
+        final File rightDirectory = Files.createTempDirectory("QueryTableJoinTest-Right").toFile();
+        try {
+            final File leftFile = new File(leftDirectory, "Left.parquet");
+            final TableDefinition leftDefinition = TableDefinition.of(
+                    ColumnDefinition.ofString("Symbol"),
+                    ColumnDefinition.ofInt("LeftSentinel"));
+            final int leftSize = 100_000;
+            // Alternate Apple/DragonFruit per 5000-row band so the stride filter keeps both.
+            final Table leftSource = emptyTable(leftSize)
+                    .updateView(
+                            "Symbol = ((ii / 5000) % 2 == 0) ? `Apple` : `DragonFruit`",
+                            "LeftSentinel = i");
+            ParquetTools.writeTable(leftSource, leftFile.getPath(),
+                    ParquetInstructions.EMPTY.withTableDefinition(leftDefinition));
+
+            // Keep ~20 rows widely scattered. Each falls in its own 1024-row sparse block, which
+            // makes the sparse overhead exceed the 4x threshold and forces the Hash redirection.
+            final Table left = ParquetTools.readTable(leftFile.getPath())
+                    .where("ii % 5000 == 0");
+
+            final File rightFile = new File(rightDirectory, "Right.parquet");
+            final TableDefinition rightDefinition = TableDefinition.of(
+                    ColumnDefinition.ofString("Symbol"),
+                    ColumnDefinition.ofInt("RightSentinel"));
+            final Table rightSource =
+                    newTable(stringCol("Symbol", "Apple", "Banana")).update("RightSentinel=100+i");
+            ParquetTools.writeTable(rightSource, rightFile.getPath(),
+                    ParquetInstructions.EMPTY.withTableDefinition(rightDefinition));
+            final Table right = ParquetTools.readTable(rightFile.getPath());
+
+            final Table result = left.naturalJoin(right, "Symbol");
+
+            final Table expected = emptyTable(20).update(
+                    "Symbol = (ii % 2 == 0) ? `Apple` : `DragonFruit`",
+                    "LeftSentinel = (int) (ii * 5000)",
+                    "RightSentinel = (ii % 2 == 0) ? 100 : NULL_INT");
+            assertTableEquals(expected, result);
+
+            final ColumnSource<?> rightSentinelSource = result.getColumnSource("RightSentinel");
+            assertTrue("RightSentinel must be a RedirectedColumnSource",
+                    rightSentinelSource instanceof RedirectedColumnSource);
+            final RowRedirection rowRedirection =
+                    ((RedirectedColumnSource<?>) rightSentinelSource).getRowRedirection();
+
+            assertTrue("Expected hash row redirection, got " + rowRedirection.getClass().getName(),
+                    rowRedirection instanceof WritableRowRedirectionLockFree);
+
+            // Find an unmatched ("DragonFruit") left row in the filtered result.
+            final ColumnSource<String> symbolSource = result.getColumnSource("Symbol", String.class);
+            long unmatchedLeftRowKey = -1;
+            for (final RowSet.Iterator it = result.getRowSet().iterator(); it.hasNext();) {
+                final long key = it.nextLong();
+                if ("DragonFruit".equals(symbolSource.get(key))) {
+                    unmatchedLeftRowKey = key;
+                    break;
+                }
+            }
+            assertTrue("Did not find an unmatched DragonFruit row in the filtered left",
+                    unmatchedLeftRowKey != -1L);
+
+            final long innerRowKey = rowRedirection.get(unmatchedLeftRowKey);
+
+            assertEquals("Unmatched left row must redirect to NULL_ROW_KEY, not NULL_LONG",
+                    RowSequence.NULL_ROW_KEY, innerRowKey);
+        } finally {
+            FileUtils.deleteRecursively(leftDirectory);
+            FileUtils.deleteRecursively(rightDirectory);
+        }
+    }
+
     /** Test #1 for DHC issue #3202 */
     public void testDHC3202_v1() {
         // flood the hashtable with large updates
@@ -2358,5 +2477,53 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         ParquetTools.writeTable(rightTable, rightLocation.getPath(),
                 ParquetInstructions.EMPTY.withTableDefinition(rightDefinition));
         return ParquetTools.readTable(rightLocation.getPath());
+    }
+
+    public void testLeftRemoveDuplicateRightNoSpuriousModifiedColumns() {
+        // Both sides refreshing so naturalJoin uses the both-incremental state manager, which tracks per-key left row
+        // sets. The right side has duplicate "dup" keys, so the "dup" slot's right state is an internal
+        // duplicate-location token (rather than a resolved right row key); FIRST_MATCH resolves it to the first match.
+        final QueryTable leftTable = TstUtils.testRefreshingTable(
+                i(0, 1, 2).toTracking(),
+                col("Key", "dup", "dup", "solo"),
+                intCol("LSentinel", 1, 2, 3));
+        final QueryTable rightTable = TstUtils.testRefreshingTable(
+                i(0, 1, 2).toTracking(),
+                col("Key", "dup", "dup", "solo"),
+                intCol("RSentinel", 100, 101, 200));
+
+        final QueryTable result =
+                (QueryTable) leftTable.naturalJoin(rightTable, "Key", "RSentinel", NaturalJoinType.FIRST_MATCH);
+        final ModifiedColumnSet rsentinelColumn = result.newModifiedColumnSet("RSentinel");
+
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        // Remove one of the two "dup" left rows (the other remains) and, unrelatedly, modify the "solo" row's non-key
+        // value. The removal is a pure left removal from the duplicate-right "dup" slot: it leaves left rows behind but
+        // does not change that slot's right value. The tracker entry it created has only a left flag, which is cleared
+        // once the removal is applied -- so the final modified-slot pass must skip it. If it does not, the resolved
+        // "dup" right row key is compared against the saved duplicate-location token, they differ, and the join
+        // spuriously marks the right (RSentinel) column as modified even though no right value changed.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(leftTable, i(0));
+            addToTable(leftTable, i(2), col("Key", "solo"), intCol("LSentinel", 30));
+            leftTable.notifyListeners(i(), i(0), i(2));
+        });
+
+        assertEquals(1, listener.getCount());
+        final TableUpdate update = listener.getUpdate();
+        assertEquals(i(0), update.removed());
+        // Only the "solo" row actually changed; the remaining "dup" row must not be reported as modified.
+        assertEquals(i(2), update.modified());
+        // RSentinel did not change for any row, so it must not appear in the modified column set.
+        assertFalse(update.modifiedColumnSet().containsAny(rsentinelColumn));
+
+        assertTableEquals(
+                newTable(col("Key", "dup", "solo"), intCol("LSentinel", 2, 30), intCol("RSentinel", 100, 200)),
+                result);
+
+        listener.close();
     }
 }

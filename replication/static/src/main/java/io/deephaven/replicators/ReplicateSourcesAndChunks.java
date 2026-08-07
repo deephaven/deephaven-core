@@ -452,10 +452,10 @@ public class ReplicateSourcesAndChunks {
 
         lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(
                 "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType) {",
-                "        this(type, componentType, new TLongArrayList());",
+                "        this(type, componentType, new LongArrayList());",
                 "    }",
                 "",
-                "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType, final TLongArrayList firstOffsetForData) {",
+                "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType, final LongArrayList firstOffsetForData) {",
                 "        super(type, componentType);",
                 "        this.firstOffsetForData = firstOffsetForData;",
                 "    }"

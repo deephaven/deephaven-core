@@ -12,6 +12,7 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':util-function')
     implementation libs.commons.lang3
+    implementation libs.dsi.fastutil
 
     api project(':engine-table')
     implementation project(':proto:proto-backplane-grpc-flight')
@@ -29,6 +30,8 @@ dependencies {
     annotationProcessor libs.immutables.value
 
     testImplementation project(':engine-test-utils')
+    // BarrageUtilTest needs parquet for symbol table testing.
+    testImplementation project(':extensions-parquet-table')
 
     implementation libs.slf4j.api
     testRuntimeOnly libs.slf4j.simple

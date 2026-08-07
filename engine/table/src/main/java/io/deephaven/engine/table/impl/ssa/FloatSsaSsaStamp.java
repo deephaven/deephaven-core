@@ -303,4 +303,3 @@ public class FloatSsaSsaStamp implements SsaSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

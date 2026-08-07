@@ -46,9 +46,6 @@ public class LivenessArtifact extends ReferenceCountedLivenessNode implements Se
      * Add this artifact to the current manager provided by the {@link LivenessScopeStack}.
      */
     public final void manageWithCurrentScope() {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return;
-        }
         LivenessScopeStack.peek().manage(this);
     }
 }

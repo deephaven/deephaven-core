@@ -310,4 +310,3 @@ public class ObjectReverseSsaSsaStamp implements SsaSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

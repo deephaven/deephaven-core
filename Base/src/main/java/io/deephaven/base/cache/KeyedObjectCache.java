@@ -4,9 +4,9 @@
 package io.deephaven.base.cache;
 
 import io.deephaven.base.MathUtil;
-import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.verify.Require;
-import gnu.trove.impl.PrimeFinder;
+import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.hash.PrimeFinder;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;

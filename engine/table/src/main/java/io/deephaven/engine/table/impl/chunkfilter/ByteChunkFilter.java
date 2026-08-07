@@ -64,4 +64,3 @@ public abstract class ByteChunkFilter implements ChunkFilter {
         return count;
     }
 }
-

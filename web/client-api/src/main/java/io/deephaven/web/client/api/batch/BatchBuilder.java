@@ -3,15 +3,14 @@
 //
 package io.deephaven.web.client.api.batch;
 
-import elemental2.core.JsArray;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.DropColumnsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.FilterTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.FlattenRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SelectOrUpdateRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SortTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.batchtablerequest.Operation;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
+import io.deephaven.proto.backplane.grpc.FilterTableRequest;
+import io.deephaven.proto.backplane.grpc.FlattenRequest;
+import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
+import io.deephaven.proto.backplane.grpc.SortTableRequest;
+import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.Sort;
 import io.deephaven.web.client.api.TableTicket;
 import io.deephaven.web.client.api.filter.FilterCondition;
@@ -22,7 +21,7 @@ import io.deephaven.web.shared.fu.MappedIterable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -181,8 +180,8 @@ public class BatchBuilder {
         }
     }
 
-    public JsArray<Operation> serializable() {
-        JsArray<Operation> send = new JsArray<>();
+    public List<BatchTableRequest.Operation> serializable() {
+        List<BatchTableRequest.Operation> send = new ArrayList<>();
         for (BatchOp op : ops) {
             if (!op.hasHandles()) {
                 assert op.getState().isRunning() : "Only running states should be found in batch without a new handle";
@@ -195,160 +194,200 @@ public class BatchBuilder {
             }
 
             // Each BatchOp is assumed to have one source table and a list of specific ordered operations to produce
-            // a target. Intermediate items each use the offset before them
-            Supplier<TableReference> prevTableSupplier = new Supplier<TableReference>() {
+            // a target. The first operation always references its source by ticket (not batchOffset), and subsequent
+            // operations within the same BatchOp chain each other via batchOffset. Because each BatchOp independently
+            // references an exported source ticket, internalOffset correctly restarts at -1 for each BatchOp — the
+            // batchOffset values are only used within a single chain, and the intermediate result between chains is
+            // exported with its own ticket (see maybeInsertInterimTable / insertOp in RequestBatcher).
+            Supplier<TableReference> prevTableSupplier = new Supplier<>() {
                 // initialize as -1 because a reference to the "first" will be zero
                 int internalOffset = -1;
 
                 @Override
                 public TableReference get() {
-                    TableReference ref = new TableReference();
+                    TableReference.Builder ref = TableReference.newBuilder();
                     if (internalOffset == -1) {
                         // for a given BatchOp, the first pb op references a table by ticket
                         ref.setTicket(op.getSource().makeTicket());
                     } else {
                         // every subsequent pb op references the entry before it
-                        ref.setBatchOffset(send.length + internalOffset);
+                        ref.setBatchOffset(internalOffset);
                     }
                     internalOffset++;
 
-                    return ref;
+                    return ref.build();
                 }
             };
-            Consumer<Ticket>[] lastOp = new Consumer[1];
-
-            List<Operation> operations = Stream.of(
-                    buildCustomColumns(op, prevTableSupplier, lastOp),
-                    buildViewColumns(op, prevTableSupplier, lastOp),
-                    buildFilter(op, prevTableSupplier, lastOp),
-                    buildSort(op, prevTableSupplier, lastOp),
-                    buildDropColumns(op, prevTableSupplier, lastOp),
-                    flattenOperation(op, prevTableSupplier, lastOp))
+            List<Function<Ticket, BatchTableRequest.Operation>> operations = Stream.of(
+                    buildCustomColumns(op, prevTableSupplier),
+                    buildViewColumns(op, prevTableSupplier),
+                    buildFilter(op, prevTableSupplier),
+                    buildSort(op, prevTableSupplier),
+                    buildDropColumns(op, prevTableSupplier),
+                    flattenOperation(op, prevTableSupplier))
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
 
             if (!operations.isEmpty()) {
-                lastOp[0].accept(op.getNewId().makeTicket());
-
-                // after building the entire collection, append to the set of steps we'll send
                 for (int i = 0; i < operations.size(); i++) {
-                    send.push(operations.get(i));
+                    Ticket resultTicket = op.getNewId().getTicket();
+                    send.add(operations.get(i).apply(i == operations.size() - 1 ? resultTicket : null));
                 }
             }
         }
         return send;
     }
 
-    private Operation buildCustomColumns(BatchOp op, Supplier<TableReference> prevTableSupplier,
-            Consumer<Ticket>[] lastOp) {
-        SelectOrUpdateRequest value = new SelectOrUpdateRequest();
-
+    private Function<Ticket, BatchTableRequest.Operation> buildCustomColumns(BatchOp op,
+            Supplier<TableReference> prevTableSupplier) {
+        boolean match = false;
         for (CustomColumnDescriptor customColumn : op.getCustomColumns()) {
             if (op.getAppendTo() == null || !op.getAppendTo().hasCustomColumn(customColumn)) {
-                value.addColumnSpecs(customColumn.getExpression());
+                match = true;
+                break;
             }
         }
-        if (value.getColumnSpecsList().length == 0) {
+        if (!match) {
             return null;
         }
 
-        Operation updateViewOp = new Operation();
-        updateViewOp.setUpdateView(value);
+        return resultTicket -> {
+            SelectOrUpdateRequest.Builder value = SelectOrUpdateRequest.newBuilder();
 
-        value.setSourceId(prevTableSupplier.get());
-        lastOp[0] = value::setResultId;
+            for (CustomColumnDescriptor customColumn : op.getCustomColumns()) {
+                if (op.getAppendTo() == null || !op.getAppendTo().hasCustomColumn(customColumn)) {
+                    value.addColumnSpecs(customColumn.getExpression());
+                }
+            }
 
-        return updateViewOp;
+            value.setSourceId(prevTableSupplier.get());
+            if (resultTicket != null) {
+                value.setResultId(resultTicket);
+            }
+
+            return BatchTableRequest.Operation.newBuilder()
+                    .setUpdateView(value)
+                    .build();
+        };
     }
 
-    private Operation flattenOperation(BatchOp op, Supplier<TableReference> prevTableSupplier,
-            Consumer<Ticket>[] lastOp) {
+    private Function<Ticket, BatchTableRequest.Operation> flattenOperation(BatchOp op,
+            Supplier<TableReference> prevTableSupplier) {
         if (!op.isFlat()) {
             return null;
         }
-
-        Operation flattenOp = new Operation();
-        FlattenRequest value = new FlattenRequest();
-        flattenOp.setFlatten(value);
-        value.setSourceId(prevTableSupplier.get());
-        lastOp[0] = value::setResultId;
-        return flattenOp;
+        return resultTicket -> {
+            FlattenRequest.Builder flatten = FlattenRequest.newBuilder().setSourceId(prevTableSupplier.get());
+            if (resultTicket != null) {
+                flatten.setResultId(resultTicket);
+            }
+            return BatchTableRequest.Operation.newBuilder()
+                    .setFlatten(flatten)
+                    .build();
+        };
     }
 
-    private Operation buildSort(BatchOp op, Supplier<TableReference> prevTableSupplier, Consumer<Ticket>[] lastOp) {
-        SortTableRequest value = new SortTableRequest();
+
+    private Function<Ticket, BatchTableRequest.Operation> buildSort(BatchOp op,
+            Supplier<TableReference> prevTableSupplier) {
+        boolean match = false;
         for (Sort sort : op.getSorts()) {
             if (op.getAppendTo() == null || !op.getAppendTo().hasSort(sort)) {
-                value.addSorts(sort.makeDescriptor());
+                match = true;
+                break;
             }
         }
-        if (value.getSortsList().length == 0) {
+        if (!match) {
             return null;
         }
-        Operation sortOp = new Operation();
-        sortOp.setSort(value);
+        return resultTicket -> {
+            SortTableRequest.Builder value = SortTableRequest.newBuilder();
+            for (Sort sort : op.getSorts()) {
+                if (op.getAppendTo() == null || !op.getAppendTo().hasSort(sort)) {
+                    value.addSorts(sort.makeDescriptor());
+                }
+            }
+            value.setSourceId(prevTableSupplier.get());
+            if (resultTicket != null) {
+                value.setResultId(resultTicket);
+            }
 
-        value.setSourceId(prevTableSupplier.get());
-        lastOp[0] = value::setResultId;
-
-        return sortOp;
+            return BatchTableRequest.Operation.newBuilder()
+                    .setSort(value)
+                    .build();
+        };
     }
 
-    private Operation buildFilter(BatchOp op, Supplier<TableReference> prevTableSupplier, Consumer<Ticket>[] lastOp) {
-        FilterTableRequest value = new FilterTableRequest();
+    private Function<Ticket, BatchTableRequest.Operation> buildFilter(BatchOp op,
+            Supplier<TableReference> prevTableSupplier) {
+        boolean match = false;
         for (FilterCondition filter : op.getFilters()) {
             if (op.getAppendTo() == null || !op.getAppendTo().hasFilter(filter)) {
-                value.addFilters(filter.makeDescriptor());
+                match = true;
             }
         }
-        if (value.getFiltersList().length == 0) {
+        if (!match) {
             return null;
         }
-        Operation filterOp = new Operation();
-        filterOp.setFilter(value);
+        return resultTicket -> {
+            FilterTableRequest.Builder value = FilterTableRequest.newBuilder();
+            for (FilterCondition filter : op.getFilters()) {
+                if (op.getAppendTo() == null || !op.getAppendTo().hasFilter(filter)) {
+                    value.addFilters(filter.makeDescriptor());
+                }
+            }
 
-        value.setSourceId(prevTableSupplier.get());
-        lastOp[0] = value::setResultId;
+            value.setSourceId(prevTableSupplier.get());
+            if (resultTicket != null) {
+                value.setResultId(resultTicket);
+            }
 
-        return filterOp;
+            return BatchTableRequest.Operation.newBuilder()
+                    .setFilter(value)
+                    .build();
+        };
     }
 
-    private Operation buildDropColumns(BatchOp op, Supplier<TableReference> prevTableSupplier,
-            Consumer<Ticket>[] lastOp) {
-        DropColumnsRequest value = new DropColumnsRequest();
-        for (String dropColumn : op.getDropColumns()) {
-            value.addColumnNames(dropColumn);
-        }
-
-        if (value.getColumnNamesList().length == 0) {
+    private Function<Ticket, BatchTableRequest.Operation> buildDropColumns(BatchOp op,
+            Supplier<TableReference> prevTableSupplier) {
+        if (op.getDropColumns().isEmpty()) {
             return null;
         }
-        Operation dropOp = new Operation();
-        dropOp.setDropColumns(value);
+        return resultTicket -> {
+            DropColumnsRequest.Builder value = DropColumnsRequest.newBuilder();
+            value.addAllColumnNames(op.getDropColumns());
 
-        value.setSourceId(prevTableSupplier.get());
-        lastOp[0] = value::setResultId;
+            value.setSourceId(prevTableSupplier.get());
+            if (resultTicket != null) {
+                value.setResultId(resultTicket);
+            }
 
-        return dropOp;
+            return BatchTableRequest.Operation.newBuilder()
+                    .setDropColumns(value)
+                    .build();
+        };
     }
 
-    private Operation buildViewColumns(BatchOp op, Supplier<TableReference> prevTableSupplier,
-            Consumer<Ticket>[] lastOp) {
-        SelectOrUpdateRequest value = new SelectOrUpdateRequest();
-        for (String dropColumn : op.getDropColumns()) {
-            value.addColumnSpecs(dropColumn);
-        }
-        if (value.getColumnSpecsList().length == 0) {
+    private Function<Ticket, BatchTableRequest.Operation> buildViewColumns(BatchOp op,
+            Supplier<TableReference> prevTableSupplier) {
+        if (op.getViewColumns().isEmpty()) {
             return null;
         }
+        return resultTicket -> {
+            SelectOrUpdateRequest.Builder value = SelectOrUpdateRequest.newBuilder();
+            for (String viewColumn : op.getViewColumns()) {
+                value.addColumnSpecs(viewColumn);
+            }
 
-        Operation dropOp = new Operation();
-        dropOp.setView(value);
+            value.setSourceId(prevTableSupplier.get());
+            if (resultTicket != null) {
+                value.setResultId(resultTicket);
+            }
 
-        value.setSourceId(prevTableSupplier.get());
-        lastOp[0] = value::setResultId;
-
-        return dropOp;
+            return BatchTableRequest.Operation.newBuilder()
+                    .setView(value)
+                    .build();
+        };
     }
 
     public BatchOp getOp() {

@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.locations.local;
 
-import gnu.trove.map.TIntObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -106,7 +106,7 @@ public abstract class KeyValuePartitionLayout<TLK extends TableLocationKey, TARG
             final int colIndex,
             @NotNull final Set<String> partitionKeys,
             @NotNull final Collection<String> partitionValues,
-            @NotNull final TIntObjectMap<ColumnNameInfo> partitionColInfo) {
+            @NotNull final Int2ObjectMap<ColumnNameInfo> partitionColInfo) {
         final String[] components = dirName.split("=", 2);
         if (components.length != 2) {
             throw new TableDataException("Unexpected directory name format (not key=value) at " + path);

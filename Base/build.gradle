@@ -7,7 +7,7 @@ dependencies {
 
     api project(':clock')
 
-    implementation libs.trove
+    implementation libs.dsi.fastutil
     compileOnlyApi libs.jetbrains.annotations
     implementation libs.commons.lang3
 

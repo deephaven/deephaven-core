@@ -6,16 +6,13 @@ package io.deephaven.web.client.state;
 import elemental2.core.JsMap;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
-import elemental2.core.Uint8Array;
 import elemental2.promise.Promise;
-import io.deephaven.chunk.ChunkType;
-import io.deephaven.extensions.barrage.BarrageTypeInfo;
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
+import io.deephaven.web.client.api.ColumnRestriction;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.filter.FilterCondition;
@@ -28,6 +25,7 @@ import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.*;
 import jsinterop.base.Js;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -186,7 +184,7 @@ public final class ClientTableState extends TableConfig {
         this.fetchSummary = fetchSummary;
     }
 
-    public Promise<ClientTableState> maybeRevive(BrowserHeaders metadata) {
+    public Promise<ClientTableState> maybeRevive() {
         connection.scheduleCheck(this);
         if (isEmpty()) {
             JsLog.debug("Skipping revive as state is empty");
@@ -198,7 +196,7 @@ public final class ClientTableState extends TableConfig {
         }
 
         // revive!
-        return refetch(null, metadata);
+        return refetch();
     }
 
     private JsLazy<Map<String, Column>> resetLookup() {
@@ -233,68 +231,6 @@ public final class ClientTableState extends TableConfig {
 
     public TableTicket getHandle() {
         return handle;
-    }
-
-    /**
-     * Returns the Java Class to represent each column in the table. This lets the client replace certain JVM-only
-     * classes with alternative implementations, but still use the simple {@link BarrageTypeInfo} wrapper.
-     */
-    public Class<?>[] columnTypes() {
-        return Arrays.stream(tableDef.getColumns())
-                .map(ColumnDefinition::getType)
-                .map(t -> {
-                    switch (t) {
-                        case "boolean":
-                        case "java.lang.Boolean":
-                            return boolean.class;
-                        case "char":
-                        case "java.lang.Character":
-                            return char.class;
-                        case "byte":
-                        case "java.lang.Byte":
-                            return byte.class;
-                        case "int":
-                        case "java.lang.Integer":
-                            return int.class;
-                        case "short":
-                        case "java.lang.Short":
-                            return short.class;
-                        case "long":
-                        case "java.lang.Long":
-                            return long.class;
-                        case "java.lang.Float":
-                        case "float":
-                            return float.class;
-                        case "java.lang.Double":
-                        case "double":
-                            return double.class;
-                        case "java.time.Instant":
-                            return DateWrapper.class;
-                        case "java.math.BigInteger":
-                            return BigIntegerWrapper.class;
-                        case "java.math.BigDecimal":
-                            return BigDecimalWrapper.class;
-                        default:
-                            return Object.class;
-                    }
-                })
-                .toArray(Class<?>[]::new);
-    }
-
-    /**
-     * Returns the Java Class to represent the component type in any list/array type. At this time, this value is not
-     * used by the chunk reading implementation.
-     */
-    public Class<?>[] componentTypes() {
-        return Arrays.stream(tableDef.getColumns()).map(ColumnDefinition::getType).map(t -> {
-            // All arrays and vectors will be handled as objects for now.
-            // TODO (deephaven-core#2102) clarify if we need to handle these cases at all
-            if (t.endsWith("[]") || t.endsWith("Vector")) {
-                return Object.class;
-            }
-            // Non-arrays or vectors should return null
-            return null;
-        }).toArray(Class[]::new);
     }
 
     public ClientTableState newState(TableTicket newHandle, TableConfig config) {
@@ -446,6 +382,17 @@ public final class ClientTableState extends TableConfig {
         this.tableDef = tableDef;
         if (create) {
             ColumnDefinition[] columnDefinitions = tableDef.getColumns();
+
+            // Populate column restrictions from input table metadata if available
+            if (tableDef.getInputTableMetadata() != null) {
+                for (ColumnDefinition definition : columnDefinitions) {
+                    final List<ColumnRestriction> restrictions =
+                            tableDef.getInputTableMetadata().getColumnRestrictions(definition.getName());
+                    if (restrictions != null) {
+                        definition.setColumnRestrictions(restrictions);
+                    }
+                }
+            }
 
             // iterate through the columns, combine format columns into the normal model
             Map<Boolean, Map<String, ColumnDefinition>> byNameMap = tableDef.getColumnsByName();
@@ -936,11 +883,7 @@ public final class ClientTableState extends TableConfig {
         return (a, b) -> (int) Math.signum(b.getLastTouched() - a.getLastTouched());
     }
 
-    public Promise<JsTable> fetchTable(HasEventHandling failHandler, BrowserHeaders metadata) {
-        return refetch(failHandler, metadata).then(cts -> Promise.resolve(new JsTable(connection, cts)));
-    }
-
-    public Promise<ClientTableState> refetch(HasEventHandling failHandler, BrowserHeaders metadata) {
+    public Promise<ClientTableState> refetch() {
         if (fetch == null) {
             if (failMsg != null) {
                 return Promise.reject(failMsg);
@@ -948,13 +891,13 @@ public final class ClientTableState extends TableConfig {
             return Promise.resolve(this);
         }
         final Promise<ExportedTableCreationResponse> promise =
-                Callbacks.grpcUnaryPromise(c -> fetch.fetch(c, this, metadata));
+                Callbacks.grpcUnaryPromise(c -> fetch.fetch(c, this));
         // noinspection unchecked
         return promise.then(def -> {
             if (resolution == ResolutionState.RELEASED) {
                 // was released before we managed to finish the fetch, ignore
                 // noinspection rawtypes,unchecked
-                return (Promise) Promise.reject(
+                return Promise.reject(
                         "Table already released, cannot process incoming table definition, this can be safely ignored.");
             }
             applyTableCreationResponse(def);
@@ -963,19 +906,19 @@ public final class ClientTableState extends TableConfig {
     }
 
     public void applyTableCreationResponse(ExportedTableCreationResponse def) {
-        assert def.getResultId().getTicket().getTicket_asB64().equals(getHandle().makeTicket().getTicket_asB64())
+        assert def.getResultId().getTicket().equals(getHandle().makeTicket())
                 : "Ticket is incompatible with the table details";
         // by definition, the ticket is now exported and connected
         handle.setState(TableTicket.State.EXPORTED);
         handle.setConnected(true);
 
-        Uint8Array flightSchemaMessage = def.getSchemaHeader_asU8();
+        ByteBuffer flightSchemaMessage = def.getSchemaHeader().asReadOnlyByteBuffer();
         isStatic = def.getIsStatic();
 
         setTableDef(WebBarrageUtils.readTableDefinition(WebBarrageUtils.readSchemaMessage(flightSchemaMessage)));
 
         setResolution(ResolutionState.RUNNING);
-        setSize(Long.parseLong(def.getSize()));
+        setSize(def.getSize());
     }
 
     public boolean isAncestor(ClientTableState was) {

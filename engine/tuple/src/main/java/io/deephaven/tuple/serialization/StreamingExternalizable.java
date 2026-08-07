@@ -3,7 +3,7 @@
 //
 package io.deephaven.tuple.serialization;
 
-import gnu.trove.map.TIntObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,11 +33,11 @@ public interface StreamingExternalizable {
      * @param cachedWriters The cached writers
      */
     void writeExternalStreaming(@NotNull ObjectOutput out,
-            @NotNull TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException;
+            @NotNull Int2ObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException;
 
     /**
      * Implement the Object element writing protocol described in
-     * {@link #writeExternalStreaming(ObjectOutput, TIntObjectMap)}.
+     * {@link #writeExternalStreaming(ObjectOutput, Int2ObjectMap)}.
      *
      * @param out The output
      * @param cachedWriters The cached writers
@@ -45,7 +45,7 @@ public interface StreamingExternalizable {
      * @param item The item to write
      */
     static <ITEM_TYPE> void writeObjectElement(@NotNull final ObjectOutput out,
-            @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters,
+            @NotNull final Int2ObjectMap<SerializationUtils.Writer> cachedWriters,
             final int itemIndex,
             @Nullable ITEM_TYPE item) throws IOException {
         if (item == null) {
@@ -78,19 +78,19 @@ public interface StreamingExternalizable {
      * @param in The input
      * @param cachedReaders The cached readers
      */
-    void readExternalStreaming(@NotNull ObjectInput in, @NotNull TIntObjectMap<SerializationUtils.Reader> cachedReaders)
+    void readExternalStreaming(@NotNull ObjectInput in, @NotNull Int2ObjectMap<SerializationUtils.Reader> cachedReaders)
             throws Exception;
 
     /**
      * Convenience method to allow chaining of construction and calls to
-     * {@link #readExternalStreaming(ObjectInput, TIntObjectMap)}.
+     * {@link #readExternalStreaming(ObjectInput, Int2ObjectMap)}.
      *
      * @param in The input
      * @param cachedReaders The cached readers
      * @return this
      */
     default <TYPE extends StreamingExternalizable> TYPE initializeExternalStreaming(@NotNull final ObjectInput in,
-            @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
+            @NotNull final Int2ObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
         readExternalStreaming(in, cachedReaders);
         // noinspection unchecked
         return (TYPE) this;
@@ -98,14 +98,14 @@ public interface StreamingExternalizable {
 
     /**
      * Implement the Object element reading protocol described in
-     * {@link #readExternalStreaming(ObjectInput, TIntObjectMap)}.
+     * {@link #readExternalStreaming(ObjectInput, Int2ObjectMap)}.
      *
      * @param in The input
      * @param cachedReaders The cached readers
      * @param itemIndex The index into the cached readers for this item
      */
     static <ITEM_TYPE> ITEM_TYPE readObjectElement(@NotNull final ObjectInput in,
-            @NotNull TIntObjectMap<SerializationUtils.Reader> cachedReaders,
+            @NotNull Int2ObjectMap<SerializationUtils.Reader> cachedReaders,
             final int itemIndex) throws Exception {
         if (in.readBoolean()) {
             return null;

@@ -94,7 +94,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                                 return finish(null);
                             }
                             // we are expecting an error message
-                            return Promise.reject(x);
+                            return report(x);
                         });
     }
 

@@ -16,6 +16,7 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation project(':util-thread')
+    implementation project(':engine-read-tracker')
 
     implementation platform(libs.awssdk.bom)
     implementation libs.awssdk.s3
@@ -56,6 +57,9 @@ test {
 }
 
 tasks.register('testOutOfBand', Test) {
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+
     useJUnitPlatform {
         includeTags("testcontainers")
     }

@@ -64,4 +64,3 @@ public abstract class FloatChunkFilter implements ChunkFilter {
         return count;
     }
 }
-

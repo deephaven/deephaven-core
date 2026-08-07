@@ -3,8 +3,8 @@
 //
 package io.deephaven.gen;
 
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.*;
@@ -17,7 +17,7 @@ public class GenUtils {
 
     private static final Logger log = Logger.getLogger(GenUtils.class.toString());
 
-    private static final TIntObjectMap<String> cachedIndents = new TIntObjectHashMap<>();
+    private static final Int2ObjectMap<String> cachedIndents = new Int2ObjectOpenHashMap<>();
 
     /**
      * Get a String of spaces for indenting code.

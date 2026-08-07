@@ -113,7 +113,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
             final ClassLoader parentClassLoader) {
-        final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory, parentClassLoader);
+        final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory);
 
         return ExecutionContext.newBuilder()
                 .markSystemic()

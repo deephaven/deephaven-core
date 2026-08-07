@@ -11,8 +11,11 @@ import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.FloatType;
+import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.InstantType;
+import io.deephaven.qst.type.LocalDateType;
+import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.qst.type.IntType;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.PrimitiveType;
@@ -105,6 +108,21 @@ class TypeToArrayBuilder implements Type.Visitor<ArrayBuilder<?, ?, ?>>, Primiti
     @Override
     public ArrayBuilder<?, ?, ?> visit(InstantType instantType) {
         return GenericArray.builder(instantType);
+    }
+
+    @Override
+    public ArrayBuilder<?, ?, ?> visit(LocalTimeType localTimeType) {
+        return GenericArray.builder(localTimeType);
+    }
+
+    @Override
+    public ArrayBuilder<?, ?, ?> visit(LocalDateType localDateType) {
+        return GenericArray.builder(localDateType);
+    }
+
+    @Override
+    public ArrayBuilder<?, ?, ?> visit(DurationType durationType) {
+        return GenericArray.builder(durationType);
     }
 
     @Override

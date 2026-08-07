@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.rowset.impl;
 
-import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.testutil.rowset.PerfStats;
 
@@ -42,8 +41,6 @@ public class RowSetCreationRandomPerfTest {
         return il.lastKey();
     }
 
-    private static final boolean doLeavesTypeStats = true;
-
     static long runAndGetSamples(
             final RowSetLike.Factory ilf,
             final int sz, final int runs, final PerfStats stats,
@@ -80,7 +77,7 @@ public class RowSetCreationRandomPerfTest {
 
     static final String me = RowSetCreationRandomPerfTest.class.getSimpleName();
 
-    private static final RowSetLike.Factory ilfs[] = {RowSetLike.mixedf, RowSetLike.pqf, RowSetLike.rspf};
+    private static final RowSetLike.Factory[] ilfs = {RowSetLike.mixedf, RowSetLike.pqf, RowSetLike.rspf};
 
     static double codeWarmup() {
         final int steps = 500;
@@ -135,97 +132,6 @@ public class RowSetCreationRandomPerfTest {
     static void run(final int warmupSz, final int warmupRuns, final int fullSz, final int fullRuns) {
         runStep("warmup", warmupSz, warmupRuns, false);
         runStep("full test", fullSz, fullRuns, true);
-    }
-
-    static class IntStats {
-        private TIntArrayList samples;
-        private double avg;
-        private double stddev;
-
-        public IntStats(final int nsamples) {
-            samples = new TIntArrayList(nsamples);
-        }
-
-        public void sample(final int v) {
-            samples.add(v);
-        }
-
-        public int nsamples() {
-            return samples.size();
-        }
-
-        public double avg() {
-            return avg;
-        }
-
-        public double stddev() {
-            return stddev;
-        }
-
-        public void compute() {
-            final int n = samples.size();
-            long sumx = 0;
-            long sumsqx = 0;
-            for (int i = 0; i < n; ++i) {
-                final long v = samples.get(i);
-                sumx += v;
-                sumsqx += v * v;
-            }
-            avg = sumx / (double) n;
-            final double stddev2 = sumsqx / n + avg * avg;
-            stddev = Math.sqrt(stddev2);
-            samples.sort();
-        }
-
-        // assumption: before calling percentile compute was called (and thus the array is sorted).
-        public int percentile(final double p) {
-            if (p < 0.0 || p > 100.0)
-                return 0;
-            final int n = samples.size();
-            final int i = (int) Math.ceil((n * p) / 100.0);
-            return samples.get(i > 0 ? i - 1 : 0);
-        }
-
-        public static final int defaultPrintPs[] = {0, 5, 10, 25, 40, 45, 50, 55, 60, 75, 90, 95, 99};
-
-        public void print(final String pfx) {
-            print(pfx, defaultPrintPs);
-        }
-
-        public void print(final String pfx, final int[] ps) {
-            final double avg = avg();
-            final double stddev = stddev();
-            StringBuffer sb = new StringBuffer(pfx);
-            sb.append(String.format(" n=%d, avg=%.3f, stddev=%.3f", nsamples(), avg, stddev));
-            for (int p : ps) {
-                sb.append(String.format(", p[%d]=%d", p, percentile(p)));
-            }
-            System.out.println(sb.toString());
-        }
-
-        public static void comparePrint(
-                final PerfStats p1, final String n1,
-                final PerfStats p2, final String n2,
-                final String pfx) {
-            final StringBuilder sb = new StringBuilder(pfx);
-            sb.append(n1);
-            sb.append("/");
-            sb.append(n2);
-            sb.append(": ");
-            boolean first = true;
-            for (int p : PerfStats.defaultPrintPs) {
-                final double pp1 = p1.percentile(p);
-                final double pp2 = p2.percentile(p);
-                final double ratio = (pp2 != 0.0) ? pp1 / pp2 : 0.0;
-                if (!first) {
-                    sb.append(", ");
-                }
-                sb.append(String.format("p[%d]=%.3f", p, ratio));
-                first = false;
-            }
-            sb.append(".");
-            System.out.println(sb.toString());
-        }
     }
 
     public static void main(String[] args) {

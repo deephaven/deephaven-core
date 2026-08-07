@@ -609,6 +609,60 @@ public class TableManipulationTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    /**
+     * Exercises the BatchBuilder.serializable() path with simultaneous filter, sort, and custom column changes. When
+     * both filter and sort change at once, maybeInsertInterimTable creates two BatchOps in a single batch (one for
+     * filter+columns, one for sort). This test verifies correctness and exercises the assertion in
+     * BatchBuilder.serializable() that checks whether send is ever non-empty at the start of a new BatchOp.
+     */
+    public void testRapidFilterSortAndColumns() {
+        connect(tables)
+                .then(table("truthtable"))
+                .then(table -> {
+                    delayTestFinish(5000);
+                    // Apply filter, sort, and custom column all at once - this triggers maybeInsertInterimTable
+                    // which splits into two BatchOps: (filter+customColumns) and (sort)
+                    table.applyFilter(new FilterCondition[] {
+                            table.findColumn("two").filter().eq(FilterValue.ofNumber(0.0))
+                    });
+                    table.applySort(new Sort[] {
+                            table.findColumn("one").sort().desc()
+                    });
+                    table.applyCustomColumns(JsArray.of(JsTable.CustomColumnArgUnionType.of("a=\"x\" + I")));
+                    table.setViewport(0, 7, null);
+
+                    // filtered to two=0 (I=0,1,4,5), sorted by one desc (1,5,0,4)
+                    @SuppressWarnings("unchecked")
+                    Promise<Object[]> both = Promise.all(new IThenable[] {
+                            assertNextViewportIs(table, 1, 5, 0, 4),
+                            assertNextViewportIs(table, t -> t.findColumn("a"),
+                                    new String[] {"x1", "x5", "x0", "x4"})
+                    });
+                    return both.then(ignore -> Promise.resolve(table));
+                })
+                .then(table -> {
+                    // Now change all three again simultaneously
+                    table.applyFilter(new FilterCondition[] {
+                            table.findColumn("one").filter().eq(FilterValue.ofNumber(0.0))
+                    });
+                    table.applySort(new Sort[] {
+                            table.findColumn("two").sort().asc()
+                    });
+                    table.applyCustomColumns(JsArray.of(JsTable.CustomColumnArgUnionType.of("a=\"y\" + I")));
+                    table.setViewport(0, 7, null);
+
+                    // filtered to one=0 (I=0,2,4,6), sorted by two asc (0,4,2,6)
+                    @SuppressWarnings("unchecked")
+                    Promise<Object[]> both = Promise.all(new IThenable[] {
+                            assertNextViewportIs(table, 0, 4, 2, 6),
+                            assertNextViewportIs(table, t -> t.findColumn("a"),
+                                    new String[] {"y0", "y4", "y2", "y6"})
+                    });
+                    return both.then(ignore -> Promise.resolve(table));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     @Override
     public String getModuleName() {
         return "io.deephaven.web.DeephavenIntegrationTest";

@@ -260,4 +260,3 @@ public class DoubleChunkSsaStamp implements ChunkSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

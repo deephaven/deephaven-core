@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 
 public abstract class WhereFilterDelegatingBase
         extends WhereFilterLivenessArtifactImpl
-        implements DependencyStreamProvider {
+        implements WhereFilterDelegating, DependencyStreamProvider {
 
     protected final WhereFilter filter;
 
@@ -45,6 +45,7 @@ public abstract class WhereFilterDelegatingBase
         return Stream.empty();
     }
 
+    @Override
     public WhereFilter getWrappedFilter() {
         return filter;
     }

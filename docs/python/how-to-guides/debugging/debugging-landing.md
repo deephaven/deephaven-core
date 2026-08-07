@@ -12,7 +12,8 @@ Debugging is a critical part of software development. Deephaven supports debuggi
 
 Setting up a debugger in Deephaven depends on how Deephaven is running and which IDE you're using:
 
-- **Pip installation**: Debug locally using standard IDE debuggers (PyCharm Community/Professional or VS Code). Your code runs in the same Python environment as your IDE.
+- **Pip installation**: Debug locally using standard IDE debuggers (PyCharm Community/Professional or VS Code). Your code runs in the same Python process as your IDE.
+- **Embedded server**: Debug locally using PyCharm Community or Professional. Your code runs in the same Python process as your IDE.
 - **Docker and source installations**: Debug remotely using PyCharm Professional's remote debugging server. Code runs in a container or separate process, requiring a remote connection.
 
 The Deephaven web IDE does not have a built-in debugger. You must use an external IDE to debug Python scripts and user-defined functions.
@@ -28,6 +29,7 @@ The following table shows current debugging support for different Deephaven inst
       <th>Docker</th>
       <th>Pip</th>
       <th>Source</th>
+      <th>Embedded server</th>
     </tr>
   </thead>
   <tbody>
@@ -36,9 +38,11 @@ The following table shows current debugging support for different Deephaven inst
       <td>❌</td>
       <td>✅</td>
       <td>❌</td>
+      <td>✅</td>
     </tr>
     <tr>
       <td scope="row">PyCharm Professional</td>
+      <td>✅</td>
       <td>✅</td>
       <td>✅</td>
       <td>✅</td>
@@ -48,18 +52,20 @@ The following table shows current debugging support for different Deephaven inst
       <td>❌</td>
       <td>✅</td>
       <td>❌</td>
+      <td>❌</td>
     </tr>
   </tbody>
 </table>
 
-> [!NOTE] > **PyCharm Professional** is a paid product with remote debugging capabilities. **PyCharm Community** is free but only supports local debugging (pip installation only).
+> [!NOTE]
+> **PyCharm Professional** is a paid product with remote debugging capabilities. **PyCharm Community** is free but only supports local debugging (pip installation and the embedded server).
 
 > [!WARNING]
 > PyCharm debugging has only been verified to work with **PyCharm 2024 or higher**. Earlier versions may have compatibility issues.
 
 ## Getting started
 
-The guides in this section are organized by installation method. Choose the guide that matches how you installed Deephaven: [Docker](./docker-setup.md), [pip](./pip-setup.md), or [source](./source-setup.md). Each guide shows you how to set up a debugger for the supported IDEs.
+The guides in this section are organized by installation method. Choose the guide that matches how you installed Deephaven: [Docker](./docker-setup.md), [pip](./pip-setup.md), [source](./source-setup.md), or the [embedded server](./embedded-setup.md). Each guide shows you how to set up a debugger for the supported IDEs.
 
 After setup, see [Common problems](./common-problems.md) for Deephaven-specific debugging issues you may encounter. For general debugger usage, refer to your IDE's debugging documentation.
 
@@ -89,6 +95,14 @@ Use PyCharm Professional's remote debugging server to debug versions of Deephave
 
 </CoreTutorialCard>
 
+<CoreTutorialCard to="/core/docs/how-to-guides/debugging/embedded-setup/">
+
+## Deephaven embedded server
+
+Use PyCharm Community or PyCharm Professional to debug an embedded server built from source, with local debugging.
+
+</CoreTutorialCard>
+
 </div>
 
 ## Related documentation
@@ -96,4 +110,5 @@ Use PyCharm Professional's remote debugging server to debug versions of Deephave
 - [Docker debugging setup](./docker-setup.md)
 - [Pip debugging setup](./pip-setup.md)
 - [Source debugging setup](./source-setup.md)
+- [Embedded server debugging setup](./embedded-setup.md)
 - [Common debugging problems](./common-problems.md)

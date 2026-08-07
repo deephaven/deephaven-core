@@ -3,8 +3,9 @@
 //
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -661,22 +662,22 @@ public abstract class UpdateBy {
             final Integer[] sortedDirtyOperators = ArrayUtils.addAll(dirtyConstantOperators, dirtyDynamicOperators);
 
             final List<int[]> operatorSets = new ArrayList<>(sortedDirtyOperators.length);
-            final TIntArrayList opList = new TIntArrayList(sortedDirtyOperators.length);
+            final IntArrayList opList = new IntArrayList(sortedDirtyOperators.length);
 
-            opList.add(sortedDirtyOperators[0]);
+            opList.add(sortedDirtyOperators[0].intValue());
             int lastOpIdx = sortedDirtyOperators[0];
             for (int ii = 1; ii < sortedDirtyOperators.length; ii++) {
                 final int opIdx = sortedDirtyOperators[ii];
                 if (Arrays.equals(win.operatorInputSourceSlots[opIdx], win.operatorInputSourceSlots[lastOpIdx])) {
                     opList.add(opIdx);
                 } else {
-                    operatorSets.add(opList.toArray());
-                    opList.clear(sortedDirtyOperators.length);
+                    operatorSets.add(opList.toIntArray());
+                    opList.clear();
                     opList.add(opIdx);
                 }
                 lastOpIdx = opIdx;
             }
-            operatorSets.add(opList.toArray());
+            operatorSets.add(opList.toIntArray());
 
             // Process each set of similar operators in this window serially.
             jobScheduler.iterateSerial(executionContext,
@@ -695,8 +696,10 @@ public abstract class UpdateBy {
                             processWindowOperatorSet(winIdx, opIndices, srcIndices, maxAffectedChunkSize,
                                     maxInfluencerChunkSize,
                                     () -> {
-                                        // Release the cached sources that are no longer needed.
-                                        releaseInputSources(srcIndices);
+                                        // Release the cached sources that are no longer needed. Decrement once
+                                        // per (operator, distinct srcIdx) pair to match how computeCachedColumnRowSets
+                                        // accumulates useCount.
+                                        releaseInputSources(srcIndices, opIndices.length);
                                         opSetComplete.run();
                                     }, nestedErrorConsumer);
                         }, nestedErrorConsumer);
@@ -722,11 +725,16 @@ public abstract class UpdateBy {
                 return;
             }
 
+            // Operations with multiple column inputs like WeightedAvg/WeightedSum may have duplicate source indices
+            // (when the value and weight columns are the same, e.g.). This isn't an error, but will break our caching
+            // strategy if we don't filter for duplicates.
+            final int[] uniqueSrcIndices = IntStream.of(srcIndices).distinct().toArray();
+
             jobScheduler.iterateParallel(executionContext,
                     chainAppendables(this, stringAndIndexToAppendable("-cacheOperatorInputSources", winIdx)),
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, srcIndices.length,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, uniqueSrcIndices.length,
                     (context, idx, nestedErrorConsumer, sourceComplete) -> createCachedColumnSource(
-                            srcIndices[idx], sourceComplete, nestedErrorConsumer),
+                            uniqueSrcIndices[idx], sourceComplete, nestedErrorConsumer),
                     onCachingComplete,
                     () -> {
                     },
@@ -873,15 +881,21 @@ public abstract class UpdateBy {
 
 
         /** Release the input sources that will not be needed for the rest of this update */
-        private void releaseInputSources(int[] sources) {
+        private void releaseInputSources(int[] sources, int opCount) {
             try (final ResettableWritableObjectChunk<?, ?> backingChunk =
                     ResettableWritableObjectChunk.makeResettableChunk()) {
+                // `sources` may list the same srcIdx multiple times (an operator whose value column equals its
+                // weight column has slot array [k, k]). Each operator in the set contributes 1 to the refcount
+                // per distinct srcIdx it touches, so decrement opCount times per unique srcIdx — not once per
+                // occurrence in `sources` — to avoid over-releasing.
+                final BitSet seen = new BitSet();
                 for (int srcIdx : sources) {
-                    if (!inputSourceCacheNeeded[srcIdx]) {
+                    if (!inputSourceCacheNeeded[srcIdx] || seen.get(srcIdx)) {
                         continue;
                     }
+                    seen.set(srcIdx);
 
-                    if (inputSourceReferenceCounts.decrementAndGet(srcIdx) == 0) {
+                    if (inputSourceReferenceCounts.addAndGet(srcIdx, -opCount) == 0) {
                         // Last use of this set, let's clean up
                         try (final RowSet rows = inputSourceRowSets.get(srcIdx)) {
                             // release any objects we are holding in the cache
@@ -930,11 +944,9 @@ public abstract class UpdateBy {
             upstream.release();
 
             // accumulate performance data
-            final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
-            if (accumulated != null) {
-                if (initialStep) {
-                    QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(accumulated);
-                } else {
+            if (!initialStep) {
+                final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
+                if (accumulated != null) {
                     source.getUpdateGraph().addNotification(new TerminalNotification() {
                         @Override
                         public void run() {
@@ -949,6 +961,18 @@ public abstract class UpdateBy {
 
             // continue
             onCleanupComplete.run();
+        }
+
+        /**
+         * Record the performance from an initial operation into the current nugget.
+         */
+        void recordPerformance() {
+            Assert.assertion(initialStep, "Must be on an initial step!");
+            final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
+            if (accumulated == null) {
+                return;
+            }
+            QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(accumulated);
         }
 
         /**
@@ -1062,8 +1086,10 @@ public abstract class UpdateBy {
                 AsyncClientErrorNotifier.reportError(error);
             }
         } catch (IOException e) {
-            throw new UncheckedTableException(
+            final UncheckedTableException uncheckedTableException = new UncheckedTableException(
                     "Exception while delivering async client error notification for " + sourceEntry, error);
+            uncheckedTableException.addSuppressed(e);
+            throw uncheckedTableException;
         }
     }
 
@@ -1249,7 +1275,8 @@ public abstract class UpdateBy {
             final Set<String> opResultColumnSet = new HashSet<>();
 
             final ArrayList<String> inputColumnList = new ArrayList<>();
-            final TObjectIntHashMap<String> inputColumnToSlotMap = new TObjectIntHashMap<>();
+            final Object2IntMap<String> inputColumnToSlotMap = new Object2IntOpenHashMap<>();
+            inputColumnToSlotMap.defaultReturnValue(-1);
 
             final UpdateByWindow[] windowArr = windowSpecs.stream().map(clauseList -> {
                 final UpdateByOperator[] windowOps =
@@ -1287,8 +1314,8 @@ public abstract class UpdateBy {
 
                     for (int colIdx = 0; colIdx < inputColumnNames.length; colIdx++) {
                         final String name = inputColumnNames[colIdx];
-                        final int maybeExistingSlot = inputColumnToSlotMap.get(name);
-                        if (maybeExistingSlot == inputColumnToSlotMap.getNoEntryValue()) {
+                        final int maybeExistingSlot = inputColumnToSlotMap.getInt(name);
+                        if (maybeExistingSlot == inputColumnToSlotMap.defaultReturnValue()) {
                             // create a new input source
                             final int srcIdx = inputColumnList.size();
                             inputColumnList.add(name);

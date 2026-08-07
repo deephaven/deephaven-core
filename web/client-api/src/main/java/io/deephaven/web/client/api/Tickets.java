@@ -3,15 +3,14 @@
 //
 package io.deephaven.web.client.api;
 
+import com.google.common.io.BaseEncoding;
+import com.google.protobuf.ByteString;
 import elemental2.core.TypedArray;
-import elemental2.core.Uint8Array;
-import elemental2.dom.DomGlobal;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
-import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsPackage;
 import jsinterop.base.Js;
+import jsinterop.base.JsArrayLike;
 
 /**
  * Single factory for known ticket types. By definition, this cannot be exhaustive, since flight tickets have no
@@ -35,7 +34,7 @@ public class Tickets {
     // Prefix for all shared tickets
     private static final byte SHARED_PREFIX = 'h';
 
-    // Some ticket types use a slash as a delimeter between fields
+    // Some ticket types use a slash as a delimiter between fields
     private static final char TICKET_DELIMITER = '/';
 
     /**
@@ -56,9 +55,7 @@ public class Tickets {
      * @return a ticket with the variable's id as the ticket bytes
      */
     public static Ticket createTicket(JsVariableDefinition varDef) {
-        Ticket ticket = new Ticket();
-        ticket.setTicket(varDef.getId());
-        return ticket;
+        return Ticket.newBuilder().setTicket(ByteString.copyFrom(BaseEncoding.base64().decode(varDef.getId()))).build();
     }
 
     /**
@@ -72,21 +69,20 @@ public class Tickets {
      */
 
     public static TableReference createTableRef(JsVariableDefinition varDef) {
-        TableReference tableRef = new TableReference();
-        tableRef.setTicket(createTicket(varDef));
-        return tableRef;
+        return TableReference.newBuilder()
+                .setTicket(createTicket(varDef))
+                .build();
     }
 
     public static void validateScopeOrApplicationTicketBase64(String base64Bytes) {
-        String bytes = DomGlobal.atob(base64Bytes);
-        if (bytes.length() > 2) {
-            String prefix = bytes.substring(0, 2);
-            if ((prefix.charAt(0) == SCOPE_PREFIX || prefix.charAt(0) == APPLICATION_PREFIX)
-                    && prefix.charAt(1) == TICKET_DELIMITER) {
+        byte[] bytes = BaseEncoding.base64().decode(base64Bytes);
+
+        if (bytes.length > 2) {
+            if ((bytes[0] == SCOPE_PREFIX || bytes[0] == APPLICATION_PREFIX) && bytes[1] == TICKET_DELIMITER) {
                 return;
             }
         }
-        throw new IllegalArgumentException("Cannot create a VariableDefinition from a non-scope ticket");
+        throw new IllegalArgumentException("Can only create a VariableDefinition from scope or application tickets");
     }
 
     /**
@@ -95,9 +91,15 @@ public class Tickets {
      * @return a new ticket with an export id that hasn't previously been used for this session
      */
     public Ticket newExportTicket() {
-        Ticket ticket = new Ticket();
-        ticket.setTicket(newExportTicketRaw());
-        return ticket;
+        final int exportId = newTicketInt();
+        final byte[] bytes = new byte[5];
+        bytes[0] = EXPORT_PREFIX;
+        bytes[1] = (byte) exportId;
+        bytes[2] = (byte) (exportId >>> 8);
+        bytes[3] = (byte) (exportId >>> 16);
+        bytes[4] = (byte) (exportId >>> 24);
+
+        return Ticket.newBuilder().setTicket(ByteString.copyFrom(bytes)).build();
     }
 
     /**
@@ -113,27 +115,13 @@ public class Tickets {
         return nextExport++;
     }
 
-    private Uint8Array newExportTicketRaw() {
-        final int exportId = newTicketInt();
-        final double[] dest = new double[5];
-        dest[0] = EXPORT_PREFIX;
-        dest[1] = (byte) exportId;
-        dest[2] = (byte) (exportId >>> 8);
-        dest[3] = (byte) (exportId >>> 16);
-        dest[4] = (byte) (exportId >>> 24);
-
-        final Uint8Array bytes = new Uint8Array(5);
-        bytes.set(dest);
-        return bytes;
-    }
-
     /**
      * Provides the next export id for the current session as a table ticket.
      *
      * @return a new table ticket with an export id that hasn't previously been used for this session
      */
     public TableTicket newTableTicket() {
-        return new TableTicket(newExportTicketRaw());
+        return new TableTicket(newExportTicket());
     }
 
     /**
@@ -146,15 +134,16 @@ public class Tickets {
      * @return a new shared ticket
      */
     public Ticket sharedTicket(TypedArray.SetArrayUnionType array) {
-        int length = Js.asArrayLike(array).getLength();
-        Uint8Array bytesWithPrefix = new Uint8Array(length + 2);
+        JsArrayLike<Object> arrayLike = Js.asArrayLike(array);
+        int length = arrayLike.getLength();
+        byte[] bytes = new byte[length + 2];
         // Add the shared ticket prefix at the start of the provided value
-        bytesWithPrefix.setAt(0, (double) SHARED_PREFIX);
-        bytesWithPrefix.setAt(1, (double) TICKET_DELIMITER);
-        bytesWithPrefix.set(array, 2);
+        bytes[0] = SHARED_PREFIX;
+        bytes[1] = TICKET_DELIMITER;
+        for (int i = 0; i < length; i++) {
+            bytes[i + 2] = (byte) (double) arrayLike.getAt(i);
+        }
 
-        Ticket ticket = new Ticket();
-        ticket.setTicket(bytesWithPrefix);
-        return ticket;
+        return Ticket.newBuilder().setTicket(ByteString.copyFrom(bytes)).build();
     }
 }

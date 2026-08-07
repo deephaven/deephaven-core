@@ -3,14 +3,14 @@
 //
 package io.deephaven.web.client.api.widget.plot;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.FigureDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.AxisDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_pb.FetchObjectResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
@@ -21,7 +21,6 @@ import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
-import io.deephaven.web.shared.fu.JsBiConsumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -33,46 +32,54 @@ import jsinterop.base.JsPropertyMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Provides the details for a figure.
  *
+ * <p>
  * The Deephaven JS API supports automatic lossless downsampling of time-series data, when that data is plotted in one
  * or more line series. Using a scatter plot or a X-axis of some type other than DateTime will prevent this feature from
- * being applied to a series. To enable this feature, invoke <b>Axis.range(...)</b> to specify the length in pixels of
- * the axis on the screen, and the range of values that are visible, and the server will use that width (and range, if
- * any) to reduce the number of points sent to the client.
+ * being applied to a series. To enable this feature, invoke {@link JsAxis#range(Double, Object, Object) Axis.range} to
+ * specify the length in pixels of the axis on the screen, and the range of values that are visible, and the server will
+ * use that width (and range, if any) to reduce the number of points sent to the client.
  *
- * Downsampling can also be controlled when calling either <b>Figure.subscribe()</b> or <b>Series.subscribe()</b> - both
- * can be given an optional <b>dh.plot.DownsampleOptions</b> argument. Presently only two valid values exist,
- * <b>DEFAULT</b>, and <b>DISABLE</b>, and if no argument is specified, <b>DEFAULT</b> is assumed. If there are more
+ * <p>
+ * Downsampling can also be controlled when calling either {@link #subscribe(DownsampleOptions) Figure.subscribe} or
+ * {@link JsSeries#subscribe(DownsampleOptions) Series.subscribe} - both can be given an optional
+ * {@link DownsampleOptions} argument. Presently only two valid values exist, {@link DownsampleOptions#DEFAULT} and
+ * {@link DownsampleOptions#DISABLE}, and if no argument is specified, {@code DEFAULT} is assumed. If there are more
  * than 30,000 rows in a table, downsampling will be encouraged - data will not load without calling
- * <b>subscribe(DISABLE)</b> or enabling downsampling via <b>Axis.range(...)</b>. If there are more than 200,000 rows,
- * data will refuse to load without downsampling and <b>subscribe(DISABLE)</b> would have no effect.
+ * {@code subscribe(DISABLE)} or enabling downsampling via {@link JsAxis#range(Double, Object, Object) Axis.range}. If
+ * there are more than 200,000 rows, data will refuse to load without downsampling and {@code subscribe(DISABLE)} would
+ * have no effect.
  *
+ * <p>
  * Downsampled data looks like normal data, except that select items have been removed if they would be redundant in the
  * UI given the current configuration. Individual rows are intact, so that a tooltip or some other UI item is sure to be
  * accurate and consistent, and at least the highest and lowest value for each axis will be retained as well, to ensure
  * that the "important" values are visible.
  *
- * Four events exist to help with interacting with downsampled data, all fired from the <b>Figure</b> instance itself.
- * First, <b>downsampleneeded</b> indicates that more than 30,000 rows would be fetched, and so specifying downsampling
- * is no longer optional - it must either be enabled (calling <b>axis.range(...)</b>), or disabled. If the figure is
- * configured for downsampling, when a change takes place that requires that the server perform some downsampling work,
- * the <b>downsamplestarted</b> event will first be fired, which can be used to present a brief loading message,
- * indicating to the user why data is not ready yet - when the server side process is complete,
- * <b>downsamplefinished</b> will be fired. These events will repeat when the range changes, such as when zooming,
- * panning, or resizing the figure. Finally, <b>downsamplefailed</b> indicates that something when wrong when
- * downsampling, or possibly that downsampling cannot be disabled due to the number of rows in the table.
- *
- * At this time, not marked as a ServerObject, due to internal implementation issues which leave the door open to
- * client-created figures.
+ * <p>
+ * Four events exist to help with interacting with downsampled data, all fired from the {@code Figure} instance itself.
+ * First, {@link #EVENT_DOWNSAMPLENEEDED} indicates that more than 30,000 rows would be fetched, and so specifying
+ * downsampling is no longer optional - it must either be enabled (calling {@link JsAxis#range(Double, Object, Object)
+ * Axis.range}), or disabled. If the figure is configured for downsampling, when a change takes place that requires that
+ * the server perform some downsampling work, the {@link #EVENT_DOWNSAMPLESTARTED} event will first be fired, which can
+ * be used to present a brief loading message, indicating to the user why data is not ready yet - when the server side
+ * process is complete, {@link #EVENT_DOWNSAMPLEFINISHED} will be fired. These events will repeat when the range
+ * changes, such as when zooming, panning, or resizing the figure. Finally, {@link #EVENT_DOWNSAMPLEFAILED} indicates
+ * that something went wrong when downsampling, or possibly that downsampling cannot be disabled due to the number of
+ * rows in the table.
  */
+// At this time, not marked as a ServerObject, due to internal implementation issues which leave the door open to
+// client-created figures.
 @JsType(name = "Figure", namespace = "dh.plot")
 public class JsFigure extends HasLifecycle {
 
@@ -80,42 +87,68 @@ public class JsFigure extends HasLifecycle {
      * The data within this figure was updated. {@code event.detail} is {@code FigureUpdateEventData}.
      */
     @JsProperty(namespace = "dh.plot.Figure")
-    public static final String EVENT_UPDATED = "updated",
-            /**
-             * A series used within this figure was added as part of a multi-series in a chart. The series instance is
-             * the detail for this event.
-             */
-            EVENT_SERIES_ADDED = "seriesadded",
-            EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT,
-            EVENT_RECONNECT = JsTable.EVENT_RECONNECT,
-            EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED,
-            /**
-             * The API is updating how downsampling works on this Figure, probably in response to a call to
-             * {@code Axis.range} or {@code subscribe}. The {@code event.detail} value is an array of {@code Series}
-             * instances which are affected by this.
-             */
-            EVENT_DOWNSAMPLESTARTED = "downsamplestarted",
-            /**
-             * Downsampling has finished on the given {@code Series} instances, and data will arrive shortly. The
-             * {@code event.detail} value is the array of {@code Series} instances.
-             */
-            EVENT_DOWNSAMPLEFINISHED = "downsamplefinished",
-            /**
-             * Downsampling failed for some reason on one or more series. The {@code event.detail} object has three
-             * properties: the <b>message</b> string describing what went wrong, the <b>size</b> number showing the full
-             * size of the table, and the <b>series</b> property, an array of {@code Series} instances affected.
-             */
-            EVENT_DOWNSAMPLEFAILED = "downsamplefailed",
-            /**
-             * There are too many points to be drawn in the table which backs these series, and downsampling should be
-             * enabled. As an alternative, downsampling can be explicitly disabled, provided there are less than 200,000
-             * rows in the table.
-             */
-            EVENT_DOWNSAMPLENEEDED = "downsampleneeded";
+    public static final String EVENT_UPDATED = "updated";
 
-    public interface FigureFetch {
-        void fetch(JsBiConsumer<Object, FetchObjectResponse> callback);
-    }
+    /**
+     * A series used within this figure was added as part of a multi-series in a chart. The series instance is the
+     * detail for this event.
+     */
+    @JsProperty(namespace = "dh.plot.Figure")
+    public static final String EVENT_SERIES_ADDED = "seriesadded";
+
+    /**
+     * This figure has lost its connection to the server. No further events will be fired, and no data will update,
+     * until either the connection is reestablished and {@link #EVENT_RECONNECT} is fired, or
+     * {@link #EVENT_RECONNECTFAILED} fires, indicating that it wasn't possible to reconnect and the figure should be
+     * recreated/refetched.
+     */
+    @JsProperty(namespace = "dh.plot.Figure")
+    public static final String EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT;
+
+    /**
+     * This figure has reconnected to the server, and all of its tables are ready to deliver data again. Any
+     * subscriptions that were active before the disconnect are restored.
+     */
+    @JsProperty(namespace = "dh.plot.Figure")
+    public static final String EVENT_RECONNECT = JsTable.EVENT_RECONNECT;
+
+    /**
+     * This figure failed to reconnect to the server, and is no longer usable. The {@code event.detail} value is a
+     * {@code FigureFetchError} describing what went wrong.
+     */
+    @JsProperty(namespace = "dh.plot.Figure")
+    public static final String EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
+
+    /**
+     * The API is updating how downsampling works on this Figure, probably in response to a call to
+     * {@link JsAxis#range(Double, Object, Object) Axis.range} or {@link #subscribe(DownsampleOptions) subscribe}. The
+     * {@code event.detail} value is an array of {@code Series} instances which are affected by this.
+     */
+    @JsProperty(namespace = "dh.plot.Figure")
+    public static final String EVENT_DOWNSAMPLESTARTED = "downsamplestarted";
+
+    /**
+     * Downsampling has finished on the given {@code Series} instances, and data will arrive shortly. The
+     * {@code event.detail} value is the array of {@code Series} instances.
+     */
+    @JsProperty(namespace = "dh.plot.Figure")
+    public static final String EVENT_DOWNSAMPLEFINISHED = "downsamplefinished";
+
+    /**
+     * Downsampling failed for some reason on one or more series. The {@code event.detail} object has three properties:
+     * the {@code message} string describing what went wrong, the {@code size} number showing the full size of the
+     * table, and the {@code series} property, an array of {@code Series} instances affected.
+     */
+    @JsProperty(namespace = "dh.plot.Figure")
+    public static final String EVENT_DOWNSAMPLEFAILED = "downsamplefailed";
+
+    /**
+     * There are too many points to be drawn in the table which backs these series, and downsampling should be enabled.
+     * As an alternative, downsampling can be explicitly disabled, provided there are less than 200,000 rows in the
+     * table. The {@code event.detail} object has the same properties as {@link #EVENT_DOWNSAMPLEFAILED}.
+     */
+    @JsProperty(namespace = "dh.plot.Figure")
+    public static final String EVENT_DOWNSAMPLENEEDED = "downsampleneeded";
 
     public interface FigureTableFetch {
         Promise<FigureTableFetchData> fetch(JsFigure figure, FetchObjectResponse descriptor);
@@ -125,10 +158,21 @@ public class JsFigure extends HasLifecycle {
         void close(JsFigure figure);
     }
 
+    /**
+     * Indicates that a series data source could not be resolved or used for this figure. Thrown when a table backing
+     * this figure does not have a column that one of its series expects, such as after the figure reconnects to a
+     * server where the table's schema has changed.
+     */
     public class FigureSourceException extends RuntimeException {
+        /**
+         * The table associated with the failing source.
+         */
         @JsProperty
         transient JsTable table;
 
+        /**
+         * The series data source associated with the failure.
+         */
         @JsProperty
         transient SeriesDataSource source;
 
@@ -140,24 +184,37 @@ public class JsFigure extends HasLifecycle {
         }
     }
 
+    /**
+     * Error details for a failed figure fetch.
+     */
     public class FigureFetchError {
+        /**
+         * The underlying error object.
+         */
         @JsProperty
         Object error;
 
+        /**
+         * A String array of any server-reported error messages.
+         */
         @JsProperty
         JsArray<String> errors;
 
-        FigureFetchError(Object error, JsArray<String> errors) {
+        FigureFetchError(Object error, List<String> errors) {
             this.error = error;
-            this.errors = errors;
+            this.errors = JsArray.from(errors.toArray(new String[0]));
         }
 
+        /**
+         * Returns the string representation of the underlying error.
+         */
+        @Override
         public String toString() {
             return error.toString();
         }
     }
 
-    private final FigureFetch fetch;
+    private final Supplier<Promise<FetchObjectResponse>> fetch;
     private final FigureTableFetch tableFetch;
     private FigureClose onClose;
 
@@ -173,19 +230,19 @@ public class JsFigure extends HasLifecycle {
     private JsPartitionedTable[] partitionedTables;
     private Map<Integer, JsPartitionedTable> plotHandlesToPartitionedTables;
 
-    private final Map<AxisDescriptor, DownsampledAxisDetails> downsampled = new HashMap<>();
+    private final Map<FigureDescriptor.AxisDescriptor, DownsampledAxisDetails> downsampled = new HashMap<>();
 
     private final Map<FigureSubscription, FigureSubscription> activeFigureSubscriptions = new HashMap<>();
 
     private boolean subCheckEnqueued = false;
 
     @JsIgnore
-    public JsFigure(WorkerConnection connection, FigureFetch fetch) {
+    public JsFigure(WorkerConnection connection, Supplier<Promise<FetchObjectResponse>> fetch) {
         this(fetch, new DefaultFigureTableFetch(connection));
     }
 
     @JsIgnore
-    public JsFigure(FigureFetch fetch, FigureTableFetch tableFetch) {
+    public JsFigure(Supplier<Promise<FetchObjectResponse>> fetch, FigureTableFetch tableFetch) {
         this.fetch = fetch;
         this.tableFetch = tableFetch;
     }
@@ -195,14 +252,18 @@ public class JsFigure extends HasLifecycle {
         plotHandlesToTables = new HashMap<>();
         plotHandlesToPartitionedTables = new HashMap<>();
 
-        return Callbacks.grpcUnaryPromise(fetch::fetch).then(response -> {
-            this.descriptor = FigureDescriptor.deserializeBinary(response.getData_asU8());
+        return fetch.get().then(response -> {
+            try {
+                this.descriptor = FigureDescriptor.parseFrom(response.getData());
+            } catch (InvalidProtocolBufferException e) {
+                throw new RuntimeException(e);
+            }
 
-            charts = descriptor.getChartsList().asList().stream()
+            charts = descriptor.getChartsList().stream()
                     .map(chartDescriptor -> new JsChart(chartDescriptor, this)).toArray(JsChart[]::new);
             JsObject.freeze(charts);
 
-            errors = JsObject.freeze(descriptor.getErrorsList().slice());
+            errors = Js.cast(JsObject.freeze(descriptor.getErrorsList().toArray()));
 
             return this.tableFetch.fetch(this, response);
         }).then(tableFetchData -> {
@@ -233,8 +294,7 @@ public class JsFigure extends HasLifecycle {
             return Promise.resolve(this);
         }, err -> {
             final FigureFetchError fetchError = new FigureFetchError(LazyPromise.ofObject(err),
-                    this.descriptor != null ? this.descriptor.getErrorsList() : new JsArray<>());
-            // noinspection unchecked
+                    this.descriptor != null ? this.descriptor.getErrorsList() : List.of());
             unsuppressEvents();
             fireEvent(EVENT_RECONNECTFAILED, fetchError);
             suppressEvents();
@@ -275,9 +335,7 @@ public class JsFigure extends HasLifecycle {
 
 
     /**
-     * The title of the figure.
-     * 
-     * @return String
+     * The title of the figure, or null if no title was set.
      */
     @JsProperty
     @JsNullable
@@ -288,26 +346,41 @@ public class JsFigure extends HasLifecycle {
         return null;
     }
 
+    /**
+     * The font to use when drawing the figure's title.
+     */
     @JsProperty
     public String getTitleFont() {
         return descriptor.getTitleFont();
     }
 
+    /**
+     * The color to use when drawing the figure's title.
+     */
     @JsProperty
     public String getTitleColor() {
         return descriptor.getTitleColor();
     }
 
+    /**
+     * The update interval of this figure, in milliseconds.
+     */
     @JsProperty
     public double getUpdateInterval() {
-        return Long.parseLong(descriptor.getUpdateInterval());
+        return descriptor.getUpdateInterval();
     }
 
+    /**
+     * The number of columns in this figure's chart layout.
+     */
     @JsProperty
     public int getCols() {
         return descriptor.getCols();
     }
 
+    /**
+     * The number of rows in this figure's chart layout.
+     */
     @JsProperty
     public int getRows() {
         return descriptor.getRows();
@@ -315,14 +388,15 @@ public class JsFigure extends HasLifecycle {
 
     /**
      * The charts to draw.
-     * 
-     * @return dh.plot.Chart
      */
     @JsProperty
     public JsChart[] getCharts() {
         return charts;
     }
 
+    /**
+     * Any errors that the server reported while building this figure.
+     */
     @JsProperty
     public JsArray<String> getErrors() {
         return errors;
@@ -336,7 +410,14 @@ public class JsFigure extends HasLifecycle {
         subscribe(null);
     }
 
-    public void subscribe(@JsOptional DownsampleOptions forceDisableDownsample) {
+    /**
+     * Subscribe to the underlying tables to receive updates for all series in this figure.
+     *
+     * @param forceDisableDownsample the downsampling behavior to use for every series in this figure. Pass
+     *        {@link DownsampleOptions#DISABLE} to load all data without downsampling, or omit the argument to use
+     *        {@link DownsampleOptions#DEFAULT}.
+     */
+    public void subscribe(@JsOptional @JsNullable DownsampleOptions forceDisableDownsample) {
         // iterate all series, mark all as subscribed, will enqueue a check automatically
         Arrays.stream(charts).flatMap(c -> Arrays.stream(c.getSeries()))
                 .forEach(s -> s.subscribe(forceDisableDownsample));
@@ -436,7 +517,7 @@ public class JsFigure extends HasLifecycle {
 
         // otherwise grab the first table we can find
         // TODO loop, assert all match
-        return plotHandlesToTables.get(s.getDescriptor().getDataSourcesList().getAt(0).getTableId());
+        return plotHandlesToTables.get(s.getDescriptor().getDataSources(0).getTableId());
     }
 
     // First, break down the ranges so we can tell when they are entirely incompatible. They
@@ -517,22 +598,22 @@ public class JsFigure extends HasLifecycle {
         }
         // this was formerly a switch/case, but since we're referencing JS we need to use expressions that look like
         // non-constants to java
-        int plotStyle = series.getPlotStyle();
-        if (plotStyle == FigureDescriptor.SeriesPlotStyle.getBAR()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getSTACKED_BAR()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getPIE()) {
+        FigureDescriptor.SeriesPlotStyle plotStyle = series.getDescriptor().getPlotStyle();
+        if (plotStyle == FigureDescriptor.SeriesPlotStyle.BAR
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.STACKED_BAR
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.PIE) {
             // category charts, can't remove categories
             return false;
-        } else if (plotStyle == FigureDescriptor.SeriesPlotStyle.getSCATTER()) {
+        } else if (plotStyle == FigureDescriptor.SeriesPlotStyle.SCATTER) {
             // pointless without shapes visible, this ensures we aren't somehow trying to draw it
             return false;
-        } else if (plotStyle == FigureDescriptor.SeriesPlotStyle.getLINE()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getAREA()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getSTACKED_AREA()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getHISTOGRAM()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getOHLC()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getSTEP()
-                || plotStyle == FigureDescriptor.SeriesPlotStyle.getERROR_BAR()) {
+        } else if (plotStyle == FigureDescriptor.SeriesPlotStyle.LINE
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.AREA
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.STACKED_AREA
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.HISTOGRAM
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.OHLC
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.STEP
+                || plotStyle == FigureDescriptor.SeriesPlotStyle.ERROR_BAR) {
             // allowed, fall through (listed so we can default to not downsample)
             return true;
         }
@@ -672,11 +753,11 @@ public class JsFigure extends HasLifecycle {
     }
 
     @JsIgnore
-    public void updateDownsampleRange(AxisDescriptor axis, Integer pixels, Long min, Long max) {
+    public void updateDownsampleRange(FigureDescriptor.AxisDescriptor axis, Integer pixels, Long min, Long max) {
         if (pixels == null) {
             downsampled.remove(axis);
         } else {
-            if (axis.getLog() || axis.getType() != AxisDescriptor.AxisType.getX() || axis.getInvert()) {
+            if (axis.getLog() || axis.getType() != FigureDescriptor.AxisDescriptor.AxisType.X || axis.getInvert()) {
                 return;
             }
             downsampled.put(axis, new DownsampledAxisDetails(pixels, min, max));
@@ -760,20 +841,18 @@ public class JsFigure extends HasLifecycle {
             JsTable[] tables = new JsTable[0];
             JsPartitionedTable[] partitionedTables = new JsPartitionedTable[0];
 
-            Promise<?>[] promises = new Promise[response.getTypedExportIdsList().length];
+            Promise<?>[] promises = new Promise[response.getTypedExportIdsList().size()];
 
             int nextTableIndex = 0;
             int nextPartitionedTableIndex = 0;
-            for (int i = 0; i < response.getTypedExportIdsList().length; i++) {
-                TypedTicket ticket = response.getTypedExportIdsList().getAt(i);
+            for (int i = 0; i < response.getTypedExportIdsList().size(); i++) {
+                TypedTicket ticket = response.getTypedExportIdsList().get(i);
                 if (ticket.getType().equals(JsVariableType.TABLE)) {
                     // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
                     // reconnect in this way without refetching the entire figure anyway.
                     int tableIndex = nextTableIndex++;
-                    promises[i] = Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
-                        connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
-                                connection.metadata(),
-                                c::apply);
+                    promises[i] = Callbacks.<ExportedTableCreationResponse>grpcUnaryPromise(c -> {
+                        connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(), c);
                     }).then(etcr -> {
                         ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for figure");
                         JsTable table = new JsTable(connection, cts);

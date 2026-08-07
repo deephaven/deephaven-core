@@ -3,7 +3,7 @@
 //
 package io.deephaven.util.datastructures;
 
-import gnu.trove.impl.PrimeFinder;
+import io.deephaven.hash.PrimeFinder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

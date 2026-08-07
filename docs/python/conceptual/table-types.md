@@ -77,7 +77,7 @@ Because static tables do not update, they have the following characteristics:
 2. Operations that depend on or modify external state can be used with static tables. Stateful operations can present problems for some types of streaming tables.
 3. The use of [special variables](../reference/query-language/variables/special-variables.md) is fully supported. Deephaven's special variables `i` and `ii` represent row indices of a table as `int` or `long` types, respectively. These variables are guaranteed to have consistent values in static tables.
 
-Static tables can be created by reading from a static data source, such as [CSV](../how-to-guides/data-import-export/csv-import.md), [Iceberg](../how-to-guides/data-import-export/iceberg.md), [Parquet](../how-to-guides/data-import-export/parquet-import.md), or [SQL](../how-to-guides/data-import-export/execute-sql-queries.md). Or, they can be created with Deephaven's table creation functions, like [`new_table`](../how-to-guides/new-and-empty-table.md#new_table) or [`empty_table`](../how-to-guides/new-and-empty-table.md#empty_table). This example uses [`empty_table`](../how-to-guides/new-and-empty-table.md#new_table) to construct a static table:
+Static tables can be created by reading from a static data source, such as [CSV](../how-to-guides/data-import-export/csv-import.md), [Iceberg](../how-to-guides/data-import-export/iceberg.md), [Parquet](../how-to-guides/data-import-export/parquet-import.md), or [SQL](../how-to-guides/data-import-export/execute-sql-queries.md). Or, they can be created with Deephaven's table creation functions, like [`new_table`](../how-to-guides/new-and-empty-table.md#new_table) or [`empty_table`](../how-to-guides/new-and-empty-table.md#empty_table). This example uses [`empty_table`](../how-to-guides/new-and-empty-table.md#empty_table) to construct a static table:
 
 ```python test-set=1 order=t
 from deephaven import empty_table
@@ -262,7 +262,7 @@ t_append_only = blink_to_append_only(t)
 
 ### Create a blink table from an add-only table
 
-It may be useful to create a blink table from an add-only table. This will only provide real benefit if the upstream add-only table is not fully in-memory. In this case, the operation will not fail, but there will be no memory savings. Use [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md) to accomplish this:
+It may be useful to create a blink table from an add-only table. This will only provide real benefit if the upstream add-only table is not fully in-memory. If the upstream add-only table is already fully in-memory, the operation will not fail, but there will be no memory savings. Use [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md) to accomplish this:
 
 ```python ticking-table order=null
 from deephaven import time_table

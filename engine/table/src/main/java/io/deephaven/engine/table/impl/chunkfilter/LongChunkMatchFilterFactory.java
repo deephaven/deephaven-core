@@ -7,8 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TLongHashSet;
 import io.deephaven.engine.table.MatchOptions;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 
 /**
  * Creates chunk filters for long values.
@@ -138,10 +139,10 @@ public class LongChunkMatchFilterFactory {
     }
 
     private final static class MultiValueLongChunkFilter extends LongChunkFilter {
-        private final TLongHashSet values;
+        private final LongSet values;
 
         private MultiValueLongChunkFilter(long... values) {
-            this.values = new TLongHashSet(values);
+            this.values = new LongOpenHashSet(values);
         }
 
         @Override
@@ -151,10 +152,10 @@ public class LongChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueLongChunkFilter extends LongChunkFilter {
-        private final TLongHashSet values;
+        private final LongSet values;
 
         private InverseMultiValueLongChunkFilter(long... values) {
-            this.values = new TLongHashSet(values);
+            this.values = new LongOpenHashSet(values);
         }
 
         @Override

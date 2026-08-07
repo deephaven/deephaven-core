@@ -64,6 +64,10 @@
                 "path": "getting-started/crash-course/query-strings.md"
               },
               {
+                "label": "Recipes, not loops!",
+                "path": "getting-started/crash-course/vectorization-vs-loops.md"
+              },
+              {
                 "label": "Python Integrations",
                 "path": "getting-started/crash-course/py-integrations.md"
               },
@@ -143,12 +147,20 @@
                 "path": "conceptual/column-types.md"
               },
               {
+                "label": "Deephaven Vectors",
+                "path": "conceptual/arrays-vs-vectors.md"
+              },
+              {
                 "label": "Core API design",
                 "path": "conceptual/deephaven-core-api.md"
               },
               {
                 "label": "Servers & clients",
                 "path": "conceptual/client-server-model.md"
+              },
+              {
+                "label": "What is Barrage?",
+                "path": "conceptual/what-is-barrage.md"
               }
             ]
           },
@@ -179,6 +191,10 @@
               {
                 "label": "Advanced table constructors",
                 "items": [
+                  {
+                    "label": "Convert add- and append-only tables to blink tables",
+                    "path": "how-to-guides/add-only-to-blink.md"
+                  },
                   {
                     "label": "Write data to a real-time table",
                     "path": "how-to-guides/table-publisher.md"
@@ -218,6 +234,10 @@
               {
                 "label": "Arrow Flight",
                 "path": "how-to-guides/data-import-export/arrow-flight.md"
+              },
+              {
+                "label": "Arrow/Barrage Schema",
+                "path": "how-to-guides/data-import-export/barrage-schema.md"
               },
               {
                 "label": "Iceberg",
@@ -655,6 +675,10 @@
                     "path": "how-to-guides/user-interface/navigating-the-ui.md"
                   },
                   {
+                    "label": "Upload a table from a file",
+                    "path": "how-to-guides/user-interface/upload-table-from-file.md"
+                  },
+                  {
                     "label": "Set date-time format",
                     "path": "how-to-guides/set-date-time-format.md"
                   },
@@ -893,6 +917,10 @@
               {
                 "label": "Create your own plugin",
                 "path": "how-to-guides/create-plugins.md"
+              },
+              {
+                "label": "Create a JavaScript plugin",
+                "path": "how-to-guides/create-js-plugins.md"
               }
             ]
           },
@@ -915,6 +943,10 @@
               {
                 "label": "Think like a Deephaven ninja",
                 "path": "conceptual/ninja.md"
+              },
+              {
+                "label": "Vectorization and the recipe paradigm",
+                "path": "conceptual/vectorization-and-recipes.md"
               },
               {
                 "label": "Performance",
@@ -942,6 +974,10 @@
                   {
                     "label": "Synchronization and locking",
                     "path": "conceptual/query-engine/engine-locking.md"
+                  },
+                  {
+                    "label": "Formulas and threads",
+                    "path": "how-to-guides/performance/formula-threads.md"
                   },
                   {
                     "label": "Python-Java boundary",
@@ -994,6 +1030,10 @@
                       {
                         "label": "Source setup",
                         "path": "how-to-guides/debugging/source-setup.md"
+                      },
+                      {
+                        "label": "Embedded server setup",
+                        "path": "how-to-guides/debugging/embedded-setup.md"
                       },
                       {
                         "label": "Common problems",
@@ -1102,11 +1142,19 @@
                     "path": "how-to-guides/configuration/config-file.md"
                   },
                   {
+                    "label": "Configuration properties",
+                    "path": "how-to-guides/configuration/configuration-properties.md"
+                  },
+                  {
                     "label": "Web Defaults",
                     "path": "how-to-guides/configuration/configure-web.md"
                   },
                   {
-                    "label": "Custom environmental variables",
+                    "label": "JS plugin configuration",
+                    "path": "how-to-guides/configuration/js-plugins.md"
+                  },
+                  {
+                    "label": "Custom environment variables",
                     "path": "how-to-guides/custom-environmental-variables.md"
                   },
                   {
@@ -1523,6 +1571,10 @@
                   {
                     "label": "write",
                     "path": "reference/data-import-export/Parquet/writeTable.md"
+                  },
+                  {
+                    "label": "write_partitioned",
+                    "path": "reference/data-import-export/Parquet/writePartitioned.md"
                   }
                 ]
               },
@@ -2748,6 +2800,10 @@
                   {
                     "label": "Is docker compose required?",
                     "path": "reference/community-questions/is-docker-compose-required.md"
+                  },
+                  {
+                    "label": "Why do ticking tables stall on WSL 2?",
+                    "path": "reference/community-questions/wsl2-clock-drift.md"
                   }
                 ]
               },

@@ -28,7 +28,7 @@ class UpdatePerformanceAncestorStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofString("UpdateGraph"),
             ColumnDefinition.ofLong("EntryId"),
             ColumnDefinition.ofString("EntryDescription"),
-            ColumnDefinition.ofVector("Ancestors", LongVector.class));
+            ColumnDefinition.of("Ancestors", LongVector.type()));
 
     public static TableDefinition definition() {
         return DEFINITION;

@@ -7,8 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TDoubleHashSet;
-import gnu.trove.set.hash.TLongHashSet;
+import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import io.deephaven.engine.table.MatchOptions;
 
 /**
@@ -164,11 +165,35 @@ public class DoubleChunkMatchFilterFactory {
         }
     }
 
+    // A DoubleOpenHashSet that canonicalizes -0.0d to +0.0d; NaN values are silently skipped (not added).
+    private static final class DoubleZeroCanonicalOpenHashSet {
+        final DoubleOpenHashSet wrapped;
+
+        DoubleZeroCanonicalOpenHashSet(double... values) {
+            wrapped = new DoubleOpenHashSet(values.length);
+            for (final double v : values) {
+                add(v);
+            }
+        }
+
+        private static double canonicalize(final double k) {
+            return k == 0.0d ? 0.0d : k;
+        }
+
+        public boolean add(final double k) {
+            return !Double.isNaN(k) && wrapped.add(canonicalize(k));
+        }
+
+        public boolean contains(final double k) {
+            return !Double.isNaN(k) && wrapped.contains(canonicalize(k));
+        }
+    }
+
     private final static class MultiValueDoubleChunkFilter extends DoubleChunkFilter {
-        private final TDoubleHashSet values;
+        private final DoubleZeroCanonicalOpenHashSet values;
 
         private MultiValueDoubleChunkFilter(double... values) {
-            this.values = new TDoubleHashSet(values);
+            this.values = new DoubleZeroCanonicalOpenHashSet(values);
         }
 
         @Override
@@ -178,10 +203,10 @@ public class DoubleChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueDoubleChunkFilter extends DoubleChunkFilter {
-        private final TDoubleHashSet values;
+        private final DoubleZeroCanonicalOpenHashSet values;
 
         private InverseMultiValueDoubleChunkFilter(double... values) {
-            this.values = new TDoubleHashSet(values);
+            this.values = new DoubleZeroCanonicalOpenHashSet(values);
         }
 
         @Override
@@ -191,16 +216,12 @@ public class DoubleChunkMatchFilterFactory {
     }
 
     /**
-     * Handle -0.0 vs. 0.0 correctly in value comparison. This leverages the fact that the library conversion
-     * to bits returns different values for 0.0 and -0.0 but the same value for NaN.
+     * Gets the canonicalized bit pattern for the given value. Specifically, ensures that any NaN values have the bit
+     * pattern of {@link Double#NaN}, and -0.0 has the bit pattern of 0.0.
      */
     // region getBits
-    private static final Double NEG_ZERO = -0.0;
     public static long getBits(double value) {
-        if (NEG_ZERO.equals(value)) {
-            return Double.doubleToLongBits(0.0f);
-        }
-        return Double.doubleToLongBits(value);
+        return Double.doubleToLongBits(value == 0.0d ? 0.0d : value);
     }
 
     // endregion getBits
@@ -294,16 +315,16 @@ public class DoubleChunkMatchFilterFactory {
 
         @Override
         public boolean matches(double value) {
-            final long valueBits = Double.doubleToLongBits(value);
+            final long valueBits = getBits(value);
             return valueBits != valueBits1 && valueBits != valueBits2 && valueBits != valueBits3;
         }
     }
 
     private final static class MultiValueNaNDoubleChunkFilter extends DoubleChunkFilter {
-        private final TLongHashSet values;
+        private final LongSet values;
 
         private MultiValueNaNDoubleChunkFilter(double... values) {
-            this.values = new TLongHashSet(values.length);
+            this.values = new LongOpenHashSet(values.length);
             for (double v : values) {
                 this.values.add(getBits(v));
             }
@@ -317,10 +338,10 @@ public class DoubleChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueNaNDoubleChunkFilter extends DoubleChunkFilter {
-        private final TLongHashSet values;
+        private final LongSet values;
 
         private InverseMultiValueNaNDoubleChunkFilter(double... values) {
-            this.values = new TLongHashSet(values.length);
+            this.values = new LongOpenHashSet(values.length);
             for (double v : values) {
                 this.values.add(getBits(v));
             }

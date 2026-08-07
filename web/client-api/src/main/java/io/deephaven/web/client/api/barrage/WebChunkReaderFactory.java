@@ -5,18 +5,8 @@ package io.deephaven.web.client.api.barrage;
 
 import elemental2.core.JsDate;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.ByteChunk;
-import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.DoubleChunk;
-import io.deephaven.chunk.FloatChunk;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.ShortChunk;
-import io.deephaven.chunk.WritableByteChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
@@ -26,12 +16,15 @@ import io.deephaven.extensions.barrage.chunk.ByteChunkReader;
 import io.deephaven.extensions.barrage.chunk.CharChunkReader;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
+import io.deephaven.extensions.barrage.chunk.DictionaryChunkReader;
+import io.deephaven.extensions.barrage.chunk.DictionaryReaderRegistry;
 import io.deephaven.extensions.barrage.chunk.DoubleChunkReader;
 import io.deephaven.extensions.barrage.chunk.ExpansionKernel;
 import io.deephaven.extensions.barrage.chunk.FloatChunkReader;
 import io.deephaven.extensions.barrage.chunk.IntChunkReader;
 import io.deephaven.extensions.barrage.chunk.ListChunkReader;
 import io.deephaven.extensions.barrage.chunk.LongChunkReader;
+import io.deephaven.extensions.barrage.chunk.RunEndEncodedChunkReader;
 import io.deephaven.extensions.barrage.chunk.ShortChunkReader;
 import io.deephaven.extensions.barrage.chunk.TransformingChunkReader;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
@@ -47,6 +40,7 @@ import io.deephaven.web.client.api.LongWrapper;
 import jsinterop.base.Js;
 import org.apache.arrow.flatbuf.Date;
 import org.apache.arrow.flatbuf.DateUnit;
+import org.apache.arrow.flatbuf.DictionaryEncoding;
 import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.FloatingPoint;
 import org.apache.arrow.flatbuf.Int;
@@ -75,9 +69,30 @@ import java.util.function.LongFunction;
  * Includes some specific workarounds to handle nullability that will make more sense for the browser.
  */
 public class WebChunkReaderFactory implements ChunkReader.Factory {
+    private final DictionaryReaderRegistry dictRegistry;
+
+    public WebChunkReaderFactory(DictionaryReaderRegistry dictRegistry) {
+        this.dictRegistry = dictRegistry;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T extends WritableChunk<Values>> ChunkReader<T> newReader(
+            @NotNull final BarrageTypeInfo<Field> typeInfo,
+            @NotNull final BarrageOptions options) {
+        if (typeInfo.arrowField().dictionary() != null) {
+            final DictionaryEncoding dictEncoding = typeInfo.arrowField().dictionary();
+            final long dictId = dictEncoding.id();
+            final Int indexTypeInfo = dictEncoding.indexType();
+            final int indexBitWidth = indexTypeInfo != null ? indexTypeInfo.bitWidth() : 32;
+            return (ChunkReader<T>) new DictionaryChunkReader(dictId,
+                    newDictIndexReader(indexBitWidth, options), ChunkType.Object, dictRegistry);
+        }
+        return newValueTypeReader(typeInfo, options);
+    }
+
+    @SuppressWarnings("unchecked")
+    <T extends WritableChunk<Values>> ChunkReader<T> newValueTypeReader(
             @NotNull final BarrageTypeInfo<Field> typeInfo,
             @NotNull final BarrageOptions options) {
         switch (typeInfo.arrowField().typeType()) {
@@ -279,10 +294,11 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                                     outChunk, outOffset, totalRows);
                 }
 
-                // noinspection DataFlowIssue,ConstantValue
-                final BarrageTypeInfo<Field> componentTypeInfo = new BarrageTypeInfo<>(
-                        componentType,
-                        componentType == null ? null : componentType.getComponentType(),
+                // Disregard the actual component type and request one that can hold Object, as all transformers
+                // will yield some kind of reference type since this is JS.
+                final BarrageTypeInfo<Field> componentTypeInfo = BarrageTypeInfo.make(
+                        Object.class,
+                        null,
                         typeInfo.arrowField().children(0));
                 final ChunkType chunkType = ListChunkReader.getChunkTypeFor(componentTypeInfo.type());
                 final ExpansionKernel<?> kernel =
@@ -290,6 +306,27 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                 final ChunkReader<?> componentReader = newReader(componentTypeInfo, options);
 
                 return (ChunkReader<T>) new ListChunkReader<>(listMode, 0, kernel, componentReader);
+            }
+            case Type.RunEndEncoded: {
+                // run_ends child (index 0): must be a raw Int16/Int32/Int64 chunk — can't use
+                // newReader() here, which would wrap in transformToObject and produce ChunkType.Object
+                // (incompatible with RunEndEncodedChunkReader.getRunEnd()).
+                final BarrageTypeInfo<Field> runEndsTypeInfo =
+                        BarrageTypeInfo.make(int.class, null, typeInfo.arrowField().children(0));
+                @SuppressWarnings("unchecked")
+                final ChunkReader<WritableChunk<Values>> runEndsReader = newRunEndsReader(runEndsTypeInfo, options);
+
+                // values child (index 1): newReader() always returns a WritableObjectChunk in the web
+                // context (primitives are wrapped via transformToObject for JS). Pass ChunkType.Object
+                // so RunEndEncodedChunkReader creates an Object output chunk and uses Object fill ops.
+                final BarrageTypeInfo<Field> valuesTypeInfo =
+                        BarrageTypeInfo.make(typeInfo.type(), typeInfo.componentType(),
+                                typeInfo.arrowField().children(1));
+                @SuppressWarnings("unchecked")
+                final ChunkReader<WritableChunk<Values>> valuesReader = newReader(valuesTypeInfo, options);
+
+                return (ChunkReader<T>) new RunEndEncodedChunkReader(
+                        runEndsReader, valuesReader, ChunkType.Object);
             }
             default:
                 throw new IllegalArgumentException("Unsupported type: " + Type.name(typeInfo.arrowField().typeType()));
@@ -389,6 +426,51 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
             }
             default:
                 throw new IllegalArgumentException("Unsupported Int bitwidth: " + t.bitWidth());
+        }
+    }
+
+    /**
+     * Creates a typed chunk reader for the {@code run_ends} child of an Arrow Run-End Encoded field. The Arrow spec
+     * requires {@code run_ends} to be Int16, Int32, or Int64, producing a {@link io.deephaven.chunk.ShortChunk},
+     * {@link io.deephaven.chunk.IntChunk}, or {@link io.deephaven.chunk.LongChunk} respectively.
+     * <p>
+     * Unlike {@link #newIntReader}, this does NOT wrap in {@code transformToObject} —
+     * {@link io.deephaven.extensions.barrage.chunk.RunEndEncodedChunkReader#getRunEnd()} requires a raw typed chunk to
+     * read cumulative end indices without boxing.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T extends WritableChunk<Values>> ChunkReader<T> newRunEndsReader(
+            @NotNull final BarrageTypeInfo<Field> typeInfo,
+            @NotNull final BarrageOptions options) {
+        final Int t = new Int();
+        typeInfo.arrowField().type(t);
+        switch (t.bitWidth()) {
+            case 16:
+                return (ChunkReader<T>) new ShortChunkReader(options);
+            case 32:
+                return (ChunkReader<T>) new IntChunkReader(options);
+            case 64:
+                return (ChunkReader<T>) new LongChunkReader(options);
+            default:
+                throw new IllegalArgumentException(
+                        "run_ends Int bitWidth must be 16, 32, or 64; got " + t.bitWidth());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends WritableChunk<Values>> ChunkReader<T> newDictIndexReader(
+            final int bitWidth, @NotNull final BarrageOptions options) {
+        switch (bitWidth) {
+            case 8:
+                return (ChunkReader<T>) new ByteChunkReader(options);
+            case 16:
+                return (ChunkReader<T>) new ShortChunkReader(options);
+            case 32:
+                return (ChunkReader<T>) new IntChunkReader(options);
+            case 64:
+                return (ChunkReader<T>) new LongChunkReader(options);
+            default:
+                throw new IllegalArgumentException("Unsupported dictionary index bitWidth: " + bitWidth);
         }
     }
 

@@ -14,6 +14,7 @@
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/impl/update_by_operation_impl.h"
 #include "deephaven/client/client.h"
+#include "deephaven/client/client_options.h"
 #include "deephaven/client/impl/util.h"
 #include "deephaven/client/subscription/subscribe_thread.h"
 #include "deephaven/client/subscription/subscription_handle.h"
@@ -641,8 +642,19 @@ std::shared_ptr<Schema> TableHandleImpl::Schema() {
     auto *server = managerImpl_->Server().get();
 
     arrow::flight::FlightCallOptions options;
+    // Note: Authorization and envoy-prefix headers are automatically added by BearerMiddleware
+    // Only add OTHER extra headers here (if any)
     server->ForEachHeaderNameAndValue(
         [&options](const std::string &name, const std::string &value) {
+          // Skip authorization (handled by middleware)
+          if (name == kAuthorizationHeader) {
+            return;
+          }
+          // Skip envoy-prefix (handled by middleware)
+          if (name == kEnvoyPrefixHeader) {
+            return;
+          }
+          // Add any other extra headers
           options.headers.emplace_back(name, value);
         }
     );

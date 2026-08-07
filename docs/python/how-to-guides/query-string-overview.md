@@ -132,7 +132,7 @@ For more on query language built-in constants, variables, and functions, see:
 Deephaven's Python-Java interoperability allows you to use Python code in query strings. This powerful feature is facilitated by [jpy](./use-jpy.md), a bidirectional Python-Java bridge usable from both languages.
 
 > [!CAUTION]
-> Care should be taken when calling Python in query strings for [performance reasons](../conceptual/python-java-boundary.md).
+> Care should be taken when calling Python in query strings for [performance and memory reasons](../conceptual/python-java-boundary.md).
 
 The following example uses a Python variable, function, and class in a query string.
 

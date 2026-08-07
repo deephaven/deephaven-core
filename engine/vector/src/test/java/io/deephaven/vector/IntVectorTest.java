@@ -20,7 +20,6 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 // endregion NullConstantImport
-import static io.deephaven.util.QueryConstants.NULL_INT;
 import static junit.framework.TestCase.*;
 
 /**

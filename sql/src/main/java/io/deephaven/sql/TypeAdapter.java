@@ -12,10 +12,13 @@ import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.DoubleType;
+import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.IntType;
+import io.deephaven.qst.type.LocalDateType;
+import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.ShortType;
@@ -112,6 +115,24 @@ final class TypeAdapter
     @Override
     public RelDataType visit(InstantType instantType) {
         return create(SqlTypeName.TIMESTAMP);
+    }
+
+    @Override
+    public RelDataType visit(LocalTimeType localTimeType) {
+        // TODO: DH-22157: SQL support for LocalDate/LocalTime/Duration/Period
+        return typeFactory.createJavaType(SqlTodoCustomType.class);
+    }
+
+    @Override
+    public RelDataType visit(LocalDateType localDateType) {
+        // TODO: DH-22157: SQL support for LocalDate/LocalTime/Duration/Period
+        return typeFactory.createJavaType(SqlTodoCustomType.class);
+    }
+
+    @Override
+    public RelDataType visit(DurationType durationType) {
+        // TODO: DH-22157: SQL support for LocalDate/LocalTime/Duration/Period
+        return typeFactory.createJavaType(SqlTodoCustomType.class);
     }
 
     @Override

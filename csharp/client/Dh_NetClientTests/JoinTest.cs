@@ -6,8 +6,8 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class JoinTest {
-  [Fact]
-  public void TestJoin() {
+  [Test]
+  public async Task TestJoin() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var testTable = ctx.TestTable;
 
@@ -23,11 +23,11 @@ public class JoinTest {
     expected.AddColumn("Close", [53.8, 88.5, 38.7, 453, 26.7, 544.9]);
     expected.AddColumn("ADV", [216000, 6060842, 138000, 138000000, 123000, 47211.50]);
 
-    TableComparer.AssertSame(expected, filtered);
+    await Assert.That(() => TableComparer.AssertSame(expected, filtered)).ThrowsNothing();
   }
 
-  [Fact]
-  public void TestAj() {
+  [Test]
+  public async Task TestAj() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var tm = ctx.Client.Manager;
 
@@ -84,12 +84,12 @@ public class JoinTest {
       expected.AddColumn("BidSize", [(int?)null, 20, 20, 5, 13]);
       expected.AddColumn("Ask", [(double?)null, 3.4, 3.4, 105, 110]);
       expected.AddColumn("AskSize", [(int?)null, 33, 33, 47, 15]);
-      TableComparer.AssertSame(expected, result);
+      await Assert.That(() => TableComparer.AssertSame(expected, result)).ThrowsNothing();
     }
   }
 
-  [Fact]
-  public void TestRaj() {
+  [Test]
+  public async Task TestRaj() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var tm = ctx.Client.Manager;
 
@@ -147,7 +147,7 @@ public class JoinTest {
       expected.AddColumn("Ask", [(double?)2.5, null, null, 105, 110]);
       expected.AddColumn("AskSize", [(int?)83, null, null, 47, 15]);
 
-      TableComparer.AssertSame(expected, result);
+      await Assert.That(() => TableComparer.AssertSame(expected, result)).ThrowsNothing();
     }
   }
 }

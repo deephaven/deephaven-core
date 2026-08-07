@@ -3,13 +3,14 @@
 //
 package io.deephaven.csv;
 
-import gnu.trove.map.hash.TIntObjectHashMap;
 import io.deephaven.csv.containers.ByteSlice;
 import io.deephaven.csv.tokenization.RangeTests;
 import io.deephaven.csv.tokenization.Tokenizer;
 import io.deephaven.csv.util.MutableLong;
 import io.deephaven.csv.util.MutableObject;
 import io.deephaven.time.TimeZoneAliases;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
@@ -17,7 +18,7 @@ import java.util.Map;
 
 public final class DeephavenTimeZoneParser implements Tokenizer.CustomTimeZoneParser {
     private static final int MAX_TZ_LENGTH = computeMaxTimeZoneLength();
-    private static final TIntObjectHashMap<ZoneId> ZONE_ID_MAP = createZoneIdMap();
+    private static final Int2ObjectMap<ZoneId> ZONE_ID_MAP = createZoneIdMap();
 
     private int lastTzKey = -1;
     private ZoneId lastZoneId = null;
@@ -84,8 +85,8 @@ public final class DeephavenTimeZoneParser implements Tokenizer.CustomTimeZonePa
         return Math.abs(res);
     }
 
-    private static TIntObjectHashMap<ZoneId> createZoneIdMap() {
-        final TIntObjectHashMap<ZoneId> zoneIdMap = new TIntObjectHashMap<>();
+    private static Int2ObjectMap<ZoneId> createZoneIdMap() {
+        final Int2ObjectMap<ZoneId> zoneIdMap = new Int2ObjectOpenHashMap<>();
         for (Map.Entry<String, ZoneId> entry : TimeZoneAliases.getAllZones().entrySet()) {
             final String zname = entry.getKey();
             final ZoneId zoneId = entry.getValue();

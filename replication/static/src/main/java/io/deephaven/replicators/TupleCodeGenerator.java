@@ -47,7 +47,7 @@ public class TupleCodeGenerator {
             "java.io.ObjectOutput",
             "io.deephaven.tuple.serialization.SerializationUtils",
             "io.deephaven.tuple.serialization.StreamingExternalizable",
-            "gnu.trove.map.TIntObjectMap",
+            "it.unimi.dsi.fastutil.ints.Int2ObjectMap",
             "java.util.function.UnaryOperator"
     };
 
@@ -375,7 +375,7 @@ public class TupleCodeGenerator {
 
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append(
-                "public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {")
+                "public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final Int2ObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {")
                 .append(NEW_LINE);
         indenter.increaseLevel();
         if (type1 != ElementType.OBJECT) {
@@ -397,7 +397,7 @@ public class TupleCodeGenerator {
 
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append(
-                "public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {")
+                "public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final Int2ObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {")
                 .append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("initialize(").append(NEW_LINE);
@@ -707,7 +707,7 @@ public class TupleCodeGenerator {
 
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append(
-                "public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {")
+                "public void writeExternalStreaming(@NotNull final ObjectOutput out, @NotNull final Int2ObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {")
                 .append(NEW_LINE);
         indenter.increaseLevel();
         if (type1 != ElementType.OBJECT) {
@@ -735,7 +735,7 @@ public class TupleCodeGenerator {
 
         code.append(indenter).append("@Override").append(NEW_LINE);
         code.append(indenter).append(
-                "public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {")
+                "public void readExternalStreaming(@NotNull final ObjectInput in, @NotNull final Int2ObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {")
                 .append(NEW_LINE);
         indenter.increaseLevel();
         code.append(indenter).append("initialize(").append(NEW_LINE);

@@ -64,6 +64,29 @@ source = emptyTable(10).update(
 sourceMeta = source.meta()
 ```
 
+## Nested (inner) classes
+
+Java allows users to define classes inside other classes. In Groovy, you access these nested (inner) classes using dot notation — `OuterClass.InnerClass` — which is standard Java syntax.
+
+```groovy order=null test-set=inner-classes-groovy
+import io.deephaven.engine.table.impl.util.SyncTableFilter
+
+// Access the Builder inner class of SyncTableFilter using dot notation
+def builder = new SyncTableFilter.Builder()
+```
+
+You can also import the inner class directly to use it without the outer class qualifier:
+
+```groovy order=null test-set=inner-classes-groovy
+import io.deephaven.engine.table.impl.util.SyncTableFilter.Builder
+
+// Use Builder directly after importing
+def builder2 = new Builder()
+```
+
+> [!NOTE]
+> If you load a class dynamically with `Class.forName()`, use `$` as the separator — `OuterClass$InnerClass`. This is the JVM's internal binary class name format. In Groovy source code, always use dot notation.
+
 ## Groovy's Java interoperability
 
 One of Groovy's greatest strengths is its seamless interoperability with Java. In Groovy query strings, you can:

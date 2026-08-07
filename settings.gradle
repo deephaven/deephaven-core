@@ -1,6 +1,6 @@
 plugins {
-    id 'com.gradle.develocity' version '4.3.1'
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.9.0'
+    id 'com.gradle.develocity' version '4.4.2'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
 gradle.ext.buildStartTime = new Date()
@@ -126,15 +126,6 @@ project(':server-jetty-app').projectDir = file('server/jetty-app')
 include(':server-jetty-app-custom')
 project(':server-jetty-app-custom').projectDir = file('server/jetty-app-custom')
 
-include(':server-jetty-11')
-project(':server-jetty-11').projectDir = file('server/jetty-11')
-
-include(':server-jetty-app-11')
-project(':server-jetty-app-11').projectDir = file('server/jetty-app-11')
-
-include(':server-jetty-app-custom-11')
-project(':server-jetty-app-custom-11').projectDir = file('server/jetty-app-custom-11')
-
 include(':Base')
 
 include(':base-test-utils')
@@ -177,6 +168,9 @@ project(':engine-primitive').projectDir = file('engine/primitive')
 
 include(':engine-vector')
 project(':engine-vector').projectDir = file('engine/vector')
+
+include(':engine-read-tracker')
+project(':engine-read-tracker').projectDir = file('engine/read-tracker')
 
 include(':engine-stringset')
 project(':engine-stringset').projectDir = file('engine/stringset')
@@ -256,6 +250,9 @@ project(':extensions-arrow').projectDir = file('extensions/arrow')
 include(':extensions-barrage')
 project(':extensions-barrage').projectDir = file('extensions/barrage')
 
+include(':extensions-barrage-benchmark')
+project(':extensions-barrage-benchmark').projectDir = file('extensions/barrage/benchmark')
+
 include(':extensions-classgraph')
 project(':extensions-classgraph').projectDir = file('extensions/classgraph')
 
@@ -300,6 +297,9 @@ project(':extensions-json-jackson').projectDir = file('extensions/json-jackson')
 
 include(':extensions-bson-jackson')
 project(':extensions-bson-jackson').projectDir = file('extensions/bson-jackson')
+
+include(':extensions-hadoop-common-test')
+project(':extensions-hadoop-common-test').projectDir = file('extensions/hadoop-common-test')
 
 include(':plugin')
 
@@ -500,11 +500,6 @@ include ':web-client-api:types'
 project(':web-client-api:types').projectDir = file('web/client-api/types')
 
 
-buildCache {
-    local {
-        removeUnusedEntriesAfterDays = 4
-    }
-}
 
 develocity {
     buildScan {

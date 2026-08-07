@@ -2,12 +2,12 @@
 title: proxy
 ---
 
-The `proxy` method creates a `PartitionedTable.Proxy` that allows table operations to be applied to the constituent tables of the source `PartitionedTable`.
+The [`proxy`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/PartitionedTable.html#proxy()) method creates a `PartitionedTable.Proxy` that allows table operations to be applied to the constituent tables of the source `PartitionedTable`.
 
 Each operation thus applied will produce a new `PartitionedTable` with the results, as in `transform(UnaryOperator, Dependency...)` or [`partitionedTransform(PartitionedTable, BinaryOperator, Dependency...)`](./partitionedTransform.md), and return a new proxy to that `PartitionedTable`.
 
 > [!NOTE]
-> If the `proxy` overload with no parameters is used, the result is the same as `proxy(true, true)`.
+> If the `proxy` overload with no parameters is used, the result is the same as `proxy(true, false)`.
 
 ## Syntax
 
@@ -30,6 +30,11 @@ Whether to check that proxied join operations will only find a given join key in
 
 </Param>
 </ParamTable>
+
+> [!CAUTION]
+> `PartitionedTable` transforms and proxies produce different results than on a single-table join (e.g., `naturalJoin`), `whereIn`, or `whereNotIn` when the filter or join keys span partitions. You must ensure that your data's keys map to appropriate partitions to enable correct answers.
+>
+> When `sanityCheckJoins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition, but it does not validate that a key exists in the same partition in both the left and right table.
 
 ## Returns
 

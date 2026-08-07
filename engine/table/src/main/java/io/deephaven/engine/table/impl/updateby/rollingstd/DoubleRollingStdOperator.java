@@ -19,7 +19,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleRollingStdOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;

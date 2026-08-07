@@ -1,0 +1,9 @@
+<module>
+    <source path="">
+        <include name="RowSetShiftData.java"/>
+        <include name="RowKeyRangeShiftCallback.java"/>
+    </source>
+    <source path="impl">
+        <include name="ExternalizableRowSetUtils.java"/>
+    </source>
+</module>

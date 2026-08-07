@@ -15,6 +15,7 @@ import io.deephaven.util.function.ThrowingRunnable;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -121,6 +122,16 @@ public class CapturingUpdateGraph implements UpdateGraph {
     }
 
     @Override
+    public long cycleStartNanoTime() {
+        return delegate.cycleStartNanoTime();
+    }
+
+    @Override
+    public Instant cycleStartTime() {
+        return delegate.cycleStartTime();
+    }
+
+    @Override
     public int parallelismFactor() {
         return delegate.parallelismFactor();
     }
@@ -142,7 +153,7 @@ public class CapturingUpdateGraph implements UpdateGraph {
 
     @Override
     public boolean setSerialTableOperationsSafe(final boolean newValue) {
-        return delegate.serialTableOperationsSafe();
+        return delegate.setSerialTableOperationsSafe(newValue);
     }
 
     @Override

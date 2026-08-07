@@ -6,9 +6,6 @@ package io.deephaven.server.table.inputtables;
 import com.google.protobuf.Any;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.UpdatableTable;
-import io.deephaven.engine.util.input.InputTableStatusListener;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.util.input.InputTableValidationException;
 import io.deephaven.engine.util.input.StructuredErrorImpl;
@@ -17,10 +14,8 @@ import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This is an example of an {@link InputTableUpdater} that validates that the values in an Integer column are within a
@@ -37,8 +32,7 @@ import java.util.Map;
  * </p>
  */
 @TestUseOnly
-public class RangeValidatingInputTable implements InputTableUpdater {
-    private final InputTableUpdater wrapped;
+public class RangeValidatingInputTable extends AbstractBaseValidatingInputTable {
     private final String column;
     private final int min;
     private final int max;
@@ -56,9 +50,7 @@ public class RangeValidatingInputTable implements InputTableUpdater {
     public static Table make(Table input, final String column,
             final int min,
             final int max) {
-        final InputTableUpdater updater = (InputTableUpdater) input.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
-        final RangeValidatingInputTable validatedUpdater = new RangeValidatingInputTable(updater, column, min, max);
-        return input.withAttributes(Map.of(Table.INPUT_TABLE_ATTRIBUTE, validatedUpdater));
+        return wrapUpdater(input, updater -> new RangeValidatingInputTable(updater, column, min, max));
     }
 
 
@@ -66,7 +58,7 @@ public class RangeValidatingInputTable implements InputTableUpdater {
             final String column,
             final int min,
             final int max) {
-        this.wrapped = wrapped;
+        super(wrapped);
         this.column = column;
         final Class<?> dataType = getTableDefinition().getColumn(column).getDataType();
         if (dataType != int.class) {
@@ -76,15 +68,6 @@ public class RangeValidatingInputTable implements InputTableUpdater {
         this.max = max;
     }
 
-    @Override
-    public List<String> getKeyNames() {
-        return wrapped.getKeyNames();
-    }
-
-    @Override
-    public List<String> getValueNames() {
-        return wrapped.getValueNames();
-    }
 
     @Override
     public @Nullable List<Any> getColumnRestrictions(String columnName) {
@@ -103,10 +86,6 @@ public class RangeValidatingInputTable implements InputTableUpdater {
         return result;
     }
 
-    @Override
-    public TableDefinition getTableDefinition() {
-        return wrapped.getTableDefinition();
-    }
 
     @Override
     public void validateAddOrModify(Table tableToApply) {
@@ -127,40 +106,5 @@ public class RangeValidatingInputTable implements InputTableUpdater {
         }
 
         wrapped.validateAddOrModify(tableToApply);
-    }
-
-    @Override
-    public void validateDelete(Table tableToDelete) {
-        wrapped.validateDelete(tableToDelete);
-    }
-
-    @Override
-    public void add(Table newData) throws IOException {
-        wrapped.add(newData);
-    }
-
-    @Override
-    public void addAsync(Table newData, InputTableStatusListener listener) {
-        wrapped.addAsync(newData, listener);
-    }
-
-    @Override
-    public void delete(Table table) throws IOException {
-        wrapped.delete(table);
-    }
-
-    @Override
-    public void deleteAsync(Table table, InputTableStatusListener listener) {
-        wrapped.deleteAsync(table, listener);
-    }
-
-    @Override
-    public boolean isKey(String columnName) {
-        return wrapped.isKey(columnName);
-    }
-
-    @Override
-    public boolean hasColumn(String columnName) {
-        return wrapped.hasColumn(columnName);
     }
 }

@@ -14,9 +14,24 @@ import jsinterop.annotations.JsType;
 @TsInterface
 @JsType(namespace = "dh.ide", name = "VariableDescriptor")
 public class JsVariableDescriptor {
+    /**
+     * The variable type.
+     */
     public String type;
+
+    /**
+     * The variable id.
+     *
+     * Mutually exclusive with {@link #name}.
+     */
     @JsNullable
     public String id;
+
+    /**
+     * The variable name.
+     *
+     * Mutually exclusive with {@link #id}.
+     */
     @JsNullable
     public String name;
 }

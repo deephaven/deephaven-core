@@ -5,7 +5,7 @@ package io.deephaven.base.cache;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import gnu.trove.impl.PrimeFinder;
+import io.deephaven.hash.PrimeFinder;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.ReferenceQueue;

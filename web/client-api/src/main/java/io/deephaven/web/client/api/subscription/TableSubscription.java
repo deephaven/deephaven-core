@@ -12,6 +12,7 @@ import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
+import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
@@ -63,7 +64,7 @@ public final class TableSubscription extends AbstractTableSubscription {
      * @param columns the new columns to subscribe to.
      * @param updateIntervalMs the new update interval, or {@code null}/omit to use the default of one second.
      */
-    public void changeSubscription(JsArray<Column> columns, @JsNullable Double updateIntervalMs) {
+    public void changeSubscription(JsArray<Column> columns, @JsOptional @JsNullable Double updateIntervalMs) {
         if (updateIntervalMs != null && !updateIntervalMs.equals(this.updateIntervalMs)) {
             throw new IllegalArgumentException(
                     "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");

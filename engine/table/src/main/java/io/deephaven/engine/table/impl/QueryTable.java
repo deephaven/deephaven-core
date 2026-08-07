@@ -22,7 +22,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.TableInitializationException;
-import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
@@ -58,8 +57,6 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.IterableUtils;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
@@ -76,7 +73,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -286,8 +282,15 @@ public class QueryTable extends BaseTable<QueryTable> {
     /**
      * Disable the usage of parquet row group dictionaries during push-down filtering.
      */
-    public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownParquetDictionary",
+    public static boolean DISABLE_WHERE_PUSHDOWN_DICTIONARY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownDictionary",
+                    false);
+
+    /**
+     * Disable the usage of sorted column regions during push-down filtering.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedColumn",
                     false);
 
     /**
@@ -1999,6 +2002,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         flavor == Flavor.UpdateView
                                                 ? SelectAndViewAnalyzer.UpdateFlavor.UpdateView
                                                 : SelectAndViewAnalyzer.UpdateFlavor.View;
+                                // We set the notification step to our (i.e. the parent of queryTable) step; because
+                                // the applyShiftsAndRemainingColumns does downstream operations on queryTable. The
+                                // snapshot completion normally does this, but if we don't set it, then those operations
+                                // initialize with an incorrect step. If the step ends up being wrong, we're going to
+                                // be inconsistent and throw the result away anyway.
+                                queryTable.setLastNotificationStep(getLastNotificationStep());
                                 queryTable = analyzerContext.applyShiftsAndRemainingColumns(
                                         this, queryTable, updateFlavor);
 
@@ -2830,6 +2839,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             final boolean incremental = options.has(Flag.INCREMENTAL);
             final boolean history = options.has(Flag.HISTORY);
             final String description = options.description();
+            final QueryTable triggerQueryTable = (QueryTable) trigger.coalesce();
             if (history) {
                 if (initial || incremental) {
                     // noinspection ThrowableNotThrown
@@ -2837,12 +2847,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                             "SnapshotWhenOptions should disallow history with initial or incremental");
                     return null;
                 }
-                return ((QueryTable) trigger).snapshotHistory(description, this, options.stampColumns());
+                return triggerQueryTable.snapshotHistory(description, this, options.stampColumns());
             }
             if (incremental) {
-                return ((QueryTable) trigger).snapshotIncremental(description, this, initial, options.stampColumns());
+                return triggerQueryTable.snapshotIncremental(description, this, initial,
+                        options.stampColumns());
             }
-            return ((QueryTable) trigger).snapshot(description, this, initial, options.stampColumns());
+            return triggerQueryTable.snapshot(description, this, initial, options.stampColumns());
         }
     }
 
@@ -3230,59 +3241,6 @@ public class QueryTable extends BaseTable<QueryTable> {
             Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations) {
         // noinspection unchecked
         return (MemoizedResult<R>) cachedOperations.computeIfAbsent(memoKey, k -> new MemoizedResult<>());
-    }
-
-    private static class MemoizedResult<R> {
-        private volatile WeakReference<R> reference;
-
-        R getOrCompute(Supplier<R> operation) {
-            final R cachedResult = getIfValid();
-            if (cachedResult != null) {
-                return maybeMarkSystemic(cachedResult);
-            }
-
-            synchronized (this) {
-                final R cachedResultLocked = getIfValid();
-                if (cachedResultLocked != null) {
-                    return maybeMarkSystemic(cachedResultLocked);
-                }
-
-                final R result;
-                result = operation.get();
-
-                reference = new WeakReference<>(result);
-
-                return result;
-            }
-        }
-
-        private R maybeMarkSystemic(R cachedResult) {
-            if (cachedResult instanceof SystemicObject && SystemicObjectTracker.isSystemicThread()) {
-                // noinspection unchecked
-                return (R) ((SystemicObject) cachedResult).markSystemic();
-            }
-            return cachedResult;
-        }
-
-        R getIfValid() {
-            if (reference != null) {
-                final R cachedResult = reference.get();
-                if (!isFailed(cachedResult) && Liveness.verifyCachedObjectForReuse(cachedResult)) {
-                    return cachedResult;
-                }
-            }
-            return null;
-        }
-
-        private boolean isFailed(R cachedResult) {
-            if (cachedResult instanceof Table) {
-                return ((Table) cachedResult).isFailed();
-            }
-            if (cachedResult instanceof PartitionedTable) {
-                return ((PartitionedTable) cachedResult).table().isFailed();
-            }
-            return false;
-        }
     }
 
     public <T extends DynamicNode & NotificationStepReceiver> T getResult(final Operation<T> operation) {

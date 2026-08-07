@@ -61,3 +61,6 @@ plotSub = figure(1, 2)
 ![Two subplots, displayed side-by-side](../../assets/tutorials/crash-course/crash-course-9.gif)
 
 Far more plots are available, including [histograms](../../how-to-guides/plotting/api-plotting.md#histogram), [pie charts](../../how-to-guides/plotting/api-plotting.md#pie), [scatter plots](../../how-to-guides/plotting/api-plotting.md#xy-series-as-a-scatter-plot), and more.
+
+> [!TIP]
+> Prefer a no-code approach? Use the [Chart Builder](../../how-to-guides/user-interface/chart-builder.md) to create line, bar, scatter, and pie charts from any table directly in the UI.

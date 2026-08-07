@@ -6,8 +6,8 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class HeadAndTailTest {
-  [Fact]
-  public void TestHeadAndTail() {
+  [Test]
+  public async Task TestHeadAndTail() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var table = ctx.TestTable;
 
@@ -21,7 +21,7 @@ public class HeadAndTailTest {
 
       expected.AddColumn("Ticker", ["XRX", "XRX"]);
       expected.AddColumn("Volume", [(Int64)345000, 87000]);
-      TableComparer.AssertSame(expected, th);
+      await Assert.That(() => TableComparer.AssertSame(expected, th)).ThrowsNothing();
     }
 
     {
@@ -29,7 +29,7 @@ public class HeadAndTailTest {
 
       expected.AddColumn("Ticker", ["ZNGA", "ZNGA"]);
       expected.AddColumn("Volume", [(Int64)46123, 48300]);
-      TableComparer.AssertSame(expected, tt);
+      await Assert.That(() => TableComparer.AssertSame(expected, tt)).ThrowsNothing();
     }
   }
 }

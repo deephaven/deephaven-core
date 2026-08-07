@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl.sortedranges;
 
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 public final class SortedRangesShort extends SortedRangesPacked<short[]> {
 
@@ -22,14 +22,14 @@ public final class SortedRangesShort extends SortedRangesPacked<short[]> {
         return new SortedRangesShort(initialCapacity, offset);
     }
 
-    private static ThreadLocal<TIntObjectHashMap<short[]>> ARRAY_POOL =
-            ThreadLocal.withInitial(() -> new TIntObjectHashMap<>(16));
+    private static final ThreadLocal<Int2ObjectOpenHashMap<short[]>> ARRAY_POOL =
+            ThreadLocal.withInitial(() -> new Int2ObjectOpenHashMap<>(16));
 
     @Override
     protected short[] makeArray(final int capacity) {
         final int roundedCapacity = arraySizeRoundingShort(capacity);
         if (POOL_ARRAYS) {
-            final TIntObjectHashMap<short[]> localPool = ARRAY_POOL.get();
+            final Int2ObjectOpenHashMap<short[]> localPool = ARRAY_POOL.get();
             final short[] arr = localPool.remove(roundedCapacity);
             if (arr != null) {
                 return arr;
@@ -47,7 +47,7 @@ public final class SortedRangesShort extends SortedRangesPacked<short[]> {
         if (!isShortAllocationSize(arr.length)) {
             return;
         }
-        final TIntObjectHashMap<short[]> localPool = ARRAY_POOL.get();
+        final Int2ObjectOpenHashMap<short[]> localPool = ARRAY_POOL.get();
         localPool.put(arr.length, arr);
     }
 

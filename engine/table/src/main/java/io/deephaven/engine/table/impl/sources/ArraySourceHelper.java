@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -29,7 +29,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
      * track previous values.
      */
     protected transient UpdateCommitter<ArraySourceHelper<T, UArray>> prevFlusher = null;
-    protected transient TIntArrayList prevAllocated = null;
+    protected transient IntArrayList prevAllocated = null;
 
     /**
      * If ensure previous has been called, we need not check previous values when filling.
@@ -158,7 +158,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
             prevBlocks[block] = recycler.borrowItem();
             prevInUse[block] = inUse = inUseRecycler.borrowItem();
             if (prevAllocated == null) {
-                prevAllocated = new TIntArrayList();
+                prevAllocated = new IntArrayList();
             }
             prevAllocated.add(block);
         } else {
@@ -227,8 +227,6 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
             assert pu != null;
             inUseRecycler.returnItem(pu);
             prevInUse[block] = null;
-
-            return true;
         });
         prevAllocated.clear();
     }

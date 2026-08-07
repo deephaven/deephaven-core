@@ -18,8 +18,9 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.comments.BlockComment;
-import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.comments.LineComment;
+import com.github.javaparser.ast.comments.MarkdownComment;
+import com.github.javaparser.ast.comments.TraditionalJavadocComment;
 import com.github.javaparser.ast.expr.ArrayAccessExpr;
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
 import com.github.javaparser.ast.expr.ArrayInitializerExpr;
@@ -3127,8 +3128,13 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     @Override
-    public Class<?> visit(JavadocComment n, VisitArgs printer) {
-        throw new UnsupportedOperationException("JavadocComment Operation not supported!");
+    public Class<?> visit(TraditionalJavadocComment n, VisitArgs printer) {
+        throw new UnsupportedOperationException("TraditionalJavadocComment Operation not supported!");
+    }
+
+    @Override
+    public Class<?> visit(MarkdownComment n, VisitArgs printer) {
+        throw new UnsupportedOperationException("MarkdownComment Operation not supported!");
     }
 
     @Override

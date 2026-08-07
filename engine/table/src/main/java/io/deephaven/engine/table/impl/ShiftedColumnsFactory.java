@@ -24,8 +24,9 @@ import com.github.javaparser.ast.body.ReceiverParameter;
 import com.github.javaparser.ast.body.RecordDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.comments.BlockComment;
-import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.comments.LineComment;
+import com.github.javaparser.ast.comments.MarkdownComment;
+import com.github.javaparser.ast.comments.TraditionalJavadocComment;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.modules.ModuleDeclaration;
 import com.github.javaparser.ast.modules.ModuleExportsDirective;
@@ -512,8 +513,13 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
     }
 
     @Override
-    public void visit(JavadocComment n, ShiftedColumnAttributes arg) {
-        throw new UnsupportedOperationException("JavadocComment Operation not supported");
+    public void visit(TraditionalJavadocComment n, ShiftedColumnAttributes arg) {
+        throw new UnsupportedOperationException("TraditionalJavadocComment Operation not supported");
+    }
+
+    @Override
+    public void visit(MarkdownComment n, ShiftedColumnAttributes arg) {
+        throw new UnsupportedOperationException("MarkdownComment Operation not supported");
     }
 
     @Override

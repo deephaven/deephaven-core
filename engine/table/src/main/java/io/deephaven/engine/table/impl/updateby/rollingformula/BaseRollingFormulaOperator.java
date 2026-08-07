@@ -40,7 +40,7 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
     final FormulaColumn formulaColumn;
     final Class<?> inputColumnType;
     final Class<?> inputComponentType;
-    final Class<?> inputVectorType;
+    final Class<? extends Vector<?>> inputVectorType;
 
     protected WritableColumnSource<?> primitiveOutputSource;
     protected WritableColumnSource<?> outputSource;
@@ -116,9 +116,8 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
         formulaColumn = formulaColumnMap.computeIfAbsent(inputColumnType, t -> {
             final FormulaColumn tmp = FormulaColumn.createFormulaColumn(outputColumnName,
                     FormulaUtil.replaceFormulaTokens(formula, paramToken, PARAM_COLUMN_NAME));
-
-            final ColumnDefinition<?> inputColumnDefinition = ColumnDefinition
-                    .fromGenericType(PARAM_COLUMN_NAME, inputVectorType, inputColumnType);
+            final ColumnDefinition<?> inputColumnDefinition =
+                    ColumnDefinition.ofVector(PARAM_COLUMN_NAME, inputVectorType, inputColumnType);
             tmp.initDef(Collections.singletonMap(PARAM_COLUMN_NAME, inputColumnDefinition), compilationProcessor);
             return tmp;
         });
@@ -132,7 +131,7 @@ abstract class BaseRollingFormulaOperator extends UpdateByOperator {
             final long forwardWindowScaleUnits,
             final Class<?> columnType,
             final Class<?> componentType,
-            final Class<?> vectorType,
+            final Class<? extends Vector<?>> vectorType,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);

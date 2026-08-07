@@ -7,7 +7,8 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrays;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
@@ -35,15 +36,15 @@ import java.util.ArrayList;
 public class ByteChunkColumnSource extends AbstractColumnSource<Byte>
         implements ImmutableColumnSourceGetDefaults.ForByte, ChunkColumnSource<Byte> {
     private final ArrayList<ByteChunk<? extends Values>> data = new ArrayList<>();
-    private final TLongArrayList firstOffsetForData;
+    private final LongArrayList firstOffsetForData;
     private long totalSize = 0;
 
     // region constructor
     public ByteChunkColumnSource() {
-        this(new TLongArrayList());
+        this(new LongArrayList());
     }
 
-    protected ByteChunkColumnSource(final TLongArrayList firstOffsetForData) {
+    protected ByteChunkColumnSource(final LongArrayList firstOffsetForData) {
         super(Byte.class);
         this.firstOffsetForData = firstOffsetForData;
     }
@@ -56,7 +57,7 @@ public class ByteChunkColumnSource extends AbstractColumnSource<Byte>
         }
 
         final int chunkIndex = getChunkIndex(rowKey);
-        final long offset = firstOffsetForData.getQuick(chunkIndex);
+        final long offset = firstOffsetForData.getLong(chunkIndex);
         return data.get(chunkIndex).get((int) (rowKey - offset));
     }
 
@@ -91,7 +92,7 @@ public class ByteChunkColumnSource extends AbstractColumnSource<Byte>
             final int firstChunk = getChunkIndex(firstKey);
             final int lastChunk = getChunkIndex(rowSequence.lastRowKey(), firstChunk);
             if (firstChunk == lastChunk) {
-                final int offset = (int) (firstKey - firstOffsetForData.get(firstChunk));
+                final int offset = (int) (firstKey - firstOffsetForData.getLong(firstChunk));
                 final int length = rowSequence.intSize();
                 final ByteChunk<? extends Values> byteChunk = data.get(firstChunk);
                 if (offset == 0 && length == byteChunk.size()) {
@@ -111,7 +112,7 @@ public class ByteChunkColumnSource extends AbstractColumnSource<Byte>
         rowSequence.forAllRowKeyRanges((s, e) -> {
             while (s <= e) {
                 final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.get());
-                final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));
+                final int offsetWithinChunk = (int) (s - firstOffsetForData.getLong(chunkIndex));
                 Assert.geqZero(offsetWithinChunk, "offsetWithinChunk");
                 final ByteChunk<? extends Values> byteChunk = data.get(chunkIndex);
                 final int chunkSize = byteChunk.size();
@@ -157,10 +158,11 @@ public class ByteChunkColumnSource extends AbstractColumnSource<Byte>
      */
 
     private int getChunkIndex(final long start, final int startChunk) {
-        if (start == firstOffsetForData.get(startChunk)) {
+        if (start == firstOffsetForData.getLong(startChunk)) {
             return startChunk;
         }
-        int index = firstOffsetForData.binarySearch(start, startChunk, firstOffsetForData.size());
+        int index =
+                LongArrays.binarySearch(firstOffsetForData.elements(), startChunk, firstOffsetForData.size(), start);
         if (index < 0) {
             index = -index - 2;
         }
@@ -195,7 +197,7 @@ public class ByteChunkColumnSource extends AbstractColumnSource<Byte>
             data.forEach(PoolableChunk::closeIfPoolable);
         }
         data.clear();
-        firstOffsetForData.resetQuick();
+        firstOffsetForData.clear();
     }
 
     @Override

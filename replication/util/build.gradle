@@ -7,7 +7,8 @@ description 'Replication Tools: Utilities for source code generation and replica
 
 dependencies {
     implementation project(':Base'),
-            libs.commons.io
+            libs.commons.io,
+            libs.commons.text
 
     compileOnly libs.google.findbugs.jsr305
 }

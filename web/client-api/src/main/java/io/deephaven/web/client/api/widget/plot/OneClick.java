@@ -8,7 +8,7 @@ import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsMap;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.figuredescriptor.OneClickDescriptor;
+import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
@@ -21,11 +21,18 @@ import jsinterop.base.JsPropertyMap;
 
 import java.util.Arrays;
 
+/**
+ * A one-click configuration for a chart series.
+ *
+ * <p>
+ * A {@code OneClick} can be used to select values for one or more columns, and uses those values to select one or more
+ * constituent tables from a {@link JsPartitionedTable}.
+ */
 @TsInterface
 @TsName(namespace = "dh.plot")
 public class OneClick {
     private final JsFigure jsFigure;
-    private final OneClickDescriptor oneClick;
+    private final FigureDescriptor.OneClickDescriptor oneClick;
     private final JsSeries jsSeries;
 
     private final JsMap<String, Any> values = new JsMap<>();
@@ -36,7 +43,7 @@ public class OneClick {
     private RemoverFn keyAddedListener;
     private JsTable currentTable;
 
-    public OneClick(JsFigure jsFigure, OneClickDescriptor oneClick, JsSeries jsSeries) {
+    public OneClick(JsFigure jsFigure, FigureDescriptor.OneClickDescriptor oneClick, JsSeries jsSeries) {
         this.jsFigure = jsFigure;
         this.oneClick = oneClick;
         this.jsSeries = jsSeries;
@@ -59,12 +66,15 @@ public class OneClick {
         }
     }
 
+    /**
+     * The columns that can be used to select a constituent table.
+     */
     @JsProperty
     public Column[] getColumns() {
-        JsPropertyMap<Object>[] fakeColumns = new JsPropertyMap[oneClick.getColumnsList().length];
+        JsPropertyMap<Object>[] fakeColumns = new JsPropertyMap[oneClick.getColumnsCount()];
         for (int i = 0; i < fakeColumns.length; i++) {
-            fakeColumns[i] = JsPropertyMap.of("name", oneClick.getColumnsList().getAt(i), "type",
-                    oneClick.getColumnTypesList().getAt(i));
+            fakeColumns[i] = JsPropertyMap.of("name", oneClick.getColumns(i), "type",
+                    oneClick.getColumnTypesList().get(i));
         }
         return Js.uncheckedCast(fakeColumns);
     }
@@ -75,6 +85,15 @@ public class OneClick {
     // return null;
     // }
 
+    /**
+     * Sets the selected value for {@code columnName}.
+     *
+     * <p>
+     * Passing {@code null} clears the selected value for the column.
+     *
+     * @param columnName the column name to set a value for
+     * @param value the selected value, or {@code null} to clear
+     */
     @JsMethod
     public void setValueForColumn(String columnName, Any value) {
         boolean allWereSet = allRequiredValuesSet();
@@ -105,8 +124,8 @@ public class OneClick {
             return null;
         }
 
-        if (oneClick.getColumnsList().length == 1) {
-            Object key = values.get(oneClick.getColumnsList().getAt(0));
+        if (oneClick.getColumnsList().size() == 1) {
+            Object key = values.get(oneClick.getColumnsList().get(0));
             if (key != null) {
                 return new Object[] {key};
             } else {
@@ -114,9 +133,9 @@ public class OneClick {
             }
         }
 
-        String[] key = new String[oneClick.getColumnsList().length];
-        for (int i = 0; i < oneClick.getColumnsList().length; i++) {
-            Any value = values.get(oneClick.getColumnsList().getAt(i));
+        String[] key = new String[oneClick.getColumnsList().size()];
+        for (int i = 0; i < oneClick.getColumnsCount(); i++) {
+            Any value = values.get(oneClick.getColumns(i));
             if (value != null) {
                 key[i] = value.asString();
             }
@@ -208,14 +227,13 @@ public class OneClick {
         } else if (key1 == null || key2 == null) {
             return false;
         }
-        if (key1 instanceof String) {
-            return key1.equals(key2);
+        if (key1 instanceof String[]) {
+            if (key2 instanceof String[]) {
+                return Arrays.equals((String[]) key1, (String[]) key2);
+            }
+            return false;
         }
-        assert key1 instanceof String[];
-        if (key2 instanceof String[]) {
-            return Arrays.equals((String[]) key1, (String[]) key2);
-        }
-        return false;// key2 isn't String[], so fail
+        return key1.equals(key2);
     }
 
     private static boolean anyKeyMatches(Object[] keys, Object key) {
@@ -249,25 +267,34 @@ public class OneClick {
         return currentTable;
     }
 
+    /**
+     * Gets the currently selected value for {@code columnName}.
+     *
+     * @param columnName the column name
+     * @return the selected value, or {@code null} if no value has been set
+     */
     @JsMethod
-    public Any getValueForColumn(String columName) {
-        return values.get(columName);
+    public Any getValueForColumn(String columnName) {
+        return values.get(columnName);
     }
 
     public boolean allValuesSet() {
-        return values.size == oneClick.getColumnsList().length;
+        return values.size == oneClick.getColumnsList().size();
     }
 
     public boolean allRequiredValuesSet() {
         return !isRequireAllFiltersToDisplay() || allValuesSet();
     }
 
+    /**
+     * Whether all column values must be set before a table is selected.
+     */
     @JsProperty
     public boolean isRequireAllFiltersToDisplay() {
         return oneClick.getRequireAllFiltersToDisplay();
     }
 
-    public OneClickDescriptor getDescriptor() {
+    public FigureDescriptor.OneClickDescriptor getDescriptor() {
         return this.oneClick;
     }
 }

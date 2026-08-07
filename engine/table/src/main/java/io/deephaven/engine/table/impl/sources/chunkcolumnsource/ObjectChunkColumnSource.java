@@ -7,7 +7,8 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrays;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
@@ -35,15 +36,15 @@ import java.util.ArrayList;
 public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T>
         implements ImmutableColumnSourceGetDefaults.ForObject<T>, ChunkColumnSource<T> {
     private final ArrayList<ObjectChunk<T, ? extends Values>> data = new ArrayList<>();
-    private final TLongArrayList firstOffsetForData;
+    private final LongArrayList firstOffsetForData;
     private long totalSize = 0;
 
     // region constructor
     protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType) {
-        this(type, componentType, new TLongArrayList());
+        this(type, componentType, new LongArrayList());
     }
 
-    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType, final TLongArrayList firstOffsetForData) {
+    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType, final LongArrayList firstOffsetForData) {
         super(type, componentType);
         this.firstOffsetForData = firstOffsetForData;
     }
@@ -56,7 +57,7 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T>
         }
 
         final int chunkIndex = getChunkIndex(rowKey);
-        final long offset = firstOffsetForData.getQuick(chunkIndex);
+        final long offset = firstOffsetForData.getLong(chunkIndex);
         return data.get(chunkIndex).get((int) (rowKey - offset));
     }
 
@@ -91,7 +92,7 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T>
             final int firstChunk = getChunkIndex(firstKey);
             final int lastChunk = getChunkIndex(rowSequence.lastRowKey(), firstChunk);
             if (firstChunk == lastChunk) {
-                final int offset = (int) (firstKey - firstOffsetForData.get(firstChunk));
+                final int offset = (int) (firstKey - firstOffsetForData.getLong(firstChunk));
                 final int length = rowSequence.intSize();
                 final ObjectChunk<T, ? extends Values> ObjectChunk = data.get(firstChunk);
                 if (offset == 0 && length == ObjectChunk.size()) {
@@ -111,7 +112,7 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T>
         rowSequence.forAllRowKeyRanges((s, e) -> {
             while (s <= e) {
                 final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.get());
-                final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));
+                final int offsetWithinChunk = (int) (s - firstOffsetForData.getLong(chunkIndex));
                 Assert.geqZero(offsetWithinChunk, "offsetWithinChunk");
                 final ObjectChunk<T, ? extends Values> ObjectChunk = data.get(chunkIndex);
                 final int chunkSize = ObjectChunk.size();
@@ -157,10 +158,11 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T>
      */
 
     private int getChunkIndex(final long start, final int startChunk) {
-        if (start == firstOffsetForData.get(startChunk)) {
+        if (start == firstOffsetForData.getLong(startChunk)) {
             return startChunk;
         }
-        int index = firstOffsetForData.binarySearch(start, startChunk, firstOffsetForData.size());
+        int index =
+                LongArrays.binarySearch(firstOffsetForData.elements(), startChunk, firstOffsetForData.size(), start);
         if (index < 0) {
             index = -index - 2;
         }
@@ -195,7 +197,7 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T>
             data.forEach(PoolableChunk::closeIfPoolable);
         }
         data.clear();
-        firstOffsetForData.resetQuick();
+        firstOffsetForData.clear();
     }
 
     @Override

@@ -11,7 +11,7 @@ import contextlib
 import sys
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from enum import Enum, auto
-from functools import cached_property
+from functools import cache, cached_property
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -40,6 +40,7 @@ from deephaven.jcompat import (
     j_unary_operator,
     to_sequence,
 )
+from deephaven.time import DurationLike, to_j_duration
 from deephaven.update_graph import UpdateGraph, auto_locking_ctx
 from deephaven.updateby import UpdateByOperation
 
@@ -111,8 +112,29 @@ _JNewColumnBehaviorType = jpy.get_type(
     "io.deephaven.engine.table.impl.util.KeyedTranspose$NewColumnBehavior"
 )
 
+# TailInitializationFilter
+_JTailInitializationFilter = jpy.get_type(
+    "io.deephaven.engine.table.impl.util.TailInitializationFilter"
+)
+
 # Selectable
 _JSelectable = jpy.get_type("io.deephaven.api.Selectable")
+
+# SortedColumnsAttribute
+_JSortedColumnsAttribute = jpy.get_type(
+    "io.deephaven.engine.table.impl.SortedColumnsAttribute"
+)
+_JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
+_JTableAssertions = jpy.get_type(
+    "io.deephaven.engine.table.impl.verify.TableAssertions"
+)
+
+
+@cache
+def _default_cross_join_reserve_bits() -> int:
+    return jpy.get_type(
+        "io.deephaven.engine.table.impl.CrossJoinHelper"
+    ).DEFAULT_NUM_RIGHT_BITS_TO_RESERVE
 
 
 class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
@@ -646,6 +668,14 @@ def _sort_column(col: str, dir_: SortDirection) -> jpy.JType:
         _JSortColumn.desc(_JColumnName.of(col))
         if dir_ == SortDirection.DESCENDING
         else _JSortColumn.asc(_JColumnName.of(col))
+    )
+
+
+def _sorting_order(dir_: SortDirection) -> jpy.JType:
+    return (
+        _JSortingOrder.Descending
+        if dir_ == SortDirection.DESCENDING
+        else _JSortingOrder.Ascending
     )
 
 
@@ -1705,6 +1735,75 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table sort operation failed.") from e
 
+    def with_order_for_column(
+        self,
+        col_name: str,
+        order: SortDirection = SortDirection.ASCENDING,
+    ) -> Table:
+        """Annotates this table to indicate that the given column is already sorted in the specified order.
+
+        This sets the SORTED_COLUMNS_ATTRIBUTE so that downstream operations (e.g. sorted-column binary
+        search / pushdown) can trust the column is pre-sorted without re-sorting.
+
+        .. warning::
+            **This method performs no validation.** If the column is not actually sorted in the declared
+            order, range and match filters will silently return **incorrect (missing or wrong) results**
+            with no error or warning. Use :meth:`assert_sorted` instead whenever possible — it validates
+            the sort order at call time for static tables and re-validates on every update for refreshing
+            tables. Only use this method when you have an external guarantee that the data is sorted and
+            the validation cost of ``assert_sorted`` is unacceptable.
+
+        Args:
+            col_name (str): the column to annotate as sorted.
+            order (SortDirection): the sort direction; defaults to ASCENDING.
+
+        Returns:
+            a new Table with the sorted-column attribute set.
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(
+                j_table=_JSortedColumnsAttribute.withOrderForColumn(
+                    self.j_table, col_name, _sorting_order(order)
+                )
+            )
+        except Exception as e:
+            raise DHError(e, "table with_order_for_column operation failed.") from e
+
+    def assert_sorted(
+        self,
+        col_name: str,
+        order: SortDirection = SortDirection.ASCENDING,
+        description: Optional[str] = None,
+    ) -> Table:
+        """Asserts that this table is sorted by the given column and returns it with the sorted-column attribute set.
+
+        For static tables this validates the sort order immediately and annotates the result. For refreshing tables
+        a listener is installed that validates each subsequent update, raising an error if the assertion is violated.
+        The annotation allows downstream range filters to use binary search instead of a linear scan.
+
+        Args:
+            col_name (str): the column that the table must be sorted by.
+            order (SortDirection): the expected sort direction; defaults to ASCENDING.
+            description (Optional[str]): an optional label included in the error message if the assertion is violated.
+
+        Returns:
+            a new Table with the sorted-column assertion applied.
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(
+                j_table=_JTableAssertions.assertSorted(
+                    description, self.j_table, col_name, _sorting_order(order)
+                )
+            )
+        except Exception as e:
+            raise DHError(e, "table assert_sorted operation failed.") from e
+
     # endregion
 
     #
@@ -1730,7 +1829,7 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            joinType (NaturalJoinType): the action to be taken when duplicate right hand rows are
+            type (NaturalJoinType): the action to be taken when duplicate right hand rows are
                 encountered; default is ERROR_ON_DUPLICATE
 
         Returns:
@@ -1740,21 +1839,14 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             with auto_locking_ctx(self, table):
-                if joins:
-                    return Table(
-                        j_table=self.j_table.naturalJoin(
-                            table.j_table, ",".join(on), ",".join(joins), type.value
-                        )
+                return Table(
+                    j_table=self.j_table.naturalJoin(
+                        table.j_table, on, joins, type.value
                     )
-                else:
-                    return Table(
-                        j_table=self.j_table.naturalJoin(
-                            table.j_table, ",".join(on), type.value
-                        )
-                    )
+                )
         except Exception as e:
             raise DHError(e, "table natural_join operation failed.") from e
 
@@ -1783,19 +1875,10 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             with auto_locking_ctx(self, table):
-                if joins:
-                    return Table(
-                        j_table=self.j_table.exactJoin(
-                            table.j_table, ",".join(on), ",".join(joins)
-                        )
-                    )
-                else:
-                    return Table(
-                        j_table=self.j_table.exactJoin(table.j_table, ",".join(on))
-                    )
+                return Table(j_table=self.j_table.exactJoin(table.j_table, on, joins))
         except Exception as e:
             raise DHError(e, "table exact_join operation failed.") from e
 
@@ -1804,11 +1887,17 @@ class Table(JObjectWrapper):
         table: Table,
         on: Optional[Union[str, Sequence[str]]] = None,
         joins: Optional[Union[str, Sequence[str]]] = None,
+        reserve_bits: Optional[int] = None,
     ) -> Table:
         """The join method creates a new table containing rows that have matching values in both tables. Rows that
         do not have matching criteria will not be included in the result. If there are multiple matches between a row
         from the left table and rows from the right table, all matching combinations will be included. If no columns
         to match (on) are specified, every combination of left and right table rows is included.
+
+        To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless
+        specified, join reserves 10 bits to represent a right row. When there are too few bits to represent all the
+        right rows, the table will shift a bit from the left side to the right side. The default of 10 bits was
+        carefully chosen because it results in an efficient implementation to process live updates.
 
         Args:
             table (Table): the right-table of the join
@@ -1817,6 +1906,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+            reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
+                meaning the configured value is used, which is 10 bits by default.
 
         Returns:
             a new table
@@ -1825,17 +1916,21 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
+            reserve_bits = (
+                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
+            )
             with auto_locking_ctx(self, table):
-                if joins:
-                    return Table(
-                        j_table=self.j_table.join(
-                            table.j_table, ",".join(on), ",".join(joins)
-                        )
+                return Table(
+                    j_table=table_op.join(
+                        table.j_table,
+                        on,
+                        joins,
+                        reserve_bits,
                     )
-                else:
-                    return Table(j_table=self.j_table.join(table.j_table, ",".join(on)))
+                )
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
@@ -3878,20 +3973,13 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                if joins:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.naturalJoin(
-                            table_op, ",".join(on), ",".join(joins)
-                        )
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, ",".join(on))
-                    )
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.naturalJoin(table_op, on, joins)
+                )
         except Exception as e:
             raise DHError(
                 e, "natural_join operation on the PartitionedTableProxy failed."
@@ -3924,20 +4012,13 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                if joins:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.exactJoin(
-                            table_op, ",".join(on), ",".join(joins)
-                        )
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, ",".join(on))
-                    )
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.exactJoin(table_op, on, joins)
+                )
         except Exception as e:
             raise DHError(
                 e, "exact_join operation on the PartitionedTableProxy failed."
@@ -3948,6 +4029,7 @@ class PartitionedTableProxy(JObjectWrapper):
         table: Union[Table, PartitionedTableProxy],
         on: Optional[Union[str, Sequence[str]]] = None,
         joins: Optional[Union[str, Sequence[str]]] = None,
+        reserve_bits: Optional[int] = None,
     ) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.join` table operation to all constituent tables of the underlying partitioned
         table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
@@ -3963,6 +4045,8 @@ class PartitionedTableProxy(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
+            reserve_bits (Optional[int]): the number of bits to reserve for the join; default is None, meaning the
+                configured value is used, which is 10 by default
 
         Returns:
             a new PartitionedTableProxy
@@ -3971,20 +4055,17 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
+            reserve_bits = (
+                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
+            )
+
             with auto_locking_ctx(self, table):
-                if joins:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.join(
-                            table_op, ",".join(on), ",".join(joins)
-                        )
-                    )
-                else:
-                    return PartitionedTableProxy(
-                        j_pt_proxy=self.j_pt_proxy.join(table_op, ",".join(on))
-                    )
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.join(table_op, on, joins, reserve_bits)
+                )
         except Exception as e:
             raise DHError(
                 e, "join operation on the PartitionedTableProxy failed."
@@ -4895,3 +4976,69 @@ def keyed_transpose(
             )
     except Exception as e:
         raise DHError(e, "keyed_transpose operation failed.") from e
+
+
+class TailInitializationFilter:
+    """Filters an add-only source table to retain only its most recent rows, using either
+    a timestamp window or a row count. Intended for queries that restart against a large
+    append-only dataset and need to skip rows that are too old to be relevant.
+
+    Rows appended to the source after the initial filter are passed through unchanged.
+    """
+
+    @staticmethod
+    def most_recent(table: Table, ts_col: str, period: DurationLike) -> Table:
+        """Filters an add-only table down to the most recent rows in each partition of its source.
+
+        For each partition, the newest (last) timestamp is found, and rows whose timestamp falls within ``period`` before
+        that newest timestamp are retained.
+
+        Args:
+            table (Table): the add-only source table to filter
+            ts_col (str): the name of the timestamp column; each partition must be sorted ascending by this column with
+                no null values
+            period (DurationLike): the look-behind window measured from the newest timestamp in each partition
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            j_duration = to_j_duration(period)
+            if j_duration is None:
+                raise ValueError("period must not be None")
+            nanos = j_duration.toNanos()
+            with auto_locking_ctx(table):
+                return Table(
+                    j_table=_JTailInitializationFilter.mostRecent(
+                        table.j_table, ts_col, nanos
+                    )
+                )
+        except Exception as e:
+            raise DHError(e, "failed to apply tail initialization filter.") from e
+
+    @staticmethod
+    def most_recent_rows(table: Table, row_count: int) -> Table:
+        """Filters an add-only table down to the last ``row_count`` rows in each partition of the source table.
+
+        Args:
+            table (Table): the add-only source table to filter
+            row_count (int): the number of most-recent rows to keep per partition
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            with auto_locking_ctx(table):
+                return Table(
+                    j_table=_JTailInitializationFilter.mostRecentRows(
+                        table.j_table, row_count
+                    )
+                )
+        except Exception as e:
+            raise DHError(e, "failed to apply tail initialization filter.") from e

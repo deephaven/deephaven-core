@@ -3,12 +3,8 @@
 //
 package io.deephaven.configuration;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.io.logger.Logger;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
@@ -390,10 +386,6 @@ public class PropertyFile {
         return getString(prop, log, c.getName());
     }
 
-    public TIntHashSet getIntHashSetForClass(Class c, String propertyLast) {
-        return getIntHashSetFromProperty(c.getSimpleName() + "." + propertyLast);
-    }
-
     public int[] getIntArrayForClass(Class c, String propertyLast) {
         return getIntegerArray(c.getSimpleName() + "." + propertyLast);
     }
@@ -461,16 +453,6 @@ public class PropertyFile {
 
     public void getClassParams(final Logger log, final Class c, final String name, final Object obj) {
         getClassParams(log, c, name, obj, Modifier.PUBLIC);
-    }
-
-    public TIntHashSet getIntHashSetFromProperty(final String propertyName) {
-        TIntHashSet set = new TIntHashSet();
-        for (String id : getProperty(propertyName).split("[, ]")) {
-            if (id.length() > 0) {
-                set.add(Integer.parseInt(id));
-            }
-        }
-        return set;
     }
 
     public Set<String> getStringSetFromProperty(final String propertyName) {
@@ -635,43 +617,6 @@ public class PropertyFile {
         return result;
     }
 
-    /**
-     * Parse a set of non-negative ints from a property. Format is comma-separated individual values and ranges of the
-     * form start-end.
-     *
-     * @example 0,22,100-200,99,1000-2000
-     * @param propertyName
-     * @return A set of ints derived from the specified property.
-     */
-    public TIntSet getNonNegativeIntSetWithRangeSupport(final String propertyName) {
-        final String s = getProperty(propertyName);
-        final TIntSet result = new gnu.trove.set.hash.TIntHashSet();
-        final String tokens[] = s.replaceAll(" +", "").split(",");
-
-        final Pattern rangePattern = Pattern.compile("(\\d+)\\-(\\d+)");
-        for (int ti = 0; ti < tokens.length; ++ti) {
-            final String token = tokens[ti];
-            if (token.length() == 0) {
-                continue;
-            }
-            final Matcher rangeMatcher = rangePattern.matcher(token);
-            if (rangeMatcher.matches()) {
-                final int rangeBegin = Integer.parseInt(rangeMatcher.group(1));
-                final int rangeEnd = Integer.parseInt(rangeMatcher.group(2));
-                Assert.assertion(0 <= rangeBegin && rangeBegin <= rangeEnd,
-                        "0 <= rangeBegin && rangeBegin <= rangeEnd");
-                for (int value = rangeBegin; value <= rangeEnd; ++value) {
-                    result.add(value);
-                }
-            } else {
-                final int value = Integer.parseInt(token);
-                Assert.assertion(0 <= value, "0 <= value");
-                result.add(value);
-            }
-        }
-        return result;
-    }
-
     public BitSet getBitSet(final String propertyName, final int length) {
         String s = getProperty(propertyName);
         if (s.equals("")) {
@@ -683,23 +628,6 @@ public class PropertyFile {
             result.set(Require.inRange(Integer.parseInt(parts[i]), "bit", length, "length"));
         }
         return result;
-    }
-
-    public TObjectIntHashMap<String> getStringIntHashMap(final String propertyName, final String separator) {
-        final String s = getProperty(propertyName);
-        if (s.equals("")) {
-            return new TObjectIntHashMap<>();
-        }
-        final String[] parts = s.split(",");
-        final TObjectIntHashMap<String> map = new TObjectIntHashMap<>(parts.length);
-        for (int i = 0; i < parts.length; i++) {
-            final String[] keyValue = parts[i].split(separator);
-            if (keyValue.length != 2) {
-                throw new PropertyException("Can't parse property " + propertyName + "=" + s);
-            }
-            map.put(keyValue[0], Integer.parseInt(keyValue[1]));
-        }
-        return map;
     }
 
     public long[] getLongArray(final String propertyName) {

@@ -305,4 +305,3 @@ public class DoubleReverseSsaSsaStamp implements SsaSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

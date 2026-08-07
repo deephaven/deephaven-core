@@ -21,25 +21,57 @@ import java.util.Set;
  */
 @JsType(name = "FigureDescriptor", namespace = "dh.plot")
 public class JsFigureDescriptor {
+    /**
+     * The figure title.
+     */
     @JsNullable
     public String title;
+
+    /**
+     * The font for the figure title.
+     */
     @JsNullable
     public String titleFont;
+
+    /**
+     * The color for the figure title.
+     */
     @JsNullable
     public String titleColor;
+
+    /**
+     * Whether the figure is resizable.
+     */
     @JsNullable
     public boolean isResizable;
+
+    /**
+     * Whether to use the default figure theme.
+     */
     @JsNullable
     public boolean isDefaultTheme;
 
+    /**
+     * The update interval value used when creating the figure.
+     */
     @JsNullable
     public double updateInterval;
 
+    /**
+     * The number of columns in the figure layout.
+     */
     @JsNullable
     public int cols;
+
+    /**
+     * The number of rows in the figure layout.
+     */
     @JsNullable
     public int rows;
 
+    /**
+     * The charts in this figure.
+     */
     public JsArray<JsChartDescriptor> charts;
 
     @JsConstructor
