@@ -35,6 +35,8 @@ Wait for the user. Once they confirm, re-run steps 1 and 2 before proceeding.
 
 **Language check.** A Python example needs a Python worker and a Groovy example needs a Groovy worker. If the only live session is the wrong language, say so and ask the user to start the right one rather than translating the example to fit the worker you happen to have.
 
+**Record the version.** Note `deephaven_community_version` from the response. You need it when querying the docs in step 5, and a `+snapshot` or pre-release suffix (e.g. `43.0+snapshot`) means you are ahead of the published documentation — see "When the worker is newer than the docs".
+
 ## 2. Know the environment before you write
 
 Ping the worker for what is actually installed so you do not write against libraries that are not there:
@@ -103,13 +105,31 @@ The docs MCP is the first resort, not the only one. Combine it with:
 
 If the docs and the running worker disagree, trust the worker and note the discrepancy in your final response. That is a docs bug worth reporting.
 
+### When the worker is newer than the docs
+
+The docs MCP indexes **published** documentation. It lags the main branch, and it does not reliably know its own coverage: passing `deephaven_core_version` biases its phrasing but does not stop it from answering confidently about a version it has never seen. A `+snapshot` version, or any version newer than what its citations reference, means its answers about current behavior are unverified guesses.
+
+**When the worker is newer than the docs, read the code in this repo. The repo is up to date; the published docs are not.** In that situation the ranking is:
+
+1. **The running worker** — ground truth. Run the code, inspect the result.
+2. **This repo's source** — authoritative for the version you are running:
+   - `py/server/deephaven/` — the Python API surface, signatures, and docstrings
+   - `engine/api/` and `engine/table/` — table operation semantics and error messages
+   - `docs/python/` and `docs/groovy/` — in-repo documentation for the *unreleased* version, ahead of what is published
+   - `git log -n 20 -- <path>` — whether a behavior changed recently
+3. **The docs MCP** — useful for orientation and for finding the right concept, but treat any specific claim as a hypothesis to confirm against 1 or 2.
+
+Use the worker's own introspection too. `help()`, `inspect.signature()`, `dir()`, and `meta_table` describe the build in front of you rather than an older release.
+
+**Do not make comparative version claims you have not checked.** "New in 43.0" or "this changed since 42" requires release notes or `git log`, not inference. If you cannot confirm it, leave it out.
+
 ## 6. Fix what you can, escalate what you cannot
 
 Once you have diagnosed the cause, fix it and re-run. Iterate until it passes. Fix without asking:
 
 - Syntax errors, indentation, unbalanced delimiters
 - Missing or wrong imports
-- Wrong function, method, or argument names — confirm the correct signature via `mcp0_docs_chat` or `py/server/deephaven/` before re-running
+- Wrong function, method, or argument names — confirm the correct signature via `mcp0_docs_chat`, or via `py/server/deephaven/` when the worker is newer than the docs, before re-running
 - Type mismatches in query strings and column expressions
 - Deprecated or renamed APIs
 - Undefined names and typos
@@ -153,6 +173,7 @@ Report any issue that took more than one attempt in your final response, even if
 - [ ] The published code ran verbatim on that session
 - [ ] Output was inspected, not just the absence of an error
 - [ ] Every failure was diagnosed via the docs MCP before code was edited
+- [ ] Claims were checked against this repo's source when the worker outran the published docs
 - [ ] Every fixable bug was fixed at its root cause
 - [ ] No single error was retried more than twice
 - [ ] Unfixable blockers were handed off with the error text, the attempted fixes, and a hypothesis
