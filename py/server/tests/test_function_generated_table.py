@@ -14,7 +14,7 @@ from deephaven import (
 from deephaven.column import int_col, string_col
 from deephaven.execution_context import get_exec_ctx
 from deephaven.liveness_scope import liveness_scope
-from deephaven.table import Table
+from deephaven.table import Table, TableDefinition
 from tests.testbase import BaseTestCase
 
 
@@ -158,6 +158,102 @@ class TableTestCase(BaseTestCase):
             )
             self.assertEqual(result_str, "test string")
             self.assertEqual(result_int, 12345)
+
+    def test_generated_table_blink(self):
+        append_only_input_table = input_table(col_defs={"MyStr": dht.string})
+        input_table_lastby = append_only_input_table.last_by()
+
+        def table_generator_function():
+            with liveness_scope():
+                return input_table_lastby.update("ResultStr = MyStr")
+
+        result_table = function_generated_table(
+            table_generator_function,
+            source_tables=input_table_lastby,
+            blink_table=True,
+        )
+        self.assertTrue(result_table.is_blink)
+
+        append_only_input_table.add(
+            new_table([string_col(name="MyStr", data=["test string"])])
+        )
+        self.wait_ticking_table_update(result_table, row_count=1, timeout=30)
+        first_row_key = get_row_key(0, result_table)
+        result_str = result_table.j_table.getColumnSource("ResultStr").get(
+            first_row_key
+        )
+        self.assertEqual(result_str, "test string")
+
+    def test_generated_table_copy_data_false(self):
+        append_only_input_table = input_table(col_defs={"MyStr": dht.string})
+        input_table_lastby = append_only_input_table.last_by()
+
+        def table_generator_function():
+            with liveness_scope():
+                # A fresh static snapshot each cycle satisfies the immutable-source requirement of copy_data=False.
+                return input_table_lastby.update("ResultStr = MyStr").snapshot()
+
+        result_table = function_generated_table(
+            table_generator_function,
+            source_tables=input_table_lastby,
+            copy_data=False,
+        )
+        self.assertEqual(result_table.size, 0)
+
+        append_only_input_table.add(
+            new_table([string_col(name="MyStr", data=["test string"])])
+        )
+        self.wait_ticking_table_update(result_table, row_count=1, timeout=30)
+        first_row_key = get_row_key(0, result_table)
+        result_str = result_table.j_table.getColumnSource("ResultStr").get(
+            first_row_key
+        )
+        self.assertEqual(result_str, "test string")
+
+    def test_generated_table_retain_last(self):
+        append_only_input_table = input_table(col_defs={"MyInt": dht.int32})
+        input_table_lastby = append_only_input_table.last_by()
+
+        def table_generator_function():
+            with liveness_scope():
+                # Decline to produce a table until the source has data; the previous result is retained.
+                if input_table_lastby.size == 0:
+                    return None
+                return new_table([int_col("Sum", [input_table_lastby.size])])
+
+        result_table = function_generated_table(
+            table_generator_function,
+            source_tables=input_table_lastby,
+            table_definition={"Sum": dht.int32},
+        )
+        # The first invocation returned None, so the supplied definition provides the (empty) result's columns.
+        self.assertEqual(result_table.size, 0)
+        self.assertEqual(result_table.definition, TableDefinition({"Sum": dht.int32}))
+
+        append_only_input_table.add(new_table([int_col(name="MyInt", data=[1])]))
+        self.wait_ticking_table_update(result_table, row_count=1, timeout=30)
+        first_row_key = get_row_key(0, result_table)
+        self.assertEqual(
+            result_table.j_table.getColumnSource("Sum").getInt(first_row_key), 1
+        )
+
+    def test_generated_table_definition(self):
+        table_def = TableDefinition({"ResultStr": dht.string})
+        append_only_input_table = input_table(col_defs={"MyStr": dht.string})
+        input_table_lastby = append_only_input_table.last_by()
+
+        def table_generator_function():
+            with liveness_scope():
+                return input_table_lastby.update("ResultStr = MyStr").drop_columns(
+                    "MyStr"
+                )
+
+        result_table = function_generated_table(
+            table_generator_function,
+            source_tables=input_table_lastby,
+            table_definition=table_def,
+        )
+        self.assertEqual(result_table.definition, table_def)
 
     def test_generated_table_args(self):
         def table_generator_function(nrows, query_string):
