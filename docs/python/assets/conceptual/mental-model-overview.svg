@@ -1,0 +1,150 @@
+<svg viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="#ffffff" rx="8"/>
+  <defs>
+    <style>
+      .title { font: bold 20px sans-serif; fill: #1f2937; }
+      .subtitle { font: 14px sans-serif; fill: #6b7280; }
+      .label { font: bold 14px sans-serif; fill: #374151; }
+      .desc { font: 12px sans-serif; fill: #6b7280; }
+      .callout { font: 11px sans-serif; fill: #1f2937; }
+      .code { fill: #e0e7ff; stroke: #6366f1; stroke-width: 2; }
+      .engine { fill: #fef3c7; stroke: #f59e0b; stroke-width: 2; }
+      .recipe { fill: #dbeafe; stroke: #3b82f6; stroke-width: 2; }
+      .data { fill: #dcfce7; stroke: #22c55e; stroke-width: 2; }
+      .client { fill: #f3e8ff; stroke: #a855f7; stroke-width: 2; }
+      .arrow { stroke: #6b7280; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+      .update-arrow { stroke: #22c55e; stroke-width: 2; fill: none; marker-end: url(#update); stroke-dasharray: 6,3; }
+      .shadow { filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1)); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6b7280" />
+    </marker>
+    <marker id="update" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#22c55e" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text class="title" x="450" y="35" text-anchor="middle">How Deephaven Works</text>
+  <text class="subtitle" x="450" y="55" text-anchor="middle">Tables are recipes, not data copies — updates flow automatically</text>
+  
+  <!-- STEP 1: Your Code -->
+  <g class="shadow" transform="translate(30, 80)">
+    <rect class="code" x="0" y="0" width="180" height="120" rx="8"/>
+    <text class="label" x="90" y="25" text-anchor="middle">1. Your Code</text>
+    <text class="desc" x="90" y="50" text-anchor="middle">Python or Groovy</text>
+    <rect fill="#f8fafc" stroke="#cbd5e1" x="15" y="65" width="150" height="40" rx="4"/>
+    <text x="25" y="82" font-family="monospace" font-size="10" fill="#334155">source.where("X &gt; 10")</text>
+    <text x="25" y="95" font-family="monospace" font-size="10" fill="#334155">.update("Y = X * 2")</text>
+  </g>
+  
+  <path class="arrow" d="M 220 140 L 270 140"/>
+  
+  <!-- STEP 2: Engine -->
+  <g class="shadow" transform="translate(280, 80)">
+    <rect class="engine" x="0" y="0" width="180" height="120" rx="8"/>
+    <text class="label" x="90" y="25" text-anchor="middle">2. Java Engine</text>
+    <text class="desc" x="90" y="50" text-anchor="middle">Compiles formulas</text>
+    <text class="desc" x="90" y="70" text-anchor="middle">Processes in chunks</text>
+    <text class="desc" x="90" y="90" text-anchor="middle">Optimizes execution</text>
+    <text class="callout" x="90" y="110" text-anchor="middle" font-style="italic">Not row-by-row!</text>
+  </g>
+  
+  <path class="arrow" d="M 470 140 L 520 140"/>
+  
+  <!-- STEP 3: Recipe (DAG) -->
+  <g class="shadow" transform="translate(530, 80)">
+    <rect class="recipe" x="0" y="0" width="180" height="120" rx="8"/>
+    <text class="label" x="90" y="25" text-anchor="middle">3. Table = Recipe</text>
+    <text class="desc" x="90" y="50" text-anchor="middle">Not a data copy!</text>
+    <!-- Mini DAG -->
+    <circle fill="#3b82f6" cx="50" cy="85" r="12"/>
+    <text x="50" y="89" text-anchor="middle" fill="white" font-size="9" font-weight="bold">T1</text>
+    <path class="arrow" d="M 65 85 L 95 85" style="stroke-width: 1.5"/>
+    <circle fill="#6366f1" cx="110" cy="85" r="12"/>
+    <text x="110" y="89" text-anchor="middle" fill="white" font-size="9" font-weight="bold">T2</text>
+    <path class="arrow" d="M 125 85 L 155 85" style="stroke-width: 1.5"/>
+    <circle fill="#a855f7" cx="170" cy="85" r="12"/>
+    <text x="170" y="89" text-anchor="middle" fill="white" font-size="9" font-weight="bold">T3</text>
+  </g>
+  
+  <path class="arrow" d="M 720 140 L 770 140"/>
+  
+  <!-- STEP 4: Clients -->
+  <g class="shadow" transform="translate(690, 80)">
+    <rect class="client" x="0" y="0" width="180" height="120" rx="8"/>
+    <text class="label" x="90" y="25" text-anchor="middle">4. Live Results</text>
+    <text class="desc" x="90" y="50" text-anchor="middle">Web UI • Python • JS</text>
+    <text class="desc" x="90" y="70" text-anchor="middle">Java • C++ • R • Go</text>
+    <text class="callout" x="90" y="100" text-anchor="middle" font-weight="bold" fill="#22c55e">Auto-updates!</text>
+  </g>
+  
+  <!-- Update flow arrow (bottom) -->
+  <g transform="translate(0, 220)">
+    <rect fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5" x="30" y="0" width="840" height="50" rx="6"/>
+    <text class="label" x="450" y="20" text-anchor="middle" fill="#166534">↻ When source data changes, updates flow through automatically</text>
+    <text class="desc" x="450" y="38" text-anchor="middle" fill="#166534">Only changed rows recompute • No re-running queries • All clients see consistent updates</text>
+  </g>
+  
+  <!-- KEY CONCEPTS -->
+  <text class="label" x="450" y="310" text-anchor="middle" font-size="16">Key Mental Model Concepts</text>
+  
+  <!-- Concept 1 -->
+  <g transform="translate(30, 330)">
+    <rect fill="#fef3c7" stroke="#f59e0b" x="0" y="0" width="260" height="100" rx="6"/>
+    <text class="label" x="15" y="25" fill="#92400e">Formulas run in Java</text>
+    <text class="desc" x="15" y="45" fill="#78350f">• Use Java methods: Math.sqrt()</text>
+    <text class="desc" x="15" y="62" fill="#78350f">• Not Python: math.sqrt() ✗</text>
+    <text class="desc" x="15" y="79" fill="#78350f">• Processed in batches, not rows</text>
+  </g>
+  
+  <!-- Concept 2 -->
+  <g transform="translate(320, 330)">
+    <rect fill="#dbeafe" stroke="#3b82f6" x="0" y="0" width="260" height="100" rx="6"/>
+    <text class="label" x="15" y="25" fill="#1e40af">Tables are immutable</text>
+    <text class="desc" x="15" y="45" fill="#1e3a8a">• Operations create new tables</text>
+    <text class="desc" x="15" y="62" fill="#1e3a8a">• Old tables unchanged</text>
+    <text class="desc" x="15" y="79" fill="#1e3a8a">• Always: result = t.where(...)</text>
+  </g>
+  
+  <!-- Concept 3 -->
+  <g transform="translate(610, 330)">
+    <rect fill="#dcfce7" stroke="#22c55e" x="0" y="0" width="260" height="100" rx="6"/>
+    <text class="label" x="15" y="25" fill="#166534">Order is not guaranteed</text>
+    <text class="desc" x="15" y="45" fill="#14532d">• Rows process in parallel</text>
+    <text class="desc" x="15" y="62" fill="#14532d">• Don't use counters in formulas</text>
+    <text class="desc" x="15" y="79" fill="#14532d">• Use ii for row position</text>
+  </g>
+  
+  <!-- Concept 4 -->
+  <g transform="translate(30, 450)">
+    <rect fill="#f3e8ff" stroke="#a855f7" x="0" y="0" width="260" height="100" rx="6"/>
+    <text class="label" x="15" y="25" fill="#7e22ce">Static vs Live tables</text>
+    <text class="desc" x="15" y="45" fill="#581c87">• Static: from files, snapshots</text>
+    <text class="desc" x="15" y="62" fill="#581c87">• Live: from streams, time_table</text>
+    <text class="desc" x="15" y="79" fill="#581c87">• Same code works for both!</text>
+  </g>
+  
+  <!-- Concept 5 -->
+  <g transform="translate(320, 450)">
+    <rect fill="#fce7f3" stroke="#ec4899" x="0" y="0" width="260" height="100" rx="6"/>
+    <text class="label" x="15" y="25" fill="#9d174d">Python ↔ Deephaven</text>
+    <text class="desc" x="15" y="45" fill="#831843">• to_pandas() = snapshot copy</text>
+    <text class="desc" x="15" y="62" fill="#831843">• Not connected to live table</text>
+    <text class="desc" x="15" y="79" fill="#831843">• Keep data in DH for speed</text>
+  </g>
+  
+  <!-- Concept 6 -->
+  <g transform="translate(610, 450)">
+    <rect fill="#e0e7ff" stroke="#6366f1" x="0" y="0" width="260" height="100" rx="6"/>
+    <text class="label" x="15" y="25" fill="#4338ca">Memory is shared</text>
+    <text class="desc" x="15" y="45" fill="#3730a3">• Filters share source columns</text>
+    <text class="desc" x="15" y="62" fill="#3730a3">• No data duplication</text>
+    <text class="desc" x="15" y="79" fill="#3730a3">• 50-90% memory savings</text>
+  </g>
+  
+  <!-- Footer -->
+  <text class="desc" x="450" y="580" text-anchor="middle" font-style="italic">
+    For technical details, see Deephaven's Design • For hands-on learning, see Crash Course
+  </text>
+</svg>

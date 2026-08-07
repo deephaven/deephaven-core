@@ -22,11 +22,31 @@ Deephaven's architecture is built on several key innovations:
 - **Python-first UI framework**: `deephaven.ui` enables building reactive web applications entirely in Python, with live table integration and no front-end engineering required.
 - **Unified batch and streaming**: Batch and real-time data coexist behind a single, consistent API — no separate systems or complex coordination required.
 
+## The live data stack
+
+Deephaven is a full-stack data system that unifies live and historical data in a single, composable environment. Unlike traditional architectures that force trade-offs between batch and streaming, Deephaven delivers both through a unified platform built on three integrated layers:
+
+| Layer               | Components                                              | What it provides                                                         |
+| ------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Engine**          | UpdateGraph, ColumnSources, RowSets, Chunk architecture | Incremental computation, columnar storage, zero-copy operations          |
+| **APIs**            | gRPC/Barrage, Python/Java/JS clients, Arrow Flight      | Cross-language access, network-transparent DAGs, real-time subscriptions |
+| **UI/Applications** | `deephaven.ui`, web-client-ui, Jupyter widgets          | Live dashboards, reactive components, real-time visualization            |
+
+At the core of this stack are **Live Dataframes** — Deephaven's unique abstraction that allows data to update continuously and flow naturally through code, dashboards, and applications. When a source table changes, updates propagate through the entire stack:
+
+1. **Engine**: The UpdateGraph detects changes and propagates them through the DAG
+2. **APIs**: Barrage protocol streams incremental updates to connected clients
+3. **UI**: Components automatically refresh to reflect the latest data
+
+This architecture means the same table can simultaneously serve a Python script, a Java application, a web dashboard, and a remote client — all seeing consistent, live updates without any additional code.
+
+**Why this matters**: Traditional systems require separate pipelines for batch and streaming, with different APIs, different mental models, and complex coordination. Deephaven's live data stack eliminates this complexity. Whether you're analyzing historical Parquet files or streaming Kafka data, you use the same code, the same operations, and the same UI — and everything stays in sync.
+
 ## How Deephaven compares
 
 | Capability             | Traditional Approach                    | Deephaven                            |
 | ---------------------- | --------------------------------------- | ------------------------------------ |
-| **Batch + Real-time**  | Separate systems (e.g., Spark + Flink)  | Unified table API for both           |
+| **Batch + Real-time**  | Separate systems for each               | Unified table API for both           |
 | **Update model**       | Recompute full datasets                 | Incremental (only changed rows)      |
 | **Memory efficiency**  | Copy-on-write, data duplication         | Shared `RowSets` and `ColumnSources` |
 | **Query consistency**  | Manual coordination required            | Automatic via DAG and logical clock  |
@@ -165,6 +185,73 @@ By itself, this sharing capability represents an important optimization that avo
 
 Furthermore, the possible sparsity of the `RowSet`'s row key space allows for greatly reduced data movement within the `RowSet` itself and the `ColumnSource`s it addresses. This is essential for the performance of Deephaven’s incremental sort operation, as well as in many cases when source tables publish changes that are more complex than simple append-only growth; e.g., multiple independently-growing partitions, or tabular representations of key-value store state.
 
+## How operations work
+
+Understanding how table operations execute helps explain why Deephaven is so efficient. This section traces through two common operations to show how `RowSet` and `ColumnSource` sharing work in practice.
+
+### What happens when you call `where`
+
+The [`where`](../reference/table-operations/filter/where.md) operation filters rows based on a condition. Here's what happens internally:
+
+1. **Expression parsing**: The filter condition (e.g., `"Price > 100"`) is parsed and converted into a `WhereFilter` object that can evaluate the condition efficiently.
+
+2. **Snapshot**: The operation captures a consistent snapshot of the parent table's current `RowSet`. For refreshing tables, this ensures the filter sees a stable view of the data.
+
+3. **Evaluation**: The `WhereFilter` evaluates the condition against the parent's `ColumnSource` data, processing rows in [chunks](#chunk-oriented-architecture) for efficiency. Only row keys that satisfy the condition are collected.
+
+4. **Result table creation**: A new table is created with:
+   - A new `RowSet` containing only the matching row keys (a subset of the parent's `RowSet`)
+   - **Shared** `ColumnSource`s — the result table points to the same column data as the parent, with no copying
+
+5. **Listener attachment**: If the parent table is [refreshing](./table-types.md), a listener is attached so the filtered table updates automatically when the parent changes. On each update cycle, only the changed rows are re-evaluated.
+
+**Why this is efficient**: The result table doesn't copy any column data. It simply maintains a smaller `RowSet` that selects which rows from the shared `ColumnSource`s are visible. Multiple `where` filters on the same parent all share the same underlying data.
+
+### What happens when you call `update`
+
+The [`update`](../reference/table-operations/select/update.md) operation adds or replaces columns with computed values. Here's the execution flow:
+
+1. **Formula parsing**: The formula (e.g., `"Total = Price * Quantity"`) is parsed using [JavaParser](https://javaparser.org/). Simple formulas may use pre-compiled implementations; complex formulas trigger dynamic compilation of a new Java class.
+
+2. **Column source creation**: A new `ColumnSource` is created for each derived column. This source computes values on-demand or caches them, depending on the operation variant ([`update`](../reference/table-operations/select/update.md) vs [`updateView`](../reference/table-operations/select/updateView.md)).
+
+3. **Formula evaluation**: For `update`, the formula is evaluated for each row in the `RowSet`, with results stored in the new `ColumnSource`. Data is processed in [chunks](#chunk-oriented-architecture) for efficiency.
+
+4. **Result table creation**: A new table is created with:
+   - **Shared** `RowSet` — the result has exactly the same rows as the parent
+   - **Shared** `ColumnSource`s for pass-through columns
+   - **New** `ColumnSource`(s) for the computed columns
+
+5. **Listener attachment**: For refreshing tables, a listener ensures derived columns are recomputed when source columns change.
+
+**Why this is efficient**: Only the new computed columns require storage. All other columns are shared with the parent, and the `RowSet` is inherited directly.
+
+### Operation pattern summary
+
+Most Deephaven table operations follow this pattern:
+
+| Operation Type                           | `RowSet`          | `ColumnSource`s          |
+| ---------------------------------------- | ----------------- | ------------------------ |
+| **Filtering** (`where`)                  | New (subset)      | Shared                   |
+| **Column derivation** (`update`, `view`) | Shared            | Mixed (shared + new)     |
+| **Sorting** (`sort`)                     | New (redirecting) | Shared (via redirection) |
+| **Joining** (`naturalJoin`, etc.)        | New or shared     | Mixed                    |
+| **Aggregation** (`aggBy`, etc.)          | New               | New                      |
+
+This sharing model, combined with [incremental updates](./table-update-model.md) through the [DAG](./dag.md), enables Deephaven to handle complex queries on large, rapidly-changing datasets efficiently.
+
+### How operations stay live
+
+The listener attachment in step 5 of each operation is what makes Deephaven tables "live." When a parent table updates:
+
+1. The parent's `notifyListeners` method enqueues update notifications for all child listeners
+2. Each listener receives a `TableUpdate` describing exactly which rows were added, removed, or modified
+3. The listener recomputes only the affected rows and propagates its own update downstream
+
+This continues through the entire DAG. A single source change cascades through filters, joins, and aggregations — each operation processing only the delta, not the full dataset. The result flows through the [API layer](#the-live-data-stack) via Barrage to connected clients and UI components, all within a single update cycle (default 1000ms).
+
+This is the technical foundation of [Live Dataframes](#the-live-data-stack): the same table object can be static (if its source never changes) or live (if connected to streaming data), and all downstream operations automatically inherit that behavior.
+
 ## Mechanical sympathy
 
 > “You don’t have to be an engineer to be a racing driver, but you do have to have Mechanical Sympathy.” <br/> _– Jackie Stewart, racing driver_
@@ -302,20 +389,6 @@ Although the core of Deephaven is implemented in Java, we consider Python to be 
 
 To maximize the familiarity of the Deephaven data science and app-dev experience, we have developed a transparent, pure Python API that relieves the user from the details of calling JPY. During the design and implementation of this Pythonic API, special care was taken to minimize the number of crossings between JNI and Python runtime.
 
-## gRPC APIs for polyglot interoperability
-
-Deephaven’s core API is implemented using polyglot technologies that allow for compatible client (or server!) implementations in almost any language. It is composed of several complementary modules, but its Arrow Flight service and Table service are foremost. These offer high-performance data transport -- specifically organized to include real-time and updating data -- and a table manipulation API that mirrors the Deephaven engine’s internal compute paradigm. You can read more about our API itself [here](./deephaven-core-api.md).
-
-## Distributing DAGs and global consistency
-
-At Deephaven, we believe that our approach to propagating static and updating tabular data will revolutionize distributed data systems development. It represents a powerful new model.
-
-As touched upon briefly earlier in this piece, the Deephaven query engine propagates updates concurrently via a [DAG](./dag.md), relying on a logical clock to mark phase and step changes for internal consistency. While this sort of coordination is suitable within a single process, the overhead increases exponentially when extending such a DAG across multiple processes.
-
-Based on this observation, we’ve implemented a design for multi-process data-driven applications that relies on consistent table replication using initial snapshots followed by subsequent deltas. This allows nodes to operate with their logical clocks mutually decoupled, allowing truly parallel update propagation. This also allows for bidirectional data flows, with nodes that publish a given table able to act as consumers for other tables.
-
-This approach intentionally trades away “global consistency” for increased throughput and scalability. In practice, we think that such a global view is either illusory or better implemented via end-to-end sequence numbers that allow for data correlation within the query engine. By illusory we mean to observe that input sources often publish in a mutually-asynchronous manner, thus constraining the possibilities for true consistency to something narrower; e.g., “mutual consistency based on the inputs observed at a given point in time.” For data sources that do contain correlatable sequence numbers, Deephaven offers tools for synchronizing table views to reconstruct a truly consistent state.
-
 ## Building UIs
 
 Deephaven provides two approaches for building custom user interfaces:
@@ -333,6 +406,20 @@ Deephaven provides two approaches for building custom user interfaces:
   For complete documentation, tutorials, and examples, see the [`deephaven.ui` documentation](https://deephaven.io/core/ui/docs/).
 
 - **[`web-client-ui`](https://github.com/deephaven/web-client-ui)**: JavaScript/TypeScript components for building custom web applications with full control over the front-end.
+
+## gRPC APIs for polyglot interoperability
+
+Deephaven’s core API is implemented using polyglot technologies that allow for compatible client (or server!) implementations in almost any language. It is composed of several complementary modules, but its Arrow Flight service and Table service are foremost. These offer high-performance data transport -- specifically organized to include real-time and updating data -- and a table manipulation API that mirrors the Deephaven engine’s internal compute paradigm. You can read more about our API itself [here](./deephaven-core-api.md).
+
+## Distributing DAGs and global consistency
+
+At Deephaven, we believe that our approach to propagating static and updating tabular data will revolutionize distributed data systems development. It represents a powerful new model.
+
+As touched upon briefly earlier in this piece, the Deephaven query engine propagates updates concurrently via a [DAG](./dag.md), relying on a logical clock to mark phase and step changes for internal consistency. While this sort of coordination is suitable within a single process, the overhead increases exponentially when extending such a DAG across multiple processes.
+
+Based on this observation, we’ve implemented a design for multi-process data-driven applications that relies on consistent table replication using initial snapshots followed by subsequent deltas. This allows nodes to operate with their logical clocks mutually decoupled, allowing truly parallel update propagation. This also allows for bidirectional data flows, with nodes that publish a given table able to act as consumers for other tables.
+
+This approach intentionally trades away “global consistency” for increased throughput and scalability. In practice, we think that such a global view is either illusory or better implemented via end-to-end sequence numbers that allow for data correlation within the query engine. By illusory we mean to observe that input sources often publish in a mutually-asynchronous manner, thus constraining the possibilities for true consistency to something narrower; e.g., “mutual consistency based on the inputs observed at a given point in time.” For data sources that do contain correlatable sequence numbers, Deephaven offers tools for synchronizing table views to reconstruct a truly consistent state.
 
 ## The whole is greater than….
 

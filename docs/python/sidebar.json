@@ -126,6 +126,10 @@
                 "label": "Deephaven's design",
                 "path": "conceptual/deephaven-design.md"
               },
+                            {
+                "label": "Patterns of use",
+                "path": "conceptual/deephaven-mental-model.md"
+              },
               {
                 "label": "Incremental update model",
                 "path": "conceptual/table-update-model.md"
