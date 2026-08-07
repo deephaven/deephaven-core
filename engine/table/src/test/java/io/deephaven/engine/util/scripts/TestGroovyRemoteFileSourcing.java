@@ -103,11 +103,13 @@ public class TestGroovyRemoteFileSourcing {
     private static final String SCRIPT_IMPORT_ON_CLASSPATH = entrypointScript("MyDependency");
 
     private static final String PATH_REMOTE_ONLY = "test/notebook/RemoteOnly.groovy";
+    private static final String CLASS_REMOTE_ONLY = "test.notebook.RemoteOnly";
     private static final String SCRIPT_IMPORT_REMOTE_ONLY = entrypointScript("RemoteOnly");
 
     private static final String REMOTE_SOURCE = remoteClassSource("REMOTE", 999);
     private static final String REMOTE_SOURCE_V2 = remoteClassSource("REMOTE_V2", 777);
     private static final String REMOTE_ONLY_SOURCE = remoteClassSource("REMOTE_ONLY", 555);
+    private static final String REMOTE_ONLY_SOURCE_V2 = remoteClassSource("REMOTE_ONLY_V2", 444);
 
     private static String entrypointScript(String className) {
         return "import io.deephaven.engine.context.ExecutionContext\n" +
@@ -270,7 +272,32 @@ public class TestGroovyRemoteFileSourcing {
         remoteSources.clear();
         providerDirty.set(true);
 
-        ScriptSession.Changes c2 = session.evaluateScript(SCRIPT_IMPORT_REMOTE_ONLY);
-        assertTrue("Script should fail when remote-only class is removed", c2.error != null);
+        final ScriptSession.Changes c2 = session.evaluateScript(SCRIPT_IMPORT_REMOTE_ONLY);
+        assertNotNull("Script should fail when remote-only class is removed", c2.error);
+        final String errorChain = describeErrorChain(c2.error);
+        assertTrue("Failure should be an unresolved-class error for the removed class, was:" + errorChain,
+                errorChain.contains("unable to resolve class " + CLASS_REMOTE_ONLY));
+
+        // Step 3: Restore the remote source at a new version. The entrypoint must recompile against it, and the
+        // formula must resolve the new version rather than the one cached in step 1.
+        evaluateAndAssertHelper(
+                "remote-only restored at v2",
+                SCRIPT_IMPORT_REMOTE_ONLY,
+                Map.of(PATH_REMOTE_ONLY, REMOTE_ONLY_SOURCE_V2),
+                true,
+                "REMOTE_ONLY_V2",
+                444);
+    }
+
+    /**
+     * Flattens a throwable's cause chain into a single string, so assertions can match against the whole chain and
+     * report it in full when they fail.
+     */
+    private static String describeErrorChain(final Throwable error) {
+        final StringBuilder sb = new StringBuilder();
+        for (Throwable t = error; t != null; t = t.getCause()) {
+            sb.append("\n  [").append(t.getClass().getName()).append("] ").append(t.getMessage());
+        }
+        return sb.toString();
     }
 }
