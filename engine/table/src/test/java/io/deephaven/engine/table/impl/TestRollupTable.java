@@ -11,6 +11,7 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -37,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
 import static io.deephaven.engine.testutil.HierarchicalTableTestTools.freeSnapshotTableChunks;
 import static io.deephaven.engine.testutil.HierarchicalTableTestTools.snapshotToTable;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -92,6 +94,13 @@ public class TestRollupTable extends RefreshingTableTestCase {
             "wsum",
             "grp"
     };
+
+    // The incremental tests hold the table at this size regardless of their per-cycle update size, and sweep that
+    // update size from a small fraction of the table up to a full replacement, so the table always spans several
+    // aggregation chunks (4096 rows each) and the cycles cover both tiny deltas and multi-chunk ones. A table this
+    // size also gets the update generator to emit shifts, which smaller ones rarely do; see
+    // testRollupGroupWithUpstreamShift for what that used to break.
+    private static final int INCREMENTAL_TABLE_SIZE = 10_000;
 
     /**
      * Perform a large table test, comparing the rollup table root to the zero-key equivalent table, incorporating all
@@ -187,7 +196,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
      */
     @Test
     public void testRollupMultiKeyVsZeroKeyIncremental() {
-        for (int size = 10; size <= 1000; size *= 10) {
+        for (int size = 10; size <= INCREMENTAL_TABLE_SIZE; size *= 10) {
             testRollupMultiKeyIncrementalInternal("size-" + size, size);
         }
     }
@@ -201,7 +210,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 new SetGenerator<>("u", "v", "w"),
                 new IntGenerator(10, 1_000));
 
-        final QueryTable testTable = getTable(true, size, random, columnInfo);
+        final QueryTable testTable = getTable(true, INCREMENTAL_TABLE_SIZE, random, columnInfo);
 
         final Table agged = testTable.aggBy(aggs);
 
@@ -844,6 +853,208 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
         assertTableEquals(expected, snapshot5);
         freeSnapshotTableChunks(snapshot5);
+    }
+
+    /**
+     * A rollup {@code AggGroup} must survive an upstream shift of the rows it groups.
+     *
+     * <p>
+     * The group result for a level is a vector over the <em>source</em> table's rows, backed by the RowSet that level
+     * accumulated. {@link io.deephaven.engine.table.impl.by.GroupByChunkedOperator GroupByChunkedOperator} keeps the
+     * base level's RowSets in the post-shift keyspace (it applies a shift as a remove of the pre-shift keys plus an add
+     * of the post-shift ones), but reports no modified destinations for a shift, since a shift leaves the grouped
+     * <em>values</em> unchanged. The levels above hold their own RowSet per destination -- the union of their
+     * children's, still in the source keyspace -- and
+     * {@link io.deephaven.engine.table.impl.by.GroupByReaggregateOperator GroupByReaggregateOperator} neither shifts
+     * that union nor is told to rebuild it, so it keeps pre-shift keys. Materializing the group vector then reads
+     * source rows that have moved: against these test sources that throws, and against a production column source it
+     * would silently return whatever value now occupies the vacated slot.
+     *
+     * <p>
+     * The cycle below shifts two rows and simultaneously adds one, because a shift alone leaves the root unmodified and
+     * so never re-materializes the vector that exposes the stale keys.
+     */
+    @Test
+    public void testRollupGroupWithUpstreamShift() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final RollupTable rollup = source.rollup(List.of(AggGroup("grp=Value")), "Sym");
+        // select() materializes the group vector via getDirect(), which is where the stale keys are read
+        final Table rootGroup = rollup.getRoot().select("grp");
+
+        assertTableEquals(
+                newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21))),
+                rootGroup);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            // Move keys 2 and 3 up by 100, reported purely as a shift, and add a row so the root is modified.
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            addToTable(source, i(200), stringCol("Sym", "a"), intCol("Value", 12));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(
+                    new TableUpdateImpl(i(200), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        // The group vector is in source row key order: 0, 1, 102, 103, 200.
+        assertTableEquals(
+                newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21, 12))),
+                rootGroup);
+    }
+
+    /**
+     * A shift must dirty the exposed group RowSet column and <em>nothing else</em>.
+     *
+     * <p>
+     * Every rollup level has to rebuild the union of its children's RowSets when a shift moves the rows below it -- see
+     * {@link #testRollupGroupWithUpstreamShift} for what goes wrong when it does not. But a shift relabels row keys
+     * without changing the grouped values, so the grouped value columns are unchanged and marking them modified only
+     * makes every consumer above re-materialize vectors that did not change. This asserts the narrow report, then
+     * drives a second cycle to confirm the narrow report was still enough to rebuild the union.
+     */
+    @Test
+    public void testRollupGroupShiftOnlyReportsRowSetColumn() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final RollupTable rollup = source.rollup(List.of(AggGroup("grp=Value")), "Sym");
+        final QueryTable root = (QueryTable) rollup.getRoot();
+        final Table rootGroup = root.select("grp");
+
+        assertTableEquals(newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21))), rootGroup);
+
+        final SimpleListener listener = new SimpleListener(root);
+        root.addUpdateListener(listener);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            // A pure shift: the same rows at new keys, with nothing added, removed, or modified.
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        Assert.assertEquals(1, listener.getCount());
+        final TableUpdate update = listener.getUpdate();
+        Assert.assertTrue(update.modified().isNonempty());
+        // The union each level caches has to be rebuilt, so the RowSet column is dirty...
+        Assert.assertTrue(update.modifiedColumnSet()
+                .containsAny(root.newModifiedColumnSet(EXPOSED_GROUP_ROW_SETS.name())));
+        // ...but the values in the group did not change, so the group column is not.
+        Assert.assertFalse(update.modifiedColumnSet().containsAny(root.newModifiedColumnSet("grp")));
+
+        // Correspondingly, the already-materialized vector is still correct without being recomputed.
+        assertTableEquals(newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21))), rootGroup);
+
+        // The narrow report still rebuilt the union, so the next real modification reads live keys.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(200), stringCol("Sym", "a"), intCol("Value", 12));
+            source.notifyListeners(i(200), i(), i());
+        });
+
+        assertTableEquals(newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21, 12))), rootGroup);
+
+        root.removeUpdateListener(listener);
+        listener.close();
+    }
+
+    /**
+     * The {@link #testRollupGroupWithUpstreamShift} cycle, for a non-reaggregating {@code AggFormula}.
+     *
+     * <p>
+     * {@link io.deephaven.engine.table.impl.by.FormulaMultiColumnChunkedOperator FormulaMultiColumnChunkedOperator}
+     * caches nothing keyed on source row keys, but its inputs are the group operator's
+     * {@link io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource AggregateColumnSource}s, so it
+     * inherits the union's staleness in full: evaluating the formula against a stale union reads source rows that have
+     * moved.
+     */
+    @Test
+    public void testRollupFormulaWithUpstreamShift() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final RollupTable rollup = source.rollup(List.of(AggFormula("FSum", "sum(Value)")), "Sym");
+        final Table rootFormula = rollup.getRoot().select("FSum");
+
+        assertTableEquals(newTable(longCol("FSum", 62)), rootFormula);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            // Move keys 2 and 3 up by 100, reported purely as a shift, and add a row so the root is modified.
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            addToTable(source, i(200), stringCol("Sym", "a"), intCol("Value", 12));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(
+                    new TableUpdateImpl(i(200), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        assertTableEquals(newTable(longCol("FSum", 74)), rootFormula);
+    }
+
+    /**
+     * A shift-only cycle must not recompute a rollup {@code AggFormula}.
+     *
+     * <p>
+     * The formula is evaluated over the group vectors in destination space, so a shift of the source rows cannot change
+     * its value -- and {@code i}, {@code ii}, and {@code k} refer to destination positions, not source keys.
+     * Recomputing is therefore pure waste, which is what {@code hasModifications} excluding shifts avoids.
+     */
+    @Test
+    public void testRollupFormulaShiftOnlyDoesNotRecompute() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final RollupTable rollup = source.rollup(List.of(AggFormula("FSum", "sum(Value)")), "Sym");
+        final QueryTable root = (QueryTable) rollup.getRoot();
+        final Table rootFormula = root.select("FSum");
+
+        assertTableEquals(newTable(longCol("FSum", 62)), rootFormula);
+
+        final SimpleListener listener = new SimpleListener(root);
+        root.addUpdateListener(listener);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        Assert.assertEquals(1, listener.getCount());
+        Assert.assertFalse(listener.getUpdate().modifiedColumnSet()
+                .containsAny(root.newModifiedColumnSet("FSum")));
+
+        assertTableEquals(newTable(longCol("FSum", 62)), rootFormula);
+
+        // The union was still rebuilt, so the next cycle's recompute reads live keys.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(200), stringCol("Sym", "a"), intCol("Value", 12));
+            source.notifyListeners(i(200), i(), i());
+        });
+
+        assertTableEquals(newTable(longCol("FSum", 74)), rootFormula);
+
+        root.removeUpdateListener(listener);
+        listener.close();
     }
 
     /**

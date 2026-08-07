@@ -62,7 +62,12 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
     private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
 
     private RowSetBuilderRandom stepDestinationsModified;
+    /** Did any destination's union of child RowSets actually change contents this step? */
     private boolean rowsetsModified = false;
+    /** Did the level below dirty its grouped value columns this step (as opposed to only its RowSet column)? */
+    private boolean someValueColumnsModified;
+    private boolean someKeyHasAddsOrRemoves;
+    private boolean someKeyHasShifts;
 
     private boolean initialized;
 
@@ -219,6 +224,8 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
         if (length == 0) {
             return;
         }
+        // A whole child RowSet joining this destination changes the union's contents, not just its keys.
+        someKeyHasAddsOrRemoves = true;
         accumulateToBuilderRandom(addedBuilders, rowSets, start, length, destination, false);
         if (stepDestinationsModified != null) {
             stepDestinationsModified.addKey(destination);
@@ -231,6 +238,8 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
         if (length == 0) {
             return;
         }
+        // A whole child RowSet leaving this destination changes the union's contents, not just its keys.
+        someKeyHasAddsOrRemoves = true;
         accumulateToBuilderRandom(removedBuilders, rowSets, start, length, destination, true);
         stepDestinationsModified.addKey(destination);
     }
@@ -242,6 +251,14 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             long destination) {
         if (length == 0) {
             return;
+        }
+
+        // A child RowSet changed in place. We never see shiftChunk, so a shift below arrives here as a modify that
+        // dirtied only the RowSet column; dirty value columns instead mean rows genuinely came or went below us.
+        if (someValueColumnsModified) {
+            someKeyHasAddsOrRemoves = true;
+        } else {
+            someKeyHasShifts = true;
         }
 
         accumulateToBuilderRandom(removedBuilders, previousValues, start, length, destination, true);
@@ -332,13 +349,16 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
 
     @Override
     public boolean hasModifications(boolean columnsModified) {
-        return columnsModified || rowsetsModified;
+        // Deliberately excludes shifts; see GroupByChunkedOperator.hasModifications.
+        return columnsModified || someKeyHasAddsOrRemoves;
     }
 
     private class InputToResultModifiedColumnSetFactory implements UnaryOperator<ModifiedColumnSet> {
 
         private final ModifiedColumnSet updateModifiedColumnSet;
         private final ModifiedColumnSet allOutputColumns;
+        /** Just the exposed RowSet column. */
+        private final ModifiedColumnSet rowSetModifiedColumnSet;
         private final ModifiedColumnSet.Transformer aggregatedColumnsTransformer;
 
         private InputToResultModifiedColumnSetFactory(
@@ -353,17 +373,26 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             for (int ci = 0; ci < inputColumnNames.length; ++ci) {
                 affectedColumns[ci] = resultTable.newModifiedColumnSet(resultAggregatedColumnNames[ci]);
             }
-            affectedColumns[allInputs.length - 1] = allOutputColumns = resultTable.newModifiedColumnSet(allInputs);
+            // A dirty RowSet column below us dirties our RowSet column, and nothing more by itself: whether our
+            // grouped values changed is decided by whether the level below dirtied its own value columns, which the
+            // parallel entries above already transform.
+            affectedColumns[allInputs.length - 1] =
+                    rowSetModifiedColumnSet = resultTable.newModifiedColumnSet(exposeRowSetsAs);
+            allOutputColumns = resultTable.newModifiedColumnSet(allInputs);
 
             aggregatedColumnsTransformer = inputTable.newModifiedColumnSetTransformer(allInputs, affectedColumns);
         }
 
         @Override
         public ModifiedColumnSet apply(@NotNull final ModifiedColumnSet upstreamModifiedColumnSet) {
-            if (rowsetsModified) {
+            if (someKeyHasAddsOrRemoves) {
                 return allOutputColumns;
             }
             aggregatedColumnsTransformer.clearAndTransform(upstreamModifiedColumnSet, updateModifiedColumnSet);
+            if (someKeyHasShifts) {
+                // Our union's keys moved but its contents did not; only the exposed RowSet column observes that.
+                updateModifiedColumnSet.setAll(rowSetModifiedColumnSet);
+            }
             return updateModifiedColumnSet;
         }
     }
@@ -372,7 +401,12 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
     public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         stepDestinationsModified = new BitmapRandomBuilder(startingDestinationsCount);
         rowsetsModified = false;
-        return upstream.modifiedColumnSet().containsAny(inputAggregatedColumnsModifiedColumnSet);
+        someKeyHasAddsOrRemoves = false;
+        someKeyHasShifts = false;
+        // Did the level below dirty the grouped value columns we re-aggregate, not just the RowSet column we consume?
+        // Returning it forces modifications for columns that aren't our input; modifyChunk uses it to detect shifts.
+        someValueColumnsModified = upstream.modifiedColumnSet().containsAny(inputAggregatedColumnsModifiedColumnSet);
+        return someValueColumnsModified;
     }
 
     @Override
@@ -424,6 +458,8 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             stepDestinations.insert(newDestinations);
 
             if (stepDestinations.isEmpty()) {
+                someKeyHasAddsOrRemoves = false;
+                someKeyHasShifts = false;
                 return;
             }
 
@@ -489,6 +525,9 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             }
             stepDestinationsModified = null;
         }
+        // Neither classification survives a step in which no union actually changed.
+        someKeyHasAddsOrRemoves &= rowsetsModified;
+        someKeyHasShifts &= rowsetsModified;
         initializeNewRowSetPreviousValues(newDestinations);
     }
 
