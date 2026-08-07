@@ -268,15 +268,17 @@ public class TestGroovyRemoteFileSourcing {
                 "REMOTE_ONLY",
                 555);
 
-        // Step 2: Remove remote sources — no server fallback exists, should fail
+        // Step 2: Remove remote sources — no server fallback exists, so the import cannot be satisfied. The
+        // classloader is refreshed before the script is evaluated, so the import check at the top of evaluate()
+        // sees the refreshed loader and rejects the script before it reaches the Groovy compiler.
         remoteSources.clear();
         providerDirty.set(true);
 
         final ScriptSession.Changes c2 = session.evaluateScript(SCRIPT_IMPORT_REMOTE_ONLY);
         assertNotNull("Script should fail when remote-only class is removed", c2.error);
         final String errorChain = describeErrorChain(c2.error);
-        assertTrue("Failure should be an unresolved-class error for the removed class, was:" + errorChain,
-                errorChain.contains("unable to resolve class " + CLASS_REMOTE_ONLY));
+        assertTrue("Failure should name the removed class as unimportable, was:" + errorChain,
+                errorChain.contains("Attempting to import a path that does not exist: import " + CLASS_REMOTE_ONLY));
 
         // Step 3: Restore the remote source at a new version. The entrypoint must recompile against it, and the
         // formula must resolve the new version rather than the one cached in step 1.
