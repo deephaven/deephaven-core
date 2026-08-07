@@ -93,5 +93,10 @@ public class TestTableDataService {
         public void resetServices(@NotNull TableKey key) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public void shutdownServices() {
+            throw new UnsupportedOperationException();
+        }
     }
 }
