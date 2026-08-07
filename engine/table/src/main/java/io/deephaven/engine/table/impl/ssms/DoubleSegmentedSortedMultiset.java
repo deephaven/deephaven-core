@@ -8,17 +8,14 @@
 package io.deephaven.engine.table.impl.ssms;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.util.type.TypeUtils;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
-import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -29,6 +26,7 @@ import io.deephaven.util.mutable.MutableLong;
 import it.unimi.dsi.fastutil.doubles.DoubleSet;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
@@ -2946,71 +2944,6 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
         throw new IllegalStateException("Index " + index + " not found in this SSM");
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>
-     * The inherited implementation is positional, and {@link #get(long)} rescans the leaf directory on every element,
-     * making a traversal {@code O(size * leafCount)}. Walking the leaves instead makes it {@code O(size)}, which
-     * matters because the iterator-based {@link #hashCode()} and {@link #equals(Object)} run per row per cycle when an
-     * SSM-valued column is used as an aggregation key.
-     */
-    @Override
-    public ValueIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
-        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-
-        if (leafCount <= 1) {
-            // Empty, singleton, and single-leaf SSMs store their values contiguously, so get(long) is already O(1).
-            return DoubleVector.super.iterator(fromIndexInclusive, toIndexExclusive);
-        }
-
-        // Resolve the starting leaf once; from there each element is a constant-time step.
-        int firstLeaf = 0;
-        long firstOffset = fromIndexInclusive;
-        while (firstLeaf < leafCount && firstOffset >= leafSizes[firstLeaf]) {
-            firstOffset -= leafSizes[firstLeaf++];
-        }
-
-        final int startLeaf = firstLeaf;
-        final int startOffset = (int) firstOffset;
-
-        return new ValueIteratorOfDouble() {
-
-            private int leaf = startLeaf;
-            private int offset = startOffset;
-            private long remaining = toIndexExclusive - fromIndexInclusive;
-
-            // Safe to cache: consumers drain the iterator synchronously, so no split can intervene.
-            private double[] values = startLeaf < leafCount ? leafValues[startLeaf] : null;
-            private int leafSize = startLeaf < leafCount ? leafSizes[startLeaf] : 0;
-
-            @Override
-            public double nextDouble() {
-                while (offset >= leafSize) {
-                    if (++leaf >= leafCount) {
-                        throw new IllegalStateException(
-                                "Index " + (toIndexExclusive - remaining) + " not found in this SSM");
-                    }
-                    offset = 0;
-                    values = leafValues[leaf];
-                    leafSize = leafSizes[leaf];
-                }
-                --remaining;
-                return values[offset++];
-            }
-
-            @Override
-            public boolean hasNext() {
-                return remaining > 0;
-            }
-
-            @Override
-            public long remaining() {
-                return remaining;
-            }
-        };
-    }
-
     @Override
     public DoubleVector subVector(long fromIndexInclusive, long toIndexExclusive) {
         return new DoubleVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
@@ -3057,14 +2990,16 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
         // iterate o exactly once; random access via get can be expensive for some Vector implementations
         try (final CloseablePrimitiveIteratorOfDouble oit = o.iterator()) {
             if (size == 1) {
-                return DoubleComparisons.eq(get(0), oit.nextDouble());
+                return get(0) == oit.nextDouble();
             }
 
             if (leafCount == 1) {
                 for (int ii = 0; ii < size; ii++) {
-                    if (!DoubleComparisons.eq(directoryValues[ii], oit.nextDouble())) {
+                    // region DirObjectEquals
+                    if (directoryValues[ii] != oit.nextDouble()) {
                         return false;
                     }
+                    // endregion DirObjectEquals
                 }
 
                 return true;
@@ -3072,7 +3007,7 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
 
             for (int li = 0; li < leafCount; ++li) {
                 for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    if (!DoubleComparisons.eq(leafValues[li][ai], oit.nextDouble())) {
+                    if (leafValues[li][ai] != oit.nextDouble()) {
                         return false;
                     }
                 }
@@ -3082,16 +3017,6 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
         }
     }
     // endregion VectorEquals
-
-    // region UnboxValue
-    /**
-     * Convert an element of a boxed {@link ObjectVector} into the primitive representation this SSM stores. A
-     * {@code null} element becomes the null sentinel, which is how the SSM itself stores nulls.
-     */
-    private static double unboxValue(final Object value) {
-        return TypeUtils.unbox((Double) value);
-    }
-    // endregion UnboxValue
 
     private boolean equalsArray(ObjectVector<?> o) {
         // region EqualsArrayTypeCheck
@@ -3107,12 +3032,32 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
         // iterate o exactly once; random access via get can be expensive for some Vector implementations
         try (final CloseableIterator<?> oit = o.iterator()) {
             if (size == 1) {
-                return DoubleComparisons.eq(get(0), unboxValue(oit.next()));
+                final Double val = (Double) oit.next();
+                // region VectorEquals
+                if (val == null) {
+                    // a null value matches our stored null sentinel; comparing the boxed sentinel via Objects.equals
+                    // would incorrectly report inequality
+                    return get(0) == NULL_DOUBLE;
+                }
+                // endregion VectorEquals
+
+                return Objects.equals(get(0), val);
             }
 
             if (leafCount == 1) {
                 for (int ii = 0; ii < size; ii++) {
-                    if (!DoubleComparisons.eq(directoryValues[ii], unboxValue(oit.next()))) {
+                    final Double val = (Double) oit.next();
+                    // region VectorEquals
+                    if (val == null) {
+                        // a null value matches only our stored null sentinel
+                        if (directoryValues[ii] != NULL_DOUBLE) {
+                            return false;
+                        }
+                        continue;
+                    }
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(directoryValues[ii], val)) {
                         return false;
                     }
                 }
@@ -3122,7 +3067,18 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
 
             for (int li = 0; li < leafCount; ++li) {
                 for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    if (!DoubleComparisons.eq(leafValues[li][ai], unboxValue(oit.next()))) {
+                    final Double val = (Double) oit.next();
+                    // region VectorEquals
+                    if (val == null) {
+                        // a null value matches only our stored null sentinel
+                        if (leafValues[li][ai] != NULL_DOUBLE) {
+                            return false;
+                        }
+                        continue;
+                    }
+                    // endregion VectorEquals
+
+                    if (!Objects.equals(leafValues[li][ai], val)) {
                         return false;
                     }
                 }
@@ -3132,71 +3088,94 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
         }
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>
-     * Equal to any Vector holding the same values, including another SSM: an SSM <em>is</em> a Vector, so it takes the
-     * same element-wise path rather than a structural comparison of leaf layouts. Two SSMs can hold identical values in
-     * different layouts -- leaves need not be full, and the node sizes need not agree -- so layout is not a sound basis
-     * for equality.
-     */
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
+        if (this == o)
             return true;
-        }
-        // region VectorEquals
-        if (o instanceof DoubleVector) {
-            return equalsArray((DoubleVector) o);
-        }
-        // endregion VectorEquals
+        if (!(o instanceof DoubleSegmentedSortedMultiset)) {
+            // region VectorEquals
+            if (o instanceof DoubleVector) {
+                return equalsArray((DoubleVector) o);
+            }
+            // endregion VectorEquals
 
-        if (o instanceof ObjectVector) {
-            return equalsArray((ObjectVector<?>) o);
+            if (o instanceof ObjectVector) {
+                return equalsArray((ObjectVector) o);
+            }
+            return false;
         }
-        return false;
-    }
+        final DoubleSegmentedSortedMultiset that = (DoubleSegmentedSortedMultiset) o;
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>
-     * {@link #equals(Object)} accepts any Vector with matching contents, so this must produce exactly the hash
-     * {@link DoubleVector#hashCode(DoubleVector)} would: the same seed, the same multiplier, and the same per-element
-     * {@link DoubleComparisons#hashCode(double)}. That per-element hash is also why {@link #equals(Object)} must compare
-     * elements with {@link DoubleComparisons#eq(double, double)} rather than {@code ==}.
-     *
-     * <p>
-     * Walking the leaves here rather than delegating to the helper avoids an iterator per call, which is worth roughly
-     * 2x once the values span more than one leaf. Since that duplicates the helper's formula,
-     * {@code TestDoubleSegmentedSortedMultiset#testHashCodeMatchesVectorHelper} pins the two against each other across
-     * every representation so they cannot drift apart.
-     */
-    @Override
-    public int hashCode() {
-        int result = 1;
-        if (size == 0) {
-            return result;
+        if (size() != that.size()) {
+            return false;
+        }
+
+        if (size == 1) {
+            // region SingletonEquals
+            return get(0) == that.get(0);
+            // endregion SingletonEquals
         }
 
         if (leafCount == 1) {
-            if (directoryValues == null) {
-                return 31 * result + DoubleComparisons.hashCode(singletonValue);
+            if (that.leafCount != 1 || size != that.size) {
+                return false;
             }
 
-            for (int ii = 0; ii < size; ++ii) {
-                result = 31 * result + DoubleComparisons.hashCode(directoryValues[ii]);
+            for (int ii = 0; ii < size; ii++) {
+                // region DirObjectEquals
+                if (directoryValues[ii] != that.directoryValues[ii]) {
+                    return false;
+                }
+                // endregion DirObjectEquals
+            }
+
+            return true;
+        }
+
+        int otherLeaf = 0;
+        int otherLeafIdx = 0;
+        for (int li = 0; li < leafCount; ++li) {
+            for (int ai = 0; ai < leafSizes[li]; ai++) {
+                // region LeafObjectEquals
+                if (leafValues[li][ai] != that.leafValues[otherLeaf][otherLeafIdx++]) {
+                    return false;
+                }
+                // endregion LeafObjectEquals
+
+                if (otherLeafIdx >= that.leafSizes[otherLeaf]) {
+                    otherLeaf++;
+                    otherLeafIdx = 0;
+                }
+
+                if (otherLeaf >= that.leafCount) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        if (size == 1) {
+            return Objects.hash(size) * 31 + Objects.hash(get(0));
+        }
+
+        if (leafCount == 1) {
+            int result = Objects.hash(size);
+            for (int ii = 0; ii < size; ii++) {
+                result = result * 31 + Objects.hash(directoryValues[ii]);
             }
 
             return result;
         }
 
+        int result = Objects.hash(leafCount, size);
+
         for (int li = 0; li < leafCount; ++li) {
-            final double[] values = leafValues[li];
-            final int leafSz = leafSizes[li];
-            for (int ai = 0; ai < leafSz; ++ai) {
-                result = 31 * result + DoubleComparisons.hashCode(values[ai]);
+            for (int ai = 0; ai < leafSizes[li]; ai++) {
+                result = result * 31 + Objects.hash(leafValues[li][ai]);
             }
         }
 

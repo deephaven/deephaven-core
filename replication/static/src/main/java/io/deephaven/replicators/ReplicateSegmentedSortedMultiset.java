@@ -64,7 +64,6 @@ public class ReplicateSegmentedSortedMultiset {
                 ReplicateSegmentedSortedMultiset::fixupObjectHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
-                ReplicateSegmentedSortedMultiset::fixupObjectIterator,
                 ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
 
         final List<String> files = charToAllButBoolean(TASK,
@@ -365,16 +364,6 @@ public class ReplicateSegmentedSortedMultiset {
                 "\\.toObjectArray\\(", ".toArray(");
     }
 
-    private static List<String> fixupObjectIterator(List<String> lines) {
-        // There is no ValueIteratorOfObject; the Object variant iterates as a generic ValueIterator<Object>, whose
-        // element accessor is Iterator.next() rather than the primitive variants' nextObject().
-        return globalReplacements(lines,
-                "ValueIteratorOfObject iterator\\(", "ValueIterator<Object> iterator(",
-                "new ValueIteratorOfObject\\(\\)", "new ValueIterator<Object>()",
-                "public Object nextObject\\(\\)", "public Object next()",
-                "ValueIteratorOfObject", "ValueIterator");
-    }
-
     private static List<String> fixupSsmConstructor(List<String> lines) {
         return replaceRegion(lines, "Constructor",
                 Collections.singletonList("    private final Class componentType;\n" +
@@ -411,8 +400,6 @@ public class ReplicateSegmentedSortedMultiset {
     }
 
     private static List<String> fixupObjectCompare(List<String> lines) {
-        // removes both the primitive-vector equalsArray overload and the branch of equals that dispatches to it;
-        // another Object SSM is an ObjectVector, so it reaches the remaining equalsArray overload
         lines = removeRegion(lines, "VectorEquals");
         // the primitive iterator is only used by the (now removed) primitive-vector equalsArray overload
         lines = removeImport(lines, "\\s*import .*CloseablePrimitiveIteratorOfObject;");
@@ -420,15 +407,20 @@ public class ReplicateSegmentedSortedMultiset {
                 "        if(getComponentType() != o.getComponentType()) {\n" +
                         "            return false;\n" +
                         "        }"));
-        lines = replaceRegion(lines, "UnboxValue", Collections.singletonList(
-                "    /**\n" +
-                        "     * There is nothing to unbox, and no null sentinel: an Object SSM stores nulls as null.\n"
-                        +
-                        "     */\n" +
-                        "    private static Object unboxValue(final Object value) {\n" +
-                        "        return value;\n" +
-                        "    }"));
-        return removeImport(lines, "\\s*import io\\.deephaven\\.util\\.type\\.TypeUtils;");
+        lines = replaceRegion(lines, "DirObjectEquals",
+                Collections.singletonList(
+                        "                if(!Objects.equals(directoryValues[ii], that.directoryValues[ii])) {\n" +
+                                "                    return false;\n" +
+                                "                }"));
+        lines = replaceRegion(lines, "SingletonEquals",
+                Collections.singletonList(
+                        "            return Objects.equals(get(0), that.get(0));"));
+        return replaceRegion(lines, "LeafObjectEquals",
+                Collections.singletonList(
+                        "                if(!Objects.equals(leafValues[li][ai], that.leafValues[otherLeaf][otherLeafIdx++])) {\n"
+                                +
+                                "                    return false;\n" +
+                                "                }"));
     }
 
     private static void insertInstantExtensions(String longPath) throws IOException {

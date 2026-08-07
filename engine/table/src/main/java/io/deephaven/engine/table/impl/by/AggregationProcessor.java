@@ -1797,14 +1797,11 @@ public class AggregationProcessor implements AggregationContextFactory {
             // classifies the constituent as empty, uniquely a single value, or non-unique) rather than its SSM.
             for (final Pair pair : resultPairs) {
                 final String resultName = pair.output().name();
-                final ColumnSource<?> rawValueSource = table.getColumnSource(resultName);
-                // Need both the raw value source and the reinterpreted one: Instant aggregates as long, so the
-                // operator reads long chunks, but the raw type is what picks the operator and its Instant result type.
-                final ColumnSource<?> valueSource = maybeReinterpretInstantAsLong(rawValueSource);
+                final ColumnSource<?> valueSource = table.getColumnSource(resultName);
                 final String singletonCountName =
                         resultName + ROLLUP_DISTINCT_SSM_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                 final ColumnSource<?> singletonCountSource = table.getColumnSource(singletonCountName);
-                final IterativeChunkedAggregationOperator operator = makeUniqueOperator(rawValueSource.getType(),
+                final IterativeChunkedAggregationOperator operator = makeUniqueOperator(valueSource.getType(),
                         resultName, unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), true, true,
                         singletonCountSource);
                 addOperator(operator, valueSource, resultName, singletonCountName);

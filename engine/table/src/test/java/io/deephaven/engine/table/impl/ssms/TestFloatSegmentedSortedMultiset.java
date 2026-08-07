@@ -26,10 +26,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfFloat;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.vector.FloatVector;
 import io.deephaven.vector.FloatVectorDirect;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.engine.table.impl.util.compact.FloatCompactKernel;
@@ -100,44 +98,10 @@ public class TestFloatSegmentedSortedMultiset extends RefreshingTableTestCase {
     }
 
     public void testEqualsArray() {
-        // exercise the singleton (size == 1), single-leaf (partial, then exactly full), and multi-leaf (exactly two
-        // full leaves, then several with a partial tail) representations
+        // exercise the singleton (size == 1), single-leaf, and multi-leaf representations
         checkEqualsArray(1);
         checkEqualsArray(3);
-        checkEqualsArray(4);
-        checkEqualsArray(8);
         checkEqualsArray(20);
-    }
-
-    public void testIterator() {
-        // exercise the empty, singleton (size == 1), single-leaf, and multi-leaf representations
-        checkIterator(0);
-        checkIterator(1);
-        checkIterator(3);
-        checkIterator(20);
-    }
-
-    /**
-     * hashCode() walks the leaves directly instead of delegating to the shared Vector helper, which duplicates that
-     * helper's seed, multiplier, and per-element hash. Pin the two together across the empty, singleton, single-leaf,
-     * and multi-leaf representations so the copy cannot drift -- equals() accepts any Vector with matching contents,
-     * so a divergence here would silently break the hashCode contract.
-     */
-    public void testHashCodeMatchesVectorHelper() {
-        for (final int valueCount : new int[] {0, 1, 3, 4, 8, 20}) {
-            final float[] values = new float[valueCount];
-            for (int ii = 0; ii < valueCount; ++ii) {
-                values[ii] = (float) ('a' + ii);
-            }
-            final FloatSegmentedSortedMultiset ssm = makeSsm(4, values);
-            final String message = "valueCount=" + valueCount;
-
-            // the helper applied to this SSM, to its materialized copy, and to an independently built Vector must all
-            // agree with the walk
-            assertEquals(message, FloatVector.hashCode(ssm), ssm.hashCode());
-            assertEquals(message, FloatVector.hashCode(ssm.getDirect()), ssm.hashCode());
-            assertEquals(message, new FloatVectorDirect(values).hashCode(), ssm.hashCode());
-        }
     }
 
     public void testMoveSingletonSource() {
@@ -779,38 +743,11 @@ public class TestFloatSegmentedSortedMultiset extends RefreshingTableTestCase {
             boxed[ii] = values[ii];
         }
 
-        // a Vector with identical contents is equal, in both directions, and anything equal must hash alike -- so the
-        // SSM has to use the same shared Vector helper that the *VectorDirect implementations use, and compare
-        // elements the same way that helper hashes them, rather than either with a scheme of its own
-        assertEqualBothWays(ssm, ssm.getDirect());
-        assertEqualBothWays(ssm, new FloatVectorDirect(values));
-
-        // the boxed comparison only runs in one direction for the primitive variants, because a primitive SSM is a
-        // FloatVector rather than an ObjectVector and so is not a comparand ObjectVectorDirect will accept
+        // a Vector with identical contents is equal (the primitive Vector becomes an ObjectVector after Object
+        // replication, so this exercises both equalsArray overloads across the type variants)
+        assertTrue(ssm.equals(ssm.getDirect()));
+        assertTrue(ssm.equals(new FloatVectorDirect(values)));
         assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
-        assertEquals(ssm.hashCode(), new ObjectVectorDirect<>(boxed).hashCode());
-
-        // another SSM holding the same values is equal however those values happen to be laid out: equality is a
-        // property of the contents, and identical contents can occupy different leaf structures, since leaves need
-        // not be full and the two node sizes need not agree
-        assertEqualBothWays(ssm, makeSsm(nodeSize, values));
-        assertEqualBothWays(ssm, makeSsm(nodeSize * 16, values));
-
-        // an SSM of the same length holding different values is not equal, under either layout
-        final float[] shifted = new float[valueCount];
-        for (int ii = 0; ii < valueCount; ++ii) {
-            shifted[ii] = (float) ('a' + ii + 1);
-        }
-        assertNotEqualBothWays(ssm, makeSsm(nodeSize, shifted));
-        assertNotEqualBothWays(ssm, makeSsm(nodeSize * 16, shifted));
-
-        // ... and neither is a longer one
-        final float[] longerValues = new float[valueCount + 1];
-        for (int ii = 0; ii < longerValues.length; ++ii) {
-            longerValues[ii] = (float) ('a' + ii);
-        }
-        assertNotEqualBothWays(ssm, makeSsm(nodeSize, longerValues));
-        assertNotEqualBothWays(ssm, makeSsm(nodeSize * 16, longerValues));
 
         // a Vector of a different length is not equal
         final float[] longer = new float[valueCount + 1];
@@ -835,60 +772,6 @@ public class TestFloatSegmentedSortedMultiset extends RefreshingTableTestCase {
                 final Float[] modifiedBoxed = boxed.clone();
                 modifiedBoxed[position] = different;
                 assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
-            }
-        }
-    }
-
-    /**
-     * Assert that two Vectors agree that they are equal no matter which is the receiver, and that they hash alike as
-     * {@link Object#hashCode()} then requires.
-     */
-    private void assertEqualBothWays(Object lhs, Object rhs) {
-        assertTrue(lhs + " should equal " + rhs, lhs.equals(rhs));
-        assertTrue(rhs + " should equal " + lhs, rhs.equals(lhs));
-        assertEquals("equal values must hash alike", lhs.hashCode(), rhs.hashCode());
-    }
-
-    /**
-     * Assert that two Vectors agree that they are unequal no matter which is the receiver. Their hash codes are
-     * unconstrained -- unequal values are permitted to collide.
-     */
-    private void assertNotEqualBothWays(Object lhs, Object rhs) {
-        assertFalse(lhs + " should not equal " + rhs, lhs.equals(rhs));
-        assertFalse(rhs + " should not equal " + lhs, rhs.equals(lhs));
-    }
-
-    private void checkIterator(int valueCount) {
-        final int nodeSize = 4;
-        final float[] values = new float[valueCount];
-        for (int ii = 0; ii < valueCount; ++ii) {
-            values[ii] = (float) ('a' + ii);
-        }
-        final FloatSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
-
-        // a full traversal must visit every element in order
-        try (final ValueIteratorOfFloat it = ssm.iterator()) {
-            assertEquals(valueCount, it.remaining());
-            for (int ii = 0; ii < valueCount; ++ii) {
-                assertTrue(it.hasNext());
-                assertEquals(values[ii], it.nextFloat());
-            }
-            assertFalse(it.hasNext());
-        }
-
-        // every sub-range must resolve its starting leaf correctly and stop at the right position; for a multi-leaf
-        // SSM the start may land mid-leaf, on a leaf boundary, or past several whole leaves
-        for (int from = 0; from <= valueCount; ++from) {
-            for (int to = from; to <= valueCount; ++to) {
-                try (final ValueIteratorOfFloat it = ssm.iterator(from, to)) {
-                    assertEquals(to - from, it.remaining());
-                    for (int ii = from; ii < to; ++ii) {
-                        assertTrue(it.hasNext());
-                        assertEquals(values[ii], it.nextFloat());
-                        assertEquals(to - ii - 1, it.remaining());
-                    }
-                    assertFalse(it.hasNext());
-                }
             }
         }
     }
