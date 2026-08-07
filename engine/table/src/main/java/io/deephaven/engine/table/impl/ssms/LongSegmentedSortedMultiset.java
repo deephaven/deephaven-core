@@ -3301,7 +3301,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
 
         final int totalSize = (int)(last - first + 1);
-        final Instant[] keyArray = new Instant[intSize()];
+        final Instant[] keyArray = new Instant[totalSize];
         if (leafCount == 1) {
             for(int ii = 0; ii < totalSize; ii++) {
                 keyArray[ii] = DateTimeUtils.epochNanosToInstant(directoryValues == null ? singletonValue : directoryValues[ii + (int)first]);
@@ -3310,7 +3310,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
             int offset = 0;
             int copied = 0;
             int skipped = 0;
-            for (int li = 0; li < leafCount; ++li) {
+            for (int li = 0; li < leafCount && copied < totalSize; ++li) {
                 if(skipped < first) {
                     final int toSkip = (int)first - skipped;
                     if(toSkip < leafSizes[li]) {
