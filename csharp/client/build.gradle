@@ -1,5 +1,3 @@
-import com.bmuschko.gradle.docker.tasks.image.Dockerfile
-
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
@@ -37,40 +35,19 @@ def testCsharpClient = Docker.registerDockerTask(project, 'testCsharpClient') {
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }
-    dockerfile {
-        from(Docker.localImageName('dotnet'))
-        environmentVariable 'DOTNET_CLI_TELEMETRY_OPTOUT', '1'
-        environmentVariable 'DOTNET_NOLOGO', '1'
-        // The SDK image only carries the net10.0 runtime; graft in the net8.0
-        // runtime from the (digest-pinned) official runtime image so that both
-        // target frameworks of the test project can execute.
-        copyFile(new Dockerfile.CopyFile(
-                '/usr/share/dotnet/shared/Microsoft.NETCore.App',
-                '/usr/share/dotnet/shared/Microsoft.NETCore.App/')
-                .withStage(Docker.localImageName('dotnet-runtime-8')))
-        workingDir('/project')
-        copyFile('.', '/project/')
-        runCommand('''set -eux; \\
-                      mkdir /out; \\
-                      dotnet restore /project/csharp/client/Dh_NetClientTests/Dh_NetClientTests.csproj; \\
-                      dotnet build /project/csharp/client/Dh_NetClientTests/Dh_NetClientTests.csproj \\
-                        -c Release --no-restore
-                   ''')
-        environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
-        environmentVariable 'DH_PORT', '10000'
-    }
+    dockerfile file('Dockerfile')
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     parentContainers = [ Docker.registryTask(project, 'dotnet'), Docker.registryTask(project, 'dotnet-runtime-8') ]
     entrypoint = ['/bin/bash', '-c',
-                  '''set -euxo pipefail
+                  """set -euxo pipefail
+                     export DH_HOST=${deephavenDocker.containerName.get()}
+                     export DH_PORT=10000
+                     # global.json opts dotnet test into Microsoft.Testing.Platform mode,
+                     # which runs the tests for every target framework in the project.
                      cd /project/csharp/client/Dh_NetClientTests
-                     for tfm in net8.0 net10.0; do
-                       "./bin/Release/${tfm}/Deephaven.CoreClientTests" \\
-                           --report-trx --report-trx-filename "csharp-test-${tfm}.trx" \\
-                           --results-directory /out
-                     done''']
+                     dotnet test -c Release --no-build --report-trx --results-directory /out"""]
 }
 deephavenDocker.shouldLogIfTaskFails testCsharpClient
 tasks.check.dependsOn(testCsharpClient)
