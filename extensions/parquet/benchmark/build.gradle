@@ -6,29 +6,32 @@ plugins {
 description 'Parquet Benchmark: Benchmarks for Parquet modules'
 
 sourceSets {
-    test {
+    benchmark {
         java {
             srcDir 'src/benchmark/java'
         }
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
     }
 }
 
-test {
-    failOnNoDiscoveredTests = false
+configurations {
+    benchmarkImplementation.extendsFrom implementation
+    benchmarkRuntimeOnly.extendsFrom runtimeOnly
 }
 
 dependencies {
-    testImplementation project(':extensions-parquet-table')
-    testImplementation project(':engine-table')
-    testImplementation project(':BenchmarkSupport')
-    testImplementation TestTools.projectDependency(project, 'engine-rowset')
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    benchmarkImplementation project(':extensions-parquet-table')
+    benchmarkImplementation project(':engine-table')
+    benchmarkImplementation project(':BenchmarkSupport')
+    benchmarkImplementation TestTools.projectDependency(project, 'engine-rowset')
+    benchmarkImplementation TestTools.projectDependency(project, 'engine-table')
 
-    testAnnotationProcessor libs.jmh.generator.annprocess
-    testCompileOnly libs.jmh.generator.annprocess
+    benchmarkAnnotationProcessor libs.jmh.generator.annprocess
+    benchmarkCompileOnly libs.jmh.generator.annprocess
 
-    testRuntimeOnly project(':configs')
-    testRuntimeOnly project(':test-configs')
+    benchmarkRuntimeOnly project(':configs')
+    benchmarkRuntimeOnly project(':test-configs')
 }
 
 task jmhRun(type: JavaExec)  {
@@ -36,7 +39,7 @@ task jmhRun(type: JavaExec)  {
     new File("$rootDir/tmp/logs").mkdirs()
     workingDir "$rootDir/tmp/workspace"
 
-    classpath = sourceSets.test.runtimeClasspath
+    classpath = sourceSets.benchmark.runtimeClasspath
 
     mainClass.set 'io.deephaven.benchmarking.runner.BenchmarkRunner'
 
@@ -55,7 +58,7 @@ def createJmhTask = {
         new File("$rootDir/tmp/logs").mkdirs()
 
         task.workingDir "$rootDir/tmp/workspace"
-        task.classpath = sourceSets.test.runtimeClasspath
+        task.classpath = sourceSets.benchmark.runtimeClasspath
         task.mainClass.set 'io.deephaven.benchmarking.runner.BenchmarkRunner'
 
         // arguments to pass to the application

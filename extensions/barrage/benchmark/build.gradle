@@ -6,33 +6,36 @@ plugins {
 description 'Barrage Benchmark: Benchmarks for Barrage message serialization/deserialization'
 
 sourceSets {
-    test {
+    benchmark {
         java {
             srcDir 'src/benchmark/java'
         }
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
     }
 }
 
-test {
-    failOnNoDiscoveredTests = false
+configurations {
+    benchmarkImplementation.extendsFrom implementation
+    benchmarkRuntimeOnly.extendsFrom runtimeOnly
 }
 
 dependencies {
-    testImplementation project(':extensions-barrage')
-    testImplementation project(':engine-table')
-    testImplementation project(':BenchmarkSupport')
-    testImplementation libs.arrow.vector
-    testImplementation libs.flatbuffers.java
-    testImplementation platform(libs.grpc.bom)
-    testImplementation libs.grpc.api
-    testImplementation TestTools.projectDependency(project, 'engine-rowset')
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    benchmarkImplementation project(':extensions-barrage')
+    benchmarkImplementation project(':engine-table')
+    benchmarkImplementation project(':BenchmarkSupport')
+    benchmarkImplementation libs.arrow.vector
+    benchmarkImplementation libs.flatbuffers.java
+    benchmarkImplementation platform(libs.grpc.bom)
+    benchmarkImplementation libs.grpc.api
+    benchmarkImplementation TestTools.projectDependency(project, 'engine-rowset')
+    benchmarkImplementation TestTools.projectDependency(project, 'engine-table')
 
-    testAnnotationProcessor libs.jmh.generator.annprocess
-    testCompileOnly libs.jmh.generator.annprocess
+    benchmarkAnnotationProcessor libs.jmh.generator.annprocess
+    benchmarkCompileOnly libs.jmh.generator.annprocess
 
-    testRuntimeOnly project(':configs')
-    testRuntimeOnly project(':test-configs')
+    benchmarkRuntimeOnly project(':configs')
+    benchmarkRuntimeOnly project(':test-configs')
 }
 
 def createJmhTask = {
@@ -41,7 +44,7 @@ def createJmhTask = {
         new File("$rootDir/tmp/logs").mkdirs()
 
         task.workingDir "$rootDir/tmp/workspace"
-        task.classpath = sourceSets.test.runtimeClasspath
+        task.classpath = sourceSets.benchmark.runtimeClasspath
         task.mainClass.set 'io.deephaven.benchmarking.runner.BenchmarkRunner'
 
         // arguments to pass to the application
