@@ -3,13 +3,10 @@
 //
 package io.deephaven.jpy.integration;
 
-import io.deephaven.jpy.JpyModule;
 import io.deephaven.jpy.PythonTest;
 import org.jpy.PyInputMode;
 import org.jpy.PyObject;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 

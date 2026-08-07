@@ -27,7 +27,6 @@ import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColu
 import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinStateManagerTypedBase {

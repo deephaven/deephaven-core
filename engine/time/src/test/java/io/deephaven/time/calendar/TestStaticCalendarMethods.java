@@ -3,7 +3,6 @@
 //
 package io.deephaven.time.calendar;
 
-import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
 

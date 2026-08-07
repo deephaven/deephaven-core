@@ -13,7 +13,6 @@ import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.ShortVectorDirect;
 import io.deephaven.vector.ShortVectorTest;
 import junit.framework.TestCase;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;

@@ -10,7 +10,6 @@ package io.deephaven.base.ringbuffer;
 import junit.framework.TestCase;
 
 import java.util.NoSuchElementException;
-import java.util.Random;
 
 public class TestAggregatingByteRingBuffer extends TestCase {
 

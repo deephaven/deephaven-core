@@ -5,7 +5,6 @@ package io.deephaven.engine.page;
 
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;

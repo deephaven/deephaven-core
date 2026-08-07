@@ -14,7 +14,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

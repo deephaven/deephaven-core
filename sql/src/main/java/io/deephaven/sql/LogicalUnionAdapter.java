@@ -8,7 +8,6 @@ import io.deephaven.qst.table.TableSpec;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalUnion;
 
-import java.util.function.Function;
 
 final class LogicalUnionAdapter {
 

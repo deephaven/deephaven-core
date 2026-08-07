@@ -5,7 +5,6 @@ package io.deephaven.appmode;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Properties;
 
 public class ApplicationUtil {

@@ -9,7 +9,6 @@ import io.deephaven.vector.CharVector;
 import io.deephaven.vector.CharVectorDirect;
 import io.deephaven.vector.CharVectorTest;
 import junit.framework.TestCase;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;

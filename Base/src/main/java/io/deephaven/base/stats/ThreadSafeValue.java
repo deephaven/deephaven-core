@@ -3,9 +3,7 @@
 //
 package io.deephaven.base.stats;
 
-import io.deephaven.base.AtomicUtil;
 
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 /**
  * A thread-safe extension of the {@link Value} class.

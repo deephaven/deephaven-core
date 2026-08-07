@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.select.vectorchunkfilter;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.util.SafeCloseable;

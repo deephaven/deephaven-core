@@ -12,7 +12,6 @@
 //
 package io.deephaven.engine.table.impl.join.stamp;
 
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 
 import io.deephaven.chunk.*;

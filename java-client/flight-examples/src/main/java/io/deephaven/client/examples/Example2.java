@@ -14,7 +14,6 @@ import io.deephaven.qst.table.TableSpec;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
-import java.util.Collections;
 
 @Command(name = "example-2", mixinStandardHelpOptions = true,
         description = "Canned example 2, sends a table, get the results, and convert to a TSV",

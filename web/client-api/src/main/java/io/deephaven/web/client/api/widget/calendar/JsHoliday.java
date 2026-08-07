@@ -6,12 +6,10 @@ package io.deephaven.web.client.api.widget.calendar;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
-import elemental2.core.JsObject;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.LocalDateWrapper;
 import io.deephaven.web.client.fu.JsCollectors;
 import jsinterop.annotations.JsProperty;
-import jsinterop.base.Js;
 
 /**
  * A holiday in a {@link JsBusinessCalendar dh.calendar.BusinessCalendar}.

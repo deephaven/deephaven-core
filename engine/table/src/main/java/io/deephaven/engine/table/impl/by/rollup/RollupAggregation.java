@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.by.rollup;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.ColumnDefinition;
 
-import java.util.Map;
 
 /**
  * Rollup-specific {@link Aggregation aggregations}.

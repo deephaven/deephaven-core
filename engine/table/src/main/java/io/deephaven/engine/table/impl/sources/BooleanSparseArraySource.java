@@ -15,7 +15,6 @@ import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 
 // ColumnSource is used in the long class when replicated
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -38,8 +37,6 @@ import java.util.Arrays;
 
 // region boxing imports
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
-import static io.deephaven.util.type.TypeUtils.box;
-import static io.deephaven.util.type.TypeUtils.unbox;
 // endregion boxing imports
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;

@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.chunk.*;

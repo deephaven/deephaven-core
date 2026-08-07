@@ -11,7 +11,6 @@ import io.deephaven.lang.generated.Token;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * A class specifically for completing assignment statements; to be called after the completer has discovered the cursor

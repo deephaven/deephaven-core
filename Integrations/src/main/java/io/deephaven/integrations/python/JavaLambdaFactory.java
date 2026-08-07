@@ -6,9 +6,6 @@ package io.deephaven.integrations.python;
 import org.jpy.PyObject;
 
 import javax.annotation.Nullable;
-import java.lang.invoke.CallSite;
-import java.lang.invoke.LambdaConversionException;
-import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleProxies;
 import java.lang.invoke.MethodHandles;

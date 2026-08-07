@@ -10,14 +10,12 @@ package io.deephaven.vector;
 // region IteratorTypeImport
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 // endregion IteratorTypeImport
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 // region NullConstantImport
 // endregion NullConstantImport
-import static io.deephaven.util.QueryConstants.NULL_INT;
 import static junit.framework.TestCase.*;
 
 /**

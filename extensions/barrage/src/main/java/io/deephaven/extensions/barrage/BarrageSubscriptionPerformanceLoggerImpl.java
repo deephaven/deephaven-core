@@ -5,7 +5,6 @@ package io.deephaven.extensions.barrage;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.time.DateTimeUtils;
 import org.HdrHistogram.Histogram;

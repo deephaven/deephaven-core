@@ -22,7 +22,6 @@ import io.deephaven.engine.table.impl.MultiJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.multijoin.IncrementalMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class IncrementalMultiJoinHasherDouble extends IncrementalMultiJoinStateManagerTypedBase {

@@ -8,7 +8,6 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-import javax.lang.model.SourceVersion;
 
 /**
  * A labeled table is {@link #label() label} and {@link #table() table} pair.
