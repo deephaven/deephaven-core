@@ -69,7 +69,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     protected final File classCacheDirectory;
     private final ScriptSessionQueryScope queryScope;
 
-    // DH-20578: Not final so it can be updated with fresh QueryCompiler when remote sources are detected
+    // Not final so it can be updated with a fresh QueryCompiler when remote sources are detected
     protected ExecutionContext executionContext;
 
     private S lastSnapshot;
@@ -97,25 +97,9 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         queryScope = new ScriptSessionQueryScope();
 
-        executionContext = createExecutionContext(updateGraph, operationInitializer, parentClassLoader);
-    }
-
-    /**
-     * DH-20578: Creates an ExecutionContext with a QueryCompiler based on the provided ClassLoader. This allows
-     * updating the ExecutionContext when fresh ClassLoaders are needed (e.g., for remote file sources).
-     *
-     * @param updateGraph the update graph for the context
-     * @param operationInitializer the operation initializer for the context
-     * @param parentClassLoader the ClassLoader to use for creating the QueryCompiler
-     * @return a new ExecutionContext with a QueryCompiler based on the provided ClassLoader
-     */
-    protected ExecutionContext createExecutionContext(
-            final UpdateGraph updateGraph,
-            final OperationInitializer operationInitializer,
-            final ClassLoader parentClassLoader) {
         final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory);
 
-        return ExecutionContext.newBuilder()
+        executionContext = ExecutionContext.newBuilder()
                 .markSystemic()
                 .newQueryLibrary()
                 .setQueryScope(queryScope)
@@ -125,6 +109,13 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .setClassLoader(parentClassLoader)
                 .build();
     }
+
+    /**
+     * Hook for subclasses to replace {@link #executionContext} before it is opened for an evaluation. This runs before
+     * {@link #evaluateScript(String, String)} derives and opens the context, so a replacement classloader or
+     * {@link QueryCompiler} takes effect for this evaluation rather than the next one.
+     */
+    protected void prepareForEvaluation() {}
 
     @Override
     public void cleanup() {
@@ -170,6 +161,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     public synchronized final Changes evaluateScript(final String script, @Nullable final String scriptName) {
         // Observe scope changes and propagate to the listener before running the script, in case it is long-running
         observeScopeChanges();
+
+        // Let subclasses replace executionContext before we derive and open it below, so that a fresh classloader /
+        // QueryCompiler applies to this evaluation instead of only taking effect on the next one.
+        prepareForEvaluation();
 
         RuntimeException evaluateErr = null;
         final Changes diff;

@@ -217,7 +217,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer);
+                operationInitializer, this.contextClassLoader);
     }
 
 

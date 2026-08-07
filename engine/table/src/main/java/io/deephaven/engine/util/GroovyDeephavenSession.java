@@ -357,14 +357,39 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         deleteCachedClassFiles(classCacheDirectory);
 
         // Create fresh classloader - reusing the existing configurations
-        GroovyClassLoader scriptClassLoader = new GroovyClassLoader(STATIC_LOADER, scriptConfig);
-
-        // Update the execution context with a fresh QueryCompiler
-        final QueryCompiler freshCompiler = QueryCompilerImpl.create(classCacheDirectory, scriptClassLoader);
-        executionContext = executionContext.withQueryCompiler(freshCompiler);
+        final GroovyClassLoader scriptClassLoader = new GroovyClassLoader(STATIC_LOADER, scriptConfig);
 
         // Permanently replace groovyShell with fresh shell
         groovyShell = new DeephavenGroovyShell(scriptClassLoader, groovyShell.getContext(), consoleConfig);
+
+        // Replace the QueryCompiler and the context classloader together. The compiler loads each compiled class in a
+        // child of the context classloader, so leaving a stale loader here would let formulas resolve stale Groovy
+        // classes even though the shell itself was refreshed.
+        final QueryCompiler freshCompiler = QueryCompilerImpl.create(classCacheDirectory, scriptClassLoader);
+        executionContext = executionContext
+                .withQueryCompiler(freshCompiler)
+                .withClassLoader(groovyShell.getClassLoader());
+    }
+
+    @Override
+    protected void prepareForEvaluation() {
+        final RemoteFileSourceClassLoader remoteLoader = RemoteFileSourceClassLoader.getInstance();
+        final boolean hasRemoteSources = remoteLoader.hasConfiguredRemoteSources();
+        final boolean isDirty = remoteLoader.isDirty();
+
+        // Clear the cache in two cases:
+        // 1. is_dirty flag is set - remote sources have changed
+        // 2. Previous eval had remote sources but current does not - catches edge case where script is run
+        // without providing execution context at all, and we need to clear from previous remote source scenario
+        if (isDirty || (previousEvalHadRemoteSources && !hasRemoteSources)) {
+            log.debug().append("Clearing class cache. isDirty: ").append(isDirty)
+                    .append(", previousEvalHadRemoteSources: ").append(previousEvalHadRemoteSources)
+                    .append(", hasRemoteSources: ").append(hasRemoteSources).endl();
+            refreshClassLoader();
+        }
+
+        // Update state tracker for next execution
+        previousEvalHadRemoteSources = hasRemoteSources;
     }
 
     @Override
@@ -378,23 +403,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String currentScriptName = scriptName == null
                 ? DEFAULT_SCRIPT_PREFIX
                 : scriptName.replaceAll("[^0-9A-Za-z_]", "_").replaceAll("(^[0-9])", "_$1");
-
-        final RemoteFileSourceClassLoader remoteLoader = RemoteFileSourceClassLoader.getInstance();
-        final boolean hasRemoteSources = remoteLoader.hasConfiguredRemoteSources();
-        final boolean isDirty = remoteLoader.isDirty();
-
-        // Clear the cache in two cases:
-        // 1. is_dirty flag is set - remote sources have changed
-        // 2. Previous eval had remote sources but current does not - catches edge case where script is run
-        // without providing execution context at all, and we need to clear from previous remote source scenario
-        if (isDirty || (previousEvalHadRemoteSources && !hasRemoteSources)) {
-            log.debug("Clearing class cache. isDirty: " + isDirty + ", previousEvalHadRemoteSources: "
-                    + previousEvalHadRemoteSources + ", hasRemoteSources: " + hasRemoteSources);
-            refreshClassLoader();
-        }
-
-        // Update state tracker for next execution
-        previousEvalHadRemoteSources = hasRemoteSources;
 
         // Execute the script
         try (final SafeCloseable ignored = groovyShell.setScriptPrefix(currentScriptName)) {
@@ -410,7 +418,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             }
         }
     }
-
 
     private RuntimeException wrapAndRewriteStackTrace(String scriptName, String currentScriptName, Exception e,
             String lastCommand, String commandPrefix) {
