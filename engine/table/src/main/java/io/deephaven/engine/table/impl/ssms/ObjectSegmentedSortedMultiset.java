@@ -3067,9 +3067,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
     private boolean equalsArray(ObjectVector<?> o) {
         // region EqualsArrayTypeCheck
-        if(getComponentType() != o.getComponentType()) {
-            return false;
-        }
+        // No component-type check: it only guards the primitive variants' unboxValue() cast, and gating
+        // on the declared type would break symmetry with ObjectVector.equals().
         // endregion EqualsArrayTypeCheck
 
         if (size() != o.size()) {

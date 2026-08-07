@@ -417,9 +417,9 @@ public class ReplicateSegmentedSortedMultiset {
         // the primitive iterator is only used by the (now removed) primitive-vector equalsArray overload
         lines = removeImport(lines, "\\s*import .*CloseablePrimitiveIteratorOfObject;");
         lines = replaceRegion(lines, "EqualsArrayTypeCheck", Collections.singletonList(
-                "        if(getComponentType() != o.getComponentType()) {\n" +
-                        "            return false;\n" +
-                        "        }"));
+                "        // No component-type check: it only guards the primitive variants' unboxValue() cast, and gating\n"
+                        +
+                        "        // on the declared type would break symmetry with ObjectVector.equals()."));
         // an Object SSM stores its elements exactly as the boxed vector supplies them -- nothing to unbox, and no null
         // sentinel -- so drop the helper and read the iterator directly
         lines = removeRegion(lines, "UnboxValue");
