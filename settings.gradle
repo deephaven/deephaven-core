@@ -155,6 +155,9 @@ include(':codegen')
 
 include(':cpp-client')
 
+include(':csharp-client')
+project(':csharp-client').projectDir = file('csharp/client')
+
 include(':R')
 
 include(':replication-util')
