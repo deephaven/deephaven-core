@@ -46,12 +46,12 @@ public class MegaMergeTestUtils {
     static void doSort(boolean ascending, int chunkSize, WritableCharChunk<Values> values,
             WritableLongChunk<RowKeys> keys) {
         if (ascending) {
-            try (final NullAwareCharLongTimsortKernel.CharLongSortKernelContext<Values, RowKeys> sortKernel =
+            try (final NullAwareCharLongTimsortKernel.NullAwareCharLongSortKernelContext<Values, RowKeys> sortKernel =
                     NullAwareCharLongTimsortKernel.createContext(chunkSize)) {
                 NullAwareCharLongTimsortKernel.sort(sortKernel, keys, values);
             }
         } else {
-            try (final NullAwareCharLongTimsortDescendingKernel.CharLongSortKernelContext<Values, RowKeys> sortKernel =
+            try (final NullAwareCharLongTimsortDescendingKernel.NullAwareCharLongSortKernelContext<Values, RowKeys> sortKernel =
                     NullAwareCharLongTimsortDescendingKernel.createContext(chunkSize)) {
                 NullAwareCharLongTimsortDescendingKernel.sort(sortKernel, keys, values);
             }
