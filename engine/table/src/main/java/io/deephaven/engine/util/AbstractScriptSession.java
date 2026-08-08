@@ -69,7 +69,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     protected final File classCacheDirectory;
     private final ScriptSessionQueryScope queryScope;
 
-    protected final ExecutionContext executionContext;
+    // Not final so it can be updated with a fresh QueryCompiler when remote sources are detected
+    protected ExecutionContext executionContext;
 
     private S lastSnapshot;
 
@@ -95,6 +96,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         this.classCacheDirectory = classCacheDirectory;
 
         queryScope = new ScriptSessionQueryScope();
+
         final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory);
 
         executionContext = ExecutionContext.newBuilder()
@@ -107,6 +109,13 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .setClassLoader(parentClassLoader)
                 .build();
     }
+
+    /**
+     * Hook for subclasses to replace {@link #executionContext} before it is opened for an evaluation. This runs before
+     * {@link #evaluateScript(String, String)} derives and opens the context, so a replacement classloader or
+     * {@link QueryCompiler} takes effect for this evaluation rather than the next one.
+     */
+    protected void prepareForEvaluation() {}
 
     @Override
     public void cleanup() {
@@ -152,6 +161,10 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     public synchronized final Changes evaluateScript(final String script, @Nullable final String scriptName) {
         // Observe scope changes and propagate to the listener before running the script, in case it is long-running
         observeScopeChanges();
+
+        // Let subclasses replace executionContext before we derive and open it below, so that a fresh classloader /
+        // QueryCompiler applies to this evaluation instead of only taking effect on the next one.
+        prepareForEvaluation();
 
         RuntimeException evaluateErr = null;
         final Changes diff;
