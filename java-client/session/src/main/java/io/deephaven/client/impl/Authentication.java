@@ -240,8 +240,7 @@ public final class Authentication {
 
     private static DeephavenChannel credsAndInterceptor(DeephavenChannel channel, CallCredentials callCredentials,
             ClientInterceptor clientInterceptor) {
-        return DeephavenChannel.withClientInterceptors(DeephavenChannel.withCallCredentials(channel, callCredentials),
-                clientInterceptor);
+        return channel.withCallCredentials(callCredentials).withInterceptors(clientInterceptor);
     }
 
     // Similar to io.grpc.stub.ClientCalls.toStatusRuntimeException
