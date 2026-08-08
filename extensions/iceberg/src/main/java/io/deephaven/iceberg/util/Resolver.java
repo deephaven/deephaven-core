@@ -196,7 +196,7 @@ public abstract class Resolver implements ResolverProvider {
         return true;
     }
 
-    final PartitionSpec specOrUnpartitioned() {
+    public final PartitionSpec specOrUnpartitioned() {
         return spec().orElse(PartitionSpec.unpartitioned());
     }
 
@@ -288,7 +288,7 @@ public abstract class Resolver implements ResolverProvider {
         checkCompatible(fieldPath, type);
     }
 
-    final PartitionField partitionField(ColumnDefinition<?> column) {
+    public final PartitionField partitionField(ColumnDefinition<?> column) {
         if (!column.isPartitioning()) {
             throw new IllegalArgumentException();
         }
