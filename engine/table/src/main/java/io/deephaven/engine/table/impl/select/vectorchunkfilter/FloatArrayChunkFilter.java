@@ -9,11 +9,7 @@ package io.deephaven.engine.table.impl.select.vectorchunkfilter;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfFloat;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.impl.chunkfilter.FloatChunkFilter;
-import io.deephaven.vector.FloatVector;
 
 import java.util.function.IntConsumer;
 import java.util.function.IntPredicate;

@@ -17,7 +17,6 @@ import io.deephaven.chunk.attributes.HashCodes;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.util.hashing.*;

@@ -20,7 +20,6 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.proto.util.OperationHelper;
 import io.deephaven.qst.table.EmptyTable;
-import io.deephaven.qst.table.HeadTable;
 import io.deephaven.qst.table.TableSpec;
 import io.grpc.ManagedChannel;
 import io.grpc.inprocess.InProcessChannelBuilder;

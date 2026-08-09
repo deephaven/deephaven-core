@@ -13,7 +13,6 @@ import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
 import io.deephaven.vector.IntVectorTest;
 import junit.framework.TestCase;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;

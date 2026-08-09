@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.sources;
 
 // ColumnSource is used in the long class when replicated
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;

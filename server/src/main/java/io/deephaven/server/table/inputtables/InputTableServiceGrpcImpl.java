@@ -28,7 +28,6 @@ import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
-import java.lang.Object;
 import java.util.Collection;
 import java.util.List;
 

@@ -13,7 +13,6 @@ import io.deephaven.io.logger.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.UnsupportedEncodingException;
 import java.util.Set;
 
 @Singleton

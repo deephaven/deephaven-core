@@ -9,7 +9,6 @@ package io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct;
 
 import java.time.Instant;
 
-import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.InstantSsmSourceWrapper;
 
 import io.deephaven.engine.context.ExecutionContext;

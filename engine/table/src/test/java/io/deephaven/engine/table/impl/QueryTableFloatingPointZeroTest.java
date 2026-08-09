@@ -4,18 +4,14 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.MultiJoinFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -28,7 +24,6 @@ import org.junit.experimental.categories.Category;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.deephaven.engine.testutil.TstUtils.assertEquals;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.floatCol;

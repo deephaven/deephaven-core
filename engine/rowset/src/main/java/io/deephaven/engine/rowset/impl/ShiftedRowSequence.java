@@ -4,7 +4,6 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;

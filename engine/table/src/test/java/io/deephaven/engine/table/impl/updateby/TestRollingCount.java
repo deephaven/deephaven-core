@@ -31,7 +31,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Function;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;

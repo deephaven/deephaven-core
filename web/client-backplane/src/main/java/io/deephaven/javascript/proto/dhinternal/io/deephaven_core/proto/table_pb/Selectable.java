@@ -4,7 +4,6 @@
 package io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb;
 
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.selectable.TypeCase;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;

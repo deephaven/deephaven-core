@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.table.impl.locations.TableDataService;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.text.Indenter;
 

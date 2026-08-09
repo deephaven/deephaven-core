@@ -31,7 +31,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;

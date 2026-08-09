@@ -4,7 +4,6 @@
 package io.deephaven.extensions.s3;
 
 import com.google.auto.service.AutoService;
-import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import io.deephaven.util.channel.SeekableChannelsProviderPluginBase;

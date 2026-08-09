@@ -8,7 +8,6 @@ import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
-import java.lang.Override;
 import java.util.List;
 
 /**

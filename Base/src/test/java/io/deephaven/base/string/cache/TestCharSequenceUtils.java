@@ -3,7 +3,6 @@
 //
 package io.deephaven.base.string.cache;
 
-import org.assertj.core.api.AssumptionExceptionFactory;
 import org.assertj.core.api.Assumptions;
 import org.junit.Test;
 

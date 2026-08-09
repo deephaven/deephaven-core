@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.vector.ObjectVector;

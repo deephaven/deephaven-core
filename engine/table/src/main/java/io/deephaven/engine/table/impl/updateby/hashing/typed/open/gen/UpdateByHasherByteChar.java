@@ -27,7 +27,6 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
 import io.deephaven.engine.table.impl.updateby.hashing.UpdateByStateManagerTypedBase;
 import io.deephaven.util.mutable.MutableInt;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class UpdateByHasherByteChar extends UpdateByStateManagerTypedBase {

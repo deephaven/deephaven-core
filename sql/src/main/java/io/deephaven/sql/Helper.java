@@ -8,7 +8,6 @@ import io.deephaven.api.Selectable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.ViewTable;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexInputRef;
 

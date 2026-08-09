@@ -13,7 +13,6 @@ import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.vector.ObjectVectorTest;
 import junit.framework.TestCase;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 

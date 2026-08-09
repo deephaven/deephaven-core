@@ -25,7 +25,6 @@ import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerT
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
-import java.lang.Object;
 
 final class StaticNaturalJoinHasherObject extends StaticNaturalJoinStateManagerTypedBase {
     private final ImmutableObjectArraySource mainKeySource0;

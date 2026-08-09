@@ -19,9 +19,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableShortArraySource;
 import io.deephaven.util.type.TypeUtils;
-import java.lang.Object;
-import java.lang.Override;
-import java.lang.Short;
 import java.util.Arrays;
 
 final class IncrementalAggOpenHasherShortShort extends IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase {

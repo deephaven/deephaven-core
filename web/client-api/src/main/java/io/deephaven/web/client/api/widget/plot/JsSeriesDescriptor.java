@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.core.JsArray;
-import io.deephaven.web.client.api.widget.plot.enums.JsSeriesPlotStyle;
 import io.deephaven.web.client.fu.JsData;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;

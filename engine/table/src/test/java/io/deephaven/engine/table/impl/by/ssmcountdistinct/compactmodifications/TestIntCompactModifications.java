@@ -8,8 +8,6 @@
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications;
 
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.mutable.MutableInt;
 import org.junit.Test;

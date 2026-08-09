@@ -5,7 +5,6 @@ package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.Type;
 import io.deephaven.qst.type.GenericType;
-import io.deephaven.qst.type.PrimitiveType;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

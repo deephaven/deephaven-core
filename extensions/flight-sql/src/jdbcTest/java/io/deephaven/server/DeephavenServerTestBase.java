@@ -4,7 +4,6 @@
 package io.deephaven.server;
 
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;

@@ -21,7 +21,6 @@ import io.deephaven.client.impl.TypedTicket;
 import io.deephaven.client.impl.UnknownObject;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.figure.FigureWidgetTypePlugin;
 import io.deephaven.plot.Figure;

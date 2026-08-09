@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.sources.aggregate;
 
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.vector.Vector;

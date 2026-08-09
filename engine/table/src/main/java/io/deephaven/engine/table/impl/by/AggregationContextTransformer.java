@@ -9,7 +9,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
 
 /**
  * Transformer to adjust aggregation results for operation building.

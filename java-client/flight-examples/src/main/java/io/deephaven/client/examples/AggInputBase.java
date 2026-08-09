@@ -15,7 +15,6 @@ import io.deephaven.qst.table.LabeledTables;
 import io.deephaven.qst.table.LabeledTables.Builder;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.table.TableSpec;
-import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.util.Collections;

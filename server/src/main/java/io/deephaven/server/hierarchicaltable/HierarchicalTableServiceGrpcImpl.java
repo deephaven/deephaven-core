@@ -21,7 +21,6 @@ import io.deephaven.engine.table.impl.BaseGridAttributes;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.extensions.barrage.util.ExportUtil;
@@ -44,7 +43,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
-import java.lang.Object;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;

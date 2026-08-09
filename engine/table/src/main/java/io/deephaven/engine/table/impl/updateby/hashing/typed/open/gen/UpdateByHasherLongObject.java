@@ -26,8 +26,6 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.updateby.hashing.UpdateByStateManagerTypedBase;
 import io.deephaven.util.mutable.MutableInt;
-import java.lang.Object;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class UpdateByHasherLongObject extends UpdateByStateManagerTypedBase {

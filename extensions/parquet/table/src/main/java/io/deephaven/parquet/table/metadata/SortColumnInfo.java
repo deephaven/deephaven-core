@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.SortSpec;
 import io.deephaven.api.SortColumn;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;

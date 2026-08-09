@@ -6,7 +6,6 @@ package io.deephaven.api.agg;
 import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Parameter;
 
 import java.util.List;
 

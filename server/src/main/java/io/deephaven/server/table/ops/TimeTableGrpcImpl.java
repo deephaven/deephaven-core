@@ -4,8 +4,6 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
-import io.deephaven.api.updateby.spec.CumMinMaxSpec;
-import io.deephaven.api.updateby.spec.CumSumSpec;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
@@ -13,7 +11,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.Scheduler;

@@ -28,7 +28,6 @@ import io.deephaven.util.mutable.MutableInt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.function.Supplier;
 
 public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {

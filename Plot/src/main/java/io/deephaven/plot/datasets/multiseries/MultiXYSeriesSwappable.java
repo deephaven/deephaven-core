@@ -7,11 +7,9 @@ import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.datasets.DynamicSeriesNamer;
 import io.deephaven.plot.datasets.xy.XYDataSeriesInternal;
 import io.deephaven.plot.datasets.xy.XYDataSeriesTableArray;
-import io.deephaven.plot.filters.SelectableDataSetSwappableTable;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.plot.util.tables.TableHandle;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 
 

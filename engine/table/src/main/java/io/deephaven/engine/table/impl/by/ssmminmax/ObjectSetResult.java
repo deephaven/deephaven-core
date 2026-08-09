@@ -7,8 +7,6 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmminmax;
 
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;

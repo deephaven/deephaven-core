@@ -19,9 +19,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource;
 import io.deephaven.util.type.TypeUtils;
-import java.lang.Double;
-import java.lang.Object;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class StaticAggOpenHasherDoubleDouble extends StaticChunkedOperatorAggregationStateManagerOpenAddressedBase {

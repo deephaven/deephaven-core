@@ -13,7 +13,6 @@ import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
 
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * A class specifically for completing column names; to be called after the completer has discovered the name of the

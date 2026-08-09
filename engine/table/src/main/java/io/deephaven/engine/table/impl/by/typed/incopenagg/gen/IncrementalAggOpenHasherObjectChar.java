@@ -23,9 +23,6 @@ import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationSt
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.util.type.TypeUtils;
-import java.lang.Character;
-import java.lang.Object;
-import java.lang.Override;
 import java.util.Arrays;
 
 final class IncrementalAggOpenHasherObjectChar extends IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase {

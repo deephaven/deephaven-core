@@ -7,7 +7,6 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
-import java.util.Objects;
 import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.attributes.ChunkLengths;

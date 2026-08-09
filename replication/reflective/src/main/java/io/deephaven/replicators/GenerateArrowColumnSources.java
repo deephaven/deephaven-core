@@ -27,7 +27,6 @@ import org.apache.arrow.vector.Float8Vector;
 import org.apache.arrow.vector.IntVector;
 import org.apache.arrow.vector.SmallIntVector;
 import org.apache.arrow.vector.TimeMilliVector;
-import org.apache.arrow.vector.TimeStampVector;
 import org.apache.arrow.vector.TinyIntVector;
 import org.apache.arrow.vector.UInt1Vector;
 import org.apache.arrow.vector.UInt2Vector;
@@ -42,7 +41,6 @@ import javax.lang.model.element.Modifier;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.invoke.MethodHandles;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -50,8 +48,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class GenerateArrowColumnSources {
 

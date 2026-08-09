@@ -13,7 +13,6 @@ import io.deephaven.plot.errors.*;
 import io.deephaven.plot.filters.SelectableDataSet;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.PlotUtils;
-import io.deephaven.plot.util.functions.ClosureFunction;
 import io.deephaven.plot.util.tables.ColumnHandlerFactory;
 import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.plot.util.tables.TableHandle;
@@ -22,7 +21,6 @@ import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.gui.shape.NamedShape;
 import io.deephaven.gui.shape.Shape;
-import groovy.lang.Closure;
 
 import java.io.Serializable;
 import java.util.Map;

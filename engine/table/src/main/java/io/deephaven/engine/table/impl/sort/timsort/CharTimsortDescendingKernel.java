@@ -9,7 +9,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.compare.CharComparisons;
 
 /**
  * This implements a timsort kernel for Characters.
