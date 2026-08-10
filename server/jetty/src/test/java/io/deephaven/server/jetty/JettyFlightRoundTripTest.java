@@ -156,14 +156,21 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
 
     private void manifestTest12(HttpClient client) throws InterruptedException, TimeoutException, ExecutionException {
         final ContentResponse manifestResponse = get(client, "js-plugins/manifest.json");
-        assertOk(manifestResponse, "application/json",
-                "{\"plugins\":[{\"name\":\"@deephaven_test/example1\",\"version\":\"0.1.0\",\"main\":\"dist/index.js\",\"loader\":{\"npm\":\"loader\"}},{\"name\":\"@deephaven_test/example2\",\"version\":\"0.2.0\",\"main\":\"dist/index.js\"}]}");
+        assertOk(manifestResponse, "application/json", """
+                {"plugins":[\
+                {"name":"@deephaven_test/example1","version":"0.1.0","main":"dist/index.js","loader":{"npm":"loader"}},\
+                {"name":"@deephaven_test/example2","version":"0.2.0","main":"dist/index.js"}\
+                ]}""");
     }
 
     private void manifestTest123(HttpClient client) throws InterruptedException, TimeoutException, ExecutionException {
         final ContentResponse manifestResponse = get(client, "js-plugins/manifest.json");
-        assertOk(manifestResponse, "application/json",
-                "{\"plugins\":[{\"name\":\"@deephaven_test/example1\",\"version\":\"0.1.0\",\"main\":\"dist/index.js\",\"loader\":{\"foo\":\"bar\"}},{\"name\":\"@deephaven_test/example2\",\"version\":\"0.2.0\",\"main\":\"dist/index.js\"},{\"name\":\"@deephaven_test/example3\",\"version\":\"0.3.0\",\"main\":\"index.js\"}]}");
+        assertOk(manifestResponse, "application/json", """
+                {"plugins":[\
+                {"name":"@deephaven_test/example1","version":"0.1.0","main":"dist/index.js","loader":{"foo":"bar"}},\
+                {"name":"@deephaven_test/example2","version":"0.2.0","main":"dist/index.js"},\
+                {"name":"@deephaven_test/example3","version":"0.3.0","main":"index.js"}\
+                ]}""");
     }
 
     private void example1Tests(HttpClient client, boolean isLimited)
@@ -173,8 +180,9 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                     .isEqualTo(HttpStatus.NOT_FOUND_404);
         } else {
             assertOk(get(client, "js-plugins/@deephaven_test/example1/package.json"),
-                    "application/json",
-                    "{\"name\":\"@deephaven_test/example1\",\"version\":\"0.1.0\",\"main\":\"dist/index.js\",\"files\":[\"dist\"],\"loader\":{\"npm\":\"loader\"}}");
+                    "application/json", """
+                            {"name":"@deephaven_test/example1","version":"0.1.0","main":"dist/index.js",\
+                            "files":["dist"],"loader":{"npm":"loader"}}""");
         }
 
         assertOk(
@@ -195,8 +203,9 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                     .isEqualTo(HttpStatus.NOT_FOUND_404);
         } else {
             assertOk(get(client, "js-plugins/@deephaven_test/example2/package.json"),
-                    "application/json",
-                    "{\"name\":\"@deephaven_test/example2\",\"version\":\"0.2.0\",\"main\":\"dist/index.js\",\"files\":[\"dist\"]}");
+                    "application/json", """
+                            {"name":"@deephaven_test/example2","version":"0.2.0","main":"dist/index.js",\
+                            "files":["dist"]}""");
         }
 
         assertOk(
