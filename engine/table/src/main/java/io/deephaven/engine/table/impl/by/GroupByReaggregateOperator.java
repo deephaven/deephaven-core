@@ -430,7 +430,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
 
     @Override
     public void propagateUpdates(@NotNull final TableUpdate downstream, @NotNull final RowSet newDestinations) {
-        // Track if output rowsets changes.
+        // Track whether output RowSets change.
         final MutableBoolean rowsetsModified = new MutableBoolean(false);
 
         // get the rowset for the updated items
