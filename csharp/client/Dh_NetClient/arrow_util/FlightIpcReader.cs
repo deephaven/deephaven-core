@@ -13,7 +13,7 @@ namespace Deephaven.Dh_NetClient;
 
 /// <summary>
 /// Incrementally reads Arrow record batches from a raw stream of Flight FlightData messages,
-/// such as a DoGet response (TableHandle.ToArrowTableAsync).
+/// whether from a DoGet (TableHandle.ToArrowTableAsync) or a DoExchange (SubscriptionThread).
 ///
 /// This exists because (see proto/flight.proto) the Apache.Arrow.Flight library's typed readers
 /// throw NotImplementedException on the DictionaryBatch messages the server interleaves for

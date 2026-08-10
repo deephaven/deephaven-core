@@ -32,7 +32,10 @@ public abstract class ArrowColumnSource : IColumnSource {
     if (la.Length != 1) {
       throw new Exception($"Expected ListArray of length 1, got {la.Length}");
     }
-    var array = la.GetSlicedValues(0);
+    // A Barrage chunk for a dictionary- or run-end-encoded column arrives as a
+    // List<encoded type>; expand it to a plain array of the logical value type here so
+    // everything downstream (TableState et al.) only ever sees plain data.
+    var array = EncodedArrayDecoder.DecodeArray(la.GetSlicedValues(0));
     var chunkedArray = new ChunkedArray(new[] { array });
 
     var visitor = new ArrowColumnSourceMaker(chunkedArray);
