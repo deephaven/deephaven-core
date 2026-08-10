@@ -44,8 +44,7 @@ public class ToBigIntegerPage<ATTR extends Any> implements ToPage<ATTR, BigInteg
     }
 
     /**
-     * Create a {@link ToPage} for a parquet {@code INT64} column annotated with an unsigned 64-bit int logical type.
-     * Such values do not fit in any Java primitive, so they are promoted to {@link BigInteger}.
+     * Needs no codec, unlike {@link #create}, because the values are fixed-width {@code INT64}.
      */
     public static <ATTR extends Any> ToPage<ATTR, BigInteger[]> createFromUnsignedLong(final Class<?> nativeType) {
         verifyNativeType(nativeType);

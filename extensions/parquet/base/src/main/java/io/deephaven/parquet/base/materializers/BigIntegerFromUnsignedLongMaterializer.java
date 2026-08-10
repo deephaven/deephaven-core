@@ -10,9 +10,8 @@ import org.apache.parquet.column.values.ValuesReader;
 import java.math.BigInteger;
 
 /**
- * Materializes a parquet {@code INT64} column annotated with an unsigned 64-bit int logical type as {@link BigInteger}.
- * Unlike the narrower unsigned widths, {@code UINT_64} values do not fit in any Java primitive, so they are promoted to
- * {@link BigInteger}.
+ * Materializes an unsigned 64-bit parquet int as a {@link BigInteger}, since such values do not fit in any Java
+ * primitive.
  */
 public class BigIntegerFromUnsignedLongMaterializer extends ObjectMaterializerBase<BigInteger>
         implements PageMaterializer {

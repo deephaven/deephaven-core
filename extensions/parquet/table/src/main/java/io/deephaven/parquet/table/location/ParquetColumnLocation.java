@@ -634,9 +634,12 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                     case 32:
                         return Optional.of(ToLongPage.createFromUnsignedInt(pageType));
                     case 64:
-                        // Unsigned 64-bit values do not fit in any Java primitive, so they are promoted to BigInteger.
+                        // Promoted to BigInteger by default, since no Java primitive fits. A long may be requested
+                        // instead, in which case values exceeding Long.MAX_VALUE are rejected while reading.
                         if (pageType == BigInteger.class) {
                             return Optional.of(ToBigIntegerPage.createFromUnsignedLong(pageType));
+                        } else if (pageType == long.class) {
+                            return Optional.of(ToLongPage.createFromUnsignedLong(pageType));
                         }
                         throw new IllegalArgumentException(
                                 "Cannot convert parquet unsigned long column to " + pageType);
