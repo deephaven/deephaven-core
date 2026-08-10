@@ -46,7 +46,7 @@ TEST_CASE("Fetch the entire table (small)", "[client_table]") {
       });
   std::cout << th.Stream(true) << '\n';
 
-  auto arrow_table = th.ToArrowTable();
+  auto arrow_table = th.ToArrowTable(true);
 
   auto chars = MakeReservedVector<std::optional<char16_t>>(target);
   auto int8s = MakeReservedVector<std::optional<int8_t>>(target);

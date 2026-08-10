@@ -12,6 +12,8 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Optional;
+
 /**
  * The standard implementation of an UncoalescedTable.
  *
@@ -61,6 +63,11 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
                 return coalesced = doCoalesce();
             }
         }
+    }
+
+    @Override
+    public final Optional<Table> coalescedIfAvailable() {
+        return verifyCoalescedForReuse(coalesced);
     }
 
     /**

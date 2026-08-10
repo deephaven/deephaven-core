@@ -132,6 +132,10 @@
               {
                 "label": "Servers & clients",
                 "path": "conceptual/client-server-model.md"
+              },
+              {
+                "label": "What is Barrage?",
+                "path": "conceptual/what-is-barrage.md"
               }
             ]
           },
@@ -1474,6 +1478,10 @@
                   {
                     "label": "getAttributes",
                     "path": "reference/table-operations/metadata/getAttributes.md"
+                  },
+                  {
+                    "label": "getColumnSource",
+                    "path": "reference/table-operations/metadata/getColumnSource.md"
                   },
                   {
                     "label": "getDefinition",

@@ -623,9 +623,9 @@ public final class ParquetTableReadWriteTest {
         final File dest = new File(rootFile, "ParquetTest_sortedColumnsAttribute_test.parquet");
         writeTable(sorted, dest.getPath());
 
-        // Coalescing populates the sort attribute from parquet metadata onto the SourceTable
-        final Table fromDisk = readTable(dest.getPath());
-        fromDisk.coalesce();
+        // Coalescing populates the sort attribute from parquet metadata onto the coalesced result table; the
+        // uncoalesced SourceTable's attributes are never mutated (they may already have been published)
+        final Table fromDisk = readTable(dest.getPath()).coalesce();
         assertEquals(Optional.of(SortingOrder.Ascending),
                 SortedColumnsAttribute.getOrderForColumn(fromDisk, "x"));
         assertEquals(Optional.empty(),
@@ -636,8 +636,7 @@ public final class ParquetTableReadWriteTest {
         final File dest2 = new File(rootFile, "ParquetTest_sortedColumnsAttribute_test2.parquet");
         writeTable(sorted2, dest2.getPath());
 
-        final Table fromDisk2 = readTable(dest2.getPath());
-        fromDisk2.coalesce();
+        final Table fromDisk2 = readTable(dest2.getPath()).coalesce();
         assertEquals(Optional.of(SortingOrder.Ascending),
                 SortedColumnsAttribute.getOrderForColumn(fromDisk2, "x"));
 
@@ -646,8 +645,7 @@ public final class ParquetTableReadWriteTest {
         final File dest3 = new File(rootFile, "ParquetTest_sortedColumnsAttribute_desc_test.parquet");
         writeTable(sortedDesc, dest3.getPath());
 
-        final Table fromDisk3 = readTable(dest3.getPath());
-        fromDisk3.coalesce();
+        final Table fromDisk3 = readTable(dest3.getPath()).coalesce();
         assertEquals(Optional.of(SortingOrder.Descending),
                 SortedColumnsAttribute.getOrderForColumn(fromDisk3, "x"));
     }

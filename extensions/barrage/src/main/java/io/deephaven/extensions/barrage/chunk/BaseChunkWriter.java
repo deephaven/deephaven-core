@@ -7,6 +7,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -29,6 +30,15 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
 
     public static final byte[] PADDING_BUFFER = new byte[8];
     public static final int REMAINDER_MOD_8_MASK = 0x7;
+
+    /**
+     * Upper bound (in bytes) on a single bulk payload write shared by the fixed-width primitive writers. Wide columns
+     * are encoded into little-endian bytes and flushed in windows of this size rather than writing one value (and its
+     * individual bytes) at a time. Configure once here (rather than per type) via
+     * {@code BaseChunkWriter.bulkWriteBufferBytes}.
+     */
+    protected static final int BULK_WRITE_BUFFER_BYTES = Configuration.getInstance()
+            .getIntegerForClassWithDefault(BaseChunkWriter.class, "bulkWriteBufferBytes", 4096);
 
     private final ChunkTransformer<SOURCE_CHUNK_TYPE> transformer;
     private final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier;

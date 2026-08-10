@@ -250,6 +250,9 @@ project(':extensions-arrow').projectDir = file('extensions/arrow')
 include(':extensions-barrage')
 project(':extensions-barrage').projectDir = file('extensions/barrage')
 
+include(':extensions-barrage-benchmark')
+project(':extensions-barrage-benchmark').projectDir = file('extensions/barrage/benchmark')
+
 include(':extensions-classgraph')
 project(':extensions-classgraph').projectDir = file('extensions/classgraph')
 
@@ -494,11 +497,6 @@ include ':web-client-api:types'
 project(':web-client-api:types').projectDir = file('web/client-api/types')
 
 
-buildCache {
-    local {
-        removeUnusedEntriesAfterDays = 4
-    }
-}
 
 develocity {
     buildScan {

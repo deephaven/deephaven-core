@@ -2478,4 +2478,52 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 ParquetInstructions.EMPTY.withTableDefinition(rightDefinition));
         return ParquetTools.readTable(rightLocation.getPath());
     }
+
+    public void testLeftRemoveDuplicateRightNoSpuriousModifiedColumns() {
+        // Both sides refreshing so naturalJoin uses the both-incremental state manager, which tracks per-key left row
+        // sets. The right side has duplicate "dup" keys, so the "dup" slot's right state is an internal
+        // duplicate-location token (rather than a resolved right row key); FIRST_MATCH resolves it to the first match.
+        final QueryTable leftTable = TstUtils.testRefreshingTable(
+                i(0, 1, 2).toTracking(),
+                col("Key", "dup", "dup", "solo"),
+                intCol("LSentinel", 1, 2, 3));
+        final QueryTable rightTable = TstUtils.testRefreshingTable(
+                i(0, 1, 2).toTracking(),
+                col("Key", "dup", "dup", "solo"),
+                intCol("RSentinel", 100, 101, 200));
+
+        final QueryTable result =
+                (QueryTable) leftTable.naturalJoin(rightTable, "Key", "RSentinel", NaturalJoinType.FIRST_MATCH);
+        final ModifiedColumnSet rsentinelColumn = result.newModifiedColumnSet("RSentinel");
+
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        // Remove one of the two "dup" left rows (the other remains) and, unrelatedly, modify the "solo" row's non-key
+        // value. The removal is a pure left removal from the duplicate-right "dup" slot: it leaves left rows behind but
+        // does not change that slot's right value. The tracker entry it created has only a left flag, which is cleared
+        // once the removal is applied -- so the final modified-slot pass must skip it. If it does not, the resolved
+        // "dup" right row key is compared against the saved duplicate-location token, they differ, and the join
+        // spuriously marks the right (RSentinel) column as modified even though no right value changed.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(leftTable, i(0));
+            addToTable(leftTable, i(2), col("Key", "solo"), intCol("LSentinel", 30));
+            leftTable.notifyListeners(i(), i(0), i(2));
+        });
+
+        assertEquals(1, listener.getCount());
+        final TableUpdate update = listener.getUpdate();
+        assertEquals(i(0), update.removed());
+        // Only the "solo" row actually changed; the remaining "dup" row must not be reported as modified.
+        assertEquals(i(2), update.modified());
+        // RSentinel did not change for any row, so it must not appear in the modified column set.
+        assertFalse(update.modifiedColumnSet().containsAny(rsentinelColumn));
+
+        assertTableEquals(
+                newTable(col("Key", "dup", "solo"), intCol("LSentinel", 2, 30), intCol("RSentinel", 100, 200)),
+                result);
+
+        listener.close();
+    }
 }

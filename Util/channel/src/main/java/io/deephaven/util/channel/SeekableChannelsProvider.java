@@ -83,8 +83,31 @@ public interface SeekableChannelsProvider extends SafeCloseable {
         return getReadChannel(channelContext, convertToURI(uriStr, false));
     }
 
-    SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri)
-            throws IOException;
+    /**
+     * Get a seekable byte channel.
+     *
+     * @param channelContext the channel context
+     * @param uri the uri
+     * @return the seekable byte channel
+     * @throws IOException if an IO exception occurs
+     */
+    SeekableByteChannel getReadChannel(
+            @NotNull SeekableChannelContext channelContext,
+            @NotNull URI uri) throws IOException;
+
+    /**
+     * Get a seekable byte channel with the file size of {@code uri} known ahead of time.
+     *
+     * @param channelContext the channel context
+     * @param uri the uri
+     * @param fileSize the file size
+     * @return the seekable byte channel
+     * @throws IOException if an IO exception occurs
+     */
+    SeekableByteChannel getReadChannel(
+            @NotNull SeekableChannelContext channelContext,
+            @NotNull URI uri,
+            long fileSize) throws IOException;
 
     /**
      * Creates an {@link InputStream} from the current position of {@code channel} from which the caller expects to read

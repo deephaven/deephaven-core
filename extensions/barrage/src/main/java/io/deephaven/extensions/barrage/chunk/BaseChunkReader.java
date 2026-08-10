@@ -9,6 +9,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,6 +20,15 @@ import java.util.function.IntFunction;
 
 public abstract class BaseChunkReader<READ_CHUNK_TYPE extends WritableChunk<Values>>
         implements ChunkReader<READ_CHUNK_TYPE> {
+
+    /**
+     * Upper bound (in bytes) on a single bulk payload read shared by the fixed-width primitive readers. Wide columns
+     * are decoded in windows of this size rather than materializing the entire payload at once. Configure once here
+     * (rather than per type) via {@code BaseChunkReader.bulkReadBufferBytes}.
+     */
+    protected static final int BULK_READ_BUFFER_BYTES = Configuration.getInstance()
+            .getIntegerForClassWithDefault(BaseChunkReader.class, "bulkReadBufferBytes", 4096);
+
     @FunctionalInterface
     public interface ChunkTransformer<READ_CHUNK_TYPE extends Chunk<Values>, DEST_CHUNK_TYPE extends WritableChunk<Values>> {
         void transform(READ_CHUNK_TYPE source, DEST_CHUNK_TYPE dest, int destOffset);
