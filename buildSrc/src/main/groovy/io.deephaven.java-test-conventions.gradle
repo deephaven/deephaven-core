@@ -30,11 +30,10 @@ project.tasks.named('test', Test, { test ->
 project.tasks.withType(Test).configureEach { Test t ->
     t.with {
         // Gradle 9 no longer provides default testClassesDirs/classpath for custom Test tasks.
-        // Set them here so new Test tasks automatically wire up to the test source set's outputs
-        // and runtime classpath. Tasks that need different source sets (e.g. adbcTest, brotliTest)
-        // override these in their own configuration.
-        t.testClassesDirs = testing.suites.test.sources.output.classesDirs
-        t.classpath = testing.suites.test.sources.runtimeClasspath
+        // Use conventionMapping so these act as defaults: JvmTestSuite tasks that explicitly set
+        // their own testClassesDirs/classpath will override these conventions automatically.
+        t.conventionMapping.map('testClassesDirs') { testing.suites.test.sources.output.classesDirs }
+        t.conventionMapping.map('classpath') { testing.suites.test.sources.runtimeClasspath }
 
         t.defaultCharacterEncoding = 'UTF-8'
 
