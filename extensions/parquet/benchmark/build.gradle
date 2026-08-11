@@ -1,37 +1,21 @@
 plugins {
-    id 'java-library'
     id 'io.deephaven.project.register'
 }
 
 description 'Parquet Benchmark: Benchmarks for Parquet modules'
 
-sourceSets {
-    benchmark {
-        java {
-            srcDir 'src/benchmark/java'
-        }
-        compileClasspath += sourceSets.main.output
-        runtimeClasspath += sourceSets.main.output
-    }
-}
-
-configurations {
-    benchmarkImplementation.extendsFrom implementation
-    benchmarkRuntimeOnly.extendsFrom runtimeOnly
-}
-
 dependencies {
-    benchmarkImplementation project(':extensions-parquet-table')
-    benchmarkImplementation project(':engine-table')
-    benchmarkImplementation project(':BenchmarkSupport')
-    benchmarkImplementation TestTools.projectDependency(project, 'engine-rowset')
-    benchmarkImplementation TestTools.projectDependency(project, 'engine-table')
+    implementation project(':extensions-parquet-table')
+    implementation project(':engine-table')
+    implementation project(':BenchmarkSupport')
+    implementation TestTools.projectDependency(project, 'engine-rowset')
+    implementation TestTools.projectDependency(project, 'engine-table')
 
-    benchmarkAnnotationProcessor libs.jmh.generator.annprocess
-    benchmarkCompileOnly libs.jmh.generator.annprocess
+    annotationProcessor libs.jmh.generator.annprocess
+    compileOnly libs.jmh.generator.annprocess
 
-    benchmarkRuntimeOnly project(':configs')
-    benchmarkRuntimeOnly project(':test-configs')
+    runtimeOnly project(':configs')
+    runtimeOnly project(':test-configs')
 }
 
 task jmhRun(type: JavaExec)  {
@@ -39,7 +23,7 @@ task jmhRun(type: JavaExec)  {
     new File("$rootDir/tmp/logs").mkdirs()
     workingDir "$rootDir/tmp/workspace"
 
-    classpath = sourceSets.benchmark.runtimeClasspath
+    classpath = sourceSets.main.runtimeClasspath
 
     mainClass.set 'io.deephaven.benchmarking.runner.BenchmarkRunner'
 
@@ -58,7 +42,7 @@ def createJmhTask = {
         new File("$rootDir/tmp/logs").mkdirs()
 
         task.workingDir "$rootDir/tmp/workspace"
-        task.classpath = sourceSets.benchmark.runtimeClasspath
+        task.classpath = sourceSets.main.runtimeClasspath
         task.mainClass.set 'io.deephaven.benchmarking.runner.BenchmarkRunner'
 
         // arguments to pass to the application
