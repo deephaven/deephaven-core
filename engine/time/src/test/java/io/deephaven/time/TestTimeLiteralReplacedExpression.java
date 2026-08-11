@@ -11,7 +11,7 @@ import java.util.HashMap;
 
 public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
 
-    public void testConvertExpressionDateTime() throws Exception {
+    public void testConvertExpressionInstant() throws Exception {
         final TimeLiteralReplacedExpression tlre =
                 TimeLiteralReplacedExpression.convertExpression("'2010-01-01T12:34:56.891 NY'");
         TestCase.assertEquals("_instant0", tlre.getConvertedFormula());
@@ -22,6 +22,20 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
 
         TestCase.assertEquals(
                 "        private Instant _instant0=DateTimeUtils.parseInstant(\"2010-01-01T12:34:56.891 NY\");\n",
+                tlre.getInstanceVariablesString());
+    }
+
+    public void testConvertExpressionZdt() throws Exception {
+        final TimeLiteralReplacedExpression tlre =
+                TimeLiteralReplacedExpression.convertExpression("'Z2010-01-01T12:34:56.891 NY'");
+        TestCase.assertEquals("_zdt0", tlre.getConvertedFormula());
+
+        final HashMap<String, Class<?>> newVars = new HashMap<>();
+        newVars.put("_zdt0", ZonedDateTime.class);
+        TestCase.assertEquals(newVars, tlre.getNewVariables());
+
+        TestCase.assertEquals(
+                "        private ZonedDateTime _zdt0=DateTimeUtils.parseZonedDateTime(\"Z2010-01-01T12:34:56.891 NY\");\n",
                 tlre.getInstanceVariablesString());
     }
 
