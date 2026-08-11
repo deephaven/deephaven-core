@@ -63,6 +63,11 @@ public class FilteredTableDataService extends AbstractTableDataService {
         /**
          * Produce the filter that decides the locations of {@code tableKey}.
          * <p>
+         * An implementation that accepts no location of {@code tableKey} <em>must</em> return the
+         * {@link LocationKeyFilter#NONE} instance itself, and one that accepts every location <em>should</em> return
+         * {@link LocationKeyFilter#ALL}. The sentinels are recognized by reference identity, so an equivalent lambda is
+         * not a substitute.
+         * <p>
          * This may be called more than once for the same table, so it must be a deterministic function of its argument:
          * equal table keys must yield filters that accept the same locations.
          *
