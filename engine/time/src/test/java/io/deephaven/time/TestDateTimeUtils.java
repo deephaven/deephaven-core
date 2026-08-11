@@ -2648,6 +2648,23 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.multiply((Period) null, 3));
         TestCase.assertNull(DateTimeUtils.multiply(p, NULL_INT));
 
+        TestCase.assertEquals(Period.ofDays(6), DateTimeUtils.multiply(p, 2L));
+        TestCase.assertEquals(Period.ofDays(6), DateTimeUtils.multiply(2L, p));
+        TestCase.assertEquals(Period.ofDays(9), DateTimeUtils.multiply(p, 3L));
+        TestCase.assertEquals(Period.ofDays(3), DateTimeUtils.multiply(p, 1L));
+        TestCase.assertEquals(Period.ofDays(0), DateTimeUtils.multiply(p, 0L));
+        TestCase.assertEquals(Period.ofDays(-3), DateTimeUtils.multiply(p, -1L));
+        TestCase.assertEquals(Period.ofDays(-6), DateTimeUtils.multiply(p, -2L));
+        TestCase.assertEquals(Period.ofDays(-9), DateTimeUtils.multiply(p, -3L));
+        TestCase.assertNull(DateTimeUtils.multiply((Period) null, 3L));
+        TestCase.assertNull(DateTimeUtils.multiply(p, NULL_LONG));
+
+        try {
+            DateTimeUtils.multiply(p, Long.MAX_VALUE);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
 
         TestCase.assertEquals(Duration.ofNanos(246913578L), DateTimeUtils.multiply(d, 2));
         TestCase.assertEquals(Duration.ofNanos(246913578L), DateTimeUtils.multiply(2, d));
