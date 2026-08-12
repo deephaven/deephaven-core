@@ -35,8 +35,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
 
     /**
      * The current execution context containing the active message stream and configuration. Null when no execution
-     * context is active. Used by this class's isActive() and canSourceResource() methods to determine if this provider
-     * should handle resource requests from RemoteFileSourceClassLoader.
+     * context is active. Read via {@link #activeContextIfOwned()} to determine if this provider should handle resource
+     * requests from RemoteFileSourceClassLoader.
      */
     private static volatile RemoteFileSourceExecutionContext executionContext;
 
@@ -69,7 +69,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      */
     @Override
     public boolean canSourceResource(String resourceName) {
-        if (!isActive()) {
+        final RemoteFileSourceExecutionContext context = activeContextIfOwned();
+        if (context == null) {
             return false;
         }
 
@@ -78,7 +79,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             return false;
         }
 
-        for (String contextResourcePath : executionContext.getResourcePaths()) {
+        for (String contextResourcePath : context.getResourcePaths()) {
             if (resourceName.equals(contextResourcePath)) {
                 log.debug().append("Can source: ").append(resourceName).endl();
                 return true;
@@ -146,8 +147,23 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      */
     @Override
     public boolean isActive() {
-        RemoteFileSourceExecutionContext context = executionContext;
-        return context != null && context.getActiveMessageStream() == this;
+        return activeContextIfOwned() != null;
+    }
+
+    /**
+     * Returns the execution context if it is currently owned by this message stream, otherwise null.
+     *
+     * <p>
+     * The context is read into a local so that callers observe a single, consistent snapshot. The context is nulled by
+     * {@link #clearExecutionContext()} on the transport thread when the client stream closes, which can happen while a
+     * script evaluation is still resolving resources on another thread; checking the field and then reading through it
+     * separately would leave a window for a NullPointerException.
+     *
+     * @return the execution context owned by this message stream, or null if this stream is not the active one
+     */
+    private RemoteFileSourceExecutionContext activeContextIfOwned() {
+        final RemoteFileSourceExecutionContext context = executionContext;
+        return context != null && context.getActiveMessageStream() == this ? context : null;
     }
 
     /**
@@ -157,7 +173,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      */
     @Override
     public boolean hasConfiguredResources() {
-        return isActive() && !executionContext.getResourcePaths().isEmpty();
+        final RemoteFileSourceExecutionContext context = activeContextIfOwned();
+        return context != null && !context.getResourcePaths().isEmpty();
     }
 
     /**
@@ -167,7 +184,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      */
     @Override
     public boolean isDirty() {
-        return isActive() && executionContext.isDirty();
+        final RemoteFileSourceExecutionContext context = activeContextIfOwned();
+        return context != null && context.isDirty();
     }
 
     /**
