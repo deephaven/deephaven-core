@@ -298,6 +298,47 @@ Timer(6, start_listener, args=[handle]).start()
 
 ![`handle` is registered and deregistered](../assets/how-to/listener-deregister.gif)
 
+### Update graph locks and thread safety
+
+When you create a ticking table and add a listener to it, there's a potential race condition: the table may tick (update) between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
+
+The [Update Graph](../conceptual/table-update-model.md) (UG) coordinates all table updates in Deephaven. By holding an Update Graph lock while creating the table _and_ adding the listener, you ensure no updates occur in between.
+
+![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-locks.png)
+
+> [!TIP]
+> **Lock = atomicity.** The lock ensures "create table" and "add listener" happen as one indivisible unit from the Update Graph's perspective — no updates can slip through.
+
+**Python handles this automatically.** The [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) and [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen) functions internally acquire the appropriate lock when registering listeners. This means the following code is safe:
+
+```python skip-test
+# Safe: listen() handles locking internally
+table = time_table("PT1s").update("X=i")
+handle = listen(table, listener_function)  # Lock acquired automatically
+```
+
+For most use cases, you don't need to manage locks manually. However, if you need explicit control — such as when performing multiple related operations atomically — you can use the [`deephaven.update_graph`](/core/pydoc/code/deephaven.update_graph.html) module:
+
+```python skip-test
+from deephaven import update_graph
+
+# Using exclusive_lock as a context manager
+with update_graph.exclusive_lock(table):
+    # All operations here are atomic — no updates occur until the block exits
+    table = time_table("PT1s").update("X=i")
+    handle = listen(table, listener_function)
+```
+
+Deephaven provides two types of locks:
+
+- **Exclusive lock** ([`exclusive_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.exclusive_lock)): Blocks all Update Graph processing. Use this when you need to perform multiple operations atomically.
+- **Shared lock** ([`shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock)): Allows reading but prevents the Update Graph from starting a new cycle. Use this for read-only operations on ticking data.
+
+> [!NOTE]
+> Locks should be held for the shortest duration possible. The Update Graph cannot process updates while any thread holds a lock. Long-held locks can cause update delays.
+
+For more details on locks and thread safety, see [Synchronization and locking](../conceptual/query-engine/engine-locking.md).
+
 ## Reduce data volumes
 
 Tables often tick at high frequencies and with large quantities of incoming data. It's best practice to only listen to what's required for an operation. In such cases, applying [filters](./use-filters.md) and/or [reducing tick frequencies](./performance/reduce-update-frequency.md) will reduce both the quantity and frequency of incoming data to a listener.
@@ -434,3 +475,5 @@ handle = listen(source, listener_function, do_replay=False)
 - [`TableUpdate`](/core/pydoc/code/deephaven.table_listener.html?#deephaven.table_listener.TableUpdate)
 - [`Table`](/core/javadoc/io/deephaven/engine/table/Table.html)
 - [`listen`](/core/pydoc/code/deephaven.table_listener.html?#deephaven.table_listener.listen)
+- [Synchronization and locking](../conceptual/query-engine/engine-locking.md)
+- [`update_graph`](/core/pydoc/code/deephaven.update_graph.html)

@@ -208,7 +208,45 @@ t1.addUpdateListener(h1)
 
 Most applications that require the use of a table listener do so for the entirety of the application's lifetime. If a listener should only be registered for a specified period of time, a listener can be removed from a table using the [`Table.removeUpdateListener(listener)`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/TableAdapter.html#removeUpdateListener(io.deephaven.engine.table.TableUpdateListener)) method.
 
-The following example uses [`java.util.Timer`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Timer.html) to remove a listener after 3 seconds and then adds it back it after 6 seconds.
+### Why use update graph locks?
+
+When you create a ticking table and then add a listener to it, there's a potential race condition: the table may tick (update) between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
+
+The [Update Graph](../conceptual/table-update-model.md) (UG) coordinates all table updates in Deephaven. By holding an Update Graph lock while creating the table _and_ adding the listener, you ensure that no updates occur in between — your listener captures every update from the start.
+
+![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-locks.png)
+
+> [!TIP]
+> **Lock = atomicity.** The lock ensures "create table" and "add listener" happen as one indivisible unit from the Update Graph's perspective — no updates can slip through.
+
+**Without a lock:**
+
+```groovy skip-test
+// RISKY: Updates can occur between these two lines
+t = timeTable("PT1s").update("X=i")
+t.addUpdateListener(listener)  // May miss updates that occurred above!
+```
+
+**With a lock:**
+
+```groovy skip-test
+// SAFE: No updates occur until the lock is released
+ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
+    t = timeTable("PT1s").update("X=i")
+    t.addUpdateListener(listener)
+})
+```
+
+Deephaven provides two types of locks:
+
+- **Exclusive lock** ([`exclusiveLock`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#exclusiveLock())): Blocks all Update Graph processing. Use this when you need to both create tables and add listeners atomically.
+- **Shared lock** ([`sharedLock`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock())): Allows reading but prevents the Update Graph from starting a new cycle. Use this for read-only operations on ticking data.
+
+For more details on locks and thread safety, see [Synchronization and locking](../conceptual/query-engine/engine-locking.md).
+
+### Example: Add and remove a listener
+
+The following example uses [`java.util.Timer`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Timer.html) to remove a listener after 3 seconds and then add it back after 6 seconds. The exclusive lock ensures the listener doesn't miss updates during registration.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
@@ -227,7 +265,7 @@ class ExampleListener extends InstrumentedTableUpdateListenerAdapter {
     }
 }
 
-// Use an update graph lock to ensure that the listener does not miss the first updates to the table
+// Use an exclusive lock to ensure the listener doesn't miss updates between table creation and registration
 ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
     t = timeTable("PT1s").update("X=i").tail(5)
     listener = new ExampleListener("Test Listener", t, true)
@@ -240,7 +278,7 @@ new Timer().runAfter(3000) {
     t.removeUpdateListener(listener)
 }
 
-// Use an update graph lock to ensure that the listener does not miss updates during the 6-second wait
+// Use an exclusive lock when re-adding the listener to ensure no updates are missed
 ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
     new Timer().runAfter(6000) {
         println "Adding listener"
@@ -250,6 +288,9 @@ ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
 ```
 
 ![A listener is added and removed](../assets/how-to/listener-lock.gif)
+
+> [!NOTE]
+> Locks should be held for the shortest duration possible. The Update Graph cannot process updates while any thread holds a lock. Long-held locks can cause update delays.
 
 ## Error handling
 
@@ -445,3 +486,5 @@ source.addUpdateListener(listener)
 - [`timeTable`](../reference/table-operations/create/timeTable.md)
 - [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html)
 - [Table](/core/javadoc/io/deephaven/engine/table/Table.html)
+- [Synchronization and locking](../conceptual/query-engine/engine-locking.md)
+- [`UpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html)
