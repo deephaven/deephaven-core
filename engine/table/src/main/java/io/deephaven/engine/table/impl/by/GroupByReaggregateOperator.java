@@ -17,7 +17,6 @@ import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -345,8 +344,6 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
 
         private final ModifiedColumnSet updateModifiedColumnSet;
         private final ModifiedColumnSet allOutputColumns;
-        /** Just the exposed RowSet column. */
-        private final ModifiedColumnSet rowSetModifiedColumnSet;
         private final ModifiedColumnSet.Transformer aggregatedColumnsTransformer;
 
         private InputToResultModifiedColumnSetFactory(
@@ -363,8 +360,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             }
             // A dirty RowSet column should dirty only our RowSet column here, not allOutputColumns (everything).
             // Grouped-value dirtiness is a separate signal, already carried by the parallel entries above.
-            affectedColumns[allInputs.length - 1] =
-                    rowSetModifiedColumnSet = resultTable.newModifiedColumnSet(exposeRowSetsAs);
+            affectedColumns[allInputs.length - 1] = resultTable.newModifiedColumnSet(exposeRowSetsAs);
             allOutputColumns = resultTable.newModifiedColumnSet(allInputs);
 
             aggregatedColumnsTransformer = inputTable.newModifiedColumnSetTransformer(allInputs, affectedColumns);
@@ -430,9 +426,6 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
 
     @Override
     public void propagateUpdates(@NotNull final TableUpdate downstream, @NotNull final RowSet newDestinations) {
-        // Track whether output RowSets change.
-        final MutableBoolean rowsetsModified = new MutableBoolean(false);
-
         // get the rowset for the updated items
         try (final WritableRowSet stepDestinations = stepDestinationsModified.build()) {
             // add the new destinations so a rowset will get created if it doesn't exist
@@ -482,9 +475,6 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
                             // use the addRowSet as the new rowset
                             final WritableRowSet addRowSet = nullToEmpty(
                                     extractAndClearBuilderRandom(addedBuildersBackingChunk, backingChunkOffset));
-                            if (!addRowSet.isEmpty()) {
-                                rowsetsModified.setTrue();
-                            }
                             rowSetBackingChunk.set(backingChunkOffset, live ? addRowSet.toTracking() : addRowSet);
                         } else {
                             try (final WritableRowSet addRowSet =
@@ -495,9 +485,6 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
                                                     backingChunkOffset))) {
                                 workingRowSet.remove(removeRowSet);
                                 workingRowSet.insert(addRowSet);
-                                if (!addRowSet.isEmpty() || !removeRowSet.isEmpty()) {
-                                    rowsetsModified.setTrue();
-                                }
                             }
                         }
                     });
@@ -505,10 +492,6 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             }
             stepDestinationsModified = null;
         }
-        // addChunk/removeChunk set someKeyHasAddsOrRemoves as soon as a whole child RowSet joins or leaves a
-        // destination; narrow it here to whether any keys were actually inserted or removed, since a child whose
-        // RowSet is empty contributes nothing to the union either way.
-        someKeyHasAddsOrRemoves &= rowsetsModified.booleanValue();
         initializeNewRowSetPreviousValues(newDestinations);
     }
 
