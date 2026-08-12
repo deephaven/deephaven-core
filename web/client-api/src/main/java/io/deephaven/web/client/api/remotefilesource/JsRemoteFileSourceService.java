@@ -3,24 +3,24 @@
 //
 package io.deephaven.web.client.api.remotefilesource;
 
+import com.google.protobuf.Any;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.ByteStringAccess;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.Uint8Array;
-import elemental2.dom.TextEncoder;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightDescriptor;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightInfo;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceClientMessage;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceMetaRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceMetaResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourcePluginFetchRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.RemoteFileSourceServerMessage;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.SetExecutionContextRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.remotefilesource_pb.SetExecutionContextResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceClientMessage;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaRequest;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponse;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourcePluginFetchRequest;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerMessage;
+import io.deephaven.proto.backplane.grpc.SetExecutionContextRequest;
+import io.deephaven.proto.backplane.grpc.SetExecutionContextResponse;
+import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
-import io.deephaven.web.client.api.JsProtobufUtils;
 import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.event.EventFn;
 import io.deephaven.web.client.api.WorkerConnection;
@@ -36,8 +36,12 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
+import org.apache.arrow.flight.impl.Flight;
+import org.gwtproject.nio.TypedArrayHelper;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,6 +65,11 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
     // Plugin name must match RemoteFileSourcePlugin.name() on the server
     private static final String PLUGIN_NAME = "DeephavenRemoteFileSourcePlugin";
+
+    // Type URL for the Any-wrapped plugin fetch command. Built explicitly rather than with Any.pack(), which needs
+    // protobuf descriptors that aren't available once this code is compiled to JS.
+    private static final String PLUGIN_FETCH_REQUEST_TYPE_URL =
+            "type.googleapis.com/io.deephaven.proto.backplane.grpc.RemoteFileSourcePluginFetchRequest";
 
     // Timeout for setExecutionContext requests (in milliseconds)
     private static final int SET_EXECUTION_CONTEXT_TIMEOUT_MS = 30000; // 30 seconds
@@ -98,31 +107,28 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * @param connection the worker connection to use
      * @return a promise that resolves to the FlightInfo for the plugin fetch
      */
-    private static Promise<FlightInfo> fetchPluginFlightInfo(WorkerConnection connection) {
-        // Create a new export ticket for the result
-        Ticket resultTicket = connection.getTickets().newExportTicket();
-
-        // Create the fetch request
-        RemoteFileSourcePluginFetchRequest fetchRequest = new RemoteFileSourcePluginFetchRequest();
-        fetchRequest.setResultId(resultTicket);
-        fetchRequest.setPluginName(PLUGIN_NAME);
-
-        // Serialize the request to bytes
-        Uint8Array innerRequestBytes = fetchRequest.serializeBinary();
+    private static Promise<Flight.FlightInfo> fetchPluginFlightInfo(WorkerConnection connection) {
+        // Create the fetch request, with a new export ticket for the result
+        RemoteFileSourcePluginFetchRequest fetchRequest = RemoteFileSourcePluginFetchRequest.newBuilder()
+                .setResultId(connection.getTickets().newExportTicket())
+                .setPluginName(PLUGIN_NAME)
+                .build();
 
         // Wrap in google.protobuf.Any with the proper typeUrl
-        Uint8Array anyWrappedBytes = JsProtobufUtils.wrapInAny(
-                "type.googleapis.com/io.deephaven.proto.backplane.grpc.RemoteFileSourcePluginFetchRequest",
-                innerRequestBytes);
+        Any anyWrappedRequest = Any.newBuilder()
+                .setTypeUrl(PLUGIN_FETCH_REQUEST_TYPE_URL)
+                .setValue(fetchRequest.toByteString())
+                .build();
 
         // Create a FlightDescriptor with the command
-        FlightDescriptor descriptor = new FlightDescriptor();
-        descriptor.setType(FlightDescriptor.DescriptorType.getCMD());
-        descriptor.setCmd(anyWrappedBytes);
+        Flight.FlightDescriptor descriptor = Flight.FlightDescriptor.newBuilder()
+                .setType(Flight.FlightDescriptor.DescriptorType.CMD)
+                .setCmd(anyWrappedRequest.toByteString())
+                .build();
 
         // Send the getFlightInfo request
         return Callbacks.grpcUnaryPromise(
-                c -> connection.flightServiceClient().getFlightInfo(descriptor, connection.metadata(), c::apply));
+                c -> connection.flightServiceClient().getFlightInfo(descriptor, c));
     }
 
     /**
@@ -139,20 +145,18 @@ public class JsRemoteFileSourceService extends HasEventHandling {
                     // This is the standard Flight pattern: we passed resultTicket in the request,
                     // the server exported the service to that ticket, and returned a FlightInfo
                     // with an endpoint containing that same ticket for us to use.
-                    if (flightInfo.getEndpointList().length > 0) {
-                        // Get the Arrow Flight ticket from the endpoint
-                        io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.Ticket flightTicket =
-                                flightInfo.getEndpointList().getAt(0).getTicket();
-
-                        // Convert the Arrow Flight ticket to a Deephaven ticket
-                        Ticket dhTicket = new Ticket();
-                        dhTicket.setTicket(flightTicket.getTicket_asU8());
+                    if (flightInfo.getEndpointCount() > 0) {
+                        // Convert the Arrow Flight ticket from the endpoint to a Deephaven ticket
+                        Ticket dhTicket = Ticket.newBuilder()
+                                .setTicket(flightInfo.getEndpoint(0).getTicket().getTicket())
+                                .build();
 
                         // Create a TypedTicket for the plugin instance
                         // The type must match RemoteFileSourcePlugin.name()
-                        TypedTicket typedTicket = new TypedTicket();
-                        typedTicket.setTicket(dhTicket);
-                        typedTicket.setType(PLUGIN_NAME);
+                        TypedTicket typedTicket = TypedTicket.newBuilder()
+                                .setTicket(dhTicket)
+                                .setType(PLUGIN_NAME)
+                                .build();
 
                         JsWidget widget = new JsWidget(connection, typedTicket);
 
@@ -184,8 +188,9 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
         RemoteFileSourceServerMessage message;
         try {
-            message = RemoteFileSourceServerMessage.deserializeBinary(payload);
-        } catch (Exception e) {
+            message = RemoteFileSourceServerMessage
+                    .parseFrom(ByteStringAccess.wrap(TypedArrayHelper.wrap(payload)));
+        } catch (InvalidProtocolBufferException e) {
             // Failed to parse as proto
             throw new IllegalStateException("Received unparseable message from server", e);
         }
@@ -265,17 +270,17 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     private static @NotNull RemoteFileSourceClientMessage getSetExecutionContextRequest(boolean isDirty,
             String[] resourcePaths, String requestId) {
-        SetExecutionContextRequest setContextRequest = new SetExecutionContextRequest();
-        setContextRequest.setIsDirty(isDirty);
+        SetExecutionContextRequest.Builder setContextRequest = SetExecutionContextRequest.newBuilder()
+                .setIsDirty(isDirty);
 
         if (resourcePaths != null) {
-            setContextRequest.setResourcePathsList(resourcePaths);
+            setContextRequest.addAllResourcePaths(Arrays.asList(resourcePaths));
         }
 
-        RemoteFileSourceClientMessage clientRequest = new RemoteFileSourceClientMessage();
-        clientRequest.setRequestId(requestId);
-        clientRequest.setSetExecutionContext(setContextRequest);
-        return clientRequest;
+        return RemoteFileSourceClientMessage.newBuilder()
+                .setRequestId(requestId)
+                .setSetExecutionContext(setContextRequest)
+                .build();
     }
 
     /**
@@ -285,11 +290,25 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     private void sendClientRequest(RemoteFileSourceClientMessage clientRequest) {
         // Serialize the protobuf message to bytes
-        Uint8Array messageBytes = clientRequest.serializeBinary();
+        Uint8Array messageBytes = toUint8Array(clientRequest.toByteString());
 
         // Uint8Array is an ArrayBufferView, which is one of the MessageUnion types
         // The unchecked cast is safe because MessageUnion accepts String | ArrayBuffer | ArrayBufferView
         widget.sendMessage(Js.uncheckedCast(messageBytes), null);
+    }
+
+    /**
+     * Copies a ByteString into a Uint8Array so that it can be handed to JS APIs.
+     *
+     * @param bytes the bytes to copy
+     * @return a new Uint8Array holding the same bytes
+     */
+    private static Uint8Array toUint8Array(ByteString bytes) {
+        Uint8Array result = new Uint8Array(bytes.size());
+        for (int i = 0; i < bytes.size(); i++) {
+            result.setAt(i, (double) bytes.byteAt(i));
+        }
+        return result;
     }
 
     /**
@@ -335,30 +354,30 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         @JsMethod
         public void respond(@JsNullable ResourceContentUnion content) {
             // Build RemoteFileSourceMetaResponse proto
-            RemoteFileSourceMetaResponse response = new RemoteFileSourceMetaResponse();
+            RemoteFileSourceMetaResponse.Builder response = RemoteFileSourceMetaResponse.newBuilder();
 
             if (content == null) {
                 // Resource not found
                 response.setFound(false);
-                response.setContent(new Uint8Array(0));
+                response.setContent(ByteString.EMPTY);
             } else {
                 response.setFound(true);
 
                 // Convert content to bytes using union type methods
                 if (content.isString()) {
-                    TextEncoder textEncoder = new TextEncoder();
-                    response.setContent(textEncoder.encode(content.asString()));
+                    response.setContent(ByteString.copyFrom(content.asString(), StandardCharsets.UTF_8));
                 } else if (content.isUint8Array()) {
-                    response.setContent(content.asUint8Array());
+                    response.setContent(ByteStringAccess.wrap(TypedArrayHelper.wrap(content.asUint8Array())));
                 } else {
                     throw new IllegalArgumentException("Content must be a String, Uint8Array, or null");
                 }
             }
 
             // Wrap in RemoteFileSourceClientMessage (client→server)
-            RemoteFileSourceClientMessage clientRequest = new RemoteFileSourceClientMessage();
-            clientRequest.setRequestId(requestId);
-            clientRequest.setMetaResponse(response);
+            RemoteFileSourceClientMessage clientRequest = RemoteFileSourceClientMessage.newBuilder()
+                    .setRequestId(requestId)
+                    .setMetaResponse(response)
+                    .build();
 
             sendClientRequest(clientRequest);
         }
