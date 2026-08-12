@@ -45,7 +45,9 @@ public interface RemoteFileSourceProvider {
      * Request a resource from the remote source.
      *
      * @param resourceName the name of the resource to fetch (e.g., "com/example/MyClass.groovy")
-     * @return a CompletableFuture containing the resource bytes, or null if not found
+     * @return a CompletableFuture that completes with the resource bytes, or completes with null if the resource was
+     *         not found. The future itself is never null; a provider that cannot service the request returns a future
+     *         that completes exceptionally.
      */
     CompletableFuture<byte[]> requestResource(String resourceName);
 }

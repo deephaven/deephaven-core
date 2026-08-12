@@ -4,6 +4,7 @@
 package io.deephaven.remotefilesource;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.util.RemoteFileSourceClassLoader;
 import io.deephaven.engine.util.RemoteFileSourceProvider;
 import io.deephaven.internal.log.LoggerFactory;
@@ -94,7 +95,9 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      * completed when the client responds. Only services requests if this message stream is active.
      *
      * @param resourceName the name of the resource to request
-     * @return a CompletableFuture that will contain the resource bytes when available, or null if inactive
+     * @return a CompletableFuture that completes with the resource bytes, or completes with null if the client could
+     *         not find the resource. The future completes exceptionally if this message stream is not active, if the
+     *         request could not be sent, or if the client reported an error.
      */
     @Override
     public CompletableFuture<byte[]> requestResource(String resourceName) {
@@ -110,6 +113,10 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         String requestId = UUID.randomUUID().toString();
         CompletableFuture<byte[]> future = new CompletableFuture<>();
         pendingRequests.put(requestId, future);
+        // Drop the entry on every completion path, not just when a response arrives. The caller applies its own
+        // timeout to this future, and a request whose response never arrives would otherwise be retained until the
+        // stream closes.
+        future.whenComplete((result, error) -> pendingRequests.remove(requestId));
 
         try {
             // Build RemoteFileSourceMetaRequest proto
@@ -133,7 +140,6 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             connection.onData(buffer);
         } catch (ObjectCommunicationException e) {
             future.completeExceptionally(e);
-            pendingRequests.remove(requestId);
         }
 
         return future;
@@ -262,7 +268,9 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     }
 
     /**
-     * Handles a meta response from the client containing requested resource content.
+     * Handles a meta response from the client containing requested resource content. An error reported by the client
+     * completes the pending request exceptionally so the reason reaches the caller; a response that did not find the
+     * resource completes it with null.
      *
      * @param requestId the request ID
      * @param response the meta response from the client
@@ -280,8 +288,17 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
                 .append(", found: ").append(response.getFound())
                 .append(", content length: ").append(content.length).endl();
 
-        if (!response.getError().isEmpty()) {
-            log.warn().append("Error in response: ").append(response.getError()).endl();
+        final String error = response.getError();
+        if (!error.isEmpty()) {
+            log.warn().append("Error in response: ").append(error).endl();
+            future.completeExceptionally(new UncheckedDeephavenException(
+                    "Client reported an error sourcing remote resource: " + error));
+            return;
+        }
+
+        if (!response.getFound()) {
+            future.complete(null);
+            return;
         }
 
         future.complete(content);
