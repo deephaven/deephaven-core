@@ -29,6 +29,13 @@ project.tasks.named('test', Test, { test ->
 // This applies to all test types, including the testOutOfBand, testSerial, and testParallel
 project.tasks.withType(Test).configureEach { Test t ->
     t.with {
+        // Gradle 9 no longer provides default testClassesDirs/classpath for custom Test tasks.
+        // Use convention() so these act as defaults: JvmTestSuite tasks that explicitly set
+        // their own testClassesDirs/classpath will override these conventions automatically.
+        // Unlike direct assignment, convention values are discarded when the property is set explicitly.
+        t.testClassesDirs.convention(testing.suites.test.sources.output.classesDirs)
+        t.classpath.convention(testing.suites.test.sources.runtimeClasspath)
+
         t.defaultCharacterEncoding = 'UTF-8'
 
         onlyIf { TestTools.shouldRunTests(project) }
