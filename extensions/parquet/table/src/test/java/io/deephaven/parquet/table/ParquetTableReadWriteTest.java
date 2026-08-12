@@ -3003,6 +3003,40 @@ public final class ParquetTableReadWriteTest {
     }
 
     /**
+     * {@link ParquetInstructions.UnsignedLongTarget#SIGNED_LONG} reinterprets the bits as signed instead of rejecting
+     * them, reproducing how these columns read before {@code UINT_64} was supported.
+     */
+    @Test
+    public void testReadUnsignedLongAsSignedLongViaInstructionsHint() throws IOException {
+        final ParquetInstructions asSignedLong = ParquetInstructions.builder()
+                .setUnsignedLongTarget(UINT64_COL, ParquetInstructions.UnsignedLongTarget.SIGNED_LONG)
+                .build();
+        final File dest = writeUint64File("uint64_hint_signed_long.parquet",
+                BigInteger.ZERO, BigInteger.ONE, LONG_MAX, TWO_TO_THE_63, TWO_TO_THE_63.add(BigInteger.ONE),
+                UINT64_MAX, null);
+
+        final Table fromDisk = readTable(dest.getPath(), asSignedLong).select();
+        assertEquals(long.class, fromDisk.getDefinition().getColumn(UINT64_COL).getDataType());
+        // Two nulls: the written one, and 2^63, whose bit pattern is NULL_LONG. That collision is the known,
+        // accepted flaw of this interpretation.
+        assertTableEquals(newTable(longCol(UINT64_COL,
+                0L, 1L, Long.MAX_VALUE, NULL_LONG, -9223372036854775807L, -1L, NULL_LONG)), fromDisk);
+    }
+
+    /**
+     * Without a hint, a {@code long} column gets the checked reader; the signed interpretation must be requested.
+     */
+    @Test
+    public void testReadUnsignedLongAsLongDefaultsToChecked() throws IOException {
+        final ParquetInstructions asLong = EMPTY.withTableDefinitionAndLayout(
+                TableDefinition.of(ColumnDefinition.ofLong(UINT64_COL)),
+                ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
+        final File dest = writeUint64File("uint64_unhinted_default.parquet", BigInteger.ZERO, UINT64_MAX);
+        assertThrowsWithMessage(() -> readTable(dest.getPath(), asLong).select(),
+                "Unsigned long value 18446744073709551615 is too large to be represented as a long");
+    }
+
+    /**
      * Explicitly requesting {@link ParquetInstructions.UnsignedLongTarget#BIG_INTEGER} matches the default.
      */
     @Test

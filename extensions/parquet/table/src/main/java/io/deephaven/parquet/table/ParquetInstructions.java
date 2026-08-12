@@ -109,7 +109,13 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         /**
          * Read as a primitive {@code long}; values exceeding {@link Long#MAX_VALUE} throw when read.
          */
-        LONG(long.class);
+        LONG(long.class),
+
+        /**
+         * Read as a primitive {@code long}; interpreted as a signed value. Not recommended for use because of the
+         * interpretation of the value of NULL_LONG.
+         */
+        SIGNED_LONG(long.class);
 
         private final Class<?> dataType;
 

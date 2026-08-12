@@ -384,6 +384,10 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                         : columnTypeInfo.codec().map(CodecInfo::codecName).orElse(null);
         final ColumnTypeInfo.SpecialType specialTypeName =
                 columnTypeInfo == null ? null : columnTypeInfo.specialType().orElse(null);
+        // Keyed on the Deephaven column name, as codecs are above. Null when unrequested, which selects the checked
+        // reader; the lossy SIGNED_LONG interpretation must be asked for explicitly.
+        final ParquetInstructions.UnsignedLongTarget unsignedLongTarget =
+                readInstructions.getUnsignedLongTarget(columnDefinition.getName()).orElse(null);
 
         final boolean isArray = columnChunkReader.getMaxRl() > 0;
         final boolean isCodec = CodecLookup.explicitCodecPresent(codecName);
@@ -402,8 +406,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             ToPage<ATTR, ?> toPage = null;
 
             if (!isCodec && logicalTypeAnnotation != null) {
-                toPage = logicalTypeAnnotation.accept(
-                        new LogicalTypeVisitor<ATTR>(parquetColumnName, columnChunkReader, pageType))
+                toPage = logicalTypeAnnotation.accept(new LogicalTypeVisitor<ATTR>(
+                        parquetColumnName, columnChunkReader, pageType, unsignedLongTarget))
                         .orElse(null);
             }
 
@@ -523,12 +527,16 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         private final String name;
         private final ColumnChunkReader columnChunkReader;
         private final Class<?> pageType;
+        /** Null when the caller expressed no preference. */
+        private final ParquetInstructions.UnsignedLongTarget unsignedLongTarget;
 
         LogicalTypeVisitor(@NotNull final String name, @NotNull final ColumnChunkReader columnChunkReader,
-                final Class<?> pageType) {
+                final Class<?> pageType,
+                @Nullable final ParquetInstructions.UnsignedLongTarget unsignedLongTarget) {
             this.name = name;
             this.columnChunkReader = columnChunkReader;
             this.pageType = pageType;
+            this.unsignedLongTarget = unsignedLongTarget;
         }
 
         @Override
@@ -639,7 +647,11 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                         if (pageType == BigInteger.class) {
                             return Optional.of(ToBigIntegerPage.createFromUnsignedLong(pageType));
                         } else if (pageType == long.class) {
-                            return Optional.of(ToLongPage.createFromUnsignedLong(pageType));
+                            // LONG and SIGNED_LONG share long.class, so pageType alone cannot distinguish them.
+                            return Optional.of(
+                                    unsignedLongTarget == ParquetInstructions.UnsignedLongTarget.SIGNED_LONG
+                                            ? ToLongPage.create(pageType)
+                                            : ToLongPage.createFromUnsignedLong(pageType));
                         }
                         throw new IllegalArgumentException(
                                 "Cannot convert parquet unsigned long column to " + pageType);
