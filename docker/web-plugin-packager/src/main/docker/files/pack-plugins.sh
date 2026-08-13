@@ -72,8 +72,7 @@ done
   const plugins = process.argv.slice(1).map((dir) => {
     const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8"));
     const entry = { name: pkg.name, version: pkg.version, main: pkg.main };
-    if (pkg.loader && typeof pkg.loader === "object" && !Array.isArray(pkg.loader)
-        && Object.keys(pkg.loader).length > 0) {
+    if (pkg.loader != null) {
       entry.loader = pkg.loader;
     }
     return entry;
