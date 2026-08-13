@@ -1,9 +1,7 @@
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
-import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.reporting.Report
 import org.gradle.api.reporting.internal.SimpleReport
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.junit.JUnitOptions
 import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
@@ -13,7 +11,6 @@ import org.gradle.testing.jacoco.tasks.JacocoReportsContainer
 import java.util.concurrent.Callable
 
 import static java.io.File.separator
-import static org.gradle.api.plugins.JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME
 
 /**
  * Various utilities for setting up test tasks in gradle.
@@ -102,12 +99,8 @@ By default only runs in CI; to run locally:
                 t.forkEvery = 1
             }
 
-            // wire up dependencies manually, since we don't get this for free in custom tasks
-            // (it's usually assumed you will do a custom sourceSet for integration tests,
-            // but we already use custom layouts which make "use separate sourcesets per module" in IntelliJ...troublesome).
-            SourceSetContainer sources = project.getExtensions().findByType(JavaPluginExtension).sourceSets
-            setTestClassesDirs sources.getByName('test').output.classesDirs
-            setClasspath project.files(sources.getByName('test').output, sources.getByName('main').output, project.configurations.getByName(TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME))
+            // testClassesDirs and classpath defaults are now provided by the
+            // io.deephaven.java-test-conventions configureEach convention.
 
             // we also need to adjust the reporting output directory of the alt task,
             // so we don't stomp over top of previous reports.

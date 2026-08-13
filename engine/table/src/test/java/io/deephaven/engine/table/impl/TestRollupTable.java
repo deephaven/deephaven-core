@@ -11,6 +11,7 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -21,6 +22,7 @@ import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
 import io.deephaven.vector.LongVector;
@@ -32,11 +34,16 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
 import static io.deephaven.engine.testutil.HierarchicalTableTestTools.freeSnapshotTableChunks;
 import static io.deephaven.engine.testutil.HierarchicalTableTestTools.snapshotToTable;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -47,8 +54,10 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 
 @Category(OutOfBandTest.class)
 public class TestRollupTable extends RefreshingTableTestCase {
-    // This is the list of supported aggregations for rollup. These are all using `intCol` as the column to aggregate
-    // because the re-aggregation logic is effectively the same for all column types.
+    // This is the list of supported aggregations for rollup, all using `intCol` as the column to aggregate. The
+    // re-aggregation logic is *mostly* independent of the column type, but not entirely: see `instantAggs` for the
+    // subset of these aggregations that accept an `Instant` column, whose re-aggregation reads a reinterpreted
+    // `long` value column rather than an object one.
     private final Collection<Aggregation> aggs = List.of(
             AggAbsSum("absSum=intCol"),
             AggAvg("avg=intCol"),
@@ -92,6 +101,57 @@ public class TestRollupTable extends RefreshingTableTestCase {
             "wsum",
             "grp"
     };
+
+    // The five distinct instants the Instant tests draw from. A small set means buckets share values, so the
+    // distinct/countDistinct/unique operators exercise their repeated-value and (at small sizes) singleton paths
+    // instead of every bucket trivially collapsing to "non-unique".
+    private static final Instant[] INSTANT_SET = new Instant[] {
+            DateTimeUtils.parseInstant("2020-03-17T09:30:00 NY"),
+            DateTimeUtils.parseInstant("2020-03-17T12:00:00 NY"),
+            DateTimeUtils.parseInstant("2020-03-17T16:00:00 NY"),
+            DateTimeUtils.parseInstant("2020-03-18T09:30:00 NY"),
+            DateTimeUtils.parseInstant("2020-03-18T16:00:00 NY")};
+
+    // The subset of `aggs` that accepts an `Instant` input column, aggregating `instantCol`. The numeric aggregations
+    // (absSum, avg, std, sum, var, wavg, wsum) are not applicable to Instant and are omitted. Sorting *by* the
+    // Instant column is not covered: rollup can only sort by a column each level re-exposes, which for these
+    // aggregations means a key column, exactly as the `intCol` list sorts by `Sym`.
+    private final Collection<Aggregation> instantAggs = List.of(
+            AggCount("count"),
+            AggCountWhere("countWhere", "instantCol >= '2020-03-17T16:00:00 NY'"),
+            AggCountDistinct("countDistinct=instantCol"),
+            AggDistinct("distinct=instantCol"),
+            AggFirst("first=instantCol"),
+            AggLast("last=instantCol"),
+            AggMax("max=instantCol"),
+            AggMin("min=instantCol"),
+            AggSortedFirst("Sym", "firstSorted=instantCol"),
+            AggSortedLast("Sym", "lastSorted=instantCol"),
+            AggUnique("unique=instantCol"),
+            AggGroup("grp=instantCol"));
+
+    // Companion list of columns to compare between rollup root and the zero-key equivalent
+    private final String[] instantColumnsToCompare = new String[] {
+            "count",
+            "countWhere",
+            "countDistinct",
+            "distinct",
+            "first",
+            "last",
+            "max",
+            "min",
+            "firstSorted",
+            "lastSorted",
+            "unique",
+            "grp"
+    };
+
+    // The incremental tests hold the table at this size regardless of their per-cycle update size, and sweep that
+    // update size from a small fraction of the table up to a full replacement, so the table always spans several
+    // aggregation chunks (4096 rows each) and the cycles cover both tiny deltas and multi-chunk ones. A table this
+    // size also gets the update generator to emit shifts, which smaller ones rarely do; see
+    // testRollupGroupWithUpstreamShift for what those used to break.
+    private static final int INCREMENTAL_TABLE_SIZE = 10_000;
 
     /**
      * Perform a large table test, comparing the rollup table root to the zero-key equivalent table, incorporating all
@@ -148,7 +208,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
      */
     @Test
     public void testRollupVsZeroKeyIncremental() {
-        for (int size = 10; size <= 1000; size *= 10) {
+        for (int size = 10; size <= INCREMENTAL_TABLE_SIZE; size *= 10) {
             testRollupIncrementalInternal("size-" + size, size);
         }
     }
@@ -161,7 +221,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 new SetGenerator<>("a", "b", "c", "d"),
                 new IntGenerator(10, 1_000));
 
-        final QueryTable testTable = getTable(true, 100_000, random, columnInfo);
+        final QueryTable testTable = getTable(true, INCREMENTAL_TABLE_SIZE, random, columnInfo);
 
         EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new QueryTableTest.TableComparator(
@@ -187,7 +247,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
      */
     @Test
     public void testRollupMultiKeyVsZeroKeyIncremental() {
-        for (int size = 10; size <= 1000; size *= 10) {
+        for (int size = 10; size <= INCREMENTAL_TABLE_SIZE; size *= 10) {
             testRollupMultiKeyIncrementalInternal("size-" + size, size);
         }
     }
@@ -201,7 +261,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 new SetGenerator<>("u", "v", "w"),
                 new IntGenerator(10, 1_000));
 
-        final QueryTable testTable = getTable(true, size, random, columnInfo);
+        final QueryTable testTable = getTable(true, INCREMENTAL_TABLE_SIZE, random, columnInfo);
 
         final Table agged = testTable.aggBy(aggs);
 
@@ -210,7 +270,128 @@ public class TestRollupTable extends RefreshingTableTestCase {
         EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new RollupCompareNugget(
                         rollup,
-                        agged)
+                        agged,
+                        columnsToCompare)
+        };
+
+        final int steps = 100;
+        for (int step = 0; step < steps; step++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step = " + step);
+            }
+            simulateShiftAwareStep(ctxt + " step == " + step, size, random, testTable, columnInfo, en);
+        }
+    }
+
+    /**
+     * Like {@link #testRollupVsZeroKeyStatic()}, but aggregating an {@link Instant} column with every aggregation that
+     * accepts one. An Instant aggregation result is exposed as an {@code Instant} column backed by {@code long}
+     * storage, so a re-aggregation that reads the child level's value column must reinterpret it back to {@code long}
+     * before handing it to the primitive operator; failing to do so throws while building the rollup.
+     */
+    @Test
+    public void testRollupInstantVsZeroKeyStatic() {
+        final Random random = new Random(0);
+        final ColumnInfo[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "instantCol"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new SetGenerator<>(INSTANT_SET));
+
+        final Table testTable = getTable(false, 100_000, random, columnInfo);
+
+        final Table actual = testTable.rollup(instantAggs, false, "Sym").getRoot().select(instantColumnsToCompare);
+        final Table expected = testTable.aggBy(instantAggs);
+
+        TstUtils.assertTableEquals(actual, expected);
+    }
+
+    /**
+     * Like {@link #testRollupInstantVsZeroKeyStatic()}, but rolls up by two key columns so the Instant re-aggregation
+     * also runs against an intermediate aggregated level (and through its bucketed paths).
+     */
+    @Test
+    public void testRollupInstantMultiKeyVsZeroKeyStatic() {
+        final Random random = new Random(0);
+        final ColumnInfo[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "Sym2", "instantCol"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new SetGenerator<>("u", "v", "w"),
+                new SetGenerator<>(INSTANT_SET));
+
+        final Table testTable = getTable(false, 100_000, random, columnInfo);
+
+        final Table actual =
+                testTable.rollup(instantAggs, false, "Sym", "Sym2").getRoot().select(instantColumnsToCompare);
+        final Table expected = testTable.aggBy(instantAggs);
+
+        TstUtils.assertTableEquals(actual, expected);
+    }
+
+    /**
+     * Ticking counterpart to {@link #testRollupInstantVsZeroKeyStatic()}. The small sizes leave many buckets holding a
+     * single distinct instant, so the unique re-aggregation walks its empty/unique/non-unique transitions, and the
+     * removes and modifies read previous values through the reinterpreted value column.
+     */
+    @Test
+    public void testRollupInstantVsZeroKeyIncremental() {
+        for (int size = 10; size <= INCREMENTAL_TABLE_SIZE; size *= 10) {
+            testRollupInstantIncrementalInternal("size-" + size, size);
+        }
+    }
+
+    private void testRollupInstantIncrementalInternal(final String ctxt, final int size) {
+        final Random random = new Random(0);
+
+        final ColumnInfo[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "instantCol"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new SetGenerator<>(INSTANT_SET));
+
+        final QueryTable testTable = getTable(true, INCREMENTAL_TABLE_SIZE, random, columnInfo);
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new RollupCompareNugget(
+                        testTable.rollup(instantAggs, false, "Sym"),
+                        testTable.aggBy(instantAggs),
+                        instantColumnsToCompare)
+        };
+
+        final int steps = 100;
+        for (int step = 0; step < steps; step++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step = " + step);
+            }
+            simulateShiftAwareStep(ctxt + " step == " + step, size, random, testTable, columnInfo, en);
+        }
+    }
+
+    /**
+     * Ticking counterpart to {@link #testRollupInstantMultiKeyVsZeroKeyStatic()}, so the Instant re-aggregation
+     * operators run their bucketed add/remove/modify paths against an intermediate aggregated level.
+     */
+    @Test
+    public void testRollupInstantMultiKeyVsZeroKeyIncremental() {
+        for (int size = 10; size <= INCREMENTAL_TABLE_SIZE; size *= 10) {
+            testRollupInstantMultiKeyIncrementalInternal("size-" + size, size);
+        }
+    }
+
+    private void testRollupInstantMultiKeyIncrementalInternal(final String ctxt, final int size) {
+        final Random random = new Random(0);
+
+        final ColumnInfo[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "Sym2", "instantCol"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new SetGenerator<>("u", "v", "w"),
+                new SetGenerator<>(INSTANT_SET));
+
+        final QueryTable testTable = getTable(true, INCREMENTAL_TABLE_SIZE, random, columnInfo);
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new RollupCompareNugget(
+                        testTable.rollup(instantAggs, false, "Sym", "Sym2"),
+                        testTable.aggBy(instantAggs),
+                        instantColumnsToCompare)
         };
 
         final int steps = 100;
@@ -226,8 +407,8 @@ public class TestRollupTable extends RefreshingTableTestCase {
 
         private final RollupTable rollup;
 
-        public RollupCompareNugget(RollupTable rollup, Table t2) {
-            super(rollup.getRoot().select(columnsToCompare), t2);
+        public RollupCompareNugget(RollupTable rollup, Table t2, String[] columns) {
+            super(rollup.getRoot().select(columns), t2);
             this.rollup = rollup;
         }
 
@@ -847,6 +1028,272 @@ public class TestRollupTable extends RefreshingTableTestCase {
     }
 
     /**
+     * A rollup {@code AggGroup} must survive an upstream shift of the rows it groups.
+     *
+     * <p>
+     * The group result for a level is a vector over the <em>source</em> table's rows, backed by the RowSet that level
+     * accumulated. {@link io.deephaven.engine.table.impl.by.GroupByChunkedOperator GroupByChunkedOperator} keeps the
+     * base level's RowSets in the post-shift keyspace (it applies a shift as a remove of the pre-shift keys plus an add
+     * of the post-shift ones), but reports no modified destinations for a shift, since a shift leaves the grouped
+     * <em>values</em> unchanged. The levels above hold their own RowSet per destination -- the union of their
+     * children's, still in the source keyspace -- and
+     * {@link io.deephaven.engine.table.impl.by.GroupByReaggregateOperator GroupByReaggregateOperator} neither shifts
+     * that union nor is told to rebuild it, so it keeps pre-shift keys. Materializing the group vector then reads
+     * source rows that have moved: against these test sources that throws, and against a production column source it
+     * would silently return whatever value now occupies the vacated slot.
+     *
+     * <p>
+     * The cycle below shifts two rows and simultaneously adds one, because a shift alone leaves the root unmodified and
+     * so never re-materializes the vector that exposes the stale keys.
+     */
+    @Test
+    public void testRollupGroupWithUpstreamShift() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final RollupTable rollup = source.rollup(List.of(AggGroup("grp=Value")), "Sym");
+        // select() materializes the group vector via getDirect(), which is where the stale keys are read
+        final Table rootGroup = rollup.getRoot().select("grp");
+
+        assertTableEquals(
+                newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21))),
+                rootGroup);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            // Move keys 2 and 3 up by 100, reported purely as a shift, and add a row so the root is modified.
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            addToTable(source, i(200), stringCol("Sym", "a"), intCol("Value", 12));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(
+                    new TableUpdateImpl(i(200), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        // The group vector is in source row key order: 0, 1, 102, 103, 200.
+        assertTableEquals(
+                newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21, 12))),
+                rootGroup);
+    }
+
+    /**
+     * A shift must dirty the exposed group RowSet column and <em>nothing else</em>.
+     *
+     * <p>
+     * Every rollup level has to rebuild the union of its children's RowSets when a shift moves the rows below it -- see
+     * {@link #testRollupGroupWithUpstreamShift} for what goes wrong when it does not. But a shift relabels row keys
+     * without changing the grouped values, so the grouped value columns are unchanged and marking them modified only
+     * makes every consumer above re-materialize vectors that did not change. This asserts the narrow report, then
+     * drives a second cycle to confirm the narrow report was still enough to rebuild the union.
+     */
+    @Test
+    public void testRollupGroupShiftOnlyReportsRowSetColumn() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final RollupTable rollup = source.rollup(List.of(AggGroup("grp=Value")), "Sym");
+        final QueryTable root = (QueryTable) rollup.getRoot();
+        final Table rootGroup = root.select("grp");
+
+        assertTableEquals(newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21))), rootGroup);
+
+        final SimpleListener listener = new SimpleListener(root);
+        root.addUpdateListener(listener);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            // A pure shift: the same rows at new keys, with nothing added, removed, or modified.
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        Assert.assertEquals(1, listener.getCount());
+        final TableUpdate update = listener.getUpdate();
+        Assert.assertTrue(update.modified().isNonempty());
+        // The union each level caches has to be rebuilt, so the RowSet column is dirty...
+        Assert.assertTrue(update.modifiedColumnSet()
+                .containsAny(root.newModifiedColumnSet(EXPOSED_GROUP_ROW_SETS.name())));
+        // ...but the values in the group did not change, so the group column is not.
+        Assert.assertFalse(update.modifiedColumnSet().containsAny(root.newModifiedColumnSet("grp")));
+
+        // Correspondingly, the already-materialized vector is still correct without being recomputed.
+        assertTableEquals(newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21))), rootGroup);
+
+        // The narrow report still rebuilt the union, so the next real modification reads live keys.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(200), stringCol("Sym", "a"), intCol("Value", 12));
+            source.notifyListeners(i(200), i(), i());
+        });
+
+        assertTableEquals(newTable(col("grp", (IntVector) new IntVectorDirect(10, 11, 20, 21, 12))), rootGroup);
+
+        root.removeUpdateListener(listener);
+        listener.close();
+    }
+
+    /**
+     * The {@link #testRollupGroupWithUpstreamShift} cycle, for a non-reaggregating {@code AggFormula}.
+     *
+     * <p>
+     * {@link io.deephaven.engine.table.impl.by.FormulaMultiColumnChunkedOperator FormulaMultiColumnChunkedOperator}
+     * caches nothing keyed on source row keys, but its inputs are the group operator's
+     * {@link io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource AggregateColumnSource}s, so it
+     * inherits the union's staleness in full: evaluating the formula against a stale union reads source rows that have
+     * moved.
+     */
+    @Test
+    public void testRollupFormulaWithUpstreamShift() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final RollupTable rollup = source.rollup(List.of(AggFormula("FSum", "sum(Value)")), "Sym");
+        final Table rootFormula = rollup.getRoot().select("FSum");
+
+        assertTableEquals(newTable(longCol("FSum", 62)), rootFormula);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            // Move keys 2 and 3 up by 100, reported purely as a shift, and add a row so the root is modified.
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            addToTable(source, i(200), stringCol("Sym", "a"), intCol("Value", 12));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(
+                    new TableUpdateImpl(i(200), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        assertTableEquals(newTable(longCol("FSum", 74)), rootFormula);
+    }
+
+    /**
+     * A shift-only cycle must not recompute a rollup {@code AggFormula}.
+     *
+     * <p>
+     * The formula is evaluated over the group vectors in destination space, so a shift of the source rows cannot change
+     * its value -- and {@code i}, {@code ii}, and {@code k} refer to destination positions, not source keys.
+     * Recomputing is therefore pure waste, which is what {@code hasModifications} excluding shifts avoids.
+     */
+    @Test
+    public void testRollupFormulaShiftOnlyDoesNotRecompute() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final RollupTable rollup = source.rollup(List.of(AggFormula("FSum", "sum(Value)")), "Sym");
+        final QueryTable root = (QueryTable) rollup.getRoot();
+        final Table rootFormula = root.select("FSum");
+
+        assertTableEquals(newTable(longCol("FSum", 62)), rootFormula);
+
+        final SimpleListener listener = new SimpleListener(root);
+        root.addUpdateListener(listener);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        Assert.assertEquals(1, listener.getCount());
+        Assert.assertFalse(listener.getUpdate().modifiedColumnSet()
+                .containsAny(root.newModifiedColumnSet("FSum")));
+
+        assertTableEquals(newTable(longCol("FSum", 62)), rootFormula);
+
+        // The union was still rebuilt, so the next cycle's recompute reads live keys.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(200), stringCol("Sym", "a"), intCol("Value", 12));
+            source.notifyListeners(i(200), i(), i());
+        });
+
+        assertTableEquals(newTable(longCol("FSum", 74)), rootFormula);
+
+        root.removeUpdateListener(listener);
+        listener.close();
+    }
+
+    /**
+     * {@code AggUnique} routes {@link Instant} to the primitive ({@code long}) operator, but routes
+     * {@link ZonedDateTime}, {@link Boolean}, and {@link String} to the object operator, so the value-column
+     * reinterpret its re-aggregation performs must apply to Instant alone -- converting every type that has a primitive
+     * representation would hand a primitive chunk to an operator reading an object one. Every group here is itself
+     * unique, so the re-aggregation reads each group's value column for each type: the {@code same} columns hold one
+     * value across all groups (so the root stays unique and the value has to survive the read), while the {@code mixed}
+     * columns differ between groups (so the root becomes non-unique).
+     */
+    @Test
+    public void testRollupUniqueValueTypes() {
+        final Instant instant1 = DateTimeUtils.parseInstant("2020-03-17T09:30:00 NY");
+        final Instant instant2 = DateTimeUtils.parseInstant("2020-03-18T16:00:00 NY");
+        final ZonedDateTime zoned1 = instant1.atZone(ZoneId.of("America/New_York"));
+        final ZonedDateTime zoned2 = instant2.atZone(ZoneId.of("America/New_York"));
+
+        final Table source = newTable(
+                stringCol("Sym", "a", "a", "b", "c"),
+                longCol("sameLong", 10, 10, 10, 10),
+                longCol("mixedLong", 10, 10, 10, 20),
+                instantCol("sameInstant", instant1, instant1, instant1, instant1),
+                instantCol("mixedInstant", instant1, instant1, instant1, instant2),
+                col("sameZoned", zoned1, zoned1, zoned1, zoned1),
+                col("mixedZoned", zoned1, zoned1, zoned1, zoned2),
+                booleanCol("sameBool", true, true, true, true),
+                booleanCol("mixedBool", true, true, true, false),
+                stringCol("sameString", "x", "x", "x", "x"),
+                stringCol("mixedString", "x", "x", "x", "y"));
+
+        final String[] valueColumns = new String[] {
+                "sameLong", "mixedLong",
+                "sameInstant", "mixedInstant",
+                "sameZoned", "mixedZoned",
+                "sameBool", "mixedBool",
+                "sameString", "mixedString"};
+        final Collection<Aggregation> uniqueAggs = Arrays.stream(valueColumns)
+                .map(Aggregation::AggUnique)
+                .collect(Collectors.toList());
+
+        assertTableEquals(
+                source.aggBy(uniqueAggs),
+                source.rollup(uniqueAggs, "Sym").getRoot().select(valueColumns));
+    }
+
+    /**
+     * The smallest reproducer for the reported failure: a static, single-key rollup of {@code AggUnique} over an
+     * {@link Instant} column. Every leaf holds five distinct instants and so is non-unique, but the root's
+     * re-aggregation still has to read each leaf's Instant-typed value column, which is where it threw.
+     */
+    @Test
+    public void testRollupUniqueInstantStatic() {
+        final Table source = TableTools.emptyTable(20).update(
+                "Grp = i % 4",
+                "CheckoutInstant = epochNanosToInstant(1704067200000000000L + i * 3600000000000L)");
+
+        final RollupTable rollup = source.rollup(List.of(AggUnique("CheckoutInstant")), "Grp");
+
+        // Each of the four groups holds five distinct instants, so every level is non-unique; with no sentinel
+        // supplied, non-unique reports null.
+        assertTableEquals(
+                newTable(instantCol("CheckoutInstant", new Instant[1])),
+                rollup.getRoot().select("CheckoutInstant"));
+    }
+
+    /**
      * Directed coverage for the rollup "unique" re-aggregation operator (the bucketed and singleton paths that the
      * randomized tests reach only incidentally). Four leaf states roll up into two: {@code Alpha} = Apple + Banana and
      * {@code Bravo} = Carrot + Dragonfruit. The cycles walk a constituent through every classification the operator
@@ -856,17 +1303,32 @@ public class TestRollupTable extends RefreshingTableTestCase {
      */
     @Test
     public void testRollupUniqueIncremental() {
-        final int nonUnique = -1;
+        testRollupUniqueIncremental(INT_CODER);
+    }
+
+    /**
+     * {@link #testRollupUniqueIncremental()} over an {@link Instant} value column. An Instant unique result is exposed
+     * as an {@code Instant} column backed by {@code long} storage, so this walks the same transitions through the
+     * primitive re-aggregation operator's reinterpreted value column, including the previous-value reads that its
+     * remove and modify paths make.
+     */
+    @Test
+    public void testRollupUniqueInstantIncremental() {
+        testRollupUniqueIncremental(INSTANT_CODER);
+    }
+
+    private void testRollupUniqueIncremental(final UniqueValueCoder coder) {
+        final int nonUnique = NON_UNIQUE;
         final QueryTable source = TstUtils.testRefreshingTable(
                 stringCol("Level1", "Alpha", "Alpha", "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", "Apple", "Apple", "Banana", "Banana", "Banana", "Carrot", "Dragonfruit",
                         "Dragonfruit"),
-                intCol("Value", 100, 100, 100, 100, 100, NULL_INT, 200, 201));
+                coder.col("Value", 100, 100, 100, 100, 100, NULL_INT, 200, 201));
 
         // Apple is unique(100) with two entries, Banana the same value with three; Carrot has only nulls (empty) and
         // Dragonfruit holds two distinct values (non-unique).
-        final RollupTable rollup =
-                source.rollup(List.of(AggUnique(false, UnionObject.of(nonUnique), "Unique=Value")), "Level1", "Level2");
+        final RollupTable rollup = source.rollup(
+                List.of(AggUnique(false, coder.nonUniqueSentinel(), "Unique=Value")), "Level1", "Level2");
 
         final String[] arrayWithNull = new String[1];
         final Table keyTable = newTable(
@@ -881,7 +1343,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit"),
-                intCol("Unique", nonUnique, 100, 100, 100, nonUnique, NULL_INT, nonUnique)));
+                coder.col("Unique", nonUnique, 100, 100, 100, nonUnique, NULL_INT, nonUnique)));
 
         final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
 
@@ -889,14 +1351,15 @@ public class TestRollupTable extends RefreshingTableTestCase {
         // Alpha re-aggregation runs its bucketed modifyChunk on a value-preserving constituent modify whose removal and
         // addition net to nothing. Nothing exposed changes.
         cug.runWithinUnitTestCycle(() -> {
-            addToTable(source, i(20), stringCol("Level1", "Alpha"), stringCol("Level2", "Apple"), intCol("Value", 100));
+            addToTable(source, i(20), stringCol("Level1", "Alpha"), stringCol("Level2", "Apple"),
+                    coder.col("Value", 100));
             source.notifyListeners(
                     new TableUpdateImpl(i(20), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit"),
-                intCol("Unique", nonUnique, 100, 100, 100, nonUnique, NULL_INT, nonUnique)));
+                coder.col("Unique", nonUnique, 100, 100, 100, nonUnique, NULL_INT, nonUnique)));
 
         // 3. Dragonfruit drops a value and becomes a singleton(200), so Bravo collapses to unique(200).
         cug.runWithinUnitTestCycle(() -> {
@@ -906,51 +1369,54 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit"),
-                intCol("Unique", nonUnique, 100, 100, 100, 200, NULL_INT, 200)));
+                coder.col("Unique", nonUnique, 100, 100, 100, 200, NULL_INT, 200)));
 
         // 4. Carrot gains the value Dragonfruit holds, so Bravo stays unique(200) while its singleton count grows.
         cug.runWithinUnitTestCycle(() -> {
-            addToTable(source, i(8), stringCol("Level1", "Bravo"), stringCol("Level2", "Carrot"), intCol("Value", 200));
+            addToTable(source, i(8), stringCol("Level1", "Bravo"), stringCol("Level2", "Carrot"),
+                    coder.col("Value", 200));
             source.notifyListeners(new TableUpdateImpl(i(8), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit"),
-                intCol("Unique", nonUnique, 100, 100, 100, 200, 200, 200)));
+                coder.col("Unique", nonUnique, 100, 100, 100, 200, 200, 200)));
 
         // 5. Banana gains a second distinct value and becomes non-unique, forcing Alpha non-unique.
         cug.runWithinUnitTestCycle(() -> {
-            addToTable(source, i(9), stringCol("Level1", "Alpha"), stringCol("Level2", "Banana"), intCol("Value", 101));
+            addToTable(source, i(9), stringCol("Level1", "Alpha"), stringCol("Level2", "Banana"),
+                    coder.col("Value", 101));
             source.notifyListeners(new TableUpdateImpl(i(9), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit"),
-                intCol("Unique", nonUnique, nonUnique, 100, nonUnique, 200, 200, 200)));
+                coder.col("Unique", nonUnique, nonUnique, 100, nonUnique, 200, 200, 200)));
 
         // 6. A new Bravo constituent (Eggplant) holds Dragonfruit's value, so Bravo stays unique(200).
         cug.runWithinUnitTestCycle(() -> {
             addToTable(source, i(10), stringCol("Level1", "Bravo"), stringCol("Level2", "Eggplant"),
-                    intCol("Value", 200));
+                    coder.col("Value", 200));
             source.notifyListeners(
                     new TableUpdateImpl(i(10), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit", "Eggplant"),
-                intCol("Unique", nonUnique, nonUnique, 100, nonUnique, 200, 200, 200, 200)));
+                coder.col("Unique", nonUnique, nonUnique, 100, nonUnique, 200, 200, 200, 200)));
 
         // 7. A new Bravo constituent (Fig) holds a distinct value, so Bravo becomes non-unique as its multiset gains a
         // second distinct value (allocating an SSM at the rollup level).
         cug.runWithinUnitTestCycle(() -> {
-            addToTable(source, i(11), stringCol("Level1", "Bravo"), stringCol("Level2", "Fig"), intCol("Value", 300));
+            addToTable(source, i(11), stringCol("Level1", "Bravo"), stringCol("Level2", "Fig"),
+                    coder.col("Value", 300));
             source.notifyListeners(
                     new TableUpdateImpl(i(11), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit", "Eggplant", "Fig"),
-                intCol("Unique", nonUnique, nonUnique, 100, nonUnique, nonUnique, 200, 200, 200, 300)));
+                coder.col("Unique", nonUnique, nonUnique, 100, nonUnique, nonUnique, 200, 200, 200, 300)));
 
         // 8. Carrot loses its only non-null value (its null row keeps the leaf alive), so it modifies completely to
         // null/empty. The Bravo re-aggregation processes the unique->empty constituent modify, removing a 200 from its
@@ -962,7 +1428,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit", "Eggplant", "Fig"),
-                intCol("Unique", nonUnique, nonUnique, 100, nonUnique, nonUnique, NULL_INT, 200, 200, 300)));
+                coder.col("Unique", nonUnique, nonUnique, 100, nonUnique, nonUnique, NULL_INT, 200, 200, 300)));
 
         // 9. Remove a unique state: Fig (the only holder of 300) goes away entirely, so Bravo's re-aggregation runs its
         // removeChunk, collapsing its SSM back to the singleton unique(200).
@@ -974,7 +1440,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", null, null, "Apple", "Banana", null, "Carrot", "Dragonfruit", "Eggplant"),
-                intCol("Unique", nonUnique, nonUnique, 100, nonUnique, 200, NULL_INT, 200, 200)));
+                coder.col("Unique", nonUnique, nonUnique, 100, nonUnique, 200, NULL_INT, 200, 200)));
 
         // 10. Remove a non-unique state: Banana goes away entirely, so Alpha's removeChunk drops its non-unique
         // constituent and collapses to the singleton unique(100).
@@ -986,7 +1452,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Bravo", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", null, null, "Apple", null, "Carrot", "Dragonfruit", "Eggplant"),
-                intCol("Unique", nonUnique, 100, 100, 200, NULL_INT, 200, 200)));
+                coder.col("Unique", nonUnique, 100, 100, 200, NULL_INT, 200, 200)));
 
         // 11. Remove the null state: Carrot (which has held only nulls since step 8) goes away entirely, so Bravo's
         // removeChunk drops an empty constituent and is otherwise unchanged.
@@ -997,7 +1463,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Bravo", "Bravo", "Bravo"),
                 stringCol("Level2", null, null, "Apple", null, "Dragonfruit", "Eggplant"),
-                intCol("Unique", nonUnique, 100, 100, 200, 200, 200)));
+                coder.col("Unique", nonUnique, 100, 100, 200, 200, 200)));
 
         // 12. A brand-new parent (Charlie) appears in one cycle holding three new children at once: a null-only state
         // (Honeydew) plus two distinct values (Iceberg, Jicama). Its re-aggregation runs addChunk against an empty
@@ -1007,7 +1473,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
             addToTable(source, i(12, 13, 14),
                     stringCol("Level1", "Charlie", "Charlie", "Charlie"),
                     stringCol("Level2", "Honeydew", "Iceberg", "Jicama"),
-                    intCol("Value", NULL_INT, 400, 500));
+                    coder.col("Value", NULL_INT, 400, 500));
             source.notifyListeners(
                     new TableUpdateImpl(i(12, 13, 14), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
@@ -1016,13 +1482,13 @@ public class TestRollupTable extends RefreshingTableTestCase {
                         "Charlie"),
                 stringCol("Level2", null, null, "Apple", null, "Dragonfruit", "Eggplant", null, "Honeydew", "Iceberg",
                         "Jicama"),
-                intCol("Unique", nonUnique, 100, 100, 200, 200, 200, nonUnique, NULL_INT, 400, 500)));
+                coder.col("Unique", nonUnique, 100, 100, 200, 200, 200, nonUnique, NULL_INT, 400, 500)));
 
         // 13. A further new child (Kale) joins Charlie while it already holds an SSM, so addChunk inserts straight into
         // the existing rollup SSM; Charlie stays non-unique.
         cug.runWithinUnitTestCycle(() -> {
             addToTable(source, i(15), stringCol("Level1", "Charlie"), stringCol("Level2", "Kale"),
-                    intCol("Value", 600));
+                    coder.col("Value", 600));
             source.notifyListeners(
                     new TableUpdateImpl(i(15), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
@@ -1031,7 +1497,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
                         "Charlie", "Charlie"),
                 stringCol("Level2", null, null, "Apple", null, "Dragonfruit", "Eggplant", null, "Honeydew", "Iceberg",
                         "Jicama", "Kale"),
-                intCol("Unique", nonUnique, 100, 100, 200, 200, 200, nonUnique, NULL_INT, 400, 500, 600)));
+                coder.col("Unique", nonUnique, 100, 100, 200, 200, 200, nonUnique, NULL_INT, 400, 500, 600)));
 
         // 14. Remove every remaining child of Bravo (Dragonfruit and Eggplant), so Bravo itself disappears. The root is
         // a zero-key re-aggregation, so its singleton removeChunk drops the Bravo constituent; the root stays
@@ -1044,14 +1510,14 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Charlie", "Charlie", "Charlie", "Charlie", "Charlie"),
                 stringCol("Level2", null, null, "Apple", null, "Honeydew", "Iceberg", "Jicama", "Kale"),
-                intCol("Unique", nonUnique, 100, 100, nonUnique, NULL_INT, 400, 500, 600)));
+                coder.col("Unique", nonUnique, 100, 100, nonUnique, NULL_INT, 400, 500, 600)));
 
         // 15. A new parent (Delta) appears with a single null-only child (Lemon), so Delta is empty. The root is a
         // zero-key re-aggregation, so its singleton addChunk takes an empty (neither unique nor non-unique)
         // constituent; the root is unchanged.
         cug.runWithinUnitTestCycle(() -> {
             addToTable(source, i(16), stringCol("Level1", "Delta"), stringCol("Level2", "Lemon"),
-                    intCol("Value", NULL_INT));
+                    coder.col("Value", NULL_INT));
             source.notifyListeners(
                     new TableUpdateImpl(i(16), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
@@ -1059,7 +1525,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 stringCol("Level1", null, "Alpha", "Alpha", "Charlie", "Charlie", "Charlie", "Charlie", "Charlie",
                         "Delta", "Delta"),
                 stringCol("Level2", null, null, "Apple", null, "Honeydew", "Iceberg", "Jicama", "Kale", null, "Lemon"),
-                intCol("Unique", nonUnique, 100, 100, nonUnique, NULL_INT, 400, 500, 600, NULL_INT, NULL_INT)));
+                coder.col("Unique", nonUnique, 100, 100, nonUnique, NULL_INT, 400, 500, 600, NULL_INT, NULL_INT)));
 
         // 16. Remove every child of Charlie at once. Charlie's bucketed removeChunk strips all three values from its
         // SSM, emptying it; and because Charlie (a non-unique state) then disappears, the root's singleton removeChunk
@@ -1072,34 +1538,34 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Delta", "Delta"),
                 stringCol("Level2", null, null, "Apple", null, "Lemon"),
-                intCol("Unique", 100, 100, 100, NULL_INT, NULL_INT)));
+                coder.col("Unique", 100, 100, 100, NULL_INT, NULL_INT)));
 
         // 17. Two new children with their own distinct values (700, 800) join the singleton Alpha (unique 100) in one
         // cycle, so Alpha's re-aggregation takes a singleton + multi-distinct addChunk: applyAdds seeds an SSM from the
         // held value plus the two-element batch. Alpha becomes non-unique.
         cug.runWithinUnitTestCycle(() -> {
             addToTable(source, i(17, 18), stringCol("Level1", "Alpha", "Alpha"),
-                    stringCol("Level2", "Mango", "Nectarine"), intCol("Value", 700, 800));
+                    stringCol("Level2", "Mango", "Nectarine"), coder.col("Value", 700, 800));
             source.notifyListeners(
                     new TableUpdateImpl(i(17, 18), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Alpha", "Delta", "Delta"),
                 stringCol("Level2", null, null, "Apple", "Mango", "Nectarine", null, "Lemon"),
-                intCol("Unique", nonUnique, nonUnique, 100, 700, 800, NULL_INT, NULL_INT)));
+                coder.col("Unique", nonUnique, nonUnique, 100, 700, 800, NULL_INT, NULL_INT)));
 
         // 18. Delta gains a non-null child (Melon=900), flipping it from only-nulls to unique. The root is a zero-key
         // re-aggregation, so its singleton modifyChunk processes a constituent whose previous state was empty.
         cug.runWithinUnitTestCycle(() -> {
             addToTable(source, i(19), stringCol("Level1", "Delta"), stringCol("Level2", "Melon"),
-                    intCol("Value", 900));
+                    coder.col("Value", 900));
             source.notifyListeners(
                     new TableUpdateImpl(i(19), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Alpha", "Delta", "Delta", "Delta"),
                 stringCol("Level2", null, null, "Apple", "Mango", "Nectarine", null, "Lemon", "Melon"),
-                intCol("Unique", nonUnique, nonUnique, 100, 700, 800, 900, NULL_INT, 900)));
+                coder.col("Unique", nonUnique, nonUnique, 100, 700, 800, 900, NULL_INT, 900)));
 
         // 19. Removing Melon flips Delta back from unique to only-nulls, so the root's singleton modifyChunk now
         // processes a constituent whose new state is empty.
@@ -1111,7 +1577,7 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Alpha", "Delta", "Delta"),
                 stringCol("Level2", null, null, "Apple", "Mango", "Nectarine", null, "Lemon"),
-                intCol("Unique", nonUnique, nonUnique, 100, 700, 800, NULL_INT, NULL_INT)));
+                coder.col("Unique", nonUnique, nonUnique, 100, 700, 800, NULL_INT, NULL_INT)));
 
         // 20. Removing Delta's last child deletes the (empty) Delta node, so the root's singleton removeChunk drops an
         // empty constituent. The root stays non-unique (Alpha remains non-unique).
@@ -1123,7 +1589,60 @@ public class TestRollupTable extends RefreshingTableTestCase {
         assertUniqueSnapshot(rollup, ss, keyTable, newTable(
                 stringCol("Level1", null, "Alpha", "Alpha", "Alpha", "Alpha"),
                 stringCol("Level2", null, null, "Apple", "Mango", "Nectarine"),
-                intCol("Unique", nonUnique, nonUnique, 100, 700, 800)));
+                coder.col("Unique", nonUnique, nonUnique, 100, 700, 800)));
+    }
+
+    /**
+     * The sentinel {@link #testRollupUniqueIncremental(UniqueValueCoder)} expects wherever a state is non-unique. It is
+     * distinct from every value the test uses, and (being negative) also distinct from the counts the operator encodes
+     * internally.
+     */
+    private static final int NON_UNIQUE = -1;
+
+    /**
+     * Maps the {@code int} values {@link #testRollupUniqueIncremental(UniqueValueCoder)} is written in terms of onto
+     * the column type under test, so one transition sequence covers every such type. {@link #NULL_INT} means null.
+     */
+    private interface UniqueValueCoder {
+        ColumnHolder<?> col(String name, int... values);
+
+        UnionObject nonUniqueSentinel();
+    }
+
+    private static final UniqueValueCoder INT_CODER = new UniqueValueCoder() {
+        @Override
+        public ColumnHolder<?> col(final String name, final int... values) {
+            return intCol(name, values);
+        }
+
+        @Override
+        public UnionObject nonUniqueSentinel() {
+            return UnionObject.of(NON_UNIQUE);
+        }
+    };
+
+    private static final UniqueValueCoder INSTANT_CODER = new UniqueValueCoder() {
+        @Override
+        public ColumnHolder<?> col(final String name, final int... values) {
+            final Instant[] instants = new Instant[values.length];
+            for (int ii = 0; ii < values.length; ++ii) {
+                instants[ii] = toInstant(values[ii]);
+            }
+            return instantCol(name, instants);
+        }
+
+        @Override
+        public UnionObject nonUniqueSentinel() {
+            return UnionObject.of(toInstant(NON_UNIQUE));
+        }
+    };
+
+    /**
+     * Scale an {@code int} test value into a distinct {@link Instant} (milliseconds past the epoch), mapping
+     * {@link #NULL_INT} to null so a null {@code int} value stays null in the Instant column.
+     */
+    private static Instant toInstant(final int value) {
+        return value == NULL_INT ? null : DateTimeUtils.epochNanosToInstant(value * 1_000_000L);
     }
 
     /**
