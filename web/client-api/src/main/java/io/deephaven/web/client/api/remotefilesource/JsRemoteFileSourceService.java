@@ -41,8 +41,10 @@ import org.gwtproject.nio.TypedArrayHelper;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -312,9 +314,15 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Closes the message stream connection to the server.
+     * Closes the message stream connection to the server. Any in-flight requests are failed rather than left to time
+     * out, since their responses can no longer arrive once the stream is gone.
      */
     public void close() {
+        // Take the in-flight promises before clearing, so the map is empty before the failures are delivered
+        final List<LazyPromise<Boolean>> pending = new ArrayList<>(pendingSetExecutionContextRequests.values());
+        pendingSetExecutionContextRequests.clear();
+        pending.forEach(promise -> promise.fail("RemoteFileSourceService closed"));
+
         widget.close();
     }
 
