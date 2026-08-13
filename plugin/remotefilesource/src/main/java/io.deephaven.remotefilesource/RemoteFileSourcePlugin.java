@@ -9,8 +9,6 @@ import io.deephaven.plugin.type.ObjectTypeBase;
 import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.PluginMarker;
 
-import java.nio.ByteBuffer;
-
 /**
  * ObjectType plugin for remote file sources. This plugin is registered via @AutoService and handles creation of
  * RemoteFileSourceMessageStream connections for bidirectional communication with clients.
