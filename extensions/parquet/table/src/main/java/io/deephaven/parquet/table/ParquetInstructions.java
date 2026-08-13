@@ -126,7 +126,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         /**
          * @return The column data type, primitive where applicable ({@code long.class}, not {@code Long.class})
          */
-        public Class<?> dataType() {
+        Class<?> dataType() {
             return dataType;
         }
     }
@@ -837,13 +837,21 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 if (columnDefinition == null) {
                     continue;
                 }
-                if (columnDefinition.getDataType() != target.dataType()) {
+                // Repeated columns carry the element type in getComponentType(), leaving the array or vector type in
+                // getDataType(); the target describes the element either way.
+                final Class<?> componentType = columnDefinition.getComponentType();
+                final Class<?> elementType =
+                        componentType != null ? componentType : columnDefinition.getDataType();
+                if (elementType != target.dataType()) {
+                    final String declared = componentType != null
+                            ? String.format("%s (elements of %s)", elementType.getCanonicalName(),
+                                    columnDefinition.getDataType().getCanonicalName())
+                            : elementType.getCanonicalName();
                     throw new IllegalArgumentException(String.format(
                             "Conflicting types requested for column %s: unsignedLongTarget=%s implies type %s, but the "
                                     + "supplied TableDefinition specifies type %s. The TableDefinition takes precedence "
                                     + "and would silently discard the hint, so specify only one of the two.",
-                            ci.getColumnName(), target, target.dataType().getCanonicalName(),
-                            columnDefinition.getDataType().getCanonicalName()));
+                            ci.getColumnName(), target, target.dataType().getCanonicalName(), declared));
                 }
             }
         }

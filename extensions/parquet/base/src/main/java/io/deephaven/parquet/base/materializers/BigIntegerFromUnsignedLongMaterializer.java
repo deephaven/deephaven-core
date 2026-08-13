@@ -28,11 +28,12 @@ public class BigIntegerFromUnsignedLongMaterializer extends ObjectMaterializerBa
         }
     };
 
-    private static final BigInteger TWO_TO_THE_64 = BigInteger.ONE.shiftLeft(64);
-
+    /**
+     * Mirrors {@code com.google.common.primitives.UnsignedLong}.
+     */
     public static BigInteger convertValue(long value) {
-        final BigInteger signed = BigInteger.valueOf(value);
-        return value >= 0 ? signed : signed.add(TWO_TO_THE_64);
+        final BigInteger magnitude = BigInteger.valueOf(value & Long.MAX_VALUE);
+        return value < 0 ? magnitude.setBit(Long.SIZE - 1) : magnitude;
     }
 
     private final ValuesReader dataReader;
