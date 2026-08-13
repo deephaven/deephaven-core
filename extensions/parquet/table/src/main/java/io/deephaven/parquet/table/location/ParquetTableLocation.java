@@ -1009,8 +1009,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 }
 
                 // Filtering the dictionary costs O(dictionary size), might not be worth the overhead.
-                final long threshold = (long) (dictionaryChunk.size() / QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD);
-                if (rs.size() <= threshold) {
+                final long threshold = (long) (rs.size() * QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD);
+                if (dictionaryChunk.size() >= threshold) {
                     maybeBuilder.appendRowSequence(rs);
                     maybeCount.add(rs.size());
                     return;
