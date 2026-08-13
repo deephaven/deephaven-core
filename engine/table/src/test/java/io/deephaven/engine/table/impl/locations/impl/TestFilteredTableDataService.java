@@ -177,6 +177,33 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
     }
 
     /**
+     * The single-location raw lookup binds the filter to the table key it was handed, so one location key is accepted
+     * for one table and rejected for another. This is the path that previously asked an unbound filter about a bare
+     * location key and so could not tell the two tables apart.
+     */
+    @Test
+    public void testRawLookupAppliesTheTableAwareFilter() {
+        final TableLocationKey a = keyFor("A");
+        final TableKey other = new NamedTableKey("Market.Trades");
+
+        final PopulatedProvider underlying = new PopulatedProvider(TABLE);
+        underlying.addKey(a);
+
+        // Accepts every location of TABLE and no location of any other table.
+        final LocationKeyFilterProvider perTable =
+                tableKey -> TABLE.equals(tableKey) ? LocationKeyFilter.ALL : LocationKeyFilter.NONE;
+
+        final FixedProviderService delegate = new FixedProviderService(underlying);
+        // The delegate's raw lookup consults its own provider cache, so make it create the provider for TABLE first.
+        delegate.getTableLocationProvider(TABLE);
+        final FilteredTableDataService filtered = new FilteredTableDataService(delegate, perTable);
+
+        Assert.assertSame(underlying, filtered.getRawTableLocationProvider(TABLE, a));
+        Assert.assertNull("the same location key must be rejected for a table the filter excludes",
+                filtered.getRawTableLocationProvider(other, a));
+    }
+
+    /**
      * A provider that ignores its argument supplies the same filter for every table, which is how a filter that does
      * not discriminate on the table is expressed.
      */

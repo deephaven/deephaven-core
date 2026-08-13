@@ -62,11 +62,26 @@ public class NullTableLocationProvider implements TableLocationProvider {
         return false;
     }
 
+    /**
+     * Always throws: this provider never ticks, so reaching here means a caller subscribed without first checking
+     * {@link #supportsSubscriptions()}.
+     *
+     * @param listener the listener that would have been subscribed
+     */
     @Override
-    public void subscribe(@NotNull final Listener listener) {}
+    public void subscribe(@NotNull final Listener listener) {
+        throw new UnsupportedOperationException();
+    }
 
+    /**
+     * Always throws, for the same reason as {@link #subscribe(Listener)}: no subscription can exist to cancel.
+     *
+     * @param listener the listener that would have been unsubscribed
+     */
     @Override
-    public void unsubscribe(@NotNull final Listener listener) {}
+    public void unsubscribe(@NotNull final Listener listener) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public void refresh() {}
