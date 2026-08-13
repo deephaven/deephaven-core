@@ -161,7 +161,7 @@ source = ParquetTools.readTable("/data/examples/ParquetExamples/grades/grades.pa
 result = source.where("Class = `Math`")
 ```
 
-Filtering the dictionary costs time proportional to the number of unique dictionary entries, so it only pays off when the dictionary is small relative to the amount of data it can eliminate. Before filtering a region's dictionary, the engine compares the dictionary size to the number of rows still to be filtered in that region. The dictionary is used only when it is no larger than [`QueryTable.dictionaryForWhereThreshold`](#tuning-predicate-pushdown-features) times the remaining row count — with the default of `0.25`, the dictionary must be at most 25% of the remaining row count. Otherwise, the engine skips the dictionary and leaves those rows to be filtered directly.
+Filtering the dictionary costs time proportional to the number of unique dictionary entries, so it only pays off when the dictionary is small relative to the amount of data it can eliminate. Before filtering a region's dictionary, the engine compares the dictionary size to the number of rows still to be filtered in that region. The dictionary is used only when it holds fewer entries than [`QueryTable.dictionaryForWhereThreshold`](#tuning-predicate-pushdown-features) times the remaining row count. Otherwise, the engine skips the dictionary and leaves those rows to be filtered directly. The threshold defaults to `0.25`, so the dictionary must hold fewer entries than 25% of the remaining rows for the engine to use it.
 
 If desired, you can [disable](#disabling-predicate-pushdown-features) the use of dictionary encoding during pushdown operations:
 
@@ -177,10 +177,10 @@ Under certain circumstances, you may want to disable specific predicate pushdown
 
 ## Tuning predicate pushdown features
 
-Some pushdown techniques must build or scan an auxiliary structure (a data index table or a dictionary) before they can eliminate rows. That work is only worthwhile when the structure is small relative to the data it filters, so the engine applies a size ratio test before using one. Both properties below are doubles expressing the maximum size of the auxiliary structure as a fraction of the number of rows remaining to be filtered; if the ratio exceeds the threshold, the engine skips the optimization and the rows are filtered directly.
+Some pushdown techniques must build or scan an auxiliary structure (a data index table or a dictionary) before they can eliminate rows. That work is only worthwhile when the structure is small relative to the data it filters, so the engine applies a size ratio test before using one. Both properties below are doubles that bound the size of the auxiliary structure as a fraction of the number of rows remaining to be filtered; when the structure is too large for its threshold, the engine skips the optimization and the rows are filtered directly.
 
 - [`QueryTable.dataIndexForWhereThreshold`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DATA_INDEX_FOR_WHERE_THRESHOLD) (default `0.25`) – the maximum ratio of data index table size to remaining row count for the engine to use a [data index](#deephaven-data-indexes) when filtering.
-- [`QueryTable.dictionaryForWhereThreshold`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DICTIONARY_FOR_WHERE_THRESHOLD) (default `0.25`) – the maximum ratio of dictionary size to remaining row count for the engine to use [dictionary encoding](#dictionary-encoding) when filtering.
+- [`QueryTable.dictionaryForWhereThreshold`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DICTIONARY_FOR_WHERE_THRESHOLD) (default `0.25`) – the ratio of dictionary size to remaining row count that the dictionary must fall below for the engine to use [dictionary encoding](#dictionary-encoding) when filtering.
 
 Raising a threshold toward `1.0` makes the engine more willing to use the optimization on columns with many distinct values; lowering it restricts the optimization to highly repetitive data. Setting a threshold to `0` effectively disables that pushdown technique.
 

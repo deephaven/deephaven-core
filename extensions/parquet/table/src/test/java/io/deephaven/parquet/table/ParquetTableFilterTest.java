@@ -1984,8 +1984,7 @@ public final class ParquetTableFilterTest {
         QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = configuredDictionaryThreshold;
 
         // One entry fewer over the same hundred rows -- the largest dictionary that still proceeds: 100 * 0.25 = 25,
-        // and
-        // 24 < 25, so the dictionary is worth reading and resolves every row exactly.
+        // and 24 < 25, so the dictionary is worth reading and resolves every row exactly.
         final Table diskTable = writeAndReadDictionaryTable(
                 "dictionaryThresholdProceeds", THRESHOLD_ROW_COUNT, smallestDecliningDictionarySize() - 1);
         final String filterExpr = "animal == `" + THRESHOLD_MATCH_VALUE + "`";

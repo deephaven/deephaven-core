@@ -287,9 +287,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                     false);
 
     /**
-     * Before using a dictionary for a where filter, ensure that the dictionary size is at most this fraction of the
-     * size of the rows remaining to be filtered. If the fraction is greater than this threshold, then the engine will
-     * ignore the dictionary and filter the rows directly.
+     * Before using a dictionary for a where filter, ensure that the dictionary holds fewer entries than this fraction
+     * of the size of the rows remaining to be filtered. If the dictionary is at least that large, then the engine will
+     * ignore the dictionary and filter the rows directly. A dictionary sitting exactly on the fraction is therefore not
+     * used: at the default of 0.25, a 25-entry dictionary over 100 remaining rows is skipped, while a 24-entry one is
+     * read.
      */
     public static double DICTIONARY_FOR_WHERE_THRESHOLD =
             Configuration.getInstance().getDoubleWithDefault("QueryTable.dictionaryForWhereThreshold", 0.25);
