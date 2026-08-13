@@ -1890,13 +1890,21 @@ public final class ParquetTableFilterTest {
     private static final int THRESHOLD_ROW_COUNT = 100;
 
     /**
-     * The smallest dictionary the configured threshold declines to read for {@link #THRESHOLD_ROW_COUNT} rows. Pushdown
-     * is skipped once a dictionary holds at least {@code rows * fraction} entries, so this is 25 at the shipped 0.25 —
-     * meaning 25 entries decline and 24 proceed. Derived rather than hard-coded so the boundary tracks the configured
-     * fraction.
+     * The fraction the boundary tests run at, in place of the configured one. The configured value cannot be relied on
+     * to express this boundary: {@code 0} is a documented setting that disables the optimization, and any fraction
+     * outside {@code [0.02, 1.0]} asks for a dictionary that {@link #THRESHOLD_ROW_COUNT} rows cannot hold — too few
+     * distinct entries to build a fixture at one end, more than one per row at the other. {@link #setUp} and
+     * {@link #tearDown} still save and restore whatever is configured.
      */
-    private int smallestDecliningDictionarySize() {
-        return (int) (THRESHOLD_ROW_COUNT * configuredDictionaryThreshold);
+    private static final double THRESHOLD_TEST_FRACTION = 0.25;
+
+    /**
+     * The smallest dictionary {@link #THRESHOLD_TEST_FRACTION} declines to read for {@link #THRESHOLD_ROW_COUNT} rows.
+     * Pushdown is skipped once a dictionary holds at least {@code rows * fraction} entries, so this is 25 — meaning 25
+     * entries decline and 24 proceed.
+     */
+    private static int smallestDecliningDictionarySize() {
+        return (int) (THRESHOLD_ROW_COUNT * THRESHOLD_TEST_FRACTION);
     }
 
     /**
@@ -1953,7 +1961,7 @@ public final class ParquetTableFilterTest {
      * Reading and filtering a whole dictionary costs O(dictionary), so it only pays off when enough rows remain that
      * filtering them directly would cost more. This test and {@link #dictionaryPushdownThresholdProceedsTest()} sit on
      * the two dictionary sizes either side of that boundary — the smallest that declines and the largest that proceeds
-     * — at the configured threshold, which the other dictionary tests here deliberately disable.
+     * — at {@link #THRESHOLD_TEST_FRACTION}, the heuristic that the other dictionary tests here deliberately disable.
      */
     @Test
     public void dictionaryPushdownThresholdDeclinesTest() {
@@ -1972,7 +1980,7 @@ public final class ParquetTableFilterTest {
             assertTrue("maybeMatch should be empty", pinnedOpen.maybeMatch().isEmpty());
         }
 
-        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = configuredDictionaryThreshold;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = THRESHOLD_TEST_FRACTION;
         try (final PushdownResult result = runPushdownThroughDictionary(diskTable, filterExpr)) {
             assertTrue("match should be empty", result.match().isEmpty());
             assertEquals(diskTable.size(), result.maybeMatch().size());
@@ -1981,7 +1989,7 @@ public final class ParquetTableFilterTest {
 
     @Test
     public void dictionaryPushdownThresholdProceedsTest() {
-        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = configuredDictionaryThreshold;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = THRESHOLD_TEST_FRACTION;
 
         // One entry fewer over the same hundred rows -- the largest dictionary that still proceeds: 100 * 0.25 = 25,
         // and 24 < 25, so the dictionary is worth reading and resolves every row exactly.
