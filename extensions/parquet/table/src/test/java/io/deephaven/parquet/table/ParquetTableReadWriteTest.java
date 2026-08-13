@@ -31,6 +31,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.PartitionedTableFactory;
+import io.deephaven.engine.table.impl.ForceReadUtility;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.SourceTable;
@@ -3007,14 +3008,14 @@ public final class ParquetTableReadWriteTest {
         // 2^64 - 1 does not fit in a long.
         final File outOfRange =
                 writeUint64File("uint64_as_long_out_of_range.parquet", UnsignedLong.ZERO, UnsignedLong.MAX_VALUE);
-        assertThrowsWithMessage(() -> readTable(outOfRange.getPath(), asLong).select(),
+        assertThrowsWithMessage(() -> ForceReadUtility.of(readTable(outOfRange.getPath(), asLong)),
                 "Unsigned long value 18446744073709551615 is too large to be represented as a long");
 
         // Nor does 2^63, whose bit pattern is Deephaven's null long sentinel; it must be rejected rather than quietly
         // reported as a null, and distinguished from the genuine null alongside it.
         final File nullSentinel = writeUint64File("uint64_as_long_null_sentinel.parquet",
                 UnsignedLong.ZERO, TWO_TO_THE_63, null);
-        assertThrowsWithMessage(() -> readTable(nullSentinel.getPath(), asLong).select(),
+        assertThrowsWithMessage(() -> ForceReadUtility.of(readTable(nullSentinel.getPath(), asLong)),
                 "Unsigned long value 9223372036854775808 is too large to be represented as a long");
     }
 
@@ -3038,7 +3039,7 @@ public final class ParquetTableReadWriteTest {
 
         final File outOfRange =
                 writeUint64File("uint64_hint_out_of_range.parquet", UnsignedLong.ZERO, UnsignedLong.MAX_VALUE);
-        assertThrowsWithMessage(() -> readTable(outOfRange.getPath(), asLong).select(),
+        assertThrowsWithMessage(() -> ForceReadUtility.of(readTable(outOfRange.getPath(), asLong)),
                 "Unsigned long value 18446744073709551615 is too large to be represented as a long");
     }
 
@@ -3116,7 +3117,7 @@ public final class ParquetTableReadWriteTest {
         // The element-wise rejection still applies inside a repeated column.
         final File outOfRange = writeRepeatedUint64File("uint64_repeated_out_of_range.parquet",
                 new UnsignedLong[] {UnsignedLong.ZERO, UnsignedLong.MAX_VALUE});
-        assertThrowsWithMessage(() -> readTable(outOfRange.getPath(), asLong).select(),
+        assertThrowsWithMessage(() -> ForceReadUtility.of(readTable(outOfRange.getPath(), asLong)),
                 "Unsigned long value 18446744073709551615 is too large to be represented as a long");
     }
 
@@ -3130,7 +3131,7 @@ public final class ParquetTableReadWriteTest {
                 ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
         final File dest =
                 writeUint64File("uint64_unhinted_default.parquet", UnsignedLong.ZERO, UnsignedLong.MAX_VALUE);
-        assertThrowsWithMessage(() -> readTable(dest.getPath(), asLong).select(),
+        assertThrowsWithMessage(() -> ForceReadUtility.of(readTable(dest.getPath(), asLong)),
                 "Unsigned long value 18446744073709551615 is too large to be represented as a long");
     }
 
@@ -3224,7 +3225,7 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions asInt = EMPTY.withTableDefinitionAndLayout(
                 TableDefinition.of(ColumnDefinition.ofInt(UINT64_COL)),
                 ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
-        assertThrowsWithMessage(() -> readTable(dest.getPath(), asInt).select(),
+        assertThrowsWithMessage(() -> ForceReadUtility.of(readTable(dest.getPath(), asInt)),
                 "Cannot convert parquet unsigned long column to int");
     }
 
