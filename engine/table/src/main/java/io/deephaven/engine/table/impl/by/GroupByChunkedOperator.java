@@ -53,6 +53,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
     private boolean stepValuesModified;
     private boolean someKeyHasAddsOrRemoves;
     private boolean someKeyHasModifies;
+    private boolean someKeyHasShifts;
     private boolean initialized;
 
     private MatchPair[] aggregatedColumnPairs;
@@ -172,6 +173,11 @@ public final class GroupByChunkedOperator implements GroupByOperator {
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
+        // A shift changes RowSet keys, not grouped values, so only an exposed RowSet column makes it observable.
+        // Rollups above this cache an unshifted union of these, so report doShift's add-and-remove. This is tracked
+        // separately from adds and removes so that we dirty only the exposed RowSet column, not every result column.
+        final boolean reportRowSetChanges = exposeRowSetsAs != null;
+        someKeyHasShifts |= reportRowSetChanges && startPositions.size() > 0;
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> preShiftRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) preShiftRowKeys;
         // noinspection unchecked
@@ -183,6 +189,9 @@ public final class GroupByChunkedOperator implements GroupByOperator {
             final long destination = destinations.get(startPosition);
 
             doShift(preShiftRowKeysAsOrdered, postShiftRowKeysAsOrdered, startPosition, runLength, destination);
+        }
+        if (reportRowSetChanges) {
+            stateModified.fillWithValue(0, startPositions.size(), true);
         }
     }
 
@@ -244,10 +253,13 @@ public final class GroupByChunkedOperator implements GroupByOperator {
             final long destination) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
+        // See the bucketed shiftChunk: only an exposed RowSet column makes a shift observable downstream.
+        final boolean reportRowSetChanges = exposeRowSetsAs != null;
+        someKeyHasShifts |= reportRowSetChanges && preShiftRowKeys.size() > 0;
         // noinspection unchecked
         doShift((LongChunk<OrderedRowKeys>) preShiftRowKeys, (LongChunk<OrderedRowKeys>) postShiftRowKeys, 0,
                 preShiftRowKeys.size(), destination);
-        return false;
+        return reportRowSetChanges;
     }
 
     @Override
@@ -459,6 +471,8 @@ public final class GroupByChunkedOperator implements GroupByOperator {
 
         private final ModifiedColumnSet updateModifiedColumnSet;
         private final ModifiedColumnSet allResultColumns;
+        /** Just the exposed RowSet column, or {@code null} if we don't expose one. */
+        private final ModifiedColumnSet rowSetModifiedColumnSet;
         private final ModifiedColumnSet.Transformer aggregatedColumnsTransformer;
 
         private InputToResultModifiedColumnSetFactory(
@@ -469,9 +483,11 @@ public final class GroupByChunkedOperator implements GroupByOperator {
 
             if (exposeRowSetsAs != null) {
                 // resultAggregatedColumnNames may be empty (e.g. when the row set is the only result column)
+                rowSetModifiedColumnSet = resultTable.newModifiedColumnSet(exposeRowSetsAs);
                 allResultColumns = resultTable.newModifiedColumnSet(exposeRowSetsAs);
                 allResultColumns.setAll(resultAggregatedColumnNames);
             } else {
+                rowSetModifiedColumnSet = null;
                 allResultColumns = resultTable.newModifiedColumnSet(resultAggregatedColumnNames);
             }
             aggregatedColumnsTransformer = inputTable.newModifiedColumnSetTransformer(
@@ -487,7 +503,15 @@ public final class GroupByChunkedOperator implements GroupByOperator {
             }
             if (someKeyHasModifies) {
                 aggregatedColumnsTransformer.clearAndTransform(upstreamModifiedColumnSet, updateModifiedColumnSet);
+                if (someKeyHasShifts) {
+                    // A shift dirties only the exposed RowSet column, but we still owe the upstream modifies.
+                    updateModifiedColumnSet.setAll(rowSetModifiedColumnSet);
+                }
                 return updateModifiedColumnSet;
+            }
+            if (someKeyHasShifts) {
+                // Nothing but a shift: the grouped values are unchanged, only their row keys moved.
+                return rowSetModifiedColumnSet;
             }
             return ModifiedColumnSet.EMPTY;
         }
@@ -499,6 +523,7 @@ public final class GroupByChunkedOperator implements GroupByOperator {
                 && upstream.modifiedColumnSet().containsAny(aggregationInputsModifiedColumnSet);
         someKeyHasAddsOrRemoves = false;
         someKeyHasModifies = false;
+        someKeyHasShifts = false;
         stepDestinationsModified = new BitmapRandomBuilder(startingDestinationsCount);
         return false;
     }
@@ -662,6 +687,9 @@ public final class GroupByChunkedOperator implements GroupByOperator {
 
     @Override
     public boolean hasModifications(boolean columnsModified) {
+        // Deliberately excludes shifts: a shift relabels row keys without changing the grouped values, and consumers
+        // (e.g. FormulaMultiColumnChunkedOperator) evaluate over the group vectors in destination space, so their
+        // results are unchanged. Only the exposed RowSet column observes a shift.
         return getSomeKeyHasAddsOrRemoves() || (getSomeKeyHasModifies() && columnsModified);
     }
 
