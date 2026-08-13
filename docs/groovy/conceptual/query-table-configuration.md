@@ -20,8 +20,13 @@ The `QueryTable` has the following user-configurable properties:
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForWhere`                        | true       |
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForAggregation`                  | true       |
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForJoins`                        | true       |
+| [DataIndex](#dataindex)                                             | `QueryTable.dataIndexForWhereThreshold`                  | 0.25       |
 | [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDataIndex`               | false      |
 | [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownMergedTables`            | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDictionary`              | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownSortedColumn`            | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.dictionaryForWhereThreshold`                 | 0.25       |
 | [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false      |
 | [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`  |
 | [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1         |
@@ -71,15 +76,24 @@ A Deephaven [DataIndex](../how-to-guides/data-indexes.md) is an index that can i
 | `QueryTable.useDataIndexForAggregation`    | true          | Enables data index usage in `QueryTable#aggBy`, `QueryTable#selectDistinct`, within [rollup-tables](../reference/table-operations/create/rollup.md) and [tree-tables](../reference/table-operations/create/tree.md) |
 | `QueryTable.useDataIndexForJoins`          | true          | Enables data index usage in [Deephaven Joins](../how-to-guides/joins-timeseries-range.md#which-method-should-you-use)                                                                                               |
 | `QueryTable.disableWherePushdownDataIndex` | false         | Disables data index usage within [where's pushdown predicates](#pushdown-predicates-with-where)                                                                                                                     |
+| `QueryTable.dataIndexForWhereThreshold`    | 0.25 (double) | The maximum size of a data index table, as a fraction of the rows remaining to be filtered, for the index to be used by `where`                                                                                     |
 
 ## Pushdown predicates with `where`
 
 Pushdown predicates refer to the mechanism whereby filtering conditions are applied as early as possible, ideally at the data source (e.g., Parquet or other columnar formats), before loading data into the system. By annotating source reads with predicates, the engine pulls in only the rows that satisfy the conditions, significantly reducing I/O and improving performance.
 
-| Property Name                                            | Default Value | Description                                                                                           |
-| -------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------- |
-| `QueryTable.disableWherePushdownDataIndex`               | false         | Disables the use of [data index](../how-to-guides/data-indexes.md) within where's pushdown predicates |
-| `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false         | Disables the usage of Parquet row group metadata during push-down filtering                           |
+| Property Name                                            | Default Value | Description                                                                                                                               |
+| -------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `QueryTable.disableWherePushdownDataIndex`               | false         | Disables the use of [data index](../how-to-guides/data-indexes.md) within where's pushdown predicates                                     |
+| `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false         | Disables the usage of Parquet row group metadata during push-down filtering                                                               |
+| `QueryTable.disableWherePushdownMergedTables`            | false         | Disables predicate pushdown when filtering merged tables                                                                                  |
+| `QueryTable.disableWherePushdownDictionary`              | false         | Disables dictionary-encoding predicate pushdown operations                                                                                |
+| `QueryTable.disableWherePushdownSortedColumn`            | false         | Disables the use of sorted column binary search during push-down filtering                                                                |
+| `QueryTable.dictionaryForWhereThreshold`                 | 0.25 (double) | The maximum dictionary size, as a fraction of the rows remaining to be filtered, for the dictionary to be used during push-down filtering |
+
+The two `*ForWhereThreshold` properties are cost heuristics rather than on/off switches. Scanning a data index table or a dictionary costs time proportional to its size, so the engine only does so when that structure is small relative to the rows it can eliminate. With the default `0.25`, a data index or dictionary is used only when it is at most 25% of the rows remaining to be filtered. Rows skipped by this check are not eliminated — they are filtered directly by a later stage. Raise the value toward `1.0` to apply these optimizations to columns with more distinct values, or set it to `0` to effectively disable the technique.
+
+For more details, see [Predicate pushdown filtering](../how-to-guides/predicate-pushdown.md).
 
 ## Parallel processing with `where`
 
