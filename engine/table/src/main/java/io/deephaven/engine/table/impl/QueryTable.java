@@ -287,6 +287,14 @@ public class QueryTable extends BaseTable<QueryTable> {
                     false);
 
     /**
+     * Before using a dictionary for a where filter, ensure that the dictionary size is at most this fraction of the
+     * size of the rows remaining to be filtered. If the fraction is greater than this threshold, then the engine will
+     * ignore the dictionary and filter the rows directly.
+     */
+    public static double DICTIONARY_FOR_WHERE_THRESHOLD =
+            Configuration.getInstance().getDoubleWithDefault("QueryTable.dictionaryForWhereThreshold", 0.25);
+
+    /**
      * Disable the usage of sorted column regions during push-down filtering.
      */
     public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION =
