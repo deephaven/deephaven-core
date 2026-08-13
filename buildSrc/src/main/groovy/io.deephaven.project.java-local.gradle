@@ -3,5 +3,4 @@ plugins {
     id 'io.deephaven.java-common-conventions'
     id 'io.deephaven.java-test-conventions'
     id 'io.deephaven.java-coding-conventions'
-    id 'io.deephaven.java-dependency-constraints-conventions'
 }

@@ -7,7 +7,6 @@ plugins {
     id 'io.deephaven.java-coding-conventions'
     id 'io.deephaven.java-shadow-publishing-conventions'
     id 'io.deephaven.default-description'
-    id 'io.deephaven.java-dependency-constraints-conventions'
 }
 
 def quickTask = project.tasks.getByName('quick')
