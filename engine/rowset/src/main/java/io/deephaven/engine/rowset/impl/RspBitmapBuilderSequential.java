@@ -26,36 +26,32 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     protected long maxKeyHint = -1;
 
     /**
-     * Describes what is destined for a given block, when that is known before the block's container is filled, so the
-     * container can be created at its final size and in the representation that fits it best. Containers are otherwise
-     * grown one range at a time, which reallocates their backing storage on every append; see
+     * The block that {@link #sizedBlockCardinality} and {@link #sizedBlockRangeCount} describe, or -1 when nothing is
+     * known ahead of time. A subclass that can see what a block will receive before its container is filled should
+     * publish it here, so the container can be created at its final size and in the representation that fits it best;
+     * containers are otherwise grown one range at a time, which reallocates their backing storage on every append. See
      * {@link Container#emptySizedFor(int, int)}.
      *
      * <p>
-     * Both quantities are only sizing hints. An inaccurate answer costs memory or reallocation, never correctness.
+     * These are only sizing hints. Stale or inaccurate values cost memory or reallocation, never correctness, and the
+     * block key is checked before they are used.
      */
-    public interface BlockSizes {
-
-        int NOT_KNOWN = -1;
-
-        /**
-         * @param blockKey The key of the block, i.e. the high bits shared by its values
-         * @return The number of values destined for {@code blockKey}, or {@link #NOT_KNOWN} if not known
-         */
-        int cardinalityForBlock(long blockKey);
-
-        /**
-         * @param blockKey The key of the block, i.e. the high bits shared by its values
-         * @return The number of distinct ranges those values form, meaningful only when
-         *         {@link #cardinalityForBlock(long)} is known for the same block
-         */
-        int rangeCountForBlock(long blockKey);
-    }
+    private long sizedBlockKey = -1;
+    private int sizedBlockCardinality;
+    private int sizedBlockRangeCount;
 
     /**
-     * Per-block sizes for the append(s) in progress, or {@code null} when they are not known ahead of time.
+     * Declare what {@code blockKey} will receive in total, for use when its container is created.
      */
-    protected BlockSizes blockSizes;
+    protected final void setSizedBlock(final long blockKey, final int cardinality, final int rangeCount) {
+        sizedBlockKey = blockKey;
+        sizedBlockCardinality = cardinality;
+        sizedBlockRangeCount = rangeCount;
+    }
+
+    protected final void clearSizedBlock() {
+        sizedBlockKey = -1;
+    }
 
     public RspBitmapBuilderSequential() {
         this(false);
@@ -364,10 +360,10 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
      * single-range representation is both smaller and free to build.
      */
     private Container newContainerForRange(final long blockKey, final int lowStart, final int lowEnd) {
-        final int firstRangeCardinality = lowEnd - lowStart + 1;
-        final int blockCardinality = cardinalityForBlock(blockKey);
-        if (blockCardinality > firstRangeCardinality) {
-            return Container.emptySizedFor(blockCardinality, blockSizes.rangeCountForBlock(blockKey))
+        // Pre-size only when more is coming for this block than this first range; otherwise this range is all it gets,
+        // and the compact single-range representation is both smaller and free to build.
+        if (blockKey == sizedBlockKey && sizedBlockCardinality > lowEnd - lowStart + 1) {
+            return Container.emptySizedFor(sizedBlockCardinality, sizedBlockRangeCount)
                     .iappend(lowStart, lowEnd + 1);
         }
         return Container.rangeOfOnes(lowStart, lowEnd + 1);
@@ -379,20 +375,12 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
      */
     private Container newContainerForLowValueAndRange(
             final long blockKey, final int lowValue, final int lowStart, final int lowEnd) {
-        final int cardinalitySoFar = 1 + lowEnd - lowStart + 1;
-        final int blockCardinality = cardinalityForBlock(blockKey);
-        if (blockCardinality > cardinalitySoFar) {
-            return Container.emptySizedFor(blockCardinality, blockSizes.rangeCountForBlock(blockKey))
+        if (blockKey == sizedBlockKey && sizedBlockCardinality > 1 + lowEnd - lowStart + 1) {
+            return Container.emptySizedFor(sizedBlockCardinality, sizedBlockRangeCount)
                     .iappend(lowValue, lowValue + 1)
                     .iappend(lowStart, lowEnd + 1);
         }
         return containerForLowValueAndRange(lowValue, lowStart, lowEnd);
-    }
-
-    private int cardinalityForBlock(final long blockKey) {
-        return blockSizes == null
-                ? BlockSizes.NOT_KNOWN
-                : blockSizes.cardinalityForBlock(blockKey);
     }
 
     private void ensureRb() {

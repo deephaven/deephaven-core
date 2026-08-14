@@ -3,15 +3,13 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
-import java.util.Arrays;
-
-import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
+import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.highBits;
 
 public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential {
@@ -132,90 +130,73 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
         pendingSr = ans;
     }
 
+    /**
+     * Move the accumulated {@link SortedRanges} into the RSP.
+     *
+     * <p>
+     * Every range is already known at this point, so rather than growing each container one range at a time -- which
+     * reallocates its backing storage on every append, and is therefore quadratic in the container's cardinality -- we
+     * walk two cursors over the ranges. One feeds ranges to the builder; the other runs ahead to the end of the block
+     * being started, so the container for it can be created at its final size and in the representation that suits it.
+     */
     private void flushSrToRsp() {
         final SortedRanges sr = pendingSr;
         pendingSr = null;
-        // Every range is already known here, so measure up front what each block will receive. That lets the RSP
-        // builder create each container at its final size, and in the representation that suits it: a container grown
-        // one range at a time reallocates its backing array on every append, which is quadratic in its cardinality.
-        final BlockSizeCounts counts = new BlockSizeCounts();
-        sr.forEachLongRange(counts);
-        blockSizes = counts;
-        try {
-            sr.forEachLongRange((final long start, final long end) -> {
+        try (final RowSet.RangeIterator appendIter = sr.getRangeIterator();
+                final RowSet.RangeIterator lookaheadIter = sr.getRangeIterator()) {
+            // The range the lookahead is currently sitting on. It is only partially consumed when it carries over into
+            // a later block, in which case lookStart is advanced to that block and the range is measured again there.
+            boolean lookValid = false;
+            long lookStart = 0;
+            long lookEnd = 0;
+            long sizedBlock = -1;
+            while (appendIter.hasNext()) {
+                appendIter.next();
+                final long start = appendIter.currentRangeStart();
+                final long end = appendIter.currentRangeEnd();
+                // A range that spans blocks leaves a container pending for the block its *end* falls in; any container
+                // for an earlier block is appended whole and never grown, so needs no sizing.
+                final long blockKey = highBits(end);
+                if (blockKey != sizedBlock) {
+                    final long blockLast = blockKey + BLOCK_LAST;
+                    int cardinality = 0;
+                    int rangeCount = 0;
+                    while (true) {
+                        if (!lookValid) {
+                            if (!lookaheadIter.hasNext()) {
+                                break;
+                            }
+                            lookaheadIter.next();
+                            lookStart = lookaheadIter.currentRangeStart();
+                            lookEnd = lookaheadIter.currentRangeEnd();
+                            lookValid = true;
+                        }
+                        if (lookStart > blockLast) {
+                            break;
+                        }
+                        if (lookEnd < blockKey) {
+                            // Entirely behind the block being measured; nothing here to count.
+                            lookValid = false;
+                            continue;
+                        }
+                        // Clip a range that began in an earlier block; only its part in this block belongs here.
+                        lookStart = Math.max(lookStart, blockKey);
+                        cardinality += (int) (Math.min(lookEnd, blockLast) - lookStart + 1);
+                        ++rangeCount;
+                        if (lookEnd > blockLast) {
+                            // Carries over; leave it current, positioned at the start of the next block.
+                            lookStart = blockLast + 1;
+                            break;
+                        }
+                        lookValid = false;
+                    }
+                    setSizedBlock(blockKey, cardinality, rangeCount);
+                    sizedBlock = blockKey;
+                }
                 flushRangeToPendingContainer(start, end);
-                return true;
-            });
+            }
         } finally {
-            blockSizes = null;
-        }
-    }
-
-    /**
-     * Measures how many values, in how many ranges, a sequence of ordered, disjoint ranges contributes to each RSP
-     * block, then serves those back as sizing hints. Blocks are visited in ascending order both while counting and
-     * while looking up, so a single cursor suffices.
-     */
-    private static final class BlockSizeCounts
-            implements LongRangeAbortableConsumer, RspBitmapBuilderSequential.BlockSizes {
-
-        private long[] blockKeys = new long[16];
-        private int[] cardinalities = new int[16];
-        private int[] rangeCounts = new int[16];
-        private int size;
-        private int cursor;
-
-        @Override
-        public boolean accept(final long start, final long end) {
-            final long firstBlockKey = highBits(start);
-            final long lastBlockKey = highBits(end);
-            if (firstBlockKey == lastBlockKey) {
-                add(firstBlockKey, (int) (end - start + 1));
-                return true;
-            }
-            // Blocks strictly between the first and last are covered in full and become full block spans rather than
-            // containers, so they need no count -- which also keeps this O(1) for ranges spanning many blocks.
-            add(firstBlockKey, (int) (firstBlockKey + BLOCK_SIZE - start));
-            add(lastBlockKey, (int) (end - lastBlockKey + 1));
-            return true;
-        }
-
-        /**
-         * Account for one range of {@code cardinality} values landing in {@code blockKey}. Ranges arrive in ascending
-         * order and are never adjacent, so each call is a distinct run within its block.
-         */
-        private void add(final long blockKey, final int cardinality) {
-            if (size > 0 && blockKeys[size - 1] == blockKey) {
-                cardinalities[size - 1] += cardinality;
-                ++rangeCounts[size - 1];
-                return;
-            }
-            if (size == blockKeys.length) {
-                blockKeys = Arrays.copyOf(blockKeys, size * 2);
-                cardinalities = Arrays.copyOf(cardinalities, size * 2);
-                rangeCounts = Arrays.copyOf(rangeCounts, size * 2);
-            }
-            blockKeys[size] = blockKey;
-            cardinalities[size] = cardinality;
-            rangeCounts[size] = 1;
-            ++size;
-        }
-
-        @Override
-        public int cardinalityForBlock(final long blockKey) {
-            return seek(blockKey) ? cardinalities[cursor] : NOT_KNOWN;
-        }
-
-        @Override
-        public int rangeCountForBlock(final long blockKey) {
-            return seek(blockKey) ? rangeCounts[cursor] : NOT_KNOWN;
-        }
-
-        private boolean seek(final long blockKey) {
-            while (cursor < size && blockKeys[cursor] < blockKey) {
-                ++cursor;
-            }
-            return cursor < size && blockKeys[cursor] == blockKey;
+            clearSizedBlock();
         }
     }
 }
