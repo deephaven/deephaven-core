@@ -24,12 +24,14 @@ from deephaven.column import (
     short_col,
     string_col,
 )
+from deephaven.constants import NULL_LONG
 from deephaven.experimental import s3
 from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import (
     ColumnInstruction,
     ParquetFileLayout,
     RowGroupInfo,
+    UnsignedLongTarget,
     batch_write,
     delete,
     read,
@@ -1021,6 +1023,112 @@ class ParquetTestCase(BaseTestCase):
             "data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.long}
         )
         expected = new_table([long_col("uint8Col", [255, 2, 0])])
+        self.assert_table_equals(table_from_disk, expected)
+
+    def _write_uint64_parquet(self, file_name, values):
+        """Write a nullable UINT_64 column; Deephaven's writer never emits this logical type."""
+        pyarrow.parquet.write_table(
+            pyarrow.table({"uint64Col": pyarrow.array(values, type=pyarrow.uint64())}),
+            file_name,
+        )
+        schema_from_disk = pyarrow.parquet.read_metadata(
+            file_name
+        ).schema.to_arrow_schema()
+        self.assertTrue(
+            schema_from_disk.field("uint64Col").type.equals(pyarrow.uint64())
+        )
+        return file_name
+
+    def test_unsigned_long_target_big_integer(self):
+        # 2**63 and above only read back correctly when interpreted as unsigned.
+        values = [0, 1, 2**63 - 1, 2**63, 2**63 + 1, 2**64 - 1, None]
+        file_name = self._write_uint64_parquet("uint64_big_integer.parquet", values)
+
+        j_big_integer = dtypes.BigInteger.j_type
+        expected = new_table(
+            [
+                InputColumn(
+                    name="uint64Col",
+                    data_type=dtypes.BigInteger,
+                    input_data=[
+                        None if value is None else j_big_integer(str(value))
+                        for value in values
+                    ],
+                )
+            ]
+        )
+
+        # BIG_INTEGER is the default, and requesting it explicitly must agree.
+        for col_instructions in (
+            None,
+            [
+                ColumnInstruction(
+                    column_name="uint64Col",
+                    parquet_column_name="uint64Col",
+                    unsigned_long_target=UnsignedLongTarget.BIG_INTEGER,
+                )
+            ],
+        ):
+            table_from_disk = read(file_name, col_instructions=col_instructions)
+            self.assertEqual(
+                table_from_disk.columns[0].data_type, dtypes.BigInteger
+            )
+            self.assert_table_equals(table_from_disk, expected)
+
+    def test_unsigned_long_target_long(self):
+        # LONG rejects anything above 2**63 - 1, so this file stays in range.
+        file_name = self._write_uint64_parquet(
+            "uint64_long.parquet", [0, 1, 2**63 - 1, None]
+        )
+        col_instructions = [
+            ColumnInstruction(
+                column_name="uint64Col",
+                parquet_column_name="uint64Col",
+                unsigned_long_target=UnsignedLongTarget.LONG,
+            )
+        ]
+
+        table_from_disk = read(file_name, col_instructions=col_instructions)
+        self.assertEqual(table_from_disk.columns[0].data_type, dtypes.long)
+        expected = new_table(
+            [long_col("uint64Col", [0, 1, 2**63 - 1, NULL_LONG])]
+        )
+        self.assert_table_equals(table_from_disk, expected)
+
+        # A value above 2**63 - 1 has no long representation and is rejected rather than wrapped.
+        out_of_range = self._write_uint64_parquet(
+            "uint64_long_out_of_range.parquet", [0, 2**64 - 1]
+        )
+        with self.assertRaises(DHError) as cm:
+            read(out_of_range, col_instructions=col_instructions).select()
+        self.assertIn("18446744073709551615", str(cm.exception))
+
+    def test_unsigned_long_target_signed_long(self):
+        # SIGNED_LONG exposes each value's bit pattern, so values above 2**63 - 1 read as negative. Note that 2**63
+        # reads as NULL_LONG, indistinguishable from the written null; that is the known flaw of this interpretation.
+        file_name = self._write_uint64_parquet(
+            "uint64_signed_long.parquet",
+            [0, 1, 2**63 - 1, 2**63, 2**63 + 1, 2**64 - 1, None],
+        )
+        table_from_disk = read(
+            file_name,
+            col_instructions=[
+                ColumnInstruction(
+                    column_name="uint64Col",
+                    parquet_column_name="uint64Col",
+                    unsigned_long_target=UnsignedLongTarget.SIGNED_LONG,
+                )
+            ],
+        )
+        self.assertEqual(table_from_disk.columns[0].data_type, dtypes.long)
+        expected = new_table(
+            [
+                long_col(
+                    "uint64Col",
+                    [0, 1, 2**63 - 1, NULL_LONG, -(2**63 - 1), -1, NULL_LONG],
+                )
+            ]
+        )
         self.assert_table_equals(table_from_disk, expected)
 
     @unittest.skip("DH-19432: Parquet v2 page reading does not check is_compressed")
