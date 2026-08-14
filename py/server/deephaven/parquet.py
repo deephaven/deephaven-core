@@ -41,16 +41,16 @@ _JUnsignedLongTarget = jpy.get_type(
 
 
 class UnsignedLongTarget(Enum):
-    """The Deephaven type to read a parquet UINT_64 column as; such values have no exact Python or Java primitive."""
+    """The Deephaven type to read a parquet UINT_64 column as; such values have no  Java primitive."""
 
     BIG_INTEGER = _JUnsignedLongTarget.BIG_INTEGER
-    """ Read as a BigInteger, representing every value exactly. The default. """
+    """ Read as a Java BigInteger, representing every value exactly. The default. """
 
     LONG = _JUnsignedLongTarget.LONG
-    """ Read as a long; values exceeding 2**63 - 1 raise an error when the page containing them is read. """
+    """ Read as a  Java long; values exceeding 2**63 - 1 raise an error when the page containing them is read. """
 
     SIGNED_LONG = _JUnsignedLongTarget.SIGNED_LONG
-    """ Read as a long, reinterpreting the bits as signed, so values exceeding 2**63 - 1 read as negative. Note that
+    """ Read as a Java long, reinterpreting the bits as signed, so values exceeding 2**63 - 1 read as negative. Note that
     2**63 reads as Deephaven's null long, indistinguishable from an actual null. """
 
 
