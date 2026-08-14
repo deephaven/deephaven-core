@@ -29,7 +29,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
     private final LocationKeyFilterProvider locationKeyFilterProvider;
 
     /**
-     * A filter that has been bound to a table, and so can decide that table's locations.
+     * A filter that has been bound to a table, and so can decide whether to accept that table's locations.
      */
     @FunctionalInterface
     public interface LocationKeyFilter {
@@ -46,7 +46,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
         /**
          * Determine whether one location of the bound table should be visible via this service.
          *
-         * @param locationKey The location key, whose partition values are meaningful only within the bound table
+         * @param locationKey The location key, implicitly part of the table this LocationKeyFilter was created for
          * @return True if the location key should be visible, false otherwise
          */
         boolean accept(@NotNull TableLocationKey locationKey);
@@ -55,21 +55,18 @@ public class FilteredTableDataService extends AbstractTableDataService {
     /**
      * Supplies the {@link LocationKeyFilter} for a table.
      * <p>
-     * A filter that does not discriminate on the table is a provider that ignores its argument.
+     * Implementations ignore the {@code tableKey} argument if they don't discriminate by table.
      */
     @FunctionalInterface
     public interface LocationKeyFilterProvider {
 
         /**
-         * Produce the filter that decides the locations of {@code tableKey}.
+         * Produce a filter that applies to locations belonging to the table specified by {@code tableKey}.
          * <p>
          * An implementation that accepts no location of {@code tableKey} <em>must</em> return the
          * {@link LocationKeyFilter#NONE} instance itself, and one that accepts every location <em>should</em> return
          * {@link LocationKeyFilter#ALL}. The sentinels are recognized by reference identity, so an equivalent lambda is
          * not a substitute.
-         * <p>
-         * This may be called more than once for the same table, so it must be a deterministic function of its argument:
-         * equal table keys must yield filters that accept the same locations.
          *
          * @param tableKey The table to filter the locations of
          * @return The filter for locations of {@code tableKey}; {@link LocationKeyFilter#NONE} if no location of that
@@ -119,8 +116,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
     protected TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
         final LocationKeyFilter filterForTable = locationKeyFilterProvider.forTable(tableKey);
         if (filterForTable == LocationKeyFilter.NONE) {
-            // No location of this table can be accepted, so don't consult the filtered service at all. That service is
-            // frequently remote, and consulting it would open a subscription whose every result would be discarded.
+            // No location of this table can be accepted, so don't consult the filtered service at all.
             return new NullTableLocationProvider(tableKey);
         }
         return new TableLocationProviderImpl(serviceToFilter.getTableLocationProvider(tableKey), filterForTable);
@@ -193,8 +189,6 @@ public class FilteredTableDataService extends AbstractTableDataService {
         public void getTableLocationKeys(
                 final Consumer<LiveSupplier<ImmutableTableLocationKey>> consumer,
                 final Predicate<ImmutableTableLocationKey> filter) {
-            // Apply this table's bound filter alongside the caller's, so that enumeration exposes the same
-            // set as hasTableLocationKey, getTableLocationIfPresent, and subscription delivery.
             inputProvider.getTableLocationKeys(consumer, filter.and(filterForTable::accept));
         }
 

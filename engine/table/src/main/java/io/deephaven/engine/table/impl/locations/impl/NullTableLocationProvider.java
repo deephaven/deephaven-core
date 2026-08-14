@@ -15,17 +15,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
  * A {@link TableLocationProvider} that provides no locations, for a table that is known to have none visible.
- *
- * <p>
- * This exists so that a service which has already decided a table is entirely excluded can say so without consulting
- * the service it would otherwise delegate to. That delegate is frequently remote, so the alternative is a subscription
- * whose every result would be discarded.
  */
 public class NullTableLocationProvider implements TableLocationProvider {
 
@@ -34,7 +29,7 @@ public class NullTableLocationProvider implements TableLocationProvider {
     /**
      * Constructs a provider with no locations for the given table.
      *
-     * @param tableKey the table this provider stands in for
+     * @param tableKey the key for the table with no locations
      */
     public NullTableLocationProvider(@NotNull final TableKey tableKey) {
         this.tableKey = tableKey.makeImmutable();
@@ -62,22 +57,11 @@ public class NullTableLocationProvider implements TableLocationProvider {
         return false;
     }
 
-    /**
-     * Always throws: this provider never ticks, so reaching here means a caller subscribed without first checking
-     * {@link #supportsSubscriptions()}.
-     *
-     * @param listener the listener that would have been subscribed
-     */
     @Override
     public void subscribe(@NotNull final Listener listener) {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * Always throws, for the same reason as {@link #subscribe(Listener)}: no subscription can exist to cancel.
-     *
-     * @param listener the listener that would have been unsubscribed
-     */
     @Override
     public void unsubscribe(@NotNull final Listener listener) {
         throw new UnsupportedOperationException();
@@ -94,7 +78,7 @@ public class NullTableLocationProvider implements TableLocationProvider {
     @Override
     @NotNull
     public Collection<ImmutableTableLocationKey> getTableLocationKeys() {
-        return Collections.emptyList();
+        return List.of();
     }
 
     @Override

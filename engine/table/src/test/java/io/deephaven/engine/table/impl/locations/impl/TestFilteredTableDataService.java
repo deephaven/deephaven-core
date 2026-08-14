@@ -4,10 +4,12 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.table.impl.TableUpdateMode;
 import io.deephaven.engine.table.impl.locations.ImmutableTableKey;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableKey;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
@@ -186,16 +188,23 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
         final TableLocationKey a = keyFor("A");
         final TableKey other = new NamedTableKey("Market.Trades");
 
+        // The delegate holds the same location under BOTH tables, so it can answer for either. Without that, the
+        // negative assertion below would pass even if the filter were never consulted - the delegate would return
+        // null for an unknown table anyway, which is what made an earlier version of this test vacuous.
         final PopulatedProvider underlying = new PopulatedProvider(TABLE);
         underlying.addKey(a);
+        final PopulatedProvider otherUnderlying = new PopulatedProvider(other);
+        otherUnderlying.addKey(a);
+        final PerTableProviderService delegate = new PerTableProviderService(Map.of(
+                TABLE, underlying, other, otherUnderlying));
+        delegate.getTableLocationProvider(TABLE);
+        delegate.getTableLocationProvider(other);
+        Assert.assertSame("the delegate must be able to answer for the excluded table, or this test proves nothing",
+                otherUnderlying, delegate.getRawTableLocationProvider(other, a));
 
         // Accepts every location of TABLE and no location of any other table.
         final LocationKeyFilterProvider perTable =
                 tableKey -> TABLE.equals(tableKey) ? LocationKeyFilter.ALL : LocationKeyFilter.NONE;
-
-        final FixedProviderService delegate = new FixedProviderService(underlying);
-        // The delegate's raw lookup consults its own provider cache, so make it create the provider for TABLE first.
-        delegate.getTableLocationProvider(TABLE);
         final FilteredTableDataService filtered = new FilteredTableDataService(delegate, perTable);
 
         Assert.assertSame(underlying, filtered.getRawTableLocationProvider(TABLE, a));
@@ -429,4 +438,153 @@ public class TestFilteredTableDataService extends RefreshingTableTestCase {
             return provider;
         }
     }
+
+
+    /**
+     * Subscription delivery applies the table-bound filter, so a listener sees only the keys the filter accepts - both
+     * the initial snapshot and keys pushed afterwards. This is the one discovery path a caller can take that
+     * enumeration and {@code hasTableLocationKey} do not cover.
+     */
+    @Test
+    public void testSubscriptionDeliveryAppliesTheFilter() {
+        final TableLocationKey a = keyFor("A");
+        final TableLocationKey b = keyFor("B");
+        final TableLocationKey pushed = keyFor("pushedAccepted");
+        final TableLocationKey pushedRejected = keyFor("C");
+
+        final SubscribableProvider underlying = new SubscribableProvider(TABLE);
+        underlying.addKey(a);
+        underlying.addKey(b);
+
+        // Reject exactly the keys named "C"; everything else is visible.
+        final FilteredTableDataService filtered = new FilteredTableDataService(
+                new FixedProviderService(underlying), tableKey -> key -> !key.equals(pushedRejected));
+        final TableLocationProvider provider = filtered.getTableLocationProvider(TABLE);
+        Assert.assertTrue("the provider must be subscribable for this test to mean anything",
+                provider.supportsSubscriptions());
+
+        final Set<ImmutableTableLocationKey> delivered = new HashSet<>();
+        provider.subscribe(new TableLocationProvider.Listener() {
+            @Override
+            public void handleTableLocationKeyAdded(@NotNull final LiveSupplier<ImmutableTableLocationKey> key) {
+                delivered.add(key.get());
+            }
+
+            @Override
+            public void handleTableLocationKeyRemoved(@NotNull final LiveSupplier<ImmutableTableLocationKey> key) {
+                delivered.remove(key.get());
+            }
+
+            @Override
+            public void handleException(@NotNull final TableDataException exception) {
+                throw exception;
+            }
+        });
+
+        // The initial snapshot is filtered.
+        Assert.assertEquals(Set.of(a, b), delivered);
+
+        // ... and so is everything pushed afterwards.
+        underlying.addKey(pushed);
+        underlying.addKey(pushedRejected);
+        Assert.assertEquals(Set.of(a, b, pushed), delivered);
+    }
+
+    /**
+     * A {@link TableDataService} holding a distinct provider per table. The provider cache is keyed by each provider's
+     * own table key, so a single provider instance cannot serve two different tables.
+     */
+    private static final class PerTableProviderService extends AbstractTableDataService {
+
+        private final Map<TableKey, TableLocationProvider> providers;
+
+        /**
+         * Creates a service backed by one provider per table.
+         *
+         * @param providers the provider to return for each table
+         */
+        private PerTableProviderService(@NotNull final Map<TableKey, TableLocationProvider> providers) {
+            super("perTableProviderService");
+            this.providers = providers;
+        }
+
+        /**
+         * Returns the provider registered for the requested table.
+         *
+         * @param tableKey the table being requested
+         * @return that table's provider
+         */
+        @Override
+        @NotNull
+        protected TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
+            final TableLocationProvider provider = providers.get(tableKey);
+            Assert.assertNotNull("no provider registered for " + tableKey, provider);
+            return provider;
+        }
+    }
+
+
+    /**
+     * A {@link PopulatedProvider} that supports subscriptions, so that listener delivery can be exercised. Keys added
+     * after a subscriber attaches are pushed to it.
+     */
+    private static final class SubscribableProvider extends AbstractTableLocationProvider {
+
+        /**
+         * Creates an empty subscribable provider for the given table.
+         *
+         * @param tableKey the table this provider serves
+         */
+        private SubscribableProvider(@NotNull final TableKey tableKey) {
+            super(tableKey, true, TableUpdateMode.ADD_REMOVE, TableUpdateMode.ADD_REMOVE);
+        }
+
+        /**
+         * Adds a key, pushing it to any current subscriber.
+         *
+         * @param locationKey the key to add
+         */
+        private void addKey(@NotNull final TableLocationKey locationKey) {
+            handleTableLocationKeyAdded(locationKey);
+        }
+
+        /** Activation is immediate: the key set is already in memory. */
+        @Override
+        protected void activateUnderlyingDataSource() {
+            activationSuccessful(this);
+        }
+
+        /** Nothing to tear down. */
+        @Override
+        protected void deactivateUnderlyingDataSource() {}
+
+        /**
+         * Matches the token handed to {@link #activationSuccessful}.
+         *
+         * @param token the subscription token
+         * @param <T> the token type
+         * @return whether the token is this provider
+         */
+        @Override
+        protected <T> boolean matchSubscriptionToken(final T token) {
+            return token == this;
+        }
+
+        /**
+         * Never called: this provider is enumerated, not read.
+         *
+         * @param locationKey the key that would be built
+         * @return never returns
+         */
+        @Override
+        @NotNull
+        protected TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
+            throw new UnsupportedOperationException("test provider is enumerated only");
+        }
+
+        /** Does nothing: keys arrive through {@link #addKey}. */
+        @Override
+        public void refresh() {}
+    }
+
 }
