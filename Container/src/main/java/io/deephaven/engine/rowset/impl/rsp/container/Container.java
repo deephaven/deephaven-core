@@ -201,6 +201,28 @@ public abstract class Container {
     }
 
     /**
+     * Create an empty, mutable container sized to accept {@code cardinality} values through
+     * {@link #iappend(int, int) iappend} without reallocating its backing storage.
+     *
+     * <p>
+     * {@code iappend} sizes its backing array to exactly what is needed, so growing a container one range at a time
+     * reallocates and copies on every append, which is quadratic in the container's final cardinality. Callers that
+     * know the final cardinality before they start filling (for example, when converting an already-materialized
+     * ordered set into containers) should start from this instead.
+     *
+     * <p>
+     * The size is only a hint and never affects contents: too small merely reverts to growing as needed, and too large
+     * only over-allocates. Cardinalities beyond what an {@link ArrayContainer} can hold are capped, leaving
+     * {@code iappend} to promote to a larger representation once.
+     *
+     * @param cardinality The number of values the container is expected to hold
+     * @return A new, empty, mutable container
+     */
+    public static Container emptySizedFor(final int cardinality) {
+        return new ArrayContainer(Math.max(1, Math.min(cardinality, ArrayContainer.DEFAULT_MAX_SIZE)));
+    }
+
+    /**
      * Return a new container with all shorts in [begin,end) added using an unsigned interpretation.
      *
      * @param begin start of range (inclusive)

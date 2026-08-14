@@ -7,6 +7,12 @@ import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
+
+import java.util.Arrays;
+
+import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
+import static io.deephaven.engine.rowset.impl.rsp.RspArray.highBits;
 
 public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential {
     private SortedRanges pendingSr;
@@ -127,10 +133,72 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
     }
 
     private void flushSrToRsp() {
-        pendingSr.forEachLongRange((final long start, final long end) -> {
-            flushRangeToPendingContainer(start, end);
-            return true;
-        });
+        final SortedRanges sr = pendingSr;
         pendingSr = null;
+        // Every range is already known here, so count up front how many values each block will receive. That lets the
+        // RSP builder create each container at its final size: a container grown one range at a time reallocates its
+        // backing array on every append, which is quadratic in the container's cardinality.
+        final BlockCardinalityCounts counts = new BlockCardinalityCounts();
+        sr.forEachLongRange(counts);
+        blockCardinalities = counts;
+        try {
+            sr.forEachLongRange((final long start, final long end) -> {
+                flushRangeToPendingContainer(start, end);
+                return true;
+            });
+        } finally {
+            blockCardinalities = null;
+        }
+    }
+
+    /**
+     * Counts how many values a sequence of ordered, disjoint ranges contributes to each RSP block, then serves those
+     * counts back as sizing hints. Blocks are visited in ascending order both while counting and while looking up, so a
+     * single cursor suffices.
+     */
+    private static final class BlockCardinalityCounts
+            implements LongRangeAbortableConsumer, RspBitmapBuilderSequential.BlockCardinalities {
+
+        private long[] blockKeys = new long[16];
+        private int[] cardinalities = new int[16];
+        private int size;
+        private int cursor;
+
+        @Override
+        public boolean accept(final long start, final long end) {
+            final long firstBlockKey = highBits(start);
+            final long lastBlockKey = highBits(end);
+            if (firstBlockKey == lastBlockKey) {
+                add(firstBlockKey, (int) (end - start + 1));
+                return true;
+            }
+            // Blocks strictly between the first and last are covered in full and become full block spans rather than
+            // containers, so they need no count -- which also keeps this O(1) for ranges spanning many blocks.
+            add(firstBlockKey, (int) (firstBlockKey + BLOCK_SIZE - start));
+            add(lastBlockKey, (int) (end - lastBlockKey + 1));
+            return true;
+        }
+
+        private void add(final long blockKey, final int cardinality) {
+            if (size > 0 && blockKeys[size - 1] == blockKey) {
+                cardinalities[size - 1] += cardinality;
+                return;
+            }
+            if (size == blockKeys.length) {
+                blockKeys = Arrays.copyOf(blockKeys, size * 2);
+                cardinalities = Arrays.copyOf(cardinalities, size * 2);
+            }
+            blockKeys[size] = blockKey;
+            cardinalities[size] = cardinality;
+            ++size;
+        }
+
+        @Override
+        public int forBlock(final long blockKey) {
+            while (cursor < size && blockKeys[cursor] < blockKey) {
+                ++cursor;
+            }
+            return cursor < size && blockKeys[cursor] == blockKey ? cardinalities[cursor] : NOT_KNOWN;
+        }
     }
 }
