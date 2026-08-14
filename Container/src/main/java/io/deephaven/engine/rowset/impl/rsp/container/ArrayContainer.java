@@ -13,7 +13,6 @@ import static io.deephaven.engine.rowset.impl.rsp.container.MutableInteger.setIf
 import static io.deephaven.engine.rowset.impl.rsp.container.PositionHint.resetIfNotNull;
 
 import java.util.NoSuchElementException;
-import java.util.function.Supplier;
 
 /**
  * Simple container made of an array of 16-bit integers
@@ -219,33 +218,48 @@ public class ArrayContainer extends Container {
 
     @Override
     public Container iset(final short x) {
-        return isetImpl(x, null, () -> this, this::deepcopyIfShared);
+        return isetImpl(x, null, true);
     }
 
     @Override
     Container iset(final short x, final PositionHint positionHint) {
-        return isetImpl(x, positionHint, () -> this, this::deepcopyIfShared);
+        return isetImpl(x, positionHint, true);
     }
 
     @Override
     Container set(final short x, final PositionHint positionHint) {
-        return isetImpl(x, positionHint, this::cowRef, this::deepCopy);
+        return isetImpl(x, positionHint, false);
     }
 
     @Override
     public Container set(final short x) {
-        return isetImpl(x, null, this::cowRef, this::deepCopy);
+        return isetImpl(x, null, false);
     }
 
+
+    /**
+     * The container to return when an operation turned out to change nothing: {@code this} for an in-place operation, or
+     * a new reference for a copy-on-write one.
+     */
+    private ArrayContainer unchangedResult(final boolean inPlace) {
+        return inPlace ? this : cowRef();
+    }
+
+    /**
+     * The container an operation may mutate: {@code this} unless it is shared, for an in-place operation, or a private
+     * copy for a copy-on-write one.
+     */
+    private ArrayContainer mutableTarget(final boolean inPlace) {
+        return inPlace ? deepcopyIfShared() : deepCopy();
+    }
     private Container isetImpl(final short x,
             final PositionHint positionHint,
-            final Supplier<ArrayContainer> self,
-            final Supplier<ArrayContainer> copy) {
+            final boolean inPlace) {
         final int begin = getIfNotNullAndNonNegative(positionHint, 0);
         int loc = ContainerUtil.unsignedBinarySearch(content, begin, cardinality, x);
         if (loc >= 0) {
             setIfNotNull(positionHint, loc + 1);
-            return self.get();
+            return unchangedResult(inPlace);
         }
         // Transform the ArrayContainer to a BitmapContainer
         // when cardinality = DEFAULT_MAX_SIZE
@@ -257,7 +271,7 @@ public class ArrayContainer extends Container {
             }
             return a.iset(x);
         }
-        final ArrayContainer ans = copy.get();
+        final ArrayContainer ans = mutableTarget(inPlace);
         return ans.isetImplSecondHalf(x, loc, positionHint);
     }
 
