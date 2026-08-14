@@ -135,32 +135,33 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
     private void flushSrToRsp() {
         final SortedRanges sr = pendingSr;
         pendingSr = null;
-        // Every range is already known here, so count up front how many values each block will receive. That lets the
-        // RSP builder create each container at its final size: a container grown one range at a time reallocates its
-        // backing array on every append, which is quadratic in the container's cardinality.
-        final BlockCardinalityCounts counts = new BlockCardinalityCounts();
+        // Every range is already known here, so measure up front what each block will receive. That lets the RSP
+        // builder create each container at its final size, and in the representation that suits it: a container grown
+        // one range at a time reallocates its backing array on every append, which is quadratic in its cardinality.
+        final BlockSizeCounts counts = new BlockSizeCounts();
         sr.forEachLongRange(counts);
-        blockCardinalities = counts;
+        blockSizes = counts;
         try {
             sr.forEachLongRange((final long start, final long end) -> {
                 flushRangeToPendingContainer(start, end);
                 return true;
             });
         } finally {
-            blockCardinalities = null;
+            blockSizes = null;
         }
     }
 
     /**
-     * Counts how many values a sequence of ordered, disjoint ranges contributes to each RSP block, then serves those
-     * counts back as sizing hints. Blocks are visited in ascending order both while counting and while looking up, so a
-     * single cursor suffices.
+     * Measures how many values, in how many ranges, a sequence of ordered, disjoint ranges contributes to each RSP
+     * block, then serves those back as sizing hints. Blocks are visited in ascending order both while counting and
+     * while looking up, so a single cursor suffices.
      */
-    private static final class BlockCardinalityCounts
-            implements LongRangeAbortableConsumer, RspBitmapBuilderSequential.BlockCardinalities {
+    private static final class BlockSizeCounts
+            implements LongRangeAbortableConsumer, RspBitmapBuilderSequential.BlockSizes {
 
         private long[] blockKeys = new long[16];
         private int[] cardinalities = new int[16];
+        private int[] rangeCounts = new int[16];
         private int size;
         private int cursor;
 
@@ -179,26 +180,42 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
             return true;
         }
 
+        /**
+         * Account for one range of {@code cardinality} values landing in {@code blockKey}. Ranges arrive in ascending
+         * order and are never adjacent, so each call is a distinct run within its block.
+         */
         private void add(final long blockKey, final int cardinality) {
             if (size > 0 && blockKeys[size - 1] == blockKey) {
                 cardinalities[size - 1] += cardinality;
+                ++rangeCounts[size - 1];
                 return;
             }
             if (size == blockKeys.length) {
                 blockKeys = Arrays.copyOf(blockKeys, size * 2);
                 cardinalities = Arrays.copyOf(cardinalities, size * 2);
+                rangeCounts = Arrays.copyOf(rangeCounts, size * 2);
             }
             blockKeys[size] = blockKey;
             cardinalities[size] = cardinality;
+            rangeCounts[size] = 1;
             ++size;
         }
 
         @Override
-        public int forBlock(final long blockKey) {
+        public int cardinalityForBlock(final long blockKey) {
+            return seek(blockKey) ? cardinalities[cursor] : NOT_KNOWN;
+        }
+
+        @Override
+        public int rangeCountForBlock(final long blockKey) {
+            return seek(blockKey) ? rangeCounts[cursor] : NOT_KNOWN;
+        }
+
+        private boolean seek(final long blockKey) {
             while (cursor < size && blockKeys[cursor] < blockKey) {
                 ++cursor;
             }
-            return cursor < size && blockKeys[cursor] == blockKey ? cardinalities[cursor] : NOT_KNOWN;
+            return cursor < size && blockKeys[cursor] == blockKey;
         }
     }
 }

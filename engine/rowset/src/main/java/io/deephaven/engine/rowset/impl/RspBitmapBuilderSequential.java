@@ -26,28 +26,36 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     protected long maxKeyHint = -1;
 
     /**
-     * Supplies the number of values destined for a given block, when that is known before the block's container is
-     * filled. Containers are otherwise grown one range at a time, which reallocates their backing storage on every
-     * append; see {@link Container#emptySizedFor(int)}.
+     * Describes what is destined for a given block, when that is known before the block's container is filled, so the
+     * container can be created at its final size and in the representation that fits it best. Containers are otherwise
+     * grown one range at a time, which reallocates their backing storage on every append; see
+     * {@link Container#emptySizedFor(int, int)}.
+     *
+     * <p>
+     * Both quantities are only sizing hints. An inaccurate answer costs memory or reallocation, never correctness.
      */
-    @FunctionalInterface
-    public interface BlockCardinalities {
+    public interface BlockSizes {
 
         int NOT_KNOWN = -1;
 
         /**
          * @param blockKey The key of the block, i.e. the high bits shared by its values
-         * @return The number of values destined for {@code blockKey}, or {@link #NOT_KNOWN} if not known. This is only
-         *         a sizing hint; an inaccurate answer costs memory or reallocation but never correctness.
+         * @return The number of values destined for {@code blockKey}, or {@link #NOT_KNOWN} if not known
          */
-        int forBlock(long blockKey);
+        int cardinalityForBlock(long blockKey);
+
+        /**
+         * @param blockKey The key of the block, i.e. the high bits shared by its values
+         * @return The number of distinct ranges those values form, meaningful only when
+         *         {@link #cardinalityForBlock(long)} is known for the same block
+         */
+        int rangeCountForBlock(long blockKey);
     }
 
     /**
-     * Per-block cardinalities for the append(s) in progress, or {@code null} when the sizes are not known ahead of
-     * time.
+     * Per-block sizes for the append(s) in progress, or {@code null} when they are not known ahead of time.
      */
-    protected BlockCardinalities blockCardinalities;
+    protected BlockSizes blockSizes;
 
     public RspBitmapBuilderSequential() {
         this(false);
@@ -359,7 +367,8 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         final int firstRangeCardinality = lowEnd - lowStart + 1;
         final int blockCardinality = cardinalityForBlock(blockKey);
         if (blockCardinality > firstRangeCardinality) {
-            return Container.emptySizedFor(blockCardinality).iappend(lowStart, lowEnd + 1);
+            return Container.emptySizedFor(blockCardinality, blockSizes.rangeCountForBlock(blockKey))
+                    .iappend(lowStart, lowEnd + 1);
         }
         return Container.rangeOfOnes(lowStart, lowEnd + 1);
     }
@@ -373,7 +382,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         final int cardinalitySoFar = 1 + lowEnd - lowStart + 1;
         final int blockCardinality = cardinalityForBlock(blockKey);
         if (blockCardinality > cardinalitySoFar) {
-            return Container.emptySizedFor(blockCardinality)
+            return Container.emptySizedFor(blockCardinality, blockSizes.rangeCountForBlock(blockKey))
                     .iappend(lowValue, lowValue + 1)
                     .iappend(lowStart, lowEnd + 1);
         }
@@ -381,9 +390,9 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     }
 
     private int cardinalityForBlock(final long blockKey) {
-        return blockCardinalities == null
-                ? BlockCardinalities.NOT_KNOWN
-                : blockCardinalities.forBlock(blockKey);
+        return blockSizes == null
+                ? BlockSizes.NOT_KNOWN
+                : blockSizes.cardinalityForBlock(blockKey);
     }
 
     private void ensureRb() {

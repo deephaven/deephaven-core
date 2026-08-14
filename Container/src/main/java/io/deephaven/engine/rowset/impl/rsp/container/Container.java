@@ -201,25 +201,47 @@ public abstract class Container {
     }
 
     /**
-     * Create an empty, mutable container sized to accept {@code cardinality} values through
-     * {@link #iappend(int, int) iappend} without reallocating its backing storage.
+     * The largest number of runs a {@link RunContainer} can hold before {@link #iappend(int, int) iappend} abandons it
+     * for a {@link BitmapContainer}; its capacity is measured in shorts, at two per run.
+     */
+    private static final int MAX_RUN_CONTAINER_RUNS = ArrayContainer.DEFAULT_MAX_SIZE / 2;
+
+    /**
+     * Create an empty, mutable container in whichever representation can accept {@code cardinality} values spread over
+     * {@code rangeCount} ranges through {@link #iappend(int, int) iappend} most cheaply, without having to reallocate
+     * its backing storage along the way.
      *
      * <p>
      * {@code iappend} sizes its backing array to exactly what is needed, so growing a container one range at a time
      * reallocates and copies on every append, which is quadratic in the container's final cardinality. Callers that
-     * know the final cardinality before they start filling (for example, when converting an already-materialized
-     * ordered set into containers) should start from this instead.
+     * know what a container will hold before they start filling it (for example, when converting an
+     * already-materialized ordered set into containers) should start from this instead.
      *
      * <p>
-     * The size is only a hint and never affects contents: too small merely reverts to growing as needed, and too large
-     * only over-allocates. Cardinalities beyond what an {@link ArrayContainer} can hold are capped, leaving
-     * {@code iappend} to promote to a larger representation once.
+     * Both arguments are only hints and neither can affect contents: too small merely reverts to growing as needed, and
+     * too large only over-allocates.
      *
      * @param cardinality The number of values the container is expected to hold
+     * @param rangeCount The number of distinct ranges those values are expected to form
      * @return A new, empty, mutable container
      */
-    public static Container emptySizedFor(final int cardinality) {
-        return new ArrayContainer(Math.max(1, Math.min(cardinality, ArrayContainer.DEFAULT_MAX_SIZE)));
+    public static Container emptySizedFor(final int cardinality, final int rangeCount) {
+        // Compare what each representation would cost to hold this content: an array is two bytes per value, a run
+        // container four bytes per range, and a bitmap a flat BITMAP_SIZE_IN_BYTES no matter what it holds. Only
+        // consider the first two at sizes they can actually reach without being abandoned mid-fill.
+        final int arrayBytes = cardinality <= ArrayContainer.DEFAULT_MAX_SIZE
+                ? 2 * cardinality
+                : Integer.MAX_VALUE;
+        final int runBytes = rangeCount <= MAX_RUN_CONTAINER_RUNS
+                ? 4 * rangeCount
+                : Integer.MAX_VALUE;
+        if (runBytes <= arrayBytes && runBytes < BitmapContainer.BITMAP_SIZE_IN_BYTES) {
+            return new RunContainer(Math.max(1, rangeCount));
+        }
+        if (arrayBytes < BitmapContainer.BITMAP_SIZE_IN_BYTES) {
+            return new ArrayContainer(Math.max(1, cardinality));
+        }
+        return new BitmapContainer();
     }
 
     /**
