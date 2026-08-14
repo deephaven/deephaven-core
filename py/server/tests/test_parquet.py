@@ -1070,9 +1070,7 @@ class ParquetTestCase(BaseTestCase):
             ],
         ):
             table_from_disk = read(file_name, col_instructions=col_instructions)
-            self.assertEqual(
-                table_from_disk.columns[0].data_type, dtypes.BigInteger
-            )
+            self.assertEqual(table_from_disk.columns[0].data_type, dtypes.BigInteger)
             self.assert_table_equals(table_from_disk, expected)
 
     def test_unsigned_long_target_long(self):
@@ -1090,9 +1088,7 @@ class ParquetTestCase(BaseTestCase):
 
         table_from_disk = read(file_name, col_instructions=col_instructions)
         self.assertEqual(table_from_disk.columns[0].data_type, dtypes.long)
-        expected = new_table(
-            [long_col("uint64Col", [0, 1, 2**63 - 1, NULL_LONG])]
-        )
+        expected = new_table([long_col("uint64Col", [0, 1, 2**63 - 1, NULL_LONG])])
         self.assert_table_equals(table_from_disk, expected)
 
         # A value above 2**63 - 1 has no long representation and is rejected rather than wrapped.
