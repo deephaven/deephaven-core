@@ -5,12 +5,13 @@ Orientation document for engineers and coding agents who need to change code in
 straight to the right file instead of discovering the layout by grepping.
 
 Companion docs:
+
 - `cpp-client/README.md` — build/install instructions (Linux); `cpp-client/README-windows.md` (Windows).
-- `cpp-client/doc/*.rst` + `doc/Doxyfile` — user-facing API reference (Sphinx/Doxygen),
+- `cpp-client/doc/*.rst` + `cpp-client/doc/Doxyfile` — user-facing API reference (Sphinx/Doxygen),
   published at <https://docs.deephaven.io/core/client-api/cpp/>.
 - Repo root `AGENTS.md` — the Java engine/server side of the system.
 
-**How to use this file:** the section headings below are stable anchors. `grep -n '^## ' README.md`
+**How to use this file:** the section headings below are stable anchors. `grep -n '^## ' cpp-client/deephaven/README.md`
 to get the map, then read only the sections you need.
 
 ---
@@ -43,15 +44,15 @@ cpp-client/deephaven/
   CMakeLists.txt          top-level: builds dhcore, dhclient, tests, examples; install/export rules
   cmake/deephavenConfig.cmake   installed CMake package config (find_package(deephaven))
   dhcore/                 "core": data model + ticking state machine. NO gRPC/Arrow/protobuf deps.
-    include/public/deephaven/dhcore/**   installed headers
+    include/public/deephaven/dhcore/**   installed headers, visible to the end user
     include/private/deephaven/dhcore/**  internal headers (ticking internals, immer helpers)
-    src/**
+    src/**                C++ implementation files
     flatbuf/deephaven/flatbuf/Barrage_generated.h   generated from Barrage.fbs (checked in, do not edit)
     third_party/          vendored: flatbuffers (private), date (private), roaring (roaring.c), fmt
   dhclient/               "client": gRPC + Arrow Flight + protobuf; the user-facing API.
-    include/public/deephaven/client/**   installed headers
-    include/private/deephaven/client/**  impl classes, Server, subscription internals
-    src/**
+    include/public/deephaven/client/**   installed headers, visible to the end user
+    include/private/deephaven/client/**  internal headers for impl classes, Server, subscription internals
+    src/**                C++ implementation files
   tests/                  Catch2 (`third_party/catch.hpp`) integration tests; need a live server
   examples/               small standalone programs, each with its own CMakeLists
 ```
@@ -94,7 +95,9 @@ Useful CMake options: `-DDHCORE_ONLY=ON` (skip dhclient/tests/examples — fast 
 touching the core), `-DSANITIZE_ADDRESS=ON`.
 
 Notes:
-- Warnings are errors: `-Wall -Werror` on Linux for all three targets. Windows uses `/W3 /bigobj /MP`.
+- Warnings are errors: `-Wall -Werror` on Linux for all three targets. Windows uses `/W3`.
+- Windows has the additional flags `/bigobj` (to increase the max number of sections in
+  an object file, and `/MP` to compile using multiple cores.
 - The protobuf/gRPC C++ stubs are generated **at build time** by `dhclient/CMakeLists.txt` from
   `proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/*.proto` (11 files) into
   `${CMAKE_BINARY_DIR}/dhclient/proto`. Adding a new `.proto` requires editing `PROTO_FILES`.
@@ -148,6 +151,8 @@ Key design decisions:
   `AggregateCombo`, `UpdateByOperation` each hold a single `std::shared_ptr<XxxImpl>`. Public
   headers therefore do not include protobuf, gRPC, or (mostly) Arrow. Exceptions that *do* expose
   Arrow: `client/flight.h`, `client/utility/arrow_util.h`, `client/utility/table_maker.h`.
+  This is intended to support a pay-as-you-go style: end-user code that does not explicitly need Arrow
+  functionality does not need to reference Arrow include files, directly or indirectly.
 - **Tables live on the server.** A `TableHandle` is a *handle* (an exported ticket), not data.
   Operations are RPCs that create new server-side tables and return new handles. Data only comes to
   the client through Flight (snapshot) or Barrage (subscription).
@@ -336,7 +341,7 @@ Implementations:
 
 | Class | Header | Backing store | Used for |
 |-------|--------|---------------|----------|
-| `NumericArrayColumnSource<T>` / `GenericArrayColumnSource<T>` | `column/array_column_source.h` | growable owned array | mutable local columns |
+| `GenericArrayColumnSource<T>` | `column/array_column_source.h` | growable owned array | mutable local columns |
 | `NumericBufferColumnSource<T>` / `GenericBufferColumnSource<T>` | `column/buffer_column_source.h` | borrowed pointer (no ownership) | zero-copy views (Cython) |
 | `ContainerColumnSource<T>` | `column/container_column_source.h` | `shared_ptr<ContainerBase>[]` | list-typed columns |
 | `NumericImmerColumnSource<T>` / `GenericImmerColumnSource<T>` | `private/.../immerutil/immer_column_source.h` | `immer::flex_vector` | ticking snapshots |
@@ -414,9 +419,9 @@ Manual route: `manager.NewTicket()` → `ArrowUtil::ConvertTicketToFlightDescrip
 ## 9. Ticking path (Barrage subscriptions)
 
 User contract (`dhcore/ticking/ticking.h`): implement `TickingCallback` (`OnTick(TickingUpdate)`,
-`OnFailure(std::exception_ptr)`) and pass it to `TableHandle::Subscribe`; or use the C-style overload
-`Subscribe(on_tick_fn, user_data, on_error_fn, user_data)`. `Unsubscribe(handle)` (or client shutdown)
-stops it.
+`OnFailure(std::exception_ptr)`) and pass it to TableHandle::Subscribe; there is also a C-style overload
+`Subscribe(on_tick_fn, user_data, on_error_fn, user_data)` but its use is discouraged and it
+might be removed. `Unsubscribe(handle)` (or client shutdown) stops it.
 
 `TickingUpdate` describes one cycle as a chain of immutable snapshots plus the deltas between them:
 
@@ -522,6 +527,11 @@ callback per shift triple.
 
 ## 11. Interop C ABI and downstream consumers
 
+Note that this ABI was initially written to support a C# client that would do native P/Invoke calls
+to the C++ client. Later we decided to write a full native C# client. Accordingly, there are no
+users of this ABI at present. It is possible that some existing client (for example the R client)
+would be better served by using the C-style ABI.
+
 `dhcore/include/public/deephaven/dhcore/interop/interop_util.h` +
 `dhclient/include/public/deephaven/client/interop/*.h` define an `extern "C"` surface intended for
 P/Invoke-style bindings (function names like `deephaven_client_TableHandleManager_EmptyTable`,
@@ -604,6 +614,7 @@ Gotchas:
 ## 13. Recipes
 
 **Add a table operation** (e.g. a new join flavor):
+
 1. Confirm the RPC exists in `proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/table.proto`.
 2. Add `std::shared_ptr<TableHandleImpl> Foo(...)` to `impl/table_handle_impl.h` and implement it in
    `src/impl/table_handle_impl.cc` following the §6 shape.
