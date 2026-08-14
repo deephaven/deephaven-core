@@ -755,7 +755,7 @@ public class ArrayContainer extends Container {
         final ArrayContainer ans;
         final int firstIndexNewRange = cardinality;
         if (shared || newCardinality > content.length) {
-            short[] destination = new short[calculateCapacity(newCardinality)];
+            short[] destination = new short[appendCapacity(newCardinality)];
             System.arraycopy(content, 0, destination, 0, cardinality);
             if (shared) {
                 ans = new ArrayContainer(destination, newCardinality);
@@ -855,6 +855,28 @@ public class ArrayContainer extends Container {
         final short[] vs = new short[newCapacity];
         System.arraycopy(content, 0, vs, 0, cardinality);
         content = vs;
+    }
+
+    /**
+     * The capacity, in shorts, to allocate when {@link #iappend(int, int) iappend} has to grow the backing array.
+     *
+     * <p>
+     * Enough to hold {@code newCardinality}, but also geometric in the current capacity, so that a container filled by
+     * repeated appends of a few values at a time does not reallocate and copy on every single one of them -- which
+     * would make filling it quadratic in its cardinality rather than linear.
+     *
+     * <p>
+     * Appending is the fast path for builders, and they {@link #runOptimize() optimize} the container once it is
+     * finished, which trims whatever capacity this left spare. Callers that append without optimizing afterwards, and
+     * that retain the result, will hold that spare capacity.
+     *
+     * @param newCardinality The cardinality the container will have after the append
+     * @return The capacity to allocate, always at least {@code newCardinality}
+     */
+    private int appendCapacity(final int newCardinality) {
+        final int newCapacity = Math.max(shortArraySizeRounding(newCardinality), nextCapacity(content.length));
+        // Within ~1/16th of the max there is no point holding back room to grow.
+        return newCapacity > DEFAULT_MAX_SIZE - 256 ? DEFAULT_MAX_SIZE : newCapacity;
     }
 
     private int calculateCapacity(final int min) {
