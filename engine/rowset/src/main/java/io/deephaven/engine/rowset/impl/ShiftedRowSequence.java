@@ -179,11 +179,17 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
     @Override
     public boolean forEachRowKey(LongAbortableConsumer consumer) {
+        if (shiftAmount == 0) {
+            return wrappedOK.forEachRowKey(consumer);
+        }
         return wrappedOK.forEachRowKey((ii) -> consumer.accept(ii + shiftAmount));
     }
 
     @Override
     public boolean forEachRowKeyRange(LongRangeAbortableConsumer consumer) {
+        if (shiftAmount == 0) {
+            return wrappedOK.forEachRowKeyRange(consumer);
+        }
         return wrappedOK.forEachRowKeyRange((s, e) -> consumer.accept(s + shiftAmount, e + shiftAmount));
     }
 

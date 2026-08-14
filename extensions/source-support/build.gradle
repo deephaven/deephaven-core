@@ -28,3 +28,20 @@ dependencies {
 }
 
 TestTools.addEngineOutOfBandTest(project)
+
+tasks.withType(Test).configureEach { Test t ->
+    // Forward benchmark tuning properties (e.g. -Dbench.locations=50 -Dbench.rowsPerLocation=100000) to the test JVM,
+    // which otherwise only receives an explicit allowlist of system properties. UnionRedirection.* is forwarded too:
+    // Configuration merges system properties over its property file, so -DUnionRedirection.allocationUnit=8796093022208
+    // (2^43) reproduces the regioned address space exactly (currFirstRowKeys[k] == k << 43) with no engine change.
+    System.properties.each { k, v ->
+        if (k.toString().startsWith('bench.') || k.toString().startsWith('UnionRedirection.')) {
+            t.systemProperty(k.toString(), v)
+        }
+    }
+    // The SourceTableScanBenchmarkTest holds ~4 GiB of int data at its defaults; the default test heap is 3g.
+    // Override with e.g. -PbenchHeap=12g.
+    if (project.hasProperty('benchHeap')) {
+        t.maxHeapSize = project.property('benchHeap')
+    }
+}
