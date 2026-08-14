@@ -9,7 +9,14 @@ Companion docs:
 - `cpp-client/README.md` — build/install instructions (Linux); `cpp-client/README-windows.md` (Windows).
 - `cpp-client/doc/*.rst` + `cpp-client/doc/Doxyfile` — user-facing API reference (Sphinx/Doxygen),
   published at <https://docs.deephaven.io/core/client-api/cpp/>.
+- `R/README.md` — design/implementation of the R client, which is built on top of the libraries
+  described here (see §11 for what it consumes and what that means for you).
 - Repo root `AGENTS.md` — the Java engine/server side of the system.
+
+**The C++ client is not only consumed by C++ programs.** The R client (`R/rdeephaven`) is an Rcpp
+binding over `dhclient`, and `py/client-ticking` is a Cython binding over `dhcore`. Both link against
+the libraries built here, so a change to a public header can break them even though nothing in
+`cpp-client/` fails to compile. §11 lists exactly what each one depends on.
 
 **How to use this file:** the section headings below are stable anchors. `grep -n '^## ' cpp-client/deephaven/README.md`
 to get the map, then read only the sections you need.
@@ -97,7 +104,7 @@ touching the core), `-DSANITIZE_ADDRESS=ON`.
 Notes:
 - Warnings are errors: `-Wall -Werror` on Linux for all three targets. Windows uses `/W3`.
 - Windows has the additional flags `/bigobj` (to increase the max number of sections in
-  an object file, and `/MP` to compile using multiple cores.
+  an object file), and `/MP` to compile using multiple cores.
 - The protobuf/gRPC C++ stubs are generated **at build time** by `dhclient/CMakeLists.txt` from
   `proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/*.proto` (11 files) into
   `${CMAKE_BINARY_DIR}/dhclient/proto`. Adding a new `.proto` requires editing `PROTO_FILES`.
@@ -559,7 +566,26 @@ Other consumers of `dhcore` you can break:
   `CythonSupport::Create{Boolean,String,DateTime,LocalDate,LocalTime}ColumnSource` from raw
   pointer/validity buffers, `SlicesToColumnSource`, `ContainerToColumnSource`, `ColumnSourceToString`.
   **Changing any of those signatures requires a matching change in `_core.pxd`.**
-- **`R/rdeephaven`** links `-ldhclient -ldhcore` (see `R/rdeephaven/src/Makevars`).
+- **`R/rdeephaven`** is an [Rcpp](https://github.com/RcppCore/Rcpp) binding over the **`dhclient`
+  public C++ API** — not over the C ABI above. `R/rdeephaven/src/client.cpp` wraps
+  `Client`, `TableHandleManager`, `TableHandle`, `ClientOptions`, `Aggregate`, `UpdateByOperation`,
+  and `OperationControl` in `*Wrapper` classes exposed to R through an `RCPP_MODULE`, and
+  `R/rdeephaven/src/Makevars` links `-ldhclient -ldhcore` out of `$DHCPP/lib` with headers from
+  `$DHCPP/include`. Consequences for work in this directory:
+  - Changing the signature or semantics of anything in `include/public/deephaven/client/**` can break
+    the R build. The most heavily used entry points are `Client::Connect`/`Close`,
+    `TableHandleManager::{EmptyTable,FetchTable,TimeTable,NewTicket,MakeTableHandleFromTicket,
+    RunScript,CreateFlightWrapper}`, most of `TableHandle`'s operations, `TableHandle::Schema`,
+    `TableHandle::ToArrowTable`, `FlightWrapper::{AddHeaders,FlightClient}`,
+    `ArrowUtil::ConvertTicketToFlightDescriptor`, `Base64Encode`, and `OkOrThrow`.
+  - R gets bulk data through `TableHandle::ToArrowTable(/*cooked=*/true)`, exported as an
+    `ArrowArrayStream` (Arrow C stream interface). The `cooked` path — which materializes
+    Dictionary / RunEndEncoded / RunEndEncoded-of-Dictionary columns (§8) — is what keeps the R
+    `arrow` package from having to understand those encodings, and
+    `R/rdeephaven/inst/tests/testthat/test_encoding.R` is its regression test.
+  - The R client does **not** use ticking: nothing in it calls `Subscribe`/`Unsubscribe`, so the
+    `dhcore` ticking machinery is exercised there only indirectly.
+  - See `R/README.md` for the full picture.
 
 ---
 
