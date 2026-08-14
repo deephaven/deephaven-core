@@ -85,10 +85,10 @@ Pushdown predicates refer to the mechanism whereby filtering conditions are appl
 | Property Name                                            | Default Value | Description                                                                                                                                    |
 | -------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `QueryTable.disableWherePushdownDataIndex`               | false         | Disables the use of [data index](../how-to-guides/data-indexes.md) within where's pushdown predicates                                          |
-| `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false         | Disables the usage of Parquet row group metadata during pushdown filtering                                                                    |
+| `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false         | Disables the usage of Parquet row group metadata during pushdown filtering                                                                     |
 | `QueryTable.disableWherePushdownMergedTables`            | false         | Disables predicate pushdown when filtering merged tables                                                                                       |
 | `QueryTable.disableWherePushdownDictionary`              | false         | Disables dictionary-encoding predicate pushdown operations                                                                                     |
-| `QueryTable.disableWherePushdownSortedColumn`            | false         | Disables the use of sorted column binary search during pushdown filtering                                                                     |
+| `QueryTable.disableWherePushdownSortedColumn`            | false         | Disables the use of sorted column binary search during pushdown filtering                                                                      |
 | `QueryTable.dataIndexForWhereThreshold`                  | 0.25 (double) | The maximum size of a data index table, as a fraction of the rows remaining to be filtered, for the index to be used by `where`                |
 | `QueryTable.dictionaryForWhereThreshold`                 | 0.25 (double) | The dictionary size, as a fraction of the rows remaining to be filtered, that the dictionary must fall below for push-down filtering to use it |
 
