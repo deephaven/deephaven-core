@@ -38,6 +38,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
@@ -771,21 +772,21 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
         final CharSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
 
-        final Character[] boxed = new Character[valueCount];
-        for (int ii = 0; ii < valueCount; ++ii) {
-            boxed[ii] = values[ii];
-        }
-
         // a Vector with identical contents is equal, in both directions, and anything equal must hash alike -- so the
         // SSM has to use the same shared Vector helper that the *VectorDirect implementations use, and compare
         // elements the same way that helper hashes them, rather than either with a scheme of its own
         assertEqualBothWays(ssm, ssm.getDirect());
         assertEqualBothWays(ssm, new CharVectorDirect(values));
 
-        // the boxed comparison only runs in one direction for the primitive variants, because a primitive SSM is a
-        // CharVector rather than an ObjectVector and so is not a comparand ObjectVectorDirect will accept
-        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
-        assertEquals(ssm.hashCode(), new ObjectVectorDirect<>(boxed).hashCode());
+        // region BoxedEquals
+        // a boxed Vector of the same values is not equal in either direction: it would hold a null reference wherever
+        // this SSM holds the null sentinel, so accepting it would make equal values hash differently
+        final Character[] boxed = new Character[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            boxed[ii] = values[ii];
+        }
+        assertNotEqualBothWays(ssm, new ObjectVectorDirect<>(boxed));
+        // endregion BoxedEquals
 
         // another SSM holding the same values is equal however those values happen to be laid out: equality is a
         // property of the contents, and identical contents can occupy different leaf structures, since leaves need
@@ -815,11 +816,6 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
             longer[ii] = (char) ('a' + ii);
         }
         assertFalse(ssm.equals(new CharVectorDirect(longer)));
-        final Character[] longerBoxed = new Character[valueCount + 1];
-        for (int ii = 0; ii < longerBoxed.length; ++ii) {
-            longerBoxed[ii] = (char) ('a' + ii);
-        }
-        assertFalse(ssm.equals(new ObjectVectorDirect<>(longerBoxed)));
 
         // a Vector that differs from the original in a single position is not equal; check the first, middle, and last
         if (valueCount > 0) {
@@ -828,10 +824,6 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 final char[] modifiedValues = values.clone();
                 modifiedValues[position] = different;
                 assertFalse(ssm.equals(new CharVectorDirect(modifiedValues)));
-
-                final Character[] modifiedBoxed = boxed.clone();
-                modifiedBoxed[position] = different;
-                assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
             }
         }
     }
@@ -906,31 +898,33 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         final CharSegmentedSortedMultiset ssm = makeSsm(nodeSize, sortedValues);
         final char[] stored = ssm.toArray();
 
-        // boxing the null sentinel yields a non-null element holding the sentinel value, which compares equal
+        // the null sentinel is an ordinary value to a CharVector comparison: equal both ways, and hashing alike
+        assertEqualBothWays(ssm, new CharVectorDirect(stored));
+
+        // boxing the sentinel yields a non-null element holding the sentinel value...
         final Character[] boxedSentinel = new Character[stored.length];
         for (int ii = 0; ii < stored.length; ++ii) {
             boxedSentinel[ii] = stored[ii];
         }
-        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedSentinel)));
+        // ...but a boxed Vector is still not a CharVector, so it is not equal in either direction
+        assertNotEqualBothWays(ssm, new ObjectVectorDirect<>(boxedSentinel));
 
-        // a literal null also compares equal to the stored null sentinel
+        // a boxed Vector holding a literal null where this SSM holds the sentinel is likewise not equal. This is the
+        // case that made the branch unsound: the two would have compared equal while hashing differently, since
+        // hashCode() hashes the sentinel and a boxed Vector hashes the null reference.
         final Character[] boxedNull = boxedSentinel.clone();
         for (int ii = 0; ii < stored.length; ++ii) {
             if (stored[ii] == NULL_CHAR) {
                 boxedNull[ii] = null;
             }
         }
-        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedNull)));
+        final ObjectVectorDirect<Character> boxedNullVector = new ObjectVectorDirect<>(boxedNull);
+        assertNotEqualBothWays(ssm, boxedNullVector);
 
-        // a null at a position holding a non-null value is not equal
-        for (int ii = 0; ii < stored.length; ++ii) {
-            if (stored[ii] != NULL_CHAR) {
-                final Character[] boxedWrongNull = boxedSentinel.clone();
-                boxedWrongNull[ii] = null;
-                assertFalse(ssm.equals(new ObjectVectorDirect<>(boxedWrongNull)));
-                break;
-            }
-        }
+        // ... and a hash lookup keyed on that boxed Vector must therefore miss rather than silently mismatch
+        final Map<Object, String> map = new HashMap<>();
+        map.put(boxedNullVector, "boxed");
+        assertNull(map.get(ssm));
     }
     // endregion NullEquals
 
