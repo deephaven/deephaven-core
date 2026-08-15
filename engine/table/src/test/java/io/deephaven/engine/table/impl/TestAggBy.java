@@ -38,6 +38,7 @@ import io.deephaven.vector.CharVector;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
 import junit.framework.TestCase;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -814,6 +815,61 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new char[] {'n', 'r'}, cs.get(1).toArray());
         assertArrayEquals(new char[] {'k', 'o', 's'}, cs.get(2).toArray());
         assertArrayEquals(new char[] {'l', 'p', 't'}, cs.get(3).toArray());
+    }
+
+    /**
+     * An AggDistinct result column hands the live SSM to formulas as the column value, so a query that indexes or
+     * slices such a column lands directly on the SSM's Vector implementation -- {@code Let[-1]} parses to
+     * {@code Let.get(-1)}. Offsets outside {@code [0, size())} must read as null there, exactly as they do for any
+     * other Vector, and a slice must be exclusive at its end.
+     */
+    @Test
+    public void testComboByDistinctVectorContract() {
+        final Instant firstTime = DateTimeUtils.epochNanosToInstant(1_600_000_000_000_000_000L);
+        final Instant secondTime = DateTimeUtils.plus(firstTime, 1_000_000_000L);
+        final Instant thirdTime = DateTimeUtils.plus(firstTime, 2_000_000_000L);
+
+        final QueryTable dataTable = TstUtils.testRefreshingTable(
+                intCol("Grp", 1, 1, 1, 2),
+                charCol("Let", 'a', 'b', 'c', 'z'),
+                col("Timestamp", firstTime, secondTime, thirdTime, firstTime));
+
+        // Grp 1 holds three distinct values, Grp 2 exactly one -- the SSM's singleton representation
+        final Table result = dataTable
+                .aggBy(List.of(AggDistinct("Let"), AggDistinct("Timestamp")), "Grp")
+                .update("Before = Let[-1]",
+                        "First = Let[0]",
+                        "After = Let[3]",
+                        "Whole = Let.subVector(0, Let.size())",
+                        "Overrun = Let.subVector(0, Let.size() + 2)",
+                        "BeforeTime = Timestamp[-1]",
+                        "AfterTime = Timestamp[3]",
+                        "WholeTimes = Timestamp.subVector(0, Timestamp.size())");
+
+        assertEquals(2, result.size());
+
+        // an offset before the first element, or at/after the last, reads as null instead of throwing or handing back
+        // a stale value from a leaf's unused slots
+        assertArrayEquals(new char[] {NULL_CHAR, NULL_CHAR}, ColumnVectors.ofChar(result, "Before").toArray());
+        assertArrayEquals(new char[] {'a', 'z'}, ColumnVectors.ofChar(result, "First").toArray());
+        assertArrayEquals(new char[] {NULL_CHAR, NULL_CHAR}, ColumnVectors.ofChar(result, "After").toArray());
+        assertArrayEquals(new Object[] {null, null}, ColumnVectors.ofObject(result, "BeforeTime", Object.class)
+                .toArray());
+        assertArrayEquals(new Object[] {null, null}, ColumnVectors.ofObject(result, "AfterTime", Object.class)
+                .toArray());
+
+        // subVector is exclusive at its end, and pads whatever it is asked for beyond the end with nulls
+        final ColumnSource<CharVector> whole = result.getColumnSource("Whole");
+        assertArrayEquals(new char[] {'a', 'b', 'c'}, whole.get(0).toArray());
+        assertArrayEquals(new char[] {'z'}, whole.get(1).toArray());
+
+        final ColumnSource<CharVector> overrun = result.getColumnSource("Overrun");
+        assertArrayEquals(new char[] {'a', 'b', 'c', NULL_CHAR, NULL_CHAR}, overrun.get(0).toArray());
+        assertArrayEquals(new char[] {'z', NULL_CHAR, NULL_CHAR}, overrun.get(1).toArray());
+
+        final ColumnSource<ObjectVector<Instant>> wholeTimes = result.getColumnSource("WholeTimes");
+        assertArrayEquals(new Instant[] {firstTime, secondTime, thirdTime}, wholeTimes.get(0).toArray());
+        assertArrayEquals(new Instant[] {firstTime}, wholeTimes.get(1).toArray());
     }
 
     @Test
