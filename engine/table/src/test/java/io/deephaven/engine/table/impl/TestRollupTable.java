@@ -1230,19 +1230,19 @@ public class TestRollupTable extends RefreshingTableTestCase {
     }
 
     /**
-     * A rollup {@code AggFormula} level must name its formula column in the {@link ModifiedColumnSet} it reports
-     * whenever churn in a group makes it recompute that column.
+     * A rollup {@code AggFormula} level names its formula column in the {@link ModifiedColumnSet} it reports whenever
+     * churn in a group makes it recompute that column.
      *
      * <p>
-     * The value itself is recomputed correctly, so a direct read of the result {@code ColumnSource} cannot detect the
-     * missing report; each cycle below therefore also reads through a consumer that refreshes only what the reported
-     * set marks dirty (a {@code sort} feeding a {@code select}), which is left serving the pre-update value.
+     * A direct read of the result {@code ColumnSource} is correct whatever was reported, so on its own it says nothing
+     * about the report. Each cycle therefore also reads through a consumer that refreshes only what the reported set
+     * marks dirty (a {@code sort} feeding a {@code select}), which holds the new value only if the column was named.
      *
      * <p>
-     * The gap is structural rather than particular to one kind of churn, hence the add, remove, and modify cycles. A
-     * shift-only cycle is excluded because it cannot change the formula's value:
-     * {@link #testRollupFormulaShiftOnlyDoesNotRecompute} covers that the column must stay <em>out</em> of the reported
-     * set there.
+     * Reporting is driven by the same condition that decides to recompute, so it holds for every kind of churn -- hence
+     * the add, remove, and modify cycles -- and reaches no further: the last cycle touches a column the formula does
+     * not read and expects silence, and {@link #testRollupFormulaShiftOnlyDoesNotRecompute} covers a shift, which
+     * cannot change the formula's value.
      */
     @Test
     public void testRollupFormulaReportsModifiedFormulaColumn() {

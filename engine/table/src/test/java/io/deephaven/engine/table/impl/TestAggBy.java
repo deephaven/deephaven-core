@@ -89,15 +89,18 @@ public class TestAggBy extends RefreshingTableTestCase {
     }
 
     /**
-     * An {@code AggFormula} must name its formula column in the {@link ModifiedColumnSet} it reports whenever churn in
-     * a group makes it recompute that column.
+     * An {@code AggFormula} names its formula column in the {@link ModifiedColumnSet} it reports whenever churn in a
+     * group makes it recompute that column.
      *
      * <p>
      * The non-rollup counterpart to {@code TestRollupTable.testRollupFormulaReportsModifiedFormulaColumn}. The
-     * {@code AggGroup} here registers the shared group operator, which is what leaves the formula operator
-     * non-delegating -- the same condition every rollup level meets. Two keys means the bucketed path, where the
-     * rollup's zero-key root exercises the singleton one. The cycles cover a shift, an add, a remove, and an in-place
-     * modify, since the gap is structural rather than particular to one kind of churn.
+     * {@code AggGroup} here registers the shared group operator, which leaves the formula operator non-delegating --
+     * the same condition every rollup level meets, reached through a plain {@code aggBy}. Two keys puts this on the
+     * bucketed path, where the rollup's zero-key root covers the singleton one.
+     *
+     * <p>
+     * Reporting holds for every kind of churn, hence the add, remove, and modify cycles, and reaches no further: a
+     * plain {@code aggBy} exposes no group RowSet column, so the leading shift owes nothing downstream at all.
      */
     @Test
     public void testAggFormulaReportsModifiedFormulaColumn() {
@@ -122,8 +125,8 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
 
-        // A pure shift of the "b" rows first, as in the reported reproducer: their keys move but their values do not,
-        // so the formula cannot change and nothing is owed downstream. The cycles after it run against shifted keys.
+        // A pure shift of the "b" rows: their keys move but their values do not, so the formula cannot change, and with
+        // no group RowSet column exposed nothing is owed downstream. The cycles after it run against shifted keys.
         cug.runWithinUnitTestCycle(() -> {
             addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
             removeRows(source, i(2, 3));
