@@ -250,7 +250,6 @@ jobs:
   python_static_job:
     name: Python static
     runs-on: ubuntu-24.04
-    needs: [version_job]
     defaults:
       run:
         shell: bash
@@ -259,25 +258,13 @@ jobs:
       - name: Check out this repo
         uses: actions/checkout@v6
 
-      - name: Install Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.10'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
 
-      - name: Install the 'wheel' package
-        run: pip3 install wheel
-
-      - name: Install requirements-dev.txt
-        run: |
-          cd ./py/client
-          pip3 install -r requirements-dev.txt
-
-      - name: Run setup.py
-        env:
-          DEEPHAVEN_VERSION: ${{ needs.version_job.outputs.dhc_version }}
-        run: |
-          cd ./py/client
-          python setup.py bdist_wheel
+      # Builds the wheel in a Docker container, with the Deephaven version
+      # baked in by Gradle. The wheel is copied out to py/client/build/wheel.
+      - name: Build the pydeephaven wheel
+        run: ./gradlew :py-client:buildWheel
 
       # Upload static .whl file as build artifact, to be used directly or by
       # dependent clients like Python ticking
@@ -285,7 +272,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: py-static-wheel
-          path: ./py/client/dist/*.whl
+          path: ./py/client/build/wheel/*.whl
 
   #=============================================================================
   # Build the Python Ticking Client (OS dependent)
