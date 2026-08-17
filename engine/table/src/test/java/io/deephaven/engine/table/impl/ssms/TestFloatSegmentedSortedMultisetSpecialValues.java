@@ -196,14 +196,12 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
         assertEqualBothWays(ssmA, ssmB.getDirect());
         assertEqualBothWays(ssmA, new FloatVectorDirect(withB));
 
-        // the boxed comparison only runs in one direction: a FloatSegmentedSortedMultiset is a FloatVector rather
-        // than an ObjectVector, so it is not a comparand an ObjectVectorDirect will accept
+        // a boxed Vector of the same values is a different Vector type, and so not equal in either direction
         final Float[] boxedB = new Float[withB.length];
         for (int ii = 0; ii < withB.length; ++ii) {
             boxedB[ii] = withB[ii];
         }
-        assertTrue(ssmA.equals(new ObjectVectorDirect<>(boxedB)));
-        assertEquals(ssmA.hashCode(), new ObjectVectorDirect<>(boxedB).hashCode());
+        assertNotEqualBothWays(ssmA, new ObjectVectorDirect<>(boxedB));
     }
 
     /**
@@ -227,8 +225,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
         for (int ii = 0; ii < withPositive.length; ++ii) {
             boxedPositive[ii] = withPositive[ii];
         }
-        assertTrue(ssmNegative.equals(new ObjectVectorDirect<>(boxedPositive)));
-        assertEquals(ssmNegative.hashCode(), new ObjectVectorDirect<>(boxedPositive).hashCode());
+        assertNotEqualBothWays(ssmNegative, new ObjectVectorDirect<>(boxedPositive));
     }
 
     /**
@@ -239,5 +236,14 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
         assertTrue(lhs + " should equal " + rhs, lhs.equals(rhs));
         assertTrue(rhs + " should equal " + lhs, rhs.equals(lhs));
         assertEquals("equal values must hash alike", lhs.hashCode(), rhs.hashCode());
+    }
+
+    /**
+     * Assert that two Vectors agree that they are unequal no matter which is the receiver. Their hash codes are
+     * unconstrained -- unequal values are permitted to collide.
+     */
+    private void assertNotEqualBothWays(final Object lhs, final Object rhs) {
+        assertFalse(lhs + " should not equal " + rhs, lhs.equals(rhs));
+        assertFalse(rhs + " should not equal " + lhs, rhs.equals(lhs));
     }
 }

@@ -9,6 +9,8 @@ package io.deephaven.engine.table.impl.ssms;
 
 import java.lang.reflect.Array;
 
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+
 import java.util.Objects;
 import io.deephaven.util.compare.ObjectComparisons;
 
@@ -19,7 +21,6 @@ import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.primitive.value.iterator.ValueIterator;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
@@ -3059,18 +3060,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     }
     // endregion
 
-    // region VectorEquals
-    // endregion VectorEquals
-
-    // region UnboxValue
-    // endregion UnboxValue
-
     private boolean equalsArray(ObjectVector<?> o) {
-        // region EqualsArrayTypeCheck
-        // No component-type check: it only guards the primitive variants' unboxValue() cast, and gating
-        // on the declared type would break symmetry with ObjectVector.equals().
-        // endregion EqualsArrayTypeCheck
-
         if (size() != o.size()) {
             return false;
         }
@@ -3107,22 +3097,26 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
      * {@inheritDoc}
      *
      * <p>
-     * Equal to any Vector holding the same values, including another SSM: an SSM <em>is</em> a Vector, so it takes the
-     * same element-wise path rather than a structural comparison of leaf layouts. Two SSMs can hold identical values in
-     * different layouts -- leaves need not be full, and the node sizes need not agree -- so layout is not a sound basis
-     * for equality.
+     * Equal to any {@link ObjectVector} holding the same values, including another SSM: an SSM <em>is</em> a
+     * {@link ObjectVector}, so it takes the same element-wise path rather than a structural comparison of leaf layouts.
+     * Two SSMs can hold identical values in different layouts -- leaves need not be full, and the node sizes need not
+     * agree -- so layout is not a sound basis for equality.
+     *
+     * <p>
+     * Nothing else is equal, exactly as {@link ObjectVector#equals(ObjectVector, Object)} requires: a Vector that stores
+     * its elements some other way cannot be accepted without breaking the {@link #hashCode()} contract, and would not
+     * be reciprocated in any case, since that Vector's own {@code equals} rejects a {@link ObjectVector}.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        // region VectorEquals
-        // endregion VectorEquals
 
         if (o instanceof ObjectVector) {
             return equalsArray((ObjectVector<?>) o);
         }
+
         return false;
     }
 

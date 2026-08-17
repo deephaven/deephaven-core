@@ -9,6 +9,7 @@ package io.deephaven.engine.table.impl.ssms;
 
 import java.time.Instant;
 
+import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.time.DateTimeUtils;
 
@@ -17,11 +18,8 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
-import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.util.type.TypeUtils;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
@@ -3054,7 +3052,6 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
     // endregion
 
-    // region VectorEquals
     private boolean equalsArray(LongVector o) {
         if (size() != o.size()) {
             return false;
@@ -3087,80 +3084,31 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
             return true;
         }
     }
-    // endregion VectorEquals
-
-    // region UnboxValue
-    /**
-     * Convert an element of a boxed {@link ObjectVector} into the primitive representation this SSM stores. A
-     * {@code null} element becomes the null sentinel, which is how the SSM itself stores nulls.
-     */
-    private static long unboxValue(final Object value) {
-        return TypeUtils.unbox((Long) value);
-    }
-    // endregion UnboxValue
-
-    private boolean equalsArray(ObjectVector<?> o) {
-        // region EqualsArrayTypeCheck
-        if (o.getComponentType() != long.class && o.getComponentType() != Long.class) {
-            return false;
-        }
-        // endregion EqualsArrayTypeCheck
-
-        if (size() != o.size()) {
-            return false;
-        }
-
-        // iterate o exactly once; random access via get can be expensive for some Vector implementations
-        try (final CloseableIterator<?> oit = o.iterator()) {
-            if (size == 1) {
-                return LongComparisons.eq(get(0), unboxValue(oit.next()));
-            }
-
-            if (leafCount == 1) {
-                for (int ii = 0; ii < size; ii++) {
-                    if (!LongComparisons.eq(directoryValues[ii], unboxValue(oit.next()))) {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            for (int li = 0; li < leafCount; ++li) {
-                for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    if (!LongComparisons.eq(leafValues[li][ai], unboxValue(oit.next()))) {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-    }
 
     /**
      * {@inheritDoc}
      *
      * <p>
-     * Equal to any Vector holding the same values, including another SSM: an SSM <em>is</em> a Vector, so it takes the
-     * same element-wise path rather than a structural comparison of leaf layouts. Two SSMs can hold identical values in
-     * different layouts -- leaves need not be full, and the node sizes need not agree -- so layout is not a sound basis
-     * for equality.
+     * Equal to any {@link LongVector} holding the same values, including another SSM: an SSM <em>is</em> a
+     * {@link LongVector}, so it takes the same element-wise path rather than a structural comparison of leaf layouts.
+     * Two SSMs can hold identical values in different layouts -- leaves need not be full, and the node sizes need not
+     * agree -- so layout is not a sound basis for equality.
+     *
+     * <p>
+     * Nothing else is equal, exactly as {@link LongVector#equals(LongVector, Object)} requires: a Vector that stores
+     * its elements some other way cannot be accepted without breaking the {@link #hashCode()} contract, and would not
+     * be reciprocated in any case, since that Vector's own {@code equals} rejects a {@link LongVector}.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        // region VectorEquals
+
         if (o instanceof LongVector) {
             return equalsArray((LongVector) o);
         }
-        // endregion VectorEquals
 
-        if (o instanceof ObjectVector) {
-            return equalsArray((ObjectVector<?>) o);
-        }
         return false;
     }
 

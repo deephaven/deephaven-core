@@ -410,28 +410,31 @@ public class ReplicateSegmentedSortedMultiset {
                         "    }"));
     }
 
+    /**
+     * The replicated {@code equalsArray} already takes the right parameter type -- {@code CharVector} becomes
+     * {@code ObjectVector}, which is what an Object SSM is -- so only its iteration needs adjusting: there is no
+     * {@code CloseablePrimitiveIteratorOfObject}, and the generic
+     * {@link io.deephaven.engine.primitive.iterator.CloseableIterator} that replaces it is drained with {@code next()}
+     * rather than the primitive variants' {@code nextObject()}.
+     */
     private static List<String> fixupObjectCompare(List<String> lines) {
-        // removes both the primitive-vector equalsArray overload and the branch of equals that dispatches to it;
-        // another Object SSM is an ObjectVector, so it reaches the remaining equalsArray overload
-        lines = removeRegion(lines, "VectorEquals");
-        // the primitive iterator is only used by the (now removed) primitive-vector equalsArray overload
+        lines = globalReplacements(lines,
+                "equalsArray\\(ObjectVector o\\)", "equalsArray(ObjectVector<?> o)",
+                "equalsArray\\(\\(ObjectVector\\) o\\)", "equalsArray((ObjectVector<?>) o)",
+                "final CloseablePrimitiveIteratorOfObject oit", "final CloseableIterator<?> oit",
+                "oit\\.nextObject\\(\\)", "oit.next()");
         lines = removeImport(lines, "\\s*import .*CloseablePrimitiveIteratorOfObject;");
-        lines = replaceRegion(lines, "EqualsArrayTypeCheck", Collections.singletonList(
-                "        // No component-type check: it only guards the primitive variants' unboxValue() cast, and gating\n"
-                        +
-                        "        // on the declared type would break symmetry with ObjectVector.equals()."));
-        // an Object SSM stores its elements exactly as the boxed vector supplies them -- nothing to unbox, and no null
-        // sentinel -- so drop the helper and read the iterator directly
-        lines = removeRegion(lines, "UnboxValue");
-        lines = globalReplacements(lines, "unboxValue\\(oit\\.next\\(\\)\\)", "oit.next()");
-        return removeImport(lines, "\\s*import io\\.deephaven\\.util\\.type\\.TypeUtils;");
+        return addImport(lines, "import io.deephaven.engine.primitive.iterator.CloseableIterator;");
     }
 
     private static void insertInstantExtensions(String longPath) throws IOException {
         final File longFile = new File(longPath);
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
 
+        // the Instant extensions are the only place a primitive SSM deals in ObjectVector, so the template does not
+        // import it
         lines = addImport(lines,
+                "import io.deephaven.vector.ObjectVector;",
                 "import io.deephaven.vector.ObjectVectorDirect;",
                 "import io.deephaven.time.DateTimeUtils;");
         lines = addImport(lines, Instant.class);

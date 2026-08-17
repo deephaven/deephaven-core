@@ -12,11 +12,8 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
-import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.util.type.TypeUtils;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfDouble;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
@@ -3048,7 +3045,6 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
     }
     // endregion
 
-    // region VectorEquals
     private boolean equalsArray(DoubleVector o) {
         if (size() != o.size()) {
             return false;
@@ -3081,80 +3077,31 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
             return true;
         }
     }
-    // endregion VectorEquals
-
-    // region UnboxValue
-    /**
-     * Convert an element of a boxed {@link ObjectVector} into the primitive representation this SSM stores. A
-     * {@code null} element becomes the null sentinel, which is how the SSM itself stores nulls.
-     */
-    private static double unboxValue(final Object value) {
-        return TypeUtils.unbox((Double) value);
-    }
-    // endregion UnboxValue
-
-    private boolean equalsArray(ObjectVector<?> o) {
-        // region EqualsArrayTypeCheck
-        if (o.getComponentType() != double.class && o.getComponentType() != Double.class) {
-            return false;
-        }
-        // endregion EqualsArrayTypeCheck
-
-        if (size() != o.size()) {
-            return false;
-        }
-
-        // iterate o exactly once; random access via get can be expensive for some Vector implementations
-        try (final CloseableIterator<?> oit = o.iterator()) {
-            if (size == 1) {
-                return DoubleComparisons.eq(get(0), unboxValue(oit.next()));
-            }
-
-            if (leafCount == 1) {
-                for (int ii = 0; ii < size; ii++) {
-                    if (!DoubleComparisons.eq(directoryValues[ii], unboxValue(oit.next()))) {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            for (int li = 0; li < leafCount; ++li) {
-                for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    if (!DoubleComparisons.eq(leafValues[li][ai], unboxValue(oit.next()))) {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-    }
 
     /**
      * {@inheritDoc}
      *
      * <p>
-     * Equal to any Vector holding the same values, including another SSM: an SSM <em>is</em> a Vector, so it takes the
-     * same element-wise path rather than a structural comparison of leaf layouts. Two SSMs can hold identical values in
-     * different layouts -- leaves need not be full, and the node sizes need not agree -- so layout is not a sound basis
-     * for equality.
+     * Equal to any {@link DoubleVector} holding the same values, including another SSM: an SSM <em>is</em> a
+     * {@link DoubleVector}, so it takes the same element-wise path rather than a structural comparison of leaf layouts.
+     * Two SSMs can hold identical values in different layouts -- leaves need not be full, and the node sizes need not
+     * agree -- so layout is not a sound basis for equality.
+     *
+     * <p>
+     * Nothing else is equal, exactly as {@link DoubleVector#equals(DoubleVector, Object)} requires: a Vector that stores
+     * its elements some other way cannot be accepted without breaking the {@link #hashCode()} contract, and would not
+     * be reciprocated in any case, since that Vector's own {@code equals} rejects a {@link DoubleVector}.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        // region VectorEquals
+
         if (o instanceof DoubleVector) {
             return equalsArray((DoubleVector) o);
         }
-        // endregion VectorEquals
 
-        if (o instanceof ObjectVector) {
-            return equalsArray((ObjectVector<?>) o);
-        }
         return false;
     }
 

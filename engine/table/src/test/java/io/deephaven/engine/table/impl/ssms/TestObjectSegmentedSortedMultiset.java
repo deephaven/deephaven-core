@@ -761,21 +761,14 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
         final ObjectSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
 
-        final Object[] boxed = new Object[valueCount];
-        for (int ii = 0; ii < valueCount; ++ii) {
-            boxed[ii] = values[ii];
-        }
-
         // a Vector with identical contents is equal, in both directions, and anything equal must hash alike -- so the
         // SSM has to use the same shared Vector helper that the *VectorDirect implementations use, and compare
         // elements the same way that helper hashes them, rather than either with a scheme of its own
         assertEqualBothWays(ssm, ssm.getDirect());
         assertEqualBothWays(ssm, new ObjectVectorDirect(values));
 
-        // the boxed comparison only runs in one direction for the primitive variants, because a primitive SSM is a
-        // ObjectVector rather than an ObjectVector and so is not a comparand ObjectVectorDirect will accept
-        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
-        assertEquals(ssm.hashCode(), new ObjectVectorDirect<>(boxed).hashCode());
+        // region BoxedEquals
+        // endregion BoxedEquals
 
         // another SSM holding the same values is equal however those values happen to be laid out: equality is a
         // property of the contents, and identical contents can occupy different leaf structures, since leaves need
@@ -805,11 +798,6 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
             longer[ii] = (Object) ('a' + ii);
         }
         assertFalse(ssm.equals(new ObjectVectorDirect(longer)));
-        final Object[] longerBoxed = new Object[valueCount + 1];
-        for (int ii = 0; ii < longerBoxed.length; ++ii) {
-            longerBoxed[ii] = (Object) ('a' + ii);
-        }
-        assertFalse(ssm.equals(new ObjectVectorDirect<>(longerBoxed)));
 
         // a Vector that differs from the original in a single position is not equal; check the first, middle, and last
         if (valueCount > 0) {
@@ -818,10 +806,6 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
                 final Object[] modifiedValues = values.clone();
                 modifiedValues[position] = different;
                 assertFalse(ssm.equals(new ObjectVectorDirect(modifiedValues)));
-
-                final Object[] modifiedBoxed = boxed.clone();
-                modifiedBoxed[position] = different;
-                assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
             }
         }
     }
