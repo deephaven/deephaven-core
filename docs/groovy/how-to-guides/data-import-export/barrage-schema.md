@@ -462,7 +462,9 @@ status: run_end_encoded=true run_ends=Int(32, true) dictionary_encoded=false arr
 value: run_end_encoded=false dictionary_encoded=false arrow_type=Int(32, true)
 ```
 
-`status` arrived as `RunEndEncoded` with `Int32` run ends, exactly as annotated, while `value` was sent unencoded. Running the same check against the [dictionary-encoded example](#example-dictionary-encoded-columns) prints `dictionary_encoded=true` for `status` instead, and subscribing to a table with no `BARRAGE_SCHEMA_ATTRIBUTE` prints `false` for both facets of every column.
+`status` arrived as `RunEndEncoded` with `Int32` run ends, exactly as annotated, while `value` was sent unencoded. Running the same check against the [dictionary-encoded example](#example-dictionary-encoded-columns) prints `dictionary_encoded=true` for `status` instead.
+
+Subscribing to a table with no `BARRAGE_SCHEMA_ATTRIBUTE` prints `false` for both facets of every column, unless the server has encoding auto-detection enabled. The `BarrageUtil.ree.autoDetectEnabled` and `BarrageUtil.dictionary.autoDetectEnabled` properties are both off by default; when either is set, the server may choose an encoding on its own for a table you never annotated, and this check is how you see what it picked.
 
 Use `println wire_schema.toJson()` to dump the entire negotiated schema, including each field's `deephaven:type` metadata.
 
