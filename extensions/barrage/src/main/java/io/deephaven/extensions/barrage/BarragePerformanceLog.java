@@ -36,6 +36,14 @@ public class BarragePerformanceLog {
 
     private static volatile BarragePerformanceLog INSTANCE;
 
+    /**
+     * Get the singleton instance, creating it if necessary. The instance resolves its performance sinks from
+     * {@link BarrageTableLoggers#get()} when it is created, so
+     * {@link BarrageTableLoggers#set(BarrageTableLoggers.Factory)} must be called before first use for an
+     * integrator-provided factory to take effect.
+     *
+     * @return the singleton {@link BarragePerformanceLog}
+     */
     public static BarragePerformanceLog getInstance() {
         BarragePerformanceLog local;
         if ((local = INSTANCE) == null) {
@@ -84,8 +92,9 @@ public class BarragePerformanceLog {
     private final BarrageSnapshotPerformanceLoggerImpl snapImpl;
 
     private BarragePerformanceLog() {
-        subImpl = new BarrageSubscriptionPerformanceLoggerImpl();
-        snapImpl = new BarrageSnapshotPerformanceLoggerImpl();
+        final BarrageTableLoggers.Factory loggerFactory = BarrageTableLoggers.get();
+        subImpl = new BarrageSubscriptionPerformanceLoggerImpl(loggerFactory.subscriptionPerformanceSink());
+        snapImpl = new BarrageSnapshotPerformanceLoggerImpl(loggerFactory.snapshotPerformanceSink());
     }
 
     public QueryTable getSubscriptionTable() {

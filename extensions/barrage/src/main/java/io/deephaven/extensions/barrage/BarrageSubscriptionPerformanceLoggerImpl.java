@@ -5,22 +5,35 @@ package io.deephaven.extensions.barrage;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.time.DateTimeUtils;
 import org.HdrHistogram.Histogram;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Objects;
 
+/**
+ * Publishes barrage subscription statistics to the in-memory blink table, and forwards each entry to the
+ * {@link BarrageSubscriptionPerformanceSink} provided by {@link BarrageTableLoggers}.
+ */
 class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPerformanceLogger {
+    private static final Logger log = LoggerFactory.getLogger(BarrageSubscriptionPerformanceLoggerImpl.class);
+
+    private final BarrageSubscriptionPerformanceSink sink;
     private final BarrageSubscriptionPerformanceStreamPublisher publisher;
     // Keep, may eventually want to manage / close
     @SuppressWarnings("FieldCanBeLocal")
     private final StreamToBlinkTableAdapter adapter;
     private final Table blink;
 
-    public BarrageSubscriptionPerformanceLoggerImpl() {
+    private boolean encounteredError = false;
+
+    public BarrageSubscriptionPerformanceLoggerImpl(final BarrageSubscriptionPerformanceSink sink) {
+        this.sink = Objects.requireNonNull(sink);
         publisher = new BarrageSubscriptionPerformanceStreamPublisher();
         adapter = new StreamToBlinkTableAdapter(
                 BarrageSubscriptionPerformanceStreamPublisher.definition(),
@@ -33,20 +46,48 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
         blink = adapter.table();
     }
 
+    /**
+     * Publish the statistics accumulated in {@code hist}. The values are extracted before this method returns and
+     * neither this class nor the {@link BarrageSubscriptionPerformanceSink} retains {@code hist}, so the caller is free
+     * to {@link Histogram#reset() reset} it as soon as this method returns.
+     *
+     * @implNote this method is synchronized to guarantee identical ordering of entries between the publisher and the
+     *           sink; doing so also relieves the requirement that the sink be thread safe
+     */
     @Override
-    public void log(String tableId, String tableKey, String statType, Instant now, Histogram hist) {
+    public synchronized void log(String tableId, String tableKey, String statType, Instant now, Histogram hist) {
+        final long count = hist.getTotalCount();
+        final long p50 = hist.getValueAtPercentile(50);
+        final long p75 = hist.getValueAtPercentile(75);
+        final long p90 = hist.getValueAtPercentile(90);
+        final long p95 = hist.getValueAtPercentile(95);
+        final long p99 = hist.getValueAtPercentile(99);
+        final long max = hist.getMaxValue();
+
         publisher.add(
                 tableId,
                 tableKey,
                 statType,
                 DateTimeUtils.epochNanos(now),
-                hist.getTotalCount(),
-                hist.getValueAtPercentile(50) / 1e6,
-                hist.getValueAtPercentile(75) / 1e6,
-                hist.getValueAtPercentile(90) / 1e6,
-                hist.getValueAtPercentile(95) / 1e6,
-                hist.getValueAtPercentile(99) / 1e6,
-                hist.getMaxValue() / 1e6);
+                count,
+                p50 / 1e6,
+                p75 / 1e6,
+                p90 / 1e6,
+                p95 / 1e6,
+                p99 / 1e6,
+                max / 1e6);
+
+        if (encounteredError) {
+            return;
+        }
+        try {
+            sink.log(tableId, tableKey, statType, now, count, p50, p75, p90, p95, p99, max);
+        } catch (final IOException e) {
+            // Don't want to log this for every entry
+            log.error().append("Error recording barrage subscription performance for ").append(tableKey)
+                    .append(" caused by: ").append(e).endl();
+            encounteredError = true;
+        }
     }
 
     public Table blinkTable() {
