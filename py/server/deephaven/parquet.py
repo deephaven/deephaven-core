@@ -56,18 +56,24 @@ class UnsignedLongTarget(Enum):
 
 @dataclass
 class ColumnInstruction:
-    """This class specifies the instructions for reading/writing a Parquet column.
-
-    unsigned_long_target applies to reads only, and only to columns with a UINT_64 logical type; it is ignored when
-    writing, since Deephaven never writes UINT_64.
-    """
+    """This class specifies the instructions for reading/writing a Parquet column."""
 
     column_name: Optional[str] = None
+    """ The Deephaven column name. Required when writing. """
     parquet_column_name: Optional[str] = None
+    """ The corresponding column name in the Parquet file. Required when reading. """
     codec_name: Optional[str] = None
+    """ The fully qualified name of an ObjectCodec class that serializes this column's values to and from bytes, for
+    types with no language-agnostic Parquet representation. This is not the compression codec, which is set per file
+    with the compression_codec_name argument. """
     codec_args: Optional[str] = None
+    """ An implementation-specific argument string passed to codec_name. """
     use_dictionary: bool = False
+    """ Whether the writer should use dictionary-based encoding for this column; never evaluated for non-String
+    columns. """
     unsigned_long_target: Optional[UnsignedLongTarget] = None
+    """ Applies only to reads, and only to columns with a UINT_64 logical type; it is ignored when writing, since
+    Deephaven never writes UINT_64. """
 
 
 class ParquetFileLayout(Enum):
@@ -286,8 +292,7 @@ def read(
     Args:
         path (str): the file or directory to examine
         col_instructions (Optional[list[ColumnInstruction]]): instructions for customizations while reading particular
-            columns, default is None, which means no specialization for any column. Use
-            ColumnInstruction.unsigned_long_target to choose how a UINT_64 column is read.
+            columns, default is None, which means no specialization for any column.
         is_legacy_parquet (bool): if the parquet data is legacy
         is_refreshing (bool): if the parquet data represents a refreshing source
         file_layout (Optional[ParquetFileLayout]): the parquet file layout, by default None. When None, the layout is
