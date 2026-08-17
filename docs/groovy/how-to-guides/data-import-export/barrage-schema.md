@@ -370,6 +370,8 @@ def new_schema = new Schema(fields)
 table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
+To confirm that the column really is sent run-end encoded, see [Verify the encoding from a subscriber](#verify-the-encoding-from-a-subscriber) below.
+
 ## Example: Dictionary-Encoded Columns
 
 [Dictionary Encoding](https://arrow.apache.org/docs/format/Columnar.html#dictionary-encoded-layout) is a wire-level optimization for low-cardinality columns. Instead of sending each value in full, Deephaven sends each unique value once (in a `DictionaryBatch` message) and replaces each row with a compact integer index.
@@ -425,8 +427,54 @@ def new_schema = new Schema(fields)
 table_w_attributes = table.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
+## Verify the encoding from a subscriber
+
+The schema a table is exported with is sent to every subscriber, and Deephaven stores it on the resulting client-side table under the same `Table.BARRAGE_SCHEMA_ATTRIBUTE`. Reading that attribute back tells you exactly which encoding each column was sent with.
+
+Run the [Run-End Encoded example](#example-run-end-encoded-ree-columns) above so that `table_w_attributes` exists, then subscribe to it — from a second Deephaven instance, or from the same instance over a [URI](../use-uris.md):
+
+```groovy skip-test
+import io.deephaven.engine.table.Table
+import org.apache.arrow.vector.types.pojo.ArrowType
+import static io.deephaven.uri.ResolveTools.resolve
+
+// Subscribe to the exported table; `client_table` is a live Barrage subscription
+client_table = resolve("dh+plain://localhost:10000/scope/table_w_attributes")
+
+// The schema the server actually exported with, as an org.apache.arrow.vector.types.pojo.Schema
+wire_schema = client_table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)
+
+for (field in wire_schema.getFields()) {
+    boolean ree = field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded
+    // A dictionary lives on the field itself, or on the REE `values` child when doubly encoded
+    def valuesField = ree ? field.getChildren().get(1) : field
+    println "${field.getName()}: run_end_encoded=${ree}" +
+        (ree ? " run_ends=${field.getChildren().get(0).getType()}" : "") +
+        " dictionary_encoded=${valuesField.getDictionary() != null}" +
+        " arrow_type=${valuesField.getType()}"
+}
+```
+
+This prints:
+
+```text
+status: run_end_encoded=true run_ends=Int(32, true) dictionary_encoded=false arrow_type=Utf8
+value: run_end_encoded=false dictionary_encoded=false arrow_type=Int(32, true)
+```
+
+`status` arrived as `RunEndEncoded` with `Int32` run ends, exactly as annotated, while `value` was sent unencoded. Running the same check against the [dictionary-encoded example](#example-dictionary-encoded-columns) prints `dictionary_encoded=true` for `status` instead, and subscribing to a table with no `BARRAGE_SCHEMA_ATTRIBUTE` prints `false` for both facets of every column.
+
+Use `println wire_schema.toJson()` to dump the entire negotiated schema, including each field's `deephaven:type` metadata.
+
+> [!NOTE]
+> These encodings do not change the Deephaven column type — the subscriber's `status` column is still a `String`, and the subscriber's `TableDefinition` is identical either way. Both encodings are transport-only optimizations, so the schema attribute is the only thing that tells you how the bytes were sent.
+
+> [!CAUTION]
+> The attribute is only propagated through a few operations (`where`, `firstBy`, `lastBy`, `partitionBy`, `reverse`, `sort`, and flatten). Read it from the table returned by `resolve` rather than from a derived table.
+
 ## Related documentation
 
 - [What is Barrage?](../../conceptual/what-is-barrage.md)
+- [Deephaven URIs](../use-uris.md)
 - [withAttributes](../../reference/table-operations/select/withAttributes.md)
 - [Arrow Flight integration](./arrow-flight.md)
