@@ -334,7 +334,7 @@ public class ObjectColumnBinarySearchKernel {
      * equals {@code min}. The returned value is the leftmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases: when {@code min} is absent from the range, when
      * {@code minInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
-     * the insertion point â the leftmost position whose value exceeds {@code min} â or {@code lastPos + 1} if all
+     * the insertion point, i.e. the leftmost position whose value exceeds {@code min}, or {@code lastPos + 1} if all
      * values in the range are &lt;= {@code min}.</li>
      * </ul>
      *
@@ -393,7 +393,7 @@ public class ObjectColumnBinarySearchKernel {
      * equals {@code max}. The returned value is the rightmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases: when {@code max} is absent from the range, when
      * {@code maxInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
-     * the first position whose value exceeds {@code max} â or {@code firstPos} if all values in the range are &gt;
+     * the first position whose value exceeds {@code max}, or {@code firstPos} if all values in the range are &gt;
      * {@code max}.</li>
      * </ul>
      *
@@ -454,7 +454,7 @@ public class ObjectColumnBinarySearchKernel {
      * equals {@code max}. The returned value is the leftmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases: when {@code max} is absent from the range, when
      * {@code maxInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
-     * the insertion point â the leftmost position whose value falls below {@code max} â or {@code lastPos + 1} if all
+     * the insertion point, i.e. the leftmost position whose value falls below {@code max}, or {@code lastPos + 1} if all
      * values in the range are &gt;= {@code max}.</li>
      * </ul>
      *
@@ -513,7 +513,7 @@ public class ObjectColumnBinarySearchKernel {
      * equals {@code min}. The returned value is the rightmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases: when {@code min} is absent from the range, when
      * {@code minInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
-     * the first position whose value falls below {@code min} â or {@code firstPos} if all values in the range are &lt;=
+     * the first position whose value falls below {@code min}, or {@code firstPos} if all values in the range are &lt;=
      * {@code min}.</li>
      * </ul>
      *
@@ -560,4 +560,3 @@ public class ObjectColumnBinarySearchKernel {
         return insertionPoint(low);
     }
 }
-

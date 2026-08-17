@@ -105,8 +105,21 @@ std::shared_ptr<Server> Server::CreateFromTarget(
   auto cfs = ConfigService::NewStub(channel);
   auto its = InputTableService::NewStub(channel);
 
-  // TODO(kosak): Warn about this string conversion or do something more general.
-  auto flight_target = ((client_options.UseTls()) ? "grpc+tls://" : "grpc://") + target;
+  // Try to dodge a Flight bug when there's a missing port number.
+  // If we're using TLS and there's no port number provided, then append :443.
+  // Otherwise (if not using TLS, or there is a port number provided), do nothing.
+  // Our heuristic for this is to search for a colon character. This also means
+  // that if we are given an IPv6 address, with or without a port number, we will
+  // also do nothing. We should handle this more comprehensively in the future.
+  std::string port_to_append;
+  if (client_options.UseTls() &&
+    target.find_last_of(':') == std::string::npos) {
+      port_to_append = ":443";
+  }
+  auto flight_target = ((client_options.UseTls()) ? "grpc+tls://" : "grpc://") +
+                       target + port_to_append;
+
+  VLOG(2) << "Server::CreateFromTarget: flight_target is " << flight_target;
 
   auto location_res = arrow::flight::Location::Parse(flight_target);
   if (!location_res.ok()) {

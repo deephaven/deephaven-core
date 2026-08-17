@@ -39,6 +39,28 @@ public class ReplicateBarrageUtils {
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/CharBarrageRunKernel.java");
+
+        // The Object variant is hand-written because null handling and generics differ; the Float and Double
+        // variants need NaN canonicalization in getOrAdd, handled by the region fixup below.
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+                CHUNK_PACKAGE + "/writermap/CharDictionaryWriterValueMap.java");
+        fixupDictionaryWriterValueMap(CHUNK_PACKAGE + "/writermap/FloatDictionaryWriterValueMap.java", "float",
+                "Float");
+        fixupDictionaryWriterValueMap(CHUNK_PACKAGE + "/writermap/DoubleDictionaryWriterValueMap.java", "double",
+                "Double");
+    }
+
+    private static void fixupDictionaryWriterValueMap(
+            final @NotNull String path,
+            final @NotNull String primitiveType,
+            final @NotNull String boxedType) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = replaceRegion(lines, "canonicalization", List.of(
+                "        // Canonicalize NaN so all bit patterns map to the same entry (fastutil hashes the raw bits).",
+                "        final " + primitiveType + " key = " + boxedType + ".isNaN(value) ? " + boxedType
+                        + ".NaN : value;"));
+        FileUtils.writeLines(file, lines);
     }
 
     private static void fixupDoubleChunkReader(final @NotNull String path) throws IOException {
