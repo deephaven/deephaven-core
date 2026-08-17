@@ -72,6 +72,16 @@ dependencies {
     testRuntimeOnly libs.slf4j.simple
 
     testImplementation libs.assertj
+
+    constraints {
+        implementation(libs.httpcore5) {
+            // used by calcite-core, iceberg, and confluent
+            because 'CVE-2026-54399'
+        }
+        implementation(libs.httpcore5.h2) {
+            because 'Keeping consistency with libs.httpcore5'
+        }
+    }
 }
 
 test {
