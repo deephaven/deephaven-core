@@ -472,6 +472,21 @@ Use `println wire_schema.toJson()` to dump the entire negotiated schema, includi
 > [!CAUTION]
 > The attribute is only propagated through a few operations (`where`, `firstBy`, `lastBy`, `partitionBy`, `reverse`, `sort`, and flatten). Read it from the table returned by `resolve` rather than from a derived table.
 
+### From the producer
+
+The server logs the same decision for every table it exports. Raise the level of the `io.deephaven.extensions.barrage.util.BarrageUtil` logger — in your logging configuration, or at runtime with `ch.qos.logback.classic.Logger#setLevel` — to `DEBUG` for a one-line summary per export, or to `TRACE` to also dump the complete Arrow schema:
+
+```xml
+<logger name="io.deephaven.extensions.barrage.util.BarrageUtil" level="DEBUG"/>
+```
+
+```text
+DEBUG | i.d.e.b.util.BarrageUtil | Barrage schema for orders: 2 columns, encodings from explicit BarrageSchema: status=REE(INT32)
+TRACE | i.d.e.b.util.BarrageUtil | Barrage schema for orders: Schema<status: RunEndEncoded<run_ends: Int(32, true) not null, values: Utf8>, value: Int(32, true)>
+```
+
+The summary reports where the encodings came from — an explicit `BARRAGE_SCHEMA_ATTRIBUTE`, or auto-detection — which is how you confirm what the server chose for a table you did not annotate yourself. Tables are named by their `Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE` when it is set, and by the table description otherwise.
+
 ## Related documentation
 
 - [What is Barrage?](../../conceptual/what-is-barrage.md)
