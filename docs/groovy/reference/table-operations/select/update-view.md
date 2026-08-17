@@ -20,7 +20,7 @@ When using `updateView`, the new columns are not stored in memory. Rather, a for
 > When using [`view`](./view.md) or `updateView`, non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](./select.md) or [`update`](./update.md) instead.
 
 > [!CAUTION]
-> Concurrency control (serial marking and barriers) cannot be applied to [`view`](./view.md) or `updateView`. These operations compute results on demand and cannot enforce ordering constraints. If you need serial evaluation or barriers, use [`select`](./select.md) or [`update`](./update.md) instead. See [Parallelizing queries](../../../conceptual/query-engine/parallelization.md#serialization) for more information.
+> Serial execution and respecting barriers are not supported for [`view`](./view.md) or `updateView`. Because these operations compute results lazily (on-demand when cells are accessed), rows may be evaluated in any order, at any time, and by any thread. This makes ordering guarantees meaningless. If your formula requires serial evaluation or must wait for another operation to complete, use [`select`](./select.md) or [`update`](./update.md) instead. See [Parallelizing queries](../../../conceptual/query-engine/parallelization.md#serialization) for more information.
 
 ## Syntax
 
