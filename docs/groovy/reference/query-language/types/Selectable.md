@@ -95,6 +95,6 @@ If you're unsure whether your formula is safe for parallel execution, ask: "Woul
 - [Filter](./Filter.md) - Similar concurrency controls for filter operations
 - [`select`](../../table-operations/select/select.md) - Uses Selectable objects
 - [`update`](../../table-operations/select/update.md) - Uses Selectable objects
-- [Barrier Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.Barrier.html)
+- [Barrier Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html#withDeclaredBarriers(java.lang.Object...))
 - [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)
 - [Selectable Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html)

@@ -124,7 +124,7 @@ This section explains when and how to override automatic parallelization for cod
 
 - **[`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html)**: An object representing a column expression, used in `select` or `update` operations.
 - **Serial execution**: Forces Deephaven to process rows one at a time, in order, using `withSerial`.
-- **[`Barrier`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.Barrier.html)**: Ensures one operation completes before another starts.
+- **[Barrier](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html#withDeclaredBarriers(java.lang.Object...))**: Ensures one operation completes before another starts.
 
 ### Parallelization (default)
 
@@ -246,7 +246,7 @@ When a Selectable is serial:
 
 When you mark a _partition filter_ (a filter that only accesses partitioning columns) as serial, Deephaven cannot reorder it and must evaluate it on all rows of the table. However, if you don't explicitly mark a partition filter as serial, the engine treats it as stateless for performance reasons — even when Deephaven is configured to treat filters as stateful by default.
 
-Specifically, Deephaven may relax ordering constraints for filters on partitioning columns and evaluate them per location rather than on every row. This allows Deephaven to reorder common partition filters ahead of other filters and avoid repeated evaluation against the same value. For example, the formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users prefer Deephaven to evaluate it early, location-by-location.
+Specifically, Deephaven may relax ordering constraints for filters on partitioning columns and evaluate them per location rather than on every row. This allows Deephaven to reorder common partition filters ahead of other filters and avoid repeated evaluation against the same value. For example, the formula filter `Date=today()` is stateful if Deephaven treats filters as stateful by default, but in nearly every case users prefer Deephaven to evaluate it early, location-by-location.
 
 #### Using `withSerial` for Filters
 
@@ -265,7 +265,7 @@ result = emptyTable(1000)
     .where(Filter.and(filter1, filter2))
 ```
 
-When a [`Filter`](https://docs.deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) is serial:
+When a [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) is serial:
 
 - Every input row is evaluated in order.
 - Filter cannot be reordered with respect to other Filters.
@@ -299,9 +299,9 @@ When shared state is involved, you often need both:
 
 In Groovy, any Java object can serve as a barrier. A barrier object creates an ordering dependency between two operations:
 
-1. One operation **declares** the barrier — it goes first
-2. Another operation **respects** the barrier — it waits
-3. Deephaven guarantees the declaring operation completes all rows before the respecting operation begins
+1. One operation **declares** the barrier — it goes first.
+2. Another operation **respects** the barrier — it waits.
+3. Deephaven guarantees the declaring operation completes all rows before the respecting operation begins.
 
 Each barrier can only be declared by one operation. Multiple operations can respect the same barrier.
 

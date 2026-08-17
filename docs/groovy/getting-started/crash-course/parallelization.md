@@ -2,7 +2,7 @@
 title: Query Parallelization
 ---
 
-Modern computers have multiple processors (called "cores") that can work simultaneously. Deephaven automatically distributes work across these cores to make queries faster. For example, if your computer has 4 cores and a calculation takes 8 seconds on a single core, Deephaven can complete it in roughly 2 seconds by having all 4 cores work on different parts at the same time.
+Modern computers have multiple processors (called "cores") that can work simultaneously. Deephaven distributes work across these cores automatically, making queries faster. For example, if your computer has 4 cores and a calculation takes 8 seconds on a single core, Deephaven can complete it in roughly 2 seconds by having all 4 cores work on different parts at the same time.
 
 > [!TIP]
 > **Most queries benefit from parallelization automatically.** You don't need to do anything special. This guide explains how parallelization works and covers the uncommon situations where you need to disable it.
@@ -16,7 +16,7 @@ Deephaven distributes work across cores in two ways:
 
 ### Across tables
 
-When one table feeds into several downstream tables, Deephaven computes those downstream tables simultaneously. In this example, `trades` feeds into three separate tables:
+When one table feeds into several downstream tables, Deephaven computes those downstream tables simultaneously. In this example, `trades` feeds into three separate tables using [`where`](../../reference/table-operations/filter/where.md), [`aggBy`](../../reference/table-operations/group-and-aggregate/aggBy.md), and [`tail`](../../reference/table-operations/filter/tail.md):
 
 ```groovy test-set=parallel order=trades,highValue,bySymbol,recent
 import static io.deephaven.api.agg.Aggregation.*
@@ -125,7 +125,7 @@ getNextId = {
 result = emptyTable(100).update("ID = getNextId()")
 ```
 
-The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with parallelization, multiple cores call `getNextId` at the same time. Two cores might both read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
+The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with parallelization, multiple cores call `getNextId` at the same time. Two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
 
 ### The fix: force sequential processing with `withSerial`
 
