@@ -46,7 +46,7 @@ Deephaven maps Parquet [logical types](https://github.com/apache/parquet-format/
 `BigInteger` represents every `UINT_64` value exactly, at the cost of an object per value. Two alternatives read the column as a primitive `long` instead:
 
 - `UnsignedLongTarget.LONG` reads values that fit in a `long` and raises an error on any value greater than 2<sup>63</sup> - 1. Use this option when the data is known to stay within the `long` range and an unnoticed overflow is unacceptable.
-- `UnsignedLongTarget.SIGNED_LONG` reinterprets the bit pattern as signed, so values greater than 2<sup>63</sup> - 1 read as negative numbers. This option never fails, but it is lossy in one further respect: 2<sup>63</sup> reads as `NULL_LONG`, which is indistinguishable from a null.
+- `UnsignedLongTarget.SIGNED_LONG` reinterprets the bit pattern as signed, so values greater than 2<sup>63</sup> - 1 read as negative numbers. This option never fails, but it is imprecise in one further respect: 2<sup>63</sup> reads as `NULL_LONG`, which is indistinguishable from a null.
 
 The following example reads a `UINT_64` column as a `long`, rejecting any value that does not fit:
 
@@ -62,7 +62,7 @@ instructionsInstance = ParquetInstructions.builder()
 result = ParquetTools.readTable("/data/unsigned.parquet", instructionsInstance)
 ```
 
-Deephaven never writes `UINT_64`, so these options apply to reads only. Deephaven applies the same default and offers the same coercions when reading Arrow data; see the notes on integral coercion in the [Arrow Flight guide](./arrow-flight.md).
+Deephaven never writes `UINT_64`, so these options apply only to reads. Deephaven applies the same default and offers the same coercions when reading Arrow data; see the notes on integral coercion in the [Arrow Flight guide](./arrow-flight.md).
 
 ## Related documentation
 
