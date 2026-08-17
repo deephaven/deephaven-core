@@ -22,6 +22,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -85,6 +86,101 @@ public class TestAggBy extends RefreshingTableTestCase {
         show(minMax);
 
         assertEquals(2, minMax.size());
+    }
+
+    /**
+     * An {@code AggFormula} names its formula column in the {@link ModifiedColumnSet} it reports whenever churn in a
+     * group makes it recompute that column.
+     *
+     * <p>
+     * The non-rollup counterpart to {@code TestRollupTable.testRollupFormulaReportsModifiedFormulaColumn}. The
+     * {@code AggGroup} here registers the shared group operator, which leaves the formula operator non-delegating --
+     * the same condition every rollup level meets, reached through a plain {@code aggBy}. Two keys puts this on the
+     * bucketed path, where the rollup's zero-key root covers the singleton one.
+     *
+     * <p>
+     * Reporting holds for every kind of churn, hence the add, remove, and modify cycles, and reaches no further: a
+     * plain {@code aggBy} exposes no group RowSet column, so the leading shift owes nothing downstream at all.
+     */
+    @Test
+    public void testAggFormulaReportsModifiedFormulaColumn() {
+        final QueryTable source = testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final QueryTable agged = (QueryTable) source.aggBy(
+                List.of(AggGroup("Grp=Value"), AggFormula("FSum=sum(Value)")), "Sym");
+
+        // A direct read, correct whether or not the column is advertised, and one gated on the reported MCS.
+        final Table direct = agged.select("Sym", "FSum");
+        final Table mcsGated = agged.sort("Sym").select("Sym", "FSum");
+
+        final Table initial = newTable(stringCol("Sym", "a", "b"), longCol("FSum", 21, 41));
+        assertTableEquals(initial, direct);
+        assertTableEquals(initial, mcsGated);
+
+        final SimpleListener listener = new SimpleListener(agged);
+        agged.addUpdateListener(listener);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+
+        // A pure shift of the "b" rows: their keys move but their values do not, so the formula cannot change, and with
+        // no group RowSet column exposed nothing is owed downstream. The cycles after it run against shifted keys.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(0, listener.getCount());
+        assertTableEquals(initial, direct);
+        assertTableEquals(initial, mcsGated);
+
+        // A row joins the "b" group.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(4), stringCol("Sym", "b"), intCol("Value", 22));
+            source.notifyListeners(i(4), i(), i());
+        });
+        assertFormulaReported(agged, listener, direct, mcsGated,
+                newTable(stringCol("Sym", "a", "b"), longCol("FSum", 21, 63)));
+
+        // A row leaves the "a" group.
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(0));
+            source.notifyListeners(i(), i(0), i());
+        });
+        assertFormulaReported(agged, listener, direct, mcsGated,
+                newTable(stringCol("Sym", "a", "b"), longCol("FSum", 11, 63)));
+
+        // A row keeps its group but changes value, so the group's membership is untouched.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(1), stringCol("Sym", "a"), intCol("Value", 111));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    source.newModifiedColumnSet("Value")));
+        });
+        assertFormulaReported(agged, listener, direct, mcsGated,
+                newTable(stringCol("Sym", "a", "b"), longCol("FSum", 111, 63)));
+
+        agged.removeUpdateListener(listener);
+        listener.close();
+    }
+
+    /**
+     * Assert that the update {@code listener} just captured off {@code agged} marks rows modified and names
+     * {@code FSum} in its {@link ModifiedColumnSet}, and that the result reads as {@code expected} both directly and
+     * through the gated consumer.
+     */
+    private static void assertFormulaReported(final QueryTable agged, final SimpleListener listener,
+            final Table direct, final Table mcsGated, final Table expected) {
+        final TableUpdate update = listener.getUpdate();
+        assertTrue(update.modified().isNonempty());
+        assertTrue("modifiedColumnSet " + update.modifiedColumnSet() + " should contain FSum",
+                update.modifiedColumnSet().containsAny(agged.newModifiedColumnSet("FSum")));
+
+        assertTableEquals(expected, direct);
+        assertTableEquals(expected, mcsGated);
     }
 
     @Test
