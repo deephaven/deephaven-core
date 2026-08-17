@@ -1119,6 +1119,44 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a table without attributes.") from e
 
+    def with_keys(self, cols: Union[str, Sequence[str]]) -> Table:
+        """Returns a new Table that shares the underlying data and schema with this table and has the specified
+        columns marked as its key columns.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the key column name(s), must name at least one existing column
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return Table(j_table=self.j_table.withKeys(*cols))
+        except Exception as e:
+            raise DHError(e, "failed to create a table with key columns.") from e
+
+    def with_unique_keys(self, cols: Union[str, Sequence[str]]) -> Table:
+        """Returns a new Table that shares the underlying data and schema with this table and has the specified
+        columns marked as its key columns, additionally indicating that each key set will be unique.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the key column name(s), must name at least one existing column
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return Table(j_table=self.j_table.withUniqueKeys(*cols))
+        except Exception as e:
+            raise DHError(e, "failed to create a table with unique key columns.") from e
+
     def to_string(
         self, num_rows: int = 10, cols: Optional[Union[str, Sequence[str]]] = None
     ) -> str:
