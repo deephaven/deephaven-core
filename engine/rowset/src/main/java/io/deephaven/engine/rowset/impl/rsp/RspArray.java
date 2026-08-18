@@ -4550,6 +4550,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             throw new IllegalArgumentException(
                     ("startPositionInclusive=" + startPositionInclusive + " should be >=0."));
         }
+        if (length <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
         final long endPositionInclusive;
         if (isCardinalityCached()) {
             final long cardinality = getCardinality();
@@ -4558,7 +4561,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             endPositionInclusive = Math.min(startPositionInclusive + length, cardinality) - 1;
         } else {
-            endPositionInclusive = startPositionInclusive + length;
+            endPositionInclusive = startPositionInclusive + length - 1;
         }
         final MutableLong prevCardMu;
         final int startIdx;
@@ -4633,8 +4636,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         int endKeyIdx = getSpanIndex(startKeyIdx, endKey);
         final boolean endKeyIdxWasNegative = endKeyIdx < 0;
         if (endKeyIdxWasNegative) {
-            // endIdx can't be -1, otherwise we would have returned above.
             endKeyIdx = -endKeyIdx - 2;
+            if (endKeyIdx < startKeyIdx) {
+                // The requested range ends before the span where it would need to start; the intersection is empty.
+                // This also covers a range entirely before the first span (endKeyIdx == -1).
+                return RowSequenceFactory.EMPTY;
+            }
         }
         final BeforeCardContext beforeCardCtx = (acc == null)
                 ? new BeforeCardContext(startIdx, cardBeforeStartIdx)
@@ -4665,6 +4672,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     absoluteEndPos = lastValidPos;
                 }
             }
+        }
+        if (absoluteEndPos < absoluteStartPos) {
+            // The requested range falls entirely in a gap between present values; the intersection is empty.
+            return RowSequenceFactory.EMPTY;
         }
         long relativeStartOffset = absoluteStartPos - cardBeforeStartKeyIdx;
         final long spanCardAtStartKeyIdx = getSpanCardinalityAtIndexMaybeAcc(startKeyIdx);
