@@ -46,22 +46,16 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
     }
 
     /**
-     * Publish the statistics accumulated in {@code hist}. The values are extracted before this method returns and
-     * neither this class nor the {@link BarrageSubscriptionPerformanceSink} retains {@code hist}, so the caller is free
-     * to {@link Histogram#reset() reset} it as soon as this method returns.
+     * Publish the statistics accumulated in {@code hist}. The values are read, and the
+     * {@link BarrageSubscriptionPerformanceSink} is given its chance to read them, before this method returns; neither
+     * this class nor the sink is permitted to retain {@code hist}, so the caller is free to {@link Histogram#reset()
+     * reset} it as soon as this method returns.
      *
      * @implNote this method is synchronized to guarantee identical ordering of entries between the publisher and the
      *           sink; doing so also relieves the requirement that the sink be thread safe
      */
     @Override
     public synchronized void log(String tableId, String tableKey, String statType, Instant now, Histogram hist) {
-        final long count = hist.getTotalCount();
-        final long p50 = hist.getValueAtPercentile(50);
-        final long p75 = hist.getValueAtPercentile(75);
-        final long p90 = hist.getValueAtPercentile(90);
-        final long p95 = hist.getValueAtPercentile(95);
-        final long p99 = hist.getValueAtPercentile(99);
-        final long max = hist.getMaxValue();
         final long timestampEpochNanos = DateTimeUtils.epochNanos(now);
 
         publisher.add(
@@ -69,19 +63,19 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
                 tableKey,
                 statType,
                 timestampEpochNanos,
-                count,
-                p50 / 1e6,
-                p75 / 1e6,
-                p90 / 1e6,
-                p95 / 1e6,
-                p99 / 1e6,
-                max / 1e6);
+                hist.getTotalCount(),
+                hist.getValueAtPercentile(50) / 1e6,
+                hist.getValueAtPercentile(75) / 1e6,
+                hist.getValueAtPercentile(90) / 1e6,
+                hist.getValueAtPercentile(95) / 1e6,
+                hist.getValueAtPercentile(99) / 1e6,
+                hist.getMaxValue() / 1e6);
 
         if (encounteredError) {
             return;
         }
         try {
-            sink.log(tableId, tableKey, statType, timestampEpochNanos, count, p50, p75, p90, p95, p99, max);
+            sink.log(tableId, tableKey, statType, timestampEpochNanos, hist);
         } catch (final Exception e) {
             // Catch unchecked failures as well as IOException: a defective sink must not be able to disrupt the
             // in-memory table or the caller. Don't want to log this for every entry.
