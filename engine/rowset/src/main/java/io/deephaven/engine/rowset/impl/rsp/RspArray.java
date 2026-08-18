@@ -3438,6 +3438,32 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         tryCompactUnsafe(4);
     }
 
+    /**
+     * Intersect, in place, the spans of {@code this} overlapping the span of {@code other} at {@code otherIdx}.
+     *
+     * <p>
+     * <b>Precondition on full block spans</b>: before any call to this method, the full block spans of {@code this}
+     * must already have been pruned down to exactly the blocks covered by {@code other}, as done by the first pass of
+     * {@link #andEqualsUnsafeNoWriteCheck(RspArray)}. In particular, when the span of {@code other} at {@code otherIdx}
+     * is a container or singleton span, any full block span of {@code this} covering that block must be exactly one
+     * block long and start at the same block key; that is the only full-block-span shape this method handles (asserted
+     * below). It does <em>not</em> support splitting a multi-block full block span around {@code other}'s span, nor a
+     * one block full block span whose key differs from {@code other}'s: code for those shapes was removed as
+     * unreachable (see DH-23408), so a new caller that does not perform the pruning pass first will trip the assertion
+     * rather than compute a partial result.
+     *
+     * <p>
+     * Spans of {@code this} whose intersection is empty are marked as removed (spanInfo -1), recording their indices in
+     * {@code madeNullSpansMu} when it holds a non-null accumulator; the caller is responsible for the subsequent
+     * collect/compact pass.
+     *
+     * @param other the {@link RspArray} being intersected with {@code this}
+     * @param otherIdx the index of the span in {@code other} to process
+     * @param startPos the first span index of {@code this} to consider; span indices before it are never touched
+     * @param madeNullSpansMu accumulator for the indices of spans made empty by the intersection
+     * @param wd per-thread work data used for temporary views
+     * @return the span index of {@code this} where processing of the next span of {@code other} should start
+     */
     private int andEqualsSpan(final RspArray other, final int otherIdx,
             final int startPos, final MutableObject<SortedRanges> madeNullSpansMu,
             final WorkData wd) {
