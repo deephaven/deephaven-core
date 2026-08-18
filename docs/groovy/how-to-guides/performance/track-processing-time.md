@@ -12,13 +12,14 @@ By default, Deephaven optimizes formula evaluation by only recomputing values wh
 Consider this example where we want to record when a row is processed:
 
 ```groovy ticking-table order=null
-source = timeTable("PT1S").update("SourceTime = Timestamp", "Value = i")
+// lastBy() collapses to a single row that gets modified on each tick
+source = timeTable("PT1S").update("SourceTime = Timestamp", "Value = i").lastBy()
 
 // This ProcessTime column will NOT update when Value changes
 result = source.update("ProcessTime = now()")
 ```
 
-The `ProcessTime` column evaluates `now()` once when the row is created, but it does not re-evaluate when `Value` or other columns change. This is because `now()` has no column dependencies, so the engine skips re-evaluation as an optimization.
+The `ProcessTime` column evaluates `now()` once when the row is created, but it does not re-evaluate when `Value` changes on subsequent ticks. This is because `now()` has no column dependencies, so the engine skips re-evaluation as an optimization.
 
 In real-world pipelines, this becomes important when you receive data from external sources (like Kafka) that include a source timestamp. You want to compare that source timestamp against when Deephaven actually processed the update — but a simple `now()` formula won't re-evaluate when the row is modified.
 
@@ -48,7 +49,8 @@ This example creates a `ProcessTime` column that updates every time the row is m
 ```groovy ticking-table order=null
 import io.deephaven.engine.table.impl.select.SelectColumnFactory
 
-source = timeTable("PT1S").update("SourceTime = Timestamp", "Value = i")
+// lastBy() collapses to a single row that gets modified on each tick
+source = timeTable("PT1S").update("SourceTime = Timestamp", "Value = i").lastBy()
 
 // Create a SelectColumn that always re-evaluates
 processTimeCol = SelectColumnFactory.getExpression("ProcessTime = now()")
@@ -58,7 +60,7 @@ processTimeCol = SelectColumnFactory.getExpression("ProcessTime = now()")
 result = source.update(Arrays.asList(processTimeCol))
 ```
 
-Now `ProcessTime` captures when Deephaven processes each row modification.
+Now `ProcessTime` updates every time the row is modified, capturing when Deephaven processes each tick.
 
 ## Example: measure end-to-end latency
 
@@ -67,8 +69,8 @@ A common use case is measuring the latency between when data originates (e.g., a
 ```groovy ticking-table order=null
 import io.deephaven.engine.table.impl.select.SelectColumnFactory
 
-// Simulate incoming data with a source timestamp
-source = timeTable("PT1S").update("SourceTime = Timestamp")
+// Simulate incoming data with a source timestamp; lastBy() creates a single row that updates
+source = timeTable("PT1S").update("SourceTime = Timestamp").lastBy()
 
 // Track when Deephaven processes each modification
 processTimeCol = SelectColumnFactory.getExpression("ProcessTime = now()")

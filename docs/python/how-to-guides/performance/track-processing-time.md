@@ -34,7 +34,8 @@ SelectColumnFactory = jpy.get_type(
     "io.deephaven.engine.table.impl.select.SelectColumnFactory"
 )
 
-source = time_table("PT1S").update(["SourceTime = Timestamp"])
+# last_by() collapses to a single row that gets modified on each tick
+source = time_table("PT1S").update(["SourceTime = Timestamp"]).last_by()
 
 # Force now() to re-evaluate on every modification
 process_time_col = SelectColumnFactory.getExpression(
