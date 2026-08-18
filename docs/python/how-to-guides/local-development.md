@@ -34,23 +34,16 @@ Create a `conftest.py` file in your test directory to start the server once for 
 
 ```python skip-test
 # conftest.py
-import pytest
+from deephaven_server import Server
 
-
-@pytest.fixture(scope="session", autouse=True)
-def deephaven_server():
-    """Start Deephaven server before any tests run."""
-    from deephaven_server import Server
-
-    server = Server(port=10000, jvm_args=["-Xmx2g"])
-    server.start()
-
-    yield server
-
-    # Server stops automatically when the process ends
+# Start the server at module load time.
+# pytest loads conftest.py before collecting test modules, so this runs
+# before any test file imports deephaven.
+_server = Server(port=10000, jvm_args=["-Xmx2g"])
+_server.start()
 ```
 
-> **Note:** You must start the server before importing any `deephaven` modules. The `deephaven_server` import initializes the JVM, and subsequent `deephaven` imports depend on it.
+> **Note:** The server must start before any `deephaven` imports. Since pytest loads `conftest.py` before collecting test modules, starting the server at module level ensures the JVM is ready when test files import `deephaven`.
 
 ## Example tests
 
