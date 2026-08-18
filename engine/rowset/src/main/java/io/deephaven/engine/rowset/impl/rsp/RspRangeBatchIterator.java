@@ -73,6 +73,9 @@ public class RspRangeBatchIterator implements SafeCloseable {
         if (riView != null) {
             riView.close();
         }
+        // Release the span cursor's reference on the array; on full consumption setFinished() already did
+        // (release() is idempotent), but a partially consumed iterator would otherwise leak it.
+        release();
     }
 
     public boolean hasNext() {

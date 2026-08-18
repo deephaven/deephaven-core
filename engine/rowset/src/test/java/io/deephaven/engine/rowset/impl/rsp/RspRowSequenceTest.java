@@ -812,6 +812,61 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
     }
 
     @Test
+    public void testGetRowSequenceIteratorDoesNotLeakRefCount() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.addRange(BLOCK_SIZE, BLOCK_SIZE + 20);
+        final int before = rb.refCount();
+        try (final RowSequence.Iterator it = rb.ixGetRowSequenceIterator()) {
+            it.getNextRowSequenceWithLength(3);
+        }
+        assertEquals(before, rb.refCount());
+    }
+
+    @Test
+    public void testFillRowKeyChunkDoesNotLeakRefCount() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.addRange(BLOCK_SIZE, BLOCK_SIZE + 20);
+        rb = rb.add(3 * BLOCK_SIZE + 7);
+        final int before = rb.refCount();
+        try (final RowSequence rs = rb.ixGetRowSequenceByPosition(1, 5)) {
+            try (final WritableLongChunk<OrderedRowKeys> chunk = WritableLongChunk.makeWritableChunk(64)) {
+                rs.fillRowKeyChunk(chunk);
+                assertEquals(5, chunk.size());
+                assertEquals(BLOCK_SIZE, chunk.get(0));
+            }
+        }
+        assertEquals(before, rb.refCount());
+    }
+
+    @Test
+    public void testRangeBatchIteratorCloseReleasesCursor() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        // Plenty of separate ranges, so that one small chunk cannot exhaust the iterator.
+        for (int i = 0; i < 1000; ++i) {
+            rb = rb.add(2L * i);
+        }
+        final int before = rb.refCount();
+        final RspRangeBatchIterator it = rb.getRangeBatchIterator(0, rb.getCardinality());
+        try (final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(16)) {
+            final int nRanges = it.fillRangeChunk(chunk, 0);
+            assertTrue(nRanges < 1000);
+            assertTrue(it.hasNext());
+        }
+        it.close();
+        assertEquals(before, rb.refCount());
+        // Closing after full consumption (internal self-release) must not double-release.
+        final RspRangeBatchIterator it2 = rb.getRangeBatchIterator(0, rb.getCardinality());
+        try (final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(2048)) {
+            final int nRanges = it2.fillRangeChunk(chunk, 0);
+            assertEquals(1000, nRanges);
+        }
+        it2.close();
+        assertEquals(before, rb.refCount());
+    }
+
+    @Test
     public void testGetRowSequenceByPositionUncachedCardinality() {
         // With few enough spans (<= accNullThreshold) and cardinality > Integer.MAX_VALUE, the cardinality cache
         // stays permanently invalid (acc == null, cardData == -1), exercising the uncached branch of

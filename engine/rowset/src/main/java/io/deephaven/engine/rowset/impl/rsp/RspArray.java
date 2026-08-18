@@ -3387,7 +3387,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 break;
             }
         }
-        size = (int) dst;
+        final int newSize = (int) dst;
+        for (int i = newSize; i < size; ++i) {
+            spans[i] = null; // ensure we don't retain references to dead containers.
+        }
+        size = newSize;
         tryCompactUnsafe(4);
     }
 
@@ -3426,6 +3430,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (i == size) {
                 break;
             }
+        }
+        for (int idx = dst; idx < size; ++idx) {
+            spans[idx] = null; // ensure we don't retain references to dead containers.
         }
         size = dst;
         tryCompactUnsafe(4);
@@ -4714,7 +4721,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (isEmpty()) {
             return RowSequenceFactory.EMPTY_ITERATOR;
         }
-        return new RspRowSequence.Iterator(asRowSequence());
+        // The temporary RspRowSequence holds its own reference to us, and the Iterator constructor acquires
+        // another one; close the temporary or its reference is leaked.
+        try (final RspRowSequence rs = asRowSequence()) {
+            return new RspRowSequence.Iterator(rs);
+        }
     }
 
     public long getAverageRunLengthEstimate() {
