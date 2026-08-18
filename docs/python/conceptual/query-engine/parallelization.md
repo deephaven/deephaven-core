@@ -553,9 +553,9 @@ result = source.update([col_a, col_b])
 
 #### Stateful partition filters
 
-When you mark a _partition filter_ (a filter that only accesses partitioning columns) as serial, Deephaven cannot reorder it and must evaluate it on all rows of the table. However, if you don't explicitly mark a partition filter as serial, the engine treats it as stateless for performance reasons — even when Deephaven is configured to treat filters as stateful by default.
+When you mark a _partition filter_ (a filter that only accesses partitioning columns) as serial, Deephaven must evaluate it on all rows of the table and cannot reorder it. However, if you don't explicitly mark a partition filter as serial, the engine treats it as stateless for performance reasons — even when Deephaven is configured to treat filters as stateful by default.
 
-Specifically, Deephaven may relax ordering constraints for filters on partitioning columns and evaluate them per location rather than on every row. This allows Deephaven to reorder common partition filters ahead of other filters and avoid repeated evaluation against the same value. For example, the formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users prefer Deephaven to evaluate it early, location-by-location.
+Specifically, Deephaven may relax ordering constraints for filters on partitioning columns and evaluate them per location rather than on every row. This allows Deephaven to reorder common partition filters ahead of others and avoid repeated evaluation. For example, the formula filter `Date=today()` is stateful if filters are stateful by default, but in nearly every case users prefer Deephaven to evaluate it early, location-by-location.
 
 #### Quick reference table
 
@@ -583,4 +583,4 @@ For a quick introduction, see the [crash course](../../getting-started/crash-cou
 
 - [Update graph (table dependencies)](../dag.md)
 - [Multithreading: Synchronization, locks, and snapshots](./engine-locking.md)
-- [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)
+- [ConcurrencyControl Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl)

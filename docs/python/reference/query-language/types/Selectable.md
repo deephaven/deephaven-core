@@ -68,7 +68,7 @@ If both of those are true, use string formulas directly. There is no benefit to 
 
 ### When you need explicit control
 
-You need a `Selectable` object when the default parallel behavior would produce incorrect results. This happens when your formula is **stateful** — it reads or writes shared state that changes between rows.
+You need a `Selectable` object when parallel execution would produce incorrect results. This happens when your formula is **stateful** — it reads or writes shared state that changes between rows.
 
 **Use `with_serial`** when your formula must process rows one at a time, in order. Common cases include:
 

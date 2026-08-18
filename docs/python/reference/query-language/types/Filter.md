@@ -6,7 +6,7 @@ A [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) r
 
 ## Creating a Filter
 
-There are two ways to create a `Filter` object: from a condition string or using filter functions for null checks and boolean logic.
+There are two ways to create a `Filter` object: from a condition string, or by combining multiple filters with boolean logic.
 
 ### From a condition string
 
@@ -18,9 +18,9 @@ from deephaven.filters import Filter
 my_filter = Filter.from_("X > 5")
 ```
 
-### Using filter functions
+### Combining filters with boolean logic
 
-Use the filter functions for null checks, boolean combinations, and special value tests. These functions return `Filter` objects that you can combine or modify.
+Use filter functions for null checks, boolean combinations, and special value tests. These functions return `Filter` objects that you can combine or modify.
 
 ```python syntax
 from deephaven.filters import is_null, not_, and_, or_
