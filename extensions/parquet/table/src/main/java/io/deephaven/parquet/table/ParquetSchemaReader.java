@@ -126,15 +126,17 @@ public class ParquetSchemaReader {
             @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) {
         final MutableObject<String> errorString = new MutableObject<>();
         final MutableObject<ColumnDescriptor> currentColumn = new MutableObject<>();
+        // The Deephaven name for currentColumn; per-column read instructions are keyed by it, not the parquet name.
+        final MutableObject<String> currentColumnName = new MutableObject<>();
         final Optional<TableInfo> tableInfo = parseMetadata(keyValueMetadata);
         final Map<String, ColumnTypeInfo> nonDefaultTypeColumns =
                 tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
         final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor =
-                getVisitor(nonDefaultTypeColumns, errorString, currentColumn);
+                getVisitor(nonDefaultTypeColumns, errorString, currentColumn, currentColumnName, readInstructions);
 
         final MutableObject<ParquetInstructions.Builder> instructionsBuilder = new MutableObject<>();
         final Supplier<ParquetInstructions.Builder> builderSupplier = () -> {
-            if (instructionsBuilder.getValue() == null) {
+            if (instructionsBuilder.get() == null) {
                 instructionsBuilder.setValue(new ParquetInstructions.Builder(readInstructions));
             }
             return instructionsBuilder.getValue();
@@ -180,6 +182,7 @@ public class ParquetSchemaReader {
                     colName = parquetColumnName;
                 }
             }
+            currentColumnName.setValue(colName);
             final Optional<ColumnTypeInfo> columnTypeInfo = Optional.ofNullable(nonDefaultTypeColumns.get(colName));
 
             colDef.name = colName;
@@ -357,7 +360,9 @@ public class ParquetSchemaReader {
     private static LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> getVisitor(
             final Map<String, ColumnTypeInfo> nonDefaultTypeColumns,
             final MutableObject<String> errorString,
-            final MutableObject<ColumnDescriptor> currentColumn) {
+            final MutableObject<ColumnDescriptor> currentColumn,
+            final MutableObject<String> currentColumnName,
+            final ParquetInstructions readInstructions) {
         return new LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>>() {
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
@@ -459,6 +464,13 @@ public class ParquetSchemaReader {
                             return Optional.of(char.class);
                         case 32:
                             return Optional.of(long.class);
+                        // uint64 does not fit in any primitive; promoted to BigInteger unless the caller requested
+                        // otherwise.
+                        case 64:
+                            return Optional.of(readInstructions
+                                    .getUnsignedLongTarget(currentColumnName.get())
+                                    .orElse(ParquetInstructions.UnsignedLongTarget.BIG_INTEGER)
+                                    .dataType());
                         default:
                             // fallthrough.
                     }

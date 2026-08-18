@@ -55,6 +55,11 @@ dependencies {
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-test-utils')
 
+    testImplementation(libs.hadoop.common) {
+        transitive = false
+        because 'need to write parquet using hadoop directly for UINT64 testing'
+    }
+
     testImplementation TestTools.projectDependency(project, 'extensions-s3')
     testImplementation libs.junit4
 
