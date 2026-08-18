@@ -12,11 +12,9 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.ShortVectorDirect;
-import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.ShortComparisons;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.util.type.TypeUtils;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfShort;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
@@ -30,6 +28,7 @@ import it.unimi.dsi.fastutil.shorts.ShortOpenHashSet;
 import it.unimi.dsi.fastutil.shorts.ShortSet;
 
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
@@ -2769,55 +2768,72 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     private short[] keyArray() {
-        return keyArray(0, size - 1);
+        return keyArray(0, size);
     }
 
     /**
-     * Create an array of the current keys beginning with the first (inclusive) and ending with the last (inclusive)
-     * 
-     * @param first
-     * @param last
-     * @return
+     * Create an array of the current keys from {@code fromIndexInclusive} (inclusive) to {@code toIndexExclusive}
+     * (exclusive). Following the {@link ShortVector} contract, offsets outside {@code [0, size())} are legal and
+     * contribute the null value rather than an error.
+     *
+     * @param fromIndexInclusive The first offset to include
+     * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include
+     * @return An array of the requested keys, of length {@code toIndexExclusive - fromIndexInclusive}
      */
-    private short[] keyArray(long first, long last) {
-        if (isEmpty()) {
+    private short[] keyArray(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+
+        final int totalSize =
+                LongSizedDataStructure.intSize("keyArray", toIndexExclusive - fromIndexInclusive);
+        if (totalSize == 0) {
             // region EmptyKeyArrayAllocation
             return ArrayTypeUtils.EMPTY_SHORT_ARRAY;
             // endregion EmptyKeyArrayAllocation
         }
 
-        final int totalSize = (int) (last - first + 1);
         // region KeyArrayAllocation
         final short[] keyArray = new short[totalSize];
         // endregion KeyArrayAllocation
+
+        // the requested range may extend past either end of this SSM; those offsets read as null
+        final long firstIncluded = Math.max(fromIndexInclusive, 0);
+        final long lastExcluded = Math.max(Math.min(toIndexExclusive, size), firstIncluded);
+        int remaining = (int) (lastExcluded - firstIncluded);
+        if (remaining == 0) {
+            // the range lies entirely outside this SSM, so every offset is null
+            Arrays.fill(keyArray, NULL_SHORT);
+            return keyArray;
+        }
+
+        // null only what the copy below will not reach: with something in range, destOffset is within the result and
+        // destOffset + remaining is at most its length
+        final int destOffset = (int) (firstIncluded - fromIndexInclusive);
+        if (destOffset > 0) {
+            Arrays.fill(keyArray, 0, destOffset, NULL_SHORT);
+        }
+        if (destOffset + remaining < totalSize) {
+            Arrays.fill(keyArray, destOffset + remaining, totalSize, NULL_SHORT);
+        }
+
         if (leafCount == 1) {
             if (directoryValues == null) {
-                keyArray[0] = singletonValue;
+                keyArray[destOffset] = singletonValue;
             } else {
-                System.arraycopy(directoryValues, (int) first, keyArray, 0, totalSize);
+                System.arraycopy(directoryValues, (int) firstIncluded, keyArray, destOffset, remaining);
             }
-        } else if (leafCount > 0) {
-            int offset = 0;
-            int copied = 0;
-            int skipped = 0;
-            for (int li = 0; li < leafCount && copied < totalSize; ++li) {
-                if (skipped < first) {
-                    final int toSkip = (int) first - skipped;
-                    if (toSkip < leafSizes[li]) {
-                        final int nToCopy = Math.min(leafSizes[li] - toSkip, totalSize);
-                        System.arraycopy(leafValues[li], toSkip, keyArray, 0, nToCopy);
-                        copied = nToCopy;
-                        offset = copied;
-                        skipped = (int) first;
-                    } else {
-                        skipped += leafSizes[li];
-                    }
-                } else {
-                    int nToCopy = Math.min(leafSizes[li], totalSize - copied);
-                    System.arraycopy(leafValues[li], 0, keyArray, offset, nToCopy);
-                    offset += leafSizes[li];
-                    copied += nToCopy;
+        } else {
+            int dest = destOffset;
+            int toSkip = (int) firstIncluded;
+            for (int li = 0; li < leafCount && remaining > 0; ++li) {
+                if (toSkip >= leafSizes[li]) {
+                    toSkip -= leafSizes[li];
+                    continue;
                 }
+                final int nToCopy = Math.min(leafSizes[li] - toSkip, remaining);
+                System.arraycopy(leafValues[li], toSkip, keyArray, dest, nToCopy);
+                dest += nToCopy;
+                remaining -= nToCopy;
+                toSkip = 0;
             }
         }
         return keyArray;
@@ -2929,8 +2945,9 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     // region ShortVector
     @Override
     public short get(long index) {
-        if (index < 0 || index > size()) {
-            throw new IllegalArgumentException("Illegal index " + index + " current size: " + size());
+        // offsets outside [0, size()) are legal and read as null, per the ShortVector contract
+        if (index < 0 || index >= size()) {
+            return NULL_SHORT;
         }
 
         if (leafCount == 1) {
@@ -2960,12 +2977,56 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     public ValueIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
 
+        // The requested slice may extend past either end of this SSM; those offsets are legal and iterate as null.
+        // Split it into the leading nulls, the part this SSM actually stores, and the trailing nulls.
+        final long totalWanted = toIndexExclusive - fromIndexInclusive;
+        final long prefixNulls = fromIndexInclusive < 0 ? Math.min(-fromIndexInclusive, totalWanted) : 0;
+        final long innerFrom = Math.max(fromIndexInclusive, 0);
+        final long innerLength = innerFrom < size ? Math.min(size - innerFrom, totalWanted - prefixNulls) : 0;
+
+        return ValueIteratorOfShort.wrapWithNulls(
+                innerLength == 0 ? null : inRangeIterator(innerFrom, innerFrom + innerLength),
+                prefixNulls,
+                totalWanted - prefixNulls - innerLength);
+    }
+
+    /**
+     * Iterate a non-empty slice of the values this SSM stores. Both bounds must lie within {@code [0, size()]}.
+     *
+     * @param fromIndexInclusive The first offset to include
+     * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    private ValueIteratorOfShort inRangeIterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (leafCount <= 1) {
             // Empty, singleton, and single-leaf SSMs store their values contiguously, so get(long) is already O(1).
-            return ShortVector.super.iterator(fromIndexInclusive, toIndexExclusive);
+            return new ValueIteratorOfShort() {
+
+                private long nextIndex = fromIndexInclusive;
+
+                @Override
+                public short nextShort() {
+                    if (nextIndex >= toIndexExclusive) {
+                        throw new NoSuchElementException();
+                    }
+                    // O(1): with at most one leaf there is no directory to rescan, so this is a single array read
+                    return get(nextIndex++);
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return nextIndex < toIndexExclusive;
+                }
+
+                @Override
+                public long remaining() {
+                    return toIndexExclusive - nextIndex;
+                }
+            };
         }
 
         // Resolve the starting leaf once; from there each element is a constant-time step.
+        // Scanned rather than binary searched: that needs a prefix sum of leafSizes, which then has to be maintained.
         int firstLeaf = 0;
         long firstOffset = fromIndexInclusive;
         while (firstLeaf < leafCount && firstOffset >= leafSizes[firstLeaf]) {
@@ -2987,8 +3048,12 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
             @Override
             public short nextShort() {
+                if (remaining <= 0) {
+                    throw new NoSuchElementException();
+                }
                 while (offset >= leafSize) {
                     if (++leaf >= leafCount) {
+                        // unreachable: the bounds were clamped to this SSM's size before we were constructed
                         throw new IllegalStateException(
                                 "Index " + (toIndexExclusive - remaining) + " not found in this SSM");
                     }
@@ -3014,6 +3079,8 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     @Override
     public ShortVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        // materialized rather than a ShortVectorSlice view: an SSM is live and mutable, and a slice would capture our
+        // size at construction and then read stale bounds
         return new ShortVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
     }
 
@@ -3049,7 +3116,6 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
     // endregion
 
-    // region VectorEquals
     private boolean equalsArray(ShortVector o) {
         if (size() != o.size()) {
             return false;
@@ -3082,80 +3148,31 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
             return true;
         }
     }
-    // endregion VectorEquals
-
-    // region UnboxValue
-    /**
-     * Convert an element of a boxed {@link ObjectVector} into the primitive representation this SSM stores. A
-     * {@code null} element becomes the null sentinel, which is how the SSM itself stores nulls.
-     */
-    private static short unboxValue(final Object value) {
-        return TypeUtils.unbox((Short) value);
-    }
-    // endregion UnboxValue
-
-    private boolean equalsArray(ObjectVector<?> o) {
-        // region EqualsArrayTypeCheck
-        if (o.getComponentType() != short.class && o.getComponentType() != Short.class) {
-            return false;
-        }
-        // endregion EqualsArrayTypeCheck
-
-        if (size() != o.size()) {
-            return false;
-        }
-
-        // iterate o exactly once; random access via get can be expensive for some Vector implementations
-        try (final CloseableIterator<?> oit = o.iterator()) {
-            if (size == 1) {
-                return ShortComparisons.eq(get(0), unboxValue(oit.next()));
-            }
-
-            if (leafCount == 1) {
-                for (int ii = 0; ii < size; ii++) {
-                    if (!ShortComparisons.eq(directoryValues[ii], unboxValue(oit.next()))) {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            for (int li = 0; li < leafCount; ++li) {
-                for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    if (!ShortComparisons.eq(leafValues[li][ai], unboxValue(oit.next()))) {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-    }
 
     /**
      * {@inheritDoc}
      *
      * <p>
-     * Equal to any Vector holding the same values, including another SSM: an SSM <em>is</em> a Vector, so it takes the
-     * same element-wise path rather than a structural comparison of leaf layouts. Two SSMs can hold identical values in
-     * different layouts -- leaves need not be full, and the node sizes need not agree -- so layout is not a sound basis
-     * for equality.
+     * Equal to any {@link ShortVector} holding the same values, including another SSM: an SSM <em>is</em> a
+     * {@link ShortVector}, so it takes the same element-wise path rather than a structural comparison of leaf layouts.
+     * Two SSMs can hold identical values in different layouts -- leaves need not be full, and the node sizes need not
+     * agree -- so layout is not a sound basis for equality.
+     *
+     * <p>
+     * Nothing else is equal, exactly as {@link ShortVector#equals(ShortVector, Object)} requires: a Vector that stores
+     * its elements some other way cannot be accepted without breaking the {@link #hashCode()} contract, and would not
+     * be reciprocated in any case, since that Vector's own {@code equals} rejects a {@link ShortVector}.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        // region VectorEquals
+
         if (o instanceof ShortVector) {
             return equalsArray((ShortVector) o);
         }
-        // endregion VectorEquals
 
-        if (o instanceof ObjectVector) {
-            return equalsArray((ObjectVector<?>) o);
-        }
         return false;
     }
 

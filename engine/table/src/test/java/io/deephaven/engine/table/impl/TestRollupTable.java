@@ -1230,6 +1230,95 @@ public class TestRollupTable extends RefreshingTableTestCase {
     }
 
     /**
+     * A rollup {@code AggFormula} level names its formula column in the {@link ModifiedColumnSet} it reports whenever
+     * churn in a group makes it recompute that column.
+     *
+     * <p>
+     * A direct read of the result {@code ColumnSource} is correct whatever was reported, so on its own it says nothing
+     * about the report. Each cycle therefore also reads through a consumer that refreshes only what the reported set
+     * marks dirty (a {@code sort} feeding a {@code select}), which holds the new value only if the column was named.
+     *
+     * <p>
+     * Reporting is driven by the same condition that decides to recompute, so it holds for every kind of churn -- hence
+     * the add, remove, and modify cycles -- and reaches no further: the last cycle touches a column the formula does
+     * not read and expects silence, and {@link #testRollupFormulaShiftOnlyDoesNotRecompute} covers a shift, which
+     * cannot change the formula's value.
+     */
+    @Test
+    public void testRollupFormulaReportsModifiedFormulaColumn() {
+        final QueryTable source = TstUtils.testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21),
+                intCol("Unrelated", 1, 2, 3, 4));
+
+        final RollupTable rollup = source.rollup(List.of(AggFormula("FSum", "sum(Value)")), "Sym");
+        final QueryTable root = (QueryTable) rollup.getRoot();
+
+        // A direct read, correct whether or not the column is advertised, and one gated on the reported MCS.
+        final Table direct = root.select("FSum");
+        final Table mcsGated = root.sort("Sym").select("FSum");
+
+        assertTableEquals(newTable(longCol("FSum", 62)), direct);
+        assertTableEquals(newTable(longCol("FSum", 62)), mcsGated);
+
+        final SimpleListener listener = new SimpleListener(root);
+        root.addUpdateListener(listener);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+
+        // A row joins the "b" group.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(4), stringCol("Sym", "b"), intCol("Value", 22), intCol("Unrelated", 5));
+            source.notifyListeners(i(4), i(), i());
+        });
+        assertFormulaReported(root, listener, direct, mcsGated, 84);
+
+        // A row leaves the "a" group.
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(0));
+            source.notifyListeners(i(), i(0), i());
+        });
+        assertFormulaReported(root, listener, direct, mcsGated, 74);
+
+        // A row keeps its group but changes value, so the group's membership is untouched.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(1), stringCol("Sym", "a"), intCol("Value", 111), intCol("Unrelated", 2));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    source.newModifiedColumnSet("Value")));
+        });
+        assertFormulaReported(root, listener, direct, mcsGated, 174);
+
+        // Modifying a column the formula does not read must stay silent.
+        final int updatesBefore = listener.getCount();
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(1), stringCol("Sym", "a"), intCol("Value", 111), intCol("Unrelated", 99));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    source.newModifiedColumnSet("Unrelated")));
+        });
+        Assert.assertEquals(updatesBefore, listener.getCount());
+
+        root.removeUpdateListener(listener);
+        listener.close();
+    }
+
+    /**
+     * Assert that the update {@code listener} just captured off {@code root} marks its row modified and names
+     * {@code FSum} in its {@link ModifiedColumnSet}, and that {@code FSum} reads as {@code expected} both directly and
+     * through the gated consumer.
+     */
+    private static void assertFormulaReported(final QueryTable root, final SimpleListener listener, final Table direct,
+            final Table mcsGated, final long expected) {
+        final TableUpdate update = listener.getUpdate();
+        Assert.assertTrue(update.modified().isNonempty());
+        Assert.assertTrue("modifiedColumnSet " + update.modifiedColumnSet() + " should contain FSum",
+                update.modifiedColumnSet().containsAny(root.newModifiedColumnSet("FSum")));
+
+        assertTableEquals(newTable(longCol("FSum", expected)), direct);
+        assertTableEquals(newTable(longCol("FSum", expected)), mcsGated);
+    }
+
+    /**
      * {@code AggUnique} routes {@link Instant} to the primitive ({@code long}) operator, but routes
      * {@link ZonedDateTime}, {@link Boolean}, and {@link String} to the object operator, so the value-column
      * reinterpret its re-aggregation performs must apply to Instant alone -- converting every type that has a primitive
