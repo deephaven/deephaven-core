@@ -62,13 +62,13 @@ public class ObjectRegionBinarySearchKernel {
         if (order.isAscending()) {
             for (int idx = 0; idx < copiedValues.length && firstKey <= lastKey; ++idx) {
                 final Object toFind = copiedValues[idx];
-                final int startResult = lowerBoundAscending(region, firstKey, lastKey, toFind, true);
+                final long startResult = lowerBoundAscending(region, firstKey, lastKey, toFind, true);
                 if (startResult < 0) {
                     // Advance firstKey since we didn't find the value but eliminated some rows.
                     firstKey = insertionPoint(startResult);
                     continue;
                 }
-                final int endResult = upperBoundAscending(region, startResult, lastKey, toFind, true);
+                final long endResult = upperBoundAscending(region, startResult, lastKey, toFind, true);
                 if (endResult >= 0) {
                     builder.appendRange(startResult, endResult);
                     firstKey = endResult + 1;
@@ -77,13 +77,13 @@ public class ObjectRegionBinarySearchKernel {
         } else {
             for (int searchIndex = 0; searchIndex < copiedValues.length && firstKey <= lastKey; ++searchIndex) {
                 final Object toFind = copiedValues[searchIndex];
-                final int startResult = lowerBoundDescending(region, firstKey, lastKey, toFind, true);
+                final long startResult = lowerBoundDescending(region, firstKey, lastKey, toFind, true);
                 if (startResult < 0) {
                     // Advance firstKey since we didn't find the value but eliminated some rows.
                     firstKey = insertionPoint(startResult);
                     continue;
                 }
-                final int endResult = upperBoundDescending(region, startResult, lastKey, toFind, true);
+                final long endResult = upperBoundDescending(region, startResult, lastKey, toFind, true);
                 if (endResult >= 0) {
                     builder.appendRange(startResult, endResult);
                     firstKey = endResult + 1;
@@ -118,30 +118,30 @@ public class ObjectRegionBinarySearchKernel {
             final boolean minInc,
             final boolean maxInc) {
 
-        final int start;
-        final int end;
+        final long start;
+        final long end;
 
         if (sortColumn.isAscending()) {
             // The beginning of the range is the first row that is > or >= min (depends on minInc)
-            final int startResult = lowerBoundAscending(region, firstKey, lastKey, min, minInc);
+            final long startResult = lowerBoundAscending(region, firstKey, lastKey, min, minInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
             if (start > lastKey) {
                 return RowSetFactory.empty();
             }
             final long offset = Math.max(start, firstKey);
             // The end of the range is the last row that is < or <= max (depends on maxInc)
-            final int endResult = upperBoundAscending(region, offset, lastKey, max, maxInc);
+            final long endResult = upperBoundAscending(region, offset, lastKey, max, maxInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         } else {
             // The beginning of the range is the first row that is < or <= max (depends on maxInc)
-            final int startResult = lowerBoundDescending(region, firstKey, lastKey, max, maxInc);
+            final long startResult = lowerBoundDescending(region, firstKey, lastKey, max, maxInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
             if (start > lastKey) {
                 return RowSetFactory.empty();
             }
             final long offset = Math.max(start, firstKey);
             // The end of the range is the last row that is > or >= min (depends on minInc)
-            final int endResult = upperBoundDescending(region, offset, lastKey, min, minInc);
+            final long endResult = upperBoundDescending(region, offset, lastKey, min, minInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         }
 
@@ -173,18 +173,18 @@ public class ObjectRegionBinarySearchKernel {
             final Object min,
             final boolean minInc) {
 
-        final int start;
-        final int end;
+        final long start;
+        final long end;
 
         if (sortColumn.isAscending()) {
             // The beginning of the range is the first row that is > or >= min (depends on minInc)
-            final int startResult = lowerBoundAscending(region, firstKey, lastKey, min, minInc);
+            final long startResult = lowerBoundAscending(region, firstKey, lastKey, min, minInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
-            end = Math.toIntExact(lastKey);
+            end = lastKey;
         } else {
-            start = Math.toIntExact(firstKey);
+            start = firstKey;
             // The end of the range is the last row that is > or >= min (depends on minInc)
-            final int endResult = upperBoundDescending(region, firstKey, lastKey, min, minInc);
+            final long endResult = upperBoundDescending(region, firstKey, lastKey, min, minInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         }
 
@@ -215,19 +215,19 @@ public class ObjectRegionBinarySearchKernel {
             final Object max,
             final boolean maxInc) {
 
-        final int start;
-        final int end;
+        final long start;
+        final long end;
 
         if (sortColumn.isAscending()) {
-            start = Math.toIntExact(firstKey);
+            start = firstKey;
             // The end of the range is the last row that is < or <= max (depends on maxInc)
-            final int endResult = upperBoundAscending(region, firstKey, lastKey, max, maxInc);
+            final long endResult = upperBoundAscending(region, firstKey, lastKey, max, maxInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         } else {
             // The beginning of the range is the first row that is < or <= max (depends on maxInc)
-            final int startResult = lowerBoundDescending(region, firstKey, lastKey, max, maxInc);
+            final long startResult = lowerBoundDescending(region, firstKey, lastKey, max, maxInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
-            end = Math.toIntExact(lastKey);
+            end = lastKey;
         }
 
         if (start <= end) {
@@ -247,7 +247,7 @@ public class ObjectRegionBinarySearchKernel {
      * <li>A non-negative value is returned only when {@code minInc=true} and the value at the found position exactly
      * equals {@code min}. The returned value is the leftmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the insertion
-     * point â the leftmost position whose value exceeds {@code min} â or {@code lastKey + 1} if all values are &lt;=
+     * point, i.e. the leftmost position whose value exceeds {@code min}, or {@code lastKey + 1} if all values are &lt;=
      * {@code min}.</li>
      * </ul>
      *
@@ -260,17 +260,17 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static int lowerBoundAscending(
+    private static long lowerBoundAscending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
             final Object min,
             final boolean minInc) {
-        int low = (int) firstKey;
-        int high = (int) lastKey;
+        long low = firstKey;
+        long high = lastKey;
 
         while (low <= high) {
-            final int mid = low + (high - low) / 2;
+            final long mid = low + (high - low) / 2;
             final Object midValue = region.getObject(mid);
             if (minInc ? ObjectComparisons.geq(midValue, min) : ObjectComparisons.gt(midValue, min)) {
                 high = mid - 1;
@@ -297,7 +297,7 @@ public class ObjectRegionBinarySearchKernel {
      * <li>A non-negative value is returned only when {@code maxInc=true} and the value at the found position exactly
      * equals {@code max}. The returned value is the rightmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the first
-     * position whose value exceeds {@code max} â or {@code firstKey} if all values are &gt; {@code max}.</li>
+     * position whose value exceeds {@code max}, or {@code firstKey} if all values are &gt; {@code max}.</li>
      * </ul>
      *
      * @param region The column region to search.
@@ -309,17 +309,17 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value exceeds {@code max}.
      */
-    private static int upperBoundAscending(
+    private static long upperBoundAscending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
             final Object max,
             final boolean maxInc) {
-        int low = (int) firstKey;
-        int high = (int) lastKey;
+        long low = firstKey;
+        long high = lastKey;
 
         while (low <= high) {
-            final int mid = low + (high - low) / 2;
+            final long mid = low + (high - low) / 2;
             final Object midValue = region.getObject(mid);
             if (maxInc ? ObjectComparisons.leq(midValue, max) : ObjectComparisons.lt(midValue, max)) {
                 low = mid + 1;
@@ -347,7 +347,7 @@ public class ObjectRegionBinarySearchKernel {
      * <li>A non-negative value is returned only when {@code maxInc=true} and the value at the found position exactly
      * equals {@code max}. The returned value is the leftmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the insertion
-     * point â the leftmost position whose value falls below {@code max} â or {@code lastKey + 1} if all values are
+     * point, i.e. the leftmost position whose value falls below {@code max}, or {@code lastKey + 1} if all values are
      * &gt;= {@code max}.</li>
      * </ul>
      *
@@ -360,17 +360,17 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static int lowerBoundDescending(
+    private static long lowerBoundDescending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
             final Object max,
             final boolean maxInc) {
-        int low = (int) firstKey;
-        int high = (int) lastKey;
+        long low = firstKey;
+        long high = lastKey;
 
         while (low <= high) {
-            final int mid = low + (high - low) / 2;
+            final long mid = low + (high - low) / 2;
             final Object midValue = region.getObject(mid);
             if (maxInc ? ObjectComparisons.leq(midValue, max) : ObjectComparisons.lt(midValue, max)) {
                 high = mid - 1;
@@ -397,7 +397,7 @@ public class ObjectRegionBinarySearchKernel {
      * <li>A non-negative value is returned only when {@code minInc=true} and the value at the found position exactly
      * equals {@code min}. The returned value is the rightmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the first
-     * position whose value falls below {@code min} â or {@code firstKey} if all values are &gt;= {@code min}.</li>
+     * position whose value falls below {@code min}, or {@code firstKey} if all values are &gt;= {@code min}.</li>
      * </ul>
      *
      * @param region The column region to search.
@@ -409,17 +409,17 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value falls below {@code min}.
      */
-    private static int upperBoundDescending(
+    private static long upperBoundDescending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
             final Object min,
             final boolean minInc) {
-        int low = (int) firstKey;
-        int high = (int) lastKey;
+        long low = firstKey;
+        long high = lastKey;
 
         while (low <= high) {
-            final int mid = low + (high - low) / 2;
+            final long mid = low + (high - low) / 2;
             final Object midValue = region.getObject(mid);
             if (minInc ? ObjectComparisons.geq(midValue, min) : ObjectComparisons.gt(midValue, min)) {
                 low = mid + 1;

@@ -865,4 +865,150 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         it2.close();
         assertEquals(before, rb.refCount());
     }
+
+    @Test
+    public void testGetRowSequenceByPositionUncachedCardinality() {
+        // With few enough spans (<= accNullThreshold) and cardinality > Integer.MAX_VALUE, the cardinality cache
+        // stays permanently invalid (acc == null, cardData == -1), exercising the uncached branch of
+        // getRowSequenceByPosition even on a clean bitmap.
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.addRange(0, 0x9000_0000L);
+        final long cardinality = 0x9000_0001L;
+        assertEquals(cardinality, rb.getCardinality());
+        try (final RowSequence rs = rb.getRowSequenceByPosition(10, 100)) {
+            assertEquals(100, rs.size());
+            assertEquals(10, rs.firstRowKey());
+            assertEquals(109, rs.lastRowKey());
+        }
+        // Length running past the end must clamp.
+        try (final RowSequence rs = rb.getRowSequenceByPosition(cardinality - 5, 100)) {
+            assertEquals(5, rs.size());
+            assertEquals(0x9000_0000L, rs.lastRowKey());
+        }
+        // Zero length must produce an empty sequence.
+        try (final RowSequence rs = rb.getRowSequenceByPosition(10, 0)) {
+            assertTrue(rs.isEmpty());
+            assertEquals(0, rs.size());
+        }
+        // A saturated length ("everything from start") must not overflow the end position.
+        try (final RowSequence rs = rb.getRowSequenceByPosition(10, Long.MAX_VALUE)) {
+            assertEquals(cardinality - 10, rs.size());
+            assertEquals(10, rs.firstRowKey());
+            assertEquals(0x9000_0000L, rs.lastRowKey());
+        }
+    }
+
+    @Test
+    public void testGetRowSequenceByPositionSaturatedLengthCachedCardinality() {
+        // Small bitmap, so cardinality is cached; a saturated length must not overflow the end position.
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.add(BLOCK_SIZE + 5);
+        rb = rb.add(2 * BLOCK_SIZE + 7);
+        try (final RowSequence rs = rb.getRowSequenceByPosition(1, Long.MAX_VALUE)) {
+            assertEquals(2, rs.size());
+            assertEquals(BLOCK_SIZE + 5, rs.firstRowKey());
+            assertEquals(2 * BLOCK_SIZE + 7, rs.lastRowKey());
+        }
+    }
+
+    @Test
+    public void testGetRowSequenceByKeyRangeEmptyIntersection() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.add(30);
+        rb = rb.add(2 * BLOCK_SIZE + 5);
+        // Range falls in the gap between two values within the same block.
+        try (final RowSequence rs = rb.getRowSequenceByKeyRange(15, 20)) {
+            assertTrue(rs.isEmpty());
+            assertEquals(0, rs.size());
+            assertEquals(RowSequence.NULL_ROW_KEY, rs.firstRowKey());
+            assertEquals(RowSequence.NULL_ROW_KEY, rs.lastRowKey());
+        }
+        // Range falls in the gap between two blocks.
+        try (final RowSequence rs = rb.getRowSequenceByKeyRange(BLOCK_SIZE, BLOCK_SIZE + 10)) {
+            assertTrue(rs.isEmpty());
+            assertEquals(0, rs.size());
+        }
+        // Range falls entirely before the first key.
+        try (final RowSequence rs = rb.getRowSequenceByKeyRange(0, 5)) {
+            assertTrue(rs.isEmpty());
+            assertEquals(0, rs.size());
+        }
+        // Range falls entirely after the last key.
+        try (final RowSequence rs = rb.getRowSequenceByKeyRange(2 * BLOCK_SIZE + 6, 3 * BLOCK_SIZE)) {
+            assertTrue(rs.isEmpty());
+            assertEquals(0, rs.size());
+        }
+        // Sanity: a range that does intersect still works.
+        try (final RowSequence rs = rb.getRowSequenceByKeyRange(15, 30)) {
+            assertEquals(1, rs.size());
+            assertEquals(30, rs.firstRowKey());
+        }
+    }
+
+    @Test
+    public void testIteratorAdvanceIntoConsumedRegionIsNoOp() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.addRange(BLOCK_SIZE, BLOCK_SIZE + 5);
+        rb = rb.add(2 * BLOCK_SIZE + 3);
+        rb = rb.add(3 * BLOCK_SIZE + 4); // keeps the iterator unexhausted throughout
+        try (final RowSequence.Iterator it = rb.ixGetRowSequenceIterator()) {
+            final RowSequence rs = it.getNextRowSequenceThrough(2 * BLOCK_SIZE + 3);
+            assertEquals(7, rs.size());
+            final long posBefore = it.getRelativePosition();
+            // Advance to the exact last-consumed key: must be a no-op.
+            assertTrue(it.advance(2 * BLOCK_SIZE + 3));
+            assertEquals(posBefore, it.getRelativePosition());
+            assertEquals(3 * BLOCK_SIZE + 4, it.peekNextKey());
+            // Advance into the middle of the consumed range, in an earlier span: must be a no-op.
+            assertTrue(it.advance(BLOCK_SIZE + 2));
+            assertEquals(posBefore, it.getRelativePosition());
+            assertEquals(3 * BLOCK_SIZE + 4, it.peekNextKey());
+            // A genuine forward advance still works.
+            assertTrue(it.advance(3 * BLOCK_SIZE));
+            assertEquals(3 * BLOCK_SIZE + 4, it.peekNextKey());
+            final RowSequence rs2 = it.getNextRowSequenceThrough(3 * BLOCK_SIZE + 4);
+            assertEquals(1, rs2.size());
+            assertEquals(3 * BLOCK_SIZE + 4, rs2.firstRowKey());
+            assertFalse(it.hasMore());
+        }
+    }
+
+    @Test
+    public void testViewGetRowSequenceByKeyRangeClampedToView() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.add(BLOCK_SIZE + 5);
+        rb = rb.add(2 * BLOCK_SIZE + 7);
+        // A view over the first two keys only; a query range extending past the view's end must not
+        // return keys outside the view.
+        try (final RowSequence view = rb.getRowSequenceByPosition(0, 2)) {
+            assertEquals(2, view.size());
+            assertEquals(BLOCK_SIZE + 5, view.lastRowKey());
+            try (final RowSequence rs = view.getRowSequenceByKeyRange(0, 3 * BLOCK_SIZE)) {
+                assertEquals(2, rs.size());
+                assertEquals(10, rs.firstRowKey());
+                assertEquals(BLOCK_SIZE + 5, rs.lastRowKey());
+            }
+            // A query entirely after the view's end must be empty.
+            try (final RowSequence rs = view.getRowSequenceByKeyRange(2 * BLOCK_SIZE, 3 * BLOCK_SIZE)) {
+                assertTrue(rs.isEmpty());
+                assertEquals(0, rs.size());
+            }
+        }
+        // A view over the middle key only; a query entirely before the view's start must be empty.
+        try (final RowSequence view = rb.getRowSequenceByPosition(1, 1)) {
+            assertEquals(BLOCK_SIZE + 5, view.firstRowKey());
+            try (final RowSequence rs = view.getRowSequenceByKeyRange(0, 9)) {
+                assertTrue(rs.isEmpty());
+                assertEquals(0, rs.size());
+            }
+            try (final RowSequence rs = view.getRowSequenceByKeyRange(0, 3 * BLOCK_SIZE)) {
+                assertEquals(1, rs.size());
+                assertEquals(BLOCK_SIZE + 5, rs.firstRowKey());
+                assertEquals(BLOCK_SIZE + 5, rs.lastRowKey());
+            }
+        }
+    }
 }
