@@ -8,6 +8,8 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.vector.FloatVectorDirect;
+import io.deephaven.vector.ObjectVectorDirect;
 
 /**
  * Tests for {@link FloatSegmentedSortedMultiset} behavior around the special float values that
@@ -169,5 +171,79 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
         assertEquals(0L, ssm.totalSize());
         assertEquals(0, ssm.getAddedSize());
         assertEquals("removed should record the single NaN removal", 1, ssm.getRemovedSize());
+    }
+
+    /**
+     * Two SSMs differing only in which NaN bit pattern they store hold, per FloatComparisons, the same value. They must
+     * therefore compare equal -- against each other and against every other Vector spelling of those contents -- and
+     * hash alike. {@link FloatSegmentedSortedMultiset#hashCode()} hashes elements with
+     * {@link io.deephaven.util.compare.FloatComparisons#hashCode(float)}, which collapses NaN bit patterns, so
+     * comparing elements with {@code ==} here would break the hashCode contract.
+     */
+    public void testEqualsAcrossNaNBitPatterns() {
+        final float nanA = Float.NaN; // canonical 0x7fc00000
+        final float nanB = Float.intBitsToFloat(0x7fc12345); // alternate NaN bit pattern
+
+        final float[] withA = new float[] {Float.NEGATIVE_INFINITY, 0.0f, Float.MAX_VALUE, nanA};
+        final float[] withB = new float[] {Float.NEGATIVE_INFINITY, 0.0f, Float.MAX_VALUE, nanB};
+
+        final FloatSegmentedSortedMultiset ssmA = new FloatSegmentedSortedMultiset(NODE_SIZE);
+        insert(ssmA, withA, new int[] {1, 1, 1, 1});
+        final FloatSegmentedSortedMultiset ssmB = new FloatSegmentedSortedMultiset(NODE_SIZE);
+        insert(ssmB, withB, new int[] {1, 1, 1, 1});
+
+        assertEqualBothWays(ssmA, ssmB);
+        assertEqualBothWays(ssmA, ssmB.getDirect());
+        assertEqualBothWays(ssmA, new FloatVectorDirect(withB));
+
+        // a boxed Vector of the same values is a different Vector type, and so not equal in either direction
+        final Float[] boxedB = new Float[withB.length];
+        for (int ii = 0; ii < withB.length; ++ii) {
+            boxedB[ii] = withB[ii];
+        }
+        assertNotEqualBothWays(ssmA, new ObjectVectorDirect<>(boxedB));
+    }
+
+    /**
+     * The same requirement for signed zero: FloatComparisons treats {@code -0.0f} and {@code +0.0f} as one value and
+     * hashes them alike, so an SSM seeded with one must compare equal to every Vector spelling of the other.
+     */
+    public void testEqualsAcrossSignedZero() {
+        final float[] withNegative = new float[] {-0.0f, Float.MAX_VALUE};
+        final float[] withPositive = new float[] {0.0f, Float.MAX_VALUE};
+
+        final FloatSegmentedSortedMultiset ssmNegative = new FloatSegmentedSortedMultiset(NODE_SIZE);
+        insert(ssmNegative, withNegative, new int[] {1, 1});
+        final FloatSegmentedSortedMultiset ssmPositive = new FloatSegmentedSortedMultiset(NODE_SIZE);
+        insert(ssmPositive, withPositive, new int[] {1, 1});
+
+        assertEqualBothWays(ssmNegative, ssmPositive);
+        assertEqualBothWays(ssmNegative, ssmPositive.getDirect());
+        assertEqualBothWays(ssmNegative, new FloatVectorDirect(withPositive));
+
+        final Float[] boxedPositive = new Float[withPositive.length];
+        for (int ii = 0; ii < withPositive.length; ++ii) {
+            boxedPositive[ii] = withPositive[ii];
+        }
+        assertNotEqualBothWays(ssmNegative, new ObjectVectorDirect<>(boxedPositive));
+    }
+
+    /**
+     * Assert that two Vectors agree that they are equal no matter which is the receiver, and that they hash alike as
+     * {@link Object#hashCode()} then requires.
+     */
+    private void assertEqualBothWays(final Object lhs, final Object rhs) {
+        assertTrue(lhs + " should equal " + rhs, lhs.equals(rhs));
+        assertTrue(rhs + " should equal " + lhs, rhs.equals(lhs));
+        assertEquals("equal values must hash alike", lhs.hashCode(), rhs.hashCode());
+    }
+
+    /**
+     * Assert that two Vectors agree that they are unequal no matter which is the receiver. Their hash codes are
+     * unconstrained -- unequal values are permitted to collide.
+     */
+    private void assertNotEqualBothWays(final Object lhs, final Object rhs) {
+        assertFalse(lhs + " should not equal " + rhs, lhs.equals(rhs));
+        assertFalse(rhs + " should not equal " + lhs, rhs.equals(lhs));
     }
 }

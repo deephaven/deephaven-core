@@ -19,6 +19,24 @@ import org.gradle.api.tasks.compile.JavaCompile
 @CompileStatic
 class GwtTools {
 
+    /**
+     * Applies GWT coordinate substitutions to a configuration. Use this when resolving dependencies
+     * from projects that depend on com.google.gwt:* coordinates (which don't exist on Maven Central
+     * and must be mapped to org.gwtproject:* equivalents).
+     */
+    static void applyGwtSubstitutions(Project p, Configuration conf) {
+        def libs = p.extensions.getByType(VersionCatalogsExtension).named("libs")
+        def gwtVersion = libs.findVersion("gwt").map(VersionConstraint::getRequiredVersion).orElseThrow()
+        conf.resolutionStrategy.dependencySubstitution { sub ->
+            sub.substitute(sub.module("com.google.gwt:gwt-dev"))
+                    .using(sub.module("org.gwtproject:gwt-dev:${gwtVersion}"))
+            sub.substitute(sub.module("com.google.gwt:gwt-user"))
+                    .using(sub.module("org.gwtproject:gwt-user:${gwtVersion}"))
+            sub.substitute(sub.module("com.google.gwt:gwt-codeserver"))
+                    .using(sub.module("org.gwtproject:gwt-codeserver:${gwtVersion}"))
+        }
+    }
+
     static GwtExtension gwtCompile(Project p, String module, String description) {
         p.plugins.apply(GwtPlugin)
         GwtExtension ext = p.extensions.getByType(GwtExtension)
@@ -91,13 +109,8 @@ class GwtTools {
         gwt.gwtVersion = gwtVersion
         gwt.jettyVersion = gwtJettyVersion
         p.configurations.all { Configuration c ->
+            applyGwtSubstitutions(p, c)
             c.resolutionStrategy.dependencySubstitution { sub ->
-                sub.substitute(sub.module("com.google.gwt:gwt-codeserver"))
-                        .using(sub.module("org.gwtproject:gwt-codeserver:${gwtVersion}"))
-                sub.substitute(sub.module("com.google.gwt:gwt-user"))
-                        .using(sub.module("org.gwtproject:gwt-user:${gwtVersion}"))
-                sub.substitute(sub.module("com.google.gwt:gwt-dev"))
-                        .using(sub.module("org.gwtproject:gwt-dev:${gwtVersion}"))
                 sub.substitute(sub.module('com.google.protobuf:protobuf-java'))
                         .using(sub.module("com.vertispan.protobuf:protobuf-gwt:${protobufVers}"))
                 sub.substitute(sub.module('io.grpc:grpc-api'))

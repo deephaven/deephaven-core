@@ -13,6 +13,7 @@ ColumnInstruction(
     codec_name=None,
     codec_args=None,
     use_dictionary=False,
+    unsigned_long_target=None,
 ) = ColumnInstruction
 ```
 
@@ -58,6 +59,19 @@ An implementation-specific argument string passed to the codec named by `codec_n
 Whether or not to use [dictionary-based encoding](https://en.wikipedia.org/wiki/Dictionary_coder) for string columns.
 
 </Param>
+<Param name="unsigned_long_target" type="UnsignedLongTarget" optional>
+
+The Deephaven type to read an unsigned 64-bit integer (`UINT_64`) column as. This parameter applies to reads only, and only to columns that carry the `UINT_64` logical type. It is ignored when writing, because Deephaven never writes `UINT_64`. Default is `None`, which is equivalent to `UnsignedLongTarget.BIG_INTEGER`.
+
+Options are:
+
+- `UnsignedLongTarget.BIG_INTEGER`: (default) Read the column as `java.math.BigInteger`, which represents every `UINT_64` value exactly.
+- `UnsignedLongTarget.LONG`: Read the column as `long`. Values greater than 2<sup>63</sup> - 1 have no `long` representation, so reading a page that contains one raises an error.
+- `UnsignedLongTarget.SIGNED_LONG`: Read the column as `long`, reinterpreting the bit pattern as signed. Values greater than 2<sup>63</sup> - 1 read as negative numbers, and 2<sup>63</sup> reads as `NULL_LONG`, which is indistinguishable from a null.
+
+For an explanation of how Deephaven maps `UINT_64` and other logical types, see [Parquet formats](../../../how-to-guides/data-import-export/parquet-formats.md).
+
+</Param>
 </ParamTable>
 
 ## Returns
@@ -76,6 +90,19 @@ instruction = ColumnInstruction(
     parquet_column_name="PX",
     use_dictionary=False,
 )
+```
+
+In this example, `unsigned_long_target` reads an unsigned 64-bit integer column as a `long` instead of the default `java.math.BigInteger`. The example requires a Parquet file with a `UINT_64` column, which Deephaven does not write.
+
+```python skip-test
+from deephaven.parquet import ColumnInstruction, UnsignedLongTarget, read
+
+instruction = ColumnInstruction(
+    column_name="UInt64Column",
+    parquet_column_name="UInt64Column",
+    unsigned_long_target=UnsignedLongTarget.LONG,
+)
+result = read("/data/unsigned.parquet", col_instructions=[instruction])
 ```
 
 In this example, the `ColumnInstruction` stores a `LocalDate` column with the `LocalDateCodec`, using its compact, non-nullable representation.
