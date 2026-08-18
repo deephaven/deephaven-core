@@ -41,7 +41,7 @@ repository. It is assumed that you have the repository checked out at the locati
 
 ### Install the C++ client
 
-First, install the Deephaven C++ client. Follow the instructions in `$DHROOT/cpp-client/README.md`.
+First, install the Deephaven C++ client. Follow the instructions in `$DHROOT/cpp-client/BUILDING.md`.
 Note the restrictions on supported platforms mentioned there. The instructions will ask you to
 select a location for the installation of the C++ client library and its dependencies.
 

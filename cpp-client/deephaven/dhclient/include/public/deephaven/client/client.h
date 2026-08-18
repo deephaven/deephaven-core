@@ -15,7 +15,7 @@
 #include "deephaven/dhcore/ticking/ticking.h"
 
 /**
- * Arrow-related classes, used by TableHandleManager::newTableHandleAndFlightDescriptor() and
+ * Arrow-related classes, used by TableHandleManager::NewTicket() and
  * TableHandleManager::CreateFlightWrapper. Callers that use those methods need to include
  * deephaven/client/flight.h
  */
@@ -134,7 +134,7 @@ public:
   TableHandle EmptyTable(int64_t size) const;
   /**
    * Looks up an existing table by name.
-   * @param tableName The name of the table.
+   * @param table_name The name of the table.
    */
   [[nodiscard]]
   TableHandle FetchTable(std::string table_name) const;
@@ -155,7 +155,7 @@ public:
    * Creates an input table from an initial table. When key columns are provided, the InputTable
    * will be keyed, otherwise it will be append-only.
    * @param initial_table The initial table
-   * @param columns The set of key columns
+   * @param key_columns The set of key columns
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -396,8 +396,8 @@ public:
    */
   ~Aggregate();
   /**
-   * Returns an aggregator that computes the total sum of values, within an aggregation group,
-   * for each input column.
+   * Returns an aggregator that computes the sum of the absolute values, within an aggregation
+   * group, for each input column.
    */
   [[nodiscard]]
   static Aggregate AbsSum(std::vector<std::string> column_specs);
@@ -488,7 +488,7 @@ public:
   [[nodiscard]]
   static Aggregate Last(std::vector<std::string> column_specs);
   /**
-   * A variadic form of First(std::vector<std::string>) const that takes a combination of
+   * A variadic form of Last(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
    * @param args The arguments to Last
@@ -731,8 +731,8 @@ private:
 };
 
 /**
- * Returns an aggregator that computes the total sum of values, within an aggregation group,
- * for each input column.
+ * Returns an aggregator that computes the sum of the absolute values, within an aggregation
+ * group, for each input column.
  */
 template<typename ...Args>
 [[nodiscard]]
@@ -765,7 +765,7 @@ Aggregate AggAvg(Args &&... args) {
  */
 template<typename ...Args>
 [[nodiscard]]
-Aggregate aggCount(Args &&... args) {
+Aggregate AggCount(Args &&... args) {
   return Aggregate::Count(std::forward<Args>(args)...);
 }
 
@@ -795,7 +795,7 @@ Aggregate AggLast(Args &&... args) {
  */
 template<typename ...Args>
 [[nodiscard]]
-Aggregate aggMax(Args &&... args) {
+Aggregate AggMax(Args &&... args) {
   return Aggregate::Max(std::forward<Args>(args)...);
 }
 
@@ -815,7 +815,7 @@ Aggregate AggMed(Args &&... args) {
  */
 template<typename ...Args>
 [[nodiscard]]
-Aggregate aggMin(Args &&... args) {
+Aggregate AggMin(Args &&... args) {
   return Aggregate::Min(std::forward<Args>(args)...);
 }
 
@@ -848,7 +848,7 @@ Aggregate AggStd(Args &&... args) {
  */
 template<typename ...Args>
 [[nodiscard]]
-Aggregate aggSum(Args &&... args) {
+Aggregate AggSum(Args &&... args) {
   return Aggregate::Sum(std::forward<Args>(args)...);
 }
 
@@ -879,7 +879,7 @@ Aggregate AggWavg(Args &&... args) {
  * Returns an AggregateCombo object, which represents a collection of aggregators.
  */
 [[nodiscard]]
-inline AggregateCombo aggCombo(std::initializer_list<Aggregate> args) {
+inline AggregateCombo AggCombo(std::initializer_list<Aggregate> args) {
   return AggregateCombo::Create(args);
 }
 
@@ -930,10 +930,10 @@ public:
   TableHandleManager GetManager() const;
 
   /**
-   * Select columnSpecs from a table. The columnSpecs can be column names or formulas like
+   * Select column_specs from a table. The column_specs can be column names or formulas like
    * "NewCol = A + 12". See the Deephaven documentation for the difference between "Select" and
    * "View".
-   * @param columnSpecs The columnSpecs
+   * @param column_specs The column_specs
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -953,10 +953,10 @@ public:
   }
 
   /**
-   * View columnSpecs from a table. The columnSpecs can be column names or formulas like
+   * View column_specs from a table. The column_specs can be column names or formulas like
    * "NewCol = A + 12". See the Deephaven documentation for the difference between Select() and
    * View().
-   * @param columnSpecs The columnSpecs to View
+   * @param column_specs The column_specs to View
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -977,7 +977,7 @@ public:
 
   /**
    * Creates a new table from this table Where the specified columns have been excluded.
-   * @param columnSpecs The columns to exclude.
+   * @param column_specs The columns to exclude.
    * @return
    */
   [[nodiscard]]
@@ -998,7 +998,7 @@ public:
 
   /**
    * Creates a new table from this table, but including the additional specified columns.
-   * @param columnSpecs The columnSpecs to add. For example, {"X = A + 5", "Y = X * 2"}.
+   * @param column_specs The column_specs to add. For example, {"X = A + 5", "Y = X * 2"}.
    * See the Deephaven documentation for the difference between Update() and UpdateView().
    * @return A TableHandle referencing the new table
    */
@@ -1020,7 +1020,7 @@ public:
 
   /**
    * Creates a new table containing a new cached formula column for each argument.
-   * @param columnSpecs The columnSpecs to add. For exampe, {"X = A + 5", "Y = X * 2"}.
+   * @param column_specs The column_specs to add. For exampe, {"X = A + 5", "Y = X * 2"}.
    * See the Deephaven documentation for the difference between Update() and LazyUpdate().
    * @return A TableHandle referencing the new table
    */
@@ -1042,7 +1042,7 @@ public:
 
   /**
    * Creates a new View from this table, but including the additional specified columns.
-   * @param columnSpecs The columnSpecs to add. For exampe, {"X = A + 5", "Y = X * 2"}.
+   * @param column_specs The column_specs to add. For exampe, {"X = A + 5", "Y = X * 2"}.
    * See the Deephaven documentation for the difference between Update() and UpdateView().
    * @return A TableHandle referencing the new table
    */
@@ -1072,8 +1072,8 @@ public:
   TableHandle Where(std::string condition) const;
 
   /**
-   * Creates a new table from this table, sorted by sortPairs.
-   * @param sortPairs A vector of SortPair objects describing the sort. Each SortPair refers to
+   * Creates a new table from this table, sorted by sort_pairs.
+   * @param sort_pairs A vector of SortPair objects describing the sort. Each SortPair refers to
    *   a column, a sort direction, and whether the sort should consider to the value's regular or
    *   absolute value when doing comparisons.
    * @return A TableHandle referencing the new table
@@ -1094,9 +1094,9 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs with the column content grouped
+   * Creates a new table from this table, grouped by column_specs with the column content grouped
    * into arrays.
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1122,7 +1122,8 @@ public:
    * A variadic form of By(AggregateCombo, std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param columnSpecs Columns to group by.
+   * @param combo The aggregations to perform.
+   * @param args Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1133,9 +1134,9 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "Min" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "Min" aggregate operation
    * applied to the remaining columns.
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1144,7 +1145,7 @@ public:
    * A variadic form of MinBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param columnSpecs Columns to group by.
+   * @param args Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1155,9 +1156,9 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "Max" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "Max" aggregate operation
    * applied to the remaining columns.
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1177,9 +1178,9 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "Sum" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "Sum" aggregate operation
    * applied to the remaining columns.
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1188,7 +1189,7 @@ public:
    * A variadic form of SumBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param columnSpecs Columns to group by.
+   * @param args Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1199,9 +1200,9 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "AbsSum" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "AbsSum" aggregate operation
    * applied to the remaining columns.
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1221,9 +1222,9 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "Var" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "Var" aggregate operation
    * applied to the remaining columns.
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1243,9 +1244,9 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "std" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "std" aggregate operation
    * applied to the remaining columns.
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1265,9 +1266,9 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "Avg" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "Avg" aggregate operation
    * applied to the remaining columns.
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1287,9 +1288,9 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "First" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "First" aggregate operation
    * applied to the remaining columns.
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1309,9 +1310,9 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "Last" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "Last" aggregate operation
    * applied to the remaining columns.
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1331,15 +1332,15 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "median" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "median" aggregate operation
    * applied to the remaining columns.
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
   TableHandle MedianBy(std::vector<std::string> column_specs) const;
   /**
-   * A variadic form of LastBy(std::vector<std::string>) const that takes a combination of
+   * A variadic form of MedianBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
    * @param args The columns
@@ -1352,12 +1353,12 @@ public:
     return MedianBy(std::move(vec));
   }
 
-  // TODO(kosak): document avgMedian
+  // TODO(kosak): document avg_median
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "percentile" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "percentile" aggregate operation
    * applied to the remaining columns.
    * @param percentile The designated percentile
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1378,10 +1379,10 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, with the "percentile" aggregate operation
+   * Creates a new table from this table, grouped by column_specs, with the "percentile" aggregate operation
    * applied to the remaining columns.
    * @param percentile The designated percentile
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1403,14 +1404,14 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, having a new column named by
-   * `countByColumn` containing the size of each group.
-   * @param countByColumn Name of the output column.
-   * @param columnSpecs Columns to group by.
+   * Creates a new table from this table, grouped by column_specs, having a new column named by
+   * `count_by_column` containing the size of each group.
+   * @param count_by_column Name of the output column.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
-  TableHandle CountBy(std::string count_by_column, std::vector<std::string> columnSpecs) const;
+  TableHandle CountBy(std::string count_by_column, std::vector<std::string> column_specs) const;
   /**
    * A variadic form of CountBy(std::string, std::vector<std::string>) const that takes a combination of
    * argument types.
@@ -1426,10 +1427,10 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, having a new column named by
-   * `weightColumn` containing the weighted average of each group.
-   * @param countByColumn Name of the output column.
-   * @param columnSpecs Columns to group by.
+   * Creates a new table from this table, grouped by column_specs, with the weighted average
+   * aggregate operation applied to the remaining columns, using `weight_column` as the weights.
+   * @param weight_column Name of the column holding the weights.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1449,10 +1450,10 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, containing the Last `n` rows of
+   * Creates a new table from this table, grouped by column_specs, containing the Last `n` rows of
    * each group.
    * @param n Number of rows
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1472,10 +1473,10 @@ public:
   }
 
   /**
-   * Creates a new table from this table, grouped by columnSpecs, containing the First `n` rows of
+   * Creates a new table from this table, grouped by column_specs, containing the First `n` rows of
    * each group.
    * @param n Number of rows
-   * @param columnSpecs Columns to group by.
+   * @param column_specs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1509,11 +1510,11 @@ public:
   [[nodiscard]]
   TableHandle Tail(int64_t n) const;
 
-  //TODO(kosak): document nullFill
+  //TODO(kosak): document null_fill
   /**
    * Creates a new table from this table with the column array data ungrouped. This is the inverse
    * of the By(std::vector<std::string>) const operation.
-   * @param groupByColumns Columns to Ungroup.
+   * @param group_by_columns Columns to Ungroup.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1535,7 +1536,7 @@ public:
   /**
    * Creates a new table from this table with the column array data ungrouped. This is the inverse
    * of the By(std::vector<std::string>) const operation.
-   * @param groupByColumns Columns to Ungroup.
+   * @param group_by_columns Columns to Ungroup.
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
@@ -1556,7 +1557,7 @@ public:
     return Ungroup(std::move(vec));
   }
 
-  //TODO(kosak): document keyColumn
+  //TODO(kosak): document key_column
   /**
    * Creates a new table by merging `sources` together. The tables are essentially stacked on top
    * of each other.
@@ -1566,13 +1567,13 @@ public:
   [[nodiscard]]
   TableHandle Merge(std::string key_columns, std::vector<TableHandle> sources) const;
   /**
-   * A variadic form of Merge(std::string, std::vector<std::string>) const that takes a combination of
+   * A variadic form of Merge(std::string, std::vector<TableHandle>) const that takes a combination of
    * argument types.
+   * @tparam Rest Zero or more TableHandles
+   * @param key_column The key column.
    * @param first The first TableHandle in the list of sources.
    * @param rest The rest of the TableHandles in the list of sources. The arguments are split this
    * way to aid in overload resolution.
-   * @tparam Rest Zero or more TableHandles
-   * @param args The columns
    * @return A TableHandle referencing the new table
    */
   template<typename ...Rest>
@@ -1595,12 +1596,12 @@ public:
     return Merge("", std::move(sources));
   }
   /**
-   * A variadic form of Merge(std::vector<std::string>) const that takes a combination of
+   * A variadic form of Merge(std::vector<TableHandle>) const that takes a combination of
    * argument types.
+   * @tparam Rest Zero or more TableHandles
    * @param first The first TableHandle in the list of sources.
    * @param rest The rest of the TableHandles in the list of sources. The arguments are split this
-   * @tparam Rest Zero or more TableHandles
-   * @param args The columns
+   * way to aid in overload resolution.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Rest>
@@ -1612,13 +1613,13 @@ public:
   }
 
   /**
-   * Creates a new table by cross joining this table with `rightSide`. The tables are joined by
-   * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
+   * Creates a new table by cross joining this table with `right_side`. The tables are joined by
+   * the columns in `columnsToMatch`, and columns from `right_side` are brought in and optionally
    * renamed by `columnsToAdd`. Example:
    * @code
    * t1.CrossJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
-   * @param rightSide The table to join with this table
+   * @param right_side The table to join with this table
    * @param columns_to_match The columns to join on
    * @param columns_to_add The columns from the right side to add, and possibly rename.
    * @return A TableHandle referencing the new table
@@ -1628,13 +1629,13 @@ public:
       std::vector<std::string> columns_to_add) const;
 
   /**
-   * Creates a new table by natural joining this table with `rightSide`. The tables are joined by
-   * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
+   * Creates a new table by natural joining this table with `right_side`. The tables are joined by
+   * the columns in `columnsToMatch`, and columns from `right_side` are brought in and optionally
    * renamed by `columnsToAdd`. Example:
    * @code
    * t1.NaturalJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
-   * @param rightSide The table to join with this table
+   * @param right_side The table to join with this table
    * @param columns_to_match The columns to join on
    * @param columns_to_add The columns from the right side to add, and possibly rename.
    * @return A TableHandle referencing the new table
@@ -1644,13 +1645,13 @@ public:
       std::vector<std::string> columns_to_add) const;
 
   /**
-   * Creates a new table by exact joining this table with `rightSide`. The tables are joined by
-   * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
+   * Creates a new table by exact joining this table with `right_side`. The tables are joined by
+   * the columns in `columnsToMatch`, and columns from `right_side` are brought in and optionally
    * renamed by `columnsToAdd`. Example:
    * @code
    * t1.ExactJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
-   * @param rightSide The table to join with this table
+   * @param right_side The table to join with this table
    * @param columns_to_match The columns to join on
    * @param columns_to_add The columns from the right side to add, and possibly rename.
    * @return A TableHandle referencing the new table
@@ -1792,8 +1793,7 @@ public:
   /**
    * Removes a table from an input table. Requires that this object be an InputTable (such as that
    * created by TableHandleManager::InputTable).
-   * @param table_to_add The table to remove from the InputTable
-   * @return The new table
+   * @param table_to_remove The table to remove from the InputTable
    */
   void RemoveTable(const TableHandle &table_to_remove);
 
@@ -1809,7 +1809,7 @@ public:
    * @code
    * std::cout << table.Stream(true) << std::endl;
    * @endcode
-   * @param wantHeaders Include column headers.
+   * @param want_headers Include column headers.
    * @return
    */
   [[nodiscard]]
