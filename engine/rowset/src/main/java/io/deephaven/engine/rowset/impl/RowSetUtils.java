@@ -132,7 +132,9 @@ public class RowSetUtils {
             return j;
         }
         while (true) {
-            final long mid = (i + j) / 2;
+            // Note i + (j - i) / 2 rather than (i + j) / 2: the sum overflows when both values are >= 2^62,
+            // which legal row keys can be.
+            final long mid = i + (j - i) / 2;
             final int c = comp.directionToTargetFrom(mid);
             if (c < 0) {
                 if (j == mid || j - i <= 1) {

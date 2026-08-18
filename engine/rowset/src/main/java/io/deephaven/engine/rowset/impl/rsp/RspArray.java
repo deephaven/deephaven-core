@@ -2975,7 +2975,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return;
         }
         // First check if this is effectively an append.
-        if (tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other, false)) {
+        if (tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other)) {
             return;
         }
 
@@ -3461,42 +3461,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (flen > 0) {
                     final long ourKey = ourView.getKey();
                     final long lastKey = getKeyForLastBlockInSpan(ourKey, flen);
-                    // andIdx > 0, therefore andKey is contained in this span.
-                    if (uLess(ourKey, andKey)) {
-                        // when this method is called from andEquals, given the previous pruning this
-                        // case can't be hit.
-                        if (uLess(andKey, lastKey)) {
-                            final ArraysBuf buf = wd.getArraysBuf(3);
-                            buf.pushFullBlockSpan(ourKey, distanceInBlocks(ourKey, andKey));
-                            if (otherView.isSingletonSpan()) {
-                                buf.pushSingletonSpan(otherView.getSingletonSpanValue());
-                            } else {
-                                buf.pushSharedContainer(other, andKey, otherView.getContainer());
-                            }
-                            buf.pushFullBlockSpan(nextKey(andKey), distanceInBlocks(andKey, lastKey));
-                            replaceSpanAtIndex(andIdx, buf);
-                        } else {
-                            final ArraysBuf buf = wd.getArraysBuf(2);
-                            buf.pushFullBlockSpan(ourKey, distanceInBlocks(ourKey, andKey));
-                            if (otherView.isSingletonSpan()) {
-                                buf.pushSingletonSpan(ourView.getSingletonSpanValue());
-                            } else {
-                                buf.pushSharedContainer(other, andKey, otherView.getContainer());
-                            }
-                            replaceSpanAtIndex(andIdx, buf);
-                        }
-                    } else if (uLess(andKey, lastKey)) {
-                        final ArraysBuf buf = wd.getArraysBuf(2);
-                        // when this method is called from andEquals, given the previous pruning this
-                        // case can't be hit.
-                        if (otherView.isSingletonSpan()) {
-                            buf.pushSingletonSpan(otherView.getSingletonSpanValue());
-                        } else {
-                            buf.pushSharedContainer(other, andKey, otherView.getContainer());
-                        }
-                        buf.pushFullBlockSpan(nextKey(andKey), distanceInBlocks(andKey, lastKey));
-                        replaceSpanAtIndex(andIdx, buf);
-                    } else if (otherView.isSingletonSpan()) {
+                    // Our only caller (andEqualsUnsafeNoWriteCheck) prunes our full block spans down to the
+                    // blocks present in other before calling us, so a container or singleton span in other
+                    // must line up with a single-block full block span here exactly.
+                    Assert.assertion(ourKey == andKey && andKey == lastKey,
+                            "ourKey == andKey && andKey == lastKey",
+                            ourKey, "ourKey", andKey, "andKey", lastKey, "lastKey");
+                    if (otherView.isSingletonSpan()) {
                         setSingletonSpan(andIdx, otherView.getSingletonSpanValue());
                     } else {
                         setSharedContainerRaw(andIdx, other, andKey, otherView.getContainer());
@@ -3589,10 +3560,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             this.spanInfos = null;
             this.spans = null;
-        }
-
-        void pushSharedContainer(final RspArray other, final long key, final Container c) {
-            setContainerSpanRaw(spanInfos, spans, size, key, other.shareContainer(c));
         }
 
         void pushContainer(final long key, final Container container) {
@@ -4311,7 +4278,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     // Neither this nor other can be empty.
     // shiftAmount should be a multiple of BLOCK_SIZE.
-    boolean tryAppendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other, final boolean acquire) {
+    boolean tryAppendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other) {
         if (RspArray.debug) {
             if (size == 0 || other.size == 0) {
                 throw new IllegalArgumentException(
@@ -4342,11 +4309,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         }
         ensureSizeCanGrowBy(other.size - firstOtherSpan);
-        if (!acquire) {
-            for (int i = firstOtherSpan; i < other.size; ++i) {
-                final int pos = size + i - firstOtherSpan;
-                copyKeyAndSpanMaybeSharing(shiftAmount, other, i, spanInfos, spans, pos, !acquire);
-            }
+        for (int i = firstOtherSpan; i < other.size; ++i) {
+            final int pos = size + i - firstOtherSpan;
+            copyKeyAndSpanMaybeSharing(shiftAmount, other, i, spanInfos, spans, pos, true);
         }
         size += other.size - firstOtherSpan;
         // leave acc alone.

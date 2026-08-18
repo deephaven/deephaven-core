@@ -176,11 +176,24 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
 
     @Override
     public void add(final SortedRanges ix, final boolean acquire) {
+        ensureInnerBuilder();
         builder.add(ix, acquire);
     }
 
     @Override
     public void add(final RspBitmap ix, final boolean acquire) {
+        ensureInnerBuilder();
         builder.add(ix, acquire);
+    }
+
+    private void ensureInnerBuilder() {
+        flushPendingRange();
+        if (innerBuilder() == null) {
+            if (pendingSr != null) {
+                flushPendingSrToInnerBuilder();
+            } else {
+                setupInnerBuilderEmpty();
+            }
+        }
     }
 }

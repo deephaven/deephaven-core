@@ -150,6 +150,9 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         if (v + shiftOffset < 0) {
             throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when first=" + v);
         }
+        if (shiftOffset > 0 && last() + shiftOffset < 0) {
+            throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when last=" + last());
+        }
         return applyShiftImpl(shiftOffset, v, !canWrite());
     }
 
@@ -187,6 +190,9 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         long v = unpackedGet(0);
         if (v + shiftOffset < 0) {
             throw new IllegalArgumentException("offsetDelta=" + shiftOffset + " when first=" + v);
+        }
+        if (shiftOffset > 0 && last() + shiftOffset < 0) {
+            throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when last=" + last());
         }
         return applyShiftImpl(shiftOffset, v, true);
     }

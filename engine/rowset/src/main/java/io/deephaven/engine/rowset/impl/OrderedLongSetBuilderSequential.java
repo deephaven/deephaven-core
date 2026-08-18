@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
@@ -27,14 +28,18 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
             if (pendingSr == null && pendingContainerKey == -1 && rb == null) {
                 final SingleRange r = SingleRange.make(pendingStart, pendingEnd);
                 rowSetCounts.sampleSingleRange(r);
+                pendingStart = -1;
                 return r;
             }
             flushPendingRange();
         }
         if (pendingSr != null) {
-            pendingSr = pendingSr.tryCompactUnsafe(4);
-            rowSetCounts.sampleSortedRanges(pendingSr);
-            return pendingSr;
+            // Give up our reference to the result, like the other branches do; otherwise later builder use
+            // would mutate (or double-release) the set we returned.
+            final SortedRanges ans = pendingSr.tryCompactUnsafe(4);
+            pendingSr = null;
+            rowSetCounts.sampleSortedRanges(ans);
+            return ans;
         }
         if (pendingContainerKey != -1) {
             flushPendingContainer();
@@ -73,7 +78,7 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
     }
 
     @Override
-    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
+    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix) {
         if (ix.ixIsEmpty()) {
             return;
         }
@@ -93,11 +98,10 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
         if (pendingContainerKey != -1) {
             flushPendingContainer();
         }
-        if (rb.isEmpty()) {
-            rb.ixInsert(ix);
-            return;
-        }
-        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix, acquire);
+        // Every path that creates rb appends to it immediately; an empty rb would drop shiftAmount if
+        // handled naively, so insist on the invariant instead.
+        Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
+        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix);
     }
 
     @Override

@@ -164,6 +164,11 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         @Override
         public RowSequence getNextRowSequenceThrough(long maxKeyInclusive) {
             tryClosePendingClose();
+            if (helper.isEmpty() || maxKeyInclusive < helper.currKeyValue) {
+                // Nothing remains at or before maxKeyInclusive; without this check a max key inside the
+                // already-consumed part of the current range would produce a corrupt (min > max) slice.
+                return RowSequenceFactory.EMPTY;
+            }
             final int newStartOffset = helper.offset;
             final long newMinKeyValue = helper.currKeyValue;
 
@@ -216,11 +221,12 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
             final int newEndOffset = OrderedChunkUtils.findInChunk(backingChunk, nextKey, helper.offset,
                     backingChunk.size());
             helper.offset = newEndOffset - (newEndOffset % 2);
-            boolean hasMore = helper.offset < backingChunk.size();
-            if (hasMore) {
+            final boolean positioned = helper.offset < backingChunk.size();
+            if (positioned) {
                 helper.currKeyValue = Math.max(nextKey, backingChunk.get(helper.offset));
             }
-            return hasMore;
+            // A position past maxKeyValue means we are exhausted, even though the backing chunk has more.
+            return positioned && helper.currKeyValue <= maxKeyValue;
         }
 
         @Override
@@ -387,6 +393,10 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
     public void fillRowKeyRangesChunk(final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
         int newSize = backingChunk.size();
         newSize -= newSize & 1;
+        if (newSize == 0) {
+            chunkToFill.setSize(0);
+            return;
+        }
         backingChunk.copyToChunk(0, chunkToFill, 0, newSize);
         chunkToFill.setSize(newSize);
         chunkToFill.set(0, Math.max(minKeyValue, chunkToFill.get(0)));

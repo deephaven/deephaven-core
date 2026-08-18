@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSequence;
@@ -97,7 +98,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     }
 
     @Override
-    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
+    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix) {
         if (ix.ixIsEmpty()) {
             return;
         }
@@ -114,11 +115,10 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         if (pendingContainerKey != -1) {
             flushPendingContainer();
         }
-        if (rb.isEmpty()) {
-            rb.ixInsert(ix);
-            return;
-        }
-        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix, acquire);
+        // Every path that creates rb appends to it immediately; an empty rb would drop shiftAmount if
+        // handled naively, so insist on the invariant instead.
+        Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
+        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix);
     }
 
     @Override
@@ -209,8 +209,13 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             }
             if (pendingContainerKey != -1) {
                 if (check && pendingContainerKey > highStart) {
+                    // When pendingContainer is null the pending span is a singleton and pendingContainerKey is
+                    // its full value; otherwise pendingContainerKey holds the high bits only.
+                    final long pendingLast = (pendingContainer == null)
+                            ? pendingContainerKey
+                            : (highBits(pendingContainerKey) | pendingContainer.last());
                     throw new IllegalStateException(outOfOrderKeyErrorMsg +
-                            "last=" + end + " while appending value=" + pendingContainer.last());
+                            "last=" + pendingLast + " while appending value=" + start);
                 }
                 flushPendingContainer();
             }

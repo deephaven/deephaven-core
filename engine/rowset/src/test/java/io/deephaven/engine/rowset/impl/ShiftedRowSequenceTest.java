@@ -31,4 +31,25 @@ public class ShiftedRowSequenceTest extends RowSequenceTestBase {
             assertContentsByIndices(indices, OK);
         }
     }
+
+    @Test
+    public void testUnboundedArgumentsWithNegativeShift() {
+        // Unshifting Long.MAX_VALUE ("no upper bound") with a negative shift must saturate, not wrap.
+        try (final io.deephaven.engine.rowset.RowSet toWrap = io.deephaven.engine.rowset.RowSetFactory
+                .fromKeys(100, 200, 300)) {
+            final RowSequence shifted = ShiftedRowSequence.wrap(toWrap, -50);
+            try (final RowSequence.Iterator it = shifted.getRowSequenceIterator()) {
+                final RowSequence all = it.getNextRowSequenceThrough(Long.MAX_VALUE);
+                org.junit.Assert.assertEquals(3, all.size());
+                org.junit.Assert.assertEquals(50, all.firstRowKey());
+                org.junit.Assert.assertEquals(250, all.lastRowKey());
+                org.junit.Assert.assertFalse(it.hasMore());
+            }
+            try (final RowSequence sub = shifted.getRowSequenceByKeyRange(51, Long.MAX_VALUE)) {
+                org.junit.Assert.assertEquals(2, sub.size());
+                org.junit.Assert.assertEquals(150, sub.firstRowKey());
+            }
+            shifted.close();
+        }
+    }
 }

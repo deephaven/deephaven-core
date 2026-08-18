@@ -126,6 +126,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final void insert(final RowSet added) {
+        if (added == this) {
+            // Self-insertion is a no-op; the ix* implementations must not mutate while iterating themselves.
+            return;
+        }
         preMutationHook();
         assign(innerSet.ixInsert(getInnerSet(added)));
         postMutationHook();
@@ -155,6 +159,11 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final void remove(final RowSet removed) {
+        if (removed == this) {
+            // Guard self-aliasing; the ix* implementations must not mutate while iterating themselves.
+            clear();
+            return;
+        }
         preMutationHook();
         assign(innerSet.ixRemove(getInnerSet(removed)));
         postMutationHook();
@@ -162,6 +171,15 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final void update(final RowSet added, final RowSet removed) {
+        // Guard self-aliasing; the ix* implementations must not mutate while iterating themselves.
+        if (added == this) {
+            remove(removed);
+            return;
+        }
+        if (removed == this) {
+            resetTo(added);
+            return;
+        }
         preMutationHook();
         assign(innerSet.ixUpdate(getInnerSet(added), getInnerSet(removed)));
         postMutationHook();
@@ -169,6 +187,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final void retain(final RowSet rowSetToIntersect) {
+        if (rowSetToIntersect == this) {
+            // Self-retention is a no-op; the ix* implementations must not mutate while iterating themselves.
+            return;
+        }
         preMutationHook();
         assign(innerSet.ixRetain(getInnerSet(rowSetToIntersect)));
         postMutationHook();

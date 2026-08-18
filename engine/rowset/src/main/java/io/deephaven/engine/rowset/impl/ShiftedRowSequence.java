@@ -88,7 +88,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
         @Override
         public RowSequence getNextRowSequenceThrough(long maxKeyInclusive) {
-            reusableOK.reset(wrappedIt.getNextRowSequenceThrough(maxKeyInclusive - shiftAmount), shiftAmount);
+            reusableOK.reset(wrappedIt.getNextRowSequenceThrough(unshiftSaturated(maxKeyInclusive)), shiftAmount);
             return reusableOK;
         }
 
@@ -100,7 +100,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
         @Override
         public boolean advance(long nextKey) {
-            return wrappedIt.advance(nextKey - shiftAmount);
+            return wrappedIt.advance(unshiftSaturated(nextKey));
         }
 
         @Override
@@ -121,10 +121,27 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
     @Override
     public RowSequence getRowSequenceByKeyRange(long startRowKeyInclusive, long endRowKeyInclusive) {
+        final long unshiftedStart = startRowKeyInclusive - shiftAmount;
+        if (shiftAmount < 0 && unshiftedStart < startRowKeyInclusive) {
+            // The unshifted start is past the end of the key space; nothing can qualify.
+            return RowSequenceFactory.EMPTY;
+        }
         return wrap(
-                wrappedOK.getRowSequenceByKeyRange(startRowKeyInclusive - shiftAmount,
-                        endRowKeyInclusive - shiftAmount),
+                wrappedOK.getRowSequenceByKeyRange(unshiftedStart, unshiftSaturated(endRowKeyInclusive)),
                 shiftAmount);
+    }
+
+    /**
+     * Remove our shift from a key provided in shifted space, saturating at {@link Long#MAX_VALUE} rather than
+     * overflowing; e.g. {@code Long.MAX_VALUE} used as a "no upper bound" argument combined with a negative shift must
+     * keep meaning "no upper bound".
+     */
+    private long unshiftSaturated(final long shiftedKey) {
+        final long unshifted = shiftedKey - shiftAmount;
+        if (shiftAmount < 0 && unshifted < shiftedKey) {
+            return Long.MAX_VALUE;
+        }
+        return unshifted;
     }
 
     @Override

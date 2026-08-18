@@ -477,6 +477,29 @@ public class SingleRangeTest {
     }
 
     @Test
+    public void testInsertAndAppendRangeNearMaxValue() {
+        // Adjacency at Long.MAX_VALUE must merge, not wrap.
+        final SingleRange sr = SingleRange.make(10, Long.MAX_VALUE - 1);
+        final OrderedLongSet merged = sr.ixInsert(Long.MAX_VALUE);
+        assertTrue(merged instanceof SingleRange);
+        assertEquals(10, merged.ixFirstKey());
+        assertEquals(Long.MAX_VALUE, merged.ixLastKey());
+        // Non-adjacent: the result must be an ordered two-range set.
+        final SingleRange sr2 = SingleRange.make(10, 20);
+        final OrderedLongSet two = sr2.ixInsert(Long.MAX_VALUE);
+        assertEquals(12, two.ixCardinality());
+        assertEquals(10, two.ixFirstKey());
+        assertEquals(Long.MAX_VALUE, two.ixLastKey());
+        two.ixValidate();
+        // Append of an adjacent range ending at Long.MAX_VALUE must merge as well.
+        final SingleRange sr3 = SingleRange.make(10, Long.MAX_VALUE - 5);
+        final OrderedLongSet appended = sr3.ixAppendRange(Long.MAX_VALUE - 4, Long.MAX_VALUE);
+        assertTrue(appended instanceof SingleRange);
+        assertEquals(10, appended.ixFirstKey());
+        assertEquals(Long.MAX_VALUE, appended.ixLastKey());
+    }
+
+    @Test
     public void testRowSequenceIteratorAdvanceIntoConsumedRegionIsNoOp() {
         final SingleRange sr = SingleRange.make(10, 30);
         try (final RowSequence.Iterator it = sr.ixGetRowSequenceIterator()) {

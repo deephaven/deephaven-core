@@ -1011,4 +1011,22 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
             }
         }
     }
+
+    @Test
+    public void testFillRangeChunkHonorsChunkOffsetCapacity() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.add(20);
+        rb = rb.add(30);
+        final RspRangeBatchIterator it = rb.getRangeBatchIterator(0, rb.getCardinality());
+        try (final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(8)) {
+            // Leave room for exactly one range past the offset; the capacity math must account for the
+            // offset or it will write (and count) ranges beyond the chunk's capacity.
+            final int offset = chunk.capacity() - 2;
+            final int written = it.fillRangeChunk(chunk, offset);
+            assertEquals(1, written);
+            assertTrue(it.hasNext());
+        }
+        it.close();
+    }
 }

@@ -1116,16 +1116,19 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
 
         @Override
         public void close() {
-            preShiftKeys.close();
+            // Idempotent: build() closes internally, and callers may also use try-with-resources.
+            if (preShiftKeys != null) {
+                preShiftKeys.close();
+                preShiftKeys = null;
+            }
             if (preShiftKeysIteratorForward != null) {
                 preShiftKeysIteratorForward.close();
+                preShiftKeysIteratorForward = null;
             }
             if (preShiftKeysIteratorReverse != null) {
                 preShiftKeysIteratorReverse.close();
+                preShiftKeysIteratorReverse = null;
             }
-            preShiftKeys = null;
-            preShiftKeysIteratorForward = null;
-            preShiftKeysIteratorReverse = null;
             shiftData = null;
         }
     }

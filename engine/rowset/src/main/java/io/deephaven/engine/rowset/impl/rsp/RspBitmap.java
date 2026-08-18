@@ -952,9 +952,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         return rb;
     }
 
-    public void appendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other, final boolean acquire) {
+    public void appendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other) {
         if ((shiftAmount & BLOCK_LAST) == 0 &&
-                tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other, acquire)) {
+                tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other)) {
             return;
         }
         if (lastValue() >= other.firstValue() + shiftAmount) {
