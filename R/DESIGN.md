@@ -453,7 +453,9 @@ Naming:
 | Public R6 field holding the Rcpp object | `.internal_rcpp_object` |
 
 Style: the R code follows the [Tidyverse style guide](https://style.tidyverse.org) via the `styler`
-package — run `styler::style_pkg()` before committing (see `rdeephaven/BUILDING.md`).
+package — run `styler::style_pkg()` before committing (see `rdeephaven/BUILDING.md`). Nothing in the
+build enforces it: `R/build.gradle` runs only the tests, and the C++ side is the same story (see
+`cpp-client/DESIGN.md` §12).
 There is no automated formatter for `src/client.cpp`; it uses 4-space indentation, unlike the
 2-space Google style used in `cpp-client`.
 

@@ -112,6 +112,10 @@ cmake -S . -B build \
 VERBOSE=1 cmake --build build --target install -- -j$NCPUS
 ```
 
+Once the tree is configured, an incremental rebuild is just
+`cmake --build build -- -j$NCPUS` (add `--target install` to reinstall, or
+`--target dhclient dhclient_tests` to skip the examples).
+
 Useful CMake options: `-DDHCORE_ONLY=ON` (skip dhclient/tests/examples — fast loop when only
 touching the core), `-DSANITIZE_ADDRESS=ON`.
 
@@ -580,7 +584,9 @@ Other consumers of `dhcore` you can break:
   `dhcore/include/public/deephaven/dhcore/utility/cython_support.h` exists purely for it:
   `CythonSupport::Create{Boolean,String,DateTime,LocalDate,LocalTime}ColumnSource` from raw
   pointer/validity buffers, `SlicesToColumnSource`, `ContainerToColumnSource`, `ColumnSourceToString`.
-  **Changing any of those signatures requires a matching change in `_core.pxd`.**
+  **Changing any of those signatures requires a matching change in `_core.pxd`.** Note it
+  instantiates `NumericBufferColumnSource<T>` directly rather than using the `*BufferColumnSource`
+  type aliases in that header.
 - **`R/rdeephaven`** is an [Rcpp](https://github.com/RcppCore/Rcpp) binding over the **`dhclient`
   public C++ API** — not over the C ABI above. `R/rdeephaven/src/client.cpp` wraps
   `Client`, `TableHandleManager`, `TableHandle`, `ClientOptions`, `Aggregate`, `UpdateByOperation`,
@@ -606,7 +612,10 @@ Other consumers of `dhcore` you can break:
 
 ## 12. Conventions, style, gotchas
 
-Formatting/naming (`.clang-format`: Google style, indent 2; `.clang-tidy` naming rules):
+Formatting/naming (`.clang-format`: Google style, indent 2; `.clang-tidy` naming rules).
+**Neither is run by the build**: no Gradle or CMake task invokes clang-format or clang-tidy, and
+the Spotless `cpp` block in `cpp-client/build.gradle` only enforces the copyright header. Treat
+them as the house style you apply yourself; `-Wall -Werror` is the only automated gate.
 
 | Kind | Convention |
 |------|------------|
@@ -654,7 +663,16 @@ Gotchas:
   are lowerCamelCase (`cumSum`, `emaTick`, `rollingSumTime`, …), and in `dhcore`
   `separatedList` / `demangle` (`utility/utility.h`) are lower-case. The free aggregation helpers in
   `client.h` are all `Agg*` CamelCase, but `AggWavg` wraps `Aggregate::WAvg` — helper and static
-  method capitalize "WAvg" differently.
+  method capitalize "WAvg" differently. `AggCount`/`AggMax`/`AggMin`/`AggSum`/`AggCombo` were
+  spelled `aggCount`/`aggMax`/`aggMin`/`aggSum`/`aggCombo` until recently, so out-of-tree callers
+  written against an older release may fail to compile.
+- **A green build does not mean the variadic overloads work.** Most of the `client.h` convenience
+  overloads are templates, so a body that does not compile is only diagnosed when something
+  instantiates it — and nothing in `tests/` or `examples/` instantiates most of them. Two are known
+  to be broken today: `TableHandle::UpdateBy(Args&&...)` forwards to a one-argument
+  `UpdateBy(std::vector<std::string>)` that does not exist, and
+  `TableHandle::PercentileBy(double, Args&&...)` ends in `std::forward<Args...>(args...)`, which is
+  malformed for a parameter pack. If you add or edit a variadic overload, write a test that calls it.
 - Commented-out declarations mark unimplemented features (`InputTable(schema,…)`, `RangeJoin`).
 
 ---
