@@ -6,7 +6,7 @@ A [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.ht
 
 ## Creating a Filter
 
-There are two ways to create a `Filter` object: from a condition string or using filter combinators for boolean logic.
+There are two ways to create a `Filter` object: from a condition string, or by combining multiple filters with boolean logic.
 
 ### From a condition string
 
@@ -19,20 +19,18 @@ import io.deephaven.api.filter.Filter
 myFilter = Filter.from("X > 5")[0]
 ```
 
-### Using filter combinators
+### Combining filters with boolean logic
 
-Use `FilterOr` and `FilterAnd` to combine multiple filters with boolean logic. These accept collections of filters created with `Filter.from`.
+Use `Filter.or` and `Filter.and` to combine multiple filters. These accept collections of filters created with `Filter.from`.
 
 ```groovy syntax
 import io.deephaven.api.filter.Filter
-import io.deephaven.api.filter.FilterOr
-import io.deephaven.api.filter.FilterAnd
 
 // Multiple conditions with OR
-orFilter = FilterOr.of(Filter.from("X > 5", "Y < 10"))
+orFilter = Filter.or(Filter.from("X > 5", "Y < 10"))
 
 // Multiple conditions with AND
-andFilter = FilterAnd.of(Filter.from("X > 5", "Y < 10"))
+andFilter = Filter.and(Filter.from("X > 5", "Y < 10"))
 ```
 
 ## Methods
@@ -57,7 +55,6 @@ checkValue = { int x ->
 source = emptyTable(100).update("X = i")
 
 // Use .withSerial because the filter has side effects
-// Filter.from() returns an array; [0] gets the single filter
 myFilter = Filter.from("(boolean)checkValue(X)")[0].withSerial()
 result = source.where(myFilter)
 ```
@@ -93,7 +90,7 @@ You need a `Filter` object in two situations:
 
 **Stateful filters**: If your filter modifies shared state (e.g., counting how many rows pass), use `withSerial` to force sequential evaluation. Without it, multiple threads evaluating rows simultaneously could corrupt the shared state.
 
-**Complex boolean logic**: Use `FilterAnd.of` and `FilterOr.of` to compose filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
+**Complex boolean logic**: Use `Filter.and` and `Filter.or` to combine filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
 
 **Barriers between filters** are rarely needed — most filters are stateless. If you do have filters with shared state where one must complete before another, see the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide.
 

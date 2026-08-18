@@ -40,13 +40,11 @@ Forces the column calculation to execute sequentially on a single core, processi
 
 ```groovy order=result
 import io.deephaven.api.Selectable
-import io.deephaven.api.ColumnName
-import io.deephaven.api.RawString
 import java.util.concurrent.atomic.AtomicInteger
 
 counter = new AtomicInteger(0)
 
-col = Selectable.of(ColumnName.of("ID"), RawString.of("counter.getAndIncrement()")).withSerial()
+col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
 result = emptyTable(10).update([col])
 ```
 
@@ -77,7 +75,7 @@ If both of those are true, use string formulas directly. There is no benefit to 
 
 ### When you need explicit control
 
-You need a `Selectable` object when the default parallel behavior would produce incorrect results. This happens when your formula is **stateful** — it reads or writes shared state that changes between rows.
+You need a `Selectable` object when parallel execution would produce incorrect results. This happens when your formula is **stateful** — it reads or writes shared state that changes between rows.
 
 **Use `withSerial`** when your formula must process rows one at a time, in order. Common cases include:
 
