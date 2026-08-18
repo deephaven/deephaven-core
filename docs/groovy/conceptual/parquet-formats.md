@@ -38,7 +38,7 @@ Deephaven supports optional metadata files that let you specify the types of you
 
 Deephaven maps Parquet [logical types](https://github.com/apache/parquet-format/blob/master/LogicalTypes.md) to Deephaven column types on read. The following non-obvious mappings are supported:
 
-- **`UINT_64`**: Read as `java.math.BigInteger`. Deephaven promotes the narrower unsigned integer types to a wider signed type that holds their full range — `UINT_8` and `UINT_16` become `char`, and `UINT_32` becomes `long` — but no Java primitive holds the full `UINT_64` range, so Deephaven reads these columns as `BigInteger` by default. Use `setUnsignedLongTarget` on a [`ParquetInstructions.Builder`](./parquet-instructions.md) to choose a different type.
+- **`UINT_64`**: Read as `java.math.BigInteger`. Deephaven promotes the narrower unsigned integer types to a wider signed type that holds their full range — `UINT_8` and `UINT_16` become `char`, and `UINT_32` becomes `long` — but no Java primitive holds the full `UINT_64` range, so Deephaven reads these columns as `BigInteger` by default. Use `setUnsignedLongTarget` on a [`ParquetInstructions.Builder`](../how-to-guides/data-import-export/parquet-instructions.md) to choose a different type.
 
 ### Reading `UINT_64` as a long
 
@@ -61,7 +61,7 @@ instructionsInstance = ParquetInstructions.builder()
 result = ParquetTools.readTable("/data/unsigned.parquet", instructionsInstance)
 ```
 
-Deephaven never writes `UINT_64`, so these options apply only to reads. Deephaven applies the same default and offers the same coercions when reading Arrow data; see the notes on integral coercion in the [Arrow Flight guide](./arrow-flight.md).
+Deephaven never writes `UINT_64`, so these options apply only to reads. Deephaven applies the same default and offers the same coercions when reading Arrow data; see the notes on integral coercion in the [Arrow Flight guide](../how-to-guides/data-import-export/arrow-flight.md).
 
 ## Related documentation
 

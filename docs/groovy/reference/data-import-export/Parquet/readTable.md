@@ -136,7 +136,7 @@ Additionally, the `S3.maxFragmentSize` [configuration property](../../../how-to-
 
 - [Import Parquet into Deephaven video](https://youtu.be/k4gI6hSZ2Jc)
 - [Parquet instructions](../../../how-to-guides/data-import-export/parquet-instructions.md)
-- [Parquet formats](../../../how-to-guides/data-import-export/parquet-formats.md)
+- [Parquet formats](../../../conceptual/parquet-formats.md)
 - [Write Parquet files](./writeTable.md)
 - [Docker data volumes](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(java.lang.String))
