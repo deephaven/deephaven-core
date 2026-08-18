@@ -151,7 +151,14 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
 
     @Override
     public RowSequence getRowSequenceByKeyRange(long startRowKeyInclusive, long endRowKeyInclusive) {
-        return arr.getRowSequenceByKeyRangeConstrainedToIndexAndOffsetRange(startRowKeyInclusive, endRowKeyInclusive,
+        // The constrained lookup below searches from our start, which handles the start side; the end side must be
+        // clamped to our own last key or the result may include keys past the end of this sequence.
+        final long lastKey = lastRowKey();
+        if (startRowKeyInclusive > lastKey || endRowKeyInclusive < firstRowKey()) {
+            return RowSequenceFactory.EMPTY;
+        }
+        return arr.getRowSequenceByKeyRangeConstrainedToIndexAndOffsetRange(
+                startRowKeyInclusive, Math.min(endRowKeyInclusive, lastKey),
                 startIdx, startOffset, cardBeforeStartIdx, endIdx, endOffset);
     }
 
@@ -497,7 +504,10 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
             } else if (currEndIdx == -1) {
                 revert = savedStartIdx == currStartIdx && currStartOffset < savedStartOffset;
             } else {
-                revert = currEndIdx == currStartIdx && currStartOffset < currEndOffset;
+                // Anything at or before the previously returned end position was already consumed; the found
+                // position must be strictly after it or the advance is a no-op.
+                revert = currStartIdx < currEndIdx
+                        || (currStartIdx == currEndIdx && currStartOffset <= currEndOffset);
             }
             if (revert) {
                 currStartIdx = savedStartIdx;

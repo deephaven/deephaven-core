@@ -475,4 +475,30 @@ public class SingleRangeTest {
         assertEquals(last - 1, res.ixFirstKey());
         assertEquals(last, res.ixLastKey());
     }
+
+    @Test
+    public void testRowSequenceIteratorAdvanceIntoConsumedRegionIsNoOp() {
+        final SingleRange sr = SingleRange.make(10, 30);
+        try (final RowSequence.Iterator it = sr.ixGetRowSequenceIterator()) {
+            final RowSequence rs = it.getNextRowSequenceWithLength(5); // consumes 10..14
+            assertEquals(5, rs.size());
+            final long posBefore = it.getRelativePosition();
+            // Advance into the already-consumed region: must be a no-op.
+            assertTrue(it.advance(12));
+            assertEquals(posBefore, it.getRelativePosition());
+            assertEquals(15, it.peekNextKey());
+            // Advance to exactly the next unconsumed key: position unchanged.
+            assertTrue(it.advance(15));
+            assertEquals(posBefore, it.getRelativePosition());
+            assertEquals(15, it.peekNextKey());
+            // A genuine forward advance still works.
+            assertTrue(it.advance(20));
+            assertEquals(20, it.peekNextKey());
+            final RowSequence rs2 = it.getNextRowSequenceThrough(30);
+            assertEquals(11, rs2.size());
+            assertEquals(20, rs2.firstRowKey());
+            assertEquals(30, rs2.lastRowKey());
+            assertFalse(it.hasMore());
+        }
+    }
 }
