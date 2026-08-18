@@ -63,12 +63,13 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
         final long p95 = hist.getValueAtPercentile(95);
         final long p99 = hist.getValueAtPercentile(99);
         final long max = hist.getMaxValue();
+        final long timestampEpochNanos = DateTimeUtils.epochNanos(now);
 
         publisher.add(
                 tableId,
                 tableKey,
                 statType,
-                DateTimeUtils.epochNanos(now),
+                timestampEpochNanos,
                 count,
                 p50 / 1e6,
                 p75 / 1e6,
@@ -81,7 +82,7 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
             return;
         }
         try {
-            sink.log(tableId, tableKey, statType, now, count, p50, p75, p90, p95, p99, max);
+            sink.log(tableId, tableKey, statType, timestampEpochNanos, count, p50, p75, p90, p95, p99, max);
         } catch (final IOException e) {
             // Don't want to log this for every entry
             log.error().append("Error recording barrage subscription performance for ").append(tableKey)

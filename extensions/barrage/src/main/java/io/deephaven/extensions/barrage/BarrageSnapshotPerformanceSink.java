@@ -4,7 +4,6 @@
 package io.deephaven.extensions.barrage;
 
 import java.io.IOException;
-import java.time.Instant;
 
 /**
  * Receives barrage snapshot performance statistics so that an integrator may record them, for example into binary logs.
@@ -33,21 +32,21 @@ public interface BarrageSnapshotPerformanceSink {
      *
      * @param tableId the identity of the snapshotted table
      * @param tableKey the barrage performance key of the snapshotted table
-     * @param requestTime the time at which the request was received
+     * @param requestTimeEpochNanos the time at which the request was received, as nanoseconds since the epoch
      * @param queueNanos the time the request spent queued before being serviced
      * @param snapshotNanos the time spent constructing the snapshot
      * @param writeNanos the time spent writing the snapshot
      * @param bytesWritten the number of bytes written
      */
-    void log(String tableId, String tableKey, Instant requestTime, long queueNanos, long snapshotNanos, long writeNanos,
-            long bytesWritten) throws IOException;
+    void log(String tableId, String tableKey, long requestTimeEpochNanos, long queueNanos, long snapshotNanos,
+            long writeNanos, long bytesWritten) throws IOException;
 
     enum Noop implements BarrageSnapshotPerformanceSink {
         INSTANCE;
 
         @Override
-        public void log(String tableId, String tableKey, Instant requestTime, long queueNanos, long snapshotNanos,
-                long writeNanos, long bytesWritten) {
+        public void log(String tableId, String tableKey, long requestTimeEpochNanos, long queueNanos,
+                long snapshotNanos, long writeNanos, long bytesWritten) {
 
         }
     }

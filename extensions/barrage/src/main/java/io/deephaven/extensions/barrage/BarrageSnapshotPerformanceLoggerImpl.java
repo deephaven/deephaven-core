@@ -52,10 +52,12 @@ class BarrageSnapshotPerformanceLoggerImpl implements BarrageSnapshotPerformance
      */
     @Override
     public synchronized void log(SnapshotMetricsHelper helper, long writeNanos, long bytesWritten) {
+        final long requestTimeEpochNanos = DateTimeUtils.epochNanos(helper.requestTm);
+
         publisher.add(
                 helper.tableId,
                 helper.tableKey,
-                DateTimeUtils.epochNanos(helper.requestTm),
+                requestTimeEpochNanos,
                 helper.queueNanos / 1e6,
                 helper.snapshotNanos / 1e6,
                 writeNanos / 1e6,
@@ -65,7 +67,7 @@ class BarrageSnapshotPerformanceLoggerImpl implements BarrageSnapshotPerformance
             return;
         }
         try {
-            sink.log(helper.tableId, helper.tableKey, helper.requestTm, helper.queueNanos, helper.snapshotNanos,
+            sink.log(helper.tableId, helper.tableKey, requestTimeEpochNanos, helper.queueNanos, helper.snapshotNanos,
                     writeNanos, bytesWritten);
         } catch (final IOException e) {
             // Don't want to log this for every entry

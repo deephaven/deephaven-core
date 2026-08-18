@@ -4,7 +4,6 @@
 package io.deephaven.extensions.barrage;
 
 import java.io.IOException;
-import java.time.Instant;
 
 /**
  * Receives barrage subscription performance statistics so that an integrator may record them, for example into binary
@@ -37,7 +36,7 @@ public interface BarrageSubscriptionPerformanceSink {
      * @param tableId the identity of the subscribed table
      * @param tableKey the barrage performance key of the subscribed table
      * @param statType which statistic this entry describes, for example {@code "WriteMillis"}
-     * @param now the time at which this cycle was flushed
+     * @param timestampEpochNanos the time at which this cycle was flushed, as nanoseconds since the epoch
      * @param count the number of values recorded during this cycle
      * @param p50 the 50th percentile of the recorded values
      * @param p75 the 75th percentile of the recorded values
@@ -46,15 +45,15 @@ public interface BarrageSubscriptionPerformanceSink {
      * @param p99 the 99th percentile of the recorded values
      * @param max the largest recorded value
      */
-    void log(String tableId, String tableKey, String statType, Instant now, long count, long p50, long p75, long p90,
-            long p95, long p99, long max) throws IOException;
+    void log(String tableId, String tableKey, String statType, long timestampEpochNanos, long count, long p50,
+            long p75, long p90, long p95, long p99, long max) throws IOException;
 
     enum Noop implements BarrageSubscriptionPerformanceSink {
         INSTANCE;
 
         @Override
-        public void log(String tableId, String tableKey, String statType, Instant now, long count, long p50, long p75,
-                long p90, long p95, long p99, long max) {
+        public void log(String tableId, String tableKey, String statType, long timestampEpochNanos, long count,
+                long p50, long p75, long p90, long p95, long p99, long max) {
 
         }
     }
