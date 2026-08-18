@@ -115,8 +115,9 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         if (pendingContainerKey != -1) {
             flushPendingContainer();
         }
-        // Every path that creates rb appends to it immediately; an empty rb would drop shiftAmount if
-        // handled naively, so insist on the invariant instead.
+        // Every path that creates rb appends to it immediately, so rb is never empty here. That matters
+        // because appendShiftedUnsafeNoWriteCheck reads rb's last span (lastValue(), spanInfos[size - 1]),
+        // which is not valid on an empty bitmap.
         Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
         rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix);
     }
