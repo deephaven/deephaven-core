@@ -52,4 +52,20 @@ public class ShiftedRowSequenceTest extends RowSequenceTestBase {
             shifted.close();
         }
     }
+
+    @Test
+    public void testAdvancePastKeySpaceExhausts() {
+        // With a negative shift, an advance target whose unshifted value overflows lies beyond any key the
+        // sequence can contain: the iterator must exhaust, not position at a smaller key.
+        try (final io.deephaven.engine.rowset.RowSet toWrap = io.deephaven.engine.rowset.RowSetFactory
+                .fromKeys(Long.MAX_VALUE - 10, Long.MAX_VALUE)) {
+            final RowSequence shifted = ShiftedRowSequence.wrap(toWrap, -50);
+            try (final RowSequence.Iterator it = shifted.getRowSequenceIterator()) {
+                // Shifted keys are MAX-60 and MAX-50; both are below the requested key.
+                org.junit.Assert.assertFalse(it.advance(Long.MAX_VALUE));
+                org.junit.Assert.assertFalse(it.hasMore());
+            }
+            shifted.close();
+        }
+    }
 }

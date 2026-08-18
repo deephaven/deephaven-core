@@ -100,7 +100,16 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
         @Override
         public boolean advance(long nextKey) {
-            return wrappedIt.advance(unshiftSaturated(nextKey));
+            final long unshifted = nextKey - shiftAmount;
+            if (shiftAmount < 0 && unshifted < nextKey) {
+                // The requested key is beyond any key this sequence can contain; saturating would position
+                // us before the requested key, so exhaust the wrapped iterator instead.
+                if (wrappedIt.advance(Long.MAX_VALUE)) {
+                    wrappedIt.getNextRowSequenceWithLength(Long.MAX_VALUE);
+                }
+                return false;
+            }
+            return wrappedIt.advance(unshifted);
         }
 
         @Override
@@ -134,7 +143,8 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
     /**
      * Remove our shift from a key provided in shifted space, saturating at {@link Long#MAX_VALUE} rather than
      * overflowing; e.g. {@code Long.MAX_VALUE} used as a "no upper bound" argument combined with a negative shift must
-     * keep meaning "no upper bound".
+     * keep meaning "no upper bound". Only valid for inclusive upper bounds; positioning operations like {@code advance}
+     * must treat an overflowing target as "past the end" instead.
      */
     private long unshiftSaturated(final long shiftedKey) {
         final long unshifted = shiftedKey - shiftAmount;

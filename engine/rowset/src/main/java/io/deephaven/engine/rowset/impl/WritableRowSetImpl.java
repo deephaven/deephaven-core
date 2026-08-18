@@ -127,7 +127,11 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insert(final RowSet added) {
         if (added == this) {
-            // Self-insertion is a no-op; the ix* implementations must not mutate while iterating themselves.
+            // Self-insertion is a no-op (and the ix* implementations must not mutate while iterating
+            // themselves), but the mutation hooks must still fire; e.g. unmodifiable views reject every
+            // mutator via their hooks.
+            preMutationHook();
+            postMutationHook();
             return;
         }
         preMutationHook();
@@ -188,7 +192,11 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void retain(final RowSet rowSetToIntersect) {
         if (rowSetToIntersect == this) {
-            // Self-retention is a no-op; the ix* implementations must not mutate while iterating themselves.
+            // Self-retention is a no-op (and the ix* implementations must not mutate while iterating
+            // themselves), but the mutation hooks must still fire; e.g. unmodifiable views reject every
+            // mutator via their hooks.
+            preMutationHook();
+            postMutationHook();
             return;
         }
         preMutationHook();
