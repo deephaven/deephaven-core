@@ -16,10 +16,18 @@ import java.util.Objects;
  * the in-memory tables. An integrator installs its own factory with {@link #set(Factory)}, which must happen before the
  * first use of {@link BarragePerformanceLog}, because the sinks are resolved once, when that singleton is constructed.
  * <p>
+ * Install the factory early in startup, but do not force {@link BarragePerformanceLog#getInstance()} at that point to
+ * prove the ordering: constructing that singleton registers blink tables with the update graph of the current
+ * {@link io.deephaven.engine.context.ExecutionContext}, which typically does not exist yet while startup code is
+ * running. Let the first barrage activity create it, and rely on the warning that {@link #set(Factory)} logs if the
+ * installation turns out to be too late.
+ * <p>
  * This class is the template for extension modules that want pluggable table logging: keep the sink interfaces in the
  * module that owns them, expose a {@code <Module>TableLoggers} holder with a nested {@code Factory} and a {@code Noop}
  * default, and let the integrator install a factory during startup. Extension-specific loggers should not be added to
- * {@code io.deephaven.engine.tablelogger.EngineTableLoggers}, which is reserved for engine concepts.
+ * {@code io.deephaven.engine.tablelogger.EngineTableLoggers}, which is reserved for engine concepts. The ordering
+ * caveat above generalizes as well: every such holder has its own "install before first use of singleton X" deadline,
+ * and X's construction may need runtime machinery that startup code cannot supply.
  */
 public class BarrageTableLoggers {
     private static final Logger log = LoggerFactory.getLogger(BarrageTableLoggers.class);
@@ -48,9 +56,24 @@ public class BarrageTableLoggers {
         BarrageTableLoggers.factory = Objects.requireNonNull(factory);
     }
 
+    /**
+     * Supplies the sinks that {@link BarragePerformanceLog} forwards its entries to. Each method is called exactly
+     * once, when that singleton is constructed, on whichever thread first uses barrage.
+     * <p>
+     * Implementations should not throw: a sink that cannot be created should be reported and replaced with the
+     * corresponding {@code Noop}, so that a defective recording path degrades barrage performance logging rather than
+     * barrage itself. {@link BarragePerformanceLog} substitutes {@code Noop} for an accessor that throws or returns
+     * null, but an implementation that handles its own failure can log something far more useful about the cause.
+     */
     public interface Factory {
+        /**
+         * @return the sink to forward subscription performance entries to; never null
+         */
         BarrageSubscriptionPerformanceSink subscriptionPerformanceSink();
 
+        /**
+         * @return the sink to forward snapshot performance entries to; never null
+         */
         BarrageSnapshotPerformanceSink snapshotPerformanceSink();
 
         enum Noop implements Factory {
