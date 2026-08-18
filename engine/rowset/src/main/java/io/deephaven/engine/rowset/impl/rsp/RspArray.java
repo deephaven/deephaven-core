@@ -2134,13 +2134,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     private int getIndexForRankNoAcc(final int fromIndex, final long pos, final MutableLong prevCardMu) {
         int i = fromIndex;
-        final long posp1 = pos + 1;
         long card = (prevCardMu == null) ? 0 : prevCardMu.get();
         long prevCard;
         while (true) {
             prevCard = card;
             card += getSpanCardinalityAtIndex(i);
-            if (posp1 <= card) {
+            // Note pos < card rather than pos + 1 <= card: pos + 1 overflows for pos == Long.MAX_VALUE.
+            if (pos < card) {
                 break;
             }
             ++i;
@@ -4553,15 +4553,21 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
+        // startPositionInclusive + length - 1 can overflow for large lengths (e.g. Long.MAX_VALUE used as
+        // "everything from start"); saturate, since any end at or past the last position means "through the end".
+        final long lengthMinusOne = length - 1;
+        final long saturatedEndPositionInclusive = (lengthMinusOne > Long.MAX_VALUE - startPositionInclusive)
+                ? Long.MAX_VALUE
+                : startPositionInclusive + lengthMinusOne;
         final long endPositionInclusive;
         if (isCardinalityCached()) {
             final long cardinality = getCardinality();
             if (startPositionInclusive >= cardinality) {
                 return RowSequenceFactory.EMPTY;
             }
-            endPositionInclusive = Math.min(startPositionInclusive + length, cardinality) - 1;
+            endPositionInclusive = Math.min(saturatedEndPositionInclusive, cardinality - 1);
         } else {
-            endPositionInclusive = startPositionInclusive + length - 1;
+            endPositionInclusive = saturatedEndPositionInclusive;
         }
         final MutableLong prevCardMu;
         final int startIdx;

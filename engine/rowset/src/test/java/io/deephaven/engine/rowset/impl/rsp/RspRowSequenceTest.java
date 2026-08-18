@@ -835,6 +835,26 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
             assertTrue(rs.isEmpty());
             assertEquals(0, rs.size());
         }
+        // A saturated length ("everything from start") must not overflow the end position.
+        try (final RowSequence rs = rb.getRowSequenceByPosition(10, Long.MAX_VALUE)) {
+            assertEquals(cardinality - 10, rs.size());
+            assertEquals(10, rs.firstRowKey());
+            assertEquals(0x9000_0000L, rs.lastRowKey());
+        }
+    }
+
+    @Test
+    public void testGetRowSequenceByPositionSaturatedLengthCachedCardinality() {
+        // Small bitmap, so cardinality is cached; a saturated length must not overflow the end position.
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.add(BLOCK_SIZE + 5);
+        rb = rb.add(2 * BLOCK_SIZE + 7);
+        try (final RowSequence rs = rb.getRowSequenceByPosition(1, Long.MAX_VALUE)) {
+            assertEquals(2, rs.size());
+            assertEquals(BLOCK_SIZE + 5, rs.firstRowKey());
+            assertEquals(2 * BLOCK_SIZE + 7, rs.lastRowKey());
+        }
     }
 
     @Test
