@@ -411,7 +411,7 @@ Partitioned tables let you work with data larger than memory and parallelize pro
 | I want to...               | Use this                                               |
 | -------------------------- | ------------------------------------------------------ |
 | Check if a table updates   | `table.is_refreshing`                                  |
-| Stop updates               | `table.snapshot()`                                     |
+| Take a static snapshot     | `table.snapshot()`                                     |
 | Edit data manually         | [Input tables](../how-to-guides/input-tables.md)       |
 | Push data programmatically | [Table Publisher](../how-to-guides/table-publisher.md) |
 | Process by groups          | `partition_by`                                         |

@@ -213,7 +213,7 @@ The [`update`](../reference/table-operations/select/update.md) operation adds or
 
 1. **Formula parsing**: The formula (e.g., `"Total = Price * Quantity"`) is parsed using [JavaParser](https://javaparser.org/). Simple formulas may use pre-compiled implementations; complex formulas trigger dynamic compilation of a new Java class.
 
-2. **Column source creation**: A new `ColumnSource` is created for each derived column. This source computes values on-demand or caches them, depending on the operation variant ([`update`](../reference/table-operations/select/update.md) vs [`updateView`](../reference/table-operations/select/updateView.md)).
+2. **Column source creation**: A new `ColumnSource` is created for each derived column. This source computes values on-demand or caches them, depending on the operation variant ([`update`](../reference/table-operations/select/update.md) vs [`updateView`](../reference/table-operations/select/update-view.md)).
 
 3. **Formula evaluation**: For `update`, the formula is evaluated for each row in the `RowSet`, with results stored in the new `ColumnSource`. Data is processed in [chunks](#chunk-oriented-architecture) for efficiency.
 
