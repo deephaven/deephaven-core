@@ -163,9 +163,11 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
 
     @Override
     public void fillRowKeyChunk(final WritableLongChunk<? super OrderedRowKeys> chunkToFill) {
-        final RspIterator it = new RspIterator(new RspArray.SpanCursorForwardImpl(arr, startIdx), startOffset);
-        int n = it.copyTo(chunkToFill, 0, intSize());
-        chunkToFill.setSize(n);
+        // The iterator's span cursor holds a reference to arr; close it or the reference is leaked.
+        try (final RspIterator it = new RspIterator(new RspArray.SpanCursorForwardImpl(arr, startIdx), startOffset)) {
+            final int n = it.copyTo(chunkToFill, 0, intSize());
+            chunkToFill.setSize(n);
+        }
     }
 
     @Override

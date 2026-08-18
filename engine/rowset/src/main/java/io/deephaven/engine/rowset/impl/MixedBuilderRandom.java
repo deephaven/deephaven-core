@@ -27,7 +27,13 @@ public class MixedBuilderRandom implements OrderedLongSet.BuilderRandom {
             accumIndex = ix;
             return;
         }
-        accumIndex = accumIndex.ixInsert(ix);
+        // ixInsert may return a new object (copy-on-write when accumIndex is shared); release the
+        // replaced reference or it is leaked.
+        final OrderedLongSet newAccumIndex = accumIndex.ixInsert(ix);
+        if (newAccumIndex != accumIndex) {
+            accumIndex.ixRelease();
+        }
+        accumIndex = newAccumIndex;
         ix.ixRelease();
     }
 
