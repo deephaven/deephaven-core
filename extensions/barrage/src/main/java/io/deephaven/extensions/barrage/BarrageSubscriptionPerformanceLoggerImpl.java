@@ -11,7 +11,6 @@ import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.time.DateTimeUtils;
 import org.HdrHistogram.Histogram;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
@@ -83,10 +82,11 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
         }
         try {
             sink.log(tableId, tableKey, statType, timestampEpochNanos, count, p50, p75, p90, p95, p99, max);
-        } catch (final IOException e) {
-            // Don't want to log this for every entry
+        } catch (final Exception e) {
+            // Catch unchecked failures as well as IOException: a defective sink must not be able to disrupt the
+            // in-memory table or the caller. Don't want to log this for every entry.
             log.error().append("Error recording barrage subscription performance for ").append(tableKey)
-                    .append(" caused by: ").append(e).endl();
+                    .append("; disabling further attempts, caused by: ").append(e).endl();
             encounteredError = true;
         }
     }

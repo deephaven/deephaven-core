@@ -11,7 +11,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.time.DateTimeUtils;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
@@ -69,10 +68,11 @@ class BarrageSnapshotPerformanceLoggerImpl implements BarrageSnapshotPerformance
         try {
             sink.log(helper.tableId, helper.tableKey, requestTimeEpochNanos, helper.queueNanos, helper.snapshotNanos,
                     writeNanos, bytesWritten);
-        } catch (final IOException e) {
-            // Don't want to log this for every entry
+        } catch (final Exception e) {
+            // Catch unchecked failures as well as IOException: this runs on the request-serving thread, so a defective
+            // sink must not be able to disrupt request completion. Don't want to log this for every entry.
             log.error().append("Error recording barrage snapshot performance for ").append(helper.tableKey)
-                    .append(" caused by: ").append(e).endl();
+                    .append("; disabling further attempts, caused by: ").append(e).endl();
             encounteredError = true;
         }
     }
