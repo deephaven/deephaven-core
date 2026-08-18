@@ -304,7 +304,7 @@ When you create a ticking table and add a listener to it, there's a potential ra
 
 The [Update Graph](../conceptual/table-update-model.md) (UG) coordinates all table updates in Deephaven. By holding an Update Graph lock while creating the table _and_ adding the listener, you ensure no updates occur in between.
 
-![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-locks.png)
+![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-lock.png)
 
 > [!TIP]
 > **Lock = atomicity.** The lock ensures "create table" and "add listener" happen as one indivisible unit from the Update Graph's perspective — no updates can slip through.
