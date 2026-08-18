@@ -7,16 +7,16 @@ Deephaven tables support Object-typed columns that can hold arbitrary Java objec
 
 Use this when your Deephaven column type is too generic for the intended wire type (for example, `Object` columns that should be exported as `Union` or `Map`), or when you want to opt into a wire-level compression such as Run-End Encoding. This guide includes examples of the `Union`, `Map`, and `RunEndEncoded` types, which are supported by Deephaven.
 
-## How It Works
+## How it works
 
-1. Extract a base schema with `BarrageUtil.schemaFromTable(...)`. Manages basic type mapping for primitive types and collections of primitives.
+1. Extract a base schema with `BarrageUtil.schemaFromTable(...)`. This handles basic type mapping for primitive types and collections of primitives.
 2. Replace the target field with explicit Arrow types.
 3. Attach the schema using `withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, newSchema))`.
 
 > [!NOTE]
 > `withAttributes(...)` returns a new table. If you later transform the table (for example, with `select`, `view`, or `update`), attributes may not be preserved and you may need to re-apply the schema. Ideally, you would apply the schema as late as possible before export to minimize this risk.
 
-## Example: Annotate `Union<String, Double>` Columns
+## Example: Annotate `Union<String, Double>` columns
 
 The following example creates a table with a column of Objects (limited for this example to `String` and `Double`). The Arrow schema annotates the column as a dense union with `String` and `Double` branches. The final table can be exported over Flight / Barrage without error.
 
@@ -80,7 +80,7 @@ def new_schema = new Schema(fields)
 table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
-## Example: Annotate `Map<String, String>` Columns
+## Example: Annotate `Map<String, String>` columns
 
 The following example creates a table with a column of `Map<String, String>`. The Arrow schema annotates the column as an Arrow `Map` with the correct types for key and values. The final table can be exported over Flight / Barrage without error.
 
@@ -149,7 +149,7 @@ def new_schema = new Schema(fields)
 table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
-## Example: Annotate `Map<String, Integer>` Columns
+## Example: Annotate `Map<String, Integer>` columns
 
 The following example creates a table with a column of `Map<String, Integer>`. The Arrow schema annotates the column as an Arrow `Map` with `String` keys and `Integer` values. The final table can be exported over Flight / Barrage without error.
 
@@ -218,9 +218,9 @@ def new_schema = new Schema(fields)
 table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
-## Example: Annotate `Map<String, Union>` Columns
+## Example: Annotate `Map<String, Union>` columns
 
-This example demonstrates the use of `Union` for values in a `Map` with `String` keys. The `Union` can contain a `Double`, `String`, `Long`, or `Integer`.
+This example demonstrates using `Union` for values in a `Map` with `String` keys. The `Union` can contain a `Double`, `String`, `Long`, or `Integer`.
 
 ```groovy order=table,table_w_attributes
 // Table creation
@@ -319,7 +319,7 @@ def new_schema = new Schema(fields)
 table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
-## Example: Run-End Encoded (REE) Columns
+## Example: Run-End Encoded (REE) columns
 
 [Run-End Encoding](https://arrow.apache.org/docs/format/Columnar.html#run-end-encoded-layout) is a wire-level optimization for columns with many repeated values. Instead of sending every value, the column is serialized as two child arrays:
 
@@ -372,7 +372,7 @@ table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_
 
 To confirm that the column really is sent run-end encoded, see [Verify the encoding from a subscriber](#verify-the-encoding-from-a-subscriber) below.
 
-## Example: Dictionary-Encoded Columns
+## Example: Dictionary-Encoded columns
 
 [Dictionary Encoding](https://arrow.apache.org/docs/format/Columnar.html#dictionary-encoded-layout) is a wire-level optimization for low-cardinality columns. Instead of sending each value in full, Deephaven sends each unique value once (in a `DictionaryBatch` message) and replaces each row with a compact integer index.
 
@@ -385,9 +385,8 @@ The `DictionaryEncoding` index width controls the integer type used for indices:
 - `Int16` (16-bit signed) — more compact than `Int32`, but limits the dictionary to at most 32,768 distinct values.
 - `Int64` (64-bit signed) — rarely needed; use only when distinct values exceed 1 billion.
 
-:::caution
-Dictionary updates are sent as deltas, so entries accumulate as new unique values appear. To prevent unbounded growth on the server and client, Deephaven resets the dictionary when its size exceeds the table or viewport size by flushing the current dictionary and accumulating only newly encountered values. Despite this safety net, if a single table (or viewport) contains more distinct values than the index type can represent (128 for `Int8`, 32,768 for `Int16`), Deephaven throws an error at serialization time. Prefer `Int32` unless you are certain the column's active cardinality stays within the smaller limit.
-:::
+> [!CAUTION]
+> Dictionary updates are sent as deltas, so entries accumulate as new unique values appear. To prevent unbounded growth on the server and client, Deephaven resets the dictionary when its size exceeds the table or viewport size by flushing the current dictionary and accumulating only newly encountered values. Despite this safety net, if a single table (or viewport) contains more distinct values than the index type can represent (128 for `Int8`, 32,768 for `Int16`), Deephaven throws an error at serialization time. Prefer `Int32` unless you are certain the column's active cardinality stays within the smaller limit.
 
 ```groovy order=table,table_w_attributes
 import io.deephaven.extensions.barrage.util.BarrageUtil
@@ -429,7 +428,7 @@ table_w_attributes = table.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE,
 
 ## Verify the encoding from a subscriber
 
-The schema a table is exported with is sent to every subscriber, and Deephaven stores it on the resulting client-side table under the same `Table.BARRAGE_SCHEMA_ATTRIBUTE`. Reading that attribute back tells you exactly which encoding each column was sent with.
+Deephaven sends the export schema to every subscriber and stores it on the resulting client-side table under the same `Table.BARRAGE_SCHEMA_ATTRIBUTE`. Reading that attribute back tells you exactly which encoding each column was sent with.
 
 Run the [Run-End Encoded example](#example-run-end-encoded-ree-columns) above so that `table_w_attributes` exists, then subscribe to it — from a second Deephaven instance, or from the same instance over a [URI](../use-uris.md):
 
@@ -472,7 +471,7 @@ Use `println wire_schema.toJson()` to dump the entire negotiated schema, includi
 > These encodings do not change the Deephaven column type — the subscriber's `status` column is still a `String`, and the subscriber's `TableDefinition` is identical either way. Both encodings are transport-only optimizations, so the schema attribute is the only thing that tells you how the bytes were sent.
 
 > [!CAUTION]
-> The attribute is only propagated through a few operations (`where`, `firstBy`, `lastBy`, `partitionBy`, `reverse`, `sort`, and flatten). Read it from the table returned by `resolve` rather than from a derived table.
+> Only a few operations propagate the attribute (`where`, `firstBy`, `lastBy`, `partitionBy`, `reverse`, `sort`, and `flatten`). Read it from the table returned by `resolve` rather than from a derived table.
 
 ### From the producer
 
