@@ -9,6 +9,9 @@ An in-depth look at what we’ve done, why we’ve done it, and why you should c
 
 </div>
 
+> [!NOTE]
+> New to Deephaven? Start with [How Deephaven works: A mental model](./deephaven-mental-model.md) for an approachable introduction before diving into this technical deep-dive.
+
 We built Deephaven to be an incredible tool for working with tabular data — full stop. To us, tables are dynamic, powerful constructs, but we certainly care about static, batch ones too. In this piece, we explore some of the underlying technical and architectural decisions that, taken together, deliver Deephaven's value proposition.
 
 This guide assumes familiarity with distributed systems, JVM architecture, and modern data platforms. For hands-on tutorials, see our [how-to guides](../intro.md#how-to-guides).
@@ -92,7 +95,7 @@ When `source` receives a new row, the DAG ensures that `filtered` and `aggregate
 
 ### Update graph (UG) cycles
 
-The engine batches updates at a configurable interval (default 1000ms) and propagated through the DAG in topological order. This batching:
+The engine batches updates at a configurable interval (default 1000ms) and propagates them through the DAG in topological order. This batching:
 
 - **Improves efficiency**: Process multiple changes together instead of one at a time.
 - **Ensures consistency**: All tables see the same snapshot of changes.

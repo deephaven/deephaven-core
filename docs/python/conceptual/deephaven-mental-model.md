@@ -13,7 +13,7 @@ Deephaven works differently from tools like pandas, polars, or SQL — and even 
 
 This isn't a deep technical dive — for that, see [Deephaven's design](./deephaven-design.md). Instead, this guide builds the mental model you need to work productively with Deephaven from day one.
 
-<Svg src='../assets/conceptual/mental-model-overview.svg' style={{height: 'auto', maxWidth: '900px'}} />
+<iframe src="../assets/conceptual/mental-model-overview.html" style={{width: '100%', height: '900px', border: 'none'}} />
 
 ## Tables are recipes, not data
 
@@ -116,8 +116,8 @@ For more complex cases involving state, see [parallelization](./query-engine/par
 
 Deephaven tables come in two flavors:
 
-- **Static tables**: Data that doesn't change. Loaded from files, created from Python objects, or snapshots of live data.
-- **Refreshing (live) tables**: Data that updates continuously. Connected to streams, sensors, or other real-time sources.
+- **Static tables**: Data that doesn't change. Loaded from files, created with [`empty_table`](../reference/table-operations/create/emptyTable.md) or [`new_table`](../reference/table-operations/create/newTable.md), or snapshots of live data.
+- **Refreshing (live) tables**: Data that updates continuously. Created with [`time_table`](../reference/table-operations/create/timeTable.md), connected to streams, or other real-time sources.
 
 ```python order=static_table,live_table
 from deephaven import empty_table, time_table
@@ -161,15 +161,15 @@ my_table = new_table([int_col("ID", [1, 2, 3]), string_col("Name", ["A", "B", "C
 
 When you extract data back to Python, you're taking a _snapshot_:
 
-```python order=my_table,snapshot
+```python order=my_table
 from deephaven import empty_table
 from deephaven.numpy import to_numpy
 
 my_table = empty_table(5).update("X = i * 10")
 
-# Get a snapshot as numpy arrays
-snapshot = to_numpy(my_table)
-# snapshot is now a dict with column arrays - a Python copy, not connected to the table
+# Get a snapshot as a numpy array
+snapshot = to_numpy(my_table, cols=["X"])
+# snapshot is a numpy ndarray - a Python copy, not connected to the table
 ```
 
 For live tables, this snapshot represents the data at one moment in time. The table may continue updating, but your snapshot won't.
@@ -258,9 +258,11 @@ prices = empty_table(100).update(
     ]
 )
 
-# Let the engine do it — see agg_by reference for all aggregation options
+# Let the engine do it
 avg_by_symbol = prices.agg_by([agg.avg("AvgPrice = Price")], by=["Symbol"])
 ```
+
+See [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md) for all aggregation options.
 
 ### Pattern: Use `ii` and `i` instead of counters
 
@@ -347,8 +349,9 @@ No need for separate batch and streaming codebases.
 
 Split data by key and process each partition efficiently:
 
-```python order=trades,by_symbol
+```python order=trades
 from deephaven import time_table
+from deephaven import updateby as uby
 
 trades = time_table("PT0.1S").update(
     [
@@ -357,16 +360,18 @@ trades = time_table("PT0.1S").update(
     ]
 )
 
-# Partition by symbol — see partition_by reference for options
+# Partition by symbol
 by_symbol = trades.partition_by("Symbol")
 
 # Apply operations to each partition
 transformed = by_symbol.transform(
-    lambda t: t.update("Normalized = Price - Price.avg()")
+    lambda t: t.update_by(
+        ops=uby.rolling_avg_tick(cols=["AvgPrice = Price"], rev_ticks=10)
+    )
 )
 ```
 
-Partitioned tables let you work with data larger than memory and parallelize processing. See [Partitioned tables](../how-to-guides/partitioned-tables.md) for details.
+Partitioned tables let you work with data larger than memory and parallelize processing. See [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [Partitioned tables](../how-to-guides/partitioned-tables.md) for details.
 
 ## Pitfalls to avoid
 

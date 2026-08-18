@@ -13,7 +13,7 @@ Deephaven works differently from tools like SQL or traditional Java data structu
 
 This isn't a deep technical dive — for that, see [Deephaven's design](./deephaven-design.md). Instead, this guide builds the mental model you need to work productively with Deephaven from day one.
 
-<Svg src='../assets/conceptual/mental-model-overview.svg' style={{height: 'auto', maxWidth: '900px'}} />
+<iframe src="../assets/conceptual/mental-model-overview.html" style={{width: '100%', height: '900px', border: 'none'}} />
 
 ## Tables are recipes, not data
 
@@ -60,7 +60,7 @@ This has important implications:
 
 You can call Groovy methods and closures from formulas:
 
-```groovy order=result
+```groovy syntax
 def myCalculation(x) {
     return x * x + 1
 }
@@ -105,8 +105,8 @@ For more complex cases involving state, see [parallelization](./query-engine/par
 
 Deephaven tables come in two flavors:
 
-- **Static tables**: Data that doesn't change. Loaded from files, created programmatically, or snapshots of live data.
-- **Refreshing (live) tables**: Data that updates continuously. Connected to streams, sensors, or other real-time sources.
+- **Static tables**: Data that doesn't change. Loaded from files, created with [`emptyTable`](../reference/table-operations/create/emptyTable.md) or [`newTable`](../reference/table-operations/create/newTable.md), or snapshots of live data.
+- **Refreshing (live) tables**: Data that updates continuously. Created with [`timeTable`](../reference/table-operations/create/timeTable.md), connected to streams, or other real-time sources.
 
 ```groovy order=staticTable,liveTable
 // Static: this table will always have 10 rows with values 0-9
@@ -148,11 +148,11 @@ myTable = TableTools.newTable(
 
 When you extract data back to Groovy, you're accessing table data directly:
 
-```groovy order=myTable
+```groovy syntax
 myTable = emptyTable(5).update("X = i * 10")
 
-// Access column data
-xValues = myTable.getColumn("X").getDirect()
+// Access column data via ColumnVectors
+xValues = ColumnVectors.of(myTable, "X").toArray()
 ```
 
 For live tables, consider using `snapshot()` to get a static copy at a specific moment in time.
@@ -208,9 +208,11 @@ prices = emptyTable(100).update(
     "Price = randomDouble(100, 200)"
 )
 
-// Let the engine do it — see aggBy reference for all aggregation options
+// Let the engine do it
 avgBySymbol = prices.aggBy([AggAvg("AvgPrice = Price")], "Symbol")
 ```
+
+See [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) for all aggregation options.
 
 ### Pattern: Use `ii` and `i` instead of counters
 
@@ -292,20 +294,22 @@ No need for separate batch and streaming codebases.
 
 Split data by key and process each partition efficiently:
 
-```groovy order=trades,bySymbol
+```groovy order=trades
+import io.deephaven.api.updateby.UpdateByOperation
+
 trades = timeTable("PT0.1S").update(
     "Symbol = (ii % 3 == 0) ? `AAPL` : ((ii % 3 == 1) ? `GOOG` : `MSFT`)",
     "Price = randomDouble(100, 200)"
 )
 
-// Partition by symbol — see partitionBy reference for options
+// Partition by symbol
 bySymbol = trades.partitionBy("Symbol")
 
 // Apply operations to each partition
-transformed = bySymbol.transform { t -> t.update("Normalized = Price - Price.avg()") }
+transformed = bySymbol.transform { t -> t.updateBy(UpdateByOperation.RollingAvg(10, "AvgPrice = Price")) }
 ```
 
-Partitioned tables let you work with data larger than memory and parallelize processing. See [Partitioned tables](../how-to-guides/partitioned-tables.md) for details.
+Partitioned tables let you work with data larger than memory and parallelize processing. See [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [Partitioned tables](../how-to-guides/partitioned-tables.md) for details.
 
 ## Pitfalls to avoid
 

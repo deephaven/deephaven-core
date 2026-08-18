@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/fonts.css" />
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/colors.css" />
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/typography.css" />
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/spacing.css" />
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/effects.css" />
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/styles.css" />
+  <script src="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/_ds_bundle.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    body { margin: 0; }
+    a, a:hover { color: var(--dh-text-link); }
+    @keyframes dh-flow-pulse { 0%, 82%, 100% { box-shadow: none; } 40% { box-shadow: 0 0 0 2px var(--pulse-color); } }
+    @keyframes dh-arrow-pulse { 0%, 82%, 100% { color: var(--dh-text-muted); } 40% { color: var(--pulse-color); } }
+    @keyframes dh-banner-pulse { 0%, 82%, 100% { border-color: var(--dh-status-positive); box-shadow: none; } 40% { border-color: var(--pulse-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--pulse-color) 40%, transparent); } }
+    @keyframes dh-icon-spin { 0%, 78% { transform: rotate(0deg); } 92% { transform: rotate(180deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</helmet>
+
+<div data-theme="dark" style="width: 100%; background: var(--dh-surface-page); color: var(--dh-text-primary); font-family: var(--dh-font-sans); padding: var(--dh-space-9) var(--dh-space-8); box-sizing: border-box; display: flex; flex-direction: column; gap: var(--dh-space-8);">
+
+  <div style="text-align: center; display: flex; flex-direction: column; gap: var(--dh-space-3);">
+    <h1 style="margin: 0; font-size: var(--dh-text-3xl); font-weight: var(--dh-weight-bold); letter-spacing: var(--dh-tracking-tight); line-height: var(--dh-leading-tight);">How Deephaven works</h1>
+    <p style="margin: 0; font-size: var(--dh-text-lg); color: var(--dh-text-secondary);">Tables are recipes, not data copies — updates flow automatically</p>
+  </div>
+
+  <div style="display: flex; align-items: stretch; gap: 0;">
+
+    <div style="flex: 1 1 0; --pulse-color: var(--dh-primary-800); animation: dh-flow-pulse 6s ease-in-out infinite; animation-delay: 0s; background: var(--dh-surface-card); border: 1px solid var(--dh-border); border-top: 3px solid var(--dh-primary-800); border-radius: var(--dh-radius-lg); padding: var(--dh-space-6); display: flex; flex-direction: column; gap: var(--dh-space-3); min-width: 0;">
+      <div style="display: flex; align-items: center; gap: var(--dh-space-3);">
+        <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--dh-primary-800); flex: 0 0 auto;"></div>
+        <div style="font-size: var(--dh-text-md); font-weight: var(--dh-weight-semibold);">1. Your code</div>
+      </div>
+      <div style="font-size: var(--dh-text-sm); color: var(--dh-text-secondary);">Python or Groovy</div>
+      <div style="background: var(--dh-surface-sunken); border: 1px solid var(--dh-border); border-radius: var(--dh-radius-md); padding: var(--dh-space-3) var(--dh-space-4); font-family: var(--dh-font-mono); font-size: var(--dh-text-sm); color: var(--dh-text-primary); line-height: var(--dh-leading-relaxed);">
+        source.where("X &gt; 10")<br />&nbsp;&nbsp;.update("Y = X * 2")
+      </div>
+    </div>
+
+    <div style="flex: 0 0 auto; width: 56px; display: flex; align-items: center; justify-content: center;">
+      <div style="--pulse-color: var(--dh-secondary-500); font-size: 22px; color: var(--dh-text-muted); line-height: 1; animation: dh-arrow-pulse 6s ease-in-out infinite; animation-delay: 1s;">→</div>
+    </div>
+
+    <div style="flex: 1 1 0; --pulse-color: var(--dh-secondary-500); animation: dh-flow-pulse 6s ease-in-out infinite; animation-delay: 1.5s; background: var(--dh-surface-card); border: 1px solid var(--dh-border); border-top: 3px solid var(--dh-secondary-500); border-radius: var(--dh-radius-lg); padding: var(--dh-space-6); display: flex; flex-direction: column; gap: var(--dh-space-3); min-width: 0;">
+      <div style="display: flex; align-items: center; gap: var(--dh-space-3);">
+        <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--dh-secondary-500); flex: 0 0 auto;"></div>
+        <div style="font-size: var(--dh-text-md); font-weight: var(--dh-weight-semibold);">2. Java engine</div>
+      </div>
+      <div style="font-size: var(--dh-text-sm); color: var(--dh-text-secondary); display: flex; flex-direction: column; gap: var(--dh-space-2); flex: 1;">
+        <div>Compiles formulas</div>
+        <div>Processes in chunks</div>
+        <div>Optimizes execution</div>
+      </div>
+      <div style="font-size: var(--dh-text-sm); font-style: italic; color: var(--dh-text-muted);">Not row-by-row</div>
+    </div>
+
+    <div style="flex: 0 0 auto; width: 56px; display: flex; align-items: center; justify-content: center;">
+      <div style="--pulse-color: var(--dh-info-500); font-size: 22px; color: var(--dh-text-muted); line-height: 1; animation: dh-arrow-pulse 6s ease-in-out infinite; animation-delay: 2.5s;">→</div>
+    </div>
+
+    <div style="flex: 1 1 0; --pulse-color: var(--dh-info-500); animation: dh-flow-pulse 6s ease-in-out infinite; animation-delay: 3s; background: var(--dh-surface-card); border: 1px solid var(--dh-border); border-top: 3px solid var(--dh-info-500); border-radius: var(--dh-radius-lg); padding: var(--dh-space-6); display: flex; flex-direction: column; gap: var(--dh-space-3); min-width: 0;">
+      <div style="display: flex; align-items: center; gap: var(--dh-space-3);">
+        <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--dh-info-500); flex: 0 0 auto;"></div>
+        <div style="font-size: var(--dh-text-md); font-weight: var(--dh-weight-semibold);">3. Table = recipe</div>
+      </div>
+      <div style="font-size: var(--dh-text-sm); color: var(--dh-text-secondary);">Not a data copy</div>
+      <div style="display: flex; align-items: center; gap: var(--dh-space-3); flex: 1;">
+        <div style="width: 26px; height: 26px; border-radius: 50%; background: var(--dh-primary-700); display: flex; align-items: center; justify-content: center; font-family: var(--dh-font-mono); font-size: 10px; font-weight: var(--dh-weight-bold); color: var(--dh-white); flex: 0 0 auto;">T1</div>
+        <div style="font-size: 14px; color: var(--dh-text-muted); line-height: 1;">→</div>
+        <div style="width: 26px; height: 26px; border-radius: 50%; background: var(--dh-info-500); display: flex; align-items: center; justify-content: center; font-family: var(--dh-font-mono); font-size: 10px; font-weight: var(--dh-weight-bold); color: var(--dh-white); flex: 0 0 auto;">T2</div>
+        <div style="font-size: 14px; color: var(--dh-text-muted); line-height: 1;">→</div>
+        <div style="width: 26px; height: 26px; border-radius: 50%; background: var(--dh-info-300); display: flex; align-items: center; justify-content: center; font-family: var(--dh-font-mono); font-size: 10px; font-weight: var(--dh-weight-bold); color: var(--dh-white); flex: 0 0 auto;">T3</div>
+      </div>
+    </div>
+
+    <div style="flex: 0 0 auto; width: 56px; display: flex; align-items: center; justify-content: center;">
+      <div style="--pulse-color: var(--dh-positive-400); font-size: 22px; color: var(--dh-text-muted); line-height: 1; animation: dh-arrow-pulse 6s ease-in-out infinite; animation-delay: 4s;">→</div>
+    </div>
+
+    <div style="flex: 1 1 0; --pulse-color: var(--dh-positive-400); animation: dh-flow-pulse 6s ease-in-out infinite; animation-delay: 4.5s; background: var(--dh-surface-card); border: 1px solid var(--dh-border); border-top: 3px solid var(--dh-positive-400); border-radius: var(--dh-radius-lg); padding: var(--dh-space-6); display: flex; flex-direction: column; gap: var(--dh-space-3); min-width: 0;">
+      <div style="display: flex; align-items: center; gap: var(--dh-space-3);">
+        <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--dh-positive-400); flex: 0 0 auto;"></div>
+        <div style="font-size: var(--dh-text-md); font-weight: var(--dh-weight-semibold);">4. Live results</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px; flex: 1;">
+        <div style="display: flex; justify-content: space-between; padding: 0 var(--dh-space-3); font-size: 10px; text-transform: uppercase; letter-spacing: var(--dh-tracking-wide); color: var(--dh-text-muted);">
+          <span>Sym</span><span>Px</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--dh-space-2) var(--dh-space-3); border-radius: var(--dh-radius-sm); font-family: var(--dh-font-mono); font-size: var(--dh-text-sm); background: {{ row0Bg }}; transition: background 300ms ease;">
+          <span style="color: var(--dh-text-secondary);">{{ row0Sym }}</span>
+          <span style="color: {{ row0Color }}; transition: color 300ms ease;">{{ row0Px }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--dh-space-2) var(--dh-space-3); border-radius: var(--dh-radius-sm); font-family: var(--dh-font-mono); font-size: var(--dh-text-sm); background: {{ row1Bg }}; transition: background 300ms ease;">
+          <span style="color: var(--dh-text-secondary);">{{ row1Sym }}</span>
+          <span style="color: {{ row1Color }}; transition: color 300ms ease;">{{ row1Px }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--dh-space-2) var(--dh-space-3); border-radius: var(--dh-radius-sm); font-family: var(--dh-font-mono); font-size: var(--dh-text-sm); background: {{ row2Bg }}; transition: background 300ms ease;">
+          <span style="color: var(--dh-text-secondary);">{{ row2Sym }}</span>
+          <span style="color: {{ row2Color }}; transition: color 300ms ease;">{{ row2Px }}</span>
+        </div>
+      </div>
+      <div style="font-size: var(--dh-text-xs); color: var(--dh-text-muted);">Web UI · Python · JS · Java · C++ · R · Go</div>
+    </div>
+
+  </div>
+
+  <div style="--pulse-color: var(--dh-status-positive); animation: dh-banner-pulse 6s ease-in-out infinite; animation-delay: 5.5s; background: color-mix(in srgb, var(--dh-status-positive) 12%, transparent); border: 1px solid var(--dh-status-positive); border-radius: var(--dh-radius-md); padding: var(--dh-space-5) var(--dh-space-6); display: flex; align-items: center; gap: var(--dh-space-4); justify-content: center;">
+    <div style="font-size: 20px; color: var(--dh-status-positive); line-height: 1; animation: dh-icon-spin 6s linear infinite;">↻</div>
+    <div style="text-align: center;">
+      <div style="font-size: var(--dh-text-md); font-weight: var(--dh-weight-semibold); color: var(--dh-status-positive);">When source data changes, updates flow through automatically</div>
+      <div style="font-size: var(--dh-text-sm); color: var(--dh-text-secondary); margin-top: var(--dh-space-1);">Only changed rows recompute · No re-running queries · All clients see consistent updates</div>
+    </div>
+  </div>
+
+  <div style="text-align: center; font-size: var(--dh-text-lg); font-weight: var(--dh-weight-semibold);">Key mental model concepts</div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--dh-space-6);">
+
+    <div onMouseEnter="{{ hoverEnterC0 }}" onMouseLeave="{{ hoverLeave }}" style="cursor: default; background: var(--dh-surface-card); border: 1px solid var(--dh-border); border-top: 3px solid var(--dh-warn-300); border-radius: var(--dh-radius-lg); padding: var(--dh-space-5) var(--dh-space-6); display: flex; flex-direction: column; gap: var(--dh-space-3);">
+      <div style="display: flex; align-items: center; gap: var(--dh-space-3);">
+        <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--dh-warn-300); flex: 0 0 auto;"></div>
+        <div style="font-size: var(--dh-text-md); font-weight: var(--dh-weight-semibold);">Formulas run in Java</div>
+      </div>
+      <div style="font-size: var(--dh-text-sm); color: var(--dh-text-secondary); display: flex; flex-direction: column; gap: var(--dh-space-2);">
+        <div>Use Java methods: <span style="font-family: var(--dh-font-mono);">Math.sqrt()</span></div>
+        <div>Not Python: <span style="font-family: var(--dh-font-mono);">math.sqrt()</span> ✗</div>
+        <div>Processed in batches, not rows</div>
+      </div>
+      <div style="max-height: {{ detailHeightC0 }}px; overflow: hidden; transition: max-height 200ms ease;">
+        <div style="font-size: var(--dh-text-sm); color: var(--dh-text-muted); padding-top: var(--dh-space-2); border-top: 1px solid var(--dh-border); margin-top: var(--dh-space-1);">The engine JIT-compiles a formula once, then reuses it across chunks — the first run of a query is often slower than the next.</div>
+      </div>
+    </div>
+
+    <div onMouseEnter="{{ hoverEnterC1 }}" onMouseLeave="{{ hoverLeave }}" style="cursor: default; background: var(--dh-surface-card); border: 1px solid var(--dh-border); border-top: 3px solid var(--dh-primary-800); border-radius: var(--dh-radius-lg); padding: var(--dh-space-5) var(--dh-space-6); display: flex; flex-direction: column; gap: var(--dh-space-3);">
+      <div style="display: flex; align-items: center; gap: var(--dh-space-3);">
+        <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--dh-primary-800); flex: 0 0 auto;"></div>
+        <div style="font-size: var(--dh-text-md); font-weight: var(--dh-weight-semibold);">Tables are immutable</div>
+      </div>
+      <div style="font-size: var(--dh-text-sm); color: var(--dh-text-secondary); display: flex; flex-direction: column; gap: var(--dh-space-2);">
+        <div>Operations create new tables</div>
+        <div>Old tables unchanged</div>
+        <div>Always: <span style="font-family: var(--dh-font-mono);">result = t.where(...)</span></div>
+      </div>
+      <div style="max-height: {{ detailHeightC1 }}px; overflow: hidden; transition: max-height 200ms ease;">
+        <div style="font-size: var(--dh-text-sm); color: var(--dh-text-muted); padding-top: var(--dh-space-2); border-top: 1px solid var(--dh-border); margin-top: var(--dh-space-1);">Safe to share across threads, and the engine can reuse unchanged data instead of recomputing it.</div>
+      </div>
+    </div>
+
+    <div onMouseEnter="{{ hoverEnterC2 }}" onMouseLeave="{{ hoverLeave }}" style="cursor: default; background: var(--dh-surface-card); border: 1px solid var(--dh-border); border-top: 3px solid var(--dh-positive-400); border-radius: var(--dh-radius-lg); padding: var(--dh-space-5) var(--dh-space-6); display: flex; flex-direction: column; gap: var(--dh-space-3);">
+      <div style="display: flex; align-items: center; gap: var(--dh-space-3);">
+        <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--dh-positive-400); flex: 0 0 auto;"></div>
+        <div style="font-size: var(--dh-text-md); font-weight: var(--dh-weight-semibold);">Order is not guaranteed</div>
+      </div>
+      <div style="font-size: var(--dh-text-sm); color: var(--dh-text-secondary); display: flex; flex-direction: column; gap: var(--dh-space-2);">
+        <div>Rows process in parallel</div>
+        <div>Don't use counters in formulas</div>
+        <div>Use <span style="font-family: var(--dh-font-mono);">ii</span> for row position</div>
+      </div>
+      <div style="max-height: {{ detailHeightC2 }}px; overflow: hidden; transition: max-height 200ms ease;">
+        <div style="font-size: var(--dh-text-sm); color: var(--dh-text-muted); padding-top: var(--dh-space-2); border-top: 1px solid var(--dh-border); margin-top: var(--dh-space-1);">Aggregations and joins can reorder rows for performance — sort explicitly if display order matters.</div>
+      </div>
+    </div>
+
+    <div onMouseEnter="{{ hoverEnterC3 }}" onMouseLeave="{{ hoverLeave }}" style="cursor: default; background: var(--dh-surface-card); border: 1px solid var(--dh-border); border-top: 3px solid var(--dh-info-500); border-radius: var(--dh-radius-lg); padding: var(--dh-space-5) var(--dh-space-6); display: flex; flex-direction: column; gap: var(--dh-space-3);">
+      <div style="display: flex; align-items: center; gap: var(--dh-space-3);">
+        <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--dh-info-500); flex: 0 0 auto;"></div>
+        <div style="font-size: var(--dh-text-md); font-weight: var(--dh-weight-semibold);">Static vs live tables</div>
+      </div>
+      <div style="font-size: var(--dh-text-sm); color: var(--dh-text-secondary); display: flex; flex-direction: column; gap: var(--dh-space-2);">
+        <div>Static: from files, snapshots</div>
+        <div>Live: from streams, <span style="font-family: var(--dh-font-mono);">time_table</span></div>
+        <div>Same code works for both</div>
+      </div>
+      <div style="max-height: {{ detailHeightC3 }}px; overflow: hidden; transition: max-height 200ms ease;">
+        <div style="font-size: var(--dh-text-sm); color: var(--dh-text-muted); padding-top: var(--dh-space-2); border-top: 1px solid var(--dh-border); margin-top: var(--dh-space-1);">A live table's operations are recorded once and replayed automatically as new rows arrive.</div>
+      </div>
+    </div>
+
+    <div onMouseEnter="{{ hoverEnterC4 }}" onMouseLeave="{{ hoverLeave }}" style="cursor: default; background: var(--dh-surface-card); border: 1px solid var(--dh-border); border-top: 3px solid var(--dh-negative-500); border-radius: var(--dh-radius-lg); padding: var(--dh-space-5) var(--dh-space-6); display: flex; flex-direction: column; gap: var(--dh-space-3);">
+      <div style="display: flex; align-items: center; gap: var(--dh-space-3);">
+        <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--dh-negative-500); flex: 0 0 auto;"></div>
+        <div style="font-size: var(--dh-text-md); font-weight: var(--dh-weight-semibold);">Python ↔ Deephaven</div>
+      </div>
+      <div style="font-size: var(--dh-text-sm); color: var(--dh-text-secondary); display: flex; flex-direction: column; gap: var(--dh-space-2);">
+        <div><span style="font-family: var(--dh-font-mono);">to_pandas()</span> = snapshot copy</div>
+        <div>Not connected to live table</div>
+        <div>Keep data in DH for speed</div>
+      </div>
+      <div style="max-height: {{ detailHeightC4 }}px; overflow: hidden; transition: max-height 200ms ease;">
+        <div style="font-size: var(--dh-text-sm); color: var(--dh-text-muted); padding-top: var(--dh-space-2); border-top: 1px solid var(--dh-border); margin-top: var(--dh-space-1);">Round-tripping through pandas breaks the update graph — the copy is frozen at the moment you called it.</div>
+      </div>
+    </div>
+
+    <div onMouseEnter="{{ hoverEnterC5 }}" onMouseLeave="{{ hoverLeave }}" style="cursor: default; background: var(--dh-surface-card); border: 1px solid var(--dh-border); border-top: 3px solid var(--dh-secondary-500); border-radius: var(--dh-radius-lg); padding: var(--dh-space-5) var(--dh-space-6); display: flex; flex-direction: column; gap: var(--dh-space-3);">
+      <div style="display: flex; align-items: center; gap: var(--dh-space-3);">
+        <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--dh-secondary-500); flex: 0 0 auto;"></div>
+        <div style="font-size: var(--dh-text-md); font-weight: var(--dh-weight-semibold);">Memory is shared</div>
+      </div>
+      <div style="font-size: var(--dh-text-sm); color: var(--dh-text-secondary); display: flex; flex-direction: column; gap: var(--dh-space-2);">
+        <div>Filters share source columns</div>
+        <div>No data duplication</div>
+        <div>50–90% memory savings</div>
+      </div>
+      <div style="max-height: {{ detailHeightC5 }}px; overflow: hidden; transition: max-height 200ms ease;">
+        <div style="font-size: var(--dh-text-sm); color: var(--dh-text-muted); padding-top: var(--dh-space-2); border-top: 1px solid var(--dh-border); margin-top: var(--dh-space-1);">A filtered or sorted table often costs only a small index, not a full copy of the source data.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="text-align: center; font-size: var(--dh-text-sm); font-style: italic; color: var(--dh-text-muted);">
+    For technical details, see Deephaven's Design · For hands-on learning, see Crash Course
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    hoverConcept: null,
+    rows: [
+      { sym: 'AAPL', px: 227.14, flash: null },
+      { sym: 'MSFT', px: 415.02, flash: null },
+      { sym: 'NVDA', px: 118.77, flash: null },
+    ],
+  };
+
+  componentDidMount() {
+    this._tick = setInterval(() => {
+      this.setState(s => {
+        const idx = Math.floor(Math.random() * s.rows.length);
+        const rows = s.rows.map((r, i) => ({ ...r, flash: i === idx ? r.flash : r.flash }));
+        const delta = (Math.random() - 0.5) * 2.4;
+        const row = { ...rows[idx] };
+        row.px = Math.max(0.01, row.px + delta);
+        row.flash = delta >= 0 ? 'up' : 'down';
+        rows[idx] = row;
+        return { rows };
+      });
+      this._clear = setTimeout(() => {
+        this.setState(s => ({ rows: s.rows.map(r => ({ ...r, flash: null })) }));
+      }, 650);
+    }, 1500);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this._tick);
+    clearTimeout(this._clear);
+  }
+
+  hoverEnterC0 = () => this.setState({ hoverConcept: 0 });
+  hoverEnterC1 = () => this.setState({ hoverConcept: 1 });
+  hoverEnterC2 = () => this.setState({ hoverConcept: 2 });
+  hoverEnterC3 = () => this.setState({ hoverConcept: 3 });
+  hoverEnterC4 = () => this.setState({ hoverConcept: 4 });
+  hoverEnterC5 = () => this.setState({ hoverConcept: 5 });
+  hoverLeave = () => this.setState({ hoverConcept: null });
+
+  renderVals() {
+    const { hoverConcept, rows } = this.state;
+    const detailFor = i => hoverConcept === i ? 72 : 0;
+    const rowColor = r => r.flash === 'up' ? 'var(--dh-status-positive)' : r.flash === 'down' ? 'var(--dh-status-negative)' : 'var(--dh-text-primary)';
+    const rowBg = r => r.flash === 'up' ? 'color-mix(in srgb, var(--dh-status-positive) 22%, transparent)' : r.flash === 'down' ? 'color-mix(in srgb, var(--dh-status-negative) 18%, transparent)' : 'transparent';
+
+    return {
+      hoverEnterC0: this.hoverEnterC0, hoverEnterC1: this.hoverEnterC1, hoverEnterC2: this.hoverEnterC2,
+      hoverEnterC3: this.hoverEnterC3, hoverEnterC4: this.hoverEnterC4, hoverEnterC5: this.hoverEnterC5,
+      hoverLeave: this.hoverLeave,
+      detailHeightC0: detailFor(0), detailHeightC1: detailFor(1), detailHeightC2: detailFor(2),
+      detailHeightC3: detailFor(3), detailHeightC4: detailFor(4), detailHeightC5: detailFor(5),
+      row0Sym: rows[0].sym, row0Px: rows[0].px.toFixed(2), row0Color: rowColor(rows[0]), row0Bg: rowBg(rows[0]),
+      row1Sym: rows[1].sym, row1Px: rows[1].px.toFixed(2), row1Color: rowColor(rows[1]), row1Bg: rowBg(rows[1]),
+      row2Sym: rows[2].sym, row2Px: rows[2].px.toFixed(2), row2Color: rowColor(rows[2]), row2Bg: rowBg(rows[2]),
+    };
+  }
+}
+</script>
+</body>
+</html>
