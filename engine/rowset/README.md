@@ -144,8 +144,9 @@ single huge range stays RSP until compacted.
 Builders adapt too: the sequential builder accumulates a pending range, then a `SortedRanges`,
 then an `RspBitmap`; the random builder (`AdaptiveOrderedLongSetBuilderRandom` /
 `MixedBuilderRandom` / `RangePriorityQueueBuilder`) accumulates ranges in a heap, flushing to an
-accumulated set in O(n log n) batches. Builders are single-use: after `build()` /
-`getOrderedLongSet()` the builder must not be reused.
+accumulated set in O(n log n) batches. Builders are single-use: a second `build()` /
+`getOrderedLongSet()` call throws `IllegalStateException`. Appends after a build are not detected
+(the hot append path carries no checks) and their effect is undefined.
 
 ## Threading and the update graph
 

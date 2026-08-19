@@ -28,6 +28,7 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
 
     @Override
     public OrderedLongSet getOrderedLongSet() {
+        checkAndMarkBuilt();
         if (pendingStart != -1) {
             if (pendingSr == null && pendingContainerKey == -1 && rb == null) {
                 final SingleRange r = SingleRange.make(pendingStart, pendingEnd);
@@ -62,6 +63,7 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
 
     @TestUseOnly
     public RspBitmap getRspBitmap() {
+        checkAndMarkBuilt();
         if (pendingStart != -1) {
             flushPendingRange();
         }

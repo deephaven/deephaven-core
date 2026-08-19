@@ -26,6 +26,20 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     protected RspBitmap rb;
     protected long maxKeyHint = -1;
 
+    private boolean built;
+
+    /**
+     * Builders are single use: a second build would return a bogus (usually empty) result, so it fails instead. Only
+     * the build methods check this; appends stay unchecked to keep the hot path free of conditionals, so the effect of
+     * appending after a build is undefined rather than detected.
+     */
+    protected final void checkAndMarkBuilt() {
+        if (built) {
+            throw new IllegalStateException("Builder was already used to build a result; builders are single use");
+        }
+        built = true;
+    }
+
     /**
      * The block that {@link #sizedBlockCardinality} and {@link #sizedBlockRangeCount} describe, or -1 when nothing is
      * known ahead of time. A subclass that can see what a block will receive before its container is filled should
@@ -69,6 +83,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
 
     @Override
     public OrderedLongSet getOrderedLongSet() {
+        checkAndMarkBuilt();
         if (pendingStart != -1) {
             flushPendingRange();
         }
