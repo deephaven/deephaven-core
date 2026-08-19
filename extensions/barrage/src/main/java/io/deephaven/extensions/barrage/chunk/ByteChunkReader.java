@@ -22,8 +22,16 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
+/**
+ * Replication source for the other fixed-width primitive readers; see {@code ReplicateBarrageUtils}. Edits here must be
+ * followed by {@code ./gradlew replicateBarrageUtils}. Keep this file ASCII-only: the replicator does not round-trip
+ * non-ASCII text. The {@code Payload*} regions are overridden for {@code byte}, which needs no byte-order decoding.
+ */
 public class ByteChunkReader extends BaseChunkReader<WritableByteChunk<Values>> {
     private static final String DEBUG_NAME = "ByteChunkReader";
+
+    // Number of elements decoded per bounded bulk-read window (see BaseChunkReader#BULK_READ_BUFFER_BYTES).
+    private static final int BULK_READ_ELEMENTS = Math.max(1, BULK_READ_BUFFER_BYTES / Byte.BYTES);
 
     public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableByteChunk<Values>> transformFrom(
             final T wireReader,
@@ -92,13 +100,16 @@ public class ByteChunkReader extends BaseChunkReader<WritableByteChunk<Values>> 
             final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableByteChunk<Values> chunk,
             final int offset) throws IOException {
-        // Bytes have no endianness, so transfer the payload directly into the chunk's backing array in bounded windows
-        // rather than one DataInput#readByte call per element (and without materializing the whole payload at once).
-        for (int ei = 0; ei < nodeInfo.numElements;) {
-            final int length = Math.min(Math.max(1, BULK_READ_BUFFER_BYTES), nodeInfo.numElements - ei);
+        final int numElements = nodeInfo.numElements;
+        // region PayloadDhNulls
+        // Bytes have no endianness, so transfer the payload straight into the chunk's backing array in
+        // bounded windows rather than decoding element by element through a staging buffer.
+        for (int ei = 0; ei < numElements;) {
+            final int length = Math.min(BULK_READ_ELEMENTS, numElements - ei);
             is.readFully(chunk.array(), chunk.arrayOffset() + offset + ei, length);
             ei += length;
         }
+        // endregion PayloadDhNulls
     }
 
     private static void useValidityBuffer(
@@ -110,13 +121,15 @@ public class ByteChunkReader extends BaseChunkReader<WritableByteChunk<Values>> 
         final int numElements = nodeInfo.numElements;
         final int numValidityWords = (numElements + 63) / 64;
 
-        // The payload carries a value slot for every element, including nulls; transfer it directly into the chunk's
-        // backing array in bounded windows, then overwrite the invalid positions with the null value.
+        // region PayloadValidityBuffer
+        // The payload carries a value slot for every element, including nulls; transfer it straight into
+        // the chunk's backing array in bounded windows, then overwrite the invalid positions with null.
         for (int ei = 0; ei < numElements;) {
-            final int length = Math.min(Math.max(1, BULK_READ_BUFFER_BYTES), numElements - ei);
+            final int length = Math.min(BULK_READ_ELEMENTS, numElements - ei);
             is.readFully(chunk.array(), chunk.arrayOffset() + offset + ei, length);
             ei += length;
         }
+        // endregion PayloadValidityBuffer
 
         int ei = 0;
         for (int vi = 0; vi < numValidityWords; ++vi) {
@@ -124,7 +137,7 @@ public class ByteChunkReader extends BaseChunkReader<WritableByteChunk<Values>> 
             long validityWord = isValid.get(vi);
             do {
                 if ((validityWord & 1) == 1) {
-                    // Skip the run of valid slots (already read) to the next null.
+                    // Skip the run of valid slots (already decoded) to the next null.
                     final int valids = Math.min(Long.numberOfTrailingZeros(~validityWord), bitsLeftInThisWord);
                     ei += valids;
                     validityWord >>= valids;

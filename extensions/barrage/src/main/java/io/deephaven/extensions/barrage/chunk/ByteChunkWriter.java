@@ -27,6 +27,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.function.Supplier;
 
+/**
+ * Replication source for the other fixed-width primitive writers; see {@code ReplicateBarrageUtils}. Edits here must be
+ * followed by {@code ./gradlew replicateBarrageUtils}. Keep this file ASCII-only: the replicator does not round-trip
+ * non-ASCII text.
+ */
 public class ByteChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "ByteChunkWriter";
 
@@ -134,13 +139,14 @@ public class ByteChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
             // write the validity buffer
             bytesWritten += writeValidityBuffer(dos);
 
-            // write the payload buffer in bounded windows, gathering values into a byte[] and flushing a full window
-            // with a single bulk write rather than one DataOutput value at a time
+            // write the payload buffer in bounded windows, encoding each value into little-endian bytes (via
+            // LittleEndianCodec) and flushing a full window with a single bulk write rather than one DataOutput value,
+            // i.e. one individual byte write per byte of the value, at a time.
             final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
             final byte[] buffer = new byte[BULK_WRITE_ELEMENTS * Byte.BYTES];
             final MutableInt bufferPos = new MutableInt(0);
             subset.forAllRowKeys(row -> {
-                buffer[bufferPos.get()] = byteChunk.get((int) row);
+                LittleEndianCodec.putByte(buffer, bufferPos.get(), byteChunk.get((int) row));
                 bufferPos.add(Byte.BYTES);
                 if (bufferPos.get() == buffer.length) {
                     try {

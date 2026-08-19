@@ -14,6 +14,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.CharChunk;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,8 +23,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.function.Supplier;
 
+/**
+ * Replication source for the other fixed-width primitive writers; see {@code ReplicateBarrageUtils}. Edits here must be
+ * followed by {@code ./gradlew replicateBarrageUtils}. Keep this file ASCII-only: the replicator does not round-trip
+ * non-ASCII text.
+ */
 public class CharChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "CharChunkWriter";
+
+    // Number of elements encoded per bounded bulk-write window (see BaseChunkWriter#BULK_WRITE_BUFFER_BYTES).
+    private static final int BULK_WRITE_ELEMENTS = Math.max(1, BULK_WRITE_BUFFER_BYTES / Character.BYTES);
     private static final CharChunkWriter<CharChunk<Values>> NULLABLE_IDENTITY_INSTANCE = new CharChunkWriter<>(
             null, CharChunk::getEmptyChunk, true);
     private static final CharChunkWriter<CharChunk<Values>> NON_NULLABLE_IDENTITY_INSTANCE = new CharChunkWriter<>(
@@ -126,16 +135,28 @@ public class CharChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
             // write the validity buffer
             bytesWritten += writeValidityBuffer(dos);
 
-            // write the payload buffer
+            // write the payload buffer in bounded windows, encoding each value into little-endian bytes (via
+            // LittleEndianCodec) and flushing a full window with a single bulk write rather than one DataOutput value,
+            // i.e. one individual byte write per byte of the value, at a time.
             final CharChunk<Values> charChunk = context.getChunk().asCharChunk();
+            final byte[] buffer = new byte[BULK_WRITE_ELEMENTS * Character.BYTES];
+            final MutableInt bufferPos = new MutableInt(0);
             subset.forAllRowKeys(row -> {
-                try {
-                    dos.writeChar(charChunk.get((int) row));
-                } catch (final IOException e) {
-                    throw new UncheckedDeephavenException(
-                            "Unexpected exception while draining data to OutputStream: ", e);
+                LittleEndianCodec.putChar(buffer, bufferPos.get(), charChunk.get((int) row));
+                bufferPos.add(Character.BYTES);
+                if (bufferPos.get() == buffer.length) {
+                    try {
+                        outputStream.write(buffer, 0, buffer.length);
+                    } catch (final IOException e) {
+                        throw new UncheckedDeephavenException(
+                                "Unexpected exception while draining data to OutputStream: ", e);
+                    }
+                    bufferPos.set(0);
                 }
             });
+            if (bufferPos.get() > 0) {
+                outputStream.write(buffer, 0, bufferPos.get());
+            }
 
             bytesWritten += elementSize * subset.size();
             bytesWritten += writePadBuffer(dos, bytesWritten);

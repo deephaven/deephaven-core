@@ -27,6 +27,7 @@ public class ReplicateBarrageUtils {
         // ReplicatePrimitiveCode.floatToAllFloatingPoints("replicateBarrageUtils",
         // CHUNK_PACKAGE + "/FloatChunkReader.java", "Float16");
         fixupDoubleChunkReader(CHUNK_PACKAGE + "/DoubleChunkReader.java");
+        fixupByteChunkReader(CHUNK_PACKAGE + "/ByteChunkReader.java");
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/array/CharArrayExpansionKernel.java");
@@ -60,6 +61,32 @@ public class ReplicateBarrageUtils {
                 "        // Canonicalize NaN so all bit patterns map to the same entry (fastutil hashes the raw bits).",
                 "        final " + primitiveType + " key = " + boxedType + ".isNaN(value) ? " + boxedType
                         + ".NaN : value;"));
+        FileUtils.writeLines(file, lines);
+    }
+
+    /**
+     * A single byte needs no byte-order decoding, so the byte reader transfers the payload straight into the chunk's
+     * backing array instead of staging it in an intermediate buffer and decoding element by element.
+     */
+    private static void fixupByteChunkReader(final @NotNull String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = replaceRegion(lines, "PayloadDhNulls", List.of(
+                "        // Bytes have no endianness, so transfer the payload straight into the chunk's backing array in",
+                "        // bounded windows rather than decoding element by element through a staging buffer.",
+                "        for (int ei = 0; ei < numElements;) {",
+                "            final int length = Math.min(BULK_READ_ELEMENTS, numElements - ei);",
+                "            is.readFully(chunk.array(), chunk.arrayOffset() + offset + ei, length);",
+                "            ei += length;",
+                "        }"));
+        lines = replaceRegion(lines, "PayloadValidityBuffer", List.of(
+                "        // The payload carries a value slot for every element, including nulls; transfer it straight into",
+                "        // the chunk's backing array in bounded windows, then overwrite the invalid positions with null.",
+                "        for (int ei = 0; ei < numElements;) {",
+                "            final int length = Math.min(BULK_READ_ELEMENTS, numElements - ei);",
+                "            is.readFully(chunk.array(), chunk.arrayOffset() + offset + ei, length);",
+                "            ei += length;",
+                "        }"));
         FileUtils.writeLines(file, lines);
     }
 
