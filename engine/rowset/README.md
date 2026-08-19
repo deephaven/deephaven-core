@@ -27,7 +27,9 @@ data structures, and the ownership/lifecycle rules that are easy to get wrong.
   `getRowSequenceIterator()`. All range and key bounds are **inclusive** unless a name says
   otherwise; positions are 0-based ranks. `NULL_ROW_KEY == -1` is the "no key" sentinel; legal row
   keys are `0 .. Long.MAX_VALUE`.
-- **`RowSequence.Iterator`** — destructive, forward-only consumption:
+- **`RowSequence.Iterator`** — forward-only, consuming iteration: each `getNext*` call permanently
+  advances the iterator's position (there is no rewind or re-read; the underlying sequence itself
+  is never modified):
   `getNextRowSequenceThrough(maxKeyInclusive)`, `getNextRowSequenceWithLength(count)`,
   `advance(key)` (a **no-op** if `key` is at or before the current position — implementations must
   never rewind), `peekNextKey()`, `getRelativePosition()`. The `RowSequence` objects returned by

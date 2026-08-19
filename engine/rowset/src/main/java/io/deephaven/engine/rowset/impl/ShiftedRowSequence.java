@@ -22,7 +22,33 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
             toWrap = orig.wrappedOK;
             shiftAmount += orig.shiftAmount;
         }
+        validateShift(toWrap, shiftAmount);
         return (shiftAmount == 0) ? toWrap : new ShiftedRowSequence(toWrap, shiftAmount);
+    }
+
+    /**
+     * Every key this sequence exposes must be a legal row key: the shift must not push the wrapped sequence's first key
+     * below zero, nor its last key past {@link Long#MAX_VALUE}. Validating once here keeps the per-call paths free of
+     * overflow concerns for the keys themselves; only query arguments, which may legally be {@code Long.MAX_VALUE} in
+     * shifted space, still require care.
+     */
+    private static void validateShift(final RowSequence toWrap, final long shiftAmount) {
+        if (shiftAmount == 0 || toWrap == null || toWrap.isEmpty()) {
+            return;
+        }
+        if (shiftAmount < 0) {
+            final long first = toWrap.firstRowKey();
+            if (first + shiftAmount < 0) {
+                throw new IllegalArgumentException("Invalid shift: shiftAmount=" + shiftAmount
+                        + " would make firstRowKey=" + first + " negative");
+            }
+        } else {
+            final long last = toWrap.lastRowKey();
+            if (last + shiftAmount < 0) {
+                throw new IllegalArgumentException("Invalid shift: shiftAmount=" + shiftAmount
+                        + " overflows lastRowKey=" + last);
+            }
+        }
     }
 
     private long shiftAmount;
@@ -49,6 +75,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
             this.shiftAmount = shiftAmount;
             this.wrappedOK = toWrap;
         }
+        validateShift(this.wrappedOK, this.shiftAmount);
         invalidateRowSequenceAsChunkImpl();
         return this;
     }

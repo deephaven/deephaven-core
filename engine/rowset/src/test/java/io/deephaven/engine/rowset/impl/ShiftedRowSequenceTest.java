@@ -54,6 +54,31 @@ public class ShiftedRowSequenceTest extends RowSequenceTestBase {
     }
 
     @Test
+    public void testWrapRejectsShiftsThatEscapeTheKeySpace() {
+        try (final io.deephaven.engine.rowset.RowSet toWrap = io.deephaven.engine.rowset.RowSetFactory
+                .fromKeys(100, 200)) {
+            try {
+                ShiftedRowSequence.wrap(toWrap, -101);
+                org.junit.Assert.fail("expected IllegalArgumentException");
+            } catch (IllegalArgumentException expected) {
+            }
+            try {
+                ShiftedRowSequence.wrap(toWrap, Long.MAX_VALUE - 199);
+                org.junit.Assert.fail("expected IllegalArgumentException");
+            } catch (IllegalArgumentException expected) {
+            }
+            try {
+                new ShiftedRowSequence().reset(toWrap, -101);
+                org.junit.Assert.fail("expected IllegalArgumentException");
+            } catch (IllegalArgumentException expected) {
+            }
+            // Boundary-legal shifts are accepted.
+            ShiftedRowSequence.wrap(toWrap, -100).close();
+            ShiftedRowSequence.wrap(toWrap, Long.MAX_VALUE - 200).close();
+        }
+    }
+
+    @Test
     public void testAdvancePastKeySpaceExhausts() {
         // With a negative shift, an advance target whose unshifted value overflows lies beyond any key the
         // sequence can contain: the iterator must exhaust, not position at a smaller key.
