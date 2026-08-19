@@ -92,26 +92,12 @@ public class DoubleChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends 
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final DoubleChunk<Values> doubleChunk = context.getChunk().asDoubleChunk();
-        subset.forAllRowKeys(row -> {
-            if (doubleChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final DoubleChunk<Values> doubleChunk = context.getChunk().asDoubleChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(doubleChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(doubleChunk.isNull((int) row)));
     }
 
     private class DoubleChunkInputStream extends BaseChunkInputStream<Context> {

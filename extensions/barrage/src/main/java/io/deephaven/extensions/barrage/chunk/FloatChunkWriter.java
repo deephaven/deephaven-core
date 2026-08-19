@@ -92,26 +92,12 @@ public class FloatChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends B
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final FloatChunk<Values> floatChunk = context.getChunk().asFloatChunk();
-        subset.forAllRowKeys(row -> {
-            if (floatChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final FloatChunk<Values> floatChunk = context.getChunk().asFloatChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(floatChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(floatChunk.isNull((int) row)));
     }
 
     private class FloatChunkInputStream extends BaseChunkInputStream<Context> {

@@ -14,7 +14,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.CharChunk;
-import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -85,26 +84,12 @@ public class CharChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final CharChunk<Values> charChunk = context.getChunk().asCharChunk();
-        subset.forAllRowKeys(row -> {
-            if (charChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final CharChunk<Values> charChunk = context.getChunk().asCharChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(charChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(charChunk.isNull((int) row)));
     }
 
     private class CharChunkInputStream extends BaseChunkInputStream<Context> {

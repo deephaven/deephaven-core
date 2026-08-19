@@ -92,26 +92,12 @@ public class ByteChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Ba
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
-        subset.forAllRowKeys(row -> {
-            if (byteChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(byteChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(byteChunk.isNull((int) row)));
     }
 
     private class ByteChunkInputStream extends BaseChunkInputStream<Context> {
