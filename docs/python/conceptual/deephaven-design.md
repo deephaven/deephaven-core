@@ -253,7 +253,7 @@ The listener attachment in step 5 of each operation is what makes Deephaven tabl
 2. Each listener receives a `TableUpdate` describing exactly which rows were added, removed, or modified
 3. The listener recomputes only the affected rows and propagates its own update downstream
 
-This continues through the entire DAG. A single source change cascades through filters, joins, and aggregations — each operation processing only the delta, not the full dataset. The server completes this DAG processing within a single update cycle (default 1000ms). The results then flow asynchronously through the [API layer](#the-live-data-stack) via Barrage to connected clients and UI components.
+This continues through the entire DAG. A single source change cascades through filters, joins, and aggregations — each operation processing only the delta, not the full dataset. The engine processes this DAG within a single update cycle. The default cycle targets 1000ms intervals (including both processing and idle time), though individual cycles may take longer if the workload requires it. The results then flow asynchronously through the [API layer](#the-live-data-stack) via Barrage to connected clients and UI components.
 
 This is the technical foundation of [Live Dataframes](#the-live-data-stack): the same table object can be static (if its source never changes) or live (if connected to streaming data), and all downstream operations automatically inherit that behavior.
 

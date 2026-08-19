@@ -91,7 +91,7 @@ def next_value():
     return counter
 
 
-# This won't produce 1, 2, 3, 4, 5...
+# Don't rely on getting 1, 2, 3, 4, 5...
 result = empty_table(5).update("Value = (int)next_value()")
 ```
 
@@ -99,9 +99,9 @@ You might expect `Value` to be `[1, 2, 3, 4, 5]`. But the engine can evaluate ro
 
 **The rule:** Formulas should be _stateless_ — the result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable Python variables (like configuration values) are fine; mutable state and order-dependent logic are not.
 
-### When you need sequential processing
+### Replacing counters with row positions
 
-If you genuinely need sequential processing, Deephaven provides mechanisms for this:
+If you need deterministic row numbering, use `ii` (the row position) instead of a counter:
 
 ```python order=result
 from deephaven import empty_table
@@ -219,7 +219,8 @@ The UI updates automatically as data changes and as users interact with controls
 
 | Source           | How to use                                                                        |
 | ---------------- | --------------------------------------------------------------------------------- |
-| **Parquet/CSV**  | `read("/path/to/file.parquet")`                                                   |
+| **Parquet**      | `read("/path/to/file.parquet")`                                                   |
+| **CSV**          | `deephaven.csv.read("/path/to/file.csv")`                                         |
 | **Kafka**        | [`consume`](../how-to-guides/kafka-basic.md)                                      |
 | **Manual entry** | [Input tables](../how-to-guides/input-tables.md) — edit cells in the UI           |
 | **Programmatic** | [Table Publisher](../how-to-guides/table-publisher.md) — push data from your code |

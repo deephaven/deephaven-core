@@ -80,7 +80,7 @@ nextValue = {
     return counter
 }
 
-// This won't produce 1, 2, 3, 4, 5...
+// Don't rely on getting 1, 2, 3, 4, 5...
 result = emptyTable(5).update("Value = (int)nextValue()")
 ```
 
@@ -88,9 +88,9 @@ You might expect `Value` to be `[1, 2, 3, 4, 5]`. But the engine can evaluate ro
 
 **The rule:** Formulas should be _stateless_ — the result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable variables (like configuration values) are fine; mutable state and order-dependent logic are not.
 
-### When you need sequential processing
+### Replacing counters with row positions
 
-If you genuinely need sequential processing, Deephaven provides mechanisms for this:
+If you need deterministic row numbering, use `ii` (the row position) instead of a counter:
 
 ```groovy order=result
 // Use ii (the row number) instead of a counter
@@ -171,7 +171,8 @@ Deephaven isn't just a table engine — it's a platform for building data applic
 
 | Source           | How to use                                                                        |
 | ---------------- | --------------------------------------------------------------------------------- |
-| **Parquet/CSV**  | `ParquetTools.readTable("/path/to/file.parquet")`                                 |
+| **Parquet**      | `ParquetTools.readTable("/path/to/file.parquet")`                                 |
+| **CSV**          | `CsvTools.readCsv("/path/to/file.csv")`                                           |
 | **Kafka**        | [`KafkaTools.consumeToTable`](../how-to-guides/kafka-basic.md)                    |
 | **Manual entry** | [Input tables](../how-to-guides/input-tables.md) — edit cells in the UI           |
 | **Programmatic** | [Table Publisher](../how-to-guides/table-publisher.md) — push data from your code |
