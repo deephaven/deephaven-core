@@ -2134,13 +2134,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     private int getIndexForRankNoAcc(final int fromIndex, final long pos, final MutableLong prevCardMu) {
         int i = fromIndex;
-        final long posp1 = pos + 1;
         long card = (prevCardMu == null) ? 0 : prevCardMu.get();
         long prevCard;
         while (true) {
             prevCard = card;
             card += getSpanCardinalityAtIndex(i);
-            if (posp1 <= card) {
+            // Note pos < card rather than pos + 1 <= card: pos + 1 overflows for pos == Long.MAX_VALUE.
+            if (pos < card) {
                 break;
             }
             ++i;
@@ -3387,7 +3387,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 break;
             }
         }
-        size = (int) dst;
+        final int newSize = (int) dst;
+        for (int i = newSize; i < size; ++i) {
+            spans[i] = null; // ensure we don't retain references to dead containers.
+        }
+        size = newSize;
         tryCompactUnsafe(4);
     }
 
@@ -3426,6 +3430,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (i == size) {
                 break;
             }
+        }
+        for (int idx = dst; idx < size; ++idx) {
+            spans[idx] = null; // ensure we don't retain references to dead containers.
         }
         size = dst;
         tryCompactUnsafe(4);
@@ -4550,15 +4557,24 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             throw new IllegalArgumentException(
                     ("startPositionInclusive=" + startPositionInclusive + " should be >=0."));
         }
+        if (length <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        // startPositionInclusive + length - 1 can overflow for large lengths (e.g. Long.MAX_VALUE used as
+        // "everything from start"); saturate, since any end at or past the last position means "through the end".
+        final long lengthMinusOne = length - 1;
+        final long saturatedEndPositionInclusive = (lengthMinusOne > Long.MAX_VALUE - startPositionInclusive)
+                ? Long.MAX_VALUE
+                : startPositionInclusive + lengthMinusOne;
         final long endPositionInclusive;
         if (isCardinalityCached()) {
             final long cardinality = getCardinality();
             if (startPositionInclusive >= cardinality) {
                 return RowSequenceFactory.EMPTY;
             }
-            endPositionInclusive = Math.min(startPositionInclusive + length, cardinality) - 1;
+            endPositionInclusive = Math.min(saturatedEndPositionInclusive, cardinality - 1);
         } else {
-            endPositionInclusive = startPositionInclusive + length;
+            endPositionInclusive = saturatedEndPositionInclusive;
         }
         final MutableLong prevCardMu;
         final int startIdx;
@@ -4633,8 +4649,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         int endKeyIdx = getSpanIndex(startKeyIdx, endKey);
         final boolean endKeyIdxWasNegative = endKeyIdx < 0;
         if (endKeyIdxWasNegative) {
-            // endIdx can't be -1, otherwise we would have returned above.
             endKeyIdx = -endKeyIdx - 2;
+            if (endKeyIdx < startKeyIdx) {
+                // The requested range ends before the span where it would need to start; the intersection is empty.
+                // This also covers a range entirely before the first span (endKeyIdx == -1).
+                return RowSequenceFactory.EMPTY;
+            }
         }
         final BeforeCardContext beforeCardCtx = (acc == null)
                 ? new BeforeCardContext(startIdx, cardBeforeStartIdx)
@@ -4665,6 +4685,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     absoluteEndPos = lastValidPos;
                 }
             }
+        }
+        if (absoluteEndPos < absoluteStartPos) {
+            // The requested range falls entirely in a gap between present values; the intersection is empty.
+            return RowSequenceFactory.EMPTY;
         }
         long relativeStartOffset = absoluteStartPos - cardBeforeStartKeyIdx;
         final long spanCardAtStartKeyIdx = getSpanCardinalityAtIndexMaybeAcc(startKeyIdx);
@@ -4697,7 +4721,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (isEmpty()) {
             return RowSequenceFactory.EMPTY_ITERATOR;
         }
-        return new RspRowSequence.Iterator(asRowSequence());
+        // The temporary RspRowSequence holds its own reference to us, and the Iterator constructor acquires
+        // another one; close the temporary or its reference is leaked.
+        try (final RspRowSequence rs = asRowSequence()) {
+            return new RspRowSequence.Iterator(rs);
+        }
     }
 
     public long getAverageRunLengthEstimate() {

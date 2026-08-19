@@ -365,22 +365,23 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
             return subSetByPositionRange(positions.firstRowKey(), positions.lastRowKey() + 1);
         }
         final MutableLong currentOffset = new MutableLong();
-        final RowSequence.Iterator iter = getRowSequenceIterator();
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        positions.forEachRowKeyRange((start, end) -> {
-            if (currentOffset.get() < start) {
-                // skip items until the beginning of this range
-                iter.getNextRowSequenceWithLength(start - currentOffset.get());
-                currentOffset.set(start);
-            }
-            if (!iter.hasMore()) {
-                return false;
-            }
-            iter.getNextRowSequenceWithLength(end + 1 - currentOffset.get())
-                    .forAllRowKeyRanges(builder::appendRange);
-            currentOffset.set(end + 1);
-            return iter.hasMore();
-        });
+        try (final RowSequence.Iterator iter = getRowSequenceIterator()) {
+            positions.forEachRowKeyRange((start, end) -> {
+                if (currentOffset.get() < start) {
+                    // skip items until the beginning of this range
+                    iter.getNextRowSequenceWithLength(start - currentOffset.get());
+                    currentOffset.set(start);
+                }
+                if (!iter.hasMore()) {
+                    return false;
+                }
+                iter.getNextRowSequenceWithLength(end + 1 - currentOffset.get())
+                        .forAllRowKeyRanges(builder::appendRange);
+                currentOffset.set(end + 1);
+                return iter.hasMore();
+            });
+        }
         return builder.build();
     }
 
