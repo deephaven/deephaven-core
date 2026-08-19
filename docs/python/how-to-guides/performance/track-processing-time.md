@@ -8,7 +8,7 @@ This guide explains how to track when Deephaven processes row modifications, whi
 > [!NOTE]
 > This feature requires using jpy to access the Java API directly. See the [Groovy documentation](/core/groovy/docs/how-to-guides/performance/track-processing-time) for a full explanation of the concepts.
 
-## The problem
+## Problem
 
 By default, Deephaven optimizes formula evaluation by only recomputing values when their input columns change. A formula like `ProcessTime = now()` evaluates once when the row is created but does not re-evaluate when other columns change — because `now()` has no column dependencies.
 
@@ -20,9 +20,9 @@ Use [`SelectColumnFactory.getExpression`](https://deephaven.io/core/javadoc/io/d
 
 Since there's no native Python wrapper for this feature, you need to:
 
-1. Access the Java class via `jpy.get_type`
-2. Use `j_array_list` to convert the Python list to a Java Collection
-3. Work with the underlying `j_table` and wrap the result back to a Python `Table`
+1. Access the Java class via `jpy.get_type`.
+2. Use `j_array_list` to convert the Python list to a Java Collection.
+3. Work with the underlying `j_table` and wrap the result back to a Python `Table`.
 
 ```python ticking-table order=null
 import jpy

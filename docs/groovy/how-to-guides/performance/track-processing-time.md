@@ -5,7 +5,7 @@ sidebar_label: Track processing time
 
 This guide explains how to track when Deephaven processes row modifications, which is useful for measuring end-to-end latency in real-time data pipelines.
 
-## The problem: formulas skip re-evaluation
+## Problem: formulas skip re-evaluation
 
 By default, Deephaven optimizes formula evaluation by only recomputing values when their input columns change. This is controlled by the [Modified Column Set](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ModifiedColumnSet.html) (MCS) — a bitset that tracks which columns were modified in each update cycle.
 
