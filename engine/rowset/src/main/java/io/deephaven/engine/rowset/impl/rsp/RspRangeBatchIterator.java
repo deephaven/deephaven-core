@@ -132,7 +132,8 @@ public class RspRangeBatchIterator implements SafeCloseable {
      * @return The count of ranges written (which matches 2 times the number of elements written).
      */
     public int fillRangeChunk(final WritableLongChunk<OrderedRowKeyRanges> chunk, final int chunkOffset) {
-        final int chunkMaxCount = chunk.capacity() - chunkOffset;
+        // Range boundaries are written in pairs, so round the available slot count down to an even value.
+        final int chunkMaxCount = (chunk.capacity() - chunkOffset) & ~1;
         int chunkDelta = 0;
         // first, flush any leftovers in buf from previous calls.
         long keyForPrevRangeEndAtSpanBoundary = -1;

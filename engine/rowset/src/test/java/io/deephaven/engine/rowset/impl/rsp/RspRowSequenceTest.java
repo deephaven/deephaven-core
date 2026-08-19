@@ -1013,6 +1013,23 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
     }
 
     @Test
+    public void testFillRangeChunkOddOffsetRoundsCapacityDown() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.add(20);
+        rb = rb.add(30);
+        final RspRangeBatchIterator it = rb.getRangeBatchIterator(0, rb.getCardinality());
+        try (final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(8)) {
+            // An odd number of available slots: ranges are written in pairs, so only two whole ranges fit.
+            final int offset = chunk.capacity() - 5;
+            final int written = it.fillRangeChunk(chunk, offset);
+            assertEquals(2, written);
+            assertTrue(it.hasNext());
+        }
+        it.close();
+    }
+
+    @Test
     public void testFillRangeChunkHonorsChunkOffsetCapacity() {
         RspBitmap rb = RspBitmap.makeEmpty();
         rb = rb.add(10);
