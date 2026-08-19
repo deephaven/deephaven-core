@@ -163,29 +163,32 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final void remove(final RowSet removed) {
-        if (removed == this) {
-            // Guard self-aliasing; the ix* implementations must not mutate while iterating themselves.
-            clear();
-            return;
-        }
         preMutationHook();
-        assign(innerSet.ixRemove(getInnerSet(removed)));
+        if (removed == this) {
+            // Self-removal empties the set; the ix* implementations must not mutate while iterating themselves.
+            assign(OrderedLongSet.EMPTY);
+        } else {
+            assign(innerSet.ixRemove(getInnerSet(removed)));
+        }
         postMutationHook();
     }
 
     @Override
     public final void update(final RowSet added, final RowSet removed) {
+        preMutationHook();
         // Guard self-aliasing; the ix* implementations must not mutate while iterating themselves.
         if (added == this) {
-            remove(removed);
-            return;
+            if (removed != this) {
+                // Inserting ourselves is a no-op against our post-removal state; only the removal has effect.
+                assign(innerSet.ixRemove(getInnerSet(removed)));
+            }
+            // added == removed == this: the removal and insertion cancel; we are unchanged.
+        } else if (removed == this) {
+            // Removing all of our keys, then inserting added: we become added.
+            assign(getInnerSet(added).ixCowRef());
+        } else {
+            assign(innerSet.ixUpdate(getInnerSet(added), getInnerSet(removed)));
         }
-        if (removed == this) {
-            resetTo(added);
-            return;
-        }
-        preMutationHook();
-        assign(innerSet.ixUpdate(getInnerSet(added), getInnerSet(removed)));
         postMutationHook();
     }
 

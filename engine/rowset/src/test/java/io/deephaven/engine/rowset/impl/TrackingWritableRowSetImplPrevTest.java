@@ -172,6 +172,11 @@ public class TrackingWritableRowSetImplPrevTest {
             org.junit.Assert.fail("expected UnsupportedOperationException");
         } catch (UnsupportedOperationException expected) {
         }
+        try {
+            prev.update(prev, prev);
+            org.junit.Assert.fail("expected UnsupportedOperationException");
+        } catch (UnsupportedOperationException expected) {
+        }
         ix.close();
     }
 
