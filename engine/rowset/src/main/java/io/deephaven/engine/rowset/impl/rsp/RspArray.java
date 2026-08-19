@@ -2143,7 +2143,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     public void getKeysForPositions(final PrimitiveIterator.OfLong inputPositions, final LongConsumer outputKeys) {
         int fromIndex = 0;
         final long cardinality = isCardinalityCached() ? getCardinality() : -1;
-        final MutableLong prevCardMu = (acc == null) ? new MutableLong(0) : null;
+        // An allocated but stale acc (between unsafe mutations and finishMutations*()) cannot be used for ranks;
+        // take the same scanning path as get(long) does in that state.
+        final boolean useAcc = acc != null && cardData == size - 1;
+        final MutableLong prevCardMu = useAcc ? null : new MutableLong(0);
         while (inputPositions.hasNext()) {
             final long pos = inputPositions.nextLong();
             if (pos < 0 || (cardinality != -1 && pos >= cardinality)) {
@@ -2155,7 +2158,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 return;
             }
             final long prevCardinality;
-            if (acc != null) {
+            if (useAcc) {
                 fromIndex = getIndexForRankWithAcc(fromIndex, pos);
                 prevCardinality = cardinalityBeforeWithAcc(fromIndex);
             } else {
