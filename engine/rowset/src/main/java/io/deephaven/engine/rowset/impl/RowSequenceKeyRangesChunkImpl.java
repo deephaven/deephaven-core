@@ -157,6 +157,8 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         @Override
         public RowSequence getNextRowSequenceThrough(long maxKeyInclusive) {
             tryClosePendingClose();
+            // Our own bound wins: the keys past it belong to the backing chunk but not to this sequence.
+            maxKeyInclusive = Math.min(maxKeyInclusive, maxKeyValue);
             if (helper.isEmpty() || maxKeyInclusive < helper.currKeyValue) {
                 // Nothing remains at or before maxKeyInclusive; without this check a max key inside the
                 // already-consumed part of the current range would produce a corrupt (min > max) slice.
@@ -214,12 +216,17 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
             final int newEndOffset = OrderedChunkUtils.findInChunk(backingChunk, nextKey, helper.offset,
                     backingChunk.size());
             helper.offset = newEndOffset - (newEndOffset % 2);
-            final boolean positioned = helper.offset < backingChunk.size();
-            if (positioned) {
+            if (helper.offset < backingChunk.size()) {
                 helper.currKeyValue = Math.max(nextKey, backingChunk.get(helper.offset));
+                if (helper.currKeyValue <= maxKeyValue) {
+                    return true;
+                }
             }
-            // A position past maxKeyValue means we are exhausted, even though the backing chunk has more.
-            return positioned && helper.currKeyValue <= maxKeyValue;
+            // Landing past our bound exhausts us even though the backing chunk has more; leave the helper at the
+            // same state advanceInPositionSpace does when it runs off the end, so positions stay within our view.
+            helper.offset = backingChunk.size();
+            helper.currKeyValue = maxKeyValue;
+            return false;
         }
 
         @Override
