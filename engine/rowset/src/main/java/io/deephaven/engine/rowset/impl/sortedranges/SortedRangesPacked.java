@@ -44,11 +44,6 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         this.offset = offset;
     }
 
-    protected SortedRangesPacked(final ArrayType data, final long offset) {
-        super(data);
-        this.offset = offset;
-    }
-
     protected SortedRangesPacked(final ArrayType data, final long offset, final int count, final long cardinality) {
         super(data, count, cardinality);
         this.offset = offset;
@@ -197,7 +192,7 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         return applyShiftImpl(shiftOffset, v, true);
     }
 
-    // try to convert this to a SortedArrayLong with enough space to accomodate deltaCapacity elements
+    // try to convert this to a SortedArrayLong with enough space to accommodate deltaCapacity elements
     // in its data array.
     private SortedRangesLong tryConvertToSrLong(final int deltaCapacity) {
         if (count == 0) {

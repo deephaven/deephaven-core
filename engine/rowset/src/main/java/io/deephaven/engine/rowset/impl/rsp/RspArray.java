@@ -1359,17 +1359,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return new RspReverseIterator(new SpanCursorBackwardImpl(this));
     }
 
-    private int targetCapacityForSize(final int sz) {
-        if (sz < 1024) {
-            // smallest power of two greater or equal to sz.
-            return 1 << (31 - Integer.numberOfLeadingZeros(sz - 1));
-        }
-        if ((sz & 3) == 0) {
-            return sz;
-        }
-        return 5 * (sz / 4);
-    }
-
     /**
      * Make sure there is capacity for at least n more spans
      */
@@ -1417,13 +1406,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return;
         }
         realloc(size);
-    }
-
-    public void tryCompact(final int compactFactor) {
-        if (!canWrite()) {
-            return;
-        }
-        tryCompactUnsafe(compactFactor);
     }
 
     public int keySearch(final int startPos, final long key) {
@@ -1558,21 +1540,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         ensureCardinalityCache(false);
     }
 
-    T forceAcc() {
-        if (acc != null) {
-            return self();
-        }
-        T ref = getWriteRef();
-        ref.acc = new long[ref.spanInfos.length];
-        ref.cardData = ref.size - 1;
-        long card = 0;
-        for (int i = 0; i < ref.size; ++i) {
-            card += ref.getSpanCardinalityAtIndex(i);
-            ref.acc[i] = card;
-        }
-        return ref;
-    }
-
     void ensureCardData(final boolean optimizeContainers) {
         acc = null;
         long c = 0;
@@ -1669,14 +1636,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         cardData = -1;
     }
 
-    void modifiedLastSpan() {
-        if (acc != null) {
-            cardData = Math.min(size - 2, cardData);
-            return;
-        }
-        cardData = -1;
-    }
-
     // For tests
     long getFullBlocksCount() {
         long tflen = 0;
@@ -1707,13 +1666,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     private void arrayCopies(final int src, final int dst, final int n) {
         System.arraycopy(spanInfos, src, spanInfos, dst, n);
         System.arraycopy(spans, src, spans, dst, n);
-    }
-
-    private void compact() {
-        if (size >= spans.length) {
-            return;
-        }
-        realloc(size);
     }
 
     private void checkCompact() {

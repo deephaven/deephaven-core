@@ -18,7 +18,6 @@ import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
@@ -1225,16 +1224,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     // Guarantee for the caller: if this method returns null, no state change has been made on the this object.
-    private SortedRanges unpackedAppend(final long unpackedData, final boolean writeCheck) {
-        SortedRanges ans = ensureCanAppend(count, unpackedData, writeCheck);
-        if (ans == null) {
-            return null;
-        }
-        ans.unpackedSet(ans.count++, unpackedData);
-        return ans;
-    }
-
-    // Guarantee for the caller: if this method returns null, no state change has been made on the this object.
     private SortedRanges packedAppend2(
             final long packedData1, final long packedData2, final long unpackedData1, final long unpackedData2,
             final boolean writeCheck) {
@@ -1250,108 +1239,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             ans.unpackedSet(ans.count++, unpackedData2);
         }
         return ans;
-    }
-
-    // required on entry: out.canWrite().
-    // sar.first() <= start && end <= sar.last()
-    // returns null if we exceed maxCapacity in the process of building the answer
-    // (which can happen if you have, say, a big single range and retain a gazillion individual elements).
-    // Writes to iStartOut an array position index into sar where to continue the intersection for ranges after
-    // the one provided.
-    private static SortedRanges intersectRangeImplStep(
-            SortedRanges out,
-            final SortedRanges sar,
-            final int iStart, final long start, final long end, final MutableInt iStartOut) {
-        if (!out.fits(start, end)) {
-            return null;
-        }
-        final long packedStart = sar.pack(start);
-        int srcIndex = sar.absRawBinarySearch(packedStart, iStart, sar.count - 1);
-        long srcData = sar.packedGet(srcIndex);
-        boolean srcNeg = srcData < 0;
-        final long packedEnd = sar.pack(end);
-        if (srcNeg) {
-            final long srcValue = -srcData;
-            if (srcValue == packedStart) {
-                out = out.unpackedAppend(start, false);
-                if (out == null) {
-                    return null;
-                }
-                ++out.cardinality;
-                if (packedEnd == packedStart) {
-                    iStartOut.set(srcIndex + 1);
-                    if (DEBUG)
-                        out.validate(start, end);
-                    return out;
-                }
-            } else {
-                // packedStart < srcValue
-                out = out.unpackedAppend(start, false);
-                if (out == null) {
-                    return null;
-                }
-                if (packedEnd <= srcValue) {
-                    if (packedStart == packedEnd) {
-                        out.cardinality += 1;
-                    } else {
-                        out = out.unpackedAppend(-end, false);
-                        if (out == null) {
-                            return null;
-                        }
-                        out.cardinality += packedEnd - packedStart + 1;
-                    }
-                    iStartOut.set((packedEnd < srcValue) ? srcIndex : srcIndex + 1);
-                    if (DEBUG)
-                        out.validate(start, end);
-                    return out;
-                }
-                out = out.unpackedAppend(sar.unpack(srcData), false);
-                if (out == null) {
-                    return null;
-                }
-                out.cardinality += srcValue - packedStart + 1;
-            }
-            ++srcIndex;
-            // srcIndex < count at this point, since we know
-            // srcValue < packedEnd and packedEnd was clamped
-            // to within our array's range.
-            srcData = sar.packedGet(srcIndex);
-            srcNeg = false;
-        }
-        long srcValue = srcData;
-        long prevStart = srcData;
-        boolean pastEnd = false;
-        while (srcValue <= packedEnd) {
-            out = out.unpackedAppend(sar.unpack(srcData), false);
-            if (out == null) {
-                return null;
-            }
-            if (srcNeg) {
-                out.cardinality += srcValue - prevStart;
-            } else {
-                ++out.cardinality;
-                prevStart = srcData;
-            }
-            ++srcIndex;
-            if (srcIndex == sar.count) {
-                pastEnd = true;
-                break;
-            }
-            srcData = sar.packedGet(srcIndex);
-            srcNeg = srcData < 0;
-            srcValue = srcNeg ? -srcData : srcData;
-        }
-        if (!pastEnd && srcNeg && prevStart < packedEnd) {
-            out = out.unpackedAppend(-end, false);
-            if (out == null) {
-                return null;
-            }
-            out.cardinality += packedEnd - prevStart;
-        }
-        iStartOut.set(srcIndex);
-        if (DEBUG)
-            out.validate(start, end);
-        return out;
     }
 
     private static ThreadLocal<SortedRangesLong> workSortedRangesLongPerThread =

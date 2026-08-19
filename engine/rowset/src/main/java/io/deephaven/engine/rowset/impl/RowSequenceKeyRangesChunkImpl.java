@@ -88,13 +88,6 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
 
     }
 
-    private RowSequenceKeyRangesChunkImpl(final WritableLongChunk<OrderedRowKeyRanges> backingChunkToOwn,
-            final long minKeyValue,
-            final long maxKeyValue) {
-        this(backingChunkToOwn, backingChunkToOwn, minKeyValue, maxKeyValue);
-
-    }
-
     private class OffsetHelper {
         public int offset = 0;
         public long currKeyValue =
