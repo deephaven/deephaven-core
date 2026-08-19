@@ -2067,9 +2067,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (end < first) {
             return RowSequenceFactory.EMPTY;
         }
-        final long packedStart = pack(Math.max(start, first));
-        final long packedEnd = pack(Math.min(end, last));
-        return getRowSequenceByKeyRangePackedWithStart(0, 0, packedStart, packedEnd);
+        final long clampedStart = Math.max(start, first);
+        final long clampedEnd = Math.min(end, last);
+        if (clampedEnd < clampedStart) {
+            return RowSequenceFactory.EMPTY;
+        }
+        return getRowSequenceByKeyRangePackedWithStart(0, 0, pack(clampedStart), pack(clampedEnd));
     }
 
     final RowSequence getRowSequenceByKeyRangePackedWithStart(
@@ -2122,7 +2125,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         iNeg = true;
                         iData = iNextData;
                     } else {
-                        if (iNext > packedEnd) {
+                        if (iNextData > packedEnd) {
                             return new SortedRangesRowSequence(this, startPos, i, 0, i, 0, 1);
                         }
                         pendingStart = -1;
