@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/styles.css">
+  <script src="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/_ds_bundle.js"></script>
+  <style>
+    @keyframes dh-tick-flow {
+      0% { offset-distance: 0%; opacity: 0; }
+      15% { opacity: 1; }
+      85% { opacity: 1; }
+      100% { offset-distance: 100%; opacity: 0; }
+    }
+  </style>
+</helmet>
+
+<svg width="0" height="0" style="position:absolute;">
+  <defs>
+    <marker id="dh-arch-arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="var(--dh-text-muted)"></polygon>
+    </marker>
+    <marker id="dh-arch-flow-arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="var(--dh-warn-500)"></polygon>
+    </marker>
+  </defs>
+</svg>
+
+<div style="width:100%;box-sizing:border-box;padding:40px;background:var(--dh-surface-page);font-family:var(--dh-font-sans);color:var(--dh-text-primary);">
+
+  <div style="margin-bottom:28px;text-align:center;">
+    <h1 style="margin:0;font-size:28px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-text-primary);">Deephaven architecture overview</h1>
+    <p style="margin:6px 0 0;font-size:15px;color:var(--dh-text-secondary);">From Python/Java code to real-time web UIs</p>
+  </div>
+
+  <div style="box-sizing:border-box;padding:20px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:4px solid var(--dh-warn-500);border-radius:var(--dh-radius-lg);">
+    <div style="font-size:15px;font-weight:700;color:var(--dh-text-primary);margin-bottom:14px;">Deephaven query engine (Java)</div>
+
+    <div style="box-sizing:border-box;padding:16px;background:var(--dh-bg-1000);border:1px solid var(--dh-primary-700);border-radius:var(--dh-radius-md);margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);">Directed Acyclic Graph (DAG)</div>
+      <div style="font-size:12px;color:var(--dh-text-secondary);margin-top:2px;margin-bottom:14px;">Tables and operations form a dependency graph with automatic update propagation</div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--dh-primary-700);color:var(--dh-white);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">T1</div>
+            <div style="font-size:10px;font-weight:600;color:var(--dh-text-primary);">Source</div>
+          </div>
+          <svg width="28" height="14" viewBox="0 0 28 14"><path d="M2 7 L24 7" stroke="var(--dh-text-muted)" stroke-width="1.5" marker-end="url(#dh-arch-arrow)"></path></svg>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--dh-primary-600);color:var(--dh-white);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">T2</div>
+            <div style="font-size:10px;font-weight:600;color:var(--dh-text-primary);">Filter</div>
+          </div>
+          <svg width="28" height="14" viewBox="0 0 28 14"><path d="M2 7 L24 7" stroke="var(--dh-text-muted)" stroke-width="1.5" marker-end="url(#dh-arch-arrow)"></path></svg>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--dh-info-300);color:var(--dh-white);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">T3</div>
+            <div style="font-size:10px;font-weight:600;color:var(--dh-text-primary);">Join</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--dh-text-secondary);">
+          <div>&#8226; Incremental updates</div>
+          <div>&#8226; Logical clock for consistency</div>
+          <div>&#8226; Garbage collection</div>
+        </div>
+      </div>
+
+      <div style="box-sizing:border-box;margin-top:14px;padding:10px 14px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-radius:var(--dh-radius-md);display:flex;align-items:center;gap:20px;flex-wrap:wrap;font-size:12px;">
+        <div style="font-weight:700;color:var(--dh-text-primary);">Update Graph (UG) Cycles:</div>
+        <div style="color:var(--dh-text-secondary);">Batch changes every 1000ms &#8594;</div>
+        <div style="color:var(--dh-text-secondary);">Propagate in topological order &#8594;</div>
+        <div style="color:var(--dh-text-secondary);">Notify dependents &#8594;</div>
+        <div style="color:var(--dh-text-secondary);">UI updates</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+      <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:4px solid var(--dh-secondary-400);border-radius:var(--dh-radius-md);">
+        <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);margin-bottom:10px;">Table Data Structures</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="box-sizing:border-box;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-primary-700);border-radius:var(--dh-radius-md);">
+            <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">RowSet</div>
+            <div style="font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">Sparse 64-bit keys</div>
+            <div style="font-size:11px;color:var(--dh-text-secondary);">RSP / Roaring Bitmaps</div>
+          </div>
+          <div style="box-sizing:border-box;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-secondary-400);border-radius:var(--dh-radius-md);">
+            <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">ColumnSources</div>
+            <div style="font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">Column data by row key</div>
+            <div style="font-size:11px;color:var(--dh-text-secondary);">Shared across tables</div>
+          </div>
+        </div>
+        <div style="box-sizing:border-box;margin-top:10px;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);display:flex;gap:8px;align-items:flex-start;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--dh-text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"></path><path d="M7 3v4a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V3.13"></path></svg>
+          <div style="font-size:11px;color:var(--dh-text-secondary);"><span style="font-weight:700;color:var(--dh-text-primary);">Zero-copy optimization:</span> filters/views share ColumnSources &#8594; 50-90% memory savings</div>
+        </div>
+      </div>
+
+      <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:4px solid var(--dh-warn-500);border-radius:var(--dh-radius-md);">
+        <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);margin-bottom:10px;">Chunk-Oriented Processing</div>
+        <div style="box-sizing:border-box;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-warn-500);border-radius:var(--dh-radius-md);">
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">Chunks (4096 elements)</div>
+          <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">Bulk data transfer: getChunk(), fillChunk()</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);">Enables SIMD vectorization, reduces method calls 1000x</div>
+        </div>
+        <div style="box-sizing:border-box;margin-top:10px;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);display:flex;gap:8px;align-items:flex-start;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--dh-warn-200)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
+          <div style="font-size:11px;color:var(--dh-text-secondary);"><span style="font-weight:700;color:var(--dh-text-primary);">Performance:</span> 1M rows filtered with ~244 calls vs 1M individual calls</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
+        <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);margin-bottom:8px;">Formula Engine</div>
+        <div style="font-size:11px;color:var(--dh-text-secondary);">JavaParser &#8594; Compiled classes</div>
+        <div style="font-size:11px;color:var(--dh-text-secondary);">Numba for Python expressions</div>
+        <div style="font-size:11px;color:var(--dh-text-secondary);">Parameter substitution &amp; reuse</div>
+      </div>
+      <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
+        <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);margin-bottom:8px;">Table Operations</div>
+        <div style="font-size:11px;color:var(--dh-text-secondary);">Joins &#8226; Aggregations &#8226; Sorts</div>
+        <div style="font-size:11px;color:var(--dh-text-secondary);">Columnar hash tables</div>
+        <div style="font-size:11px;color:var(--dh-text-secondary);">Incremental algorithms</div>
+      </div>
+      <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
+        <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);margin-bottom:8px;">Data Sources</div>
+        <div style="font-size:11px;color:var(--dh-text-secondary);">Parquet &#8226; Kafka &#8226; CSV</div>
+        <div style="font-size:11px;color:var(--dh-text-secondary);">Streaming &amp; Batch</div>
+        <div style="font-size:11px;color:var(--dh-text-secondary);">Unified API for both</div>
+      </div>
+    </div>
+
+    <div style="box-sizing:border-box;padding:16px;background:var(--dh-bg-1000);border:1px solid var(--dh-border);border-left:4px solid var(--dh-positive-300);border-radius:var(--dh-radius-md);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dh-positive-200)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+        <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);">Key performance characteristics</div>
+      </div>
+      <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-relaxed);">
+        <div><span style="font-weight:700;color:var(--dh-text-primary);">Incremental updates:</span> 1 row changed = 1 row recomputed (not full table)</div>
+        <div><span style="font-weight:700;color:var(--dh-text-primary);">Shared structures:</span> 50-90% memory reduction for filtered/joined views</div>
+        <div><span style="font-weight:700;color:var(--dh-text-primary);">Chunk processing:</span> ~1000x fewer method calls, 4-8x SIMD speedup</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:32px;">
+
+    <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:4px solid var(--dh-negative-300);border-radius:var(--dh-radius-lg);">
+      <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);margin-bottom:12px;">Language Integration</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="box-sizing:border-box;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">JPY (Python &#8596; Java)</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">JNI bridge, minimal crossings</div>
+        </div>
+        <div style="box-sizing:border-box;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">Native Java API</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">Direct engine access</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:4px solid var(--dh-positive-300);border-radius:var(--dh-radius-lg);">
+      <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);margin-bottom:12px;">Network Protocols</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div style="box-sizing:border-box;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">gRPC / Arrow</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">Flight service</div>
+        </div>
+        <div style="box-sizing:border-box;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">Barrage</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">Ticking data</div>
+        </div>
+        <div style="box-sizing:border-box;padding:10px;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);">
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">WebSocket</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">Real-time updates</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+    <div style="display:flex;justify-content:center;">
+      <svg width="16" height="34" viewBox="0 0 16 34" style="overflow:visible;">
+        <path d="M 8 2 L 8 28" stroke="var(--dh-warn-500)" stroke-width="2" marker-end="url(#dh-arch-flow-arrow)"></path>
+        <circle r="3.5" fill="var(--dh-warn-500)" style="offset-path:path('M 8 2 L 8 28');animation:dh-tick-flow 2.2s cubic-bezier(0.2,0,0.2,1) infinite;"></circle>
+      </svg>
+    </div>
+    <div style="display:flex;justify-content:center;">
+      <svg width="16" height="34" viewBox="0 0 16 34" style="overflow:visible;">
+        <path d="M 8 2 L 8 28" stroke="var(--dh-warn-500)" stroke-width="2" marker-end="url(#dh-arch-flow-arrow)"></path>
+        <circle r="3.5" fill="var(--dh-warn-500)" style="offset-path:path('M 8 2 L 8 28');animation:dh-tick-flow 2.2s cubic-bezier(0.2,0,0.2,1) infinite 0.5s;"></circle>
+      </svg>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+    <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:4px solid var(--dh-info-300);border-radius:var(--dh-radius-lg);">
+      <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);margin-bottom:10px;">deephaven.ui (Python UI)</div>
+      <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-relaxed);">
+        <div>Pure Python components</div>
+        <div style="font-family:var(--dh-font-mono);">@ui.component decorator</div>
+        <div>Server-side rendering</div>
+        <div>&#8594; React in browser</div>
+        <div>No JavaScript required</div>
+      </div>
+    </div>
+
+    <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:4px solid var(--dh-info-300);border-radius:var(--dh-radius-lg);">
+      <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);margin-bottom:10px;">JavaScript / TypeScript Client</div>
+      <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-relaxed);">
+        <div style="font-family:var(--dh-font-mono);">web-client-ui components</div>
+        <div>Direct gRPC-Web</div>
+        <div>Grid, charts, dashboards</div>
+        <div>Custom integration</div>
+        <div>Maximum flexibility</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:20px;text-align:center;font-size:12px;color:var(--dh-text-secondary);">Both approaches leverage same DAG engine, gRPC protocols, and real-time capabilities</div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280}}"></script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/styles.css">
+  <script src="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/_ds_bundle.js"></script>
+  <style>
+    @keyframes dh-tick-flow {
+      0% { offset-distance: 0%; opacity: 0; }
+      15% { opacity: 1; }
+      85% { opacity: 1; }
+      100% { offset-distance: 100%; opacity: 0; }
+    }
+  </style>
+</helmet>
+
+<div style="width:100%;box-sizing:border-box;padding:40px;background:var(--dh-surface-page);font-family:var(--dh-font-sans);color:var(--dh-text-primary);">
+
+  <div style="margin-bottom:20px;text-align:center;">
+    <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-text-primary);">Unified batch and streaming: traditional vs. Deephaven</h1>
+    <p style="margin:6px 0 0;font-size:15px;color:var(--dh-text-secondary);">Unified API eliminates complexity of separate batch and real-time systems</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+
+    <div style="display:flex;flex-direction:column;height:100%;gap:20px;">
+      <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);">Traditional: Complex Multi-System</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-primary-700);border-radius:var(--dh-radius-md);">
+          <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);margin-bottom:6px;">Batch Layer</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);line-height:var(--dh-leading-relaxed);">
+            <div>&#8226; Historical data</div>
+            <div>&#8226; Parquet, HDFS</div>
+            <div>&#8226; Spark/Hadoop</div>
+            <div>&#8226; Hours/days latency</div>
+          </div>
+        </div>
+        <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-warn-500);border-radius:var(--dh-radius-md);">
+          <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);margin-bottom:6px;">Speed Layer</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);line-height:var(--dh-leading-relaxed);">
+            <div>&#8226; Real-time streams</div>
+            <div>&#8226; Kafka, Flink</div>
+            <div>&#8226; Storm, Samza</div>
+            <div>&#8226; ms-second latency</div>
+          </div>
+        </div>
+      </div>
+
+      <svg width="100%" height="52" viewBox="0 0 584 52" style="display:block;overflow:visible;">
+        <path d="M 142 0 L 142 18 L 282 32" stroke="var(--dh-border-strong)" stroke-width="2" fill="none"></path>
+        <path d="M 442 0 L 442 18 L 302 32" stroke="var(--dh-border-strong)" stroke-width="2" fill="none"></path>
+        <path d="M 292 32 L 292 46" stroke="var(--dh-border-strong)" stroke-width="2" fill="none"></path>
+        <path d="M282,26 L292,34 L282,42 Z M302,26 L292,34 L302,42 Z" fill="var(--dh-text-muted)"></path>
+        <text x="312" y="38" font-family="var(--dh-font-sans)" font-size="10" fill="var(--dh-text-muted)">merges into</text>
+        <circle r="3" fill="var(--dh-positive-300)" style="offset-path:path('M 142 0 L 142 18 L 282 32 L 292 32 L 292 46');animation:dh-tick-flow 2.4s cubic-bezier(0.2,0,0.2,1) infinite;"></circle>
+        <circle r="3" fill="var(--dh-positive-300)" style="offset-path:path('M 442 0 L 442 18 L 302 32 L 292 32 L 292 46');animation:dh-tick-flow 2.4s cubic-bezier(0.2,0,0.2,1) infinite 0.5s;"></circle>
+      </svg>
+
+      <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-positive-300);border-radius:var(--dh-radius-md);">
+        <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);margin-bottom:6px;">Serving Layer</div>
+        <div style="font-size:11px;color:var(--dh-text-secondary);line-height:var(--dh-leading-relaxed);">
+          <div>&#8226; Merges batch + real-time views</div>
+          <div>&#8226; Complex data reconciliation</div>
+          <div>&#8226; Different APIs for each layer</div>
+          <div>&#8226; Manual consistency management</div>
+        </div>
+      </div>
+
+      <div style="box-sizing:border-box;margin-top:auto;margin-bottom:0;background:var(--dh-surface-card);border:1px solid var(--dh-negative-300);border-radius:var(--dh-radius-md);padding:14px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--dh-negative-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+          <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);">Challenges:</div>
+        </div>
+        <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-relaxed);">
+          <div>&#8226; Multiple systems to learn &amp; maintain</div>
+          <div>&#8226; Different APIs for batch vs streaming</div>
+          <div>&#8226; Complex data reconciliation logic</div>
+          <div>&#8226; Infrastructure overhead</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;height:100%;gap:20px;">
+      <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);">Deephaven: Unified Single System</div>
+
+      <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:4px solid var(--dh-info-300);border-radius:var(--dh-radius-lg);">
+        <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);margin-bottom:12px;">Deephaven Query Engine</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div style="box-sizing:border-box;padding:12px;background:var(--dh-bg-1000);border:1px solid var(--dh-primary-700);border-radius:var(--dh-radius-md);">
+            <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);margin-bottom:4px;">Batch Data</div>
+            <div style="font-size:11px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">
+              <div>&#8226; Parquet, CSV</div>
+              <div>&#8226; Historical tables</div>
+              <div>&#8226; Static sources</div>
+            </div>
+          </div>
+          <div style="box-sizing:border-box;padding:12px;background:var(--dh-bg-1000);border:1px solid var(--dh-warn-500);border-radius:var(--dh-radius-md);">
+            <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);margin-bottom:4px;">Real-time Data</div>
+            <div style="font-size:11px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">
+              <div>&#8226; Kafka streams</div>
+              <div>&#8226; Live tables</div>
+              <div>&#8226; Ticking sources</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="box-sizing:border-box;padding:12px;background:var(--dh-bg-1000);border:1px solid var(--dh-primary-700);border-radius:var(--dh-radius-md);margin-bottom:12px;text-align:center;">
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">Unified DAG-based Update Model</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);margin-top:2px;">Same API &#8226; Same semantics &#8226; Automatic consistency</div>
+        </div>
+
+        <div style="box-sizing:border-box;padding:12px;background:var(--dh-bg-1000);border:1px solid var(--dh-positive-300);border-radius:var(--dh-radius-md);">
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">Single Table API</div>
+          <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);margin-top:2px;">.where() .agg_by() .join() - works on all data</div>
+        </div>
+      </div>
+
+      <div style="box-sizing:border-box;margin-top:auto;margin-bottom:0;background:var(--dh-surface-card);border:1px solid var(--dh-positive-300);border-radius:var(--dh-radius-md);padding:14px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--dh-positive-200)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+          <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);">Benefits:</div>
+        </div>
+        <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-relaxed);">
+          <div>&#8226; One system, one API to learn</div>
+          <div>&#8226; Seamless batch + real-time integration</div>
+          <div>&#8226; Automatic consistency via DAG</div>
+          <div>&#8226; Lower operational complexity</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:20px;">
+    <x-import component-from-global-scope="DeephavenDesignSystem_e929bc.Card" title="Code example: same API for both" padding="md" hint-size="1200px,auto">
+      <div style="font-size:12px;color:var(--dh-text-secondary);margin-bottom:14px;">Python code works identically for batch and real-time data:</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);margin-bottom:6px;">Batch (Historical):</div>
+          <div style="box-sizing:border-box;padding:12px;background:var(--dh-surface-sunken);border:1px solid var(--dh-primary-700);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);line-height:var(--dh-leading-relaxed);">
+            <div>historical = read_csv("trades_2024.csv")</div>
+            <div>result = historical.where("Price &gt; 100")</div>
+            <div>&nbsp;&nbsp;.agg_by([agg.avg("Price")], by=["Symbol"])</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);margin-bottom:6px;">Real-time (Live):</div>
+          <div style="box-sizing:border-box;padding:12px;background:var(--dh-surface-sunken);border:1px solid var(--dh-warn-500);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);line-height:var(--dh-leading-relaxed);">
+            <div>live = consume_kafka({"topic": "trades"})</div>
+            <div>result = live.where("Price &gt; 100")</div>
+            <div>&nbsp;&nbsp;.agg_by([agg.avg("Price")], by=["Symbol"])</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:var(--dh-text-secondary);">
+        <div>Identical operations! The only difference is the data source.</div>
+        <div>Both use the same DAG, both maintain consistency, both support all table operations.</div>
+      </div>
+    </x-import>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280}}"></script>
+</body>
+</html>
