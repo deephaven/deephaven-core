@@ -13,7 +13,7 @@ Deephaven works differently from tools like SQL or traditional Java data structu
 
 This isn't a deep technical dive — for that, see [Deephaven's design](./deephaven-design.md). Instead, this guide builds the mental model you need to work productively with Deephaven from day one.
 
-<iframe src="../assets/conceptual/mental-model-overview.html" style={{width: '100%', height: '900px', border: 'none'}} />
+<iframe src="../assets/conceptual/mental-model-overview.html" title="Deephaven mental model overview diagram" style={{width: '100%', height: '900px', border: 'none'}} />
 
 ## Tables are recipes, not data
 
@@ -35,7 +35,7 @@ Here, `filtered` doesn't contain rows 3 and 4 — it contains the _instruction_ 
 - Multiple transformations can share the same source without duplicating data.
 - Operations are typically much faster than copying entire datasets.
 
-The actual computation happens when the table is displayed or when you extract data — not when you define the transformation.
+When you call a table operation, Deephaven computes the initial result immediately. However, the "recipe" remains active — if the source data changes, downstream tables update automatically without you re-running code.
 
 ## Formulas run in the engine
 
@@ -61,14 +61,12 @@ This has important implications:
 You can call Groovy methods and closures from formulas:
 
 ```groovy syntax
-def myCalculation(x) {
-    return x * x + 1
-}
+myCalculation = { x -> x * x + 1 }
 
 result = emptyTable(10).update("Y = (int)myCalculation(i)")
 ```
 
-Methods defined in your script are available in query strings. For performance-critical code, prefer engine-native expressions when possible.
+Closures assigned to top-level variables are available in query strings. For performance-critical code, prefer engine-native expressions when possible.
 
 ## Your code doesn't run row-by-row
 
@@ -77,7 +75,7 @@ This is the most common surprise for new users. Consider this code:
 ```groovy syntax
 counter = 0
 
-def nextValue() {
+nextValue = {
     counter++
     return counter
 }
@@ -217,8 +215,8 @@ See [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) for al
 ### Pattern: Use `ii` and `i` instead of counters
 
 ```groovy order=numbered
-// ii = row position (0, 1, 2...) - changes if rows are reordered
-// i = row key (stable identifier that stays with the row)
+// i = row position as int (0, 1, 2...)
+// ii = row position as long (use for tables with more than 2 billion rows)
 numbered = emptyTable(10).update("RowNumber = ii", "Value = i * 2")
 ```
 
@@ -309,7 +307,7 @@ bySymbol = trades.partitionBy("Symbol")
 transformed = bySymbol.transform { t -> t.updateBy(UpdateByOperation.RollingAvg(10, "AvgPrice = Price")) }
 ```
 
-Partitioned tables let you work with data larger than memory and parallelize processing. See [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [Partitioned tables](../how-to-guides/partitioned-tables.md) for details.
+Partitioned tables let you parallelize processing, quickly retrieve subtables by key, and improve filter performance in loops. See [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [Partitioned tables](../how-to-guides/partitioned-tables.md) for details.
 
 ## Pitfalls to avoid
 

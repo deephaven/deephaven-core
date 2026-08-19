@@ -13,7 +13,7 @@ Deephaven works differently from tools like pandas, polars, or SQL — and even 
 
 This isn't a deep technical dive — for that, see [Deephaven's design](./deephaven-design.md). Instead, this guide builds the mental model you need to work productively with Deephaven from day one.
 
-<iframe src="../assets/conceptual/mental-model-overview.html" style={{width: '100%', height: '900px', border: 'none'}} />
+<iframe src="../assets/conceptual/mental-model-overview.html" title="Deephaven mental model overview diagram" style={{width: '100%', height: '900px', border: 'none'}} />
 
 ## Tables are recipes, not data
 
@@ -37,7 +37,7 @@ Here, `filtered` doesn't contain rows 3 and 4 — it contains the _instruction_ 
 - Multiple transformations can share the same source without duplicating data.
 - Operations are typically much faster than copying entire datasets.
 
-The actual computation happens when the table is displayed or when you extract data — not when you define the transformation.
+When you call a table operation, Deephaven computes the initial result immediately. However, the "recipe" remains active — if the source data changes, downstream tables update automatically without you re-running code.
 
 ## Formulas run in the engine, not in Python
 
@@ -269,8 +269,8 @@ See [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md) for a
 ```python order=numbered
 from deephaven import empty_table
 
-# ii = row position (0, 1, 2...) - changes if rows are reordered
-# i = row key (stable identifier that stays with the row)
+# i = row position as int (0, 1, 2...)
+# ii = row position as long (use for tables with more than 2 billion rows)
 numbered = empty_table(10).update(["RowNumber = ii", "Value = i * 2"])
 ```
 
@@ -371,7 +371,7 @@ transformed = by_symbol.transform(
 )
 ```
 
-Partitioned tables let you work with data larger than memory and parallelize processing. See [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [Partitioned tables](../how-to-guides/partitioned-tables.md) for details.
+Partitioned tables let you parallelize processing, quickly retrieve subtables by key, and improve filter performance in loops. See [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [Partitioned tables](../how-to-guides/partitioned-tables.md) for details.
 
 ## Pitfalls to avoid
 
