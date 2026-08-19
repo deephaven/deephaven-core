@@ -2418,6 +2418,30 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return findInSpan(ki, val, prevAcc);
     }
 
+    /**
+     * Find the position of {@code val} in the span at {@code idx}, in the position space that begins at
+     * {@code prevAcc}.
+     *
+     * <p>
+     * The result follows the {@code Arrays.binarySearch} convention, as {@link Container#find(short)} does: a
+     * non-negative position when {@code val} is present, otherwise the bitwise complement of the position where it
+     * would be inserted (callers recover that position as {@code ~result}, equivalently {@code -result - 1}). Positions
+     * are relative to {@code prevAcc}, so passing the cardinality of the spans preceding {@code idx} (see
+     * {@link #cardinalityBeforeMaybeAcc(int)}) yields a position in this array's own position space, and passing a
+     * view's offset yields a position in that view's space.
+     *
+     * <p>
+     * {@code idx} is expected to be the span that covers {@code val}'s block, or -- when no span covers it -- the span
+     * at the insertion point for that block, as produced by {@link #getSpanIndex(int, long)}. The latter means
+     * {@code val} may fall in a gap <em>before</em> the span's first key; every span kind must then report
+     * {@code ~prevAcc}, the insertion point at the span's first position. Reporting a position outside the span instead
+     * makes the caller decode a position unrelated to the span it asked about.
+     *
+     * @param idx The index of the span to search
+     * @param val The value to search for
+     * @param prevAcc The position that the first element of the span at {@code idx} occupies
+     * @return The position of {@code val}, or the bitwise complement of its insertion point if it is not present
+     */
     long findInSpan(final int idx, final long val, final long prevAcc) {
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, idx)) {
             if (view.isSingletonSpan()) {
@@ -2435,10 +2459,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (flen > 0) {
                 final long k = view.getKey();
                 if (val < k) {
-                    // val precedes this span; like the singleton and container cases, report the insertion
-                    // point at the span's first position rather than a position outside of this span.
                     return ~prevAcc;
                 }
+                // Every key in a full block span is present, so the offset from its first key is the position.
                 return prevAcc + val - k;
             }
             final int cf = view.getContainer().find(lowBits(val));
