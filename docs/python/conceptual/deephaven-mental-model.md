@@ -426,7 +426,7 @@ Partitioned tables let you parallelize processing, quickly retrieve subtables by
 
 | I want to...               | Use this                                               |
 | -------------------------- | ------------------------------------------------------ |
-| Check if a table updates   | `table.is_refreshing()`                                |
+| Check if a table updates   | `table.is_refreshing`                                  |
 | Take a static snapshot     | `table.snapshot()`                                     |
 | Edit data manually         | [Input tables](../how-to-guides/input-tables.md)       |
 | Push data programmatically | [Table Publisher](../how-to-guides/table-publisher.md) |

@@ -20,6 +20,7 @@ description: Review documentation for technical accuracy, style, and missing lin
    - **Absolute statements:** Are comments like "This won't produce X" actually warnings? (Parallelism makes ordering non-deterministic, but serial execution can still produce sequential results.)
    - **API per format:** Are different formats (Parquet vs. CSV) shown with their distinct APIs, not combined into one row?
    - **`ii` behavior:** Is `ii` described as providing row position, not as making execution sequential?
+   - **Python properties vs methods:** Check `@property` decorators in the source. Properties use `table.is_refreshing` (no parens); methods use `table.snapshot()` (with parens).
 
 4. **Style guide proofreading (based on `.windsurf/rules`):**
    - Check for passive voice and suggest active alternatives.
