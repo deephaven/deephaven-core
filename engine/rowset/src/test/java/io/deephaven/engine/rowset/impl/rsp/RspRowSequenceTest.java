@@ -1046,4 +1046,78 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         }
         it.close();
     }
+
+    @Test
+    public void testGetRowSequenceByKeyRangeStartKeyBeforeFullBlockSpan() {
+        // A start key in a gap that precedes a full block span must still find the span: findInSpan's
+        // full-block-span arm has to report an insertion point, like its singleton and container siblings.
+        RspBitmap a = RspBitmap.makeEmpty();
+        a = a.addRange(5 * BLOCK_SIZE, 6 * BLOCK_SIZE - 1);
+        a = a.add(9 * BLOCK_SIZE + 3);
+        a.finishMutationsAndOptimize();
+        assertEquals(BLOCK_SIZE + 1, a.getCardinality());
+        try (final RowSequence rs = a.ixGetRowSequenceByKeyRange(0, Long.MAX_VALUE)) {
+            assertEquals(BLOCK_SIZE + 1, rs.size());
+            assertEquals(5 * BLOCK_SIZE, rs.firstRowKey());
+            assertEquals(9 * BLOCK_SIZE + 3, rs.lastRowKey());
+        }
+        try (final RowSequence rs = a.ixGetRowSequenceByKeyRange(0, 6 * BLOCK_SIZE - 1)) {
+            assertEquals(BLOCK_SIZE, rs.size());
+            assertEquals(5 * BLOCK_SIZE, rs.firstRowKey());
+            assertEquals(6 * BLOCK_SIZE - 1, rs.lastRowKey());
+        }
+
+        // Same shape, but with a span present before the gap.
+        RspBitmap b = RspBitmap.makeEmpty();
+        b = b.add(BLOCK_SIZE + 1);
+        b = b.addRange(5 * BLOCK_SIZE, 6 * BLOCK_SIZE - 1);
+        b.finishMutationsAndOptimize();
+        try (final RowSequence rs = b.ixGetRowSequenceByKeyRange(3 * BLOCK_SIZE, Long.MAX_VALUE)) {
+            assertEquals(BLOCK_SIZE, rs.size());
+            assertEquals(5 * BLOCK_SIZE, rs.firstRowKey());
+            assertEquals(6 * BLOCK_SIZE - 1, rs.lastRowKey());
+        }
+        // A start key inside the full block span still works.
+        try (final RowSequence rs = b.ixGetRowSequenceByKeyRange(5 * BLOCK_SIZE + 10, Long.MAX_VALUE)) {
+            assertEquals(BLOCK_SIZE - 10, rs.size());
+            assertEquals(5 * BLOCK_SIZE + 10, rs.firstRowKey());
+        }
+
+        // Control: a container-backed first span already behaved correctly.
+        RspBitmap c = RspBitmap.makeEmpty();
+        c = c.addRange(5 * BLOCK_SIZE, 5 * BLOCK_SIZE + 10);
+        c = c.add(9 * BLOCK_SIZE + 3);
+        c.finishMutationsAndOptimize();
+        try (final RowSequence rs = c.ixGetRowSequenceByKeyRange(0, Long.MAX_VALUE)) {
+            assertEquals(12, rs.size());
+            assertEquals(5 * BLOCK_SIZE, rs.firstRowKey());
+        }
+
+        // Multi-block full block span, and a query landing before it.
+        RspBitmap d = RspBitmap.makeEmpty();
+        d = d.addRange(4 * BLOCK_SIZE, 7 * BLOCK_SIZE - 1);
+        d.finishMutationsAndOptimize();
+        try (final RowSequence rs = d.ixGetRowSequenceByKeyRange(BLOCK_SIZE, Long.MAX_VALUE)) {
+            assertEquals(3 * BLOCK_SIZE, rs.size());
+            assertEquals(4 * BLOCK_SIZE, rs.firstRowKey());
+            assertEquals(7 * BLOCK_SIZE - 1, rs.lastRowKey());
+        }
+    }
+
+    @Test
+    public void testViewGetRowSequenceByKeyRangeStartingInFullBlockSpan() {
+        // A view whose first span is a full block span, queried from before its start.
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.addRange(5 * BLOCK_SIZE, 6 * BLOCK_SIZE - 1);
+        rb = rb.add(9 * BLOCK_SIZE + 3);
+        rb.finishMutationsAndOptimize();
+        try (final RowSequence view = rb.ixGetRowSequenceByPosition(0, BLOCK_SIZE)) {
+            assertEquals(BLOCK_SIZE, view.size());
+            try (final RowSequence rs = view.getRowSequenceByKeyRange(0, Long.MAX_VALUE)) {
+                assertEquals(BLOCK_SIZE, rs.size());
+                assertEquals(5 * BLOCK_SIZE, rs.firstRowKey());
+                assertEquals(6 * BLOCK_SIZE - 1, rs.lastRowKey());
+            }
+        }
+    }
 }

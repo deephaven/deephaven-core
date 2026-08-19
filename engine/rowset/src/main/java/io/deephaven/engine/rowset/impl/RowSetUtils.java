@@ -168,24 +168,25 @@ public class RowSetUtils {
         final MutableBoolean hasPending = new MutableBoolean();
         final MutableLong pendingStart = new MutableLong(RowSequence.NULL_ROW_KEY);
         final MutableLong pendingEnd = new MutableLong(RowSequence.NULL_ROW_KEY);
-        final RowSequence.Iterator sourceProbe = sourceRowSet.getRowSequenceIterator();
         final MutableLong sourceOffset = new MutableLong();
-        destRowSet.forAllRowKeyRanges((start, end) -> {
-            final long sourceStart = sourceOffset.get() + sourceProbe.advanceAndGetPositionDistance(start);
-            final long sourceEnd = sourceStart + sourceProbe.advanceAndGetPositionDistance(end);
-            if (!hasPending.booleanValue()) {
-                pendingStart.set(sourceStart);
-                pendingEnd.set(sourceEnd);
-                hasPending.setValue(true);
-            } else if (pendingEnd.get() + 1 == sourceStart) {
-                pendingEnd.set(sourceEnd);
-            } else {
-                lrc.accept(pendingStart.get(), pendingEnd.get());
-                pendingStart.set(sourceStart);
-                pendingEnd.set(sourceEnd);
-            }
-            sourceOffset.set(sourceEnd);
-        });
+        try (final RowSequence.Iterator sourceProbe = sourceRowSet.getRowSequenceIterator()) {
+            destRowSet.forAllRowKeyRanges((start, end) -> {
+                final long sourceStart = sourceOffset.get() + sourceProbe.advanceAndGetPositionDistance(start);
+                final long sourceEnd = sourceStart + sourceProbe.advanceAndGetPositionDistance(end);
+                if (!hasPending.booleanValue()) {
+                    pendingStart.set(sourceStart);
+                    pendingEnd.set(sourceEnd);
+                    hasPending.setValue(true);
+                } else if (pendingEnd.get() + 1 == sourceStart) {
+                    pendingEnd.set(sourceEnd);
+                } else {
+                    lrc.accept(pendingStart.get(), pendingEnd.get());
+                    pendingStart.set(sourceStart);
+                    pendingEnd.set(sourceEnd);
+                }
+                sourceOffset.set(sourceEnd);
+            });
+        }
         if (hasPending.booleanValue()) {
             lrc.accept(pendingStart.get(), pendingEnd.get());
         }

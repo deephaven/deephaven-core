@@ -244,7 +244,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixSubindexByKeyOnNew(final long startKey, final long endKey) {
-        if (startKey > rangeEnd() || endKey < rangeStart()) {
+        if (endKey < startKey || startKey > rangeEnd() || endKey < rangeStart()) {
             return OrderedLongSet.EMPTY;
         }
         if (startKey == rangeStart() && endKey == rangeEnd()) {

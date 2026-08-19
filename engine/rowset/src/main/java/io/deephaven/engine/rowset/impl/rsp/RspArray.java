@@ -2434,6 +2434,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final long flen = view.getFullBlockSpanLen();
             if (flen > 0) {
                 final long k = view.getKey();
+                if (val < k) {
+                    // val precedes this span; like the singleton and container cases, report the insertion
+                    // point at the span's first position rather than a position outside of this span.
+                    return ~prevAcc;
+                }
                 return prevAcc + val - k;
             }
             final int cf = view.getContainer().find(lowBits(val));

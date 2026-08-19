@@ -445,24 +445,25 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
 
     public void forAllInRowSet(final RowSet filterRowSet, final SingleElementShiftCallback callback) {
         boolean hasReverseShift = false;
-        RowSet.SearchIterator it = filterRowSet.reverseIterator();
-        FORWARD_SHIFT: for (int ii = size() - 1; ii >= 0; --ii) {
-            final long delta = getShiftDelta(ii);
-            if (delta < 0) {
-                hasReverseShift = true;
-                continue;
-            }
-            final long start = getBeginRange(ii);
-            final long end = getEndRange(ii);
-            if (!it.advance(end)) {
-                break;
-            }
-            while (it.currentValue() >= start) {
-                callback.shift(it.currentValue(), delta);
-                if (!it.hasNext()) {
-                    break FORWARD_SHIFT;
+        try (final RowSet.SearchIterator it = filterRowSet.reverseIterator()) {
+            FORWARD_SHIFT: for (int ii = size() - 1; ii >= 0; --ii) {
+                final long delta = getShiftDelta(ii);
+                if (delta < 0) {
+                    hasReverseShift = true;
+                    continue;
                 }
-                it.nextLong();
+                final long start = getBeginRange(ii);
+                final long end = getEndRange(ii);
+                if (!it.advance(end)) {
+                    break;
+                }
+                while (it.currentValue() >= start) {
+                    callback.shift(it.currentValue(), delta);
+                    if (!it.hasNext()) {
+                        break FORWARD_SHIFT;
+                    }
+                    it.nextLong();
+                }
             }
         }
 
@@ -470,24 +471,25 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             return;
         }
 
-        it = filterRowSet.searchIterator();
-        final int size = size();
-        REVERSE_SHIFT: for (int ii = 0; ii < size; ++ii) {
-            final long delta = getShiftDelta(ii);
-            if (delta > 0) {
-                continue;
-            }
-            final long start = getBeginRange(ii);
-            final long end = getEndRange(ii);
-            if (!it.advance(start)) {
-                break;
-            }
-            while (it.currentValue() <= end) {
-                callback.shift(it.currentValue(), delta);
-                if (!it.hasNext()) {
-                    break REVERSE_SHIFT;
+        try (final RowSet.SearchIterator it = filterRowSet.searchIterator()) {
+            final int size = size();
+            REVERSE_SHIFT: for (int ii = 0; ii < size; ++ii) {
+                final long delta = getShiftDelta(ii);
+                if (delta > 0) {
+                    continue;
                 }
-                it.nextLong();
+                final long start = getBeginRange(ii);
+                final long end = getEndRange(ii);
+                if (!it.advance(start)) {
+                    break;
+                }
+                while (it.currentValue() <= end) {
+                    callback.shift(it.currentValue(), delta);
+                    if (!it.hasNext()) {
+                        break REVERSE_SHIFT;
+                    }
+                    it.nextLong();
+                }
             }
         }
     }

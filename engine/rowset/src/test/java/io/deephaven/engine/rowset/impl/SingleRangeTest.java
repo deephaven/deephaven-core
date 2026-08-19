@@ -524,4 +524,18 @@ public class SingleRangeTest {
             assertFalse(it.hasMore());
         }
     }
+
+    @Test
+    public void testSubindexByKeyOnNewInvertedWindow() {
+        // An inverted window overlapping the range must yield EMPTY, not a SingleRange with start > end.
+        final SingleRange sr = SingleRange.make(0, 3 * 65536 + 100);
+        assertEquals(OrderedLongSet.EMPTY, sr.ixSubindexByKeyOnNew(50, 10));
+        assertEquals(OrderedLongSet.EMPTY, sr.ixSubindexByKeyOnNew(100, 0));
+        // Degenerate-but-valid windows still work.
+        final OrderedLongSet single = sr.ixSubindexByKeyOnNew(50, 50);
+        assertEquals(1, single.ixCardinality());
+        assertEquals(50, single.ixFirstKey());
+        final OrderedLongSet span = sr.ixSubindexByKeyOnNew(10, 50);
+        assertEquals(41, span.ixCardinality());
+    }
 }
