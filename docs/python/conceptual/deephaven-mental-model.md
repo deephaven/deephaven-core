@@ -97,7 +97,7 @@ result = empty_table(5).update("Value = (int)next_value()")
 
 You might expect `Value` to be `[1, 2, 3, 4, 5]`. But the engine can evaluate rows in _any order_, potentially in _parallel_ across multiple threads. You might get `[3, 1, 4, 2, 5]` or something else entirely — and results may differ between runs.
 
-**The rule:** Formulas should be _stateless_ — meaning each row's result depends only on that row's inputs, not on other rows or external variables. The result for row N should depend only on the input values for row N, not on what happened when processing other rows.
+**The rule:** Formulas should be _stateless_ — the result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable Python variables (like configuration values) are fine; mutable state and order-dependent logic are not.
 
 ### When you need sequential processing
 
@@ -220,14 +220,14 @@ The UI updates automatically as data changes and as users interact with controls
 | Source           | How to use                                                                        |
 | ---------------- | --------------------------------------------------------------------------------- |
 | **Parquet/CSV**  | `read("/path/to/file.parquet")`                                                   |
-| **Kafka**        | `consume({"bootstrap.servers": ...})`                                             |
+| **Kafka**        | [`consume`](../how-to-guides/kafka-basic.md)                                      |
 | **Manual entry** | [Input tables](../how-to-guides/input-tables.md) — edit cells in the UI           |
 | **Programmatic** | [Table Publisher](../how-to-guides/table-publisher.md) — push data from your code |
 
 | Destination        | How to use                                           |
 | ------------------ | ---------------------------------------------------- |
 | **Parquet**        | `write(table, "/path/to/output.parquet")`            |
-| **Kafka**          | `produce(table, {"bootstrap.servers": ...})`         |
+| **Kafka**          | [`produce`](../how-to-guides/kafka-basic.md)         |
 | **Python**         | `to_pandas(table)` or `to_numpy(table)`              |
 | **Remote clients** | Connect via Python, Java, JavaScript, or C++ clients |
 
@@ -403,9 +403,10 @@ Partitioned tables let you parallelize processing, quickly retrieve subtables by
 
 ```python syntax
 # DON'T: Convert to pandas for every operation
-# df = my_table.to_pandas()
+# from deephaven.pandas import to_pandas, to_table
+# df = to_pandas(my_table)
 # df = df[df["X"] > 10]
-# result = deephaven.pandas.to_table(df)
+# result = to_table(df)
 
 # DO: Use Deephaven operations directly
 # result = my_table.where("X > 10")

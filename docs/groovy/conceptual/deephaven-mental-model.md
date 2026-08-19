@@ -86,7 +86,7 @@ result = emptyTable(5).update("Value = (int)nextValue()")
 
 You might expect `Value` to be `[1, 2, 3, 4, 5]`. But the engine can evaluate rows in _any order_, potentially in _parallel_ across multiple threads. You might get `[3, 1, 4, 2, 5]` or something else entirely — and results may differ between runs.
 
-**The rule:** Formulas should be _stateless_ — meaning each row's result depends only on that row's inputs, not on other rows or external variables. The result for row N should depend only on the input values for row N, not on what happened when processing other rows.
+**The rule:** Formulas should be _stateless_ — the result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable variables (like configuration values) are fine; mutable state and order-dependent logic are not.
 
 ### When you need sequential processing
 
@@ -172,15 +172,15 @@ Deephaven isn't just a table engine — it's a platform for building data applic
 | Source           | How to use                                                                        |
 | ---------------- | --------------------------------------------------------------------------------- |
 | **Parquet/CSV**  | `ParquetTools.readTable("/path/to/file.parquet")`                                 |
-| **Kafka**        | `KafkaTools.consumeToTable(...)`                                                  |
+| **Kafka**        | [`KafkaTools.consumeToTable`](../how-to-guides/kafka-basic.md)                    |
 | **Manual entry** | [Input tables](../how-to-guides/input-tables.md) — edit cells in the UI           |
 | **Programmatic** | [Table Publisher](../how-to-guides/table-publisher.md) — push data from your code |
 
-| Destination        | How to use                                           |
-| ------------------ | ---------------------------------------------------- |
-| **Parquet**        | `ParquetTools.writeTable(table, "/path/to/output")`  |
-| **Kafka**          | `KafkaTools.produceFromTable(...)`                   |
-| **Remote clients** | Connect via Python, Java, JavaScript, or C++ clients |
+| Destination        | How to use                                                       |
+| ------------------ | ---------------------------------------------------------------- |
+| **Parquet**        | `ParquetTools.writeTable(table, "/path/to/output")`              |
+| **Kafka**          | [`KafkaTools.produceFromTable`](../how-to-guides/kafka-basic.md) |
+| **Remote clients** | Connect via Python, Java, JavaScript, or C++ clients             |
 
 ### Client-server architecture
 
