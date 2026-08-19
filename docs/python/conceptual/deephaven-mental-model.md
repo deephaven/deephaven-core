@@ -13,7 +13,7 @@ Deephaven works differently from tools like pandas, polars, or SQL — and even 
 
 This isn't a deep technical dive — for that, see [Deephaven's design](./deephaven-design.md). Instead, this guide builds the mental model you need to work productively with Deephaven from day one.
 
-<iframe src="../assets/conceptual/mental-model-overview.html" title="Deephaven mental model overview diagram" style={{width: '100%', height: '900px', border: 'none'}} />
+![How Deephaven works: Tables are recipes, not data copies — updates flow automatically](../assets/conceptual/mental-model/mental-model-overview-static.png)
 
 ## Tables are recipes, not data
 
@@ -29,7 +29,7 @@ filtered = source.where("X > 2")
 doubled = source.update("Y = X * 2")
 ```
 
-Here, `filtered` doesn't contain rows 3 and 4 — it contains the _instruction_ "show rows from `source` where X > 2." If `source` changes (because it's connected to live data), `filtered` automatically reflects those changes.
+Here, `filtered` contains rows where X > 2 (rows 3 and 4), computed immediately when you call `where`. But `filtered` also maintains a _dependency_ on `source` — if `source` changes (because it's connected to live data), `filtered` automatically recomputes and reflects those changes.
 
 **Why this matters:**
 
@@ -57,7 +57,7 @@ The engine parses and executes the string `"Y = Math.sqrt(X * X + 1)"`, not Pyth
 This has important implications:
 
 - **Java methods, not Python functions**: Use `Math.sqrt()`, not `math.sqrt()`. Use `String` methods like `.toUpperCase()`, not Python string methods.
-- **No Python state by default**: Variables from your Python script aren't automatically available inside formulas.
+- **Python variables are available**: Local and global variables from your script are automatically resolved through [query scope](../how-to-guides/query-scope.md), but you can also call Python functions (with a performance cost).
 - **Much faster**: The engine processes data in optimized batches, not one row at a time.
 
 ### Calling Python from formulas
@@ -240,7 +240,7 @@ Deephaven runs as a server. Multiple clients can connect simultaneously:
 - **JavaScript client**: For web applications
 - **Java/C++ clients**: For high-performance integrations
 
-All clients see the same live data. Updates propagate to everyone automatically.
+Clients that subscribe to the same table see consistent, live updates. Tables can be shared between sessions using [shared tickets](../reference/client-api/session/publish-table.md).
 
 ## Common patterns
 

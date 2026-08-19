@@ -1,7 +1,0 @@
-/* Deephaven Design System — global entry point.
-   Consumers link this single file. Import order only; no rules here. */
-@import "./tokens/fonts.css";
-@import "./tokens/colors.css";
-@import "./tokens/typography.css";
-@import "./tokens/spacing.css";
-@import "./tokens/effects.css";
