@@ -144,9 +144,11 @@ myTable = TableTools.newTable(
 
 ### From Deephaven to Groovy
 
-When you extract data back to Groovy, you're accessing table data directly:
+When you extract data back to Groovy, the column values are materialized into an array (this is a copy, not a live view of the table's storage):
 
 ```groovy syntax
+import io.deephaven.engine.table.vectors.ColumnVectors
+
 myTable = emptyTable(5).update("X = i * 10")
 
 // Access column data via ColumnVectors
@@ -179,7 +181,7 @@ Deephaven isn't just a table engine — it's a platform for building data applic
 
 | Destination        | How to use                                                       |
 | ------------------ | ---------------------------------------------------------------- |
-| **Parquet**        | `ParquetTools.writeTable(table, "/path/to/output")`              |
+| **Parquet**        | `ParquetTools.writeTable(table, "/path/to/output.parquet")`      |
 | **Kafka**          | [`KafkaTools.produceFromTable`](../how-to-guides/kafka-basic.md) |
 | **Remote clients** | Connect via Python, Java, JavaScript, or C++ clients             |
 
@@ -295,6 +297,8 @@ Split data by key and process each partition efficiently:
 
 ```groovy order=trades
 import io.deephaven.api.updateby.UpdateByOperation
+import io.deephaven.engine.context.ExecutionContext
+import io.deephaven.util.SafeCloseable
 
 trades = timeTable("PT0.1S").update(
     "Symbol = (ii % 3 == 0) ? `AAPL` : ((ii % 3 == 1) ? `GOOG` : `MSFT`)",
@@ -304,8 +308,18 @@ trades = timeTable("PT0.1S").update(
 // Partition by symbol
 bySymbol = trades.partitionBy("Symbol")
 
+// Capture execution context - required for live partitioned tables
+// since new constituents may arrive on update threads
+defaultCtx = ExecutionContext.getContext()
+
+transformFunc = { t ->
+    try (SafeCloseable ignored = defaultCtx.open()) {
+        return t.updateBy(UpdateByOperation.RollingAvg(10, "AvgPrice = Price"))
+    }
+}
+
 // Apply operations to each partition
-transformed = bySymbol.transform { t -> t.updateBy(UpdateByOperation.RollingAvg(10, "AvgPrice = Price")) }
+transformed = bySymbol.transform(transformFunc)
 ```
 
 Partitioned tables let you parallelize processing, quickly retrieve subtables by key, and improve filter performance in loops. See [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [Partitioned tables](../how-to-guides/partitioned-tables.md) for details.

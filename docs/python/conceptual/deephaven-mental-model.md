@@ -353,6 +353,7 @@ Split data by key and process each partition efficiently:
 ```python order=trades
 from deephaven import time_table
 from deephaven import updateby as uby
+from deephaven.execution_context import get_exec_ctx
 
 trades = time_table("PT0.1S").update(
     [
@@ -364,12 +365,20 @@ trades = time_table("PT0.1S").update(
 # Partition by symbol
 by_symbol = trades.partition_by("Symbol")
 
+# Capture execution context - required for live partitioned tables
+# since new constituents may arrive on update threads
+ctx = get_exec_ctx()
+
+
+def transform_func(t):
+    with ctx:
+        return t.update_by(
+            ops=uby.rolling_avg_tick(cols=["AvgPrice = Price"], rev_ticks=10)
+        )
+
+
 # Apply operations to each partition
-transformed = by_symbol.transform(
-    lambda t: t.update_by(
-        ops=uby.rolling_avg_tick(cols=["AvgPrice = Price"], rev_ticks=10)
-    )
-)
+transformed = by_symbol.transform(transform_func)
 ```
 
 Partitioned tables let you parallelize processing, quickly retrieve subtables by key, and improve filter performance in loops. See [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [Partitioned tables](../how-to-guides/partitioned-tables.md) for details.
@@ -417,7 +426,7 @@ Partitioned tables let you parallelize processing, quickly retrieve subtables by
 
 | I want to...               | Use this                                               |
 | -------------------------- | ------------------------------------------------------ |
-| Check if a table updates   | `table.is_refreshing`                                  |
+| Check if a table updates   | `table.is_refreshing()`                                |
 | Take a static snapshot     | `table.snapshot()`                                     |
 | Edit data manually         | [Input tables](../how-to-guides/input-tables.md)       |
 | Push data programmatically | [Table Publisher](../how-to-guides/table-publisher.md) |

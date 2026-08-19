@@ -248,8 +248,8 @@ This sharing model, combined with [incremental updates](./table-update-model.md)
 The listener attachment in step 5 of each operation is what makes Deephaven tables "live." When a parent table updates:
 
 1. The parent's `notifyListeners` method enqueues update notifications for all child listeners
-2. Each listener receives a `TableUpdate` describing exactly which rows were added, removed, or modified
-3. The listener recomputes only the affected rows and propagates its own update downstream
+2. Each listener receives a `TableUpdate` describing which rows were added, removed, modified, or shifted, along with information about which columns changed
+3. The listener processes the update and propagates its own update downstream. Most operations process only the changed rows, though some (like certain filters) may need to re-examine additional rows
 
 This continues through the entire DAG. A single source change cascades through filters, joins, and aggregations — each operation processing only the delta, not the full dataset. The engine processes this DAG within a single update cycle. The default cycle targets 1000ms intervals (including both processing and idle time), though individual cycles may take longer if the workload requires it. The results then flow asynchronously through the [API layer](#the-live-data-stack) via Barrage to connected clients and UI components.
 

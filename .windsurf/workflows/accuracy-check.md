@@ -11,6 +11,15 @@ description: Review documentation for technical accuracy, style, and missing lin
    - Check that code examples use correct syntax and API calls.
    - Verify that described behavior matches the actual implementation.
    - Flag any outdated or incorrect information.
+   
+   **Common accuracy pitfalls to check:**
+   - **Execution context:** Do `transform` callbacks on live partitioned tables capture and reopen an execution context? (Required because new constituents arrive on update threads.)
+   - **Materialization vs. direct access:** Does text claiming "direct access" actually involve a copy? (`toArray()`, `to_pandas()`, `to_numpy()` all materialize data.)
+   - **Update graph semantics:** Are timing guarantees accurate? (1000ms is a target interval, not a deadline. Cycles can exceed it.)
+   - **TableUpdate contract:** Does the description include row-shift and modified-column info? Are refilter scenarios acknowledged?
+   - **Absolute statements:** Are comments like "This won't produce X" actually warnings? (Parallelism makes ordering non-deterministic, but serial execution can still produce sequential results.)
+   - **API per format:** Are different formats (Parquet vs. CSV) shown with their distinct APIs, not combined into one row?
+   - **`ii` behavior:** Is `ii` described as providing row position, not as making execution sequential?
 
 4. **Style guide proofreading (based on `.windsurf/rules`):**
    - Check for passive voice and suggest active alternatives.
