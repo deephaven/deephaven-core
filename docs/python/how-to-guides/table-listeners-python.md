@@ -312,17 +312,30 @@ The [Update Graph](../conceptual/table-update-model.md) coordinates all table up
 > [!TIP]
 > The lock ensures "create table" and "add listener" happen together as one unit — no updates can slip through.
 
-The [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) and [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen) functions automatically acquire a lock when registering the listener (when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, which is the default). However, this only protects the registration itself — not table creation. On a background thread, an update can occur between creating a table and calling `listen()`:
+The [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) and [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen) functions automatically acquire a lock when registering the listener (when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, which is the default). However, this only protects the registration itself — not table creation.
+
+**Separate locks (race condition):**
+
+If you create a table in one lock and add the listener in another, a race window exists between them:
 
 ```python skip-test
-# CAUTION (on a background thread): An update can occur between these two lines
-table = time_table("PT1s").update("X=i")  # Table created, lock not held
-handle = listen(
-    table, listener_function
-)  # Lock acquired here, but table may have already updated
+from deephaven import update_graph
+from deephaven.execution_context import get_exec_ctx
+
+ctx = get_exec_ctx()
+
+# On background thread with reopened context
+with ctx:
+    # First lock: create the table
+    with update_graph.shared_lock(ctx.update_graph):
+        table = time_table("PT1s").update("X=i")
+    # RACE WINDOW: table can update here before listener is added
+    handle = listen(table, listener_function)  # listen() locks, but too late
 ```
 
-To ensure no updates are missed on a background thread, you must first reopen the execution context (captured before dispatching), then acquire the lock:
+**Single lock (safe):**
+
+Wrap both operations in a single lock to eliminate the race:
 
 ```python skip-test
 from deephaven import update_graph
@@ -331,7 +344,7 @@ from deephaven.execution_context import get_exec_ctx
 # Before dispatching to background thread: capture the context
 ctx = get_exec_ctx()
 
-# On background thread: reopen context, then lock
+# On background thread: reopen context, then lock both operations together
 with ctx:
     with update_graph.shared_lock(ctx.update_graph):
         table = time_table("PT1s").update("X=i")
