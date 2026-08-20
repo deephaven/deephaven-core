@@ -2,6 +2,14 @@
 description: Review documentation for technical accuracy, style, and missing links
 ---
 
+> [!IMPORTANT]
+> **Verification is mandatory.** Before confirming ANY claim is accurate or applying ANY fix:
+> 1. Identify the authoritative reference (source code, reference docs, implementation)
+> 2. Read that reference and quote the relevant text
+> 3. Only then state whether the claim is accurate or apply the fix
+> 
+> Do NOT accept suggestions at face value — not from Copilot, not from user feedback, not from your own analysis.
+
 1. Ask for the file path to review if not provided.
 
 2. Read the documentation file.
@@ -39,5 +47,11 @@ description: Review documentation for technical accuracy, style, and missing lin
    - Suggest links to appropriate reference pages in `docs/{python,groovy}/reference/`.
    - Check that existing links are valid and point to the correct pages.
    - Ensure a "Related documentation" section exists (unless it's a landing page, overview, or blog).
+   - **Before suggesting any new link:** Run `find_file_by_name` to confirm the target file exists.
 
 6. Report findings organized by category with specific suggestions for fixes.
+
+7. **Before applying any fixes:**
+   - For each fix, show the reference source that confirms it is correct.
+   - For any link additions, show the `find_file_by_name` result confirming the path.
+   - Do NOT batch fixes without verification — verify each one individually.

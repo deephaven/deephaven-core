@@ -35,7 +35,7 @@ Here, `filtered` contains rows where X > 2 (rows 3 and 4), computed immediately 
 - Multiple transformations can share the same source without duplicating data.
 - Operations are typically much faster than copying entire datasets.
 
-When you call a table operation, Deephaven establishes the dependency and, for most operations, computes the initial result immediately. (Operations like [`view`](../reference/table-operations/select/view.md) defer formula evaluation until values are accessed.) The "recipe" remains active — if the source data changes, downstream tables update automatically without you re-running code.
+When you call a table operation, Deephaven establishes the dependency and computes the initial result. The "recipe" remains active — if the source data changes, downstream tables update automatically without you re-running code. Operations like [`view`](../reference/table-operations/select/view.md) are an exception: they store the formula but defer evaluation until values are actually accessed, which saves memory for columns you rarely read.
 
 ## Formulas run in the engine
 
@@ -98,7 +98,7 @@ result = emptyTable(5).update("Value = ii + 1")
 ```
 
 > [!NOTE]
-> Row-position variables (`i` and `ii`) are supported for static, append-only, and blink tables. General refreshing tables may reject them because row positions can change when rows are modified or removed. For those cases, consider using a key column or the row key variable `k`.
+> These variables work on static and certain streaming tables, but general refreshing tables reject them because positions and keys can shift. If you need row identity on a ticking table, use a stable key column instead. See [special variables](../reference/query-language/variables/special-variables.md) for the full compatibility matrix.
 
 For more complex cases involving state, see [parallelization](./query-engine/parallelization.md) and the serial execution options. For details on [`ii` and other special variables](../reference/query-language/variables/special-variables.md), see the reference documentation.
 
@@ -117,7 +117,7 @@ staticTable = emptyTable(10).update("X = i")
 liveTable = timeTable("PT1S")  // See timeTable reference for duration syntax
 ```
 
-**The key insight:** Transformations on live tables produce live results. If you filter a live table, the filtered result also updates automatically.
+**The key insight:** Transformations on live tables produce live results. If you filter a live table, the filtered result updates automatically. When you need to freeze the data at a point in time, use [`snapshot`](../reference/table-operations/snapshot/snapshot.md) to capture a static copy.
 
 ```groovy order=liveSource,recentOnly
 liveSource = timeTable("PT1S").update("Value = randomInt(0, 100)")

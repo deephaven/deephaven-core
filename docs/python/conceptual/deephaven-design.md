@@ -253,9 +253,9 @@ The listener attachment in step 5 of each operation is what makes Deephaven tabl
 2. Each listener receives a `TableUpdate` describing which rows were added, removed, modified, or shifted, along with information about which columns changed
 3. The listener processes the update and propagates its own update downstream. Most operations process only the changed rows, though some (like certain filters) may need to re-examine additional rows
 
-This continues through the entire DAG. A single source change cascades through filters, joins, and aggregations — each operation processing only the delta, not the full dataset. The engine processes this DAG within a single update cycle. The default cycle targets 1000ms intervals (including both processing and idle time), though individual cycles may take longer if the workload requires it. The results then flow asynchronously through the [API layer](#the-live-data-stack) via Barrage to connected clients and UI components.
+This continues through the entire DAG. A single source change cascades through filters, joins, and aggregations — with most operations processing only the delta, not the full dataset. The engine processes this DAG within a single update cycle. The default cycle targets 1000ms intervals (including both processing and idle time), though individual cycles may take longer if the workload requires it. The results then flow asynchronously through the [API layer](#the-live-data-stack) via Barrage to connected clients and UI components.
 
-This is the technical foundation of [Live Dataframes](#the-live-data-stack): the same table object can be static (if its source never changes) or live (if connected to streaming data), and all downstream operations automatically inherit that behavior.
+This is the technical foundation of [Live Dataframes](#the-live-data-stack): a table is static (if its source never changes) or live (if connected to streaming data), and most downstream operations preserve that behavior. (Some operations, like [`snapshot`](../reference/table-operations/snapshot/snapshot.md), intentionally produce static results from live sources.)
 
 ## Mechanical sympathy
 
