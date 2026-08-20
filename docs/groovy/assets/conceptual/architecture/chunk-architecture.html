@@ -22,10 +22,20 @@
       85% { opacity: 1; }
       100% { offset-distance: 100%; opacity: 0; }
     }
+    @keyframes dh-cell-scan {
+      0%, 92% { background: var(--dh-bg-1000); border-color: var(--dh-border-strong); box-shadow: none; }
+      4%, 20% { background: var(--dh-logo-red); border-color: var(--dh-logo-red); box-shadow: 0 0 0 2px color-mix(in srgb, var(--dh-logo-red) 30%, transparent); }
+      28% { background: var(--dh-bg-1000); border-color: var(--dh-border-strong); box-shadow: none; }
+    }
+    @keyframes dh-chunk-flash {
+      0%, 55% { background: var(--dh-surface-card); box-shadow: none; }
+      62%, 78% { background: var(--dh-logo-cyan); box-shadow: 0 0 0 2px color-mix(in srgb, var(--dh-logo-cyan) 35%, transparent); }
+      92%, 100% { background: var(--dh-surface-card); box-shadow: none; }
+    }
   </style>
 </helmet>
 
-<div style="width:100%;box-sizing:border-box;padding:40px;background:var(--dh-surface-page);font-family:var(--dh-font-sans);color:var(--dh-text-primary);">
+<div style="width:1280px;box-sizing:border-box;padding:40px;background:var(--dh-surface-page);font-family:var(--dh-font-sans);color:var(--dh-text-primary);zoom:0.75;">
 
   <div style="margin-bottom:28px;">
     <h1 style="margin:0;font-size:28px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-text-primary);">Chunk-oriented architecture: bulk data processing</h1>
@@ -38,30 +48,30 @@
 
     <div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dh-negative-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>
         <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);">Cell-by-cell (traditional)</div>
       </div>
-      <div style="box-sizing:border-box;height:220px;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-negative-400);border-radius:var(--dh-radius-lg);">
+      <div style="box-sizing:border-box;height:220px;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-logo-red);border-radius:var(--dh-radius-lg);">
         <div style="font-size:13px;font-weight:600;color:var(--dh-text-primary);">ColumnSource: Values</div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:12px;">
-          <div style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-sm);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);">42</div>
-          <div style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-sm);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);">17</div>
-          <div style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-sm);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);">93</div>
-          <div style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-sm);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);">28</div>
-          <div style="font-size:11px;color:var(--dh-text-muted);margin-left:4px;">... (millions more)</div>
+          <div style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-sm);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);animation:dh-cell-scan 3.2s steps(1) infinite;animation-delay:0s;">42</div>
+          <div style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-sm);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);animation:dh-cell-scan 3.2s steps(1) infinite;animation-delay:0.8s;">17</div>
+          <div style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-sm);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);animation:dh-cell-scan 3.2s steps(1) infinite;animation-delay:1.6s;">93</div>
+          <div style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-sm);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);animation:dh-cell-scan 3.2s steps(1) infinite;animation-delay:2.4s;">28</div>
+          <div style="font-size:11px;color:var(--dh-text-muted);margin-left:4px;">... (millions more, one at a time)</div>
         </div>
         <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px;">
           <div style="display:flex;align-items:center;gap:6px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-negative-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-            <div style="font-size:12px;color:var(--dh-negative-300);">Each cell: virtual method call</div>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+            <div style="font-size:12px;color:var(--dh-logo-red);">Each cell: virtual method call</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-negative-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-            <div style="font-size:12px;color:var(--dh-negative-300);">Poor cache locality</div>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+            <div style="font-size:12px;color:var(--dh-logo-red);">Poor cache locality</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-negative-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-            <div style="font-size:12px;color:var(--dh-negative-300);">Can't vectorize</div>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+            <div style="font-size:12px;color:var(--dh-logo-red);">Can't vectorize</div>
           </div>
         </div>
       </div>
@@ -69,35 +79,35 @@
 
     <div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dh-positive-200)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>
         <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);">Chunk-based (Deephaven)</div>
       </div>
-      <div style="box-sizing:border-box;height:220px;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-positive-300);border-radius:var(--dh-radius-lg);">
+      <div style="box-sizing:border-box;height:220px;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-logo-cyan);border-radius:var(--dh-radius-lg);">
         <div style="font-size:13px;font-weight:600;color:var(--dh-text-primary);">ColumnSource (ChunkSource)</div>
-        <div style="box-sizing:border-box;margin-top:12px;padding:8px 10px;background:var(--dh-bg-1000);border:1px solid var(--dh-secondary-400);border-radius:var(--dh-radius-md);">
-          <div style="font-size:11px;font-weight:600;color:var(--dh-text-primary);">Chunk[4096] (bulk read)</div>
+        <div style="box-sizing:border-box;margin-top:12px;padding:8px 10px;background:var(--dh-bg-1000);border:1px solid var(--dh-logo-cyan);border-radius:var(--dh-radius-md);">
+          <div style="font-size:11px;font-weight:600;color:var(--dh-text-primary);">Chunk[4096] (bulk read, one call)</div>
           <div style="display:flex;align-items:center;gap:4px;margin-top:8px;">
-            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-secondary-400);border-radius:2px;"></div>
-            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-secondary-400);border-radius:2px;"></div>
-            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-secondary-400);border-radius:2px;"></div>
-            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-secondary-400);border-radius:2px;"></div>
+            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
+            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
+            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
+            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
             <div style="font-size:10px;color:var(--dh-text-muted);margin:0 6px;">... 4092 more values ...</div>
-            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-secondary-400);border-radius:2px;"></div>
-            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-secondary-400);border-radius:2px;"></div>
+            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
+            <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
           </div>
         </div>
         <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px;">
           <div style="display:flex;align-items:center;gap:6px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-positive-200)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
-            <div style="font-size:12px;color:var(--dh-positive-200);">One call for 4096 cells</div>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
+            <div style="font-size:12px;color:var(--dh-logo-cyan);">One call for 4096 cells</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-positive-200)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
-            <div style="font-size:12px;color:var(--dh-positive-200);">Sequential memory access</div>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
+            <div style="font-size:12px;color:var(--dh-logo-cyan);">Sequential memory access</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-positive-200)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
-            <div style="font-size:12px;color:var(--dh-positive-200);">JIT can vectorize (SIMD)</div>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
+            <div style="font-size:12px;color:var(--dh-logo-cyan);">JIT can vectorize (SIMD)</div>
           </div>
         </div>
       </div>
@@ -116,9 +126,9 @@
       </div>
 
       <svg width="44" height="90" viewBox="0 0 44 90" style="flex:none;overflow:visible;">
-        <defs><marker id="dh-flow-arrow-1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><polygon points="0 0, 7 3, 0 6" fill="var(--dh-primary-600)"></polygon></marker></defs>
-        <path d="M 4 45 L 40 45" stroke="var(--dh-primary-600)" stroke-width="1.5" marker-end="url(#dh-flow-arrow-1)"></path>
-        <circle r="3.5" fill="var(--dh-primary-600)" style="offset-path:path('M 4 45 L 40 45');animation:dh-tick-flow 1.8s cubic-bezier(0.2,0,0.2,1) infinite;"></circle>
+        <defs><marker id="dh-flow-arrow-1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><polygon points="0 0, 7 3, 0 6" fill="var(--dh-logo-indigo)"></polygon></marker></defs>
+        <path d="M 4 45 L 40 45" stroke="var(--dh-logo-indigo)" stroke-width="1.5" marker-end="url(#dh-flow-arrow-1)"></path>
+        <circle r="3.5" fill="var(--dh-logo-indigo)" style="offset-path:path('M 4 45 L 40 45');animation:dh-tick-flow 1.8s cubic-bezier(0.2,0,0.2,1) infinite;"></circle>
       </svg>
 
       <div style="flex:1;box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-radius:var(--dh-radius-lg);">
@@ -129,8 +139,8 @@
       </div>
 
       <svg width="44" height="90" viewBox="0 0 44 90" style="flex:none;overflow:visible;">
-        <path d="M 4 45 L 40 45" stroke="var(--dh-primary-600)" stroke-width="1.5" marker-end="url(#dh-flow-arrow-1)"></path>
-        <circle r="3.5" fill="var(--dh-primary-600)" style="offset-path:path('M 4 45 L 40 45');animation:dh-tick-flow 1.8s cubic-bezier(0.2,0,0.2,1) infinite 0.4s;"></circle>
+        <path d="M 4 45 L 40 45" stroke="var(--dh-logo-indigo)" stroke-width="1.5" marker-end="url(#dh-flow-arrow-1)"></path>
+        <circle r="3.5" fill="var(--dh-logo-indigo)" style="offset-path:path('M 4 45 L 40 45');animation:dh-tick-flow 1.8s cubic-bezier(0.2,0,0.2,1) infinite 0.4s;"></circle>
       </svg>
 
       <div style="flex:1;box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-radius:var(--dh-radius-lg);">
@@ -141,8 +151,8 @@
       </div>
 
       <svg width="44" height="90" viewBox="0 0 44 90" style="flex:none;overflow:visible;">
-        <path d="M 4 45 L 40 45" stroke="var(--dh-primary-600)" stroke-width="1.5" marker-end="url(#dh-flow-arrow-1)"></path>
-        <circle r="3.5" fill="var(--dh-primary-600)" style="offset-path:path('M 4 45 L 40 45');animation:dh-tick-flow 1.8s cubic-bezier(0.2,0,0.2,1) infinite 0.8s;"></circle>
+        <path d="M 4 45 L 40 45" stroke="var(--dh-logo-indigo)" stroke-width="1.5" marker-end="url(#dh-flow-arrow-1)"></path>
+        <circle r="3.5" fill="var(--dh-logo-indigo)" style="offset-path:path('M 4 45 L 40 45');animation:dh-tick-flow 1.8s cubic-bezier(0.2,0,0.2,1) infinite 0.8s;"></circle>
       </svg>
 
       <div style="flex:1;box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-radius:var(--dh-radius-lg);">
@@ -164,7 +174,7 @@
           <svg width="60" height="14" viewBox="0 0 60 14"><defs><marker id="dh-pool-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><polygon points="0 0, 7 3, 0 6" fill="var(--dh-text-muted)"></polygon></marker></defs><path d="M 2 7 L 56 7" stroke="var(--dh-text-muted)" stroke-width="1.5" marker-end="url(#dh-pool-arrow)"></path></svg>
           <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-muted);">acquire()</div>
         </div>
-        <div style="width:130px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-warn-400);border-radius:var(--dh-radius-md);font-size:12px;font-weight:600;color:var(--dh-text-primary);">In use</div>
+        <div style="width:130px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-logo-yellow);border-radius:var(--dh-radius-md);font-size:12px;font-weight:600;color:var(--dh-text-primary);">In use</div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
           <svg width="60" height="14" viewBox="0 0 60 14"><path d="M 2 7 L 56 7" stroke="var(--dh-text-muted)" stroke-width="1.5" marker-end="url(#dh-pool-arrow)"></path></svg>
           <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-muted);">release()</div>
@@ -178,34 +188,34 @@
     <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);margin-bottom:16px;">Performance benefits</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
 
-      <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-primary-600);border-radius:var(--dh-radius-lg);">
+      <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-logo-indigo);border-radius:var(--dh-radius-lg);">
         <div style="display:flex;align-items:center;gap:8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dh-primary-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-indigo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
           <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);">Amortized overhead</div>
         </div>
         <div style="margin-top:10px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">One method call for 4096 cells</div>
         <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">vs. 4096 individual calls</div>
-        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-primary-600);">~1000x fewer calls</div>
+        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-indigo);">~1000x fewer calls</div>
       </div>
 
-      <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-secondary-300);border-radius:var(--dh-radius-lg);">
+      <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-logo-cyan);border-radius:var(--dh-radius-lg);">
         <div style="display:flex;align-items:center;gap:8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dh-secondary-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" x2="21" y1="9" y2="9"></line><line x1="3" x2="21" y1="15" y2="15"></line><line x1="9" x2="9" y1="3" y2="21"></line><line x1="15" x2="15" y1="3" y2="21"></line></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" x2="21" y1="9" y2="9"></line><line x1="3" x2="21" y1="15" y2="15"></line><line x1="9" x2="9" y1="3" y2="21"></line><line x1="15" x2="15" y1="3" y2="21"></line></svg>
           <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);">Vectorization</div>
         </div>
         <div style="margin-top:10px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">Sequential memory allows</div>
         <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">SIMD operations</div>
-        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-secondary-200);">Process 4-8 values per instruction</div>
+        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-cyan);">Process 4-8 values per instruction</div>
       </div>
 
-      <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-info-300);border-radius:var(--dh-radius-lg);">
+      <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-logo-cyan);border-radius:var(--dh-radius-lg);">
         <div style="display:flex;align-items:center;gap:8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dh-info-300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5V19A9 3 0 0 0 21 19V5"></path><path d="M3 12A9 3 0 0 0 21 12"></path></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5V19A9 3 0 0 0 21 19V5"></path><path d="M3 12A9 3 0 0 0 21 12"></path></svg>
           <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);">Cache efficiency</div>
         </div>
         <div style="margin-top:10px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">Contiguous data improves</div>
         <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">L1/L2/L3 cache hit rates</div>
-        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-info-300);">Fewer memory stalls</div>
+        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-cyan);">Fewer memory stalls</div>
       </div>
 
     </div>
