@@ -222,17 +222,29 @@ The [Update Graph](../conceptual/table-update-model.md) coordinates all table up
 > [!TIP]
 > The lock ensures "create table" and "add listener" happen together as one unit — no updates can slip through.
 
-**Without a lock (on a background thread):**
+**Separate locks (race condition):**
+
+If you lock each operation separately, a race window exists between them:
 
 ```groovy skip-test
-// RISKY: An update can occur between these two lines
-t = timeTable("PT1s").update("X=i")
-t.addUpdateListener(listener)  // May miss updates that happened above!
+import io.deephaven.util.SafeCloseable
+
+// On background thread with reopened context
+try (SafeCloseable ignored = ctx.open()) {
+    // First lock: create the table
+    ctx.getUpdateGraph().sharedLock().doLocked(() -> {
+        t = timeTable("PT1s").update("X=i")
+    })
+    // RACE WINDOW: table can update here before listener is added
+    ctx.getUpdateGraph().sharedLock().doLocked(() -> {
+        t.addUpdateListener(listener)  // May miss updates!
+    })
+}
 ```
 
-**With a lock (on a background thread):**
+**Single lock (safe):**
 
-On a background thread, you must first reopen the execution context (captured before dispatching), then acquire the lock:
+Wrap both operations in a single lock to eliminate the race:
 
 ```groovy skip-test
 import io.deephaven.util.SafeCloseable
@@ -240,7 +252,7 @@ import io.deephaven.util.SafeCloseable
 // Before dispatching to background thread: capture the context
 ctx = ExecutionContext.getContext()
 
-// On background thread: reopen context, then lock
+// On background thread: reopen context, then lock both operations together
 try (SafeCloseable ignored = ctx.open()) {
     ctx.getUpdateGraph().sharedLock().doLocked(() -> {
         t = timeTable("PT1s").update("X=i")
