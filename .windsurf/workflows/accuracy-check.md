@@ -21,6 +21,9 @@ description: Review documentation for technical accuracy, style, and missing lin
    - **API per format:** Are different formats (Parquet vs. CSV) shown with their distinct APIs, not combined into one row?
    - **`ii` behavior:** Is `ii` described as providing row position, not as making execution sequential?
    - **Python properties vs methods:** Check `@property` decorators in the source. Properties use `table.is_refreshing` (no parens); methods use `table.snapshot()` (with parens).
+   - **Formula compilation:** Only direct column references bypass compilation. Don't say "simple formulas are pre-compiled" — complexity doesn't determine compilation path.
+   - **Listener attachment conditions:** WhereListener can exist for static sources with refreshing filter dependencies, not just refreshing parent tables.
+   - **Incremental evaluation claims:** Filters can trigger broader re-evaluation (refilter path), not just changed rows. Avoid overstating "only changed rows."
 
 4. **Style guide proofreading (based on `.windsurf/rules`):**
    - Check for passive voice and suggest active alternatives.

@@ -208,7 +208,7 @@ The [`where`](../reference/table-operations/filter/where.md) operation filters r
    - A new `RowSet` containing only the matching row keys (a subset of the parent's `RowSet`)
    - **Shared** `ColumnSource`s — the result table points to the same column data as the parent, with no copying
 
-5. **Listener attachment**: If the parent table is [refreshing](./table-types.md), a listener is attached so the filtered table updates automatically when the parent changes. On each update cycle, only the changed rows are re-evaluated.
+5. **Listener attachment**: If the parent table is [refreshing](./table-types.md), or if the filter depends on refreshing data, a listener is attached so the filtered table updates automatically. On each update cycle, the listener typically re-evaluates only the changed rows, though some filter conditions may trigger broader re-evaluation.
 
 **Why this is efficient**: The result table doesn't copy any column data. It simply maintains a smaller `RowSet` that selects which rows from the shared `ColumnSource`s are visible. Multiple `where` filters on the same parent all share the same underlying data.
 
@@ -216,7 +216,7 @@ The [`where`](../reference/table-operations/filter/where.md) operation filters r
 
 The [`update`](../reference/table-operations/select/update.md) operation adds or replaces columns with computed values. Here's the execution flow:
 
-1. **Formula parsing**: The formula (e.g., `"Total = Price * Quantity"`) is parsed using [JavaParser](https://javaparser.org/). Simple formulas may use pre-compiled implementations; complex formulas trigger dynamic compilation of a new Java class.
+1. **Formula parsing**: The formula (e.g., `"Total = Price * Quantity"`) is parsed using [JavaParser](https://javaparser.org/). Direct column references (e.g., `"X"` or `"Y = X"`) bypass formula compilation entirely; all other formulas are analyzed and compiled into executable code.
 
 2. **Column source creation**: A new `ColumnSource` is created for each derived column. This source computes values on-demand or caches them, depending on the operation variant ([`update`](../reference/table-operations/select/update.md) vs [`update_view`](../reference/table-operations/select/update-view.md)).
 
