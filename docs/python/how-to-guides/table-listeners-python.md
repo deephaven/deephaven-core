@@ -298,6 +298,59 @@ Timer(6, start_listener, args=[handle]).start()
 
 ![`handle` is registered and deregistered](../assets/how-to/listener-deregister.gif)
 
+### Update graph locks and thread safety
+
+When code running outside the Deephaven console creates a ticking table and adds a listener, the table may update between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
+
+> [!NOTE]
+> Code run in the Deephaven console is already protected — consecutive lines in the console cannot have updates slip between them. This section applies to code running on other threads, such as timer callbacks or background workers.
+
+The [Update Graph](../conceptual/table-update-model.md) coordinates all table updates in Deephaven. By holding a lock while creating the table _and_ adding the listener, you ensure no updates occur in between.
+
+![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-lock.png)
+
+> [!TIP]
+> The lock ensures "create table" and "add listener" happen together as one unit — no updates can slip through.
+
+The [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) and [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen) functions automatically acquire a lock when registering the listener (when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, which is the default). However, this only protects the registration itself — not table creation. On a background thread, an update can occur between creating a table and calling `listen()`:
+
+```python skip-test
+# CAUTION (on a background thread): An update can occur between these two lines
+table = time_table("PT1s").update("X=i")  # Table created, lock not held
+handle = listen(
+    table, listener_function
+)  # Lock acquired here, but table may have already updated
+```
+
+To ensure no updates are missed on a background thread, you must first reopen the execution context (captured before dispatching), then acquire the lock:
+
+```python skip-test
+from deephaven import update_graph
+from deephaven.execution_context import get_exec_ctx
+
+# Before dispatching to background thread: capture the context
+ctx = get_exec_ctx()
+
+# On background thread: reopen context, then lock
+with ctx:
+    with update_graph.shared_lock(ctx.update_graph):
+        table = time_table("PT1s").update("X=i")
+        handle = listen(table, listener_function)
+```
+
+> [!NOTE]
+> Background threads don't have an execution context by default. Table operations like `time_table` require a valid context. Capture the context before dispatching, then reopen it on the background thread.
+
+Deephaven provides two types of locks:
+
+- **Shared lock** ([`shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock)): Pauses table updates while your code runs. Use this for table operations like creating tables and adding listeners.
+- **Exclusive lock** ([`exclusive_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.exclusive_lock)): Blocks all Update Graph activity. Use this only for advanced cases, such as waiting for specific update conditions.
+
+> [!NOTE]
+> Keep locks brief. Tables cannot update while a lock is held, so long-held locks can delay data.
+
+For more details on locks and thread safety, see [Synchronization and locking](../conceptual/query-engine/engine-locking.md).
+
 ## Reduce data volumes
 
 Tables often tick at high frequencies and with large quantities of incoming data. It's best practice to only listen to what's required for an operation. In such cases, applying [filters](./use-filters.md) and/or [reducing tick frequencies](./performance/reduce-update-frequency.md) will reduce both the quantity and frequency of incoming data to a listener.
@@ -434,3 +487,5 @@ handle = listen(source, listener_function, do_replay=False)
 - [`TableUpdate`](/core/pydoc/code/deephaven.table_listener.html?#deephaven.table_listener.TableUpdate)
 - [`Table`](/core/javadoc/io/deephaven/engine/table/Table.html)
 - [`listen`](/core/pydoc/code/deephaven.table_listener.html?#deephaven.table_listener.listen)
+- [Synchronization and locking](../conceptual/query-engine/engine-locking.md)
+- [`update_graph`](/core/pydoc/code/deephaven.update_graph.html)
