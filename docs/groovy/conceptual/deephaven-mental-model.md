@@ -48,7 +48,7 @@ result = emptyTable(1000).update("X = i", "Y = Math.sqrt(X * X + 1)")
 The engine parses and executes the string `"Y = Math.sqrt(X * X + 1)"`.
 
 > [!TIP]
-> Query strings use Java-style syntax: backticks (`` ` ``) for strings instead of quotes, `PT1S` for durations (1 second), and casts like `(int)` to specify return types.
+> Query strings use Java-style syntax: backticks (`` ` ``) for strings, single quotes for duration literals (`'PT1S'` for 1 second), and casts like `(int)` to specify return types. Note that API arguments like `timeTable("PT1S")` pass the duration as a string, while formulas require the query-literal syntax.
 
 This has important implications:
 
