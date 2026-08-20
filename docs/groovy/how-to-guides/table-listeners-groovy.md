@@ -235,6 +235,8 @@ t.addUpdateListener(listener)  // May miss updates that happened above!
 On a background thread, you must first reopen the execution context (captured before dispatching), then acquire the lock:
 
 ```groovy skip-test
+import io.deephaven.util.SafeCloseable
+
 // Before dispatching to background thread: capture the context
 ctx = ExecutionContext.getContext()
 

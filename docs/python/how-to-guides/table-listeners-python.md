@@ -332,7 +332,7 @@ from deephaven.execution_context import get_exec_ctx
 ctx = get_exec_ctx()
 
 # On background thread: reopen context, then lock
-with ctx.open():
+with ctx:
     with update_graph.shared_lock(ctx.update_graph):
         table = time_table("PT1s").update("X=i")
         handle = listen(table, listener_function)
