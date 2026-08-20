@@ -22,6 +22,9 @@
       88% { opacity: 1; }
       100% { offset-distance: 100%; opacity: 0; }
     }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
   </style>
 </helmet>
 
@@ -36,7 +39,7 @@
 
     <div style="position:absolute;top:0;left:40px;width:352px;height:240px;background:var(--dh-surface-card);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-lg);">
       <div style="position:absolute;top:14px;left:16px;right:16px;font-size:15px;font-weight:600;color:var(--dh-text-primary);">Table: source</div>
-      <div style="position:absolute;top:44px;left:16px;right:16px;height:26px;box-sizing:border-box;padding:5px 10px;background:var(--dh-surface-sunken);border:1px solid var(--dh-border);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:12px;color:var(--dh-text-secondary);">time_table("PT1S")</div>
+      <div style="position:absolute;top:44px;left:16px;right:16px;height:26px;box-sizing:border-box;padding:5px 10px;background:var(--dh-surface-sunken);border:1px solid var(--dh-border);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:12px;color:var(--dh-text-secondary);">timeTable("PT1S")</div>
       <div style="position:absolute;top:88px;left:16px;width:320px;height:60px;box-sizing:border-box;padding:8px 10px;background:var(--dh-bg-1000);border:1px solid var(--dh-logo-indigo);border-radius:var(--dh-radius-md);">
         <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">RowSet</div>
         <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-secondary);margin-top:3px;">Keys: [0, 1, 2, 3, ...]</div>
@@ -80,7 +83,7 @@
 
     <div style="position:absolute;top:0;left:808px;width:352px;height:240px;background:var(--dh-surface-card);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-lg);">
       <div style="position:absolute;top:14px;left:16px;right:16px;font-size:15px;font-weight:600;color:var(--dh-text-primary);">Table: renamed</div>
-      <div style="position:absolute;top:44px;left:16px;right:16px;height:26px;box-sizing:border-box;padding:5px 10px;background:var(--dh-surface-sunken);border:1px solid var(--dh-border);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:12px;color:var(--dh-text-secondary);">.view(["A", "C=B"])</div>
+      <div style="position:absolute;top:44px;left:16px;right:16px;height:26px;box-sizing:border-box;padding:5px 10px;background:var(--dh-surface-sunken);border:1px solid var(--dh-border);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:12px;color:var(--dh-text-secondary);">.view("A", "C = B")</div>
       <div style="position:absolute;top:88px;left:16px;width:320px;height:60px;box-sizing:border-box;padding:8px 10px;background:var(--dh-bg-1000);border:1px dashed var(--dh-logo-cyan);border-radius:var(--dh-radius-md);">
         <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">RowSet (shared)</div>
         <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-logo-cyan);margin-top:3px;">&#8594; source.RowSet</div>

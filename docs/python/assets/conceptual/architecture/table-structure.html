@@ -22,6 +22,9 @@
       88% { opacity: 1; }
       100% { offset-distance: 100%; opacity: 0; }
     }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
   </style>
 </helmet>
 

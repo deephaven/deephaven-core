@@ -32,6 +32,9 @@
       62%, 78% { background: var(--dh-logo-cyan); box-shadow: 0 0 0 2px color-mix(in srgb, var(--dh-logo-cyan) 35%, transparent); }
       92%, 100% { background: var(--dh-surface-card); box-shadow: none; }
     }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
   </style>
 </helmet>
 
@@ -85,7 +88,7 @@
       <div style="box-sizing:border-box;height:220px;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-logo-cyan);border-radius:var(--dh-radius-lg);">
         <div style="font-size:13px;font-weight:600;color:var(--dh-text-primary);">ColumnSource (ChunkSource)</div>
         <div style="box-sizing:border-box;margin-top:12px;padding:8px 10px;background:var(--dh-bg-1000);border:1px solid var(--dh-logo-cyan);border-radius:var(--dh-radius-md);">
-          <div style="font-size:11px;font-weight:600;color:var(--dh-text-primary);">Chunk[4096] (bulk read, one call)</div>
+          <div style="font-size:11px;font-weight:600;color:var(--dh-text-primary);">Chunk (bulk read, configurable size)</div>
           <div style="display:flex;align-items:center;gap:4px;margin-top:8px;">
             <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
             <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
@@ -99,7 +102,7 @@
         <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px;">
           <div style="display:flex;align-items:center;gap:6px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
-            <div style="font-size:12px;color:var(--dh-logo-cyan);">One call for 4096 cells</div>
+            <div style="font-size:12px;color:var(--dh-logo-cyan);">One call for thousands of cells</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
@@ -121,8 +124,8 @@
 
       <div style="flex:1;box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-radius:var(--dh-radius-lg);">
         <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">1. ColumnSource</div>
-        <div style="margin-top:8px;font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);">getChunk(offset,</div>
-        <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);">&nbsp;&nbsp;size=4096)</div>
+        <div style="margin-top:8px;font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);">getChunk(context,</div>
+        <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);">&nbsp;&nbsp;rowSequence)</div>
       </div>
 
       <svg width="44" height="90" viewBox="0 0 44 90" style="flex:none;overflow:visible;">
@@ -193,8 +196,8 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-indigo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg>
           <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);">Amortized overhead</div>
         </div>
-        <div style="margin-top:10px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">One method call for 4096 cells</div>
-        <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">vs. 4096 individual calls</div>
+        <div style="margin-top:10px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">One method call for thousands of cells</div>
+        <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">vs. thousands of individual calls</div>
         <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-indigo);">~1000x fewer calls</div>
       </div>
 
@@ -226,7 +229,7 @@
       <div style="box-sizing:border-box;padding:12px;background:var(--dh-surface-sunken);border:1px solid var(--dh-border);border-radius:var(--dh-radius-md);">
         <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-muted);">// Instead of: for (long key : rowSet) { if (predicate(getValue(key))) { ... } }</div>
         <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-muted);margin-top:4px;">// Chunks do: Chunk values = source.getChunk(context, rowSequence);</div>
-        <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-muted);margin-top:4px;">//&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bulkFilter(values, predicate, outputKeys);&nbsp;&nbsp;// Process 4096 at once</div>
+        <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-muted);margin-top:4px;">//&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bulkFilter(values, predicate, outputKeys);&nbsp;&nbsp;// Process entire chunk at once</div>
       </div>
     </x-import>
   </div>
