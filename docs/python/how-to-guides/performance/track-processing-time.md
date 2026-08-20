@@ -18,11 +18,13 @@ This matters when you receive data from external sources (like Kafka) that inclu
 
 Use [`SelectColumnFactory.getExpression`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/SelectColumnFactory.html#getExpression(java.lang.String)) with [`withRecomputeOnModifiedRow`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/SelectColumn.html#withRecomputeOnModifiedRow()) to force the formula to re-evaluate every time a row is modified.
 
-Since there's no native Python wrapper for this feature, use `jpy.get_type` to access the Java class. The resulting `SelectColumn` can be passed directly to `update` — Python's table wrapper accepts Java `Selectable` instances and handles conversion automatically.
+Since there's no native Python wrapper for this feature, use `jpy.get_type` to access the Java class. The jpy-obtained `SelectColumn` isn't recognized by the Python wrapper's type checking, so you need to call `j_table.update` directly and wrap the result.
 
 ```python ticking-table order=null
 import jpy
 from deephaven import time_table
+from deephaven.jcompat import j_array_list
+from deephaven.table import Table
 
 SelectColumnFactory = jpy.get_type(
     "io.deephaven.engine.table.impl.select.SelectColumnFactory"
@@ -36,8 +38,8 @@ process_time_col = SelectColumnFactory.getExpression(
     "ProcessTime = now()"
 ).withRecomputeOnModifiedRow()
 
-# Pass the Java SelectColumn directly to update
-result = source.update(process_time_col)
+# Call j_table.update directly since the Python wrapper doesn't recognize jpy types
+result = Table(j_table=source.j_table.update(j_array_list([process_time_col])))
 
 # Calculate latency
 result = result.update(
