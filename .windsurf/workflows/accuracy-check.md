@@ -22,7 +22,7 @@ description: Review documentation for technical accuracy, style, and missing lin
    
    **Common accuracy pitfalls to check:**
    - **Execution context:** Do `transform` callbacks on live partitioned tables capture and reopen an execution context? (Required because new constituents arrive on update threads.)
-   - **Materialization vs. direct access:** Does text claiming "direct access" actually involve a copy? (`toArray()`, `to_pandas()`, `to_numpy()` all materialize data.)
+   - **Materialization vs. direct access:** Does text claiming "direct access" actually involve a copy? Note: `to_pandas()` and `to_numpy()` materialize data; `Vector.toArray()` may return the backing array (no copy) per the interface contract, while `Vector.copyToArray()` guarantees a fresh copy. Be precise about which method is being discussed.
    - **Update graph semantics:** Are timing guarantees accurate? (1000ms is a target interval, not a deadline. Cycles can exceed it.)
    - **TableUpdate contract:** Does the description include row-shift and modified-column info? Are refilter scenarios acknowledged?
    - **Absolute statements:** Are comments like "This won't produce X" actually warnings? (Parallelism makes ordering non-deterministic, but serial execution can still produce sequential results.)
