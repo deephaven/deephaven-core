@@ -40,7 +40,7 @@ This approach requires three steps:
 
 1. **Create a [`SelectColumn`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/SelectColumn.html)** using `SelectColumnFactory.getExpression`. The standard string-based `update("formula")` API doesn't expose re-evaluation control, so we need to work with the underlying `SelectColumn` object.
 2. **Wrap it** with `withRecomputeOnModifiedRow` to bypass the Modified Column Set optimization.
-3. **Pass it as a Collection** using `Arrays.asList()`. The [`update`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#update(java.util.Collection)) method that accepts `SelectColumn` objects requires a Collection, not individual arguments.
+3. **Pass it as a Collection** using `Arrays.asList()`. The [`update`](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#update(java.util.Collection)) method that accepts `SelectColumn` objects requires a Collection, not individual arguments.
 
 ## Example: track processing time
 
