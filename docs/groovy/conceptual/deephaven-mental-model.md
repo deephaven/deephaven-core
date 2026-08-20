@@ -147,15 +147,15 @@ myTable = TableTools.newTable(
 
 ### From Deephaven to Groovy
 
-When you extract data back to Groovy, the column values are materialized into an array (this is a copy, not a live view of the table's storage):
+When you extract data back to Groovy, you can copy column values into an array. This is a snapshot, not a live view — changes to the table won't affect the array:
 
 ```groovy syntax
 import io.deephaven.engine.table.vectors.ColumnVectors
 
 myTable = emptyTable(5).update("X = i * 10")
 
-// Access column data via ColumnVectors
-xValues = ColumnVectors.of(myTable, "X").toArray()
+// Copy column data into an array
+xValues = ColumnVectors.of(myTable, "X").copyToArray()
 ```
 
 For live tables, consider using `snapshot()` to get a static copy at a specific moment in time.
