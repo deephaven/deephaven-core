@@ -233,13 +233,13 @@ The [`update`](../reference/table-operations/select/update.md) operation adds or
 
 Most Deephaven table operations follow this pattern:
 
-| Operation Type                           | `RowSet`          | `ColumnSource`s          |
-| ---------------------------------------- | ----------------- | ------------------------ |
-| **Filtering** (`where`)                  | New (subset)      | Shared                   |
-| **Column derivation** (`update`, `view`) | Shared            | Mixed (shared + new)     |
-| **Sorting** (`sort`)                     | New (redirecting) | Shared (via redirection) |
-| **Joining** (`naturalJoin`, etc.)        | New or shared     | Mixed                    |
-| **Aggregation** (`aggBy`, etc.)          | New               | New                      |
+| Operation Type                           | `RowSet`      | `ColumnSource`s          |
+| ---------------------------------------- | ------------- | ------------------------ |
+| **Filtering** (`where`)                  | New (subset)  | Shared                   |
+| **Column derivation** (`update`, `view`) | Shared        | Mixed (shared + new)     |
+| **Sorting** (`sort`)                     | New (flat)    | Shared (via redirection) |
+| **Joining** (`naturalJoin`, etc.)        | New or shared | Mixed                    |
+| **Aggregation** (`aggBy`, etc.)          | New           | New                      |
 
 This sharing model, combined with [incremental updates](./table-update-model.md) through the [DAG](./dag.md), enables Deephaven to handle complex queries on large, rapidly-changing datasets efficiently.
 
