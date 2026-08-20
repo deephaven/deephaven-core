@@ -312,27 +312,29 @@ The [Update Graph](../conceptual/table-update-model.md) coordinates all table up
 > [!TIP]
 > The lock ensures "create table" and "add listener" happen together as one unit — no updates can slip through.
 
-The [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) and [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen) functions automatically acquire a lock when registering the listener (when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, which is the default). However, this only protects the registration itself — not table creation. An update can still occur between creating a table and calling `listen()`:
+The [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) and [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen) functions automatically acquire a lock when registering the listener (when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, which is the default). However, this only protects the registration itself — not table creation. On a background thread, an update can occur between creating a table and calling `listen()`:
 
 ```python skip-test
-# CAUTION: An update can occur between these two lines
+# CAUTION (on a background thread): An update can occur between these two lines
 table = time_table("PT1s").update("X=i")  # Table created, lock not held
 handle = listen(
     table, listener_function
 )  # Lock acquired here, but table may have already updated
 ```
 
-To ensure no updates are missed, wrap both table creation and listener registration in a single lock:
+To ensure no updates are missed on a background thread, wrap both table creation and listener registration in a single lock:
 
 ```python skip-test
 from deephaven import update_graph
-from deephaven.execution_context import get_exec_ctx
 
 # Safe: One lock spans both creation and registration
-with update_graph.shared_lock(get_exec_ctx().update_graph):
+with update_graph.shared_lock(existing_table.update_graph):
     table = time_table("PT1s").update("X=i")
     handle = listen(table, listener_function)
 ```
+
+> [!NOTE]
+> Background threads don't have an execution context by default. Use an existing table's `update_graph` property to access the lock, or capture the execution context before dispatching work to the background thread.
 
 Deephaven provides two types of locks:
 
