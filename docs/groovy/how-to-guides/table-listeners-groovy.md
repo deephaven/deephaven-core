@@ -232,18 +232,23 @@ t.addUpdateListener(listener)  // May miss updates that happened above!
 
 **With a lock (on a background thread):**
 
-On a background thread, get the lock from an existing table's update graph:
+On a background thread, you must first reopen the execution context (captured before dispatching), then acquire the lock:
 
 ```groovy skip-test
-// SAFE: No updates occur until the lock is released
-existingTable.getUpdateGraph().sharedLock().doLocked(() -> {
-    t = timeTable("PT1s").update("X=i")
-    t.addUpdateListener(listener)
-})
+// Before dispatching to background thread: capture the context
+ctx = ExecutionContext.getContext()
+
+// On background thread: reopen context, then lock
+try (SafeCloseable ignored = ctx.open()) {
+    ctx.getUpdateGraph().sharedLock().doLocked(() -> {
+        t = timeTable("PT1s").update("X=i")
+        t.addUpdateListener(listener)
+    })
+}
 ```
 
 > [!NOTE]
-> Background threads don't have an execution context by default. Use an existing table's `getUpdateGraph` method to access the lock, or capture and reopen the console's execution context on the background thread. See [Execution context](../conceptual/execution-context.md) for details.
+> Background threads don't have an execution context by default. Table operations like `timeTable` require a valid context. Capture the context before dispatching, then reopen it on the background thread. See [Execution context](../conceptual/execution-context.md) for details.
 
 Deephaven provides two types of locks:
 

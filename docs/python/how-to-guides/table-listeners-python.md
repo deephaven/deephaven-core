@@ -322,19 +322,24 @@ handle = listen(
 )  # Lock acquired here, but table may have already updated
 ```
 
-To ensure no updates are missed on a background thread, wrap both table creation and listener registration in a single lock:
+To ensure no updates are missed on a background thread, you must first reopen the execution context (captured before dispatching), then acquire the lock:
 
 ```python skip-test
 from deephaven import update_graph
+from deephaven.execution_context import get_exec_ctx
 
-# Safe: One lock spans both creation and registration
-with update_graph.shared_lock(existing_table.update_graph):
-    table = time_table("PT1s").update("X=i")
-    handle = listen(table, listener_function)
+# Before dispatching to background thread: capture the context
+ctx = get_exec_ctx()
+
+# On background thread: reopen context, then lock
+with ctx.open():
+    with update_graph.shared_lock(ctx.update_graph):
+        table = time_table("PT1s").update("X=i")
+        handle = listen(table, listener_function)
 ```
 
 > [!NOTE]
-> Background threads don't have an execution context by default. Use an existing table's `update_graph` property to access the lock, or capture the execution context before dispatching work to the background thread.
+> Background threads don't have an execution context by default. Table operations like `time_table` require a valid context. Capture the context before dispatching, then reopen it on the background thread.
 
 Deephaven provides two types of locks:
 
