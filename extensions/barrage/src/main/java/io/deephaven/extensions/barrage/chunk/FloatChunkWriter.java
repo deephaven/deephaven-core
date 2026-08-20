@@ -27,11 +27,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.function.Supplier;
 
-/**
- * Replication source for the other fixed-width primitive writers; see {@code ReplicateBarrageUtils}. Edits here must be
- * followed by {@code ./gradlew replicateBarrageUtils}. Keep this file ASCII-only: the replicator does not round-trip
- * non-ASCII text.
- */
 public class FloatChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends BaseChunkWriter<SOURCE_CHUNK_TYPE> {
     private static final String DEBUG_NAME = "FloatChunkWriter";
 

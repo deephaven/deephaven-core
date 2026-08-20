@@ -23,9 +23,7 @@ import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
 /**
- * Replication source for the other fixed-width primitive readers; see {@code ReplicateBarrageUtils}. Edits here must be
- * followed by {@code ./gradlew replicateBarrageUtils}. Keep this file ASCII-only: the replicator does not round-trip
- * non-ASCII text. The {@code Payload*} regions are overridden for {@code byte}, which needs no byte-order decoding.
+ * The {@code Payload*} regions are overridden for {@code byte}, which needs no byte-order decoding.
  */
 public class FloatChunkReader extends BaseChunkReader<WritableFloatChunk<Values>> {
     private static final String DEBUG_NAME = "FloatChunkReader";

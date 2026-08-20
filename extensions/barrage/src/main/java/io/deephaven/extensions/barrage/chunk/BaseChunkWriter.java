@@ -20,6 +20,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
@@ -344,9 +345,7 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
             }
             bytes = new byte[getValidityMapSerializationSizeFor(numElements)];
             byteOffset = (count >>> 6) * Long.BYTES;
-            for (int bi = 0; bi < byteOffset; ++bi) {
-                bytes[bi] = (byte) 0xFF;
-            }
+            Arrays.fill(bytes, 0, byteOffset, (byte) 0xFF);
             accumulator = (1L << (count & 63)) - 1;
         }
 
