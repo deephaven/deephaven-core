@@ -35,7 +35,7 @@ Here, `filtered` contains rows where X > 2 (rows 3 and 4), computed immediately 
 - Multiple transformations can share the same source without duplicating data.
 - Operations are typically much faster than copying entire datasets.
 
-When you call a table operation, Deephaven computes the initial result immediately. However, the "recipe" remains active — if the source data changes, downstream tables update automatically without you re-running code.
+When you call a table operation, Deephaven establishes the dependency and, for most operations, computes the initial result immediately. (Operations like [`view`](../reference/table-operations/select/view.md) defer formula evaluation until values are accessed.) The "recipe" remains active — if the source data changes, downstream tables update automatically without you re-running code.
 
 ## Formulas run in the engine
 
@@ -90,12 +90,15 @@ You might expect `Value` to be `[1, 2, 3, 4, 5]`. But the engine can evaluate ro
 
 ### Replacing counters with row positions
 
-If you need deterministic row numbering, use `ii` (the row position) instead of a counter:
+If you need deterministic row numbering on **static or append-only tables**, use `ii` (the row position) instead of a counter:
 
 ```groovy order=result
 // Use ii (the row number) instead of a counter
 result = emptyTable(5).update("Value = ii + 1")
 ```
+
+> [!NOTE]
+> Row-position variables (`i` and `ii`) are supported for static, append-only, and blink tables. General refreshing tables may reject them because row positions can change when rows are modified or removed. For those cases, consider using a key column or the row key variable `k`.
 
 For more complex cases involving state, see [parallelization](./query-engine/parallelization.md) and the serial execution options. For details on [`ii` and other special variables](../reference/query-language/variables/special-variables.md), see the reference documentation.
 
@@ -171,19 +174,19 @@ Deephaven isn't just a table engine — it's a platform for building data applic
 
 ### Data sources and sinks
 
-| Source           | How to use                                                                        |
-| ---------------- | --------------------------------------------------------------------------------- |
-| **Parquet**      | `ParquetTools.readTable("/path/to/file.parquet")`                                 |
-| **CSV**          | `CsvTools.readCsv("/path/to/file.csv")`                                           |
-| **Kafka**        | [`KafkaTools.consumeToTable`](../how-to-guides/kafka-basic.md)                    |
-| **Manual entry** | [Input tables](../how-to-guides/input-tables.md) — edit cells in the UI           |
-| **Programmatic** | [Table Publisher](../how-to-guides/table-publisher.md) — push data from your code |
+| Source           | How to use                                                                             |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| **Parquet**      | `ParquetTools.readTable("/path/to/file.parquet")`                                      |
+| **CSV**          | `CsvTools.readCsv("/path/to/file.csv")`                                                |
+| **Kafka**        | [`KafkaTools.consumeToTable`](../reference/data-import-export/Kafka/consumeToTable.md) |
+| **Manual entry** | [Input tables](../how-to-guides/input-tables.md) — edit cells in the UI                |
+| **Programmatic** | [Table Publisher](../how-to-guides/table-publisher.md) — push data from your code      |
 
-| Destination        | How to use                                                       |
-| ------------------ | ---------------------------------------------------------------- |
-| **Parquet**        | `ParquetTools.writeTable(table, "/path/to/output.parquet")`      |
-| **Kafka**          | [`KafkaTools.produceFromTable`](../how-to-guides/kafka-basic.md) |
-| **Remote clients** | Connect via Python, Java, JavaScript, or C++ clients             |
+| Destination        | How to use                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| **Parquet**        | `ParquetTools.writeTable(table, "/path/to/output.parquet")`                                |
+| **Kafka**          | [`KafkaTools.produceFromTable`](../reference/data-import-export/Kafka/produceFromTable.md) |
+| **Remote clients** | Connect via Python, Java, JavaScript, or C++ clients                                       |
 
 ### Client-server architecture
 

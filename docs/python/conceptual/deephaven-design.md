@@ -41,7 +41,7 @@ At the core of this stack are **Live Dataframes** — Deephaven's unique abstrac
 2. **APIs**: Barrage protocol streams incremental updates to connected clients
 3. **UI**: Components automatically refresh to reflect the latest data
 
-This architecture means the same table can simultaneously serve a Python script, a Java application, a web dashboard, and a remote client — all seeing consistent, live updates without any additional code.
+This architecture means the same table can simultaneously serve a Python script, a Java application, a web dashboard, and a remote client — each receiving consistent snapshots and incremental deltas without any additional code. (Remote clients receive updates via their own subscription stream, so different clients may see updates at slightly different times.)
 
 **Why this matters**: Traditional systems require separate pipelines for batch and streaming, with different APIs, different mental models, and complex coordination. Deephaven's live data stack eliminates this complexity. Whether you're analyzing historical Parquet files or streaming Kafka data, you use the same code, the same operations, and the same UI — and everything stays in sync.
 
@@ -218,7 +218,7 @@ The [`update`](../reference/table-operations/select/update.md) operation adds or
 
 1. **Formula parsing**: The formula (e.g., `"Total = Price * Quantity"`) is parsed using [JavaParser](https://javaparser.org/). Direct column references (e.g., `"X"` or `"Y = X"`) bypass formula compilation entirely; all other formulas are analyzed and compiled into executable code.
 
-2. **Column source creation**: A new `ColumnSource` is created for each derived column. This source computes values on-demand or caches them, depending on the operation variant ([`update`](../reference/table-operations/select/update.md) vs [`update_view`](../reference/table-operations/select/update-view.md)).
+2. **Column source creation**: For computed formulas, a new `ColumnSource` is created. This source computes values on-demand or caches them, depending on the operation variant ([`update`](../reference/table-operations/select/update.md) vs [`update_view`](../reference/table-operations/select/update-view.md)). Direct column references (aliases like `"Y = X"`) reuse the existing `ColumnSource` without creating a new one.
 
 3. **Formula evaluation**: For `update`, the formula is evaluated for each row in the `RowSet`, with results stored in the new `ColumnSource`. Data is processed in [chunks](#chunk-oriented-architecture) for efficiency.
 
