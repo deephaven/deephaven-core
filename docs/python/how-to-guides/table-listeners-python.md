@@ -300,23 +300,26 @@ Timer(6, start_listener, args=[handle]).start()
 
 ### Update graph locks and thread safety
 
-When you create a ticking table and add a listener to it, there's a potential race condition: the table may tick (update) between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
+When code running outside the Deephaven console creates a ticking table and adds a listener, the table may update between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
 
-The [Update Graph](../conceptual/table-update-model.md) (UG) coordinates all table updates in Deephaven. By holding an Update Graph lock while creating the table _and_ adding the listener, you ensure no updates occur in between.
+> [!NOTE]
+> Code run in the Deephaven console is already protected — consecutive lines in the console cannot have updates slip between them. This section applies to code running on other threads, such as timer callbacks or background workers.
+
+The [Update Graph](../conceptual/table-update-model.md) coordinates all table updates in Deephaven. By holding a lock while creating the table _and_ adding the listener, you ensure no updates occur in between.
 
 ![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-lock.png)
 
 > [!TIP]
-> **Lock = atomicity.** The lock ensures "create table" and "add listener" happen as one indivisible unit from the Update Graph's perspective — no updates can slip through.
+> The lock ensures "create table" and "add listener" happen together as one unit — no updates can slip through.
 
-The [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) and [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen) functions internally acquire a lock when calling `addUpdateListener`. However, this only protects the registration itself — not table creation. A refresh cycle can still occur between creating a table and calling `listen()`:
+The [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) and [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen) functions automatically acquire a lock when registering the listener (when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, which is the default). However, this only protects the registration itself — not table creation. An update can still occur between creating a table and calling `listen()`:
 
 ```python skip-test
-# CAUTION: A refresh can occur between these two lines
+# CAUTION: An update can occur between these two lines
 table = time_table("PT1s").update("X=i")  # Table created, lock not held
 handle = listen(
     table, listener_function
-)  # Lock acquired here, but table may have already ticked
+)  # Lock acquired here, but table may have already updated
 ```
 
 To ensure no updates are missed, wrap both table creation and listener registration in a single lock:
@@ -333,11 +336,11 @@ with update_graph.shared_lock(get_exec_ctx().update_graph):
 
 Deephaven provides two types of locks:
 
-- **Exclusive lock** ([`exclusive_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.exclusive_lock)): Blocks all Update Graph processing. Use this when you need to perform multiple operations atomically.
-- **Shared lock** ([`shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock)): Allows reading but prevents the Update Graph from starting a new cycle. Use this for read-only operations on ticking data.
+- **Shared lock** ([`shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock)): Pauses table updates while your code runs. Use this for table operations like creating tables and adding listeners.
+- **Exclusive lock** ([`exclusive_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.exclusive_lock)): Blocks all Update Graph activity. Use this only for advanced cases, such as waiting for specific update conditions.
 
 > [!NOTE]
-> Locks should be held for the shortest duration possible. The Update Graph cannot start a new refresh cycle while a non-UG thread holds a lock. Long-held locks can cause update delays.
+> Keep locks brief. Tables cannot update while a lock is held, so long-held locks can delay data.
 
 For more details on locks and thread safety, see [Synchronization and locking](../conceptual/query-engine/engine-locking.md).
 

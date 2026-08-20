@@ -210,28 +210,31 @@ Most applications that require the use of a table listener do so for the entiret
 
 ### Why use update graph locks?
 
-When you create a ticking table and then add a listener to it, there's a potential race condition: the table may tick (update) between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
+When code running outside the Deephaven console creates a ticking table and adds a listener, the table may update between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
 
-The [Update Graph](../conceptual/table-update-model.md) (UG) coordinates all table updates in Deephaven. By holding an Update Graph lock while creating the table _and_ adding the listener, you ensure that no updates occur in between — your listener captures every update from the start.
+> [!NOTE]
+> Code run in the Deephaven console is already protected — consecutive lines in the console cannot have updates slip between them. This section applies to code running on other threads, such as timer callbacks or background workers.
+
+The [Update Graph](../conceptual/table-update-model.md) coordinates all table updates in Deephaven. By holding a lock while creating the table _and_ adding the listener, you ensure that no updates occur in between — your listener captures every update from the start.
 
 ![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-lock.png)
 
 > [!TIP]
-> **Lock = atomicity.** The lock ensures "create table" and "add listener" happen as one indivisible unit from the Update Graph's perspective — no updates can slip through.
+> The lock ensures "create table" and "add listener" happen together as one unit — no updates can slip through.
 
-**Without a lock:**
+**Without a lock (on a background thread):**
 
 ```groovy skip-test
-// RISKY: Updates can occur between these two lines
+// RISKY: An update can occur between these two lines
 t = timeTable("PT1s").update("X=i")
-t.addUpdateListener(listener)  // May miss updates that occurred above!
+t.addUpdateListener(listener)  // May miss updates that happened above!
 ```
 
-**With a lock:**
+**With a lock (on a background thread):**
 
 ```groovy skip-test
 // SAFE: No updates occur until the lock is released
-ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
+ExecutionContext.getContext().getUpdateGraph().sharedLock().doLocked(() -> {
     t = timeTable("PT1s").update("X=i")
     t.addUpdateListener(listener)
 })
@@ -239,19 +242,18 @@ ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
 
 Deephaven provides two types of locks:
 
-- **Exclusive lock** ([`exclusiveLock`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#exclusiveLock())): Blocks all Update Graph processing. Use this when you need to both create tables and add listeners atomically.
-- **Shared lock** ([`sharedLock`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock())): Allows reading but prevents the Update Graph from starting a new cycle. Use this for read-only operations on ticking data.
+- **Shared lock** ([`sharedLock`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock())): Pauses table updates while your code runs. Use this for table operations like creating tables and adding listeners.
+- **Exclusive lock** ([`exclusiveLock`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#exclusiveLock())): Blocks all Update Graph activity. Use this only for advanced cases, such as waiting for specific update conditions.
 
 For more details on locks and thread safety, see [Synchronization and locking](../conceptual/query-engine/engine-locking.md).
 
 ### Example: Add and remove a listener
 
-The following example uses [`java.util.Timer`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Timer.html) to remove a listener after 3 seconds and then add it back after 6 seconds. The exclusive lock ensures the listener doesn't miss updates during registration.
+The following example uses [`java.util.Timer`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Timer.html) to remove a listener after 3 seconds and then add it back after 6 seconds. Since the timer callback runs on a background thread, it must acquire the shared lock when re-adding the listener.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
-import io.deephaven.engine.context.ExecutionContext;
 
 class ExampleListener extends InstrumentedTableUpdateListenerAdapter {
 
@@ -265,13 +267,11 @@ class ExampleListener extends InstrumentedTableUpdateListenerAdapter {
     }
 }
 
-// Use an exclusive lock to ensure the listener doesn't miss updates between table creation and registration
-ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
-    t = timeTable("PT1s").update("X=i").tail(5)
-    listener = new ExampleListener("Test Listener", t, true)
-    println "Adding listener"
-    t.addUpdateListener(listener)
-});
+// Console code is already protected — no lock needed here
+t = timeTable("PT1s").update("X=i").tail(5)
+listener = new ExampleListener("Test Listener", t, true)
+println "Adding listener"
+t.addUpdateListener(listener)
 
 new Timer().runAfter(3000) {
     println "Removing listener"
@@ -279,8 +279,8 @@ new Timer().runAfter(3000) {
 }
 
 new Timer().runAfter(6000) {
-    // Acquire the lock when actually re-adding the listener
-    ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
+    // Timer runs on a background thread — acquire the lock
+    t.getUpdateGraph().sharedLock().doLocked(() -> {
         println "Adding listener"
         t.addUpdateListener(listener)
     })
@@ -290,7 +290,7 @@ new Timer().runAfter(6000) {
 ![A listener is added and removed](../assets/how-to/listener-lock.gif)
 
 > [!NOTE]
-> Locks should be held for the shortest duration possible. The Update Graph cannot start a new refresh cycle while a non-UG thread holds a lock. Long-held locks can cause update delays.
+> Keep locks brief. Tables cannot update while a lock is held, so long-held locks can delay data.
 
 ## Error handling
 
