@@ -278,19 +278,19 @@ new Timer().runAfter(3000) {
     t.removeUpdateListener(listener)
 }
 
-// Use an exclusive lock when re-adding the listener to ensure no updates are missed
-ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
-    new Timer().runAfter(6000) {
+new Timer().runAfter(6000) {
+    // Acquire the lock when actually re-adding the listener
+    ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
         println "Adding listener"
         t.addUpdateListener(listener)
-    }
-});
+    })
+}
 ```
 
 ![A listener is added and removed](../assets/how-to/listener-lock.gif)
 
 > [!NOTE]
-> Locks should be held for the shortest duration possible. The Update Graph cannot process updates while any thread holds a lock. Long-held locks can cause update delays.
+> Locks should be held for the shortest duration possible. The Update Graph cannot start a new refresh cycle while a non-UG thread holds a lock. Long-held locks can cause update delays.
 
 ## Error handling
 
