@@ -6,14 +6,17 @@ The `writeTable` method will write a table to a standard Parquet file.
 
 ## Syntax
 
-```
+```groovy syntax
 writeTable(sourceTable, destPath)
-writeTable(sourceTable, destFile)
-writeTable(sourceTable, destFile, definition)
-writeTable(sourceTable, destFile, writeInstructions)
-writeTable(sourceTable, destPath, definition, writeInstructions)
-writeTable(sourceTable, destFile, definition, writeInstructions)
+writeTable(sourceTable, destPath, writeInstructions)
 ```
+
+> [!NOTE]
+> To write multiple tables at once, use [`writeTables`](https://deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)):
+>
+> ```groovy syntax
+> writeTables(sourceTables[], destPaths[], writeInstructions)
+> ```
 
 ## Parameters
 
@@ -25,32 +28,25 @@ The table to write to file.
 </Param>
 <Param name="destPath" type="String">
 
-Path name of the file where the table will be stored. The file name should end with the `.parquet` extension. If the path includes non-existing directories, they are created.
+Path name or URI of the file where the table will be stored. The file name should end with the `.parquet` extension. If the path includes non-existing directories, they are created. If there is an error, any intermediate directories previously created are removed; note this makes this method unsafe for concurrent use.
 
 </Param>
-<Param name="destFile" type="File">
+<Param name="writeInstructions" type="ParquetInstructions" optional>
 
-Destination file. Its path must end in ".parquet". Any non-existing directories in the path are created. If there is an error, any intermediate directories previously created are removed. Note: this makes this method unsafe for concurrent use.
-
-</Param>
-<Param name="definition" type="TableDefinition">
-
-Table definition to use (instead of the one implied by the table itself).
-
-</Param>
-<Param name="writeInstructions" type="ParquetInstructions">
-
-Instructions for customizations while writing. Valid values are:
+Instructions for customizations while writing. For simple compression, use predefined constants:
 
 - `ParquetTools.SNAPPY`: Aims for high speed, and a reasonable amount of compression, based on Snappy compression format by [Google](https://github.com/google/snappy/blob/main/format_description.txt).
 - `ParquetTools.UNCOMPRESSED`: The output will not be compressed.
-- `ParquetTools.LZ4_RAW`: Compression codec loosely based on the [LZ4 compression algorithm](https://github.com/lz4/lz4), but with an additional undocumented framing scheme. The framing is part of the original Hadoop compression library and was historically copied first in parquet-mr, then emulated with mixed results by parquet-cpp. Note that `LZ4` is not recommended for use with Parquet files. Use `LZ4_RAW` instead.
-- `ParquetTools.LZ4`: **Deprecated** Compression codec loosely based on the [LZ4 compression algorithm](https://github.com/lz4/lz4), but with an additional undocumented framing scheme. The framing is part of the original Hadoop compression library and was historically copied first in parquet-mr, then emulated with mixed results by parquet-cpp. Note that `LZ4` is deprecated; use `LZ4_RAW` instead.
+- `ParquetTools.LZ4_RAW`: A codec based on the [LZ4 block format](https://github.com/lz4/lz4/blob/dev/doc/lz4_Block_format.md). Should always be used instead of `LZ4`.
+- `ParquetTools.LZ4`: **Deprecated** Use `LZ4_RAW` instead.
 - `ParquetTools.LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
-- `ParquetTools.GZIP`: Compression codec based on the GZIP format (not the closely-related "zlib" or "deflate" formats) defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
-- `ParquetTools.ZSTD`: Compression codec with the highest compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
+- `ParquetTools.GZIP`: Compression codec based on the GZIP format defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
+- `ParquetTools.ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
+- `ParquetTools.BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios.
 
 If not specified, defaults to `SNAPPY`.
+
+For advanced options such as Row Group configuration, metadata file generation, index columns, and S3 support, use `ParquetInstructions.builder()`. See the [Parquet instructions](../../../how-to-guides/data-import-export/parquet-instructions.md) guide for details.
 
 </Param>
 </ParamTable>

@@ -59,6 +59,7 @@ qup = queryUpdatePerformance(n)
 | `IntervalEndTime`       | `Instant` | The end of the interval this row represents.                                                                                                                   |
 | `RowsPerSec`            | `long`    | The number of rows per second.                                                                                                                                 |
 | `RowsPerCPUSec`         | `long`    | The number of rows per CPU second.                                                                                                                             |
+| `RowsPerOpSec`          | `long`    | The number of rows per second spent performing the operation.                                                                                                  |
 | `EntryDescription`      | `String`  | A textual description of the operation, generally including the name and some of the arguments.                                                                |
 | `EntryId`               | `long`    | A numeric identifier for this performance entry, which can be used to identify the same operation across cycles.                                               |
 | `EntryCallerLine`       | `String`  | The file and line number where the operation was initiated, if available.                                                                                      |

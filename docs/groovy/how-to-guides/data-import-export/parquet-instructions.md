@@ -74,8 +74,9 @@ The `ParquetInstructions.Builder` class has the following methods:
   - `LZ4_RAW`: A codec based on the [LZ4 block format](https://github.com/lz4/lz4/blob/dev/doc/lz4_Block_format.md). Should always be used instead of `LZ4`.
   - `LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
   - `GZIP`: Compression codec based on the GZIP format (not the closely-related "zlib" or "deflate" formats) defined by [RFC 1952](https://tools.ietf.org/html/rfc1952).
-  - `ZSTD`: Compression codec with the highest compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
-  - `LZ4`: **Deprecated** Compression codec loosely based on the [LZ4 compression algorithm](https://github.com/lz4/lz4), but with an additional undocumented framing scheme. The framing is part of the original Hadoop compression library and was historically copied first in parquet-mr, then emulated with mixed results by parquet-cpp. Note that `LZ4` is deprecated; use `LZ4_RAW` instead.
+  - `ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
+  - `BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios.
+  - `LZ4`: **Deprecated** Use `LZ4_RAW` instead.
 - `setFileLayout(fileLayout)`: Sets the Parquet file layout. Use with `ParquetFileLayout.valueOf(<Enum>)`. If this method is not called, layout is inferred. Enums are:
   - "SINGLE_FILE": A single Parquet file.
   - "FLAT_PARTITIONED": A single directory of Parquet files with no nested subdirectories.

@@ -18,7 +18,7 @@ public class FilterConditionTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     private Column getColumn() {
-        return new Column(0, 0, -1, "int", "ColumnName", false, -1, null, false, false, false);
+        return new Column(0, 0, -1, "int", "ColumnName", false, -1, null, false, false, false, null);
     }
 
     private FilterValue[] arr(FilterValue filterValue) {

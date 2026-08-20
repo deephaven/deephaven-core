@@ -97,7 +97,7 @@ public class ShutdownManagerImpl implements ShutdownManager {
                     Thread.currentThread().interrupt();
                 }
             }
-        });
+        }, "ShutdownManagerHook");
     }
 
     @Override

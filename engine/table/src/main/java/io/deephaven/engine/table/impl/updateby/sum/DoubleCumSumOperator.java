@@ -17,7 +17,6 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperat
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
 

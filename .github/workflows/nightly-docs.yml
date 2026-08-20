@@ -3,8 +3,8 @@ name: Docs nightly checks
 # Controls when the action will run.
 on:
   schedule:
-    #2AM EST == 6AM UTC
-    - cron: '0 6 * * *'
+    #2AM EST == 6AM UTC weekdays (Mon-Fri)
+    - cron: '0 6 * * 1-5'
 
 jobs:
   snapshots:
@@ -59,10 +59,10 @@ jobs:
     if: failure() && github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven'
     steps:
       - name: Slack Notification
-        uses: slackapi/slack-github-action@v1.23.0
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
+        uses: slackapi/slack-github-action@v3.0.3
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
+          webhook-type: webhook-trigger
           payload: |
             {
               "repository": "${{ github.repository }}",

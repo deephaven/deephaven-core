@@ -261,4 +261,3 @@ public class ShortReverseChunkSsaStamp implements ChunkSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

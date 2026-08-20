@@ -33,6 +33,8 @@ StringUtils.cacheSize=0
 
 TrackedFileHandleFactory.maxOpenFiles=1024
 
+FileHandle.threadSafeStats=true
+
 TableDataRefreshService.tableLocationsRefreshMillis=10000
 TableDataRefreshService.tableSizeRefreshMillis=1000
 

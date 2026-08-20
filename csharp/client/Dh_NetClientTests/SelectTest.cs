@@ -2,19 +2,12 @@
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 using Deephaven.Dh_NetClient;
-using Xunit.Abstractions;
 
 namespace Deephaven.Dh_NetClientTests;
 
 public class SelectTest {
-  private readonly ITestOutputHelper _output;
-
-  public SelectTest(ITestOutputHelper output) {
-    _output = output;
-  }
-
-  [Fact]
-  public void TestSupportAllTypes() {
+  [Test]
+  public async Task TestSupportAllTypes() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
 
     var boolData = new List<bool>();
@@ -62,13 +55,13 @@ public class SelectTest {
     tm.AddColumn("timeOnlyData", timeOnlyData);
 
     var th = tm.MakeTable(ctx.Client.Manager);
-    _output.WriteLine(th.ToString(true));
+    Console.WriteLine(th.ToString(true));
 
-    TableComparer.AssertSame(tm, th);
+    await Assert.That(() => TableComparer.AssertSame(tm, th)).ThrowsNothing();
   }
 
-  [Fact]
-  public void TestCreateUpdateFetchATable() {
+  [Test]
+  public async Task TestCreateUpdateFetchATable() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
 
     var tm = new TableMaker();
@@ -86,11 +79,11 @@ public class SelectTest {
     tm.AddColumn("Q2", [0, 100, 200, 300, 400, 500, 600, 700, 800, 900]);
     tm.AddColumn("Q3", [10, 110, 210, 310, 410, 510, 610, 710, 810, 910]);
     tm.AddColumn("Q4", [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]);
-    TableComparer.AssertSame(tm, t4);
+    await Assert.That(() => TableComparer.AssertSame(tm, t4)).ThrowsNothing();
   }
 
-  [Fact]
-  public void TestSelectAFewColumns() {
+  [Test]
+  public async Task TestSelectAFewColumns() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var table = ctx.TestTable;
 
@@ -102,29 +95,28 @@ public class SelectTest {
     tm.AddColumn("Ticker", ["AAPL", "AAPL"]);
     tm.AddColumn("Close", [23.5, 24.2]);
     tm.AddColumn("Volume", [(Int64)100000, 250000]);
-    TableComparer.AssertSame(tm, t1);
+    await Assert.That(() => TableComparer.AssertSame(tm, t1)).ThrowsNothing();
   }
 
-
-  [Fact]
-  public void TestLastByAndSelect() {
+  [Test]
+  public async Task TestLastByAndSelect() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var table = ctx.TestTable;
 
     var t1 = table.Where("ImportDate == `2017-11-01` && Ticker == `AAPL`")
       .LastBy("Ticker")
       .Select("Ticker", "Close", "Volume");
-    _output.WriteLine(t1.ToString(true));
+    Console.WriteLine(t1.ToString(true));
 
     var tm = new TableMaker();
     tm.AddColumn("Ticker", ["AAPL"]);
     tm.AddColumn("Close", [26.7]);
     tm.AddColumn("Volume", [(Int64)19000]);
-    TableComparer.AssertSame(tm, t1);
+    await Assert.That(() => TableComparer.AssertSame(tm, t1)).ThrowsNothing();
   }
 
-  [Fact]
-  public void TestNewColumns() {
+  [Test]
+  public async Task TestNewColumns() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var table = ctx.TestTable;
 
@@ -135,23 +127,21 @@ public class SelectTest {
     var tm = new TableMaker();
     tm.AddColumn("MV1", [(double)2350000, 6050000, 507300]);
     tm.AddColumn("V_plus_12", [(Int64)100012, 250012, 19012]);
-    TableComparer.AssertSame(tm, t1);
+    await Assert.That(() => TableComparer.AssertSame(tm, t1)).ThrowsNothing();
   }
 
-
-  [Fact]
-  public void TestDropColumns() {
+  [Test]
+  public async Task TestDropColumns() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var table = ctx.TestTable;
 
     var t1 = table.DropColumns("ImportDate", "Open", "Close");
-    Assert.Equal(5, table.Schema.FieldsList.Count);
-    Assert.Equal(2, t1.Schema.FieldsList.Count);
+    await Assert.That(table.Schema.FieldsList.Count).IsEqualTo(5);
+    await Assert.That(t1.Schema.FieldsList.Count).IsEqualTo(2);
   }
 
-
-  [Fact]
-  public void TestSimpleWhere() {
+  [Test]
+  public async Task TestSimpleWhere() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var table = ctx.TestTable;
     var updated = table.Update("QQQ = i");
@@ -162,38 +152,38 @@ public class SelectTest {
     var tm = new TableMaker();
     tm.AddColumn("Ticker", ["IBM"]);
     tm.AddColumn("Volume", [(Int64)138000]);
-    TableComparer.AssertSame(tm, t1);
+    await Assert.That(() => TableComparer.AssertSame(tm, t1)).ThrowsNothing();
   }
 
-  [Fact]
-  public void TestFormulaInTheWhereClause() {
+  [Test]
+  public async Task TestFormulaInTheWhereClause() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var table = ctx.TestTable;
 
     var t1 = table.Where(
         "ImportDate == `2017-11-01` && Ticker == `AAPL` && Volume % 10 == Volume % 100")
       .Select("Ticker", "Volume");
-    _output.WriteLine(t1.ToString(true));
+    Console.WriteLine(t1.ToString(true));
 
     var tm = new TableMaker();
     tm.AddColumn("Ticker", ["AAPL", "AAPL", "AAPL"]);
     tm.AddColumn("Volume", [(Int64)100000, 250000, 19000]);
-    TableComparer.AssertSame(tm, t1);
+    await Assert.That(() => TableComparer.AssertSame(tm, t1)).ThrowsNothing();
   }
 
-  [Fact]
-  public void TestSimpleWhereWithSyntaxError() {
+  [Test]
+  public async Task TestSimpleWhereWithSyntaxError() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var table = ctx.TestTable;
 
-    Assert.Throws<AggregateException>(() => {
+    await Assert.That(() => {
       var t1 = table.Where(")))))");
-      _output.WriteLine(t1.ToString(true));
-    });
+      Console.WriteLine(t1.ToString(true));
+    }).Throws<AggregateException>();
   }
 
-  [Fact]
-  public void TestWhereIn() {
+  [Test]
+  public async Task TestWhereIn() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
 
     var sourceMaker = new TableMaker();
@@ -215,11 +205,11 @@ public class SelectTest {
     expected.AddColumn("Number", [(Int32?)null, 2, null, 3]);
     expected.AddColumn("Color", ["red", "blue", "purple", "blue"]);
     expected.AddColumn("Code", [(Int32?)12, 13, null, null]);
-    TableComparer.AssertSame(expected, result);
+    await Assert.That(() => TableComparer.AssertSame(expected, result)).ThrowsNothing();
   }
 
-  [Fact]
-  public void TestLazyUpdate() {
+  [Test]
+  public async Task TestLazyUpdate() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
 
     var sourceMaker = new TableMaker();
@@ -235,11 +225,11 @@ public class SelectTest {
     expected.AddColumn("B", [1, 2, 3, 4]);
     expected.AddColumn("C", [5, 2, 5, 5]);
     expected.AddColumn("Y", [Math.Sqrt(5), Math.Sqrt(2), Math.Sqrt(5), Math.Sqrt(5)]);
-    TableComparer.AssertSame(expected, result);
+    await Assert.That(() => TableComparer.AssertSame(expected, result)).ThrowsNothing();
   }
 
-  [Fact]
-  public void TestSelectDistinct() {
+  [Test]
+  public async Task TestSelectDistinct() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
 
     var sourceMaker = new TableMaker();
@@ -248,10 +238,10 @@ public class SelectTest {
     var source = sourceMaker.MakeTable(ctx.Client.Manager);
 
     var result = source.SelectDistinct("A");
-    _output.WriteLine(result.ToString(true));
+    Console.WriteLine(result.ToString(true));
 
     var expected = new TableMaker();
     expected.AddColumn("A", ["apple", "orange", "plum", "grape"]);
-    TableComparer.AssertSame(expected, result);
+    await Assert.That(() => TableComparer.AssertSame(expected, result)).ThrowsNothing();
   }
 }

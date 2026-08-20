@@ -615,7 +615,10 @@ inside_calls = empty_table(1).update(
 
 When Java values are used directly in query strings, they do not require any [Python-Java boundary crossings](../conceptual/python-java-boundary.md) during their execution. Thus, such patterns will be very performant relative to other patterns that require boundary crossings. Here is an example that compares the efficiency of generating random numbers using a Python or a Java approach.
 
-```python order=:log,python_gauss,java_gauss
+> [!IMPORTANT]
+> This example uses [Numba](./use-numba.md), which currently supports NumPy 2.4 and earlier. Deephaven ships with NumPy 2.5, so this example does not run in a default Deephaven deployment unless you reconfigure Deephaven to use a NumPy version below 2.5.
+
+```python order=:log,python_gauss,java_gauss docker-config=numba
 import time
 from deephaven import empty_table
 

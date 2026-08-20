@@ -8,9 +8,12 @@ import org.jpy.CreateModule;
 import org.jpy.PyObject;
 import org.junit.Assert;
 
+import java.lang.ref.Reference;
+import java.time.Duration;
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 public class ReferenceCounting implements AutoCloseable {
 
@@ -37,7 +40,7 @@ public class ReferenceCounting implements AutoCloseable {
         Assert.assertEquals(expectedReferenceCount, RefcountModule.refcount(refcountModule, object));
         gc.collect();
         Assert.assertEquals(expectedReferenceCount, RefcountModule.refcount(refcountModule, object));
-        blackhole(object);
+        Reference.reachabilityFence(object);
     }
 
     public void check(int expectedReferenceCount, Object obj) {
@@ -71,37 +74,53 @@ public class ReferenceCounting implements AutoCloseable {
     }
 
     /**
-     * This is a fragile method, meant to ensure that GC gets invoked. There are a couple of shortcomings:
+     * Rather than trying to demonstrate that cleanup happens at a specific moment (which the JVM does not guarantee,
+     * and which made the previous finalizer-sentinel version of this method flaky — see git history), this method only
+     * asks that cleanup happen eventually: it repeatedly nudges the JVM garbage collector, drains the jpy reference
+     * queue, and runs the Python garbage collector, polling the caller's condition until it becomes true or the timeout
+     * expires.
      *
-     * 1) There is no guarantee that GC will actually be invoked. 2) Even if our dummy object is collected, it doesn't
-     * guarantee that any other objects we care about have been GCd.
-     *
-     * That said - this seems to work for at least some VM implementations.
+     * @param makeObject Create the caller object under test and supply it to us. We will drop our reference to it
+     *        before polling. The caller should not try to hold a reference to it
+     * @param didFinalizationHappen Return true if the caller determines that finalization happened on its object.
+     *        Otherwise, return false.
+     * @return true if cleanup was observed before the timeout, false otherwise
      */
-    public void gc() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
-        // noinspection unused
-        Object obj = new Object() {
-            @Override
-            protected void finalize() throws Throwable {
-                super.finalize();
-                latch.countDown();
-            }
-        };
+    public <T> boolean doesCleanupHappenEventually(
+            Supplier<T> makeObject, BooleanSupplier didFinalizationHappen)
+            throws InterruptedException {
+        T callerObject = makeObject.get();
+        Reference.reachabilityFence(callerObject);
         // noinspection UnusedAssignment
-        obj = null;
-        System.gc();
-        Assert.assertTrue("GC did not happen within 1 second", latch.await(1, TimeUnit.SECONDS));
-        PyObject.cleanup();
-        gc.collect();
-    }
+        callerObject = null;
 
-    /**
-     * The blackhole ensures that java can't GC away our java objects early (which effects the python reference count)
-     */
-    public static void blackhole(Object... objects) {
-        if (Objects.hash(objects) == Integer.MAX_VALUE) {
-            System.out.println("Blackhole"); // very unlikely
+        // Implementation note: the problem with the former test is that it waited for evidence that GC happened, and
+        // then *immediately* called PyObject.cleanup().
+        // PyObject.cleanup() works by processing swept Weak/PhantomReferences from their queue. There is a race between
+        // the garbage collector posting items to that queue and PyObject.cleanup() checking that queue. If
+        // PyObject.cleanup() is called too early, it may miss the Weak/PhantomReference
+        // being posted. Now, you might think "no worries, if our explicit call to PyObject.cleanup() missed the queue,
+        // the dedicated cleanup thread defined in the JPY project at PyObjectReferences.cleanupThreadLogic() will soon
+        // run and pick it up; all we need to do is wait a couple of seconds for it to wake up and finish."
+        // This was the approach taken by the previous version of the code. The problem is *that thread never runs*
+        // because we have disabled it "for now" in py/jpy-integration/src/javaToPython/build.gradle.template.
+        // To make this more robust, we repeatedly call all the relevant collection methods in a loop until our PyObject
+        // is eventually cleaned up. In ~750 trials the worst case delay was 137 ms, so we are using 5 seconds here,
+        // which is a generous margin without stalling a broken run for long.
+        final Duration cleanupTimeout = Duration.ofSeconds(5);
+
+        final long deadlineNanos = System.nanoTime() + cleanupTimeout.toNanos();
+        while (true) {
+            System.gc();
+            PyObject.cleanup();
+            gc.collect();
+            if (didFinalizationHappen.getAsBoolean()) {
+                return true;
+            }
+            if (System.nanoTime() >= deadlineNanos) {
+                return false;
+            }
+            TimeUnit.MILLISECONDS.sleep(100);
         }
     }
 }

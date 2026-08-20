@@ -8,7 +8,6 @@ import io.deephaven.api.Selectable;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
@@ -580,7 +579,7 @@ public class QueryTableWhereInTest {
         TableTools.show(filteredTable);
     }
 
-    private static class TestUncoalescedTable extends UncoalescedTable<TestUncoalescedTable> {
+    private static class TestUncoalescedTable extends UncoalescedTableImpl<TestUncoalescedTable> {
         private final Table delegate;
         private final List<Collection<? extends Selectable>> selectDistinctColumns = new ArrayList<>();
 

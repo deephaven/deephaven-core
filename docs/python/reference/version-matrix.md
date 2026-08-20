@@ -19,7 +19,8 @@ We aim to support all Java LTS versions greater than or equal to our minimum Jav
 | Deephaven Version |    JDK 11 (LTS)    |    JDK 17 (LTS)    |    JDK 21 (LTS)    |  JDK 25 (latest)   |
 | ----------------- | :----------------: | :----------------: | :----------------: | :----------------: |
 | 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| 0.41.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| 41.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| 42.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
 We build and test using OpenJDK packages. We do not regularly run or test with GraalVM.
 

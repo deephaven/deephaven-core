@@ -104,6 +104,7 @@ import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.complex.ListViewVector;
 import org.apache.arrow.vector.complex.MapVector;
 import org.apache.arrow.vector.complex.StructVector;
+import org.apache.arrow.vector.complex.RunEndEncodedVector;
 import org.apache.arrow.vector.complex.UnionVector;
 import org.apache.arrow.vector.complex.impl.ComplexCopier;
 import org.apache.arrow.vector.complex.impl.UnionListReader;
@@ -119,7 +120,11 @@ import org.apache.arrow.vector.types.IntervalUnit;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.UnionMode;
+import org.apache.arrow.vector.dictionary.Dictionary;
+import org.apache.arrow.vector.dictionary.DictionaryEncoder;
+import org.apache.arrow.vector.dictionary.DictionaryProvider;
 import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
@@ -2116,17 +2121,38 @@ public class BarrageChunkFactoryTest {
                                     (UnionVector) getWrapModeVector(rpcMethod, source),
                                     (UnionVector) getWrapModeVector(rpcMethod, dest));
                         } else if (wrapMode != TestWrapMode.NONE) {
-                            validateList(wrapMode, rpcMethod,
-                                    (BaseListVector) getWrapModeVector(rpcMethod, source),
-                                    (BaseListVector) getWrapModeVector(rpcMethod, dest));
+                            final FieldVector destWrapVec = getWrapModeVector(rpcMethod, dest);
+                            if (destWrapVec instanceof RunEndEncodedVector) {
+                                // REE auto-encoding applied to a list-typed column; expand before comparison
+                                try (final FieldVector expandedWrap =
+                                        expandReeVector((RunEndEncodedVector) destWrapVec)) {
+                                    validateList(wrapMode, rpcMethod,
+                                            (BaseListVector) getWrapModeVector(rpcMethod, source),
+                                            (BaseListVector) expandedWrap);
+                                }
+                            } else {
+                                validateList(wrapMode, rpcMethod,
+                                        (BaseListVector) getWrapModeVector(rpcMethod, source),
+                                        (BaseListVector) destWrapVec);
+                            }
                         }
 
                         if (nullMode == TestNullMode.NULL_WIRE) {
                             // no-op as long as we can round-trip the null wire type
                         } else if (wrapMode == TestWrapMode.NONE || wrapMode.isUnion()) {
-                            // noinspection unchecked
-                            validate(nullMode, (T) dataVector,
-                                    (T) getDataVector(wrapMode, nullMode, rpcMethod, dest, listItemLength));
+                            final FieldVector destDataVector =
+                                    getDataVector(wrapMode, nullMode, rpcMethod, dest, listItemLength);
+                            if (destDataVector instanceof RunEndEncodedVector) {
+                                // REE auto-encoding was applied server-side; expand to flat for comparison
+                                try (final FieldVector expanded =
+                                        expandReeVector((RunEndEncodedVector) destDataVector)) {
+                                    // noinspection unchecked
+                                    validate(nullMode, (T) dataVector, (T) expanded);
+                                }
+                            } else {
+                                // noinspection unchecked
+                                validate(nullMode, (T) dataVector, (T) destDataVector);
+                            }
                         } else if (wrapMode.isView()) {
                             // TODO: rm this branch when https://github.com/apache/arrow-java/issues/471 is fixed
 
@@ -2237,9 +2263,33 @@ public class BarrageChunkFactoryTest {
                                         valueVectors = ((StructVector) valueVectors).getChild("value");
                                     }
 
-                                    // noinspection unchecked
-                                    validate(nullMode, (T) valueVectors,
-                                            (T) getDataVector(wrapMode, nullMode, rpcMethod, dest, listItemLength));
+                                    final FieldVector destWrapVecForData = getWrapModeVector(rpcMethod, dest);
+                                    if (destWrapVecForData instanceof RunEndEncodedVector) {
+                                        // REE auto-encoding applied to a list-typed column; expand before comparison
+                                        try (final FieldVector expandedDest =
+                                                expandReeVector((RunEndEncodedVector) destWrapVecForData)) {
+                                            final FieldVector innerData;
+                                            if (listItemLength != 0) {
+                                                innerData = ((FixedSizeListVector) expandedDest).getDataVector();
+                                            } else if (wrapMode.isVariableLength()) {
+                                                innerData = ((ListVector) expandedDest).getDataVector();
+                                            } else if (wrapMode == TestWrapMode.MAP_KEY) {
+                                                innerData = ((StructVector) ((MapVector) expandedDest)
+                                                        .getDataVector()).getChild("key");
+                                            } else if (wrapMode == TestWrapMode.MAP_VALUE) {
+                                                innerData = ((StructVector) ((MapVector) expandedDest)
+                                                        .getDataVector()).getChild("value");
+                                            } else {
+                                                innerData = ((ListViewVector) expandedDest).getDataVector();
+                                            }
+                                            // noinspection unchecked
+                                            validate(nullMode, (T) valueVectors, (T) innerData);
+                                        }
+                                    } else {
+                                        // noinspection unchecked
+                                        validate(nullMode, (T) valueVectors,
+                                                (T) getDataVector(wrapMode, nullMode, rpcMethod, dest, listItemLength));
+                                    }
                                 }
                             }
                         }
@@ -2721,6 +2771,26 @@ public class BarrageChunkFactoryTest {
                 return arrayVector.getDataVector();
             }
         }
+    }
+
+    private FieldVector expandReeVector(final RunEndEncodedVector reeVec) {
+        final FieldVector valuesVec = reeVec.getValuesVector();
+        final IntVector runEndsVec = (IntVector) reeVec.getRunEndsVector();
+        final int logicalSize = reeVec.getValueCount();
+        final FieldVector result = valuesVec.getField().createVector(allocator);
+        result.setInitialCapacity(logicalSize);
+        result.allocateNew();
+        int numRuns = runEndsVec.getValueCount();
+        int startPos = 0;
+        for (int run = 0; run < numRuns; run++) {
+            final int endPos = runEndsVec.get(run);
+            for (int pos = startPos; pos < endPos; pos++) {
+                result.copyFromSafe(run, pos, valuesVec);
+            }
+            startPos = endPos;
+        }
+        result.setValueCount(logicalSize);
+        return result;
     }
 
     private abstract class IntRoundTripTest<T extends FieldVector> extends RoundTripTest<T> {
@@ -3593,5 +3663,442 @@ public class BarrageChunkFactoryTest {
             return QueryConstants.MAX_LONG;
         }
         throw new IllegalArgumentException("Unexpected type: " + dhType);
+    }
+
+    // ---- Dictionary Encoded interop test ----
+
+    /**
+     * Verifies bidirectional Arrow Flight interop for Dictionary-Encoded columns:
+     * <ol>
+     * <li>Upload dictionary-encoded Utf8 from stock Arrow (a DictionaryBatch followed by an index RecordBatch) via
+     * DoPut and confirm DH decodes it into a flat String column.</li>
+     * <li>Annotate the table with a BARRAGE_SCHEMA_ATTRIBUTE containing DictionaryEncoding.</li>
+     * <li>Download the annotated table and confirm stock Arrow receives dictionary-encoded data (schema field has
+     * DictionaryEncoding, DictionaryProvider carries the values).</li>
+     * </ol>
+     */
+    @Test
+    public void testDictionaryEncodedInterop() throws Exception {
+        final String[] logicalValues = {"apple", null, "banana", "apple", "cherry", null, "banana", "apple"};
+        final int numRows = logicalValues.length;
+
+        // --- Step 1: Upload dictionary-encoded Utf8 via DoPut (DictionaryBatch + index RecordBatch) ---
+        // Distinct (non-null) values in first-seen order form the dictionary; nulls are carried by the index vector.
+        final java.util.List<String> distinct = new java.util.ArrayList<>();
+        for (final String v : logicalValues) {
+            if (v != null && !distinct.contains(v)) {
+                distinct.add(v);
+            }
+        }
+        final int rawTicket = nextTicket++;
+        try (final VarCharVector dictVec =
+                new VarCharVector("values", FieldType.nullable(Types.MinorType.VARCHAR.getType()), allocator);
+                final VarCharVector plainVec =
+                        new VarCharVector(COLUMN_NAME, FieldType.nullable(Types.MinorType.VARCHAR.getType()),
+                                allocator)) {
+            dictVec.allocateNew();
+            for (int i = 0; i < distinct.size(); ++i) {
+                dictVec.setSafe(i, distinct.get(i).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            dictVec.setValueCount(distinct.size());
+
+            plainVec.allocateNew();
+            for (int i = 0; i < numRows; ++i) {
+                if (logicalValues[i] == null) {
+                    plainVec.setNull(i);
+                } else {
+                    plainVec.setSafe(i, logicalValues[i].getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+            }
+            plainVec.setValueCount(numRows);
+
+            final Dictionary dictionary =
+                    new Dictionary(dictVec, new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)));
+            final DictionaryProvider.MapDictionaryProvider provider =
+                    new DictionaryProvider.MapDictionaryProvider(dictionary);
+
+            try (final IntVector encodedVec = (IntVector) DictionaryEncoder.encode(plainVec, dictionary);
+                    final VectorSchemaRoot source = VectorSchemaRoot.of(encodedVec)) {
+                source.setRowCount(numRows);
+                final FlightDescriptor descriptor =
+                        FlightDescriptor.path("export", Integer.toString(rawTicket));
+                final FlightClient.ClientStreamListener putStream =
+                        flightClient.startPut(descriptor, source, provider, new AsyncPutListener());
+                putStream.putNext();
+                putStream.completed();
+                putStream.getResult();
+            }
+        }
+
+        // --- Step 2: Verify DH decoded the dictionary into a flat String column ---
+        final CompletableFuture<Table> rawFuture = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> rawExport = currentSession.getExport(rawTicket);
+        currentSession.nonExport()
+                .onErrorHandler(e -> rawFuture.cancel(true))
+                .require(rawExport)
+                .submit(() -> rawFuture.complete(rawExport.get()));
+        final Table uploadedTable = rawFuture.get();
+
+        assertEquals(numRows, uploadedTable.size());
+        assertEquals(String.class, uploadedTable.getColumnSource(COLUMN_NAME).getType());
+        final ColumnSource<String> strSrc = uploadedTable.getColumnSource(COLUMN_NAME);
+        for (int i = 0; i < numRows; ++i) {
+            assertEquals("Value mismatch at row " + i, logicalValues[i], strSrc.get(i));
+        }
+
+        // --- Step 3: Create annotated export with BARRAGE_SCHEMA_ATTRIBUTE = dict schema ---
+        // Build the dict schema directly: a single nullable Utf8 field with DictionaryEncoding(id=0, Int32).
+        // BarrageUtil.encodingsFromSchema() reads this and yields DICTIONARY_ENCODED_INT32 for the column.
+        final Schema dictSchema = new Schema(Collections.singletonList(new Field(
+                COLUMN_NAME,
+                new FieldType(true, new ArrowType.Utf8(),
+                        new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)), null),
+                Collections.emptyList())));
+
+        final int annotatedTicket = nextTicket++;
+        currentSession.newExport(annotatedTicket)
+                .require(rawExport)
+                .submit(() -> rawExport.get().withAttributes(
+                        Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, dictSchema)));
+
+        // --- Step 4: Download and confirm stock Arrow receives dictionary-encoded data ---
+        try (final FlightStream stream = flightClient.getStream(flightTicketFor(annotatedTicket))) {
+            final Schema downloadSchema = stream.getSchema();
+            final Field downloadField = downloadSchema.findField(COLUMN_NAME);
+            assertNotNull("Field not found in download schema: " + COLUMN_NAME, downloadField);
+            assertNotNull(
+                    "Expected DictionaryEncoding on downloaded field " + COLUMN_NAME,
+                    downloadField.getDictionary());
+
+            assertTrue("Expected at least one payload on download", stream.next());
+            assertEquals("Row count mismatch on download", numRows, stream.getRoot().getRowCount());
+
+            // DictionaryProvider must carry the dict values for id=0.
+            final DictionaryProvider dp = stream.getDictionaryProvider();
+            final Dictionary downloadedDict = dp.lookup(0L);
+            assertNotNull("Expected dictionary id=0 in download stream", downloadedDict);
+            assertTrue("Dict values vector must be non-empty",
+                    downloadedDict.getVector().getValueCount() > 0);
+        }
+    }
+
+    // ---- Run-End Encoded interop test ----
+
+    /**
+     * Verifies bidirectional Arrow Flight interop for Run-End Encoded columns:
+     * <ol>
+     * <li>Upload REE from stock Arrow → confirm DH decodes to flat int values.</li>
+     * <li>Download the same table (BARRAGE_SCHEMA_ATTRIBUTE carries the REE schema) → confirm stock Arrow receives a
+     * {@link RunEndEncodedVector} with correct decoded values.</li>
+     * </ol>
+     */
+    @Test
+    public void testRunEndEncodedInterop() throws Exception {
+        final Random rnd = new Random(RANDOM_SEED);
+
+        // --- Build flat logical values (null = null reference, non-null = boxed int) ---
+        // Pattern: blocks of 10 rows; every third block is all-null for run variety.
+        final Integer[] flatValues = new Integer[NUM_ROWS];
+        for (int i = 0; i < NUM_ROWS; ++i) {
+            flatValues[i] = ((i / 10) % 3 == 2) ? null : rnd.nextInt(1_000_000);
+        }
+
+        // --- Run-encode the flat values ---
+        final int[] runEnds = new int[NUM_ROWS];
+        final Integer[] runValues = new Integer[NUM_ROWS];
+        int numRuns = 0;
+        {
+            int pos = 0;
+            while (pos < NUM_ROWS) {
+                final Integer cur = flatValues[pos];
+                int end = pos + 1;
+                while (end < NUM_ROWS) {
+                    final Integer nxt = flatValues[end];
+                    if (cur == null ? nxt == null : cur.equals(nxt)) {
+                        end++;
+                    } else {
+                        break;
+                    }
+                }
+                runEnds[numRuns] = end;
+                runValues[numRuns] = cur;
+                numRuns++;
+                pos = end;
+            }
+        }
+
+        // --- Build the REE Arrow schema ---
+        // run_ends child: non-nullable Int32
+        final Field runEndsField = new Field("run_ends",
+                new FieldType(false, new ArrowType.Int(32, true), null, null),
+                Collections.emptyList());
+        // values child: nullable Int32, carries deephaven:type metadata so DH knows the Java type
+        final Map<String, String> valuesAttrs = new LinkedHashMap<>();
+        valuesAttrs.put(DH_TYPE_TAG, int.class.getCanonicalName());
+        final Field valuesField = new Field("values",
+                new FieldType(true, new ArrowType.Int(32, true), null, valuesAttrs),
+                Collections.emptyList());
+        // REE parent: nullable, no buffers
+        final Field reeField = new Field(COLUMN_NAME,
+                new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+                Arrays.asList(runEndsField, valuesField));
+        final Schema uploadSchema = new Schema(Collections.singletonList(reeField));
+
+        // --- Upload REE data to Deephaven ---
+        final int ticket = nextTicket++;
+        final int finalNumRuns = numRuns;
+        try (final VectorSchemaRoot source = VectorSchemaRoot.create(uploadSchema, allocator)) {
+            source.allocateNew();
+            final RunEndEncodedVector reeVec = (RunEndEncodedVector) source.getVector(0);
+            final IntVector runEndsVec = (IntVector) reeVec.getRunEndsVector();
+            final IntVector valuesVec = (IntVector) reeVec.getValuesVector();
+
+            for (int i = 0; i < finalNumRuns; ++i) {
+                runEndsVec.setSafe(i, runEnds[i]);
+                if (runValues[i] == null) {
+                    valuesVec.setNull(i);
+                } else {
+                    valuesVec.setSafe(i, runValues[i]);
+                }
+            }
+            runEndsVec.setValueCount(finalNumRuns);
+            valuesVec.setValueCount(finalNumRuns);
+            reeVec.setValueCount(NUM_ROWS);
+            source.setRowCount(NUM_ROWS);
+
+            final FlightDescriptor descriptor = FlightDescriptor.path("export", Integer.toString(ticket));
+            final FlightClient.ClientStreamListener putStream =
+                    flightClient.startPut(descriptor, source, new AsyncPutListener());
+            putStream.putNext();
+            putStream.completed();
+            putStream.getResult();
+        }
+
+        // --- Verify DH decoded REE into flat int values ---
+        final CompletableFuture<Table> tableFuture = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> tableExport = currentSession.getExport(ticket);
+        currentSession.nonExport()
+                .onErrorHandler(e -> tableFuture.cancel(true))
+                .require(tableExport)
+                .submit(() -> tableFuture.complete(tableExport.get()));
+        final Table uploadedTable = tableFuture.get();
+
+        assertEquals(NUM_ROWS, uploadedTable.size());
+        assertEquals(int.class, uploadedTable.getColumnSource(COLUMN_NAME).getType());
+
+        // --- Download: BARRAGE_SCHEMA_ATTRIBUTE is the REE schema → DH re-encodes as REE ---
+        // Verify stock Arrow receives a RunEndEncodedVector with correct logical values.
+        try (final FlightStream stream = flightClient.getStream(flightTicketFor(ticket))) {
+            assertTrue("Expected at least one payload", stream.next());
+            final VectorSchemaRoot dest = stream.getRoot();
+
+            assertEquals("Row count mismatch", NUM_ROWS, dest.getRowCount());
+
+            final FieldVector colVec = dest.getVector(0);
+            assertTrue(
+                    "Expected RunEndEncodedVector on download, got: " + colVec.getClass().getSimpleName(),
+                    colVec instanceof RunEndEncodedVector);
+
+            final RunEndEncodedVector destRee = (RunEndEncodedVector) colVec;
+            for (int i = 0; i < NUM_ROWS; ++i) {
+                if (flatValues[i] == null) {
+                    assertTrue("Expected null at logical index " + i, destRee.isNull(i));
+                } else {
+                    assertFalse("Unexpected null at logical index " + i, destRee.isNull(i));
+                    assertEquals("Value mismatch at logical index " + i,
+                            (int) flatValues[i], ((Number) destRee.getObject(i)).intValue());
+                }
+            }
+        }
+    }
+
+    // ---- Run-End + Dictionary Encoded interop test ----
+
+    /**
+     * Verifies bidirectional Arrow Flight interop for doubly-encoded {@code RunEndEncoded<Dictionary<...>>} columns:
+     * <ol>
+     * <li>Upload a run-end encoded column whose {@code values} child is itself dictionary-encoded (a DictionaryBatch
+     * followed by a RunEndEncoded RecordBatch carrying dictionary indices) via DoPut and confirm DH decodes it into a
+     * flat String column.</li>
+     * <li>Annotate the table with a BARRAGE_SCHEMA_ATTRIBUTE whose column is run-end encoded (Int32 run_ends) with a
+     * {@code values} child carrying an Arrow {@link DictionaryEncoding} (Int32 index, dict id 0).</li>
+     * <li>Download the annotated table and confirm stock Arrow receives a {@link RunEndEncodedVector} whose
+     * dictionary-encoded {@code values} child resolves through the {@link DictionaryProvider} back to the original
+     * logical strings.</li>
+     * </ol>
+     */
+    @Test
+    public void testRunEndDictionaryEncodedInterop() throws Exception {
+        // Low-cardinality, run-friendly logical values: blocks of 10 rows cycling through a few distinct strings, with
+        // every fourth block null. This produces both long runs (favoring REE) and few distinct values (favoring the
+        // dictionary), exercising the combined encoding.
+        final String[] distinct = {"apple", "banana", "cherry"};
+        final String[] logicalValues = new String[NUM_ROWS];
+        for (int i = 0; i < NUM_ROWS; ++i) {
+            final int block = i / 10;
+            logicalValues[i] = (block % 4 == 3) ? null : distinct[block % distinct.length];
+        }
+
+        // Run-encode into (run_end, per-run value) pairs.
+        final int[] runEnds = new int[NUM_ROWS];
+        final String[] runValues = new String[NUM_ROWS];
+        int numRuns = 0;
+        {
+            int pos = 0;
+            while (pos < NUM_ROWS) {
+                final String cur = logicalValues[pos];
+                int end = pos + 1;
+                while (end < NUM_ROWS
+                        && (cur == null ? logicalValues[end] == null : cur.equals(logicalValues[end]))) {
+                    end++;
+                }
+                runEnds[numRuns] = end;
+                runValues[numRuns] = cur;
+                numRuns++;
+                pos = end;
+            }
+        }
+        final int finalNumRuns = numRuns;
+
+        // --- Step 1: Upload RunEndEncoded<Dictionary<Utf8>> via DoPut (DictionaryBatch + REE index RecordBatch) ---
+        final int rawTicket = nextTicket++;
+        try (final VarCharVector dictVec =
+                new VarCharVector("values", FieldType.nullable(Types.MinorType.VARCHAR.getType()), allocator);
+                final VarCharVector runValsVec =
+                        new VarCharVector("values", FieldType.nullable(Types.MinorType.VARCHAR.getType()),
+                                allocator)) {
+            // dictionary values (the distinct non-null strings, id 0)
+            dictVec.allocateNew();
+            for (int i = 0; i < distinct.length; ++i) {
+                dictVec.setSafe(i, distinct[i].getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            dictVec.setValueCount(distinct.length);
+
+            // per-run plain values, to be dictionary-encoded into the REE values child
+            runValsVec.allocateNew();
+            for (int r = 0; r < finalNumRuns; ++r) {
+                if (runValues[r] == null) {
+                    runValsVec.setNull(r);
+                } else {
+                    runValsVec.setSafe(r, runValues[r].getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+            }
+            runValsVec.setValueCount(finalNumRuns);
+
+            final Dictionary dictionary =
+                    new Dictionary(dictVec, new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)));
+            final DictionaryProvider.MapDictionaryProvider provider =
+                    new DictionaryProvider.MapDictionaryProvider(dictionary);
+
+            // Encoded REE values child (dictionary indices) and the run_ends child. Both become children of the
+            // RunEndEncodedVector, which owns and closes them via the enclosing VectorSchemaRoot.
+            final IntVector encodedValues = (IntVector) DictionaryEncoder.encode(runValsVec, dictionary);
+            final IntVector runEndsVec = new IntVector("run_ends",
+                    new FieldType(false, new ArrowType.Int(32, true), null, null), allocator);
+            runEndsVec.allocateNew(finalNumRuns);
+            for (int r = 0; r < finalNumRuns; ++r) {
+                runEndsVec.setSafe(r, runEnds[r]);
+            }
+            runEndsVec.setValueCount(finalNumRuns);
+
+            final Field reeUploadField = new Field(COLUMN_NAME,
+                    new FieldType(false, new ArrowType.RunEndEncoded(), null, null),
+                    Arrays.asList(runEndsVec.getField(), encodedValues.getField()));
+            final RunEndEncodedVector reeVec =
+                    new RunEndEncodedVector(reeUploadField, allocator, runEndsVec, encodedValues, null);
+            reeVec.setValueCount(NUM_ROWS);
+
+            try (final VectorSchemaRoot source = VectorSchemaRoot.of(reeVec)) {
+                source.setRowCount(NUM_ROWS);
+                final FlightDescriptor descriptor =
+                        FlightDescriptor.path("export", Integer.toString(rawTicket));
+                final FlightClient.ClientStreamListener putStream =
+                        flightClient.startPut(descriptor, source, provider, new AsyncPutListener());
+                putStream.putNext();
+                putStream.completed();
+                putStream.getResult();
+            }
+        }
+
+        // --- Step 2: Verify DH decoded the REE-over-dictionary into a flat String column ---
+        final CompletableFuture<Table> rawFuture = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> rawExport = currentSession.getExport(rawTicket);
+        currentSession.nonExport()
+                .onErrorHandler(e -> rawFuture.cancel(true))
+                .require(rawExport)
+                .submit(() -> rawFuture.complete(rawExport.get()));
+        final Table uploadedTable = rawFuture.get();
+
+        assertEquals(NUM_ROWS, uploadedTable.size());
+        assertEquals(String.class, uploadedTable.getColumnSource(COLUMN_NAME).getType());
+
+        // --- Step 3: Create annotated export with BARRAGE_SCHEMA_ATTRIBUTE = RunEndEncoded<Dictionary<Utf8>> ---
+        // values child: nullable Utf8 carrying a dictionary encoding (Int32 index, dict id 0).
+        final Field valuesField = new Field("values",
+                new FieldType(true, new ArrowType.Utf8(),
+                        new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)), null),
+                Collections.emptyList());
+        // run_ends child: non-nullable Int32.
+        final Field runEndsField = new Field("run_ends",
+                new FieldType(false, new ArrowType.Int(32, true), null, null),
+                Collections.emptyList());
+        // REE parent wrapping the dictionary-encoded values.
+        final Field reeField = new Field(COLUMN_NAME,
+                new FieldType(false, new ArrowType.RunEndEncoded(), null, null),
+                Arrays.asList(runEndsField, valuesField));
+        final Schema reeDictSchema = new Schema(Collections.singletonList(reeField));
+
+        final int annotatedTicket = nextTicket++;
+        currentSession.newExport(annotatedTicket)
+                .require(rawExport)
+                .submit(() -> rawExport.get().withAttributes(
+                        Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, reeDictSchema)));
+
+        // --- Step 4: Download and confirm stock Arrow receives REE-over-dictionary data ---
+        try (final FlightStream stream = flightClient.getStream(flightTicketFor(annotatedTicket))) {
+            final Schema downloadSchema = stream.getSchema();
+            final Field downloadField = downloadSchema.findField(COLUMN_NAME);
+            assertNotNull("Field not found in download schema: " + COLUMN_NAME, downloadField);
+            assertEquals("Expected RunEndEncoded parent on downloaded field " + COLUMN_NAME,
+                    ArrowType.ArrowTypeID.RunEndEncoded, downloadField.getType().getTypeID());
+
+            assertTrue("Expected at least one payload on download", stream.next());
+            final VectorSchemaRoot dest = stream.getRoot();
+            assertEquals("Row count mismatch on download", NUM_ROWS, dest.getRowCount());
+
+            final FieldVector colVec = dest.getVector(0);
+            assertTrue(
+                    "Expected RunEndEncodedVector on download, got: " + colVec.getClass().getSimpleName(),
+                    colVec instanceof RunEndEncodedVector);
+            final RunEndEncodedVector destRee = (RunEndEncodedVector) colVec;
+            final IntVector runEndsVec = (IntVector) destRee.getRunEndsVector();
+            final FieldVector valuesIdxVec = destRee.getValuesVector();
+
+            // The REE values child must itself be dictionary encoded, and the provider must carry its values.
+            final DictionaryEncoding valuesEncoding = valuesIdxVec.getField().getDictionary();
+            assertNotNull("Expected DictionaryEncoding on the REE values child", valuesEncoding);
+            final DictionaryProvider dp = stream.getDictionaryProvider();
+            final Dictionary dict = dp.lookup(valuesEncoding.getId());
+            assertNotNull("Expected dictionary id=" + valuesEncoding.getId() + " in download stream", dict);
+            final VarCharVector dictValues = (VarCharVector) dict.getVector();
+
+            // Reconstruct each logical row: walk the run that covers it, read that run's dictionary index, then resolve
+            // the index against the shipped dictionary values.
+            int run = 0;
+            for (int i = 0; i < NUM_ROWS; ++i) {
+                while (runEndsVec.get(run) <= i) {
+                    run++;
+                }
+                if (logicalValues[i] == null) {
+                    assertTrue("Expected null at logical index " + i, valuesIdxVec.isNull(run));
+                } else {
+                    assertFalse("Unexpected null at logical index " + i, valuesIdxVec.isNull(run));
+                    final int dictIdx = ((Number) valuesIdxVec.getObject(run)).intValue();
+                    final String actual =
+                            new String(dictValues.get(dictIdx), java.nio.charset.StandardCharsets.UTF_8);
+                    assertEquals("Value mismatch at logical index " + i, logicalValues[i], actual);
+                }
+            }
+        }
     }
 }

@@ -23,6 +23,11 @@ _JCallbackAdapter = cast(
 
 def initialize_all_and_register_into(callback: _JCallbackAdapter):
     """Python method that Java can call to create plugin instances on startup."""
+    from ._authorization import set_transformer
+
+    # Make the authorization transformer available to plugins (via deephaven.plugin_authorization) before any plugin
+    # is registered, so plugins may apply manual transformations to the references they export.
+    set_transformer(callback.authorizationTransformer())
     deephaven.plugin.register_all_into(RegistrationAdapter(callback))
 
 

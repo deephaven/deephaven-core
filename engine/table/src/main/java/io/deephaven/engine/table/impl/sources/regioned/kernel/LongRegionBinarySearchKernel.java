@@ -61,13 +61,13 @@ public class LongRegionBinarySearchKernel {
         if (order.isAscending()) {
             for (int idx = 0; idx < unboxed.length && firstKey <= lastKey; ++idx) {
                 final long toFind = unboxed[idx];
-                final int startResult = findStartIndexAscending(region, firstKey, lastKey, toFind, true);
+                final int startResult = lowerBoundAscending(region, firstKey, lastKey, toFind, true);
                 if (startResult < 0) {
                     // Advance firstKey since we didn't find the value but eliminated some rows.
                     firstKey = insertionPoint(startResult);
                     continue;
                 }
-                final int endResult = findEndIndexAscending(region, startResult, lastKey, toFind, true);
+                final int endResult = upperBoundAscending(region, startResult, lastKey, toFind, true);
                 if (endResult >= 0) {
                     builder.appendRange(startResult, endResult);
                     firstKey = endResult + 1;
@@ -76,13 +76,13 @@ public class LongRegionBinarySearchKernel {
         } else {
             for (int searchIndex = 0; searchIndex < unboxed.length && firstKey <= lastKey; ++searchIndex) {
                 final long toFind = unboxed[searchIndex];
-                final int startResult = findStartIndexDescending(region, firstKey, lastKey, toFind, true);
+                final int startResult = lowerBoundDescending(region, firstKey, lastKey, toFind, true);
                 if (startResult < 0) {
                     // Advance firstKey since we didn't find the value but eliminated some rows.
                     firstKey = insertionPoint(startResult);
                     continue;
                 }
-                final int endResult = findEndIndexDescending(region, startResult, lastKey, toFind, true);
+                final int endResult = upperBoundDescending(region, startResult, lastKey, toFind, true);
                 if (endResult >= 0) {
                     builder.appendRange(startResult, endResult);
                     firstKey = endResult + 1;
@@ -122,25 +122,25 @@ public class LongRegionBinarySearchKernel {
 
         if (sortColumn.isAscending()) {
             // The beginning of the range is the first row that is > or >= min (depends on minInc)
-            final int startResult = findStartIndexAscending(region, firstKey, lastKey, min, minInc);
+            final int startResult = lowerBoundAscending(region, firstKey, lastKey, min, minInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
             if (start > lastKey) {
                 return RowSetFactory.empty();
             }
             final long offset = Math.max(start, firstKey);
             // The end of the range is the last row that is < or <= max (depends on maxInc)
-            final int endResult = findEndIndexAscending(region, offset, lastKey, max, maxInc);
+            final int endResult = upperBoundAscending(region, offset, lastKey, max, maxInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         } else {
             // The beginning of the range is the first row that is < or <= max (depends on maxInc)
-            final int startResult = findStartIndexDescending(region, firstKey, lastKey, max, maxInc);
+            final int startResult = lowerBoundDescending(region, firstKey, lastKey, max, maxInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
             if (start > lastKey) {
                 return RowSetFactory.empty();
             }
             final long offset = Math.max(start, firstKey);
             // The end of the range is the last row that is > or >= min (depends on minInc)
-            final int endResult = findEndIndexDescending(region, offset, lastKey, min, minInc);
+            final int endResult = upperBoundDescending(region, offset, lastKey, min, minInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         }
 
@@ -177,13 +177,13 @@ public class LongRegionBinarySearchKernel {
 
         if (sortColumn.isAscending()) {
             // The beginning of the range is the first row that is > or >= min (depends on minInc)
-            final int startResult = findStartIndexAscending(region, firstKey, lastKey, min, minInc);
+            final int startResult = lowerBoundAscending(region, firstKey, lastKey, min, minInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
             end = Math.toIntExact(lastKey);
         } else {
             start = Math.toIntExact(firstKey);
             // The end of the range is the last row that is > or >= min (depends on minInc)
-            final int endResult = findEndIndexDescending(region, firstKey, lastKey, min, minInc);
+            final int endResult = upperBoundDescending(region, firstKey, lastKey, min, minInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         }
 
@@ -220,11 +220,11 @@ public class LongRegionBinarySearchKernel {
         if (sortColumn.isAscending()) {
             start = Math.toIntExact(firstKey);
             // The end of the range is the last row that is < or <= max (depends on maxInc)
-            final int endResult = findEndIndexAscending(region, firstKey, lastKey, max, maxInc);
+            final int endResult = upperBoundAscending(region, firstKey, lastKey, max, maxInc);
             end = endResult >= 0 ? endResult : insertionPoint(endResult) - 1;
         } else {
             // The beginning of the range is the first row that is < or <= max (depends on maxInc)
-            final int startResult = findStartIndexDescending(region, firstKey, lastKey, max, maxInc);
+            final int startResult = lowerBoundDescending(region, firstKey, lastKey, max, maxInc);
             start = startResult >= 0 ? startResult : insertionPoint(startResult);
             end = Math.toIntExact(lastKey);
         }
@@ -237,16 +237,29 @@ public class LongRegionBinarySearchKernel {
     }
 
     /**
-     * Finds the starting index for a given value in an ascending (non-descending) sorted region.
+     * Performs a binary search on an ascending (non-descending) sorted region to find the leftmost position satisfying
+     * the lower bound.
+     *
+     * <p>
+     * Return value convention (mirrors {@link java.util.Arrays#binarySearch}):
+     * <ul>
+     * <li>A non-negative value is returned only when {@code minInc=true} and the value at the found position exactly
+     * equals {@code min}. The returned value is the leftmost such position.</li>
+     * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the insertion
+     * point â the leftmost position whose value exceeds {@code min} â or {@code lastKey + 1} if all values are &lt;=
+     * {@code min}.</li>
+     * </ul>
      *
      * @param region The column region to search.
      * @param firstKey The starting key of the search range.
      * @param lastKey The ending key of the search range.
      * @param min The value to find.
-     * @param minInc If true, the search is inclusive of the value.
-     * @return The starting index, or {@code -(insertionPoint) - 1} if not found.
+     * @param minInc If {@code true}, an exact match at the leftmost occurrence returns a non-negative position; if
+     *        {@code false}, the result is always negative (insertion-point encoded).
+     * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
+     *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static int findStartIndexAscending(
+    private static int lowerBoundAscending(
             @NotNull final ColumnRegionLong<?> region,
             final long firstKey,
             final long lastKey,
@@ -254,36 +267,48 @@ public class LongRegionBinarySearchKernel {
             final boolean minInc) {
         int low = (int) firstKey;
         int high = (int) lastKey;
-        int ans = -1;
 
         while (low <= high) {
             final int mid = low + (high - low) / 2;
             final long midValue = region.getLong(mid);
-            final boolean satisfiesMin = minInc
-                    ? LongComparisons.geq(midValue, min)
-                    : LongComparisons.gt(midValue, min);
-
-            if (satisfiesMin) {
-                ans = mid;
+            if (minInc ? LongComparisons.geq(midValue, min) : LongComparisons.gt(midValue, min)) {
                 high = mid - 1;
             } else {
                 low = mid + 1;
             }
         }
-        return ans >= 0 ? ans : insertionPoint(low);
+        // low is now the insertion point. For inclusive searches, check for an exact match there.
+        if (minInc && low <= lastKey) {
+            if (LongComparisons.eq(region.getLong(low), min)) {
+                return low;
+            }
+        }
+        return insertionPoint(low);
     }
 
     /**
-     * Finds the ending index for a given value in an ascending (non-descending) sorted region.
+     * Performs a binary search on an ascending (non-descending) sorted region to find the rightmost position satisfying
+     * the upper bound.
+     *
+     * <p>
+     * Return value convention (mirrors {@link java.util.Arrays#binarySearch}):
+     * <ul>
+     * <li>A non-negative value is returned only when {@code maxInc=true} and the value at the found position exactly
+     * equals {@code max}. The returned value is the rightmost such position.</li>
+     * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the first
+     * position whose value exceeds {@code max} â or {@code firstKey} if all values are &gt; {@code max}.</li>
+     * </ul>
      *
      * @param region The column region to search.
      * @param firstKey The starting key of the search range.
      * @param lastKey The ending key of the search range.
      * @param max The value to find.
-     * @param maxInc If true, the search is inclusive of the value.
-     * @return The ending index, or {@code -(insertionPoint) - 1} if not found.
+     * @param maxInc If {@code true}, an exact match at the rightmost occurrence returns a non-negative position; if
+     *        {@code false}, the result is always negative (insertion-point encoded).
+     * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
+     *         {@code p} where {@code -(p + 1)} is the first position whose value exceeds {@code max}.
      */
-    private static int findEndIndexAscending(
+    private static int upperBoundAscending(
             @NotNull final ColumnRegionLong<?> region,
             final long firstKey,
             final long lastKey,
@@ -291,36 +316,50 @@ public class LongRegionBinarySearchKernel {
             final boolean maxInc) {
         int low = (int) firstKey;
         int high = (int) lastKey;
-        int ans = -1;
 
         while (low <= high) {
             final int mid = low + (high - low) / 2;
             final long midValue = region.getLong(mid);
-            final boolean satisfiesMax = maxInc
-                    ? LongComparisons.leq(midValue, max)
-                    : LongComparisons.lt(midValue, max);
-
-            if (satisfiesMax) {
-                ans = mid;
+            if (maxInc ? LongComparisons.leq(midValue, max) : LongComparisons.lt(midValue, max)) {
                 low = mid + 1;
             } else {
                 high = mid - 1;
             }
         }
-        return ans >= 0 ? ans : insertionPoint(low);
+        // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
+        // For inclusive searches, check for an exact match at high.
+        if (maxInc && high >= firstKey) {
+            if (LongComparisons.eq(region.getLong(high), max)) {
+                return high;
+            }
+        }
+        return insertionPoint(low);
     }
 
     /**
-     * Finds the starting index for a given value in a descending (non-ascending) sorted region.
+     * Performs a binary search on a descending (non-ascending) sorted region to find the leftmost position satisfying
+     * the upper bound.
+     *
+     * <p>
+     * Return value convention (mirrors {@link java.util.Arrays#binarySearch}):
+     * <ul>
+     * <li>A non-negative value is returned only when {@code maxInc=true} and the value at the found position exactly
+     * equals {@code max}. The returned value is the leftmost such position.</li>
+     * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the insertion
+     * point â the leftmost position whose value falls below {@code max} â or {@code lastKey + 1} if all values are
+     * &gt;= {@code max}.</li>
+     * </ul>
      *
      * @param region The column region to search.
      * @param firstKey The starting key of the search range.
      * @param lastKey The ending key of the search range.
      * @param max The value to find.
-     * @param maxInc If true, the search is inclusive of the value.
-     * @return The starting index, or {@code -(insertionPoint) - 1} if not found.
+     * @param maxInc If {@code true}, an exact match at the leftmost occurrence returns a non-negative position; if
+     *        {@code false}, the result is always negative (insertion-point encoded).
+     * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
+     *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static int findStartIndexDescending(
+    private static int lowerBoundDescending(
             @NotNull final ColumnRegionLong<?> region,
             final long firstKey,
             final long lastKey,
@@ -328,36 +367,48 @@ public class LongRegionBinarySearchKernel {
             final boolean maxInc) {
         int low = (int) firstKey;
         int high = (int) lastKey;
-        int ans = -1;
 
         while (low <= high) {
             final int mid = low + (high - low) / 2;
             final long midValue = region.getLong(mid);
-            final boolean satisfiesMax = maxInc
-                    ? LongComparisons.leq(midValue, max)
-                    : LongComparisons.lt(midValue, max);
-
-            if (satisfiesMax) {
-                ans = mid;
+            if (maxInc ? LongComparisons.leq(midValue, max) : LongComparisons.lt(midValue, max)) {
                 high = mid - 1;
             } else {
                 low = mid + 1;
             }
         }
-        return ans >= 0 ? ans : insertionPoint(low);
+        // low is now the insertion point. For inclusive searches, check for an exact match there.
+        if (maxInc && low <= lastKey) {
+            if (LongComparisons.eq(region.getLong(low), max)) {
+                return low;
+            }
+        }
+        return insertionPoint(low);
     }
 
     /**
-     * Finds the ending index for a given value in a descending (non-ascending) sorted region.
+     * Performs a binary search on a descending (non-ascending) sorted region to find the rightmost position satisfying
+     * the lower bound.
+     *
+     * <p>
+     * Return value convention (mirrors {@link java.util.Arrays#binarySearch}):
+     * <ul>
+     * <li>A non-negative value is returned only when {@code minInc=true} and the value at the found position exactly
+     * equals {@code min}. The returned value is the rightmost such position.</li>
+     * <li>A negative value {@code p} is returned in all other cases. In this case {@code -(p + 1)} is the first
+     * position whose value falls below {@code min} â or {@code firstKey} if all values are &gt;= {@code min}.</li>
+     * </ul>
      *
      * @param region The column region to search.
      * @param firstKey The starting key of the search range.
      * @param lastKey The ending key of the search range.
      * @param min The value to find.
-     * @param minInc If true, the search is inclusive of the value.
-     * @return The ending index, or {@code -(insertionPoint) - 1} if not found.
+     * @param minInc If {@code true}, an exact match at the rightmost occurrence returns a non-negative position; if
+     *        {@code false}, the result is always negative (insertion-point encoded).
+     * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
+     *         {@code p} where {@code -(p + 1)} is the first position whose value falls below {@code min}.
      */
-    private static int findEndIndexDescending(
+    private static int upperBoundDescending(
             @NotNull final ColumnRegionLong<?> region,
             final long firstKey,
             final long lastKey,
@@ -365,22 +416,23 @@ public class LongRegionBinarySearchKernel {
             final boolean minInc) {
         int low = (int) firstKey;
         int high = (int) lastKey;
-        int ans = -1;
 
         while (low <= high) {
             final int mid = low + (high - low) / 2;
             final long midValue = region.getLong(mid);
-            final boolean satisfiesMin = minInc
-                    ? LongComparisons.geq(midValue, min)
-                    : LongComparisons.gt(midValue, min);
-
-            if (satisfiesMin) {
-                ans = mid;
+            if (minInc ? LongComparisons.geq(midValue, min) : LongComparisons.gt(midValue, min)) {
                 low = mid + 1;
             } else {
                 high = mid - 1;
             }
         }
-        return ans >= 0 ? ans : insertionPoint(low);
+        // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
+        // For inclusive searches, check for an exact match at high.
+        if (minInc && high >= firstKey) {
+            if (LongComparisons.eq(region.getLong(high), min)) {
+                return high;
+            }
+        }
+        return insertionPoint(low);
     }
 }

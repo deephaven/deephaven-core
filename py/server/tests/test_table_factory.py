@@ -280,6 +280,32 @@ class TableFactoryTestCase(BaseTestCase):
 
             bool_col(name="Boolean", data=[True, NoBoolAllowed()])
 
+    def test_invalid_column_name(self):
+        bad_name = "Asdf:"
+
+        with self.subTest("new_table"):
+            with self.assertRaises(DHError) as cm:
+                new_table(cols=[int_col(name=bad_name, data=[1, 2, 3])])
+            self.assertIn("Invalid column name", str(cm.exception))
+
+        with self.subTest("input_table from col_defs"):
+            with self.assertRaises(DHError) as cm:
+                input_table(col_defs={bad_name: dtypes.int32})
+            self.assertIn("Invalid column name", str(cm.exception))
+
+        with self.subTest("keyed input_table from col_defs"):
+            with self.assertRaises(DHError) as cm:
+                input_table(
+                    col_defs={"Key": dtypes.string, bad_name: dtypes.int32},
+                    key_cols="Key",
+                )
+            self.assertIn("Invalid column name", str(cm.exception))
+
+        with self.subTest("DynamicTableWriter"):
+            with self.assertRaises(DHError) as cm:
+                DynamicTableWriter({bad_name: dtypes.int32})
+            self.assertIn("Invalid column name", str(cm.exception))
+
     def test_dynamic_table_writer(self):
         with self.subTest("Correct Input"):
             col_defs = {"Numbers": dtypes.int32, "Words": dtypes.string}

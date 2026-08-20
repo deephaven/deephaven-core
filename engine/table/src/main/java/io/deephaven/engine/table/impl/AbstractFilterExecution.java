@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.dataindex.DataIndexPushdownManager;
+import io.deephaven.engine.table.impl.sort.SortedColumnPushdownManager;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
@@ -493,27 +494,28 @@ abstract class AbstractFilterExecution {
         // declares the barrier to any filter that respects it.
         final Map<Object, Collection<Object>> barrierDependencies = new HashMap<>();
 
+        final Map<String, ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
+
         try {
             for (int ii = 0; ii < filters.size(); ii++) {
                 final WhereFilter filter = filters.get(ii);
-                if (!PushdownFilterMatcher.canPushdownFilter(filter)) {
+                // Pushdown requires a column source for every filter column; a filter may reference a column that is
+                // not present in the source table (e.g. a ClockFilter after the column was narrowed away), in which
+                // case we skip pushdown and let regular filter execution handle (and report) the missing column.
+                if (!PushdownFilterMatcher.canPushdownFilter(filter)
+                        || !columnSourceMap.keySet().containsAll(filter.getColumns())) {
                     statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
                 } else {
-                    // Only consider column sources that are actually present in the source table,because filters may
-                    // refer to columns like "i" or "ii" that are not actually in the table.
-                    final Map<String, ColumnSource<?>> columnSourceMap = sourceTable.getColumnSourceMap();
                     final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                            .filter(columnSourceMap::containsKey)
                             .map(sourceTable::getColumnSource)
                             .collect(Collectors.toList());
 
                     PushdownFilterMatcher executor =
                             PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-                    // Potentially wrap the executor to add DataIndex support.
-                    final DataIndex dataIndex = filterDataIndexMap.get(filter);
-                    if (dataIndex != null) {
-                        executor = DataIndexPushdownManager.wrap(dataIndex, executor);
-                    }
+                    // Wrap the executor to add DataIndex support (if applicable).
+                    executor = DataIndexPushdownManager.wrap(filterDataIndexMap.get(filter), executor);
+                    // Wrap the executor to add SortedColumn support (if applicable)
+                    executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
                     if (executor != null) {
                         final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
                         statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
@@ -666,12 +668,6 @@ abstract class AbstractFilterExecution {
                 }, () -> {
                     // Return empty RowSets instead of null.
                     final WritableRowSet result = localInput.get();
-                    final BasePerformanceEntry baseEntry = jobScheduler().getAccumulatedPerformance();
-                    if (baseEntry != null) {
-                        basePerformanceEntry.accumulate(baseEntry);
-                    }
-
-                    // Separate the added and modified result if necessary.
                     if (runModifiedFilters) {
                         final WritableRowSet addedResult = result.extract(addedInput);
                         onComplete.accept(addedResult, result);

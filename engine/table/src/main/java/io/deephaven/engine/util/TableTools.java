@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.util;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.base.clock.Clock;
@@ -718,6 +719,7 @@ public class TableTools {
     public static Table newTable(long size, Map<String, ColumnSource<?>> columns) {
         for (final Map.Entry<String, ColumnSource<?>> entry : columns.entrySet()) {
             final String columnName = entry.getKey();
+            NameValidator.validateColumnName(columnName);
             if (entry.getValue() == null) {
                 throw new ArgumentException("Column source for " + columnName + " is null");
             }
@@ -736,6 +738,7 @@ public class TableTools {
      * @return an empty Deephaven Table
      */
     public static Table newTable(TableDefinition definition) {
+        definition.checkHasValidColumnNames();
         Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             columns.put(columnDefinition.getName(), NullValueColumnSource.getInstance(
@@ -769,6 +772,7 @@ public class TableTools {
 
     public static Table newTable(TableDefinition definition, @Nullable Map<String, Object> attributes,
             ColumnHolder<?>... columnHolders) {
+        definition.checkHasValidColumnNames();
         checkSizes(columnHolders);
         final WritableRowSet rowSet = getRowSet(columnHolders);
         final LinkedHashMap<String, ColumnSource<?>> columns =

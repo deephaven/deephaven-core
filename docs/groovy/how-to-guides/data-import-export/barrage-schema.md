@@ -1,11 +1,11 @@
 ---
-title: Barrage Schema Annotation
-sidebar_label: Barrage Schema Annotation
+title: Barrage schema annotation
+sidebar_label: Barrage schema annotation
 ---
 
 Deephaven tables support Object-typed columns that can hold arbitrary Java objects. When exporting these tables over Flight using the Barrage format, Deephaven uses Apache Arrow schemas to describe the data. By default, if a column is typed as `Object`, the Arrow schema may not capture the intended structure of the data, which can lead to inefficient serialization or loss of type information. Use the `Table.BARRAGE_SCHEMA_ATTRIBUTE` to inject explicit Arrow schema information, which ensures that the Flight export uses the correct wire format.
 
-Use this when your Deephaven column type is too generic for the intended wire type (for example, `Object` columns that should be exported as `Union` or `Map`). This guide includes examples of the `Union` and `Map` types, which are currently supported by Deephaven.
+Use this when your Deephaven column type is too generic for the intended wire type (for example, `Object` columns that should be exported as `Union` or `Map`), or when you want to opt into a wire-level compression such as Run-End Encoding. This guide includes examples of the `Union`, `Map`, and `RunEndEncoded` types, which are supported by Deephaven.
 
 ## How It Works
 
@@ -20,7 +20,7 @@ Use this when your Deephaven column type is too generic for the intended wire ty
 
 The following example creates a table with a column of Objects (limited for this example to `String` and `Double`). The Arrow schema annotates the column as a dense union with `String` and `Double` branches. The final table can be exported over Flight / Barrage without error.
 
-```groovy order=union_table,union_table_w_attributes
+```groovy order=table,table_w_attributes
 // Table creation
 
 import java.util.Random
@@ -42,7 +42,7 @@ QueryScope.addParam("rndObject", () -> {
         return (Object)rnd.nextDouble();
     }
 })
-union_table = emptyTable(20).update("row = ii", "rnd = rndObject()")
+table = emptyTable(20).update("row = ii", "rnd = rndObject()")
 
 // Schema annotation
 
@@ -56,7 +56,7 @@ import org.apache.arrow.vector.types.FloatingPointPrecision
 import io.deephaven.engine.table.Table
 
 // 1. Get existing schema
-def curr_schema = BarrageUtil.schemaFromTable(union_table)
+def curr_schema = BarrageUtil.schemaFromTable(table)
 def fields = new ArrayList<>(curr_schema.getFields())
 
 // 2. Define the Union types: String and Double
@@ -76,15 +76,15 @@ def unionField = new Field(
 fields.set(1, unionField)
 def new_schema = new Schema(fields)
 
-// 5. Apply attributes, creating a new table reference which can be used for export
-union_table_w_attributes = union_table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
+// 5. Apply attributes, creating a new table reference which can be used for export; the original table is unchanged
+table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
 ## Example: Annotate `Map<String, String>` Columns
 
-The following example creates a table with a column of `Map<String, Double>`. The Arrow schema annotates the column as an Arrow `Map` with the correct types for key and values. The final table can be exported over Flight / Barrage without error.
+The following example creates a table with a column of `Map<String, String>`. The Arrow schema annotates the column as an Arrow `Map` with the correct types for key and values. The final table can be exported over Flight / Barrage without error.
 
-```groovy order=map_string_table,map_string_table_w_attributes
+```groovy order=table,table_w_attributes
 // Table creation
 
 import java.util.Random
@@ -107,7 +107,7 @@ QueryScope.addParam("rndMapStringString", () -> {
     )
 })
 
-map_string_table = emptyTable(20).update("row = ii", "map = rndMapStringString()")
+table = emptyTable(20).update("row = ii", "map = rndMapStringString()")
 
 // Schema annotation
 
@@ -119,7 +119,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType
 import io.deephaven.engine.table.Table
 
 // 1. Get existing schema
-def curr_schema = BarrageUtil.schemaFromTable(map_string_table)
+def curr_schema = BarrageUtil.schemaFromTable(table)
 def fields = new ArrayList<>(curr_schema.getFields())
 
 // 2. Define key/value for Map<String, String>
@@ -145,15 +145,15 @@ def mapField = new Field(
 fields.set(1, mapField)
 def new_schema = new Schema(fields)
 
-// 6. Apply attributes, creating a new table reference which can be used for export
-map_string_table_w_attributes = map_string_table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
+// 6. Apply attributes, creating a new table reference which can be used for export; the original table is unchanged
+table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
 ## Example: Annotate `Map<String, Integer>` Columns
 
 The following example creates a table with a column of `Map<String, Integer>`. The Arrow schema annotates the column as an Arrow `Map` with `String` keys and `Integer` values. The final table can be exported over Flight / Barrage without error.
 
-```groovy order=map_string_integer_table,map_string_integer_table_w_attributes
+```groovy order=table,table_w_attributes
 // Table creation
 
 import java.util.Random
@@ -176,7 +176,7 @@ QueryScope.addParam("rndMapStringInteger", () -> {
     )
 })
 
-map_string_integer_table = emptyTable(20).update("row = ii", "map = rndMapStringInteger()")
+table = emptyTable(20).update("row = ii", "map = rndMapStringInteger()")
 
 // Schema annotation
 
@@ -188,7 +188,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType
 import io.deephaven.engine.table.Table
 
 // 1. Get existing schema
-def curr_schema = BarrageUtil.schemaFromTable(map_string_integer_table)
+def curr_schema = BarrageUtil.schemaFromTable(table)
 def fields = new ArrayList<>(curr_schema.getFields())
 
 // 2. Define key/value for Map<String, Integer>
@@ -214,15 +214,15 @@ def mapField = new Field(
 fields.set(1, mapField)
 def new_schema = new Schema(fields)
 
-// 6. Apply attributes, creating a new table reference which can be used for export
-map_string_integer_table_w_attributes = map_string_integer_table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
+// 6. Apply attributes, creating a new table reference which can be used for export; the original table is unchanged
+table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
 ## Example: Annotate `Map<String, Union>` Columns
 
 This example demonstrates the use of `Union` for values in a `Map` with `String` keys. The `Union` can contain a `Double`, `String`, `Long`, or `Integer`.
 
-```groovy order=map_union_table,map_union_table_w_attributes
+```groovy order=table,table_w_attributes
 // Table creation
 
 import java.util.Random
@@ -262,7 +262,7 @@ QueryScope.addParam("rndMapStringUnion", (len) -> {
     )
 })
 
-map_union_table = emptyTable(20).update("row = ii", "map = rndMapStringUnion()")
+table = emptyTable(20).update("row = ii", "map = rndMapStringUnion()")
 
 // Schema annotation
 
@@ -276,7 +276,7 @@ import org.apache.arrow.vector.types.FloatingPointPrecision
 import io.deephaven.engine.table.Table
 
 // 1. Get existing schema
-def curr_schema = BarrageUtil.schemaFromTable(map_union_table)
+def curr_schema = BarrageUtil.schemaFromTable(table)
 def fields = new ArrayList<>(curr_schema.getFields())
 
 // 2. Define the Union (The "Value" in the Map)
@@ -315,6 +315,118 @@ def mapField = new Field(
 fields.set(1, mapField)
 def new_schema = new Schema(fields)
 
-// 7. Apply attributes, creating a new table reference which can be used for export
-map_union_table_w_attributes = map_union_table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
+// 7. Apply attributes, creating a new table reference which can be used for export; the original table is unchanged
+table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
+
+## Example: Run-End Encoded (REE) Columns
+
+[Run-End Encoding](https://arrow.apache.org/docs/format/Columnar.html#run-end-encoded-layout) is a wire-level optimization for columns with many repeated values. Instead of sending every value, the column is serialized as two child arrays:
+
+- `run_ends` — a non-nullable integer array of cumulative 1-based end indices, one per run. The last value always equals the logical row count.
+- `values` — the values that will be repeated in the run.
+
+A column of 1,000 rows where the same integer repeats 100 times in a row costs 10 `run_end` entries + 10 `value` entries instead of 1,000 integers. Deephaven stores the column flat (unchanged type); REE is a transport-only optimization. The `run_ends` integer width is determined by the Arrow field structure you supply via `BARRAGE_SCHEMA_ATTRIBUTE`. Use `Int32` unless you have a specific reason to use `Int16`. Note that `Int16` `run_ends` constrain the effective batch size to at most `Short.MAX_VALUE` / 32,767 rows per record batch.
+
+```groovy order=table,table_w_attributes
+import io.deephaven.engine.table.Table
+import io.deephaven.extensions.barrage.util.BarrageUtil
+import org.apache.arrow.vector.types.pojo.ArrowType
+import org.apache.arrow.vector.types.pojo.Field
+import org.apache.arrow.vector.types.pojo.FieldType
+import org.apache.arrow.vector.types.pojo.Schema
+
+table = emptyTable(100).update(
+    "status = (ii % 10 < 7) ? `OPEN` : `CLOSED`",
+    "value  = (int) ii"
+)
+
+// Extract the default schema to borrow existing field metadata
+def baseSchema = BarrageUtil.schemaFromTable(table)
+def fields = new java.util.ArrayList<>(baseSchema.getFields())
+
+// run_ends child: non-nullable Int32 index (handles up to ~2 billion logical rows per batch)
+def runEndsField = new Field("run_ends",
+    new FieldType(false, new ArrowType.Int(32, true), null, null),
+    java.util.Collections.emptyList()
+)
+// values child: reuse the original "status" field type so deephaven:type metadata is preserved
+def originalStatusField = baseSchema.findField("status")
+def valuesField = new Field("values",
+    originalStatusField.getFieldType(),
+    originalStatusField.getChildren()
+)
+// REE parent: nullable, no buffers (the children carry all the data)
+def reeField = new Field("status",
+    new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+    java.util.List.of(runEndsField, valuesField)
+)
+
+def statusIdx = fields.findIndexOf { it.getName() == "status" }
+fields.set(statusIdx, reeField)
+def new_schema = new Schema(fields)
+
+// Apply attributes, creating a new table reference which can be used for export; the original table is unchanged
+table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
+```
+
+## Example: Dictionary-Encoded Columns
+
+[Dictionary Encoding](https://arrow.apache.org/docs/format/Columnar.html#dictionary-encoded-layout) is a wire-level optimization for low-cardinality columns. Instead of sending each value in full, Deephaven sends each unique value once (in a `DictionaryBatch` message) and replaces each row with a compact integer index.
+
+A string column with 1,000 rows drawn from only 5 distinct values costs 5 full string entries (in the dictionary) + 1,000 integer indices, rather than 1,000 full strings. Deephaven stores the column flat (unchanged type); dictionary encoding is a transport-only optimization.
+
+The `DictionaryEncoding` index width controls the integer type used for indices:
+
+- `Int32` (32-bit signed) — handles up to about 1 billion distinct values; suitable for almost all use cases.
+- `Int8` (8-bit signed) — the most compact option, but limits the dictionary to at most 128 distinct values.
+- `Int16` (16-bit signed) — more compact than `Int32`, but limits the dictionary to at most 32,768 distinct values.
+- `Int64` (64-bit signed) — rarely needed; use only when distinct values exceed 1 billion.
+
+:::caution
+Dictionary updates are sent as deltas, so entries accumulate as new unique values appear. To prevent unbounded growth on the server and client, Deephaven resets the dictionary when its size exceeds the table or viewport size by flushing the current dictionary and accumulating only newly encountered values. Despite this safety net, if a single table (or viewport) contains more distinct values than the index type can represent (128 for `Int8`, 32,768 for `Int16`), Deephaven throws an error at serialization time. Prefer `Int32` unless you are certain the column's active cardinality stays within the smaller limit.
+:::
+
+```groovy order=table,table_w_attributes
+import io.deephaven.extensions.barrage.util.BarrageUtil
+import org.apache.arrow.vector.types.pojo.ArrowType
+import org.apache.arrow.vector.types.pojo.DictionaryEncoding
+import org.apache.arrow.vector.types.pojo.Field
+import org.apache.arrow.vector.types.pojo.FieldType
+import org.apache.arrow.vector.types.pojo.Schema
+
+table = emptyTable(100).update(
+    "status = (ii % 3 == 0) ? `OPEN` : (ii % 3 == 1) ? `CLOSED` : `PENDING`",
+    "value  = (int) ii"
+)
+
+// Extract the default schema to borrow existing field metadata (e.g. deephaven:type tags)
+def baseSchema = BarrageUtil.schemaFromTable(table)
+def fields = new ArrayList<>(baseSchema.getFields())
+
+// Build the dictionary-encoded field:
+//   type       = Utf8 (the value type of the column, so DH knows the Java column type is String)
+//   dictionary = DictionaryEncoding(id=0, ordered=false, indexType=Int32)
+// The id uniquely identifies this dictionary within the stream. If you encode multiple columns,
+// give each a distinct id (0, 1, 2, ...).
+def originalStatusField = baseSchema.findField("status")
+def dictField = new Field("status",
+    new FieldType(true, originalStatusField.getType(),
+        new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)),
+        originalStatusField.getMetadata()),
+    originalStatusField.getChildren()
+)
+
+def statusIdx = fields.findIndexOf { it.getName() == "status" }
+fields.set(statusIdx, dictField)
+def new_schema = new Schema(fields)
+
+// Apply attributes, creating a new table reference which can be used for export; the original table is unchanged
+table_w_attributes = table.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
+```
+
+## Related documentation
+
+- [What is Barrage?](../../conceptual/what-is-barrage.md)
+- [withAttributes](../../reference/table-operations/select/withAttributes.md)
+- [Arrow Flight integration](./arrow-flight.md)

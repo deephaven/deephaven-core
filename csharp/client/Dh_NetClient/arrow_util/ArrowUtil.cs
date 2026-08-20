@@ -38,8 +38,11 @@ public static class ArrowUtil {
     for (var i = 0; i != ncols; ++i) {
       var columnSource = clientTable.GetColumn(i);
       var arrowArray = ArrowArrayConverter.ColumnSourceToArray(columnSource, nrows);
-      var field = clientTable.Schema.GetFieldByIndex(i);
-      var column = new ArrowColumn(field, [arrowArray]);
+      var schemaField = clientTable.Schema.GetFieldByIndex(i);
+      // Adapt the schema field to the array type, since the array type may have more information (in particular,
+      // the Name field of underlying types) than the schema field.
+      var fieldToUse = new Field(schemaField.Name, arrowArray.Data.DataType, schemaField.IsNullable, schemaField.Metadata);
+      var column = new ArrowColumn(fieldToUse, [arrowArray]);
       columns.Add(column);
     }
 
@@ -189,11 +192,15 @@ public static class ArrowUtil {
     private IEnumerable VisitListArrayHelper(ListArray array) {
       // ListArray's elements are IArrowArrays. For each element,
       // we turn the IArrowArray into a List<object>.
-      // To do this, we recursivel invoke the ToEnumerableVisitor (to handle the case
+      // To do this, we recursively invoke the ToEnumerableVisitor (to handle the case
       // where the elements are themselves lists).
       var innerVisitor = new ToEnumerableVisitor();
       for (var i = 0; i != array.Length; ++i) {
         var slice = array.GetSlicedValues(i);
+        if (slice == null) {
+          yield return null;
+          continue;
+        }
         slice.Accept(innerVisitor);
         yield return new List<object>(innerVisitor.Result.Cast<object>());
       }

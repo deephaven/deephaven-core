@@ -353,6 +353,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Preview));
 
         tempMap.put(SORTED_COLUMNS_ATTRIBUTE, EnumSet.of(
+                CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.PartitionBy));

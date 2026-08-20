@@ -68,6 +68,10 @@ class InitialFilterExecution extends AbstractFilterExecution {
     }
 
     BasePerformanceEntry getBasePerformanceEntry() {
+        final BasePerformanceEntry accumulatedPerformance = jobScheduler.getAccumulatedPerformance();
+        if (accumulatedPerformance != null) {
+            basePerformanceEntry.accumulate(accumulatedPerformance);
+        }
         return basePerformanceEntry;
     }
 }

@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.naturaljoin;
 
-import com.squareup.javapoet.CodeBlock;
+import com.palantir.javapoet.CodeBlock;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -273,7 +273,7 @@ public class TypedNaturalJoinFactory {
 
     public static void rightIncrementalModify(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.addStatement("final long oldRightRow = rightRowKey.getUnsafe(tableLocation)", RowSet.class);
+        builder.addStatement("final long oldRightRow = rightRowKey.getUnsafe(tableLocation)");
         builder.addStatement(
                 "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, $T.FLAG_RIGHT_MODIFY_PROBE))",
                 NaturalJoinModifiedSlotTracker.class);
@@ -365,7 +365,7 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
         builder.addStatement(
                 "rightSideDuplicateRowSets.getUnsafe(duplicateLocation).insert(rowKeyChunk.get(chunkPosition))");
-        builder.nextControlFlow("else", RowSet.class);
+        builder.nextControlFlow("else");
 
         builder.beginControlFlow("if (addOnly && joinType == NaturalJoinType.FIRST_MATCH) ");
         builder.addStatement("// nop, we already have the first match");
@@ -560,12 +560,16 @@ public class TypedNaturalJoinFactory {
         builder.nextControlFlow("else");
         builder.addStatement("rightRowKey = rightRowKeyForState");
         builder.endControlFlow();
+        builder.add("// accumulate the added key for one bulk insert per slot, rather than inserting one at a time\n");
         builder.addStatement(
-                "$LLeftRowSet.getUnsafe($L).insert(rowKeyChunk.get(chunkPosition))", sourceType, tableLocation);
+                "$LModifiedTrackerCookieSource.set($L, modifiedSlotTracker.addLeftAddition($LModifiedTrackerCookieSource.getUnsafe($L), $LInsertMask | $L, rowKeyChunk.get(chunkPosition), rightRowKeyForState))",
+                sourceType, tableLocation, sourceType, tableLocation, sourceType, tableLocation);
         builder.addStatement("leftRedirections.set(leftRedirectionOffset++, rightRowKey)");
     }
 
     public static void incrementalLeftInsertUpdate(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
+        builder.add(
+                "// new (or reused-tombstoned) slot has no existing left rows: build the row set from this key directly\n");
         incrementalBuildLeftInsert(hasherConfig, builder);
         builder.addStatement("leftRedirections.set(leftRedirectionOffset++, $T.NULL_ROW_KEY)", RowSet.class);
     }
@@ -574,13 +578,21 @@ public class TypedNaturalJoinFactory {
             CodeBlock.Builder builder) {
         final String sourceType = getSourceType(alternate);
         final String tableLocation = getTableLocation(alternate);
-        builder.addStatement("final WritableRowSet left = $LLeftRowSet.getUnsafe($L)",
-                sourceType, tableLocation);
+        builder.add("// single-row slot: removing empties it, so remove directly and skip the tracker\n");
+        builder.addStatement("final $T left = $LLeftRowSet.getUnsafe($L)", WritableRowSet.class, sourceType,
+                tableLocation);
+        builder.beginControlFlow("if (left.size() == 1)");
         builder.addStatement("left.remove(rowKeyChunk.get(chunkPosition))");
-        builder.beginControlFlow("if (left.isEmpty() && rightState == $T.NULL_ROW_KEY)", RowSet.class);
-        // it is actually deleted
+        builder.beginControlFlow("if (rightState == $T.NULL_ROW_KEY)", RowSet.class);
+        builder.add("// no right match remains, so the slot is now dead\n");
         builder.addStatement("$LRightRowKey.set($L, TOMBSTONE_RIGHT_STATE)", sourceType, tableLocation);
         builder.addStatement("liveEntries--");
+        builder.endControlFlow();
+        builder.nextControlFlow("else");
+        builder.add("// multi-row slot: accumulate for one bulk remove per slot\n");
+        builder.addStatement(
+                "$LModifiedTrackerCookieSource.set($L, modifiedSlotTracker.addLeftRemoval($LModifiedTrackerCookieSource.getUnsafe($L), $LInsertMask | $L, rowKeyChunk.get(chunkPosition), rightState))",
+                sourceType, tableLocation, sourceType, tableLocation, sourceType, tableLocation);
         builder.endControlFlow();
     }
 

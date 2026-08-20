@@ -12,6 +12,7 @@ import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
+import io.deephaven.web.client.api.ColumnRestriction;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.filter.FilterCondition;
@@ -381,6 +382,17 @@ public final class ClientTableState extends TableConfig {
         this.tableDef = tableDef;
         if (create) {
             ColumnDefinition[] columnDefinitions = tableDef.getColumns();
+
+            // Populate column restrictions from input table metadata if available
+            if (tableDef.getInputTableMetadata() != null) {
+                for (ColumnDefinition definition : columnDefinitions) {
+                    final List<ColumnRestriction> restrictions =
+                            tableDef.getInputTableMetadata().getColumnRestrictions(definition.getName());
+                    if (restrictions != null) {
+                        definition.setColumnRestrictions(restrictions);
+                    }
+                }
+            }
 
             // iterate through the columns, combine format columns into the normal model
             Map<Boolean, Map<String, ColumnDefinition>> byNameMap = tableDef.getColumnsByName();

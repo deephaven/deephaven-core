@@ -305,4 +305,3 @@ public class FloatReverseSsaSsaStamp implements SsaSsaStamp {
         return doComparison(lhs, rhs) <= 0;
     }
 }
-

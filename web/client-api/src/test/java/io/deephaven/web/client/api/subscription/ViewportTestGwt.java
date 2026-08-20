@@ -1036,6 +1036,42 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+
+
+    public void testSubscriptionsOutlivingTables() {
+        // DH-20800 resulted in a logged error, but no exception. This test instruments the browser's log functionality
+        // so we can detect that an error was written out, and confirm through its absence that the bug was fixed.
+        errorLogsDontFail();
+
+        connect(tables)
+                .then(table("growingForward"))
+                .then(t -> {
+                    delayTestFinish(9001);
+
+                    DataOptions.ViewportSubscriptionOptions options = new DataOptions.ViewportSubscriptionOptions();
+                    options.columns = t.getColumns();
+                    options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
+                    TableViewportSubscription sub = t.createViewportSubscription(options);
+                    return waitForEvent(sub, TableSubscription.EVENT_UPDATED, 2000).onInvoke(sub)
+                            .then(s -> {
+                                t.close();
+                                // even though the table is closed, we should still get updates without errors
+                                return waitForEvent(s, TableSubscription.EVENT_UPDATED, 2000).onInvoke(sub);
+                            }).then(s -> {
+                                // The next event isn't quite sufficient, because handlers could go off out of order,
+                                // wait one more.
+                                return waitForEvent(s, TableSubscription.EVENT_UPDATED, 2000).onInvoke(sub);
+                            }).then(s -> {
+                                // close the subscription and end the test, confirming explicitly that we did not see
+                                // an error message
+                                s.close();
+                                assertTrue(errorLogsSeen.toString(), errorLogsSeen.isEmpty());
+                                return null;
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     @Override
     public String getModuleName() {
         return "io.deephaven.web.DeephavenIntegrationTest";

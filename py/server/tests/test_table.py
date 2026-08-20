@@ -52,6 +52,7 @@ from deephaven.table import (
     Selectable,
     Table,
     TableDefinition,
+    TailInitializationFilter,
     table_diff,
 )
 from tests.testbase import BaseTestCase, table_equals
@@ -353,8 +354,57 @@ class TableTestCase(BaseTestCase):
         sorted_table2 = self.test_table.sort_descending(order_by="b")
         self.assertEqual(sorted_table, sorted_table2)
 
+    def test_with_order_for_column(self):
+        import jpy
+
+        _JSortedColumnsAttribute = jpy.get_type(
+            "io.deephaven.engine.table.impl.SortedColumnsAttribute"
+        )
+        _JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
+
+        asc_table = self.test_table.with_order_for_column("a")
+        self.assertEqual(asc_table.size, self.test_table.size)
+        order = _JSortedColumnsAttribute.getOrderForColumn(asc_table.j_table, "a")
+        self.assertEqual(order.get(), _JSortingOrder.Ascending)
+
+        desc_table = self.test_table.with_order_for_column(
+            "a", SortDirection.DESCENDING
+        )
+        order = _JSortedColumnsAttribute.getOrderForColumn(desc_table.j_table, "a")
+        self.assertEqual(order.get(), _JSortingOrder.Descending)
+
+        no_order = _JSortedColumnsAttribute.getOrderForColumn(desc_table.j_table, "b")
+        self.assertTrue(no_order.isEmpty())
+
         with self.assertRaises(TypeError):
             sorted_table3 = self.test_table.sort_descending()
+
+    def test_assert_sorted(self):
+        import jpy
+
+        _JSortedColumnsAttribute = jpy.get_type(
+            "io.deephaven.engine.table.impl.SortedColumnsAttribute"
+        )
+        _JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
+
+        pre_sorted = self.test_table.sort(order_by="a")
+        result = pre_sorted.assert_sorted("a")
+        self.assertEqual(result.size, pre_sorted.size)
+        order = _JSortedColumnsAttribute.getOrderForColumn(result.j_table, "a")
+        self.assertEqual(order.get(), _JSortingOrder.Ascending)
+
+        pre_sorted_desc = self.test_table.sort_descending(order_by="a")
+        result_desc = pre_sorted_desc.assert_sorted("a", SortDirection.DESCENDING)
+        order_desc = _JSortedColumnsAttribute.getOrderForColumn(
+            result_desc.j_table, "a"
+        )
+        self.assertEqual(order_desc.get(), _JSortingOrder.Descending)
+
+        with self.assertRaises(DHError):
+            pre_sorted.assert_sorted("a", SortDirection.DESCENDING)
+
+        with self.assertRaises(DHError):
+            self.test_table.assert_sorted("a", description="my_sort_check")
 
     def test_reverse(self):
         reversed_table = self.test_table.reverse()
@@ -456,6 +506,30 @@ class TableTestCase(BaseTestCase):
             self.assertTrue(result_table.size > left_table.size)
         with self.subTest("with no join keys"):
             result_table = left_table.join(right_table, joins="e")
+            self.assertTrue(result_table.size > left_table.size)
+
+    def test_cross_join_with_reserve_bits(self):
+        left_table = self.test_table.drop_columns(cols=["e"])
+        right_table = self.test_table.where(["a % 2 > 0 && b % 3 == 1"]).drop_columns(
+            cols=["b", "c", "d"]
+        )
+        with self.subTest("with some join keys"):
+            result_table = left_table.join(
+                right_table, on=["a"], joins=["e"], reserve_bits=2
+            )
+            self.assertTrue(result_table.size < left_table.size)
+        with self.subTest("with some join keys"):
+            result_table = left_table.join(
+                right_table, on="a", joins="e", reserve_bits=2
+            )
+            self.assertTrue(result_table.size < left_table.size)
+        with self.subTest("with no join keys"):
+            result_table = left_table.join(
+                right_table, on=[], joins=["e"], reserve_bits=2
+            )
+            self.assertTrue(result_table.size > left_table.size)
+        with self.subTest("with no join keys"):
+            result_table = left_table.join(right_table, joins="e", reserve_bits=2)
             self.assertTrue(result_table.size > left_table.size)
 
     def test_as_of_join(self):
@@ -1580,6 +1654,83 @@ class TableTestCase(BaseTestCase):
         )
         with self.assertRaises(DHError):
             t = empty_table(10).update([swcc_c, swcc_b])
+
+    def test_tail_initialization_most_recent(self):
+        from datetime import timedelta
+
+        with self.subTest("keep rows within a period of the newest timestamp (str)"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            rt = TailInitializationFilter.most_recent(
+                source, "Timestamp", "PT00:00:00.1"
+            )
+            self.assertTrue(rt.is_refreshing)
+            self.assertLessEqual(rt.size, source.size)
+            self.assertGreater(rt.size, 0)
+
+        with self.subTest("period as int nanoseconds"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            rt = TailInitializationFilter.most_recent(source, "Timestamp", 100_000_000)
+            self.assertTrue(rt.is_refreshing)
+            self.assertLessEqual(rt.size, source.size)
+
+        with self.subTest("period as datetime.timedelta"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            rt = TailInitializationFilter.most_recent(
+                source, "Timestamp", timedelta(milliseconds=100)
+            )
+            self.assertTrue(rt.is_refreshing)
+            self.assertLessEqual(rt.size, source.size)
+
+        with self.subTest("static snapshot keeps only rows within the window"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            static = source.snapshot()
+            # a static (non-refreshing) table is a single partition and is add-only
+            rt = TailInitializationFilter.most_recent(static, "Timestamp", 0)
+            # with a zero period only rows sharing the newest timestamp survive
+            self.assertGreaterEqual(rt.size, 1)
+            self.assertLessEqual(rt.size, static.size)
+            self.assertFalse(rt.is_refreshing)
+
+    def test_tail_initialization_most_recent_rows(self):
+        with self.subTest("static snapshot keeps an exact number of rows"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            static = source.snapshot()
+            rt = TailInitializationFilter.most_recent_rows(static, 10)
+            self.assertEqual(rt.size, 10)
+            self.assertFalse(rt.is_refreshing)
+
+        with self.subTest("refreshing source stays refreshing"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=100, timeout=60)
+            rt = TailInitializationFilter.most_recent_rows(source, 10)
+            self.assertTrue(rt.is_refreshing)
+            self.assertGreaterEqual(rt.size, 10)
+
+    def test_tail_initialization_errors(self):
+        with self.subTest("non-add-only source raises"):
+            source = time_table("PT00:00:00.01")
+            self.wait_ticking_table_update(source, row_count=10, timeout=60)
+            # last_by produces modifies, so the result is not add-only
+            not_add_only = source.last_by()
+            with self.assertRaises(DHError):
+                TailInitializationFilter.most_recent(not_add_only, "Timestamp", "PT1S")
+            with self.assertRaises(DHError):
+                TailInitializationFilter.most_recent_rows(not_add_only, 5)
+
+        with self.subTest("null timestamps raise"):
+            static = empty_table(10).update(["Timestamp = (Instant) null"])
+            with self.assertRaises(DHError):
+                TailInitializationFilter.most_recent(static, "Timestamp", "PT1S")
+
+        with self.subTest("missing timestamp column raises"):
+            static = empty_table(10).update(["X = i"])
+            with self.assertRaises(DHError):
+                TailInitializationFilter.most_recent(static, "Timestamp", "PT1S")
 
 
 if __name__ == "__main__":

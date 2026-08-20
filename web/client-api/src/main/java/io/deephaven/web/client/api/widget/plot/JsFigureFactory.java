@@ -103,9 +103,15 @@ public class JsFigureFactory {
 
     private static FigureDescriptor convertJsFigureDescriptor(JsFigureDescriptor jsDescriptor) {
         FigureDescriptor.Builder descriptor = FigureDescriptor.newBuilder();
-        descriptor.setTitle(jsDescriptor.title);
-        descriptor.setTitleFont(jsDescriptor.titleFont);
-        descriptor.setTitleColor(jsDescriptor.titleColor);
+        if (jsDescriptor.title != null) {
+            descriptor.setTitle(jsDescriptor.title);
+        }
+        if (jsDescriptor.titleFont != null) {
+            descriptor.setTitleFont(jsDescriptor.titleFont);
+        }
+        if (jsDescriptor.titleColor != null) {
+            descriptor.setTitleColor(jsDescriptor.titleColor);
+        }
         descriptor.setUpdateInterval((long) jsDescriptor.updateInterval);
         descriptor.setCols(jsDescriptor.cols);
         descriptor.setRows(jsDescriptor.rows);
@@ -132,13 +138,23 @@ public class JsFigureFactory {
                     FigureDescriptor.ChartDescriptor.ChartType.forNumber(jsDescriptor.chartType.coerceToInt()));
         }
 
-        descriptor.setTitle(jsDescriptor.title);
-        descriptor.setTitleFont(jsDescriptor.titleFont);
-        descriptor.setTitleColor(jsDescriptor.titleColor);
+        if (jsDescriptor.title != null) {
+            descriptor.setTitle(jsDescriptor.title);
+        }
+        if (jsDescriptor.titleFont != null) {
+            descriptor.setTitleFont(jsDescriptor.titleFont);
+        }
+        if (jsDescriptor.titleColor != null) {
+            descriptor.setTitleColor(jsDescriptor.titleColor);
+        }
 
         descriptor.setShowLegend(jsDescriptor.showLegend);
-        descriptor.setLegendFont(jsDescriptor.legendFont);
-        descriptor.setLegendColor(jsDescriptor.legendColor);
+        if (jsDescriptor.legendFont != null) {
+            descriptor.setLegendFont(jsDescriptor.legendFont);
+        }
+        if (jsDescriptor.legendColor != null) {
+            descriptor.setLegendColor(jsDescriptor.legendColor);
+        }
 
         descriptor.setIs3D(jsDescriptor.is3d);
 
@@ -172,11 +188,21 @@ public class JsFigureFactory {
         descriptor.setPosition(
                 FigureDescriptor.AxisDescriptor.AxisPosition.forNumber(jsDescriptor.position.coerceToInt()));
         descriptor.setLog(jsDescriptor.log);
-        descriptor.setLabel(jsDescriptor.label);
-        descriptor.setLabelFont(jsDescriptor.labelFont);
-        descriptor.setTicksFont(jsDescriptor.ticksFont);
-        descriptor.setFormatPattern(jsDescriptor.formatPattern);
-        descriptor.setColor(jsDescriptor.color);
+        if (jsDescriptor.label != null) {
+            descriptor.setLabel(jsDescriptor.label);
+        }
+        if (jsDescriptor.labelFont != null) {
+            descriptor.setLabelFont(jsDescriptor.labelFont);
+        }
+        if (jsDescriptor.ticksFont != null) {
+            descriptor.setTicksFont(jsDescriptor.ticksFont);
+        }
+        if (jsDescriptor.formatPattern != null) {
+            descriptor.setFormatPattern(jsDescriptor.formatPattern);
+        }
+        if (jsDescriptor.color != null) {
+            descriptor.setColor(jsDescriptor.color);
+        }
         descriptor.setMinRange(jsDescriptor.minRange);
         descriptor.setMaxRange(jsDescriptor.maxRange);
         descriptor.setMinorTicksVisible(jsDescriptor.minorTicksVisible);
@@ -197,7 +223,9 @@ public class JsFigureFactory {
         FigureDescriptor.SeriesDescriptor.Builder descriptor = FigureDescriptor.SeriesDescriptor.newBuilder();
 
         descriptor.setPlotStyle(FigureDescriptor.SeriesPlotStyle.forNumber(jsDescriptor.plotStyle.coerceToInt()));
-        descriptor.setName(jsDescriptor.name);
+        if (jsDescriptor.name != null) {
+            descriptor.setName(jsDescriptor.name);
+        }
         if (jsDescriptor.linesVisible != null) {
             descriptor.setLinesVisible(jsDescriptor.linesVisible);
         }
@@ -205,17 +233,31 @@ public class JsFigureFactory {
             descriptor.setShapesVisible(jsDescriptor.shapesVisible);
         }
         descriptor.setGradientVisible(jsDescriptor.gradientVisible != null ? jsDescriptor.gradientVisible : false);
-        descriptor.setLineColor(jsDescriptor.lineColor);
-        descriptor.setPointLabelFormat(jsDescriptor.pointLabelFormat);
-        descriptor.setXToolTipPattern(jsDescriptor.xToolTipPattern);
-        descriptor.setYToolTipPattern(jsDescriptor.yToolTipPattern);
+        if (jsDescriptor.lineColor != null) {
+            descriptor.setLineColor(jsDescriptor.lineColor);
+        }
+        if (jsDescriptor.pointLabelFormat != null) {
+            descriptor.setPointLabelFormat(jsDescriptor.pointLabelFormat);
+        }
+        if (jsDescriptor.xToolTipPattern != null) {
+            descriptor.setXToolTipPattern(jsDescriptor.xToolTipPattern);
+        }
+        if (jsDescriptor.yToolTipPattern != null) {
+            descriptor.setYToolTipPattern(jsDescriptor.yToolTipPattern);
+        }
 
-        descriptor.setShapeLabel(jsDescriptor.shapeLabel);
+        if (jsDescriptor.shapeLabel != null) {
+            descriptor.setShapeLabel(jsDescriptor.shapeLabel);
+        }
         if (jsDescriptor.shapeSize != null) {
             descriptor.setShapeSize(jsDescriptor.shapeSize);
         }
-        descriptor.setShapeColor(jsDescriptor.shapeColor);
-        descriptor.setShape(jsDescriptor.shape);
+        if (jsDescriptor.shapeColor != null) {
+            descriptor.setShapeColor(jsDescriptor.shapeColor);
+        }
+        if (jsDescriptor.shape != null) {
+            descriptor.setShape(jsDescriptor.shape);
+        }
 
         JsArray<JsSourceDescriptor> jsDataSources = jsDescriptor.dataSources;
         for (int i = 0; i < jsDataSources.length; i++) {

@@ -305,6 +305,20 @@ public class ReplicationUtils {
     }
 
     /**
+     * Remove all of the specified imports -- Error if any are not found.
+     */
+    public static List<String> removeDuplicateImports(List<String> lines) {
+        final Set<String> importLines = new HashSet<>();
+        return lines.stream().filter(line -> {
+            if (line.startsWith("import ")) {
+                return importLines.add(line);
+            } else {
+                return true;
+            }
+        }).collect(Collectors.toList());
+    }
+
+    /**
      * Remove imports if they match any of the patterns.
      */
     public static List<String> removeAnyImports(List<String> lines, String... importRegex) {

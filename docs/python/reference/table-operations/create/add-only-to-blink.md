@@ -2,10 +2,10 @@
 title: add_only_to_blink
 ---
 
-The `add_only_to_blink` method creates a blink table from the supplied add-only table. The blink table contains the rows added in the latest update cycle.
+The `add_only_to_blink` method creates a blink table from the supplied add-only or append-only table. The blink table contains the rows added in the latest update cycle.
 
 > [!NOTE]
-> The use of this function should be limited to add-only tables that are not fully in-memory, or when blink-table specific aggregation semantics are desired. If the table is fully in-memory, creating a downstream blink table is not recommended because it doesn't achieve the main benefit of blink tables, which is to reduce memory usage but instead increases memory usage.
+> The use of this function should be limited to add-only or append-only tables that are not fully in-memory, or when blink-table specific aggregation semantics are desired. If the table is fully in-memory, creating a downstream blink table is not recommended because it doesn't achieve the main benefit of blink tables, which is to reduce memory usage but instead increases memory usage.
 
 ## Syntax
 
@@ -20,7 +20,7 @@ add_only_to_blink(table: Table) -> Table
 <ParamTable>
 <Param name="table" type="Table">
 
-The add-only table to convert to a blink table.
+The add-only or append-only table to convert to a blink table.
 
 </Param>
 </ParamTable>
@@ -31,7 +31,7 @@ A blink table.
 
 ## Example
 
-The following example creates an add-only table with [`time_table`](./timeTable.md) and then converts it to a blink table with `add_only_to_blink`. This example uses `add_only_to_blink` on an in-memory table, which is not recommended, but it illustrates the syntax of the method.
+The following example creates an append-only table with [`time_table`](./timeTable.md) and then converts it to a blink table with `add_only_to_blink`. This example uses `add_only_to_blink` on an in-memory table, which is not recommended, but it illustrates the syntax of the method.
 
 ```python order=null
 from deephaven.stream import add_only_to_blink

@@ -38,7 +38,7 @@ There are a variety of ADBC client implementations that have [Flight SQL drivers
 #### ADBC Python
 
 The [ADBC Python](https://arrow.apache.org/adbc/current/python/index.html) library has a [Flight SQL driver](https://arrow.apache.org/adbc/current/python/api/adbc_driver_flightsql.html), and is simple to use from Python.
-[Installation](https://arrow.apache.org/adbc/main/driver/installation.html#python) is as simple as `pip install adbc-driver-flightsql pyarrow`.
+[Installation](https://arrow.apache.org/adbc/main/installation.html#python) is as simple as `pip install adbc-driver-flightsql pyarrow`.
 
 ```python skip-test
 import adbc_driver_flightsql.dbapi
@@ -59,7 +59,7 @@ with adbc_driver_flightsql.dbapi.connect(
 #### ADBC Java
 
 The [ADBC Java](https://arrow.apache.org/adbc/current/java/index.html) library has a [Flight SQL driver](https://arrow.apache.org/adbc/current/java/api/org/apache/arrow/adbc/driver/flightsql/package-summary.html), and is simple to use from Java.
-[Installation](https://arrow.apache.org/adbc/main/driver/installation.html#java) requires a dependency on `org.apache.arrow.adbc:adbc-driver-flight-sql`.
+[Installation](https://arrow.apache.org/adbc/main/installation.html#java) requires a dependency on `org.apache.arrow.adbc:adbc-driver-flight-sql`.
 
 ```java skip-test
 Map<String, Object> options = new HashMap<>();
@@ -88,9 +88,9 @@ try (
 
 Any ADBC client that has a Flight SQL driver should work with Deephaven Flight SQL:
 
-- [ADBC C / C++](https://arrow.apache.org/adbc/current/cpp/index.html) [driver and installation](https://arrow.apache.org/adbc/main/driver/installation.html#c-c).
+- [ADBC C / C++](https://arrow.apache.org/adbc/current/cpp/index.html) [driver and installation](https://arrow.apache.org/adbc/main/installation.html#c-c).
 - [ADBC Go](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc) [driver](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc/driver/flightsql) and [installation](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc#readme-installation).
-- [ADBC R](https://arrow.apache.org/adbc/current/r/index.html) [driver](https://arrow.apache.org/adbc/current/r/adbcflightsql/index.html) and [installation](https://arrow.apache.org/adbc/main/driver/installation.html#r).
+- [ADBC R](https://arrow.apache.org/adbc/current/r/index.html) [driver](https://arrow.apache.org/adbc/current/r/adbcflightsql/index.html) and [installation](https://arrow.apache.org/adbc/main/installation.html#r).
 
 ### Flight SQL JDBC Driver
 
@@ -155,7 +155,7 @@ Each of the following examples demonstrates:
 #### ADBC Python
 
 The [ADBC Python](https://arrow.apache.org/adbc/current/python/index.html) library has a [Flight SQL driver](https://arrow.apache.org/adbc/current/python/api/adbc_driver_flightsql.html), and is simple to use from Python.
-[Installation](https://arrow.apache.org/adbc/main/driver/installation.html#python) is as simple as `pip install adbc-driver-flightsql pyarrow`.
+[Installation](https://arrow.apache.org/adbc/main/installation.html#python) is as simple as `pip install adbc-driver-flightsql pyarrow`.
 
 ```python skip-test
 from typing import List, Tuple

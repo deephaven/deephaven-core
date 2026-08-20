@@ -3,15 +3,19 @@
 //
 package io.deephaven.web.client.api.barrage.def;
 
+import elemental2.core.JsArray;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.barrage.data.BarrageColumnType;
+import io.deephaven.web.client.api.ColumnRestriction;
 import org.apache.arrow.flatbuf.Field;
 
+import java.util.List;
 import java.util.Map;
 
 public class ColumnDefinition {
     private final BarrageColumnType columnType;
     private final int columnIndex;
+    private JsArray<ColumnRestriction> columnRestrictions;
 
     public ColumnDefinition(int index, Field field) {
         this.columnType = BarrageColumnType.fromArrowField(field);
@@ -80,9 +84,20 @@ public class ColumnDefinition {
         return columnType.getDeephavenColumnAttr("description");
     }
 
+    public JsArray<ColumnRestriction> getColumnRestrictions() {
+        return columnRestrictions;
+    }
+
+    public void setColumnRestrictions(List<ColumnRestriction> columnRestrictions) {
+        this.columnRestrictions = new JsArray<>();
+        for (ColumnRestriction r : columnRestrictions) {
+            this.columnRestrictions.push(r);
+        }
+    }
+
     public Column makeJsColumn(int index, Map<Boolean, Map<String, ColumnDefinition>> map) {
         if (isForRow()) {
-            return makeColumn(-1, this, null, false, null, null, false, false);
+            return makeColumn(-1, this, null, false, null, null, false, false, null);
         }
         Map<String, ColumnDefinition> byNameMap = map.get(isRollupConstituentNodeColumn());
         ColumnDefinition format = byNameMap.get(getFormatColumnName());
@@ -95,16 +110,17 @@ public class ColumnDefinition {
                 format == null ? null : format.getColumnIndex(),
                 getDescription(),
                 isInputTableKeyColumn(),
-                isInputTableValueColumn());
+                isInputTableValueColumn(),
+                getColumnRestrictions());
     }
 
     private static Column makeColumn(int jsIndex, ColumnDefinition definition,
             Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex, String description,
-            boolean inputTableKeyColumn, boolean inputTableValueColumn) {
+            boolean inputTableKeyColumn, boolean inputTableValueColumn, JsArray<ColumnRestriction> columnRestrictions) {
         return new Column(jsIndex, definition.getColumnIndex(), styleIndex, definition.getType(),
                 definition.getName(), isPartitionColumn, formatStringIndex, description, inputTableKeyColumn,
                 inputTableValueColumn,
-                definition.isSortable());
+                definition.isSortable(), columnRestrictions);
     }
 
     public boolean isHierarchicalExpandByColumn() {

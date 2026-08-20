@@ -6,8 +6,8 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class MergeTest {
-  [Fact]
-  public void TestMerge() {
+  [Test]
+  public async Task TestMerge() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var testTable = ctx.TestTable;
 
@@ -29,6 +29,6 @@ public class MergeTest {
     expected.AddColumn("Close", [23.5, 24.2, 26.7, 538.2, 544.9]);
     expected.AddColumn("Volume", [(Int64)100000, 250000, 19000, 46123, 48300]);
 
-    TableComparer.AssertSame(expected, merged);
+    await Assert.That(() => TableComparer.AssertSame(expected, merged)).ThrowsNothing();
   }
 }

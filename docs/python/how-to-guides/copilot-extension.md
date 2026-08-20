@@ -50,6 +50,12 @@ If you do not yet have Deephaven installed, there are several ways to get starte
 - [Build from source](../getting-started/launch-build.md)
 - [Production application](../getting-started/production-application.md)
 
+For Java/Groovy:
+
+- [Docker](/core/groovy/docs/getting-started/docker-install)
+- [Build from source](/core/groovy/docs/getting-started/launch-build)
+- [Production application](/core/groovy/docs/getting-started/production-application)
+
 3. Install the Deephaven GitHub Copilot extension
 
 Head to [github.com/apps/deephaven](https://github.com/apps/deephaven), and click the big green **Install** button. Follow the instructions to install the extension.

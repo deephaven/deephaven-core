@@ -16,7 +16,6 @@ import io.deephaven.generic.region.AppendOnlyFixedSizePageRegionObject;
 import io.deephaven.generic.region.AppendOnlyRegionAccessor;
 import io.deephaven.test.types.ParallelTest;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -27,6 +26,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.function.IntToLongFunction;
+
+import static org.junit.Assert.*;
 
 @Category(ParallelTest.class)
 public class ObjectRegionBinarySearchKernelTest {
@@ -99,29 +100,38 @@ public class ObjectRegionBinarySearchKernelTest {
             final long startRow = Math.max(0, firstKey.applyAsLong(ii));
             final long endRow = Math.min(size - 1, lastKey.applyAsLong(ii));
             // Test match search and min/max search give the same results for this value.
-            try (final RowSet matchesFound = ObjectRegionBinarySearchKernel.binarySearchMatch(
-                    region,
-                    startRow, endRow,
-                    sortColumn,
-                    new String[] {value});
-                    final RowSet minMaxFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
-                            region,
-                            startRow, endRow,
-                            sortColumn,
-                            value,
-                            value, true,
-                            true)) {
-                if (startRow <= ii && ii <= endRow) {
-                    Assert.assertTrue("Expected to find " + value + " at index " + ii,
-                            matchesFound.containsRange(ii, ii));
-                } else {
-                    Assert.assertFalse("Index should not be populated.",
-                            matchesFound.containsRange(ii, ii));
-                }
-                Assert.assertEquals("binarySearchMatch and binarySearchMinMax should return the same results.",
-                        matchesFound, minMaxFound);
-            }
+            try (final RowSet matchRs = ObjectRegionBinarySearchKernel.binarySearchMatch(
+                    region, startRow, endRow, sortColumn, new String[] {value});
+                    final RowSet minMaxRs = ObjectRegionBinarySearchKernel.binarySearchMinMax(
+                            region, startRow, endRow, sortColumn, value, value, true, true)) {
+                // Ensure match search and min/max search give the same results.
+                assertEquals(matchRs, minMaxRs);
 
+                // Test the results for correctness.
+                if (matchRs.isNonempty()) {
+                    // Ensure not returning outside row limits.
+                    assertTrue(matchRs.firstRowKey() >= startRow);
+                    assertTrue(matchRs.lastRowKey() <= endRow);
+                }
+                if (startRow <= ii && ii <= endRow) {
+                    assertTrue("Expected to find " + ii, matchRs.containsRange(ii, ii));
+                } else {
+                    assertFalse("Not expected to find " + ii, matchRs.containsRange(ii, ii));
+                }
+            }
+            // Ensure not found when not expected.
+            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
+                    region, startRow, endRow, sortColumn, value, value, true, false)) {
+                assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
+                    region, startRow, endRow, sortColumn, value, value, false, true)) {
+                assertTrue(valuesFound.isEmpty());
+            }
+            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
+                    region, startRow, endRow, sortColumn, value, value, false, false)) {
+                assertTrue(valuesFound.isEmpty());
+            }
         }
 
         // Test negative lookups
@@ -131,47 +141,12 @@ public class ObjectRegionBinarySearchKernelTest {
             final long startRow = 0;
             final long endRow = size - 1;
             try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMatch(
-                    region,
-                    startRow, endRow,
-                    sortColumn,
-                    new String[] {missingValue})) {
-                Assert.assertTrue(valuesFound.isEmpty());
+                    region, startRow, endRow, sortColumn, new String[] {missingValue})) {
+                assertTrue(valuesFound.isEmpty());
             }
             try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
-                    region,
-                    startRow, endRow,
-                    sortColumn,
-                    missingValue,
-                    missingValue, true,
-                    false)) {
-                Assert.assertTrue(valuesFound.isEmpty());
-            }
-            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
-                    region,
-                    startRow, endRow,
-                    sortColumn,
-                    missingValue,
-                    missingValue, false,
-                    false)) {
-                Assert.assertTrue(valuesFound.isEmpty());
-            }
-            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
-                    region,
-                    startRow, endRow,
-                    sortColumn,
-                    missingValue,
-                    missingValue, false,
-                    true)) {
-                Assert.assertTrue(valuesFound.isEmpty());
-            }
-            try (final RowSet valuesFound = ObjectRegionBinarySearchKernel.binarySearchMinMax(
-                    region,
-                    startRow, endRow,
-                    sortColumn,
-                    missingValue,
-                    missingValue, true,
-                    true)) {
-                Assert.assertTrue(valuesFound.isEmpty());
+                    region, startRow, endRow, sortColumn, missingValue, missingValue, true, true)) {
+                assertTrue(valuesFound.isEmpty());
             }
         }
     }
@@ -472,9 +447,9 @@ public class ObjectRegionBinarySearchKernelTest {
         try (final RowSet result = ObjectRegionBinarySearchKernel.binarySearchMinMax(
                 region, 0, data.size() - 1, sortColumn,
                 minValue, maxValue, minInclusive, maxInclusive)) {
-            Assert.assertEquals(expectedSize, result.size());
-            Assert.assertEquals(expectedFirstRow, result.firstRowKey());
-            Assert.assertEquals(expectedLastRow, result.lastRowKey());
+            assertEquals(expectedSize, result.size());
+            assertEquals(expectedFirstRow, result.firstRowKey());
+            assertEquals(expectedLastRow, result.lastRowKey());
         }
     }
 
@@ -506,28 +481,28 @@ public class ObjectRegionBinarySearchKernelTest {
             if (firstKey > 0) {
                 try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
                         final RowSet intersection = result.intersect(excludedLow)) {
-                    Assert.assertTrue(intersection.isEmpty());
+                    assertTrue(intersection.isEmpty());
                 }
             }
 
             // Go through every value in the result and ensure it is within the min/max bounds.
             result.forAllRowKeys(rowKey -> {
                 // Must be within the first/last key bounds
-                Assert.assertTrue(rowKey >= firstKey && rowKey <= lastKey);
+                assertTrue(rowKey >= firstKey && rowKey <= lastKey);
 
                 // The value at the row key must be within the min/max bounds.
                 final String value = dataToUse.get((int) rowKey);
                 if (maxInclusive) {
-                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) <= 0);
+                    assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) <= 0);
                 } else {
-                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) < 0);
+                    assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) < 0);
                 }
             });
 
             // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
             try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
                     final RowSet intersection = result.intersect(excludedHigh)) {
-                Assert.assertTrue(intersection.isEmpty());
+                assertTrue(intersection.isEmpty());
             }
         }
     }
@@ -559,28 +534,28 @@ public class ObjectRegionBinarySearchKernelTest {
             if (firstKey > 0) {
                 try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
                         final RowSet intersection = result.intersect(excludedLow)) {
-                    Assert.assertTrue(intersection.isEmpty());
+                    assertTrue(intersection.isEmpty());
                 }
             }
 
             // Go through every value in the result and ensure it is within the min/max bounds.
             result.forAllRowKeys(rowKey -> {
                 // Must be within the first/last key bounds
-                Assert.assertTrue(rowKey >= firstKey && rowKey <= lastKey);
+                assertTrue(rowKey >= firstKey && rowKey <= lastKey);
 
                 // The value at the row key must be within the min/max bounds.
                 final String value = dataToUse.get((int) rowKey);
                 if (minInclusive) {
-                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) >= 0);
+                    assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) >= 0);
                 } else {
-                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) > 0);
+                    assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) > 0);
                 }
             });
 
             // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
             try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
                     final RowSet intersection = result.intersect(excludedHigh)) {
-                Assert.assertTrue(intersection.isEmpty());
+                assertTrue(intersection.isEmpty());
             }
         }
     }
@@ -615,33 +590,33 @@ public class ObjectRegionBinarySearchKernelTest {
             if (firstKey > 0) {
                 try (final RowSet excludedLow = RowSetFactory.fromRange(0, firstKey - 1);
                         final RowSet intersection = result.intersect(excludedLow)) {
-                    Assert.assertTrue(intersection.isEmpty());
+                    assertTrue(intersection.isEmpty());
                 }
             }
 
             // Go through every value in the result and ensure it is within the min/max bounds.
             result.forAllRowKeys(rowKey -> {
                 // Must be within the first/last key bounds
-                Assert.assertTrue(rowKey >= firstKey && rowKey <= lastKey);
+                assertTrue(rowKey >= firstKey && rowKey <= lastKey);
 
                 // The value at the row key must be within the min/max bounds.
                 final String value = dataToUse.get((int) rowKey);
                 if (minInclusive) {
-                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) >= 0);
+                    assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) >= 0);
                 } else {
-                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) > 0);
+                    assertTrue(Comparator.<String>naturalOrder().compare(value, minValue) > 0);
                 }
                 if (maxInclusive) {
-                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) <= 0);
+                    assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) <= 0);
                 } else {
-                    Assert.assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) < 0);
+                    assertTrue(Comparator.<String>naturalOrder().compare(value, maxValue) < 0);
                 }
             });
 
             // Test from lastKey + 1 to make sure no false positives are found above the lastKey.
             try (final RowSet excludedHigh = RowSetFactory.fromRange(lastKey + 1, Long.MAX_VALUE);
                     final RowSet intersection = result.intersect(excludedHigh)) {
-                Assert.assertTrue(intersection.isEmpty());
+                assertTrue(intersection.isEmpty());
             }
         }
     }

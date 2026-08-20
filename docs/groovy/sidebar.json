@@ -43,8 +43,16 @@
                 "path": "getting-started/crash-course/table-ops.md"
               },
               {
+                "label": "Time and Calendars",
+                "path": "getting-started/crash-course/time-calendars.md"
+              },
+              {
                 "label": "Query Strings",
                 "path": "getting-started/crash-course/query-strings.md"
+              },
+              {
+                "label": "Recipes, not loops!",
+                "path": "getting-started/crash-course/vectorization-vs-loops.md"
               },
               {
                 "label": "Real-time Plots",
@@ -128,6 +136,10 @@
               {
                 "label": "Servers & clients",
                 "path": "conceptual/client-server-model.md"
+              },
+              {
+                "label": "What is Barrage?",
+                "path": "conceptual/what-is-barrage.md"
               }
             ]
           },
@@ -159,7 +171,7 @@
                 "label": "Advanced table constructors",
                 "items": [
                   {
-                    "label": "Convert add-only tables to blink tables",
+                    "label": "Convert add- and append-only tables to blink tables",
                     "path": "how-to-guides/add-only-to-blink.md"
                   },
                   {
@@ -268,6 +280,10 @@
               {
                 "label": "URI",
                 "path": "how-to-guides/use-uris.md"
+              },
+              {
+                "label": "Table data service",
+                "path": "how-to-guides/data-import-export/table-data-service.md"
               },
               {
                 "label": "Table listeners",
@@ -512,6 +528,10 @@
               {
                 "label": "Liveness Scopes",
                 "path": "conceptual/liveness-scope-concept.md"
+              },
+              {
+                "label": "Systemic Object Marking",
+                "path": "conceptual/systemic-object-marking.md"
               },
               {
                 "label": "Generate query strings",
@@ -810,6 +830,10 @@
                 "path": "conceptual/ninja.md"
               },
               {
+                "label": "Vectorization and the recipe paradigm",
+                "path": "conceptual/vectorization-and-recipes.md"
+              },
+              {
                 "label": "Performance",
                 "items": [
                   {
@@ -871,8 +895,8 @@
                     "path": "how-to-guides/triage-errors.md"
                   },
                   {
-                    "label": "Attach a JVM debugger",
-                    "path": "how-to-guides/attach-debugger.md"
+                    "label": "Decipher Groovy errors",
+                    "path": "how-to-guides/groovy-errors.md"
                   },
                   {
                     "label": "Get version information",
@@ -881,6 +905,27 @@
                   {
                     "label": "Retrieve logs",
                     "path": "how-to-guides/logs.md"
+                  },
+                  {
+                    "label": "Debugging",
+                    "items": [
+                      {
+                        "label": "Overview",
+                        "path": "how-to-guides/debugging/debugging-landing.md"
+                      },
+                      {
+                        "label": "Docker setup",
+                        "path": "how-to-guides/debugging/docker-setup.md"
+                      },
+                      {
+                        "label": "Source setup",
+                        "path": "how-to-guides/debugging/source-setup.md"
+                      },
+                      {
+                        "label": "Common problems",
+                        "path": "how-to-guides/debugging/common-problems.md"
+                      }
+                    ]
                   }
                 ]
               },
@@ -989,6 +1034,10 @@
                   {
                     "label": "Deephaven configuration files",
                     "path": "how-to-guides/configuration/config-file.md"
+                  },
+                  {
+                    "label": "Configuration properties",
+                    "path": "how-to-guides/configuration/configuration-properties.md"
                   },
                   {
                     "label": "Web Defaults",
@@ -1433,6 +1482,10 @@
                   {
                     "label": "getAttributes",
                     "path": "reference/table-operations/metadata/getAttributes.md"
+                  },
+                  {
+                    "label": "getColumnSource",
+                    "path": "reference/table-operations/metadata/getColumnSource.md"
                   },
                   {
                     "label": "getDefinition",
@@ -2817,6 +2870,10 @@
                   {
                     "label": "Is docker compose required?",
                     "path": "reference/community-questions/is-docker-compose-required.md"
+                  },
+                  {
+                    "label": "Why do ticking tables stall on WSL 2?",
+                    "path": "reference/community-questions/wsl2-clock-drift.md"
                   }
                 ]
               },

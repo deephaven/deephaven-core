@@ -12,13 +12,52 @@ import jsinterop.annotations.JsType;
 @JsType(namespace = "dh", name = "VariableType")
 @TsTypeDef(tsType = "string")
 public class JsVariableType {
-    public static final String TABLE = "Table",
-            TREETABLE = "TreeTable",
-            HIERARCHICALTABLE = "HierarchicalTable",
-            TABLEMAP = "TableMap",
-            PARTITIONEDTABLE = "PartitionedTable",
-            FIGURE = "Figure",
-            OTHERWIDGET = "OtherWidget",
-            PANDAS = "pandas.DataFrame",
-            TREEMAP = "Treemap";
+    /**
+     * A {@link io.deephaven.web.client.api.JsTable}.
+     */
+    public static final String TABLE = "Table";
+
+    /**
+     * A {@link io.deephaven.web.client.api.tree.JsTreeTable}.
+     */
+    public static final String TREETABLE = "TreeTable";
+
+    /**
+     * A hierarchical table.
+     */
+    public static final String HIERARCHICALTABLE = "HierarchicalTable";
+
+    /**
+     * A table map.
+     */
+    public static final String TABLEMAP = "TableMap";
+
+    /**
+     * A {@link io.deephaven.web.client.api.JsPartitionedTable}.
+     */
+    public static final String PARTITIONEDTABLE = "PartitionedTable";
+
+    /**
+     * A {@link io.deephaven.web.client.api.widget.plot.JsFigure}.
+     */
+    public static final String FIGURE = "Figure";
+
+    /**
+     * An exported object that is not one of the explicitly listed Deephaven JS API widget types.
+     */
+    public static final String OTHERWIDGET = "OtherWidget";
+
+    /**
+     * A Python pandas DataFrame.
+     */
+    public static final String PANDAS = "pandas.DataFrame";
+
+    /**
+     * A treemap widget.
+     *
+     * <p>
+     * Treemaps are represented in the JS API as a {@link io.deephaven.web.client.api.widget.plot.JsFigure} containing a
+     * chart whose type is {@link io.deephaven.web.client.api.widget.plot.enums.JsChartType#TREEMAP}.
+     */
+    public static final String TREEMAP = "Treemap";
 }

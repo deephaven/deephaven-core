@@ -19,7 +19,7 @@ import java.util.stream.Stream;
  * An uncoalesced table that may be redefined without triggering a {@link #coalesce()}.
  */
 public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_TYPE>>
-        extends UncoalescedTable<IMPL_TYPE> {
+        extends UncoalescedTableImpl<IMPL_TYPE> {
 
     protected RedefinableTable(@NotNull final TableDefinition definition, @NotNull final String description) {
         super(definition, description);

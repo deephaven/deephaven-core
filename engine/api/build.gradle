@@ -32,6 +32,7 @@ dependencies {
     testImplementation libs.commons.lang3
 
     testImplementation libs.junit4
+    testImplementation libs.jmock
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')
