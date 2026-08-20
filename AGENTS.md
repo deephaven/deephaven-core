@@ -7,7 +7,7 @@
 1. **Identify the authoritative source** for each claim (reference docs, source code, implementation)
 2. **Read that source** and quote the relevant text in your response
 3. **Show verification evidence** before making changes
-4. **Verify link targets exist** using `find_file_by_name` before adding any markdown link
+4. **Verify link targets exist** before adding any markdown link (use glob, find, or equivalent path-discovery tools)
 
 **Do NOT apply fixes without showing the reference that confirms them.**
 
@@ -33,10 +33,4 @@ Copilot and other tools can be wrong. You have been wrong. Blindly applying sugg
 
 ### Link verification
 
-Before adding any link like `[text](../path/to/file.md)`:
-
-```
-find_file_by_name("**/file.md", "/path/to/docs")
-```
-
-Confirm the path exists before adding the link.
+Before adding any link like `[text](../path/to/file.md)`, use your available path-discovery tools (glob, find, grep, etc.) to confirm the target file exists.

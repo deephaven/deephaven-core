@@ -47,11 +47,11 @@ description: Review documentation for technical accuracy, style, and missing lin
    - Suggest links to appropriate reference pages in `docs/{python,groovy}/reference/`.
    - Check that existing links are valid and point to the correct pages.
    - Ensure a "Related documentation" section exists (unless it's a landing page, overview, or blog).
-   - **Before suggesting any new link:** Run `find_file_by_name` to confirm the target file exists.
+   - **Before suggesting any new link:** Use path-discovery tools (glob, find, etc.) to confirm the target file exists.
 
 6. Report findings organized by category with specific suggestions for fixes.
 
 7. **Before applying any fixes:**
    - For each fix, show the reference source that confirms it is correct.
-   - For any link additions, show the `find_file_by_name` result confirming the path.
+   - For any link additions, show the search result confirming the path exists.
    - Do NOT batch fixes without verification — verify each one individually.

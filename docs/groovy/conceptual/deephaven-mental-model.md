@@ -66,7 +66,7 @@ myCalculation = { x -> x * x + 1 }
 result = emptyTable(10).update("Y = (int)myCalculation(i)")
 ```
 
-Closures assigned to top-level variables are available in query strings. Calls to Groovy closures are batched (processed a chunk at a time), but this is still slower than pure-engine formulas. For performance-critical code, prefer engine-native expressions.
+Closures assigned to top-level variables are available in query strings. The engine calls your closure once per row, which is slower than pure-engine formulas. For performance-critical code, prefer engine-native expressions.
 
 ## Your code doesn't run row-by-row
 
