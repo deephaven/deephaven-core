@@ -75,7 +75,7 @@ def my_calculation(x):
 result = empty_table(10).update("Y = (int)my_calculation(i)")
 ```
 
-When you reference a Python function in a formula, the engine must cross into Python to evaluate it. Eligible functions are batched (processed a chunk at a time rather than per-value), but this is still slower than pure-engine formulas. For performance-critical code, prefer engine-native expressions.
+When you reference a Python function in a formula, the engine must cross into Python to evaluate it. The boundary crossing is batched (once per chunk of rows), but a scalar function is still called once per row within that chunk. This is slower than pure-engine formulas. For performance-critical code, prefer engine-native expressions.
 
 ## Your code doesn't run row-by-row
 
