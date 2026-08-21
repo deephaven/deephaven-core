@@ -7,13 +7,17 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsType;
 
 /**
- * Counts the number of rows in each group. Not supported in aggAllBy.
+ * Counts the number of rows in each aggregation group. The count is stored in a new column with the specified name.
+ *
+ * <p>
+ * This aggregation is not supported in {@code aggAllBy} — use it only with {@code aggBy}.
  */
 @JsType
 @TsInterface
 public final class Count extends Aggregation {
     public final String type = "Count";
-    /** The output column name to hold the counts. */
+
+    /** The output column name to hold the row count for each group. */
     public String col;
 }
 

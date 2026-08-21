@@ -7,10 +7,15 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import io.deephaven.web.client.api.Column.ColumnOrName;
 import jsinterop.annotations.JsType;
 
+/**
+ * Computes the weighted sum within each aggregation group. Each input value is multiplied by the corresponding weight,
+ * and the results are summed.
+ */
 @JsType
 @TsInterface
 public final class WSum extends ColumnAggregation {
     public final String type = "WSum";
+
+    /** The column to use as the source of weights for the weighted sum calculation. */
     public ColumnOrName weightColumn;
 }
-

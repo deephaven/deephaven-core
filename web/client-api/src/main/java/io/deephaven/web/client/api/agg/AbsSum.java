@@ -6,6 +6,9 @@ package io.deephaven.web.client.api.agg;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsType;
 
+/**
+ * Computes the sum of absolute values within each aggregation group.
+ */
 @JsType
 @TsInterface
 public final class AbsSum extends ColumnAggregation {

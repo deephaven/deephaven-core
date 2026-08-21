@@ -8,15 +8,21 @@ import elemental2.core.ReadonlyArray;
 import jsinterop.annotations.JsType;
 
 /**
- * Counts the number of rows matching the given filters in each group. Not supported in aggAllBy.
+ * Counts the number of rows matching the given filter expressions within each aggregation group. The count is stored in
+ * a new column with the specified name.
+ *
+ * <p>
+ * This aggregation is not supported in {@code aggAllBy} — use it only with {@code aggBy}.
  */
 @JsType
 @TsInterface
 public final class CountWhere extends Aggregation {
     public final String type = "CountWhere";
-    /** The output column name to hold the counts. */
+
+    /** The output column name to hold the filtered row count for each group. */
     public String col;
-    /** The filter expression(s) to apply. */
+
+    /** The filter expression(s) to apply before counting. Only rows matching all filters are counted. */
     public ReadonlyArray<String> filters;
 }
 

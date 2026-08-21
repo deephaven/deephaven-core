@@ -11,7 +11,16 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 /**
- * Union type for all aggregations accepted by most APIs
+ * Union type representing all aggregation variants accepted by {@code aggBy}. This includes both column-based
+ * aggregations (subtypes of {@link ColumnAggregation}) that operate on input/output column pairs, and non-column
+ * aggregations ({@link Count}, {@link CountWhere}, {@link Partition}, {@link FirstRowKey}, {@link LastRowKey}) that
+ * produce a single named output column.
+ *
+ * <p>
+ * Each variant carries a {@code type} field (accessible via {@link #getType()}) that acts as a discriminant for
+ * TypeScript narrowing.
+ *
+ * @see AggAllByUnion for the subset accepted by {@code aggAllBy}
  */
 @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
 @TsUnion

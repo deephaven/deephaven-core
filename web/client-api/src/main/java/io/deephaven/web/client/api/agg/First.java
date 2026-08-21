@@ -6,6 +6,9 @@ package io.deephaven.web.client.api.agg;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsType;
 
+/**
+ * Returns the first value within each aggregation group.
+ */
 @JsType
 @TsInterface
 public final class First extends ColumnAggregation {

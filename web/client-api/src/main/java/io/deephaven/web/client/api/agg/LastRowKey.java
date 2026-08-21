@@ -3,12 +3,21 @@
 //
 package io.deephaven.web.client.api.agg;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import jsinterop.annotations.JsType;
+
 /**
- * Returns the row key of the last row in each group. Not supported in aggAllBy.
+ * Returns the row key of the last row in each aggregation group. The row key is stored in a new column with the
+ * specified name.
+ *
+ * <p>
+ * This aggregation is not supported in {@code aggAllBy} — use it only with {@code aggBy}.
  */
+@JsType
+@TsInterface
 public final class LastRowKey extends Aggregation {
     public final String type = "LastRowKey";
-    /** The output column name to hold the last row key. */
+
+    /** The output column name to hold the last row key for each group. */
     public String col;
 }
-

@@ -6,6 +6,9 @@ package io.deephaven.web.client.api.agg;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsType;
 
+/**
+ * Collects all values within each aggregation group into an array/vector column.
+ */
 @JsType
 @TsInterface
 public final class Group extends ColumnAggregation {

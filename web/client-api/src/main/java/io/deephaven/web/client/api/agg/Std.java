@@ -6,6 +6,13 @@ package io.deephaven.web.client.api.agg;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsType;
 
+/**
+ * Computes the sample standard deviation within each aggregation group.
+ *
+ * <p>
+ * Sample standard deviation is computed using <a href="https://en.wikipedia.org/wiki/Bessel%27s_correction">Bessel's
+ * correction</a>, which ensures that the sample variance will be an unbiased estimator of population variance.
+ */
 @JsType
 @TsInterface
 public final class Std extends ColumnAggregation {

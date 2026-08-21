@@ -8,15 +8,23 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 /**
- * Partitions the table into sub-tables, one per group. Not supported in aggAllBy.
+ * Partitions the source table into sub-tables, one per aggregation group. Each sub-table is stored in a new column with
+ * the specified name.
+ *
+ * <p>
+ * This aggregation is not supported in {@code aggAllBy} — use it only with {@code aggBy}.
  */
 @JsType
 @TsInterface
 public final class Partition extends Aggregation {
     public final String type = "Partition";
-    /** The output column name to hold the sub-tables. */
+
+    /** The output column name to hold the sub-table for each group. */
     public String col;
-    /** Whether to include the group-by columns in the sub-tables. Defaults to true if omitted. */
+
+    /**
+     * Whether to include the group-by columns in each output sub-table. Defaults to {@code true} if not specified.
+     */
     @JsNullable
     public Boolean includeGroupByColumns;
 }
