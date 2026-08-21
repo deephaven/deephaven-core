@@ -16,7 +16,6 @@ import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;
 import io.deephaven.web.client.api.JsRangeSet;
-import io.deephaven.web.client.api.JsTableOperations;
 import io.deephaven.web.client.api.LongWrapper;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
@@ -227,7 +226,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     protected abstract void sendFirstSubscriptionRequest();
 
     protected void sendBarrageSubscriptionRequest(@Nullable RangeSet viewport,
-            ReadonlyArray<JsTableOperations.ColumnOrName> columns, Double updateIntervalMs, boolean isReverseViewport,
+            ReadonlyArray<Column.ColumnOrName> columns, Double updateIntervalMs, boolean isReverseViewport,
             int previewListLengthLimit) {
         if (isClosed()) {
             if (failMsg == null) {

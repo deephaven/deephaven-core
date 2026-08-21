@@ -910,7 +910,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsMethod
     public Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options) {
         DataOptions.SnapshotOptions snapshotOptions = DataOptions.SnapshotOptions.of(options);
-        ReadonlyArray<JsTableOperations.ColumnOrName> columns = snapshotOptions.columns;
+        ReadonlyArray<Column.ColumnOrName> columns = snapshotOptions.columns;
         RangeSet rows = snapshotOptions.rows.asRangeSet().getRange();
 
         // TODO #1039 slice rows and drop columns

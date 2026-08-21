@@ -5,14 +5,22 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import com.vertispan.tsdefs.annotations.TsUnion;
+import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
 import io.deephaven.web.client.api.filter.FilterValue;
+import javaemul.internal.annotations.DoNotAutobox;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsOverlay;
+import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
+import jsinterop.base.Js;
 
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
@@ -342,5 +350,40 @@ public class Column {
         return new Column(jsIndex, index, styleColumnIndex, type, name, isPartitionColumn,
                 formatStringColumnIndex, description, isInputTableKeyColumn, isInputTableValueColumn, isSortable,
                 columnRestrictions);
+    }
+
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    public interface ColumnOrName {
+        @JsOverlay
+        static Function<ColumnOrName, String> COLUMN_NAME = c -> c.isString() ? c.asString() : c.asColumn().getName();
+
+        @JsOverlay
+        static ColumnOrName of(@DoNotAutobox Object value) {
+            return Js.cast(value);
+        }
+
+        @JsOverlay
+        default boolean isString() {
+            return (Object) this instanceof String;
+        }
+
+        @JsOverlay
+        default boolean isColumn() {
+            return (Object) this instanceof Column;
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default String asString() {
+            return Js.asString(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default Column asColumn() {
+            return Js.cast(this);
+        }
+
     }
 }

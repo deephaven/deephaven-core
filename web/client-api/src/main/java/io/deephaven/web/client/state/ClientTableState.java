@@ -20,7 +20,6 @@ import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.HasTableState;
-import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -637,7 +636,7 @@ public final class ClientTableState extends TableConfig {
         return c;
     }
 
-    public JsArray<Column> mapToColumns(ReadonlyArray<JsTableOperations.ColumnOrName> columns) {
+    public JsArray<Column> mapToColumns(ReadonlyArray<Column.ColumnOrName> columns) {
         return columns.map((c, i) -> {
             if (c.isString()) {
                 return findColumn(c.asString());

@@ -8,7 +8,6 @@ import elemental2.core.JsArray;
 import elemental2.core.ReadonlyArray;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsTable;
-import io.deephaven.web.client.api.JsTableOperations;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsIgnore;
@@ -67,7 +66,7 @@ public final class TableSubscription extends AbstractTableSubscription {
      * @param columns the new columns to subscribe to.
      * @param updateIntervalMs the new update interval, or {@code null}/omit to use the default of one second.
      */
-    public void changeSubscription(ReadonlyArray<JsTableOperations.ColumnOrName> columns,
+    public void changeSubscription(ReadonlyArray<Column.ColumnOrName> columns,
             @JsOptional @JsNullable Double updateIntervalMs) {
         if (updateIntervalMs != null && !updateIntervalMs.equals(this.updateIntervalMs)) {
             throw new IllegalArgumentException(

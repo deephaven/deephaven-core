@@ -5,8 +5,6 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import com.vertispan.tsdefs.annotations.TsUnion;
-import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.AggSpec;
@@ -24,23 +22,19 @@ import io.deephaven.proto.backplane.grpc.SortDescriptor;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.proto.backplane.grpc.NullValue;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
+import io.deephaven.web.client.api.agg.*;
 import io.deephaven.web.client.api.filter.FilterCondition;
-import javaemul.internal.annotations.DoNotAutobox;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
-import jsinterop.annotations.JsOverlay;
-import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -298,7 +292,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new filtered table
      */
     @JsMethod
-    default JsPendingTable whereIn(JsTableOperations rightTable, ReadonlyArray<ColumnOrName> columnsToMatch) {
+    default JsPendingTable whereIn(JsTableOperations rightTable, ReadonlyArray<Column.ColumnOrName> columnsToMatch) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setWhereIn(WhereInRequest.newBuilder()
@@ -323,7 +317,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new filtered table
      */
     @JsMethod
-    default JsPendingTable whereNotIn(JsTableOperations rightTable, ReadonlyArray<ColumnOrName> columnsToMatch) {
+    default JsPendingTable whereNotIn(JsTableOperations rightTable, ReadonlyArray<Column.ColumnOrName> columnsToMatch) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setWhereIn(WhereInRequest.newBuilder()
@@ -498,41 +492,6 @@ public interface JsTableOperations extends ServerObject {
     // @JsMethod
     // JsTableOperations rangeJoin(JsTableOperations rightTable,
 
-    @TsUnion
-    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
-    public interface ColumnOrName {
-        @JsOverlay
-        static Function<ColumnOrName, String> COLUMN_NAME = c -> c.isString() ? c.asString() : c.asColumn().getName();
-
-        @JsOverlay
-        static ColumnOrName of(@DoNotAutobox Object value) {
-            return Js.cast(value);
-        }
-
-        @JsOverlay
-        default boolean isString() {
-            return (Object) this instanceof String;
-        }
-
-        @JsOverlay
-        default boolean isColumn() {
-            return (Object) this instanceof Column;
-        }
-
-        @JsOverlay
-        @TsUnionMember
-        default String asString() {
-            return Js.asString(this);
-        }
-
-        @JsOverlay
-        @TsUnionMember
-        default Column asColumn() {
-            return Js.cast(this);
-        }
-
-    }
-
     /**
      * Groups the table by the specified columns, accumulating the other columns into arrays. If no columns are
      * provided, the resulting table will have a single row.
@@ -541,7 +500,7 @@ public interface JsTableOperations extends ServerObject {
      * @return
      */
     @JsMethod
-    default JsTableOperations groupBy(@JsOptional @JsNullable ReadonlyArray<ColumnOrName> groupByColumns) {
+    default JsTableOperations groupBy(@JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest.newBuilder()
@@ -550,292 +509,9 @@ public interface JsTableOperations extends ServerObject {
                         .build())
                 .setResultId(ticket)
                 .addAllGroupByColumns(groupByColumns != null ? groupByColumns.asList().stream()
-                        .map(ColumnOrName.COLUMN_NAME)
+                        .map(Column.ColumnOrName.COLUMN_NAME)
                         .toList() : Collections.emptyList())));
     }
-
-    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
-    @TsUnion
-    public static interface AggregationUnion {
-        @JsOverlay
-        @TsUnionMember
-        AbsSum asAbsSum();
-
-        @JsOverlay
-        @TsUnionMember
-        ApproxPercentile asApproxPercentile();
-
-        @JsOverlay
-        @TsUnionMember
-        Avg asAvg();
-
-        @JsOverlay
-        @TsUnionMember
-        CountDistinct asCountDistinct();
-
-        @JsOverlay
-        @TsUnionMember
-        Distinct asDistinct();
-
-        @JsOverlay
-        @TsUnionMember
-        First asFirst();
-
-        @JsOverlay
-        @TsUnionMember
-        Formula asFormula();
-
-        @JsOverlay
-        @TsUnionMember
-        Freeze asFreeze();
-
-        @JsOverlay
-        @TsUnionMember
-        Group asGroup();
-
-        @JsOverlay
-        @TsUnionMember
-        Last asLast();
-
-        @JsOverlay
-        @TsUnionMember
-        Max asMax();
-
-        @JsOverlay
-        @TsUnionMember
-        Median asMedian();
-
-        @JsOverlay
-        @TsUnionMember
-        Min asMin();
-
-        @JsOverlay
-        @TsUnionMember
-        Percentile asPercentile();
-
-        @JsOverlay
-        @TsUnionMember
-        SortedFirst asSortedFirst();
-
-        @JsOverlay
-        @TsUnionMember
-        SortedLast asSortedLast();
-
-        @JsOverlay
-        @TsUnionMember
-        Std asStd();
-
-        @JsOverlay
-        @TsUnionMember
-        Sum asSum();
-
-        @JsOverlay
-        @TsUnionMember
-        TDigest asTDigest();
-
-        @JsOverlay
-        @TsUnionMember
-        Unique asUnique();
-
-        @JsOverlay
-        @TsUnionMember
-        Var asVar();
-
-        @JsOverlay
-        @TsUnionMember
-        WAvg asWAvg();
-
-        @JsOverlay
-        @TsUnionMember
-        WSum asWSum();
-
-        @JsOverlay
-        @TsUnionMember
-        Count asCount();
-
-        @JsOverlay
-        @TsUnionMember
-        CountWhere asCountWhere();
-
-        @JsOverlay
-        @TsUnionMember
-        Partition asPartition();
-
-        @JsOverlay
-        @TsUnionMember
-        FirstRowKey asFirstRowKey();
-
-        @JsOverlay
-        @TsUnionMember
-        LastRowKey asLastRowKey();
-
-        /**
-         * Helper to read the type of any of the agg types - not visible from JS/TS as part of this union, but
-         * allows access to the `type` field that each agg type has.
-         * @return
-         */
-        @JsProperty
-        String getType();
-    }
-
-    public static sealed class Aggregation
-            permits ColumnAggregation, Count, CountWhere, Partition, FirstRowKey, LastRowKey {
-    }
-
-    public static sealed class ColumnAggregation extends Aggregation
-            permits AbsSum, ApproxPercentile, Avg, CountDistinct, Distinct, First, Formula, Freeze, Group, Last, Max,
-            Median, Min, Percentile, SortedFirst, SortedLast, Std, Sum, TDigest, Unique, Var, WAvg, WSum {
-        @JsNullable
-        ReadonlyArray<ColumnOrName> columns;
-    }
-
-    public final class SortedFirst extends ColumnAggregation {
-        final String type = "SortedFirst";
-        ReadonlyArray<Sort> sortedColumns;
-    }
-    public final class SortedLast extends ColumnAggregation {
-        final String type = "SortedLast";
-        ReadonlyArray<Sort> sortedColumns;
-    }
-    public final class Percentile extends ColumnAggregation {
-        final String type = "Percentile";
-        double percentile;
-        boolean averageEvenlyDivided;
-    }
-    public final class WSum extends ColumnAggregation {
-        final String type = "WSum";
-        ColumnOrName weightColumn;
-    }
-
-    public final class Sum extends ColumnAggregation {
-        final String type = "Sum";
-    }
-    public final class Last extends ColumnAggregation {
-        final String type = "Last";
-    }
-    public final class Var extends ColumnAggregation {
-        final String type = "Var";
-    }
-    public final class Group extends ColumnAggregation {
-        final String type = "Group";
-    }
-    public final class First extends ColumnAggregation {
-        final String type = "First";
-    }
-    public final class Freeze extends ColumnAggregation {
-        final String type = "Freeze";
-    }
-    public final class Avg extends ColumnAggregation {
-        final String type = "Avg";
-    }
-    public final class Min extends ColumnAggregation {
-        final String type = "Min";
-    }
-    public final class Max extends ColumnAggregation {
-        final String type = "Max";
-    }
-    public final class AbsSum extends ColumnAggregation {
-        final String type = "AbsSum";
-    }
-    public final class Std extends ColumnAggregation {
-        final String type = "Std";
-    }
-    public final class CountDistinct extends ColumnAggregation {
-        final String type = "CountDistinct";
-        boolean countNulls;
-    }
-    public final class ApproxPercentile extends ColumnAggregation {
-        final String type = "ApproxPercentile";
-        /**
-         * The percentile to calculate. Must be in the range [0.0, 1.0].
-         */
-        double percentile;
-        /**
-         * Whether to average the highest low-bucket value and lowest high-bucket value, when the low-bucket and
-         * high-bucket are of equal size. Only applies to numeric types.
-         */
-        @JsNullable
-        Double compression;
-    }
-    public final class WAvg extends ColumnAggregation {
-        final String type = "WAvg";
-        ColumnOrName weightColumn;
-    }
-    public final class Median extends ColumnAggregation {
-        final String type = "Median";
-        boolean averageEvenlyDivided;
-    }
-    public final class Distinct extends ColumnAggregation {
-        final String type = "Distinct";
-        boolean includeNulls;
-    }
-    public final class Unique extends ColumnAggregation {
-        final String type = "Unique";
-        boolean includeNulls;
-        // TODO non-unique sentinel values
-    }
-    public final class TDigest extends ColumnAggregation {
-        final String type = "TDigest";
-        @JsNullable
-        Double compression;
-    }
-    public final class Formula extends ColumnAggregation {
-        final String type = "Formula";
-        String formula;
-        String paramToken;
-    }
-
-    /**
-     * Counts the number of rows in each group. Not supported in aggAllBy.
-     */
-    public final class Count extends Aggregation {
-        final String type = "Count";
-        /** The output column name to hold the counts. */
-        String col;
-    }
-
-    /**
-     * Counts the number of rows matching the given filters in each group. Not supported in aggAllBy.
-     */
-    public final class CountWhere extends Aggregation {
-        final String type = "CountWhere";
-        /** The output column name to hold the counts. */
-        String col;
-        /** The filter expression(s) to apply. */
-        ReadonlyArray<String> filters;
-    }
-
-    /**
-     * Partitions the table into sub-tables, one per group. Not supported in aggAllBy.
-     */
-    public final class Partition extends Aggregation {
-        final String type = "Partition";
-        /** The output column name to hold the sub-tables. */
-        String col;
-        /** Whether to include the group-by columns in the sub-tables. Defaults to true if omitted. */
-        @JsNullable
-        Boolean includeGroupByColumns;
-    }
-
-    /**
-     * Returns the row key of the first row in each group. Not supported in aggAllBy.
-     */
-    public final class FirstRowKey extends Aggregation {
-        final String type = "FirstRowKey";
-        /** The output column name to hold the first row key. */
-        String col;
-    }
-
-    /**
-     * Returns the row key of the last row in each group. Not supported in aggAllBy.
-     */
-    public final class LastRowKey extends Aggregation {
-        final String type = "LastRowKey";
-        /** The output column name to hold the last row key. */
-        String col;
-    }
-
-
 
     /**
      * Applies a single aggregation to all columns.
@@ -845,8 +521,8 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with these aggregations applied to the data in this table
      */
     @JsMethod
-    default JsTableOperations aggAllBy(AggregationUnion aggUnion,
-            @JsOptional @JsNullable ReadonlyArray<ColumnOrName> groupByColumns) {
+    default JsTableOperations aggAllBy(AggAllByUnion aggUnion,
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         AggSpec.Builder spec = makeAggSpec(aggUnion);
@@ -857,7 +533,7 @@ public interface JsTableOperations extends ServerObject {
                         .build())
                 .setSpec(spec)
                 .addAllGroupByColumns(groupByColumns != null ? groupByColumns.asList().stream()
-                        .map(ColumnOrName.COLUMN_NAME)
+                        .map(Column.ColumnOrName.COLUMN_NAME)
                         .toList() : Collections.emptyList())));
     }
 
@@ -906,7 +582,7 @@ public interface JsTableOperations extends ServerObject {
         }
 
         // Spec-based aggregation types — build AggSpec, then wrap in AggregationColumns with match pairs
-        AggSpec.Builder spec = makeAggSpec(aggUnion);
+        AggSpec.Builder spec = makeAggSpec((AggAllByUnion) aggUnion);
 
         io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns.Builder colsBuilder =
                 io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns.newBuilder()
@@ -919,7 +595,7 @@ public interface JsTableOperations extends ServerObject {
         return result.setColumns(colsBuilder);
     }
 
-    private AggSpec.Builder makeAggSpec(AggregationUnion aggUnion) {
+    private AggSpec.Builder makeAggSpec(AggAllByUnion aggUnion) {
         AggSpec.Builder spec = AggSpec.newBuilder();
         switch (aggUnion.getType()) {
             case "AbsSum":
@@ -1037,13 +713,13 @@ public interface JsTableOperations extends ServerObject {
             case "WAvg": {
                 WAvg wAvg = aggUnion.asWAvg();
                 spec.setWeightedAvg(AggSpec.AggSpecWeighted.newBuilder()
-                        .setWeightColumn(ColumnOrName.COLUMN_NAME.apply(wAvg.weightColumn)));
+                        .setWeightColumn(Column.ColumnOrName.COLUMN_NAME.apply(wAvg.weightColumn)));
                 break;
             }
             case "WSum": {
                 WSum wSum = aggUnion.asWSum();
                 spec.setWeightedSum(AggSpec.AggSpecWeighted.newBuilder()
-                        .setWeightColumn(ColumnOrName.COLUMN_NAME.apply(wSum.weightColumn)));
+                        .setWeightColumn(Column.ColumnOrName.COLUMN_NAME.apply(wSum.weightColumn)));
                 break;
             }
             default:
@@ -1055,7 +731,8 @@ public interface JsTableOperations extends ServerObject {
 
     @JsMethod
     default JsTableOperations aggBy(ReadonlyArray<AggregationUnion> aggregations, boolean preserveEmpty,
-            @JsNullable JsTableOperations initialGroups, @JsNullable ReadonlyArray<ColumnOrName> groupByColumns) {
+            @JsNullable JsTableOperations initialGroups,
+            @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         AggregateRequest.Builder aggBuilder = AggregateRequest.newBuilder()
@@ -1078,7 +755,7 @@ public interface JsTableOperations extends ServerObject {
         }
         if (groupByColumns != null) {
             aggBuilder.addAllGroupByColumns(groupByColumns.asList().stream()
-                    .map(ColumnOrName.COLUMN_NAME)
+                    .map(Column.ColumnOrName.COLUMN_NAME)
                     .toList());
         }
         return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder));
@@ -1147,7 +824,7 @@ public interface JsTableOperations extends ServerObject {
          */
         @JsProperty
         @JsNullable
-        public ReadonlyArray<ColumnOrName> columnsToUngroup;
+        public ReadonlyArray<Column.ColumnOrName> columnsToUngroup;
     }
 
     /**
@@ -1180,7 +857,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table without those columns
      */
     @JsMethod
-    default JsPendingTable dropColumn(ReadonlyArray<ColumnOrName> columnsToDrop) {
+    default JsPendingTable dropColumn(ReadonlyArray<Column.ColumnOrName> columnsToDrop) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setDropColumns(DropColumnsRequest.newBuilder()
@@ -1190,8 +867,8 @@ public interface JsTableOperations extends ServerObject {
                 .addAllColumnNames(columnsToNameList(columnsToDrop))));
     }
 
-    private static List<String> columnsToNameList(ReadonlyArray<ColumnOrName> columnsToDrop) {
-        return columnsToDrop.asList().stream().map(ColumnOrName.COLUMN_NAME).toList();
+    private static List<String> columnsToNameList(ReadonlyArray<Column.ColumnOrName> columnsToDrop) {
+        return columnsToDrop.asList().stream().map(Column.ColumnOrName.COLUMN_NAME).toList();
     }
     // endregion
 
