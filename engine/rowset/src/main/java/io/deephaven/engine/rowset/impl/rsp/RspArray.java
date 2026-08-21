@@ -1940,6 +1940,43 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         ++size;
     }
 
+    /**
+     * Make room for and place every span accumulated in {@code pending}, with a single pass over our arrays; the
+     * batched form of {@link #open}. Leaves {@code pending} empty.
+     *
+     * <p>
+     * Callers must not have marked any span for removal (see {@link #markIndexAsRemoved}) while these positions were
+     * accumulating: removals are recorded as array indices, and moving spans here would leave those indices pointing at
+     * the wrong spans.
+     */
+    protected void applyPendingSpanInserts(final PendingSpanInserts pending) {
+        final int deltaSpans = pending.count;
+        if (deltaSpans == 0) {
+            return;
+        }
+        ensureSizeCanGrowBy(deltaSpans);
+        // Walk the pending spans from last to first, so that each block of our spans is moved to its final place
+        // exactly once: everything from the current position to the last span not yet moved slides right by the number
+        // of pending spans still to be placed after it.
+        int dstIdx = size + deltaSpans - 1;
+        int srcIdx = size - 1;
+        for (int p = deltaSpans - 1; p >= 0; --p) {
+            final int position = pending.positions[p];
+            final int n = srcIdx - position + 1;
+            if (n > 0) {
+                arrayCopies(position, dstIdx - n + 1, n);
+                dstIdx -= n;
+                srcIdx = position - 1;
+            }
+            spanInfos[dstIdx] = pending.spanInfos[p];
+            spans[dstIdx] = pending.spans[p];
+            --dstIdx;
+        }
+        size += deltaSpans;
+        modifiedSpan(pending.positions[0]);
+        pending.clear();
+    }
+
     private void open(final int i) {
         ensureSizeCanGrowBy(1);
         final int dstPos = i + 1;
@@ -2880,6 +2917,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         private SortedRangesInt sortedRangesInt;
         private SortedRangesInt madeNullSortedRanges;
         private ArraysBuf rspArraysBuf;
+        private PendingSpanInserts pendingSpanInserts;
         private SpanView[] spanViewStack = ZERO_LENGTH_SPAN_VIEW_ARRAY;
         private int stackEnd = 0;
         private int stackGrowAmount = 0;
@@ -2912,6 +2950,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             madeNullSortedRanges.clear();
             return madeNullSortedRanges;
+        }
+
+        PendingSpanInserts getPendingSpanInserts() {
+            if (pendingSpanInserts == null) {
+                pendingSpanInserts = new PendingSpanInserts();
+            } else {
+                pendingSpanInserts.clear();
+            }
+            return pendingSpanInserts;
         }
 
         ArraysBuf getArraysBuf(final int minCapacity) {
@@ -3576,6 +3623,59 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 }
                 return andIdx + 1;
             }
+        }
+    }
+
+    /**
+     * Spans to be inserted into an {@link RspArray} at positions established ahead of time, so that room for all of
+     * them can be made in a single pass. Inserting them one at a time shifts the tail of the array once per span, which
+     * is quadratic when many spans go into a long array.
+     *
+     * <p>
+     * A position is an index into the array as it stands while entries accumulate; nothing moves until
+     * {@link RspArray#applyPendingSpanInserts} runs, so a caller can keep searching the array while it fills this in.
+     * Positions must be pushed in non-decreasing order; entries sharing a position keep their push order.
+     */
+    protected static final class PendingSpanInserts {
+        private static final int INITIAL_CAPACITY = 16;
+        private int[] positions = new int[INITIAL_CAPACITY];
+        private long[] spanInfos = new long[INITIAL_CAPACITY];
+        private Object[] spans = new Object[INITIAL_CAPACITY];
+        private int count;
+
+        int count() {
+            return count;
+        }
+
+        void clear() {
+            // Whatever we were holding is in the array now; don't keep containers alive through this cache.
+            java.util.Arrays.fill(spans, 0, count, null);
+            count = 0;
+        }
+
+        private void ensureCanGrowByOne() {
+            if (count < positions.length) {
+                return;
+            }
+            final int newCapacity = 2 * positions.length;
+            positions = java.util.Arrays.copyOf(positions, newCapacity);
+            spanInfos = java.util.Arrays.copyOf(spanInfos, newCapacity);
+            spans = java.util.Arrays.copyOf(spans, newCapacity);
+        }
+
+        void pushSingleton(final int position, final long value) {
+            ensureCanGrowByOne();
+            positions[count] = position;
+            spanInfos[count] = value;
+            spans[count] = null;
+            ++count;
+        }
+
+        void pushContainer(final int position, final long key, final Container container) {
+            ensureCanGrowByOne();
+            positions[count] = position;
+            setContainerSpanRaw(spanInfos, spans, count, key, container);
+            ++count;
         }
     }
 

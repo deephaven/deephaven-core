@@ -144,6 +144,11 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         int lengthFromThisSpan;
         final WorkData wd = workDataPerThread.get();
         final MutableObject<SortedRanges> sortedRangesMu = getWorkSortedRangesMutableObject(wd);
+        final PendingSpanInserts pending = wd.getPendingSpanInserts();
+        // Blocks we do not have yet are collected and inserted in one pass, rather than shifting our tail once per
+        // block. Promoting a block to a full block span has to give that up, because it can mark spans for removal by
+        // index and moving spans afterwards would invalidate those indices.
+        boolean batchInserts = true;
         int spanIndex = 0;
         try (SpanView ourView = wd.borrowSpanView()) {
             for (int vi = 0; vi < length; vi += lengthFromThisSpan) {
@@ -170,18 +175,36 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 final Container result = createOrUpdateContainerForValues(
                         values, vi + offset, lengthFromThisSpan, existing, spanIndex, container);
                 if (result != null && result.isAllOnes()) {
-                    spanIndex = setOrInsertFullBlockSpanAtIndex(spanIndexRaw, highBits, 1, sortedRangesMu);
+                    final int idxForFull;
+                    if (pending.count() == 0) {
+                        idxForFull = spanIndexRaw;
+                    } else {
+                        // Our spans move here, so the position we searched out above no longer holds.
+                        applyPendingSpanInserts(pending);
+                        idxForFull = getSpanIndex(0, highBits);
+                    }
+                    batchInserts = false;
+                    spanIndex = setOrInsertFullBlockSpanAtIndex(idxForFull, highBits, 1, sortedRangesMu);
                 } else if (!existing) {
                     if (result == null) {
-                        insertSingletonAtIndex(spanIndex, value);
+                        if (batchInserts) {
+                            pending.pushSingleton(spanIndex, value);
+                        } else {
+                            insertSingletonAtIndex(spanIndex, value);
+                        }
                     } else {
-                        insertContainerAtIndex(spanIndex, highBits, result);
+                        if (batchInserts) {
+                            pending.pushContainer(spanIndex, highBits, result);
+                        } else {
+                            insertContainerAtIndex(spanIndex, highBits, result);
+                        }
                     }
                 } else {
                     setContainerSpan(container, spanIndex, highBits, result);
                 }
             }
         }
+        applyPendingSpanInserts(pending);
         collectRemovedIndicesIfAny(sortedRangesMu);
     }
 
