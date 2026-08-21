@@ -277,10 +277,27 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         CURR, PREV
     }
 
+    /**
+     * Mutable holder for the last slot accessed by a context, used to seed subsequent slot searches in
+     * {@link UnionRedirection}. All {@link SlotState slot states} belonging to a single context share one instance,
+     * which matters because a {@link GetContext} delegates to its {@link FillContext} for row sequences that span
+     * multiple slots; without sharing, the delegating context's hint would go stale and force a full search of the slot
+     * key space on its next access.
+     */
+    private static final class SlotHint {
+
+        private int lastSlot;
+    }
+
     private abstract class SlotState<SLOT_CONTEXT_TYPE extends Context> implements SafeCloseable {
 
         private static final int NULL_SLOT = -1;
         private static final int NULL_SHIFT = -1;
+
+        /**
+         * Our context's shared record of the last slot accessed, maintained by {@link #prepare}.
+         */
+        private final SlotHint slotHint;
 
         /**
          * Row sequence wrapper used to translate outer row keys into the row key space of the source occupying our
@@ -298,14 +315,16 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         protected SLOT_CONTEXT_TYPE context;
         protected int capacity;
 
-        int lastAccessedSlot() {
-            return slot == NULL_SLOT ? 0 : slot;
+        private SlotState(@NotNull final SlotHint slotHint) {
+            this.slotHint = slotHint;
         }
 
         void prepare(final int sliceSlot, final DataVersion sliceDataVersion, final int sliceSize) {
             Require.geqZero(sliceSlot, "sliceSlot");
             Require.gtZero(sliceSize, "sliceSize");
             Require.neqNull(sliceDataVersion, "dataVersion");
+
+            slotHint.lastSlot = sliceSlot;
 
             final ColumnSource<T> oldSource = source;
             if (sliceSlot != slot || sliceDataVersion != dataVersion) {
@@ -391,6 +410,10 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
          */
         private final ResettableWritableChunk<Any> sliceDestination = getChunkType().makeResettableWritableChunk();
 
+        private SlotFillState(@NotNull final SlotHint slotHint) {
+            super(slotHint);
+        }
+
         @Override
         protected void makeContext(final int sliceSize) {
             context = source.makeFillContext(sliceSize);
@@ -432,6 +455,10 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     private class SlotGetState extends SlotState<ChunkSource.GetContext> {
 
+        private SlotGetState(@NotNull final SlotHint slotHint) {
+            super(slotHint);
+        }
+
         @Override
         protected void makeContext(final int sliceSize) {
             context = source.makeGetContext(sliceSize);
@@ -461,14 +488,16 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     private class FillContext implements ChunkSource.FillContext {
 
+        private final SlotHint slotHint;
         private final SlotFillState slotState;
 
         private FillContext() {
-            slotState = new SlotFillState();
+            slotHint = new SlotHint();
+            slotState = new SlotFillState(slotHint);
         }
 
         private int lastSlot() {
-            return slotState.lastAccessedSlot();
+            return slotHint.lastSlot;
         }
 
         private void fillChunkAppend(
@@ -493,11 +522,14 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     private class GetContext extends DefaultGetContext<Values> {
 
+        private final SlotHint slotHint;
         private final SlotGetState slotState;
 
         private GetContext(final int chunkCapacity) {
             super(UnionColumnSource.this, chunkCapacity, null);
-            slotState = new SlotGetState();
+            // Share our fill context's hint; we delegate to it for row sequences that span multiple slots.
+            slotHint = getFillContext().slotHint;
+            slotState = new SlotGetState(slotHint);
         }
 
         @Override
@@ -507,7 +539,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
 
         private int lastSlot() {
-            return slotState.lastAccessedSlot();
+            return slotHint.lastSlot;
         }
 
         private Chunk<? extends Values> getChunk(final int slot, @NotNull final RowSequence outerRowSequence) {
