@@ -9,6 +9,9 @@ import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
+import io.deephaven.proto.backplane.grpc.AggSpec;
+import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
+import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
@@ -21,6 +24,7 @@ import io.deephaven.proto.backplane.grpc.SortDescriptor;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.NullValue;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.web.client.api.filter.FilterCondition;
@@ -529,16 +533,556 @@ public interface JsTableOperations extends ServerObject {
 
     }
 
-    // @JsMethod
-    // JsTableOperations groupBy(JsArray<ColumnOrName> columns);
+    /**
+     * Groups the table by the specified columns, accumulating the other columns into arrays. If no columns are
+     * provided, the resulting table will have a single row.
+     * 
+     * @param groupByColumns columns to group
+     * @return
+     */
+    @JsMethod
+    default JsTableOperations groupBy(@JsOptional @JsNullable ReadonlyArray<ColumnOrName> groupByColumns) {
+        Ticket ticket = getConnection().getTickets().newExportTicket();
 
-    // TODO re-model aggs into a new options object
-    // @JsMethod
-    // JsTableOperations aggAllBy(JsTotalsTableConfig config);
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest.newBuilder()
+                .setSourceId(TableReference.newBuilder()
+                        .setTicket(typedTicket().getTicket())
+                        .build())
+                .setResultId(ticket)
+                .addAllGroupByColumns(groupByColumns != null ? groupByColumns.asList().stream()
+                        .map(ColumnOrName.COLUMN_NAME)
+                        .toList() : Collections.emptyList())));
+    }
 
-    // TODO single agg model, plus preserveEmpty boolean?
-    // @JsMethod
-    // JsTableOperations aggBy(JsTotalsTableConfig config);
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    @TsUnion
+    public static interface AggregationUnion {
+        @JsOverlay
+        @TsUnionMember
+        AbsSum asAbsSum();
+
+        @JsOverlay
+        @TsUnionMember
+        ApproxPercentile asApproxPercentile();
+
+        @JsOverlay
+        @TsUnionMember
+        Avg asAvg();
+
+        @JsOverlay
+        @TsUnionMember
+        CountDistinct asCountDistinct();
+
+        @JsOverlay
+        @TsUnionMember
+        Distinct asDistinct();
+
+        @JsOverlay
+        @TsUnionMember
+        First asFirst();
+
+        @JsOverlay
+        @TsUnionMember
+        Formula asFormula();
+
+        @JsOverlay
+        @TsUnionMember
+        Freeze asFreeze();
+
+        @JsOverlay
+        @TsUnionMember
+        Group asGroup();
+
+        @JsOverlay
+        @TsUnionMember
+        Last asLast();
+
+        @JsOverlay
+        @TsUnionMember
+        Max asMax();
+
+        @JsOverlay
+        @TsUnionMember
+        Median asMedian();
+
+        @JsOverlay
+        @TsUnionMember
+        Min asMin();
+
+        @JsOverlay
+        @TsUnionMember
+        Percentile asPercentile();
+
+        @JsOverlay
+        @TsUnionMember
+        SortedFirst asSortedFirst();
+
+        @JsOverlay
+        @TsUnionMember
+        SortedLast asSortedLast();
+
+        @JsOverlay
+        @TsUnionMember
+        Std asStd();
+
+        @JsOverlay
+        @TsUnionMember
+        Sum asSum();
+
+        @JsOverlay
+        @TsUnionMember
+        TDigest asTDigest();
+
+        @JsOverlay
+        @TsUnionMember
+        Unique asUnique();
+
+        @JsOverlay
+        @TsUnionMember
+        Var asVar();
+
+        @JsOverlay
+        @TsUnionMember
+        WAvg asWAvg();
+
+        @JsOverlay
+        @TsUnionMember
+        WSum asWSum();
+
+        @JsOverlay
+        @TsUnionMember
+        Count asCount();
+
+        @JsOverlay
+        @TsUnionMember
+        CountWhere asCountWhere();
+
+        @JsOverlay
+        @TsUnionMember
+        Partition asPartition();
+
+        @JsOverlay
+        @TsUnionMember
+        FirstRowKey asFirstRowKey();
+
+        @JsOverlay
+        @TsUnionMember
+        LastRowKey asLastRowKey();
+
+        /**
+         * Helper to read the type of any of the agg types - not visible from JS/TS as part of this union, but
+         * allows access to the `type` field that each agg type has.
+         * @return
+         */
+        @JsProperty
+        String getType();
+    }
+
+    public static sealed class Aggregation
+            permits ColumnAggregation, Count, CountWhere, Partition, FirstRowKey, LastRowKey {
+    }
+
+    public static sealed class ColumnAggregation extends Aggregation
+            permits AbsSum, ApproxPercentile, Avg, CountDistinct, Distinct, First, Formula, Freeze, Group, Last, Max,
+            Median, Min, Percentile, SortedFirst, SortedLast, Std, Sum, TDigest, Unique, Var, WAvg, WSum {
+        @JsNullable
+        ReadonlyArray<ColumnOrName> columns;
+    }
+
+    public final class SortedFirst extends ColumnAggregation {
+        final String type = "SortedFirst";
+        ReadonlyArray<Sort> sortedColumns;
+    }
+    public final class SortedLast extends ColumnAggregation {
+        final String type = "SortedLast";
+        ReadonlyArray<Sort> sortedColumns;
+    }
+    public final class Percentile extends ColumnAggregation {
+        final String type = "Percentile";
+        double percentile;
+        boolean averageEvenlyDivided;
+    }
+    public final class WSum extends ColumnAggregation {
+        final String type = "WSum";
+        ColumnOrName weightColumn;
+    }
+
+    public final class Sum extends ColumnAggregation {
+        final String type = "Sum";
+    }
+    public final class Last extends ColumnAggregation {
+        final String type = "Last";
+    }
+    public final class Var extends ColumnAggregation {
+        final String type = "Var";
+    }
+    public final class Group extends ColumnAggregation {
+        final String type = "Group";
+    }
+    public final class First extends ColumnAggregation {
+        final String type = "First";
+    }
+    public final class Freeze extends ColumnAggregation {
+        final String type = "Freeze";
+    }
+    public final class Avg extends ColumnAggregation {
+        final String type = "Avg";
+    }
+    public final class Min extends ColumnAggregation {
+        final String type = "Min";
+    }
+    public final class Max extends ColumnAggregation {
+        final String type = "Max";
+    }
+    public final class AbsSum extends ColumnAggregation {
+        final String type = "AbsSum";
+    }
+    public final class Std extends ColumnAggregation {
+        final String type = "Std";
+    }
+    public final class CountDistinct extends ColumnAggregation {
+        final String type = "CountDistinct";
+        boolean countNulls;
+    }
+    public final class ApproxPercentile extends ColumnAggregation {
+        final String type = "ApproxPercentile";
+        /**
+         * The percentile to calculate. Must be in the range [0.0, 1.0].
+         */
+        double percentile;
+        /**
+         * Whether to average the highest low-bucket value and lowest high-bucket value, when the low-bucket and
+         * high-bucket are of equal size. Only applies to numeric types.
+         */
+        @JsNullable
+        Double compression;
+    }
+    public final class WAvg extends ColumnAggregation {
+        final String type = "WAvg";
+        ColumnOrName weightColumn;
+    }
+    public final class Median extends ColumnAggregation {
+        final String type = "Median";
+        boolean averageEvenlyDivided;
+    }
+    public final class Distinct extends ColumnAggregation {
+        final String type = "Distinct";
+        boolean includeNulls;
+    }
+    public final class Unique extends ColumnAggregation {
+        final String type = "Unique";
+        boolean includeNulls;
+        // TODO non-unique sentinel values
+    }
+    public final class TDigest extends ColumnAggregation {
+        final String type = "TDigest";
+        @JsNullable
+        Double compression;
+    }
+    public final class Formula extends ColumnAggregation {
+        final String type = "Formula";
+        String formula;
+        String paramToken;
+    }
+
+    /**
+     * Counts the number of rows in each group. Not supported in aggAllBy.
+     */
+    public final class Count extends Aggregation {
+        final String type = "Count";
+        /** The output column name to hold the counts. */
+        String col;
+    }
+
+    /**
+     * Counts the number of rows matching the given filters in each group. Not supported in aggAllBy.
+     */
+    public final class CountWhere extends Aggregation {
+        final String type = "CountWhere";
+        /** The output column name to hold the counts. */
+        String col;
+        /** The filter expression(s) to apply. */
+        ReadonlyArray<String> filters;
+    }
+
+    /**
+     * Partitions the table into sub-tables, one per group. Not supported in aggAllBy.
+     */
+    public final class Partition extends Aggregation {
+        final String type = "Partition";
+        /** The output column name to hold the sub-tables. */
+        String col;
+        /** Whether to include the group-by columns in the sub-tables. Defaults to true if omitted. */
+        @JsNullable
+        Boolean includeGroupByColumns;
+    }
+
+    /**
+     * Returns the row key of the first row in each group. Not supported in aggAllBy.
+     */
+    public final class FirstRowKey extends Aggregation {
+        final String type = "FirstRowKey";
+        /** The output column name to hold the first row key. */
+        String col;
+    }
+
+    /**
+     * Returns the row key of the last row in each group. Not supported in aggAllBy.
+     */
+    public final class LastRowKey extends Aggregation {
+        final String type = "LastRowKey";
+        /** The output column name to hold the last row key. */
+        String col;
+    }
+
+
+
+    /**
+     * Applies a single aggregation to all columns.
+     * 
+     * @param aggUnion the aggregation to apply
+     * @param groupByColumns columns to group by
+     * @return a new table with these aggregations applied to the data in this table
+     */
+    @JsMethod
+    default JsTableOperations aggAllBy(AggregationUnion aggUnion,
+            @JsOptional @JsNullable ReadonlyArray<ColumnOrName> groupByColumns) {
+        Ticket ticket = getConnection().getTickets().newExportTicket();
+
+        AggSpec.Builder spec = makeAggSpec(aggUnion);
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest.newBuilder()
+                .setResultId(ticket)
+                .setSourceId(TableReference.newBuilder()
+                        .setTicket(typedTicket().getTicket())
+                        .build())
+                .setSpec(spec)
+                .addAllGroupByColumns(groupByColumns != null ? groupByColumns.asList().stream()
+                        .map(ColumnOrName.COLUMN_NAME)
+                        .toList() : Collections.emptyList())));
+    }
+
+    private io.deephaven.proto.backplane.grpc.Aggregation.Builder makeAggregation(AggregationUnion aggUnion) {
+        io.deephaven.proto.backplane.grpc.Aggregation.Builder result =
+                io.deephaven.proto.backplane.grpc.Aggregation.newBuilder();
+
+        switch (aggUnion.getType()) {
+            // Non-spec aggregation types — these use different proto oneof arms
+            case "Count": {
+                Count count = aggUnion.asCount();
+                result.setCount(io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount.newBuilder()
+                        .setColumnName(count.col));
+                return result;
+            }
+            case "CountWhere": {
+                CountWhere countWhere = aggUnion.asCountWhere();
+                result.setCountWhere(io.deephaven.proto.backplane.grpc.Aggregation.AggregationCountWhere.newBuilder()
+                        .setColumnName(countWhere.col)
+                        .addAllFilters(countWhere.filters.asList()));
+                return result;
+            }
+            case "Partition": {
+                Partition partition = aggUnion.asPartition();
+                result.setPartition(io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition.newBuilder()
+                        .setColumnName(partition.col)
+                        .setIncludeGroupByColumns(
+                                partition.includeGroupByColumns != null ? partition.includeGroupByColumns : true));
+                return result;
+            }
+            case "FirstRowKey": {
+                FirstRowKey firstRowKey = aggUnion.asFirstRowKey();
+                result.setFirstRowKey(io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey.newBuilder()
+                        .setColumnName(firstRowKey.col));
+                return result;
+            }
+            case "LastRowKey": {
+                LastRowKey lastRowKey = aggUnion.asLastRowKey();
+                result.setLastRowKey(io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey.newBuilder()
+                        .setColumnName(lastRowKey.col));
+                return result;
+            }
+            default:
+                // Fall through to spec-based handling below
+                break;
+        }
+
+        // Spec-based aggregation types — build AggSpec, then wrap in AggregationColumns with match pairs
+        AggSpec.Builder spec = makeAggSpec(aggUnion);
+
+        io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns.Builder colsBuilder =
+                io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns.newBuilder()
+                        .setSpec(spec);
+        ColumnAggregation colAgg = Js.cast(aggUnion);
+        if (colAgg.columns != null) {
+            colsBuilder.addAllMatchPairs(columnsToNameList(colAgg.columns));
+        }
+
+        return result.setColumns(colsBuilder);
+    }
+
+    private AggSpec.Builder makeAggSpec(AggregationUnion aggUnion) {
+        AggSpec.Builder spec = AggSpec.newBuilder();
+        switch (aggUnion.getType()) {
+            case "AbsSum":
+                spec.setAbsSum(AggSpec.AggSpecAbsSum.getDefaultInstance());
+                break;
+            case "ApproxPercentile": {
+                ApproxPercentile approxPct = aggUnion.asApproxPercentile();
+                AggSpec.AggSpecApproximatePercentile.Builder builder =
+                        AggSpec.AggSpecApproximatePercentile.newBuilder()
+                                .setPercentile(approxPct.percentile);
+                if (approxPct.compression != null) {
+                    builder.setCompression(approxPct.compression);
+                }
+                spec.setApproximatePercentile(builder);
+                break;
+            }
+            case "Avg":
+                spec.setAvg(AggSpec.AggSpecAvg.getDefaultInstance());
+                break;
+            case "CountDistinct": {
+                CountDistinct countDistinct = aggUnion.asCountDistinct();
+                spec.setCountDistinct(AggSpec.AggSpecCountDistinct.newBuilder()
+                        .setCountNulls(countDistinct.countNulls));
+                break;
+            }
+            case "Distinct": {
+                Distinct distinct = aggUnion.asDistinct();
+                spec.setDistinct(AggSpec.AggSpecDistinct.newBuilder()
+                        .setIncludeNulls(distinct.includeNulls));
+                break;
+            }
+            case "First":
+                spec.setFirst(AggSpec.AggSpecFirst.getDefaultInstance());
+                break;
+            case "Formula": {
+                Formula formula = aggUnion.asFormula();
+                spec.setFormula(AggSpec.AggSpecFormula.newBuilder()
+                        .setFormula(formula.formula)
+                        .setParamToken(formula.paramToken));
+                break;
+            }
+            case "Freeze":
+                spec.setFreeze(AggSpec.AggSpecFreeze.getDefaultInstance());
+                break;
+            case "Group":
+                spec.setGroup(AggSpec.AggSpecGroup.getDefaultInstance());
+                break;
+            case "Last":
+                spec.setLast(AggSpec.AggSpecLast.getDefaultInstance());
+                break;
+            case "Max":
+                spec.setMax(AggSpec.AggSpecMax.getDefaultInstance());
+                break;
+            case "Median": {
+                Median median = aggUnion.asMedian();
+                spec.setMedian(AggSpec.AggSpecMedian.newBuilder()
+                        .setAverageEvenlyDivided(median.averageEvenlyDivided));
+                break;
+            }
+            case "Min":
+                spec.setMin(AggSpec.AggSpecMin.getDefaultInstance());
+                break;
+            case "Percentile": {
+                Percentile pct = aggUnion.asPercentile();
+                spec.setPercentile(AggSpec.AggSpecPercentile.newBuilder()
+                        .setPercentile(pct.percentile)
+                        .setAverageEvenlyDivided(pct.averageEvenlyDivided));
+                break;
+            }
+            case "SortedFirst": {
+                SortedFirst sortedFirst = aggUnion.asSortedFirst();
+                AggSpec.AggSpecSorted.Builder sortedBuilder = AggSpec.AggSpecSorted.newBuilder();
+                for (Sort sort : sortedFirst.sortedColumns.asList()) {
+                    sortedBuilder.addColumns(AggSpec.AggSpecSortedColumn.newBuilder()
+                            .setColumnName(sort.getColumn().getName()));
+                }
+                spec.setSortedFirst(sortedBuilder);
+                break;
+            }
+            case "SortedLast": {
+                SortedLast sortedLast = aggUnion.asSortedLast();
+                AggSpec.AggSpecSorted.Builder sortedBuilder = AggSpec.AggSpecSorted.newBuilder();
+                for (Sort sort : sortedLast.sortedColumns.asList()) {
+                    sortedBuilder.addColumns(AggSpec.AggSpecSortedColumn.newBuilder()
+                            .setColumnName(sort.getColumn().getName()));
+                }
+                spec.setSortedLast(sortedBuilder);
+                break;
+            }
+            case "Std":
+                spec.setStd(AggSpec.AggSpecStd.getDefaultInstance());
+                break;
+            case "Sum":
+                spec.setSum(AggSpec.AggSpecSum.getDefaultInstance());
+                break;
+            case "TDigest": {
+                TDigest tDigest = aggUnion.asTDigest();
+                AggSpec.AggSpecTDigest.Builder tDigestBuilder = AggSpec.AggSpecTDigest.newBuilder();
+                if (tDigest.compression != null) {
+                    tDigestBuilder.setCompression(tDigest.compression);
+                }
+                spec.setTDigest(tDigestBuilder);
+                break;
+            }
+            case "Unique": {
+                Unique unique = aggUnion.asUnique();
+                spec.setUnique(AggSpec.AggSpecUnique.newBuilder()
+                        .setIncludeNulls(unique.includeNulls));
+                // TODO support null sentinels
+                break;
+            }
+            case "Var":
+                spec.setVar(AggSpec.AggSpecVar.getDefaultInstance());
+                break;
+            case "WAvg": {
+                WAvg wAvg = aggUnion.asWAvg();
+                spec.setWeightedAvg(AggSpec.AggSpecWeighted.newBuilder()
+                        .setWeightColumn(ColumnOrName.COLUMN_NAME.apply(wAvg.weightColumn)));
+                break;
+            }
+            case "WSum": {
+                WSum wSum = aggUnion.asWSum();
+                spec.setWeightedSum(AggSpec.AggSpecWeighted.newBuilder()
+                        .setWeightColumn(ColumnOrName.COLUMN_NAME.apply(wSum.weightColumn)));
+                break;
+            }
+            default:
+                throw new UnsupportedOperationException("Unsupported aggregation: " + aggUnion.getType());
+        }
+
+        return spec;
+    }
+
+    @JsMethod
+    default JsTableOperations aggBy(ReadonlyArray<AggregationUnion> aggregations, boolean preserveEmpty,
+            @JsNullable JsTableOperations initialGroups, @JsNullable ReadonlyArray<ColumnOrName> groupByColumns) {
+        Ticket ticket = getConnection().getTickets().newExportTicket();
+
+        AggregateRequest.Builder aggBuilder = AggregateRequest.newBuilder()
+                .setResultId(ticket)
+                .setSourceId(TableReference.newBuilder()
+                        .setTicket(typedTicket().getTicket())
+                        .build())
+                .setPreserveEmpty(preserveEmpty);
+
+        for (int i = 0; i < aggregations.getLength(); i++) {
+            AggregationUnion aggUnion = aggregations.getAt(i);
+            io.deephaven.proto.backplane.grpc.Aggregation.Builder agg = makeAggregation(aggUnion);
+            aggBuilder.addAggregations(agg);
+        }
+
+        if (initialGroups != null) {
+            aggBuilder.setInitialGroupsId(TableReference.newBuilder()
+                    .setTicket(initialGroups.typedTicket().getTicket())
+                    .build());
+        }
+        if (groupByColumns != null) {
+            aggBuilder.addAllGroupByColumns(groupByColumns.asList().stream()
+                    .map(ColumnOrName.COLUMN_NAME)
+                    .toList());
+        }
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder));
+    }
 
     // TODO options
     // @JsMethod
