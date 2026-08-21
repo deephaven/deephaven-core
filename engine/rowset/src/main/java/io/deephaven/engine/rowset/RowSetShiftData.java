@@ -325,14 +325,18 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @return the key in post-shift space
      */
     public long apply(final long keyToShift) {
-        for (int shiftIdx = 0; shiftIdx < size(); shiftIdx++) {
-            if (getBeginRange(shiftIdx) > keyToShift) {
-                // no shift applies so we are already in post-shift space
-                return keyToShift;
-            }
-            if (getEndRange(shiftIdx) >= keyToShift) {
-                // this shift applies, add the delta to get post-shift
-                return keyToShift + getShiftDelta(shiftIdx);
+        // Shift ranges are ordered and do not overlap (see validate()), so at most one contains keyToShift and it can
+        // be found by bisection; a key in a gap between ranges, or outside them all, is already in post-shift space.
+        int lo = 0;
+        int hi = size() - 1;
+        while (lo <= hi) {
+            final int mid = (lo + hi) >>> 1;
+            if (getEndRange(mid) < keyToShift) {
+                lo = mid + 1;
+            } else if (getBeginRange(mid) > keyToShift) {
+                hi = mid - 1;
+            } else {
+                return keyToShift + getShiftDelta(mid);
             }
         }
         return keyToShift;

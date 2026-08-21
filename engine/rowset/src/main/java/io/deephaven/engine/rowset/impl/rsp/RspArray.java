@@ -2070,8 +2070,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         ensureSizeCanGrowBy(buf.size - 1);
         final int dstPos = i + buf.size;
         final int srcPos = i + 1;
-        final int count = size - srcPos;
-        arrayCopies(srcPos, dstPos, count);
+        if (dstPos != srcPos) {
+            arrayCopies(srcPos, dstPos, size - srcPos);
+        }
         for (int j = 0; j < buf.size; ++j) {
             spanInfos[i + j] = buf.spanInfos[j];
             spans[i + j] = buf.spans[j];
