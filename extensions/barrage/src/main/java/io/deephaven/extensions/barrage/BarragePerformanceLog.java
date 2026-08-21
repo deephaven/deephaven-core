@@ -8,8 +8,6 @@ import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,8 +22,6 @@ import java.util.function.Supplier;
  * {@link Table#withAttributes(Map)} attribute} to the table.
  */
 public class BarragePerformanceLog {
-    private static final Logger log = LoggerFactory.getLogger(BarragePerformanceLog.class);
-
     /**
      * If all barrage performance logging is enabled by default, then table's description is used as TableKey unless
      * overridden with the {@link io.deephaven.engine.table.Table#BARRAGE_PERFORMANCE_KEY_ATTRIBUTE table key}
@@ -102,42 +98,8 @@ public class BarragePerformanceLog {
 
     private BarragePerformanceLog() {
         final BarrageTableLoggers.Factory loggerFactory = BarrageTableLoggers.get();
-        subImpl = new BarrageSubscriptionPerformanceLoggerImpl(resolveSink(
-                loggerFactory::subscriptionPerformanceSink,
-                BarrageSubscriptionPerformanceSink.Noop.INSTANCE,
-                "subscription"));
-        snapImpl = new BarrageSnapshotPerformanceLoggerImpl(resolveSink(
-                loggerFactory::snapshotPerformanceSink,
-                BarrageSnapshotPerformanceSink.Noop.INSTANCE,
-                "snapshot"));
-    }
-
-    /**
-     * Obtain a sink from the installed {@link BarrageTableLoggers.Factory}, falling back to {@code noop} if the factory
-     * fails to provide one. A sink that cannot be created must degrade the recording of barrage performance data, not
-     * barrage itself: this constructor runs on whichever thread first uses barrage, and a failure here would leave
-     * {@link #INSTANCE} null so that every later {@link #getInstance()} retries and re-throws.
-     */
-    private static <SINK_TYPE> SINK_TYPE resolveSink(
-            final Supplier<SINK_TYPE> sinkSupplier,
-            final SINK_TYPE noop,
-            final String description) {
-        final SINK_TYPE sink;
-        try {
-            sink = sinkSupplier.get();
-        } catch (final Exception e) {
-            log.error().append("Error creating the barrage ").append(description)
-                    .append(" performance sink; barrage ").append(description)
-                    .append(" performance will be reported to the in-memory table only, caused by: ").append(e).endl();
-            return noop;
-        }
-        if (sink == null) {
-            log.error().append("The installed BarrageTableLoggers.Factory returned a null barrage ")
-                    .append(description).append(" performance sink; barrage ").append(description)
-                    .append(" performance will be reported to the in-memory table only").endl();
-            return noop;
-        }
-        return sink;
+        subImpl = new BarrageSubscriptionPerformanceLoggerImpl(loggerFactory.subscriptionPerformanceSink());
+        snapImpl = new BarrageSnapshotPerformanceLoggerImpl(loggerFactory.snapshotPerformanceSink());
     }
 
     public QueryTable getSubscriptionTable() {

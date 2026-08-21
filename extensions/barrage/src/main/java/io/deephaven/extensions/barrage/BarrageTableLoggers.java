@@ -60,10 +60,10 @@ public class BarrageTableLoggers {
      * Supplies the sinks that {@link BarragePerformanceLog} forwards its entries to. Each method is called exactly
      * once, when that singleton is constructed, on whichever thread first uses barrage.
      * <p>
-     * Implementations should not throw: a sink that cannot be created should be reported and replaced with the
-     * corresponding {@code Noop}, so that a defective recording path degrades barrage performance logging rather than
-     * barrage itself. {@link BarragePerformanceLog} substitutes {@code Noop} for an accessor that throws or returns
-     * null, but an implementation that handles its own failure can log something far more useful about the cause.
+     * Implementations must not throw and must not return null; either fails the construction of
+     * {@link BarragePerformanceLog}, and hence the barrage activity that first needed it. An implementation that
+     * expects a sink to be unavailable is responsible for that decision itself: catch the failure, log the cause, and
+     * return the corresponding {@code Noop} so that barrage performance is recorded to the in-memory tables only.
      */
     public interface Factory {
         /**
