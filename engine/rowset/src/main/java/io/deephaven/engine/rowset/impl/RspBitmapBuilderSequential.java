@@ -29,9 +29,9 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     private boolean built;
 
     /**
-     * Builders are single use: a second build would return a bogus (usually empty) result, so it fails instead. Only
-     * the build methods check this; appends stay unchecked to keep the hot path free of conditionals, so the effect of
-     * appending after a build is undefined rather than detected.
+     * Builders are single use: a second build fails instead. Only the build methods check this; appends stay unchecked
+     * to keep the hot path free of conditionals, so the effect of appending after a build is undefined rather than
+     * detected.
      */
     protected final void checkAndMarkBuilt() {
         if (built) {

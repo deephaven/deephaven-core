@@ -39,8 +39,7 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
             flushPendingRange();
         }
         if (pendingSr != null) {
-            // Give up our reference to the result, like the other branches do; otherwise later builder use
-            // would mutate (or double-release) the set we returned.
+            // The result belongs to the caller, so we give up our reference to it.
             final SortedRanges ans = pendingSr.tryCompactUnsafe(4);
             pendingSr = null;
             rowSetCounts.sampleSortedRanges(ans);

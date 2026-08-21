@@ -112,9 +112,8 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
     }
 
     /**
-     * Builders are single use: a second build would return a bogus (usually empty) result, so it fails instead. Only
-     * the build method checks this; adds stay unchecked to keep the hot path free of conditionals, so the effect of
-     * adding after a build is undefined rather than detected.
+     * Builders are single use: a second build fails instead. Only the build method checks this; adds stay unchecked to
+     * keep the hot path free of conditionals, so the effect of adding after a build is undefined rather than detected.
      */
     private boolean built;
 
