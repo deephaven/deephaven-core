@@ -3,34 +3,13 @@
 #
 
 import pathlib
-from typing import Any
 
 import jpy
+from deephaven.jcompat import j_json_value
 from deephaven.plugin.js import JsPlugin
 
 _JJsPlugin = jpy.get_type("io.deephaven.plugin.js.JsPlugin")
 _JPath = jpy.get_type("java.nio.file.Path")
-_JHashMap = jpy.get_type("java.util.HashMap")
-_JArrayList = jpy.get_type("java.util.ArrayList")
-
-
-def _to_j_object(value: Any) -> Any:
-    """Recursively converts Python containers into Java Map / List instances.
-
-    Nested containers must be converted explicitly; otherwise jpy passes them through as opaque
-    org.jpy.PyObject values, which the server cannot serialize into the js-plugins manifest.
-    """
-    if isinstance(value, dict):
-        j_map = _JHashMap(len(value))
-        for k, v in value.items():
-            j_map.put(_to_j_object(k), _to_j_object(v))
-        return j_map
-    if isinstance(value, (list, tuple, set, frozenset)):
-        j_list = _JArrayList(len(value))
-        for v in value:
-            j_list.add(_to_j_object(v))
-        return j_list
-    return value
 
 
 def to_j_js_plugin(js_plugin: JsPlugin) -> jpy.JType:
@@ -53,5 +32,5 @@ def to_j_js_plugin(js_plugin: JsPlugin) -> jpy.JType:
     # deephaven-plugin package.
     loader = getattr(js_plugin, "loader", None)
     if loader is not None:
-        builder.loader(_to_j_object(loader))
+        builder.loader(j_json_value(loader))
     return builder.build()

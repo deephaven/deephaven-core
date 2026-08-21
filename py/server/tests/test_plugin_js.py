@@ -10,11 +10,9 @@ import unittest
 import jpy
 from deephaven.plugin.js import JsPlugin
 
-from deephaven_internal.plugin.js import _to_j_object, to_j_js_plugin
+from deephaven_internal.plugin.js import to_j_js_plugin
 from tests.testbase import BaseTestCase
 
-_JMap = jpy.get_type("java.util.Map")
-_JList = jpy.get_type("java.util.List")
 _JObjectMapper = jpy.get_type("com.fasterxml.jackson.databind.ObjectMapper")
 
 
@@ -87,109 +85,6 @@ class PluginJsTestCase(BaseTestCase):
         "js-plugins/manifest.json", and asserts the resulting JSON matches expected."""
         actual = json.loads(_JObjectMapper().writeValueAsString(j_object))
         self.assertEqual(actual, expected)
-
-    def assert_round_trip(self, value) -> None:
-        """Asserts that value survives conversion to Java and JSON serialization unchanged."""
-        self.assert_json_equals(_to_j_object(value), value)
-
-    def test_basic_values_pass_through(self):
-        for value in [None, True, False, 0, 42, -7, 0.0, 1.5, -2.25, "", "a string"]:
-            with self.subTest(value=value):
-                self.assertIs(_to_j_object(value), value)
-
-    def test_dict(self):
-        j_map = _to_j_object({"key": "value", "count": 3})
-        self.assertTrue(_JMap.jclass.isInstance(j_map))
-        self.assertEqual(j_map.size(), 2)
-        self.assertEqual(j_map.get("key"), "value")
-        self.assertEqual(j_map.get("count"), 3)
-
-    def test_dict_of_basic_values(self):
-        self.assert_round_trip(
-            {
-                "none": None,
-                "true": True,
-                "false": False,
-                "int": 42,
-                "negative_int": -7,
-                "float": 1.5,
-                "str": "a string",
-            }
-        )
-
-    def test_nested_dict(self):
-        j_map = _to_j_object({"outer": {"inner": {"deepest": "value"}}})
-        j_outer = j_map.get("outer")
-        self.assertTrue(_JMap.jclass.isInstance(j_outer))
-        j_inner = j_outer.get("inner")
-        self.assertTrue(_JMap.jclass.isInstance(j_inner))
-        self.assertEqual(j_inner.get("deepest"), "value")
-
-    def test_list(self):
-        j_list = _to_j_object(["a", "b", "c"])
-        self.assertTrue(_JList.jclass.isInstance(j_list))
-        self.assertEqual(j_list.size(), 3)
-        self.assertEqual(j_list.get(0), "a")
-        self.assertEqual(j_list.get(2), "c")
-
-    def test_tuple(self):
-        j_list = _to_j_object(("a", "b"))
-        self.assertTrue(_JList.jclass.isInstance(j_list))
-        self.assert_json_equals(j_list, ["a", "b"])
-
-    def test_set(self):
-        j_list = _to_j_object({"a", "b", "c"})
-        self.assertTrue(_JList.jclass.isInstance(j_list))
-        self.assertEqual(
-            sorted(json.loads(_JObjectMapper().writeValueAsString(j_list))),
-            ["a", "b", "c"],
-        )
-
-    def test_frozenset(self):
-        j_list = _to_j_object(frozenset(["a"]))
-        self.assertTrue(_JList.jclass.isInstance(j_list))
-        self.assert_json_equals(j_list, ["a"])
-
-    def test_empty_containers(self):
-        self.assert_round_trip({})
-        self.assert_round_trip([])
-        self.assert_round_trip({"empty_map": {}, "empty_list": []})
-
-    def test_nested_containers(self):
-        self.assert_round_trip(
-            {
-                "list_of_dicts": [{"a": 1}, {"b": [2, 3]}],
-                "dict_of_lists": {"x": [[1, 2], []], "y": [{"z": None}]},
-                "deep": {"a": {"b": {"c": {"d": ["e", {"f": True}]}}}},
-            }
-        )
-
-    def test_list_of_lists(self):
-        j_list = _to_j_object([[1, 2], [3]])
-        self.assertTrue(_JList.jclass.isInstance(j_list.get(0)))
-        self.assert_json_equals(j_list, [[1, 2], [3]])
-
-    def test_realistic_loader(self):
-        self.assert_round_trip(
-            {
-                "name": "@deephaven_test/example-loader",
-                "version": "0.1.0",
-                "entry": "./dist/loader.js",
-                "config": {
-                    "enabled": True,
-                    "timeout": 30,
-                    "ratio": 0.5,
-                    "tags": ["one", "two"],
-                    "nested": {"deps": ["@deephaven/jsapi-bootstrap"], "extra": None},
-                },
-            }
-        )
-
-    def test_non_string_keys(self):
-        # Jackson serializes non-string map keys as strings, which is the same behavior as json.dumps
-        self.assert_json_equals(
-            _to_j_object({1: "a", 2.5: "b"}), {"1": "a", "2.5": "b"}
-        )
 
     def test_to_j_js_plugin(self):
         j_plugin = to_j_js_plugin(_MyJsPlugin(self.plugin_path))
