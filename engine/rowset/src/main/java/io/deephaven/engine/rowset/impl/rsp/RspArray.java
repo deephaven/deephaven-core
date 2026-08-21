@@ -1962,6 +1962,41 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
+     * Whether a full block span for the given key and full block length can become a new span at index {@code i} as-is,
+     * with no merging: adjacent full block spans have to be represented as a single span, and any span of ours inside
+     * the blocks it covers would have to be absorbed by it. Neither is true when this returns true, so the span can
+     * simply be placed at {@code i}.
+     *
+     * @param i the index the span would occupy, as returned by a search for {@code key} that did not find it
+     * @param key the key of the span's first block
+     * @param flen the span's length in blocks; greater than zero
+     * @return true if placing the span at {@code i} preserves our invariants
+     */
+    private boolean fullBlockSpanFitsVerbatimAtIndex(final int i, final long key, final long flen) {
+        final long lastKey = getKeyForLastBlockInFullSpan(key, flen);
+        if (i < size) {
+            final long rightKey = getKey(i);
+            if (uLessOrEqual(rightKey, lastKey)) {
+                return false;
+            }
+            if (rightKey - lastKey == BLOCK_SIZE && getFullBlockSpanLen(spanInfos[i], spans[i]) > 0) {
+                return false;
+            }
+        }
+        if (i > 0) {
+            final long leftSpanInfo = spanInfos[i - 1];
+            final long leftFlen = getFullBlockSpanLen(leftSpanInfo, spans[i - 1]);
+            if (leftFlen > 0) {
+                final long leftLastKey = getKeyForLastBlockInFullSpan(spanInfoToKey(leftSpanInfo), leftFlen);
+                if (key - leftLastKey <= BLOCK_SIZE) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
      * Insert a new singleton span at position i with key k, pushing the existing elements to the right. The caller
      * should ensure that the key order is preserved by this operation.
      *
@@ -2962,12 +2997,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return;
         }
 
-        // Do a first pass finding all the containers on other for a key not present in this;
-        // this way we try our best to avoid an O(n^2) scenario where we have to move later
-        // spans to make space for earlier new keys over and over.
+        // Do a first pass finding all the spans on other for a key not present in this; this way we
+        // try our best to avoid an O(n^2) scenario where we have to move later spans to make space
+        // for earlier new keys over and over. A full block span is only taken in this pass when it
+        // can be inserted verbatim; one that has to merge with, or absorb, a span of ours is left to
+        // the second pass, which is where that logic lives.
 
         // The first pass will accumulate pairs of (a, b) = (other's idx, this' idx) in this array,
-        // for indices a of other that correspond to containers that will be inserted in b
+        // for indices a of other that correspond to spans that will be inserted in b
         // in this.
         final WorkData wd = workDataPerThread.get();
         int[] idxPairs = wd.getIntArray();
@@ -2980,10 +3017,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         boolean tryAddToSecondPassSkips = true;
         int startPos = 0;
         for (int otherIdx = 0; otherIdx < other.size; ++otherIdx) {
-            final Object otherSpan = other.spans[otherIdx];
-            if (isFullBlockSpan(otherSpan)) {
-                continue;
-            }
+            final long otherFlen = getFullBlockSpanLen(other.spanInfos[otherIdx], other.spans[otherIdx]);
             final long otherSpanKey = shiftAmount + other.getKey(otherIdx);
             int i = unsignedBinarySearch(this::getKey, startPos, size, otherSpanKey);
             if (i >= 0) {
@@ -2994,7 +3028,31 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (i == size) {
                 break;
             }
-            // At this point we know this container from other has a key that is not
+            startPos = i;
+            // Whether a full block span of ours ending at or after otherSpanKey already accounts for it.
+            boolean coveredOnOurLeft = false;
+            if (i > 0) {
+                final Object span = spans[i - 1];
+                final long spanInfo = spanInfos[i - 1];
+                final long flen = getFullBlockSpanLen(spanInfo, span);
+                if (flen > 0) {
+                    final long kSpan = spanInfoToKey(spanInfo);
+                    final long kSpanLast = getKeyForLastBlockInSpan(kSpan, flen);
+                    if (kSpanLast >= otherSpanKey) {
+                        coveredOnOurLeft = true;
+                    }
+                }
+            }
+            if (otherFlen > 0) {
+                // A full block span covers more than its first key, so being covered on our left says
+                // nothing about the rest of it; and inserting it verbatim is only correct when it neither
+                // merges with an adjacent full block span of ours nor covers any span of ours. Anything
+                // else is the second pass' job.
+                if (coveredOnOurLeft || !fullBlockSpanFitsVerbatimAtIndex(i, otherSpanKey, otherFlen)) {
+                    continue;
+                }
+            }
+            // At this point we know this span from other has a key that is not
             // in our spans array; either it is part of a full block span,
             // and can be skipped altogether, or it will be added in this
             // first pass. Either way, it needs to be skipped in the second pass.
@@ -3006,19 +3064,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     secondPassSkips = sr;
                 }
             }
-
-            startPos = i;
-            if (i > 0) {
-                final Object span = spans[i - 1];
-                final long spanInfo = spanInfos[i - 1];
-                final long flen = getFullBlockSpanLen(spanInfo, span);
-                if (flen > 0) {
-                    final long kSpan = spanInfoToKey(spanInfo);
-                    final long kSpanLast = getKeyForLastBlockInSpan(kSpan, flen);
-                    if (kSpanLast >= otherSpanKey) {
-                        continue;
-                    }
-                }
+            if (coveredOnOurLeft) {
+                continue;
             }
             if (idxPairsCount + 2 > idxPairs.length) {
                 final int[] newArr;
