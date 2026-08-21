@@ -153,6 +153,34 @@ public class TrackingWritableRowSetImplPrevTest {
     }
 
     @Test
+    public void testPrevViewRejectsSelfAliasedMutators() {
+        final TrackingWritableRowSet ix = RowSetFactory.fromKeys(1, 2, 3).toTracking();
+        final WritableRowSetImpl prev = (WritableRowSetImpl) ix.prev();
+        // Even as no-ops, mutators on the unmodifiable prev view must throw.
+        try {
+            prev.insert(prev);
+            org.junit.Assert.fail("expected UnsupportedOperationException");
+        } catch (UnsupportedOperationException expected) {
+        }
+        try {
+            prev.retain(prev);
+            org.junit.Assert.fail("expected UnsupportedOperationException");
+        } catch (UnsupportedOperationException expected) {
+        }
+        try {
+            prev.remove(prev);
+            org.junit.Assert.fail("expected UnsupportedOperationException");
+        } catch (UnsupportedOperationException expected) {
+        }
+        try {
+            prev.update(prev, prev);
+            org.junit.Assert.fail("expected UnsupportedOperationException");
+        } catch (UnsupportedOperationException expected) {
+        }
+        ix.close();
+    }
+
+    @Test
     public void testCloseReleasesPrevReference() {
         RspBitmap rb = RspBitmap.makeEmpty();
         rb = rb.addRange(0, 9);

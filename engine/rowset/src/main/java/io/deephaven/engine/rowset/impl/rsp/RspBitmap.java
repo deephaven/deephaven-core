@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
-import io.deephaven.engine.rowset.impl.RowSetCounts;
 import io.deephaven.engine.rowset.impl.RowSetUtils;
 import io.deephaven.engine.rowset.impl.rsp.container.*;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
@@ -952,9 +951,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         return rb;
     }
 
-    public void appendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other, final boolean acquire) {
+    public void appendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other) {
         if ((shiftAmount & BLOCK_LAST) == 0 &&
-                tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other, acquire)) {
+                tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other)) {
             return;
         }
         if (lastValue() >= other.firstValue() + shiftAmount) {
@@ -2189,58 +2188,4 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         return valuesToString();
     }
 
-    public static class BuilderRandom implements OrderedLongSet.BuilderRandom {
-        public RspBitmap rb;
-        public RowSetCounts rowSetCounts;
-
-        public BuilderRandom(final RowSetCounts rowSetCounts, final long start, final long end) {
-            rb = new RspBitmap(start, end);
-            this.rowSetCounts = rowSetCounts;
-        }
-
-        public BuilderRandom(final RowSetCounts rowSetCounts) {
-            rb = new RspBitmap();
-            this.rowSetCounts = rowSetCounts;
-        }
-
-        @Override
-        public RspBitmap getOrderedLongSet() {
-            final RspBitmap ans = rb;
-            rb = null;
-            ans.tryCompactUnsafe(4);
-            ans.finishMutationsAndOptimize();
-            rowSetCounts.sampleRsp(ans);
-            return ans;
-        }
-
-        @Override
-        public void addKey(final long key) {
-            rb.addUnsafeNoWriteCheck(key);
-        }
-
-        @Override
-        public void addRange(final long start, final long endInclusive) {
-            rb.addRangeUnsafeNoWriteCheck(start, endInclusive);
-        }
-
-        @Override
-        public void appendKey(final long key) {
-            rb.appendUnsafeNoWriteCheck(key);
-        }
-
-        @Override
-        public void appendRange(final long start, final long endInclusive) {
-            rb.appendRangeUnsafeNoWriteCheck(start, endInclusive);
-        }
-
-        @Override
-        public void add(final SortedRanges ix, final boolean acquire) {
-            rb.insertOrderedLongSetUnsafeNoWriteCheck(ix);
-        }
-
-        @Override
-        public void add(final RspBitmap ix, final boolean acquire) {
-            rb.insertOrderedLongSetUnsafeNoWriteCheck(ix);
-        }
-    }
 }

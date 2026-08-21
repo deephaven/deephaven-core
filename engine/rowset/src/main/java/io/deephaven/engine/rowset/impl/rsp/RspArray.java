@@ -1359,17 +1359,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return new RspReverseIterator(new SpanCursorBackwardImpl(this));
     }
 
-    private int targetCapacityForSize(final int sz) {
-        if (sz < 1024) {
-            // smallest power of two greater or equal to sz.
-            return 1 << (31 - Integer.numberOfLeadingZeros(sz - 1));
-        }
-        if ((sz & 3) == 0) {
-            return sz;
-        }
-        return 5 * (sz / 4);
-    }
-
     /**
      * Make sure there is capacity for at least n more spans
      */
@@ -1417,13 +1406,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return;
         }
         realloc(size);
-    }
-
-    public void tryCompact(final int compactFactor) {
-        if (!canWrite()) {
-            return;
-        }
-        tryCompactUnsafe(compactFactor);
     }
 
     public int keySearch(final int startPos, final long key) {
@@ -1558,21 +1540,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         ensureCardinalityCache(false);
     }
 
-    T forceAcc() {
-        if (acc != null) {
-            return self();
-        }
-        T ref = getWriteRef();
-        ref.acc = new long[ref.spanInfos.length];
-        ref.cardData = ref.size - 1;
-        long card = 0;
-        for (int i = 0; i < ref.size; ++i) {
-            card += ref.getSpanCardinalityAtIndex(i);
-            ref.acc[i] = card;
-        }
-        return ref;
-    }
-
     void ensureCardData(final boolean optimizeContainers) {
         acc = null;
         long c = 0;
@@ -1669,14 +1636,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         cardData = -1;
     }
 
-    void modifiedLastSpan() {
-        if (acc != null) {
-            cardData = Math.min(size - 2, cardData);
-            return;
-        }
-        cardData = -1;
-    }
-
     // For tests
     long getFullBlocksCount() {
         long tflen = 0;
@@ -1707,13 +1666,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     private void arrayCopies(final int src, final int dst, final int n) {
         System.arraycopy(spanInfos, src, spanInfos, dst, n);
         System.arraycopy(spans, src, spans, dst, n);
-    }
-
-    private void compact() {
-        if (size >= spans.length) {
-            return;
-        }
-        realloc(size);
     }
 
     private void checkCompact() {
@@ -2191,7 +2143,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     public void getKeysForPositions(final PrimitiveIterator.OfLong inputPositions, final LongConsumer outputKeys) {
         int fromIndex = 0;
         final long cardinality = isCardinalityCached() ? getCardinality() : -1;
-        final MutableLong prevCardMu = (acc == null) ? new MutableLong(0) : null;
+        // An allocated but stale acc (between unsafe mutations and finishMutations*()) cannot be used for ranks;
+        // take the same scanning path as get(long) does in that state.
+        final boolean useAcc = acc != null && cardData == size - 1;
+        final MutableLong prevCardMu = useAcc ? null : new MutableLong(0);
         while (inputPositions.hasNext()) {
             final long pos = inputPositions.nextLong();
             if (pos < 0 || (cardinality != -1 && pos >= cardinality)) {
@@ -2203,7 +2158,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 return;
             }
             final long prevCardinality;
-            if (acc != null) {
+            if (useAcc) {
                 fromIndex = getIndexForRankWithAcc(fromIndex, pos);
                 prevCardinality = cardinalityBeforeWithAcc(fromIndex);
             } else {
@@ -2418,6 +2373,30 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return findInSpan(ki, val, prevAcc);
     }
 
+    /**
+     * Find the position of {@code val} in the span at {@code idx}, in the position space that begins at
+     * {@code prevAcc}.
+     *
+     * <p>
+     * The result follows the {@code Arrays.binarySearch} convention, as {@link Container#find(short)} does: a
+     * non-negative position when {@code val} is present, otherwise the bitwise complement of the position where it
+     * would be inserted (callers recover that position as {@code ~result}, equivalently {@code -result - 1}). Positions
+     * are relative to {@code prevAcc}, so passing the cardinality of the spans preceding {@code idx} (see
+     * {@link #cardinalityBeforeMaybeAcc(int)}) yields a position in this array's own position space, and passing a
+     * view's offset yields a position in that view's space.
+     *
+     * <p>
+     * {@code idx} is expected to be the span that covers {@code val}'s block, or -- when no span covers it -- the span
+     * at the insertion point for that block, as produced by {@link #getSpanIndex(int, long)}. The latter means
+     * {@code val} may fall in a gap <em>before</em> the span's first key; every span kind must then report
+     * {@code ~prevAcc}, the insertion point at the span's first position. Reporting a position outside the span instead
+     * makes the caller decode a position unrelated to the span it asked about.
+     *
+     * @param idx The index of the span to search
+     * @param val The value to search for
+     * @param prevAcc The position that the first element of the span at {@code idx} occupies
+     * @return The position of {@code val}, or the bitwise complement of its insertion point if it is not present
+     */
     long findInSpan(final int idx, final long val, final long prevAcc) {
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, idx)) {
             if (view.isSingletonSpan()) {
@@ -2434,6 +2413,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final long flen = view.getFullBlockSpanLen();
             if (flen > 0) {
                 final long k = view.getKey();
+                if (val < k) {
+                    return ~prevAcc;
+                }
+                // Every key in a full block span is present, so the offset from its first key is the position.
                 return prevAcc + val - k;
             }
             final int cf = view.getContainer().find(lowBits(val));
@@ -2975,7 +2958,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return;
         }
         // First check if this is effectively an append.
-        if (tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other, false)) {
+        if (tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other)) {
             return;
         }
 
@@ -3438,6 +3421,32 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         tryCompactUnsafe(4);
     }
 
+    /**
+     * Intersect, in place, the spans of {@code this} overlapping the span of {@code other} at {@code otherIdx}.
+     *
+     * <p>
+     * <b>Precondition on full block spans</b>: before any call to this method, the full block spans of {@code this}
+     * must already have been pruned down to exactly the blocks covered by {@code other}, as done by the first pass of
+     * {@link #andEqualsUnsafeNoWriteCheck(RspArray)}. In particular, when the span of {@code other} at {@code otherIdx}
+     * is a container or singleton span, any full block span of {@code this} covering that block must be exactly one
+     * block long and start at the same block key; that is the only full-block-span shape this method handles (asserted
+     * below). It does <em>not</em> support splitting a multi-block full block span around {@code other}'s span, nor a
+     * one block full block span whose key differs from {@code other}'s: code for those shapes was removed as
+     * unreachable (see DH-23408), so a new caller that does not perform the pruning pass first will trip the assertion
+     * rather than compute a partial result.
+     *
+     * <p>
+     * Spans of {@code this} whose intersection is empty are marked as removed (spanInfo -1), recording their indices in
+     * {@code madeNullSpansMu} when it holds a non-null accumulator; the caller is responsible for the subsequent
+     * collect/compact pass.
+     *
+     * @param other the {@link RspArray} being intersected with {@code this}
+     * @param otherIdx the index of the span in {@code other} to process
+     * @param startPos the first span index of {@code this} to consider; span indices before it are never touched
+     * @param madeNullSpansMu accumulator for the indices of spans made empty by the intersection
+     * @param wd per-thread work data used for temporary views
+     * @return the span index of {@code this} where processing of the next span of {@code other} should start
+     */
     private int andEqualsSpan(final RspArray other, final int otherIdx,
             final int startPos, final MutableObject<SortedRanges> madeNullSpansMu,
             final WorkData wd) {
@@ -3461,42 +3470,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (flen > 0) {
                     final long ourKey = ourView.getKey();
                     final long lastKey = getKeyForLastBlockInSpan(ourKey, flen);
-                    // andIdx > 0, therefore andKey is contained in this span.
-                    if (uLess(ourKey, andKey)) {
-                        // when this method is called from andEquals, given the previous pruning this
-                        // case can't be hit.
-                        if (uLess(andKey, lastKey)) {
-                            final ArraysBuf buf = wd.getArraysBuf(3);
-                            buf.pushFullBlockSpan(ourKey, distanceInBlocks(ourKey, andKey));
-                            if (otherView.isSingletonSpan()) {
-                                buf.pushSingletonSpan(otherView.getSingletonSpanValue());
-                            } else {
-                                buf.pushSharedContainer(other, andKey, otherView.getContainer());
-                            }
-                            buf.pushFullBlockSpan(nextKey(andKey), distanceInBlocks(andKey, lastKey));
-                            replaceSpanAtIndex(andIdx, buf);
-                        } else {
-                            final ArraysBuf buf = wd.getArraysBuf(2);
-                            buf.pushFullBlockSpan(ourKey, distanceInBlocks(ourKey, andKey));
-                            if (otherView.isSingletonSpan()) {
-                                buf.pushSingletonSpan(ourView.getSingletonSpanValue());
-                            } else {
-                                buf.pushSharedContainer(other, andKey, otherView.getContainer());
-                            }
-                            replaceSpanAtIndex(andIdx, buf);
-                        }
-                    } else if (uLess(andKey, lastKey)) {
-                        final ArraysBuf buf = wd.getArraysBuf(2);
-                        // when this method is called from andEquals, given the previous pruning this
-                        // case can't be hit.
-                        if (otherView.isSingletonSpan()) {
-                            buf.pushSingletonSpan(otherView.getSingletonSpanValue());
-                        } else {
-                            buf.pushSharedContainer(other, andKey, otherView.getContainer());
-                        }
-                        buf.pushFullBlockSpan(nextKey(andKey), distanceInBlocks(andKey, lastKey));
-                        replaceSpanAtIndex(andIdx, buf);
-                    } else if (otherView.isSingletonSpan()) {
+                    // Our only caller (andEqualsUnsafeNoWriteCheck) prunes our full block spans down to the
+                    // blocks present in other before calling us, so a container or singleton span in other
+                    // must line up with a single-block full block span here exactly.
+                    Assert.assertion(ourKey == andKey && andKey == lastKey,
+                            "ourKey == andKey && andKey == lastKey",
+                            ourKey, "ourKey", andKey, "andKey", lastKey, "lastKey");
+                    if (otherView.isSingletonSpan()) {
                         setSingletonSpan(andIdx, otherView.getSingletonSpanValue());
                     } else {
                         setSharedContainerRaw(andIdx, other, andKey, otherView.getContainer());
@@ -3589,10 +3569,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             this.spanInfos = null;
             this.spans = null;
-        }
-
-        void pushSharedContainer(final RspArray other, final long key, final Container c) {
-            setContainerSpanRaw(spanInfos, spans, size, key, other.shareContainer(c));
         }
 
         void pushContainer(final long key, final Container container) {
@@ -4311,7 +4287,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     // Neither this nor other can be empty.
     // shiftAmount should be a multiple of BLOCK_SIZE.
-    boolean tryAppendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other, final boolean acquire) {
+    boolean tryAppendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other) {
         if (RspArray.debug) {
             if (size == 0 || other.size == 0) {
                 throw new IllegalArgumentException(
@@ -4342,11 +4318,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         }
         ensureSizeCanGrowBy(other.size - firstOtherSpan);
-        if (!acquire) {
-            for (int i = firstOtherSpan; i < other.size; ++i) {
-                final int pos = size + i - firstOtherSpan;
-                copyKeyAndSpanMaybeSharing(shiftAmount, other, i, spanInfos, spans, pos, !acquire);
-            }
+        for (int i = firstOtherSpan; i < other.size; ++i) {
+            final int pos = size + i - firstOtherSpan;
+            copyKeyAndSpanMaybeSharing(shiftAmount, other, i, spanInfos, spans, pos, true);
         }
         size += other.size - firstOtherSpan;
         // leave acc alone.

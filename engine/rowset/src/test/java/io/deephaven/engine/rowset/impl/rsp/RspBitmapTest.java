@@ -3869,7 +3869,7 @@ public class RspBitmapTest {
         r0 = r0.addRange(3 * BLOCK_SIZE, 3 * BLOCK_SIZE + BLOCK_LAST);
         RspBitmap r1 = RspBitmap.makeSingleRange(4 * BLOCK_SIZE, 4 * BLOCK_SIZE + BLOCK_LAST);
         final long cardBefore = r0.getCardinality();
-        final boolean worked = r0.tryAppendShiftedUnsafeNoWriteCheck(0, r1, false);
+        final boolean worked = r0.tryAppendShiftedUnsafeNoWriteCheck(0, r1);
         assertTrue(worked);
         r0.finishMutationsAndOptimize();
         r0.validate();
@@ -3886,7 +3886,7 @@ public class RspBitmapTest {
         RspBitmap r1 = RspBitmap.makeSingleRange(5 * BLOCK_SIZE, 5 * BLOCK_SIZE + BLOCK_LAST);
         r1 = r1.append(7 * BLOCK_SIZE + 3);
         final long cardBefore = r0.getCardinality();
-        final boolean worked = r0.tryAppendShiftedUnsafeNoWriteCheck(0, r1, false);
+        final boolean worked = r0.tryAppendShiftedUnsafeNoWriteCheck(0, r1);
         assertTrue(worked);
         r0.finishMutationsAndOptimize();
         r0.validate();
@@ -3898,7 +3898,7 @@ public class RspBitmapTest {
     public void testAppendShifted() {
         RspBitmap r0 = RspBitmap.makeSingleRange(20, 39);
         RspBitmap r1 = RspBitmap.makeSingleRange(21, 40);
-        r0.appendShiftedUnsafeNoWriteCheck(BLOCK_SIZE, r1, false);
+        r0.appendShiftedUnsafeNoWriteCheck(BLOCK_SIZE, r1);
         r0.finishMutationsAndOptimize();
         assertEquals(40, r0.getCardinality());
         assertTrue(r0.containsRange(20, 39));

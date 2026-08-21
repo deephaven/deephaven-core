@@ -20,8 +20,6 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
     private interface SingleSpanIterator {
         boolean forEachLong(LongAbortableConsumer lc);
 
-        int copyTo(long[] vs, int offset, int maxCount);
-
         int copyTo(WritableLongChunk<? super OrderedRowKeys> chunk, int offset, int maxCount);
 
         long nextLong();
@@ -84,21 +82,6 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
         return true;
     }
 
-    public int copyTo(final long[] vs, final int offset, final int max) {
-        int c = 0;
-        while (hasNext) {
-            if (!sit.hasNext()) {
-                nextSingleSpanIterator(0);
-            }
-            c += sit.copyTo(vs, offset + c, max - c);
-            hasNext = sit.hasNext() || p.hasNext();
-            if (c >= max) {
-                break;
-            }
-        }
-        return c;
-    }
-
     public int copyTo(final WritableLongChunk<? super OrderedRowKeys> chunk, final int offset, final int max) {
         int c = 0;
         while (hasNext) {
@@ -151,16 +134,6 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                 }
 
                 @Override
-                public int copyTo(final long[] vs, final int offset, final int max) {
-                    if (max <= 0 || v == -1) {
-                        return 0;
-                    }
-                    vs[offset] = v;
-                    v = -1;
-                    return 1;
-                }
-
-                @Override
                 public int copyTo(final WritableLongChunk<? super OrderedRowKeys> chunk, final int offset,
                         final int max) {
                     if (max <= 0 || v == -1) {
@@ -200,16 +173,6 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                         }
                     }
                     return true;
-                }
-
-                @Override
-                public int copyTo(final long vs[], final int offset, final int max) {
-                    int c = 0;
-                    final long last = Math.min(curr + max - 1, end);
-                    while (curr <= last) {
-                        vs[offset + c++] = curr++;
-                    }
-                    return c;
                 }
 
                 @Override
@@ -266,23 +229,6 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                     }
                 }
                 return cit.forEach((final short v) -> lc.accept(longValue(v)));
-            }
-
-            @Override
-            public int copyTo(final long[] vs, final int offset, final int max) {
-                int c = 0;
-                while (c < max && bi < count) {
-                    vs[offset + c++] = longValue(buf[bi++]);
-                }
-                if (c < max && cit.hasNext()) {
-                    final int[] ac = {c};
-                    cit.forEach((short v) -> {
-                        vs[offset + ac[0]++] = longValue(v);
-                        return ac[0] < max;
-                    });
-                    return ac[0];
-                }
-                return c;
             }
 
             @Override

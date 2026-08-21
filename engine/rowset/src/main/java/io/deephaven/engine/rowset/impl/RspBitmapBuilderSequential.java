@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSequence;
@@ -24,6 +25,20 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     protected Container pendingContainer;
     protected RspBitmap rb;
     protected long maxKeyHint = -1;
+
+    private boolean built;
+
+    /**
+     * Builders are single use: a second build fails instead. Only the build methods check this; appends stay unchecked
+     * to keep the hot path free of conditionals, so the effect of appending after a build is undefined rather than
+     * detected.
+     */
+    protected final void checkAndMarkBuilt() {
+        if (built) {
+            throw new IllegalStateException("Builder was already used to build a result; builders are single use");
+        }
+        built = true;
+    }
 
     /**
      * The block that {@link #sizedBlockCardinality} and {@link #sizedBlockRangeCount} describe, or -1 when nothing is
@@ -68,6 +83,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
 
     @Override
     public OrderedLongSet getOrderedLongSet() {
+        checkAndMarkBuilt();
         if (pendingStart != -1) {
             flushPendingRange();
         }
@@ -125,7 +141,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     }
 
     @Override
-    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
+    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix) {
         if (ix.ixIsEmpty()) {
             return;
         }
@@ -142,11 +158,11 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         if (pendingContainerKey != -1) {
             flushPendingContainer();
         }
-        if (rb.isEmpty()) {
-            rb.ixInsert(ix);
-            return;
-        }
-        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix, acquire);
+        // Every path that creates rb appends to it immediately, so rb is never empty here. That matters
+        // because appendShiftedUnsafeNoWriteCheck reads rb's last span (lastValue(), spanInfos[size - 1]),
+        // which is not valid on an empty bitmap.
+        Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
+        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix);
     }
 
     @Override
@@ -237,8 +253,13 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             }
             if (pendingContainerKey != -1) {
                 if (check && pendingContainerKey > highStart) {
+                    // When pendingContainer is null the pending span is a singleton and pendingContainerKey is
+                    // its full value; otherwise pendingContainerKey holds the high bits only.
+                    final long pendingLast = (pendingContainer == null)
+                            ? pendingContainerKey
+                            : (highBits(pendingContainerKey) | pendingContainer.last());
                     throw new IllegalStateException(outOfOrderKeyErrorMsg +
-                            "last=" + end + " while appending value=" + pendingContainer.last());
+                            "last=" + pendingLast + " while appending value=" + start);
                 }
                 flushPendingContainer();
             }

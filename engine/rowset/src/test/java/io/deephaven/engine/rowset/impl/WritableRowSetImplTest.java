@@ -3414,4 +3414,20 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(before, rowSet.refCount());
         rowSet.close();
     }
+
+    public void testSelfAliasedMutators() {
+        final WritableRowSet rowSet = RowSetFactory.fromKeys(1, 5, 9);
+        rowSet.insert(rowSet);
+        assertEquals(3, rowSet.size());
+        rowSet.retain(rowSet);
+        assertEquals(3, rowSet.size());
+        try (final WritableRowSet other = RowSetFactory.fromKeys(100)) {
+            rowSet.update(other, rowSet); // remove everything, then add {100}
+            assertEquals(1, rowSet.size());
+            assertEquals(100, rowSet.firstRowKey());
+        }
+        rowSet.remove(rowSet);
+        assertTrue(rowSet.isEmpty());
+        rowSet.close();
+    }
 }

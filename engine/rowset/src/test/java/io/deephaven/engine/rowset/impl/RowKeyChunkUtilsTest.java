@@ -140,6 +140,18 @@ public class RowKeyChunkUtilsTest {
         }
     }
 
+    @Test
+    public void testConvertToOrderedKeyIndicesWithOffsetSizesFromOffset() {
+        // The sizing loop used to count the whole chunk regardless of srcOffset, over-allocating and
+        // potentially throwing a spurious SizeException.
+        final LongChunk<OrderedRowKeyRanges> ranges = createChunk(0, 9, 20, 24);
+        final LongChunk<OrderedRowKeys> result = RowKeyChunkUtils.convertToOrderedKeyIndices(2, ranges);
+        assertEquals(5, result.size());
+        for (int i = 0; i < 5; ++i) {
+            assertEquals(20 + i, result.get(i));
+        }
+    }
+
     private <ATTR extends Any> LongChunk<ATTR> createChunk(final long... values) {
         final WritableLongChunk<ATTR> chunk = WritableLongChunk.makeWritableChunk(values.length);
         for (int idx = 0; idx < values.length; ++idx) {
