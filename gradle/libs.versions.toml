@@ -10,7 +10,7 @@ aws-s3-tables-catalog-for-iceberg = "0.1.8"
 calcite = "1.42.0"
 httpcore5 = "5.4.3"
 
-classgraph = "4.8.192"
+classgraph = "4.8.193"
 commons-compress = "1.28.0"
 commons-io = "2.22.0"
 commons-lang3 = "3.20.0"
