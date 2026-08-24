@@ -27,16 +27,17 @@ public class RspBitmapChunkInsertBatchingTest {
     private static final long BS = BLOCK_SIZE;
 
     private static RspBitmap addValues(final RspBitmap rb, final long... values) {
-        final WritableLongChunk<OrderedRowKeys> chunk = WritableLongChunk.makeWritableChunk(values.length);
-        for (int i = 0; i < values.length; ++i) {
-            chunk.set(i, values[i]);
+        try (final WritableLongChunk<OrderedRowKeys> chunk = WritableLongChunk.makeWritableChunk(values.length)) {
+            for (int i = 0; i < values.length; ++i) {
+                chunk.set(i, values[i]);
+            }
+            chunk.setSize(values.length);
+            final RspBitmap w = rb.writeCheck();
+            w.addValuesUnsafeNoWriteCheck(chunk, 0, values.length);
+            w.finishMutations();
+            w.validate("after addValues");
+            return w;
         }
-        chunk.setSize(values.length);
-        final RspBitmap w = rb.writeCheck();
-        w.addValuesUnsafeNoWriteCheck(chunk, 0, values.length);
-        w.finishMutations();
-        w.validate("after addValues");
-        return w;
     }
 
     private static void assertKeysAre(final TreeSet<Long> expected, final RspBitmap actual) {
