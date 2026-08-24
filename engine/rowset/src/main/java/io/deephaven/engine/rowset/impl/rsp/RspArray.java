@@ -1977,6 +1977,46 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         pending.clear();
     }
 
+    /**
+     * Apply both halves of what a batched mutation leaves outstanding: the spans marked for removal, and the spans
+     * waiting to be inserted.
+     *
+     * <p>
+     * The two cannot just be applied one after the other. Removals are recorded as indices into our arrays as they
+     * stand, and pending positions are too, so whichever goes first moves the other's targets. Compacting the removals
+     * out only ever moves spans left, by the number of marked spans preceding them, so removals first plus that same
+     * count taken off each pending position puts every insert where it belongs. A position naming a span that is itself
+     * being removed lands on the first span surviving after it, which is where inserting before the removed span would
+     * have put it anyway.
+     */
+    protected void applyPendingSpanEdits(final PendingSpanInserts pending,
+            final MutableObject<SortedRanges> madeNullSpansMu) {
+        final SortedRanges madeNullSpans = madeNullSpansMu.getValue();
+        // A null tracker means the removals stopped being recorded and the collect below scans for them instead; either
+        // way there may be marked spans, and it is the marks in our arrays that the remap reads.
+        final boolean anyMarkedForRemoval = madeNullSpans == null || madeNullSpans.getCardinality() > 0;
+        if (anyMarkedForRemoval && pending.count() > 0) {
+            int markedBefore = 0;
+            int p = 0;
+            for (int i = 0; i < size && p < pending.count(); ++i) {
+                while (p < pending.count() && pending.positionAt(p) == i) {
+                    pending.setPositionAt(p, i - markedBefore);
+                    ++p;
+                }
+                if (spanInfos[i] == -1) {
+                    ++markedBefore;
+                }
+            }
+            // Anything left names our end, which is past every marked span.
+            while (p < pending.count()) {
+                pending.setPositionAt(p, pending.positionAt(p) - markedBefore);
+                ++p;
+            }
+        }
+        collectRemovedIndicesIfAny(madeNullSpansMu);
+        applyPendingSpanInserts(pending);
+    }
+
     private void open(final int i) {
         ensureSizeCanGrowBy(1);
         final int dstPos = i + 1;
@@ -1999,6 +2039,37 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
+     * Whether replacing the span at index {@code i} with a one-block full block span for {@code key} is a plain
+     * in-place write: it is not, if a full block span of ours on either side would have to merge with it. When this
+     * returns true nothing moves and nothing is marked for removal, so positions accumulated for a pending insert stay
+     * valid across the write.
+     *
+     * @param i the index of the span being replaced, whose key is {@code key}
+     * @param key the block key of the span being replaced
+     * @return true if the replacement neither merges nor absorbs
+     */
+    protected boolean fullBlockSpanSetsInPlaceAtIndex(final int i, final long key) {
+        if (i > 0) {
+            final long leftSpanInfo = spanInfos[i - 1];
+            // A span marked for removal keeps its old span object, so its length would read as a real one.
+            final long leftFlen = leftSpanInfo == -1 ? 0 : getFullBlockSpanLen(leftSpanInfo, spans[i - 1]);
+            if (leftFlen > 0
+                    && key - getKeyForLastBlockInFullSpan(spanInfoToKey(leftSpanInfo), leftFlen) <= BLOCK_SIZE) {
+                return false;
+            }
+        }
+        final int rightIdx = i + 1;
+        if (rightIdx < size) {
+            final long rightSpanInfo = spanInfos[rightIdx];
+            if (getFullBlockSpanLen(rightSpanInfo, spans[rightIdx]) > 0
+                    && spanInfoToKey(rightSpanInfo) - key == BLOCK_SIZE) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Whether a full block span for the given key and full block length can become a new span at index {@code i} as-is,
      * with no merging: adjacent full block spans have to be represented as a single span, and any span of ours inside
      * the blocks it covers would have to be absorbed by it. Neither is true when this returns true, so the span can
@@ -2009,9 +2080,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      * @param flen the span's length in blocks; greater than zero
      * @return true if placing the span at {@code i} preserves our invariants
      */
-    private boolean fullBlockSpanFitsVerbatimAtIndex(final int i, final long key, final long flen) {
+    protected boolean fullBlockSpanFitsVerbatimAtIndex(final int i, final long key, final long flen) {
         final long lastKey = getKeyForLastBlockInFullSpan(key, flen);
-        if (i < size) {
+        if (i < size && spanInfos[i] != -1) {
             final long rightKey = getKey(i);
             if (uLessOrEqual(rightKey, lastKey)) {
                 return false;
@@ -2022,7 +2093,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         if (i > 0) {
             final long leftSpanInfo = spanInfos[i - 1];
-            final long leftFlen = getFullBlockSpanLen(leftSpanInfo, spans[i - 1]);
+            // A span marked for removal keeps its old span object, so its length would read as a real one.
+            final long leftFlen = leftSpanInfo == -1 ? 0 : getFullBlockSpanLen(leftSpanInfo, spans[i - 1]);
             if (leftFlen > 0) {
                 final long leftLastKey = getKeyForLastBlockInFullSpan(spanInfoToKey(leftSpanInfo), leftFlen);
                 if (key - leftLastKey <= BLOCK_SIZE) {
@@ -3648,6 +3720,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return count;
         }
 
+        int positionAt(final int i) {
+            return positions[i];
+        }
+
+        void setPositionAt(final int i, final int position) {
+            positions[i] = position;
+        }
+
         void clear() {
             // Whatever we were holding is in the array now; don't keep containers alive through this cache.
             java.util.Arrays.fill(spans, 0, count, null);
@@ -3676,6 +3756,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             ensureCanGrowByOne();
             positions[count] = position;
             setContainerSpanRaw(spanInfos, spans, count, key, container);
+            ++count;
+        }
+
+        void pushFullBlockSpan(final int position, final long key, final long flen) {
+            ensureCanGrowByOne();
+            positions[count] = position;
+            setFullBlockSpanRaw(count, spanInfos, spans, key, flen);
             ++count;
         }
     }

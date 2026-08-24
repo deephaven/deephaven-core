@@ -146,9 +146,11 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         final MutableObject<SortedRanges> sortedRangesMu = getWorkSortedRangesMutableObject(wd);
         final PendingSpanInserts pending = wd.getPendingSpanInserts();
         // Blocks we do not have yet are collected and inserted in one pass, rather than shifting our tail once per
-        // block. Promoting a block to a full block span has to give that up, because it can mark spans for removal by
-        // index and moving spans afterwards would invalidate those indices.
-        boolean batchInserts = true;
+        // block. Spans marked for removal along the way are recorded by index, so the two are reconciled together at
+        // the end (and at any point in between where our arrays have to be settled).
+        // Key of the last full block span left pending, or -1. Two full block spans for adjacent blocks have to be a
+        // single span, and a pending one is not in the array yet for fullBlockSpanFitsVerbatimAtIndex to notice.
+        long pendingFullBlockKey = -1;
         int spanIndex = 0;
         try (SpanView ourView = wd.borrowSpanView()) {
             for (int vi = 0; vi < length; vi += lengthFromThisSpan) {
@@ -175,37 +177,45 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 final Container result = createOrUpdateContainerForValues(
                         values, vi + offset, lengthFromThisSpan, existing, spanIndex, container);
                 if (result != null && result.isAllOnes()) {
-                    final int idxForFull;
-                    if (pending.count() == 0) {
-                        idxForFull = spanIndexRaw;
+                    final boolean adjacentToPendingFullBlockSpan =
+                            pendingFullBlockKey != -1 && highBits - pendingFullBlockKey == BLOCK_SIZE;
+                    if (!adjacentToPendingFullBlockSpan && existing
+                            && fullBlockSpanSetsInPlaceAtIndex(spanIndex, highBits)) {
+                        // Nothing moves, so whatever is pending stays valid.
+                        setFullBlockSpan(spanIndex, highBits, 1);
+                    } else if (!adjacentToPendingFullBlockSpan && !existing
+                            && fullBlockSpanFitsVerbatimAtIndex(spanIndex, highBits, 1)) {
+                        pending.pushFullBlockSpan(spanIndex, highBits, 1);
+                        pendingFullBlockKey = highBits;
                     } else {
-                        // Our spans move here, so the position we searched out above no longer holds.
-                        applyPendingSpanInserts(pending);
-                        idxForFull = getSpanIndex(0, highBits);
+                        // This one has to merge with, or absorb, spans of ours; that is what
+                        // setOrInsertFullBlockSpanAtIndex is for, and it needs our arrays settled first.
+                        final int idxForFull;
+                        if (pending.count() == 0) {
+                            idxForFull = spanIndexRaw;
+                        } else {
+                            // Our spans move here, so the position we searched out above no longer holds. Anything
+                            // already marked for removal has to go at the same time, since those marks are recorded by
+                            // index too.
+                            applyPendingSpanEdits(pending, sortedRangesMu);
+                            sortedRangesMu.setValue(wd.getMadeNullSortedRanges());
+                            pendingFullBlockKey = -1;
+                            idxForFull = getSpanIndex(0, highBits);
+                        }
+                        spanIndex = setOrInsertFullBlockSpanAtIndex(idxForFull, highBits, 1, sortedRangesMu);
                     }
-                    batchInserts = false;
-                    spanIndex = setOrInsertFullBlockSpanAtIndex(idxForFull, highBits, 1, sortedRangesMu);
                 } else if (!existing) {
                     if (result == null) {
-                        if (batchInserts) {
-                            pending.pushSingleton(spanIndex, value);
-                        } else {
-                            insertSingletonAtIndex(spanIndex, value);
-                        }
+                        pending.pushSingleton(spanIndex, value);
                     } else {
-                        if (batchInserts) {
-                            pending.pushContainer(spanIndex, highBits, result);
-                        } else {
-                            insertContainerAtIndex(spanIndex, highBits, result);
-                        }
+                        pending.pushContainer(spanIndex, highBits, result);
                     }
                 } else {
                     setContainerSpan(container, spanIndex, highBits, result);
                 }
             }
         }
-        applyPendingSpanInserts(pending);
-        collectRemovedIndicesIfAny(sortedRangesMu);
+        applyPendingSpanEdits(pending, sortedRangesMu);
     }
 
     private static int countContiguousHighBitsMatches(final LongChunk<OrderedRowKeys> values,
