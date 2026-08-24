@@ -49,7 +49,7 @@ _JPrimitiveArrayConversionUtility = jpy.get_type(
     "io.deephaven.integrations.common.PrimitiveArrayConversionUtility"
 )
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
-_JHashMap = jpy.get_type("java.util.HashMap")
+_JLinkedHashMap = jpy.get_type("java.util.LinkedHashMap")
 _JArrayList = jpy.get_type("java.util.ArrayList")
 
 _DH_PANDAS_NULLABLE_TYPE_MAP: dict[DType, type[ExtensionDtype]] = {
@@ -92,22 +92,35 @@ def j_hashmap(d: Optional[dict] = None) -> Optional[jpy.JType]:
     return r
 
 
-def j_json_value(value: Any) -> Any:
+JsonValue = Union[
+    None,
+    bool,
+    int,
+    float,
+    str,
+    dict[Any, "JsonValue"],
+    list["JsonValue"],
+    tuple["JsonValue", ...],
+]
+"""A JSON-compatible Python value: a scalar, or a dict/list/tuple of them."""
+
+
+def j_json_value(value: JsonValue) -> Union[jpy.JType, None, bool, int, float, str]:
     """Recursively converts a JSON-compatible Python value into Java objects.
 
-    A dict is converted to a java.util.HashMap and a list, tuple, set, or frozenset is converted to a
-    java.util.ArrayList, with their keys and values converted recursively. Any other value is unwrapped and
-    left for jpy to convert.
+    A dict is converted to a java.util.LinkedHashMap and a list or tuple is converted to a
+    java.util.ArrayList, with their keys and values converted recursively. Any other value is
+    unwrapped and left for jpy to convert.
 
     Nested containers must be converted explicitly; otherwise jpy passes them through as opaque
     org.jpy.PyObject values.
     """
     if isinstance(value, dict):
-        r = _JHashMap(len(value))
+        r = _JLinkedHashMap(len(value))
         for k, v in value.items():
             r.put(j_json_value(k), j_json_value(v))
         return r
-    if isinstance(value, (list, tuple, set, frozenset)):
+    if isinstance(value, (list, tuple)):
         r = _JArrayList(len(value))
         for v in value:
             r.add(j_json_value(v))
