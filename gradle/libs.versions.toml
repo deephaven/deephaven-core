@@ -9,6 +9,7 @@ aws-s3-tables-catalog-for-iceberg = "0.1.8"
 
 calcite = "1.42.0"
 httpcore5 = "5.4.3"
+httpclient = "5.6.3"
 
 classgraph = "4.8.193"
 commons-compress = "1.28.0"
@@ -142,6 +143,8 @@ calcite-core = { module = "org.apache.calcite:calcite-core", version.ref = "calc
 # httpcore5 is used for constraints, we also have httpcore5-h2 in our classpath so list it to keep consistency
 httpcore5 = { module = "org.apache.httpcomponents.core5:httpcore5", version.ref = "httpcore5" }
 httpcore5-h2 = { module = "org.apache.httpcomponents.core5:httpcore5-h2", version.ref = "httpcore5" }
+# httpclient is used for constraints
+httpclient = { module = "org.apache.httpcomponents.client5:httpclient5", version.ref = "httpclient" }
 
 classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
 
