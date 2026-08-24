@@ -3,7 +3,7 @@ adbc = "0.21.0"
 airlift = "2.0.3"
 arrow = "18.3.0"
 autoservice = "1.1.1"
-avro = "1.12.1"
+avro = "1.12.2"
 awssdk = "2.29.52"
 aws-s3-tables-catalog-for-iceberg = "0.1.8"
 
