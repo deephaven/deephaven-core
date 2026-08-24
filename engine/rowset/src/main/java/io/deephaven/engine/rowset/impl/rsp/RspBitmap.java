@@ -1591,7 +1591,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         } else if (removed instanceof SingleRange) {
             removeRangeUnsafeNoWriteCheck(removed.ixFirstKey(), removed.ixLastKey());
             if (added instanceof SortedRanges) {
-                addRangesUnsafeNoWriteCheck(added.ixRangeIterator());
+                insertOrderedLongSetUnsafeNoWriteCheck((SortedRanges) added);
             } else {
                 orEqualsUnsafeNoWriteCheck((RspBitmap) added);
             }
@@ -1634,7 +1634,125 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     }
 
     public void insertOrderedLongSetUnsafeNoWriteCheck(final SortedRanges sr) {
+        makeRoomForPartiallyCoveredBlocks(sr);
         addRangesUnsafeNoWriteCheck(sr.getRangeIterator());
+    }
+
+    /**
+     * Create, in a single pass, a span for each block that {@code sr} only covers part of and that we do not have a
+     * span for yet. Adding the ranges afterwards then finds those blocks present and updates them in place, instead of
+     * shifting the tail of our spans array once per range to make room -- which is quadratic when both sides are large.
+     *
+     * <p>
+     * A range needs room made for up to three spans: the block it starts in and the block it ends in, when it only
+     * covers part of them, and one full block span for the run of complete blocks in between. The partial ones become
+     * singletons holding a key the insert is about to add anyway, so our invariants hold throughout. The run is only
+     * taken when it can be placed as-is; a run that would have to merge with, or absorb, a span of ours is left to the
+     * insert, which is what knows how to do that.
+     */
+    private void makeRoomForPartiallyCoveredBlocks(final SortedRanges sr) {
+        if (size == 0) {
+            // Nothing to make room in; the insert takes its append path.
+            return;
+        }
+        final WorkData wd = workDataPerThread.get();
+        final PendingSpanInserts pending = wd.getPendingSpanInserts();
+        final long ourLastBlockKey = keyForLastBlock();
+        int hint = 0;
+        long lastQueuedBlockKey = -1;
+        // Last block of the most recently queued full block span, or -1. Two full block spans for adjacent blocks have
+        // to be a single span, and a queued one is not in the array for fullBlockSpanFitsVerbatimAtIndex to see.
+        long lastQueuedFullBlockLastKey = -1;
+        try (final RowSet.RangeIterator it = sr.getRangeIterator()) {
+            // Block keys only go up from here on: the ranges ascend and do not overlap, so each range's first block
+            // is at or after the previous range's last block. That is what lets the loop stop for good below, rather
+            // than walking the rest of the ranges to reject them one at a time.
+            ranges: while (it.hasNext()) {
+                it.next();
+                final long start = it.currentRangeStart();
+                final long end = it.currentRangeEnd();
+                final long firstBlockKey = highBits(start);
+                final long lastBlockKey = highBits(end);
+                final boolean coversFirstBlockWholly = lowBitsAsInt(start) == 0
+                        && (firstBlockKey != lastBlockKey || lowBitsAsInt(end) == BLOCK_LAST);
+                final boolean coversLastBlockWholly = lowBitsAsInt(end) == BLOCK_LAST;
+                // The run of blocks the range covers completely, if any. A single block range is its own run when it
+                // covers that block whole; computing the run's end by stepping back a block would underflow there.
+                final boolean hasWholeBlockRun;
+                final long firstWholeBlockKey;
+                final long lastWholeBlockKey;
+                if (firstBlockKey == lastBlockKey) {
+                    hasWholeBlockRun = coversFirstBlockWholly;
+                    firstWholeBlockKey = firstBlockKey;
+                    lastWholeBlockKey = lastBlockKey;
+                } else {
+                    firstWholeBlockKey = coversFirstBlockWholly ? firstBlockKey : nextKey(firstBlockKey);
+                    lastWholeBlockKey = coversLastBlockWholly ? lastBlockKey : lastBlockKey - BLOCK_SIZE;
+                    hasWholeBlockRun = uLessOrEqual(firstWholeBlockKey, lastWholeBlockKey);
+                }
+                // In ascending key order: the partial first block, the run of complete blocks, the partial last block.
+                for (int which = 0; which < 3; ++which) {
+                    final long blockKey;
+                    final long keyInBlock;
+                    final long flen;
+                    if (which == 0) {
+                        if (coversFirstBlockWholly) {
+                            continue;
+                        }
+                        blockKey = firstBlockKey;
+                        keyInBlock = start;
+                        flen = 0;
+                    } else if (which == 1) {
+                        if (!hasWholeBlockRun) {
+                            continue;
+                        }
+                        blockKey = firstWholeBlockKey;
+                        keyInBlock = -1;
+                        flen = distanceInBlocks(firstWholeBlockKey, lastWholeBlockKey) + 1;
+                    } else {
+                        if (firstBlockKey == lastBlockKey || coversLastBlockWholly) {
+                            continue;
+                        }
+                        blockKey = lastBlockKey;
+                        keyInBlock = end;
+                        flen = 0;
+                    }
+                    if (uGreater(blockKey, ourLastBlockKey)) {
+                        // This block and every one after it is past our last, and the insert appends those with no
+                        // shifting to make room for, so there is nothing left for this pass to do.
+                        break ranges;
+                    }
+                    final int idx = getSpanIndex(hint, blockKey);
+                    if (idx >= 0) {
+                        hint = idx;
+                        continue;
+                    }
+                    hint = ~idx;
+                    if (flen > 0) {
+                        // The insert would repair a run placed over spans of ours, or next to a full block span of
+                        // ours, by absorbing or merging them -- it walks the same ranges we do. We skip those anyway,
+                        // to keep our arrays valid the whole way through and to avoid queueing a span only for the
+                        // insert to take it straight back out.
+                        final boolean adjacentToQueuedFullBlockSpan = lastQueuedFullBlockLastKey != -1
+                                && blockKey - lastQueuedFullBlockLastKey == BLOCK_SIZE;
+                        if (adjacentToQueuedFullBlockSpan
+                                || !fullBlockSpanFitsVerbatimAtIndex(hint, blockKey, flen)) {
+                            continue;
+                        }
+                        pending.pushFullBlockSpan(hint, blockKey, flen);
+                        lastQueuedFullBlockLastKey = blockKey + (flen - 1) * BLOCK_SIZE;
+                        continue;
+                    }
+                    if (blockKey == lastQueuedBlockKey) {
+                        // Another range in the same block already has a span queued for it.
+                        continue;
+                    }
+                    pending.pushSingleton(hint, keyInBlock);
+                    lastQueuedBlockKey = blockKey;
+                }
+            }
+        }
+        applyPendingSpanInserts(pending);
     }
 
     public void insertOrderedLongSetUnsafeNoWriteCheck(final RspBitmap rb) {
