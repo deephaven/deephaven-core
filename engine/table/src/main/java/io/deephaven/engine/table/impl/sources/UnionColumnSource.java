@@ -279,17 +279,33 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     /**
-     * Implemented by our contexts in order to expose the slot search hint they maintain, which is not otherwise
-     * observable: {@link UnionRedirection#currSlotForRowKey(long, int)} and its siblings return the same slot for any
-     * hint, so a stale hint costs a search of the slot key space rather than producing a wrong answer.
+     * Implemented by our contexts in order to expose internal state that is not otherwise observable, since it affects
+     * only how much work an access costs and never its result.
      */
     @VisibleForTesting
-    interface LastSlotHolder {
+    interface ContextInternals {
 
         /**
+         * Expose the slot search hint this context maintains: {@link UnionRedirection#currSlotForRowKey(long, int)} and
+         * its siblings return the same slot for any hint, so a stale hint costs a search of the slot key space rather
+         * than producing a wrong answer.
+         *
          * @return The last slot accessed via this context, or {@code 0} if no slot has been accessed yet
          */
         int lastSlot();
+
+        /**
+         * Expose the context this context currently holds for the constituent {@link ColumnSource} occupying its slot,
+         * which is re-made whenever the constituent source changes or the existing context is too small.
+         * <p>
+         * A {@link GetContext} reports the context held for its own accesses; the fill context it delegates to for row
+         * sequences that span multiple slots maintains its own, reachable via
+         * {@link DefaultGetContext#getFillContext(ChunkSource.GetContext)}.
+         *
+         * @return The constituent context currently held, or {@code null} if none has been made yet
+         */
+        @Nullable
+        Context constituentContext();
     }
 
     /**
@@ -501,7 +517,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
     }
 
-    private class FillContext implements ChunkSource.FillContext, LastSlotHolder {
+    private class FillContext implements ChunkSource.FillContext, ContextInternals {
 
         private final SlotHint slotHint;
         private final FillSlotState slotState;
@@ -514,6 +530,11 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         @Override
         public int lastSlot() {
             return slotHint.lastSlot;
+        }
+
+        @Override
+        public Context constituentContext() {
+            return slotState.context;
         }
 
         private void fillChunkAppend(
@@ -536,7 +557,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
     }
 
-    private class GetContext extends DefaultGetContext<Values> implements LastSlotHolder {
+    private class GetContext extends DefaultGetContext<Values> implements ContextInternals {
 
         private final SlotHint slotHint;
         private final GetSlotState slotState;
@@ -557,6 +578,11 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         @Override
         public int lastSlot() {
             return slotHint.lastSlot;
+        }
+
+        @Override
+        public Context constituentContext() {
+            return slotState.context;
         }
 
         private Chunk<? extends Values> getChunk(final int slot, @NotNull final RowSequence outerRowSequence) {

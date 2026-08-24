@@ -30,7 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The hint is not observable through results: {@link UnionRedirection#currSlotForRowKey(long, int)} and its siblings
  * return the same slot for any hint, resetting to a full search when the hint cannot be used. A stale hint therefore
  * costs a binary search over the slot key space instead of two array reads, which matters for unions with very many
- * constituents. These tests observe it via {@link UnionColumnSource.LastSlotHolder}.
+ * constituents. These tests observe it, along with the constituent contexts our contexts hold, via
+ * {@link UnionColumnSource.ContextInternals}.
  */
 public class TestUnionColumnSource {
 
@@ -77,6 +78,8 @@ public class TestUnionColumnSource {
                 final ChunkSource.GetContext getContext = source.makeGetContext(CHUNK_CAPACITY)) {
             assertThat(lastSlot(fillContext)).isEqualTo(0);
             assertThat(lastSlot(getContext)).isEqualTo(0);
+            assertThat(constituentContext(fillContext)).isNull();
+            assertThat(constituentContext(getContext)).isNull();
         }
     }
 
@@ -187,15 +190,61 @@ public class TestUnionColumnSource {
      * constituent is unchanged.
      */
     @Test
-    public void alternatingDataVersionsHintAtTheSameSlot() {
+    public void alternatingDataVersionsReuseTheSameSlotAndFillContext() {
         try (final WritableChunk<Values> destination = makeChunk();
                 final ChunkSource.FillContext fillContext = source.makeFillContext(CHUNK_CAPACITY)) {
             source.fillChunk(fillContext, destination, slotRows[3]);
             assertThat(lastSlot(fillContext)).isEqualTo(3);
+            final Context constituentContext = constituentContext(fillContext);
+            assertThat(constituentContext).isNotNull();
+
             source.fillPrevChunk(fillContext, destination, slotRows[3]);
             assertThat(lastSlot(fillContext)).isEqualTo(3);
+            assertThat(constituentContext(fillContext)).isSameAs(constituentContext);
+
             source.fillChunk(fillContext, destination, slotRows[3]);
             assertThat(lastSlot(fillContext)).isEqualTo(3);
+            assertThat(constituentContext(fillContext)).isSameAs(constituentContext);
+        }
+    }
+
+    /**
+     * The same, for a get context: {@link ColumnSource#getChunk} and {@link ColumnSource#getPrevChunk} for one slot
+     * resolve to the same constituent {@link ColumnSource}, and so must share one constituent context.
+     */
+    @Test
+    public void alternatingDataVersionsReuseTheSameSlotAndGetContext() {
+        try (final ChunkSource.GetContext getContext = source.makeGetContext(CHUNK_CAPACITY)) {
+            source.getChunk(getContext, slotRows[3]);
+            assertThat(lastSlot(getContext)).isEqualTo(3);
+            final Context constituentContext = constituentContext(getContext);
+            assertThat(constituentContext).isNotNull();
+
+            source.getPrevChunk(getContext, slotRows[3]);
+            assertThat(lastSlot(getContext)).isEqualTo(3);
+            assertThat(constituentContext(getContext)).isSameAs(constituentContext);
+
+            source.getChunk(getContext, slotRows[3]);
+            assertThat(lastSlot(getContext)).isEqualTo(3);
+            assertThat(constituentContext(getContext)).isSameAs(constituentContext);
+        }
+    }
+
+    /**
+     * Negative control for the reuse asserted above: our constituents are distinct {@link ColumnSource sources} that
+     * hand out a fresh context per request, so moving to another slot must produce a different constituent context.
+     * Without this, the assertions above would hold for a source that shared one context across all slots.
+     */
+    @Test
+    public void changingSlotsMakesANewConstituentContext() {
+        try (final WritableChunk<Values> destination = makeChunk();
+                final ChunkSource.FillContext fillContext = source.makeFillContext(CHUNK_CAPACITY)) {
+            source.fillChunk(fillContext, destination, slotRows[3]);
+            final Context slotThreeContext = constituentContext(fillContext);
+            source.fillChunk(fillContext, destination, slotRows[4]);
+            assertThat(constituentContext(fillContext)).isNotSameAs(slotThreeContext);
+            source.fillChunk(fillContext, destination, slotRows[3]);
+            assertThat(constituentContext(fillContext)).isNotSameAs(slotThreeContext);
         }
     }
 
@@ -214,7 +263,15 @@ public class TestUnionColumnSource {
     }
 
     private static int lastSlot(@NotNull final Context context) {
-        assertThat(context).isInstanceOf(UnionColumnSource.LastSlotHolder.class);
-        return ((UnionColumnSource.LastSlotHolder) context).lastSlot();
+        return internals(context).lastSlot();
+    }
+
+    private static Context constituentContext(@NotNull final Context context) {
+        return internals(context).constituentContext();
+    }
+
+    private static UnionColumnSource.ContextInternals internals(@NotNull final Context context) {
+        assertThat(context).isInstanceOf(UnionColumnSource.ContextInternals.class);
+        return (UnionColumnSource.ContextInternals) context;
     }
 }
