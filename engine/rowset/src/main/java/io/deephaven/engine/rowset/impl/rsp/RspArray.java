@@ -1950,7 +1950,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      * the wrong spans.
      */
     protected void applyPendingSpanInserts(final PendingSpanInserts pending) {
-        final int deltaSpans = pending.count;
+        final int deltaSpans = pending.size;
         if (deltaSpans == 0) {
             return;
         }
@@ -1985,9 +1985,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      * The two cannot just be applied one after the other. Removals are recorded as indices into our arrays as they
      * stand, and pending positions are too, so whichever goes first moves the other's targets. Compacting the removals
      * out only ever moves spans left, by the number of marked spans preceding them, so removals first plus that same
-     * count taken off each pending position puts every insert where it belongs. A position naming a span that is itself
-     * being removed lands on the first span surviving after it, which is where inserting before the removed span would
-     * have put it anyway.
+     * count taken off each pending position puts every insert where it belongs. The mapping also holds for a position
+     * naming a marked span -- it lands on the first span surviving after it, which is where inserting before the marked
+     * span would have put it -- though no caller produces one: a caller only queues a position it searched out, and
+     * marked spans always sit before the point its searches start from.
      */
     protected void applyPendingSpanEdits(final PendingSpanInserts pending,
             final MutableObject<SortedRanges> madeNullSpansMu) {
@@ -1995,11 +1996,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         // A null tracker means the removals stopped being recorded and the collect below scans for them instead; either
         // way there may be marked spans, and it is the marks in our arrays that the remap reads.
         final boolean anyMarkedForRemoval = madeNullSpans == null || madeNullSpans.getCardinality() > 0;
-        if (anyMarkedForRemoval && pending.count() > 0) {
+        if (anyMarkedForRemoval && pending.size() > 0) {
             int markedBefore = 0;
             int p = 0;
-            for (int i = 0; i < size && p < pending.count(); ++i) {
-                while (p < pending.count() && pending.positionAt(p) == i) {
+            for (int i = 0; i < size && p < pending.size(); ++i) {
+                while (p < pending.size() && pending.positionAt(p) == i) {
                     pending.setPositionAt(p, i - markedBefore);
                     ++p;
                 }
@@ -2008,7 +2009,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 }
             }
             // Anything left names our end, which is past every marked span.
-            while (p < pending.count()) {
+            while (p < pending.size()) {
                 pending.setPositionAt(p, pending.positionAt(p) - markedBefore);
                 ++p;
             }
@@ -2039,63 +2040,46 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * Whether replacing the span at index {@code i} with a one-block full block span for {@code key} is a plain
-     * in-place write: it is not, if a full block span of ours on either side would have to merge with it. When this
-     * returns true nothing moves and nothing is marked for removal, so positions accumulated for a pending insert stay
-     * valid across the write.
+     * Whether a full block span for {@code key} covering {@code flen} blocks can be placed among our spans as-is, with
+     * no merging: adjacent full block spans have to be represented as a single span, and any span of ours inside the
+     * blocks it covers would have to be absorbed by it. Neither is true when this returns true, so the span can simply
+     * be written where it goes.
      *
-     * @param i the index of the span being replaced, whose key is {@code key}
-     * @param key the block key of the span being replaced
-     * @return true if the replacement neither merges nor absorbs
-     */
-    protected boolean fullBlockSpanSetsInPlaceAtIndex(final int i, final long key) {
-        if (i > 0) {
-            final long leftSpanInfo = spanInfos[i - 1];
-            // A span marked for removal keeps its old span object, so its length would read as a real one.
-            final long leftFlen = leftSpanInfo == -1 ? 0 : getFullBlockSpanLen(leftSpanInfo, spans[i - 1]);
-            if (leftFlen > 0
-                    && key - getKeyForLastBlockInFullSpan(spanInfoToKey(leftSpanInfo), leftFlen) <= BLOCK_SIZE) {
-                return false;
-            }
-        }
-        final int rightIdx = i + 1;
-        if (rightIdx < size) {
-            final long rightSpanInfo = spanInfos[rightIdx];
-            if (getFullBlockSpanLen(rightSpanInfo, spans[rightIdx]) > 0
-                    && spanInfoToKey(rightSpanInfo) - key == BLOCK_SIZE) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Whether a full block span for the given key and full block length can become a new span at index {@code i} as-is,
-     * with no merging: adjacent full block spans have to be represented as a single span, and any span of ours inside
-     * the blocks it covers would have to be absorbed by it. Neither is true when this returns true, so the span can
-     * simply be placed at {@code i}.
+     * <p>
+     * The neighbours are named explicitly because the span may be going into a gap or over a span of ours: inserting it
+     * before the span at {@code i} makes the neighbours {@code i - 1} and {@code i}, while writing it over the span at
+     * {@code i} makes them {@code i - 1} and {@code i + 1}.
      *
-     * @param i the index the span would occupy, as returned by a search for {@code key} that did not find it
+     * <p>
+     * Neither neighbour may be a span marked for removal: such a span keeps its old span object, so its length and key
+     * would read as a real span's. No caller can hand one over, because marked spans always sit before the index the
+     * caller's search started from.
+     *
+     * @param leftIdx index of the span before it, or -1 if it would be our first
+     * @param rightIdx index of the first span after it, or {@code size} if it would be our last
      * @param key the key of the span's first block
      * @param flen the span's length in blocks; greater than zero
-     * @return true if placing the span at {@code i} preserves our invariants
+     * @return true if the span neither merges with nor absorbs a span of ours
      */
-    protected boolean fullBlockSpanFitsVerbatimAtIndex(final int i, final long key, final long flen) {
+    protected boolean fullBlockSpanNeedsNoMerge(final int leftIdx, final int rightIdx, final long key,
+            final long flen) {
         final long lastKey = getKeyForLastBlockInFullSpan(key, flen);
-        if (i < size && spanInfos[i] != -1) {
-            final long rightKey = getKey(i);
+        if (rightIdx < size) {
+            final long rightSpanInfo = spanInfos[rightIdx];
+            final long rightKey = spanInfoToKey(rightSpanInfo);
             if (uLessOrEqual(rightKey, lastKey)) {
                 return false;
             }
-            if (rightKey - lastKey == BLOCK_SIZE && getFullBlockSpanLen(spanInfos[i], spans[i]) > 0) {
+            if (rightKey - lastKey == BLOCK_SIZE && getFullBlockSpanLen(rightSpanInfo, spans[rightIdx]) > 0) {
                 return false;
             }
         }
-        if (i > 0) {
-            final long leftSpanInfo = spanInfos[i - 1];
-            // A span marked for removal keeps its old span object, so its length would read as a real one.
-            final long leftFlen = leftSpanInfo == -1 ? 0 : getFullBlockSpanLen(leftSpanInfo, spans[i - 1]);
+        if (leftIdx >= 0) {
+            final long leftSpanInfo = spanInfos[leftIdx];
+            final long leftFlen = getFullBlockSpanLen(leftSpanInfo, spans[leftIdx]);
             if (leftFlen > 0) {
+                // Signed on purpose: a left full block span that overlaps us puts its last key past ours, and the
+                // negative difference has to compare as less than a block, which it would not unsigned.
                 final long leftLastKey = getKeyForLastBlockInFullSpan(spanInfoToKey(leftSpanInfo), leftFlen);
                 if (key - leftLastKey <= BLOCK_SIZE) {
                     return false;
@@ -3168,7 +3152,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 // nothing about the rest of it; and inserting it verbatim is only correct when it neither
                 // merges with an adjacent full block span of ours nor covers any span of ours. Anything
                 // else is the second pass' job.
-                if (coveredOnOurLeft || !fullBlockSpanFitsVerbatimAtIndex(i, otherSpanKey, otherFlen)) {
+                if (coveredOnOurLeft || !fullBlockSpanNeedsNoMerge(i - 1, i, otherSpanKey, otherFlen)) {
                     continue;
                 }
             }
@@ -3714,10 +3698,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         private int[] positions = new int[INITIAL_CAPACITY];
         private long[] spanInfos = new long[INITIAL_CAPACITY];
         private Object[] spans = new Object[INITIAL_CAPACITY];
-        private int count;
+        private int size;
 
-        int count() {
-            return count;
+        int size() {
+            return size;
         }
 
         int positionAt(final int i) {
@@ -3730,12 +3714,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         void clear() {
             // Whatever we were holding is in the array now; don't keep containers alive through this cache.
-            java.util.Arrays.fill(spans, 0, count, null);
-            count = 0;
+            java.util.Arrays.fill(spans, 0, size, null);
+            size = 0;
         }
 
         private void ensureCanGrowByOne() {
-            if (count < positions.length) {
+            if (size < positions.length) {
                 return;
             }
             final int newCapacity = 2 * positions.length;
@@ -3746,24 +3730,24 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         void pushSingleton(final int position, final long value) {
             ensureCanGrowByOne();
-            positions[count] = position;
-            spanInfos[count] = value;
-            spans[count] = null;
-            ++count;
+            positions[size] = position;
+            spanInfos[size] = value;
+            spans[size] = null;
+            ++size;
         }
 
         void pushContainer(final int position, final long key, final Container container) {
             ensureCanGrowByOne();
-            positions[count] = position;
-            setContainerSpanRaw(spanInfos, spans, count, key, container);
-            ++count;
+            positions[size] = position;
+            setContainerSpanRaw(spanInfos, spans, size, key, container);
+            ++size;
         }
 
         void pushFullBlockSpan(final int position, final long key, final long flen) {
             ensureCanGrowByOne();
-            positions[count] = position;
-            setFullBlockSpanRaw(count, spanInfos, spans, key, flen);
-            ++count;
+            positions[size] = position;
+            setFullBlockSpanRaw(size, spanInfos, spans, key, flen);
+            ++size;
         }
     }
 

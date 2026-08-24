@@ -139,17 +139,22 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         return rb;
     }
 
+    /**
+     * Add {@code length} values from {@code values}, starting at {@code offset}, to this bitmap.
+     *
+     * <p>
+     * Blocks we do not have yet are collected and inserted in one pass, rather than shifting our tail once per block.
+     * Spans marked for removal along the way are recorded by index, so the two are reconciled together at the end, and
+     * at any point in between where our arrays have to be settled.
+     */
     public void addValuesUnsafeNoWriteCheck(final LongChunk<OrderedRowKeys> values, final int offset,
             final int length) {
         int lengthFromThisSpan;
         final WorkData wd = workDataPerThread.get();
         final MutableObject<SortedRanges> sortedRangesMu = getWorkSortedRangesMutableObject(wd);
         final PendingSpanInserts pending = wd.getPendingSpanInserts();
-        // Blocks we do not have yet are collected and inserted in one pass, rather than shifting our tail once per
-        // block. Spans marked for removal along the way are recorded by index, so the two are reconciled together at
-        // the end (and at any point in between where our arrays have to be settled).
         // Key of the last full block span left pending, or -1. Two full block spans for adjacent blocks have to be a
-        // single span, and a pending one is not in the array yet for fullBlockSpanFitsVerbatimAtIndex to notice.
+        // single span, and a pending one is not in the array yet for fullBlockSpanNeedsNoMerge to notice.
         long pendingFullBlockKey = -1;
         int spanIndex = 0;
         try (SpanView ourView = wd.borrowSpanView()) {
@@ -180,18 +185,18 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                     final boolean adjacentToPendingFullBlockSpan =
                             pendingFullBlockKey != -1 && highBits - pendingFullBlockKey == BLOCK_SIZE;
                     if (!adjacentToPendingFullBlockSpan && existing
-                            && fullBlockSpanSetsInPlaceAtIndex(spanIndex, highBits)) {
+                            && fullBlockSpanNeedsNoMerge(spanIndex - 1, spanIndex + 1, highBits, 1)) {
                         // Nothing moves, so whatever is pending stays valid.
                         setFullBlockSpan(spanIndex, highBits, 1);
                     } else if (!adjacentToPendingFullBlockSpan && !existing
-                            && fullBlockSpanFitsVerbatimAtIndex(spanIndex, highBits, 1)) {
+                            && fullBlockSpanNeedsNoMerge(spanIndex - 1, spanIndex, highBits, 1)) {
                         pending.pushFullBlockSpan(spanIndex, highBits, 1);
                         pendingFullBlockKey = highBits;
                     } else {
                         // This one has to merge with, or absorb, spans of ours; that is what
                         // setOrInsertFullBlockSpanAtIndex is for, and it needs our arrays settled first.
                         final int idxForFull;
-                        if (pending.count() == 0) {
+                        if (pending.size() == 0) {
                             idxForFull = spanIndexRaw;
                         } else {
                             // Our spans move here, so the position we searched out above no longer holds. Anything
@@ -1660,9 +1665,6 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         final long ourLastBlockKey = keyForLastBlock();
         int hint = 0;
         long lastQueuedBlockKey = -1;
-        // Last block of the most recently queued full block span, or -1. Two full block spans for adjacent blocks have
-        // to be a single span, and a queued one is not in the array for fullBlockSpanFitsVerbatimAtIndex to see.
-        long lastQueuedFullBlockLastKey = -1;
         try (final RowSet.RangeIterator it = sr.getRangeIterator()) {
             // Block keys only go up from here on: the ranges ascend and do not overlap, so each range's first block
             // is at or after the previous range's last block. That is what lets the loop stop for good below, rather
@@ -1675,7 +1677,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 final long lastBlockKey = highBits(end);
                 final boolean coversFirstBlockWholly = lowBitsAsInt(start) == 0
                         && (firstBlockKey != lastBlockKey || lowBitsAsInt(end) == BLOCK_LAST);
-                final boolean coversLastBlockWholly = lowBitsAsInt(end) == BLOCK_LAST;
+                final boolean coversLastBlockWholly = lowBitsAsInt(end) == BLOCK_LAST
+                        && (firstBlockKey != lastBlockKey || lowBitsAsInt(start) == 0);
                 // The run of blocks the range covers completely, if any. A single block range is its own run when it
                 // covers that block whole; computing the run's end by stepping back a block would underflow there.
                 final boolean hasWholeBlockRun;
@@ -1729,18 +1732,16 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                     }
                     hint = ~idx;
                     if (flen > 0) {
-                        // The insert would repair a run placed over spans of ours, or next to a full block span of
-                        // ours, by absorbing or merging them -- it walks the same ranges we do. We skip those anyway,
-                        // to keep our arrays valid the whole way through and to avoid queueing a span only for the
-                        // insert to take it straight back out.
-                        final boolean adjacentToQueuedFullBlockSpan = lastQueuedFullBlockLastKey != -1
-                                && blockKey - lastQueuedFullBlockLastKey == BLOCK_SIZE;
-                        if (adjacentToQueuedFullBlockSpan
-                                || !fullBlockSpanFitsVerbatimAtIndex(hint, blockKey, flen)) {
+                        // Two runs can never be queued for adjacent blocks -- that would need two adjacent ranges, and
+                        // SortedRanges coalesces those -- so unlike the chunk insert, this has no queued run of its own
+                        // to check against. What is left is a run that would merge with or absorb a span of ours; the
+                        // insert would repair that by walking the same ranges, but we skip it anyway, to keep our
+                        // arrays valid the whole way through and to avoid queueing a span only for the insert to take
+                        // straight back out.
+                        if (!fullBlockSpanNeedsNoMerge(hint - 1, hint, blockKey, flen)) {
                             continue;
                         }
                         pending.pushFullBlockSpan(hint, blockKey, flen);
-                        lastQueuedFullBlockLastKey = blockKey + (flen - 1) * BLOCK_SIZE;
                         continue;
                     }
                     if (blockKey == lastQueuedBlockKey) {
