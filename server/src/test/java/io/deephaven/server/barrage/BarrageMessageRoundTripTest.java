@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.barrage;
 
+import com.google.protobuf.CodedInputStream;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.api.ColumnName;
@@ -33,6 +34,7 @@ import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageMessageReaderImpl;
+import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.GrpcMarshallingException;
@@ -54,8 +56,10 @@ import org.junit.experimental.categories.Category;
 
 import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -63,6 +67,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -1842,6 +1848,64 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     }
 
     /**
+     * Regression test: a subscription whose initial snapshot carries <em>zero rows</em> (e.g. a freshly created,
+     * still-empty ticking table) must still emit an initial {@code isDelta=false} {@code DictionaryBatch} defining the
+     * nested dictionary's id <em>before</em> the first {@code RecordBatch} that references it. Strict Arrow consumers
+     * (such as the C++ client) fail or hang when the first RecordBatch references an undefined dictionary id, even with
+     * zero rows.
+     *
+     * <p>
+     * The Java reader is deliberately lenient here — {@code DictionaryChunkReader} skips dictionary resolution entirely
+     * for a zero-row batch — so a plain round-trip cannot detect the defect. Instead this test asserts the wire-level
+     * invariant directly, using the per-message {@link MessageHeader} types recorded by {@link DummyObserver}. Without
+     * the empty-batch dictionary-registration threading in
+     * {@code ChunkWriter.getEmptyInputStream(options, dictionaryRegistry)} (and its callers), the initial flush
+     * contains no DictionaryBatch at all and this test fails.
+     */
+    public void testReeDictionaryEncodedEmptyInitialSnapshot() {
+        final int steps = 10;
+        final int size = 100;
+        final Random random = new Random(2);
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo<?, ?>[2];
+        final QueryTable sourceTable = makeReeDictTable(0, random, columnInfo);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(null, allCols, "ree-dict-empty-initial");
+
+        // Deliver the initial snapshot; the table has no rows yet.
+        flushProducerTable();
+
+        final List<Byte> headerTypes = client.dummyObserver.observedHeaderTypes;
+        final int firstDictionaryBatch = headerTypes.indexOf(MessageHeader.DictionaryBatch);
+        final int firstRecordBatch = headerTypes.indexOf(MessageHeader.RecordBatch);
+        assertTrue("initial snapshot must contain a RecordBatch", firstRecordBatch >= 0);
+        assertTrue("initial snapshot of a dictionary-encoded subscription must emit a DictionaryBatch defining the "
+                + "dictionary id before the first RecordBatch that references it, even when the snapshot has zero "
+                + "rows; strict Arrow consumers (e.g. the C++ client) fail or hang otherwise. Observed header types: "
+                + headerTypes,
+                firstDictionaryBatch >= 0 && firstDictionaryBatch < firstRecordBatch);
+
+        // The (lenient) Java replica should also be a valid empty table at this point.
+        nugget.flushClientEvents();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("initial empty snapshot");
+
+        // Now grow the table from empty and confirm the stream stays healthy end-to-end.
+        for (int step = 0; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("step " + step);
+        }
+    }
+
+    /**
      * Builds a schema where {@code col1Name} and {@code col2Name} both carry {@link DictionaryEncoding} with the same
      * dictionary id (0). Two columns sharing a single id means a single {@code DictionaryBatch} per update covers both.
      */
@@ -2179,10 +2243,32 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
         private final BarrageDataMarshaller marshaller;
         private final Queue<BarrageMessage> receivedCommands;
+        /**
+         * The Arrow {@link MessageHeader} type of every wire message received, in arrival order (e.g.
+         * {@link MessageHeader#DictionaryBatch}, {@link MessageHeader#RecordBatch}). Lets tests assert wire-level
+         * message-ordering invariants that a lenient reader would otherwise paper over.
+         */
+        final List<Byte> observedHeaderTypes = new ArrayList<>();
 
         DummyObserver(final BarrageDataMarshaller marshaller, final Queue<BarrageMessage> receivedCommands) {
             this.marshaller = marshaller;
             this.receivedCommands = receivedCommands;
+        }
+
+        /**
+         * Extracts the flatbuffer {@link MessageHeader} type from one FlightData-framed wire message, mirroring the
+         * header parsing in {@link BarrageMessageReaderImpl}.
+         */
+        private static byte peekHeaderType(final byte[] buf, final int len) throws IOException {
+            final CodedInputStream decoder = CodedInputStream.newInstance(buf, 0, len);
+            for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
+                if (tag == BarrageProtoUtil.DATA_HEADER_TAG) {
+                    final int size = decoder.readRawVarint32();
+                    return Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size))).headerType();
+                }
+                decoder.skipField(tag);
+            }
+            return MessageHeader.NONE;
         }
 
         @Override
@@ -2192,6 +2278,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
                         inputStream.drainTo(baos);
                         inputStream.close();
+                        observedHeaderTypes.add(peekHeaderType(baos.peekBuffer(), baos.size()));
                         final BarrageMessage message =
                                 marshaller.parse(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                         // we skip schema messages, but can't suppress without propagating something...
