@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests {@link BaseChunkWriter.ValidityBuffer}, which packs the Arrow validity bitmap and counts nulls in a single
@@ -45,17 +46,42 @@ public class ValidityBufferTest {
         return nulls;
     }
 
+    private static BaseChunkWriter.ValidityBuffer fill(
+            final BaseChunkWriter.ValidityBuffer buffer,
+            final boolean[] isNull) {
+        for (final boolean elementIsNull : isNull) {
+            buffer.setNextIsNull(elementIsNull);
+        }
+        return buffer;
+    }
+
     /**
-     * Feed {@code isNull} through a buffer and assert both outputs. The null count is read first, matching the order
-     * {@code BaseChunkInputStream} uses: it needs the count for the field node before the bytes are drained.
+     * Feed {@code isNull} through both flavors of buffer and assert their outputs.
+     * <p>
+     * The lazily materialized buffer only has bytes once a null has been appended; with no nulls the column sends no
+     * validity buffer at all, so asking for the bytes is a caller bug and must throw rather than quietly produce an
+     * all-valid bitmap. The eagerly {@link BaseChunkWriter.ValidityBuffer#packed packed} buffer always has bytes, and
+     * they must agree with the lazy one wherever both are legal. The null count is read before the bytes, matching the
+     * order {@code BaseChunkInputStream} uses: it needs the count for the field node before draining.
      */
     private static void assertPacksTo(final String description, final boolean[] isNull) {
-        final BaseChunkWriter.ValidityBuffer validity = new BaseChunkWriter.ValidityBuffer(isNull.length);
-        for (final boolean elementIsNull : isNull) {
-            validity.setNextIsNull(elementIsNull);
+        final int expectedNulls = countNulls(isNull);
+        final byte[] expected = expectedBitmap(isNull);
+
+        final BaseChunkWriter.ValidityBuffer lazy = fill(new BaseChunkWriter.ValidityBuffer(isNull.length), isNull);
+        assertThat(lazy.nullCount()).as("%s: lazy nullCount", description).isEqualTo(expectedNulls);
+        if (expectedNulls == 0) {
+            assertThatThrownBy(lazy::bytes)
+                    .as("%s: lazy bytes() with no null appended", description)
+                    .isInstanceOf(IllegalStateException.class);
+        } else {
+            assertThat(lazy.bytes()).as("%s: lazy bitmap", description).containsExactly(expected);
         }
-        assertThat(validity.nullCount()).as("%s: nullCount", description).isEqualTo(countNulls(isNull));
-        assertThat(validity.bytes()).as("%s: bitmap", description).containsExactly(expectedBitmap(isNull));
+
+        final BaseChunkWriter.ValidityBuffer packed =
+                fill(BaseChunkWriter.ValidityBuffer.packed(isNull.length), isNull);
+        assertThat(packed.nullCount()).as("%s: packed nullCount", description).isEqualTo(expectedNulls);
+        assertThat(packed.bytes()).as("%s: packed bitmap", description).containsExactly(expected);
     }
 
     /** Sizes that bracket the word boundaries: empty, sub-word, exact multiples, and one either side. */
@@ -75,8 +101,8 @@ public class ValidityBufferTest {
 
     @Test
     public void allElementsValid() {
-        // No null ever arrives, so bytes() has to synthesize the all-valid bitmap from the running count. This is the
-        // path BooleanChunkWriter takes for a payload of all-TRUE values.
+        // No null ever arrives: the lazy buffer must refuse to hand out bytes, while the packed buffer -- the shape
+        // BooleanChunkWriter uses for a payload of all-TRUE values -- must produce the full all-ones bitmap.
         for (final int size : SIZES) {
             assertPacksTo("all valid, size " + size, new boolean[size]);
         }
@@ -166,11 +192,7 @@ public class ValidityBufferTest {
             for (final boolean fillNull : new boolean[] {false, true}) {
                 final boolean[] isNull = new boolean[size];
                 Arrays.fill(isNull, fillNull);
-                final BaseChunkWriter.ValidityBuffer validity = new BaseChunkWriter.ValidityBuffer(size);
-                for (final boolean elementIsNull : isNull) {
-                    validity.setNextIsNull(elementIsNull);
-                }
-                final byte[] bytes = validity.bytes();
+                final byte[] bytes = fill(BaseChunkWriter.ValidityBuffer.packed(size), isNull).bytes();
                 for (int bit = size; bit < bytes.length * 8; ++bit) {
                     assertThat((bytes[bit / 8] >> (bit & 7)) & 1)
                             .as("size %d fillNull %b: bit %d past the last element", size, fillNull, bit)

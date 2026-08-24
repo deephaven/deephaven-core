@@ -103,8 +103,9 @@ public class BooleanChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends
             bytesWritten += writeValidityBuffer(dos);
 
             // write the payload buffer
-            // we cheat and re-use validity buffer bit-packing; a set bit is TRUE rather than non-null
-            final ValidityBuffer payload = new ValidityBuffer(subset.intSize(DEBUG_NAME));
+            // we cheat and re-use validity buffer bit-packing; a set bit is TRUE rather than non-null. It is packed up
+            // front because an all-TRUE column appends no "null" and still has to emit a full buffer.
+            final ValidityBuffer payload = ValidityBuffer.packed(subset.intSize(DEBUG_NAME));
             final ByteChunk<Values> byteChunk = context.getChunk().asByteChunk();
             subset.forAllRowKeys(row -> payload.setNextIsNull(
                     BooleanUtils.byteAsBoolean(byteChunk.get((int) row)) != Boolean.TRUE));

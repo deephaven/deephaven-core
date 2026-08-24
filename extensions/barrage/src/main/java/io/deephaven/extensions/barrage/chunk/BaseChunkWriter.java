@@ -267,7 +267,8 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
      * bit marks a valid (non-null) element. Nulls are counted as the bits are appended, so a single traversal of the
      * row data yields both the field node's null count and the bytes of the validity buffer.
      * <p>
-     * {@link BooleanChunkWriter} also uses this to pack its payload, which has the same shape.
+     * {@link BooleanChunkWriter} also uses this to pack its payload, which has the same shape, via
+     * {@link #packed(int)}.
      */
     protected static final class ValidityBuffer {
         private final int numElements;
@@ -287,8 +288,26 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
         private int nullCount = 0;
         private boolean sealed = false;
 
+        /**
+         * A validity bitmap, materialized only once a null is appended. A column with no nulls sends no validity buffer
+         * at all, so asking such a buffer for its {@link #bytes()} is a caller bug and throws.
+         */
         public ValidityBuffer(final int numElements) {
             this.numElements = numElements;
+        }
+
+        /**
+         * A bit-packed buffer that is materialized up front, for a caller that needs the bits whatever the values turn
+         * out to be. {@link BooleanChunkWriter} packs its payload this way, where a set bit means TRUE rather than
+         * non-null and an all-TRUE column must still emit a full buffer.
+         *
+         * @param numElements the number of elements to be appended
+         * @return a buffer whose {@link #bytes()} is always available
+         */
+        public static ValidityBuffer packed(final int numElements) {
+            final ValidityBuffer buffer = new ValidityBuffer(numElements);
+            buffer.allocate();
+            return buffer;
         }
 
         public void setNextIsNull(final boolean isNull) {
@@ -356,12 +375,14 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
         /**
          * Finalize and return the packed bytes; exactly {@code getValidityMapSerializationSizeFor(numElements)} of
          * them. No element may be appended afterwards.
+         *
+         * @throws IllegalStateException if nothing was ever materialized, i.e. no null was appended and the buffer was
+         *         not created by {@link #packed(int)}
          */
         public byte[] bytes() {
             if (bytes == null) {
-                // No null was ever appended, so every element is valid; materialize what appending them one at a time
-                // would have produced, trailing bits past the last element left clear.
-                allocate();
+                throw new IllegalStateException("No bits have been packed: a validity buffer is only written when "
+                        + "nullCount() is non-zero; a caller that needs the bytes regardless must use packed()");
             }
             if (!sealed) {
                 sealed = true;
