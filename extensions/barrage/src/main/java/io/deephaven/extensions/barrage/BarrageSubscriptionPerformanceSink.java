@@ -17,9 +17,8 @@ import java.io.IOException;
  * {@link BarragePerformanceLog#CYCLE_DURATION_MILLIS}. Values are accumulated in a histogram between flushes, so each
  * entry summarizes many events.
  * <p>
- * Values are recorded in units that depend on {@code statType}: nanoseconds for the duration statistics (those whose
- * names end in {@code Millis}, such as {@code "WriteMillis"}) and bits for {@code "WriteMegabits"}. These are the raw
- * recorded units; the in-memory table scales them to milliseconds and megabits to match its column names.
+ * Histogram values are recorded in nanoseconds for every currently supported {@code statType}. The in-memory table
+ * scales them to milliseconds to match its percentile column names.
  *
  * @implNote implementations need not be thread safe; all calls to a given instance are serialized.
  */
