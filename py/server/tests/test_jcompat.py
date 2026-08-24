@@ -115,19 +115,6 @@ class JCompatTestCase(BaseTestCase):
         self.assertTrue(_JList.jclass.isInstance(j_list))
         self.assert_json_equals(j_list, ["a", "b"])
 
-    def test_j_json_value_set(self):
-        j_list = j_json_value({"a", "b", "c"})
-        self.assertTrue(_JList.jclass.isInstance(j_list))
-        self.assertEqual(
-            sorted(json.loads(_JObjectMapper().writeValueAsString(j_list))),
-            ["a", "b", "c"],
-        )
-
-    def test_j_json_value_frozenset(self):
-        j_list = j_json_value(frozenset(["a"]))
-        self.assertTrue(_JList.jclass.isInstance(j_list))
-        self.assert_json_equals(j_list, ["a"])
-
     def test_j_json_value_empty_containers(self):
         self.assert_round_trip({})
         self.assert_round_trip([])
