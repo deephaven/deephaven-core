@@ -251,18 +251,18 @@ public class TestMultiColumnSort {
     }
 
     private static void checkParallelSame(final Table table, final SortInvoker invoker) {
-        final long oldMinimum = SortHelpers.parallelSortMinimumSize;
+        final long oldMinimum = QueryTable.MINIMUM_PARALLEL_SORT_ROWS;
         final long oldSegment = SortHelpers.parallelSortSegmentSize;
         final Table serial;
         final Table parallel;
         try {
-            SortHelpers.parallelSortMinimumSize = 0;
+            QueryTable.MINIMUM_PARALLEL_SORT_ROWS = 0;
             serial = invoker.sort(table);
-            SortHelpers.parallelSortMinimumSize = 1;
+            QueryTable.MINIMUM_PARALLEL_SORT_ROWS = 1;
             SortHelpers.parallelSortSegmentSize = 1;
             parallel = invoker.sort(table);
         } finally {
-            SortHelpers.parallelSortMinimumSize = oldMinimum;
+            QueryTable.MINIMUM_PARALLEL_SORT_ROWS = oldMinimum;
             SortHelpers.parallelSortSegmentSize = oldSegment;
         }
         assertTableEquals(serial, parallel);
@@ -294,18 +294,18 @@ public class TestMultiColumnSort {
         }
 
         // exactly two segments: a 10,000 row table with 5,000 row segments
-        final long oldMinimum = SortHelpers.parallelSortMinimumSize;
+        final long oldMinimum = QueryTable.MINIMUM_PARALLEL_SORT_ROWS;
         final long oldSegment = SortHelpers.parallelSortSegmentSize;
         try {
             final Table table = makeTable(new Random(31415), 10000);
-            SortHelpers.parallelSortMinimumSize = 0;
+            QueryTable.MINIMUM_PARALLEL_SORT_ROWS = 0;
             final Table serial = table.sort("ObjA", "IntB");
-            SortHelpers.parallelSortMinimumSize = 1;
+            QueryTable.MINIMUM_PARALLEL_SORT_ROWS = 1;
             SortHelpers.parallelSortSegmentSize = 5000;
             final Table twoSegments = table.sort("ObjA", "IntB");
             assertTableEquals(serial, twoSegments);
         } finally {
-            SortHelpers.parallelSortMinimumSize = oldMinimum;
+            QueryTable.MINIMUM_PARALLEL_SORT_ROWS = oldMinimum;
             SortHelpers.parallelSortSegmentSize = oldSegment;
         }
 
@@ -323,18 +323,18 @@ public class TestMultiColumnSort {
 
         // the parallelSort switch forces the serial path even when the size thresholds would parallelize
         final boolean oldParallelSort = SortHelpers.parallelSort;
-        final long oldMinimumSize = SortHelpers.parallelSortMinimumSize;
+        final long oldMinimumSize = QueryTable.MINIMUM_PARALLEL_SORT_ROWS;
         final long oldSegmentSize = SortHelpers.parallelSortSegmentSize;
         try {
             final Table table = makeTable(new Random(8675309), 10000);
             final Table expected = table.sort("ObjA", "IntB");
             SortHelpers.parallelSort = false;
-            SortHelpers.parallelSortMinimumSize = 1;
+            QueryTable.MINIMUM_PARALLEL_SORT_ROWS = 1;
             SortHelpers.parallelSortSegmentSize = 1;
             assertTableEquals(expected, table.sort("ObjA", "IntB"));
         } finally {
             SortHelpers.parallelSort = oldParallelSort;
-            SortHelpers.parallelSortMinimumSize = oldMinimumSize;
+            QueryTable.MINIMUM_PARALLEL_SORT_ROWS = oldMinimumSize;
             SortHelpers.parallelSortSegmentSize = oldSegmentSize;
         }
     }

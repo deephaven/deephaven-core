@@ -319,6 +319,15 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSelectRows", 1L << 22);
 
     /**
+     * The minimum number of rows in a sort for which the engine may parallelize work: filling the values chunks that
+     * feed the sort kernels, sorting segments of the positions with pairwise merges, and gathering the permuted row
+     * keys. Below this, dividing the work into segments costs more than the work itself, so sorts of fewer rows — and
+     * all sorts when the value is zero or negative — are processed entirely on the calling thread.
+     */
+    public static long MINIMUM_PARALLEL_SORT_ROWS =
+            Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSortRows", 1L << 20);
+
+    /**
      * For unit tests, we do want to force the column parallel select and update at times.
      */
     static boolean FORCE_PARALLEL_SELECT_AND_UPDATE =

@@ -91,7 +91,7 @@ public class MultiColumnSortBenchmark {
         engine = new EngineCleanup();
         engine.setUp();
         QueryTable.USE_INDIRECT_SORT_KERNELS = "kernel".equals(kernelMode);
-        SortHelpers.parallelSortMinimumSize = parallelMinSize;
+        QueryTable.MINIMUM_PARALLEL_SORT_ROWS = parallelMinSize;
         sortColumns = sortCols.split(",");
 
         final Random random = new Random(0xDEADBEEF);
