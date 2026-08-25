@@ -419,4 +419,41 @@ public class TestMultiColumnSort {
                 .sort(sortColumns);
         assertTableEquals(expected, sorted);
     }
+
+    /**
+     * When every sort column is row-key agnostic nothing remains to sort by; constructing such a sort on an empty
+     * refreshing table (a partitioned table proxy sorting by its partition key, which is constant within each
+     * constituent) must not try to prepare a kernel with no columns, and the result is the source order.
+     */
+    @Test
+    public void testAllRowKeyAgnosticSortColumns() {
+        TestCase.assertFalse(IndirectTimsortKernelFactory.hasKernel(new ChunkType[0], new Comparator[0]));
+
+        final QueryTable base = TstUtils.testRefreshingTable(intCol("IntA"));
+        final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>(base.getColumnSourceMap());
+        sources.put("ConstI", NullValueColumnSource.getInstance(int.class, null));
+        sources.put("ConstS", NullValueColumnSource.getInstance(String.class, null));
+        final QueryTable source = new QueryTable(base.getRowSet(), sources);
+        source.setRefreshing(true);
+
+        final Table sortedOne = source.sortDescending("ConstI");
+        final Table sortedBoth = source.sort("ConstS", "ConstI");
+        // one column remaining after the constants are dropped uses the pregenerated kernels
+        final Table sortedWithData = source.sort("ConstS", "IntA", "ConstI");
+
+        final int[] intA = {3, 1, 2};
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet added = RowSetFactory.fromRange(0, intA.length - 1);
+            TstUtils.addToTable(source, added, intCol("IntA", intA), intCol("ConstI"), stringCol("ConstS"));
+            source.notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+
+        for (final Table sorted : new Table[] {sortedOne, sortedBoth, sortedWithData}) {
+            TestCase.assertFalse("sorted.isFailed()", ((BaseTable<?>) sorted).isFailed());
+        }
+        assertTableEquals(source, sortedOne);
+        assertTableEquals(source, sortedBoth);
+        assertTableEquals(source.sort("IntA"), sortedWithData);
+    }
 }

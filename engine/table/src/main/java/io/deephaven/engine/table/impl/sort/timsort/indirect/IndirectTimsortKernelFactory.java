@@ -188,9 +188,13 @@ public class IndirectTimsortKernelFactory {
     /**
      * Whether {@link #makeContext} provides a kernel for the given column chunk types and comparators; callers use the
      * existing single-column kernels when it does not. This is the same policy makeContext applies, without creating a
-     * context: single-column sorts of primitive types are declined, as are boolean chunks.
+     * context: single-column sorts of primitive types are declined, as are boolean chunks and empty shapes.
      */
     public static boolean hasKernel(final ChunkType[] chunkTypes, final Comparator[] comparators) {
+        if (chunkTypes.length == 0) {
+            // there is nothing to sort by; a kernel with no columns cannot be generated
+            return false;
+        }
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             if (ColumnType.forChunkType(chunkTypes[ii]) == null) {
                 return false;
