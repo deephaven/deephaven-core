@@ -315,6 +315,9 @@ public class SortHelpers {
             final Comparator[] comparators,
             final boolean[] comparatorsRespectEquality) {
         final int[] survivors = effectiveSortColumns(columnsToSortBy, comparatorsRespectEquality);
+        if (survivors.length == 0) {
+            return;
+        }
         final ChunkType[] chunkTypes = new ChunkType[survivors.length];
         final SortingOrder[] effectiveOrder = new SortingOrder[survivors.length];
         final Comparator[] effectiveComparators = new Comparator[survivors.length];
