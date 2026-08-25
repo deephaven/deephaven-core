@@ -319,6 +319,13 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSelectRows", 1L << 22);
 
     /**
+     * Whether the engine may parallelize sorts at all; when false every sort is processed entirely on the calling
+     * thread, regardless of {@link #MINIMUM_PARALLEL_SORT_ROWS}.
+     */
+    public static boolean PARALLEL_SORT =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.parallelSort", true);
+
+    /**
      * The minimum number of rows in a sort for which the engine may parallelize work: filling the values chunks that
      * feed the sort kernels, sorting segments of the positions with pairwise merges, and gathering the permuted row
      * keys. Below this, dividing the work into segments costs more than the work itself, so sorts of fewer rows — and

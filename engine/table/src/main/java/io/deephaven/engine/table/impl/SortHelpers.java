@@ -122,13 +122,6 @@ public class SortHelpers {
     static int sortChunkSize = Configuration.getInstance().getIntegerWithDefault("QueryTable.sortChunkSize", 1 << 30);
 
     /**
-     * Whether the engine may parallelize sorts at all; when false every sort is processed entirely on the calling
-     * thread, regardless of {@link QueryTable#MINIMUM_PARALLEL_SORT_ROWS}.
-     */
-    public static boolean parallelSort = Configuration.getInstance()
-            .getBooleanWithDefault("QueryTable.parallelSort", true);
-
-    /**
      * The minimum number of rows in each segment of a parallel sort. A parallel sort is split into at most the
      * {@link OperationInitializer#parallelismFactor() parallelism factor} of the current context's operation
      * initializer, using fewer (larger) segments when the parallelism factor would make the segments smaller than this.
@@ -1091,13 +1084,13 @@ public class SortHelpers {
 
     /**
      * The number of segments to split a values fill of the given size into: one (i.e., no parallelism) when
-     * {@link #parallelSort} is off, {@link QueryTable#MINIMUM_PARALLEL_SORT_ROWS} is non-positive, the fill is smaller
-     * than it, or the current thread may not parallelize; otherwise the parallelism factor of the current context's
-     * operation initializer.
+     * {@link QueryTable#PARALLEL_SORT} is off, {@link QueryTable#MINIMUM_PARALLEL_SORT_ROWS} is non-positive, the fill
+     * is smaller than it, or the current thread may not parallelize; otherwise the parallelism factor of the current
+     * context's operation initializer.
      */
     private static int parallelFillSegments(final int sortSize) {
         final long minimumSize = QueryTable.MINIMUM_PARALLEL_SORT_ROWS;
-        if (!parallelSort || minimumSize <= 0 || sortSize < minimumSize) {
+        if (!QueryTable.PARALLEL_SORT || minimumSize <= 0 || sortSize < minimumSize) {
             return 1;
         }
         final OperationInitializer operationInitializer = parallelizableOperationInitializer();
@@ -1123,12 +1116,13 @@ public class SortHelpers {
     /**
      * The number of segments to split a sort of the given size into: the operation initializer's parallelism factor,
      * limited so that every segment is at least {@link #parallelSortSegmentSize} rows (i.e., biased towards fewer
-     * segments); one (no parallelism) when {@link #parallelSort} is off, {@link QueryTable#MINIMUM_PARALLEL_SORT_ROWS}
-     * is non-positive, the sort is smaller than it, or the current thread may not parallelize.
+     * segments); one (no parallelism) when {@link QueryTable#PARALLEL_SORT} is off,
+     * {@link QueryTable#MINIMUM_PARALLEL_SORT_ROWS} is non-positive, the sort is smaller than it, or the current thread
+     * may not parallelize.
      */
     private static int parallelSortSegments(final int sortSize) {
         final long minimumSize = QueryTable.MINIMUM_PARALLEL_SORT_ROWS;
-        if (!parallelSort || minimumSize <= 0 || sortSize < minimumSize) {
+        if (!QueryTable.PARALLEL_SORT || minimumSize <= 0 || sortSize < minimumSize) {
             return 1;
         }
         final OperationInitializer operationInitializer = parallelizableOperationInitializer();

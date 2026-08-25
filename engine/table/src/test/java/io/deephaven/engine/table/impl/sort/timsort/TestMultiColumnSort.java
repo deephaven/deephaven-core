@@ -322,18 +322,18 @@ public class TestMultiColumnSort {
         }
 
         // the parallelSort switch forces the serial path even when the size thresholds would parallelize
-        final boolean oldParallelSort = SortHelpers.parallelSort;
+        final boolean oldParallelSort = QueryTable.PARALLEL_SORT;
         final long oldMinimumSize = QueryTable.MINIMUM_PARALLEL_SORT_ROWS;
         final long oldSegmentSize = SortHelpers.parallelSortSegmentSize;
         try {
             final Table table = makeTable(new Random(8675309), 10000);
             final Table expected = table.sort("ObjA", "IntB");
-            SortHelpers.parallelSort = false;
+            QueryTable.PARALLEL_SORT = false;
             QueryTable.MINIMUM_PARALLEL_SORT_ROWS = 1;
             SortHelpers.parallelSortSegmentSize = 1;
             assertTableEquals(expected, table.sort("ObjA", "IntB"));
         } finally {
-            SortHelpers.parallelSort = oldParallelSort;
+            QueryTable.PARALLEL_SORT = oldParallelSort;
             QueryTable.MINIMUM_PARALLEL_SORT_ROWS = oldMinimumSize;
             SortHelpers.parallelSortSegmentSize = oldSegmentSize;
         }
