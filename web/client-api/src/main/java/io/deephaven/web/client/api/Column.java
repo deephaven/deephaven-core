@@ -356,7 +356,7 @@ public class Column {
     @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
     public interface ColumnOrName {
         @JsOverlay
-        static Function<ColumnOrName, String> COLUMN_NAME = c -> c.isString() ? c.asString() : c.asColumn().getName();
+        Function<ColumnOrName, String> COLUMN_NAME = ColumnOrName::columnName;
 
         @JsOverlay
         static ColumnOrName of(@DoNotAutobox Object value) {
@@ -385,5 +385,12 @@ public class Column {
             return Js.cast(this);
         }
 
+        /**
+         * Internal helper to read the column name provided.
+         */
+        @JsOverlay
+        default String columnName() {
+            return isString() ? asString() : asColumn().getName();
+        }
     }
 }

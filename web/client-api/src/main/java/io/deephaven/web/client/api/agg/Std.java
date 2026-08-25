@@ -13,7 +13,7 @@ import jsinterop.annotations.JsType;
  * Sample standard deviation is computed using <a href="https://en.wikipedia.org/wiki/Bessel%27s_correction">Bessel's
  * correction</a>, which ensures that the sample variance will be an unbiased estimator of population variance.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Std extends ColumnAggregation {
     @TsLiteral
     public final String type = "Std";

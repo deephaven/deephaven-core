@@ -9,7 +9,7 @@ import jsinterop.annotations.JsType;
 /**
  * Computes the arithmetic mean (average) within each aggregation group.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Avg extends ColumnAggregation {
     @TsLiteral
     public final String type = "Avg";

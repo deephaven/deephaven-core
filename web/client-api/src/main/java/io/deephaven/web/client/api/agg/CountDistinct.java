@@ -10,7 +10,7 @@ import jsinterop.annotations.JsType;
 /**
  * Counts the number of distinct values within each aggregation group.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class CountDistinct extends ColumnAggregation {
     @TsLiteral
     public final String type = "CountDistinct";

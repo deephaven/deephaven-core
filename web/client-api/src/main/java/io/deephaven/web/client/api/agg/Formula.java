@@ -14,7 +14,7 @@ import jsinterop.annotations.JsType;
  * For example, with {@code formula = "max(each)"} and {@code paramToken = "each"}, the formula will compute the maximum
  * of each group's values, where {@code each} is replaced by the column's vector for that group.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Formula extends ColumnAggregation {
     @TsLiteral
     public final String type = "Formula";

@@ -9,7 +9,7 @@ import jsinterop.annotations.JsType;
 /**
  * Returns the first value within each aggregation group.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class First extends ColumnAggregation {
     @TsLiteral
     public final String type = "First";

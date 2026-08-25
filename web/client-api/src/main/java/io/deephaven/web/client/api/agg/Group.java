@@ -9,7 +9,7 @@ import jsinterop.annotations.JsType;
 /**
  * Collects all values within each aggregation group into an array/vector column.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Group extends ColumnAggregation {
     @TsLiteral
     public final String type = "Group";

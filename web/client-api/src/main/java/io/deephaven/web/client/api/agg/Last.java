@@ -9,7 +9,7 @@ import jsinterop.annotations.JsType;
 /**
  * Returns the last value within each aggregation group.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Last extends ColumnAggregation {
     @TsLiteral
     public final String type = "Last";

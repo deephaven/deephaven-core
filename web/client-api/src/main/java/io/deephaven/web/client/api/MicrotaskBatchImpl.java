@@ -194,11 +194,6 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     @Override
-    public TableReference tableReference() {
-        return TableReference.newBuilder().setTicket(ticket).build();
-    }
-
-    @Override
     public WorkerConnection getConnection() {
         return connection;
     }

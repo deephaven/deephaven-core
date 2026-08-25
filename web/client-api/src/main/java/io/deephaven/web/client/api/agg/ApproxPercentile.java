@@ -11,7 +11,7 @@ import jsinterop.annotations.JsType;
  * Computes an approximate percentile within each aggregation group using a T-Digest data structure. This is useful for
  * very large data sets where an exact percentile would be too expensive to compute.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class ApproxPercentile extends ColumnAggregation {
     @TsLiteral
     public final String type = "ApproxPercentile";

@@ -11,7 +11,7 @@ import jsinterop.annotations.JsType;
  * Computes the single unique value within each aggregation group. If all values in a group are null, or if there is
  * more than one distinct value, the result is null (or a non-unique sentinel value, if supported).
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Unique extends ColumnAggregation {
     @TsLiteral
     public final String type = "Unique";

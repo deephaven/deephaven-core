@@ -11,7 +11,7 @@ import jsinterop.annotations.JsType;
  * Computes the weighted average within each aggregation group. Each input value is multiplied by the corresponding
  * weight, and the result is the sum of weighted values divided by the sum of weights.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class WAvg extends ColumnAggregation {
     @TsLiteral
     public final String type = "WAvg";

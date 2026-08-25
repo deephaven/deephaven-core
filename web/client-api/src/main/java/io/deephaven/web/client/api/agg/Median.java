@@ -10,7 +10,7 @@ import jsinterop.annotations.JsType;
 /**
  * Computes the median value within each aggregation group.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Median extends ColumnAggregation {
     @TsLiteral
     public final String type = "Median";

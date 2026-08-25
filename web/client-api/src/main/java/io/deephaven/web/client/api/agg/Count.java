@@ -12,7 +12,7 @@ import jsinterop.annotations.JsType;
  * <p>
  * This aggregation is not supported in {@code aggAllBy} — use it only with {@code aggBy}.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Count extends Aggregation {
     @TsLiteral
     public final String type = "Count";

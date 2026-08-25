@@ -11,7 +11,7 @@ import jsinterop.annotations.JsType;
  * Computes a T-Digest data structure within each aggregation group, which can be used later for approximate percentile
  * calculations. This stores a compressed representation of the data distribution.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class TDigest extends ColumnAggregation {
     @TsLiteral
     public final String type = "TDigest";

@@ -11,7 +11,7 @@ import jsinterop.annotations.JsType;
  * Computes the weighted sum within each aggregation group. Each input value is multiplied by the corresponding weight,
  * and the results are summed.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class WSum extends ColumnAggregation {
     @TsLiteral
     public final String type = "WSum";

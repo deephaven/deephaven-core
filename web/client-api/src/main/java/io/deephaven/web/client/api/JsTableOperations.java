@@ -13,6 +13,7 @@ import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
+import io.deephaven.proto.backplane.grpc.FlattenRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SliceRequest;
@@ -31,8 +32,6 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import jsinterop.base.Js;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
@@ -128,10 +127,6 @@ public interface JsTableOperations extends ServerObject {
      * @return a table operations instance that more calls can be chained on, or can be awaited
      */
     JsPendingTable call(Ticket resultId, BatchTableRequest.Operation.Builder operation);
-
-    TableReference tableReference();
-
-    // region Calls from Java's TableOperations
 
     @JsMethod
     default JsPendingTable head(TableData.RowPositionUnion size) {
@@ -242,17 +237,16 @@ public interface JsTableOperations extends ServerObject {
                         .setTicket(trigger.typedTicket().getTicket())
                         .build())
                 .setResultId(ticket)
-                .setInitial(options.initial != null ? options.initial : false)
-                .setIncremental(options.incremental != null ? options.incremental : false)
-                .setHistory(options.history != null ? options.history : false)
+                .setInitial(options.initial != null && options.initial)
+                .setIncremental(options.incremental != null && options.incremental)
+                .setHistory(options.history != null && options.history)
                 .addAllStampColumns(
                         options.stampColumns != null ? options.stampColumns.asList() : Collections.emptyList())));
     }
 
     // omitting sortDescending, sort objects have this for us
-    // TODO support simple struct for "expected names"?
     @JsMethod
-    default JsPendingTable sort(ReadonlyArray<Sort> sorts) {
+    default JsPendingTable sort(ReadonlyArray<Sort.SortUnion> sorts) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setSort(SortTableRequest.newBuilder()
@@ -260,7 +254,7 @@ public interface JsTableOperations extends ServerObject {
                         .setTicket(typedTicket().getTicket())
                         .build())
                 .setResultId(ticket)
-                .addAllSorts(sorts.asList().stream().map(Sort::makeDescriptor).toList())));
+                .addAllSorts(sorts.asList().stream().map(Sort.SortUnion::makeDescriptor).toList())));
     }
 
     /**
@@ -498,7 +492,7 @@ public interface JsTableOperations extends ServerObject {
      * provided, the resulting table will have a single row.
      * 
      * @param groupByColumns columns to group
-     * @return
+     * @return a table with one row per group
      */
     @JsMethod
     default JsTableOperations groupBy(@JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
@@ -509,9 +503,7 @@ public interface JsTableOperations extends ServerObject {
                         .setTicket(typedTicket().getTicket())
                         .build())
                 .setResultId(ticket)
-                .addAllGroupByColumns(groupByColumns != null ? groupByColumns.asList().stream()
-                        .map(Column.ColumnOrName.COLUMN_NAME)
-                        .toList() : Collections.emptyList())));
+                .addAllGroupByColumns(groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
     }
 
     /**
@@ -526,243 +518,22 @@ public interface JsTableOperations extends ServerObject {
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        AggSpec.Builder spec = makeAggSpec(aggUnion);
+        AggSpec.Builder spec = aggUnion.makeAggSpec();
         return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest.newBuilder()
                 .setResultId(ticket)
                 .setSourceId(TableReference.newBuilder()
                         .setTicket(typedTicket().getTicket())
                         .build())
                 .setSpec(spec)
-                .addAllGroupByColumns(groupByColumns != null ? groupByColumns.asList().stream()
-                        .map(Column.ColumnOrName.COLUMN_NAME)
-                        .toList() : Collections.emptyList())));
-    }
-
-    private io.deephaven.proto.backplane.grpc.Aggregation.Builder makeAggregation(AggregationUnion aggUnion) {
-        io.deephaven.proto.backplane.grpc.Aggregation.Builder result =
-                io.deephaven.proto.backplane.grpc.Aggregation.newBuilder();
-
-        switch (aggUnion.getType()) {
-            // Non-spec aggregation types — these use different proto oneof arms
-            case "Count": {
-                Count count = aggUnion.asCount();
-                result.setCount(io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount.newBuilder()
-                        .setColumnName(count.col));
-                return result;
-            }
-            case "CountWhere": {
-                CountWhere countWhere = aggUnion.asCountWhere();
-                result.setCountWhere(io.deephaven.proto.backplane.grpc.Aggregation.AggregationCountWhere.newBuilder()
-                        .setColumnName(countWhere.col)
-                        .addAllFilters(countWhere.filters.asList()));
-                return result;
-            }
-            case "Partition": {
-                Partition partition = aggUnion.asPartition();
-                result.setPartition(io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition.newBuilder()
-                        .setColumnName(partition.col)
-                        .setIncludeGroupByColumns(
-                                partition.includeGroupByColumns != null ? partition.includeGroupByColumns : true));
-                return result;
-            }
-            case "FirstRowKey": {
-                FirstRowKey firstRowKey = aggUnion.asFirstRowKey();
-                result.setFirstRowKey(io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey.newBuilder()
-                        .setColumnName(firstRowKey.col));
-                return result;
-            }
-            case "LastRowKey": {
-                LastRowKey lastRowKey = aggUnion.asLastRowKey();
-                result.setLastRowKey(io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey.newBuilder()
-                        .setColumnName(lastRowKey.col));
-                return result;
-            }
-            default:
-                // Fall through to spec-based handling below
-                break;
-        }
-
-        // Spec-based aggregation types — build AggSpec, then wrap in AggregationColumns with match pairs
-        AggSpec.Builder spec = makeAggSpec((AggAllByUnion) aggUnion);
-
-        io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns.Builder colsBuilder =
-                io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns.newBuilder()
-                        .setSpec(spec);
-        ColumnAggregation colAgg = Js.cast(aggUnion);
-        if (colAgg.columns != null) {
-            colsBuilder.addAllMatchPairs(JsTable.MatchPairUnion.toStringArray(colAgg.columns));
-        }
-
-        return result.setColumns(colsBuilder);
-    }
-
-    private AggSpec.Builder makeAggSpec(AggAllByUnion aggUnion) {
-        AggSpec.Builder spec = AggSpec.newBuilder();
-        switch (aggUnion.getType()) {
-            case "AbsSum":
-                spec.setAbsSum(AggSpec.AggSpecAbsSum.getDefaultInstance());
-                break;
-            case "ApproxPercentile": {
-                ApproxPercentile approxPct = aggUnion.asApproxPercentile();
-                AggSpec.AggSpecApproximatePercentile.Builder builder =
-                        AggSpec.AggSpecApproximatePercentile.newBuilder()
-                                .setPercentile(approxPct.percentile);
-                if (approxPct.compression != null) {
-                    builder.setCompression(approxPct.compression);
-                }
-                spec.setApproximatePercentile(builder);
-                break;
-            }
-            case "Avg":
-                spec.setAvg(AggSpec.AggSpecAvg.getDefaultInstance());
-                break;
-            case "CountDistinct": {
-                CountDistinct countDistinct = aggUnion.asCountDistinct();
-                spec.setCountDistinct(AggSpec.AggSpecCountDistinct.newBuilder()
-                        .setCountNulls(countDistinct.countNulls != null && countDistinct.countNulls));
-                break;
-            }
-            case "Distinct": {
-                Distinct distinct = aggUnion.asDistinct();
-                spec.setDistinct(AggSpec.AggSpecDistinct.newBuilder()
-                        .setIncludeNulls(distinct.includeNulls != null && distinct.includeNulls));
-                break;
-            }
-            case "First":
-                spec.setFirst(AggSpec.AggSpecFirst.getDefaultInstance());
-                break;
-            case "Formula": {
-                Formula formula = aggUnion.asFormula();
-                spec.setFormula(AggSpec.AggSpecFormula.newBuilder()
-                        .setFormula(formula.formula)
-                        .setParamToken(formula.paramToken));
-                break;
-            }
-            case "Freeze":
-                spec.setFreeze(AggSpec.AggSpecFreeze.getDefaultInstance());
-                break;
-            case "Group":
-                spec.setGroup(AggSpec.AggSpecGroup.getDefaultInstance());
-                break;
-            case "Last":
-                spec.setLast(AggSpec.AggSpecLast.getDefaultInstance());
-                break;
-            case "Max":
-                spec.setMax(AggSpec.AggSpecMax.getDefaultInstance());
-                break;
-            case "Median": {
-                Median median = aggUnion.asMedian();
-                spec.setMedian(AggSpec.AggSpecMedian.newBuilder()
-                        .setAverageEvenlyDivided(median.averageEvenlyDivided == null || median.averageEvenlyDivided));
-                break;
-            }
-            case "Min":
-                spec.setMin(AggSpec.AggSpecMin.getDefaultInstance());
-                break;
-            case "Percentile": {
-                Percentile pct = aggUnion.asPercentile();
-                spec.setPercentile(AggSpec.AggSpecPercentile.newBuilder()
-                        .setPercentile(pct.percentile)
-                        .setAverageEvenlyDivided(pct.averageEvenlyDivided != null && pct.averageEvenlyDivided));
-                break;
-            }
-            case "SortedFirst": {
-                SortedFirst sortedFirst = aggUnion.asSortedFirst();
-                AggSpec.AggSpecSorted.Builder sortedBuilder = AggSpec.AggSpecSorted.newBuilder();
-                for (Sort sort : sortedFirst.sortedColumns.asList()) {
-                    sortedBuilder.addColumns(AggSpec.AggSpecSortedColumn.newBuilder()
-                            .setColumnName(sort.getColumn().getName()));
-                }
-                spec.setSortedFirst(sortedBuilder);
-                break;
-            }
-            case "SortedLast": {
-                SortedLast sortedLast = aggUnion.asSortedLast();
-                AggSpec.AggSpecSorted.Builder sortedBuilder = AggSpec.AggSpecSorted.newBuilder();
-                for (Sort sort : sortedLast.sortedColumns.asList()) {
-                    sortedBuilder.addColumns(AggSpec.AggSpecSortedColumn.newBuilder()
-                            .setColumnName(sort.getColumn().getName()));
-                }
-                spec.setSortedLast(sortedBuilder);
-                break;
-            }
-            case "Std":
-                spec.setStd(AggSpec.AggSpecStd.getDefaultInstance());
-                break;
-            case "Sum":
-                spec.setSum(AggSpec.AggSpecSum.getDefaultInstance());
-                break;
-            case "TDigest": {
-                TDigest tDigest = aggUnion.asTDigest();
-                AggSpec.AggSpecTDigest.Builder tDigestBuilder = AggSpec.AggSpecTDigest.newBuilder();
-                if (tDigest.compression != null) {
-                    tDigestBuilder.setCompression(tDigest.compression);
-                }
-                spec.setTDigest(tDigestBuilder);
-                break;
-            }
-            case "Unique": {
-                Unique unique = aggUnion.asUnique();
-                spec.setUnique(AggSpec.AggSpecUnique.newBuilder()
-                        .setIncludeNulls(unique.includeNulls != null && unique.includeNulls));
-                // TODO support null sentinels
-                break;
-            }
-            case "Var":
-                spec.setVar(AggSpec.AggSpecVar.getDefaultInstance());
-                break;
-            case "WAvg": {
-                WAvg wAvg = aggUnion.asWAvg();
-                spec.setWeightedAvg(AggSpec.AggSpecWeighted.newBuilder()
-                        .setWeightColumn(Column.ColumnOrName.COLUMN_NAME.apply(wAvg.weightColumn)));
-                break;
-            }
-            case "WSum": {
-                WSum wSum = aggUnion.asWSum();
-                spec.setWeightedSum(AggSpec.AggSpecWeighted.newBuilder()
-                        .setWeightColumn(Column.ColumnOrName.COLUMN_NAME.apply(wSum.weightColumn)));
-                break;
-            }
-            default:
-                throw new UnsupportedOperationException("Unsupported aggregation: " + aggUnion.getType());
-        }
-
-        return spec;
+                .addAllGroupByColumns(groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
     }
 
     /**
-     *
+     * Aggregates the contents of this table into a new table.
+     * 
+     * @param options
+     * @return
      */
-    @TsInterface
-    @JsType(namespace = "dh")
-    class AggByOptions {
-        /**
-         * The aggregations to apply
-         */
-        ReadonlyArray<AggregationUnion> aggregations;
-
-        /**
-         * Whether to keep result rows for groups that are initially empty or become empty as a result of updates. Each
-         * agregation operator defines its own values for empty groups. Defaults to false if unspecified.
-         */
-        @Nullable
-        Boolean preserveEmpty;
-
-        /**
-         * An optional table whose distinct combinations of values for the {@link #groupByColumns} should be used to
-         * create an initial set of aggregation groups. All other columns are ignored.
-         */
-        @JsNullable
-        JsTableOperations initialGroups;
-
-        /**
-         * The columns to group by. Must be specified if {@link #initialGroups} is non-null. If empty or unspecified,
-         * the result will be a single group containing all rows in the table.
-         */
-        @JsNullable
-        ReadonlyArray<Column.ColumnOrName> groupByColumns;
-    }
-
     @JsMethod
     default JsTableOperations aggBy(AggByOptions options) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
@@ -776,7 +547,7 @@ public interface JsTableOperations extends ServerObject {
 
         for (int i = 0; i < options.aggregations.getLength(); i++) {
             AggregationUnion aggUnion = options.aggregations.getAt(i);
-            io.deephaven.proto.backplane.grpc.Aggregation.Builder agg = makeAggregation(aggUnion);
+            io.deephaven.proto.backplane.grpc.Aggregation.Builder agg = aggUnion.makeAggregation();
             aggBuilder.addAggregations(agg);
         }
 
@@ -784,11 +555,12 @@ public interface JsTableOperations extends ServerObject {
             aggBuilder.setInitialGroupsId(TableReference.newBuilder()
                     .setTicket(options.initialGroups.typedTicket().getTicket())
                     .build());
+            if (options.groupByColumns == null || options.groupByColumns.getLength() == 0) {
+                throw new IllegalArgumentException("initialGroups requires groupByColumns");
+            }
         }
         if (options.groupByColumns != null) {
-            aggBuilder.addAllGroupByColumns(options.groupByColumns.asList().stream()
-                    .map(Column.ColumnOrName.COLUMN_NAME)
-                    .toList());
+            aggBuilder.addAllGroupByColumns(columnsToNameList(options.groupByColumns));
         }
         return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder));
     }
@@ -796,53 +568,62 @@ public interface JsTableOperations extends ServerObject {
     // TODO options
     // @JsMethod
     // JsTableOperations updateBy();
+
+    @JsMethod
+    default JsTableOperations selectDistinct(ReadonlyArray<Column.ColumnOrName> columns) {
+        Ticket ticket = getConnection().getTickets().newExportTicket();
+
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setSelect(SelectOrUpdateRequest.newBuilder()
+                .addAllColumnSpecs(columnsToNameList(columns))
+                .setSourceId(TableReference.newBuilder()
+                        .setTicket(typedTicket().getTicket())
+                        .build())
+                .setResultId(ticket)));
+    }
+
+    // @JsMethod
+    // JsTableOperations countBy(Column.ColumnOrName columName, ReadonlyArray<Column.ColumnOrName> groupByColumns);
+    //
     //
     // @JsMethod
-    // JsTableOperations selectDistinct(JsArray<ColumnOrName> names);
+    // JsTableOperations firstBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
     //
     // @JsMethod
-    // JsTableOperations countBy(ColumnOrName columName, JsArray<ColumnOrName> groupByColumns);
-    //
-    //
-    // @JsMethod
-    // JsTableOperations firstBy(JsArray<ColumnOrName> groupByColumns);
+    // JsTableOperations lastBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
     //
     // @JsMethod
-    // JsTableOperations lastBy(JsArray<ColumnOrName> groupByColumns);
+    // JsTableOperations minBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
     //
     // @JsMethod
-    // JsTableOperations minBy(JsArray<ColumnOrName> groupByColumns);
+    // JsTableOperations maxBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
     //
     // @JsMethod
-    // JsTableOperations maxBy(JsArray<ColumnOrName> groupByColumns);
+    // JsTableOperations sumBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
     //
     // @JsMethod
-    // JsTableOperations sumBy(JsArray<ColumnOrName> groupByColumns);
+    // JsTableOperations avgBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
     //
     // @JsMethod
-    // JsTableOperations avgBy(JsArray<ColumnOrName> groupByColumns);
+    // JsTableOperations medianBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
     //
     // @JsMethod
-    // JsTableOperations medianBy(JsArray<ColumnOrName> groupByColumns);
+    // JsTableOperations stdBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
     //
     // @JsMethod
-    // JsTableOperations stdBy(JsArray<ColumnOrName> groupByColumns);
+    // JsTableOperations varBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
     //
     // @JsMethod
-    // JsTableOperations varBy(JsArray<ColumnOrName> groupByColumns);
+    // JsTableOperations absSumBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
     //
     // @JsMethod
-    // JsTableOperations absSumBy(JsArray<ColumnOrName> groupByColumns);
+    // JsTableOperations wsumBy(Column.ColumnOrName weightColumn, ReadonlyArray<Column.ColumnOrName> groupByColumns);
     //
     // @JsMethod
-    // JsTableOperations wsumBy(ColumnOrName weightColumn, JsArray<ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations wavgBy(ColumnOrName weightColumn, JsArray<ColumnOrName> groupByColumns);
+    // JsTableOperations wavgBy(Column.ColumnOrName weightColumn, ReadonlyArray<Column.ColumnOrName> groupByColumns);
 
     @TsInterface
-    @JsType(isNative = false, namespace = "dh")
-    public static class UngroupOptions {
+    @JsType(namespace = "dh")
+    class UngroupOptions {
         /**
          * Indicates if the ungrouped table should allow disparate sized arrays filling shorter columns with null
          * values. If false, then all arrays must be the same length. Defaults to false.
@@ -874,7 +655,7 @@ public interface JsTableOperations extends ServerObject {
                 .setSourceId(TableReference.newBuilder()
                         .setTicket(typedTicket().getTicket())
                         .build())
-                .setNullFill(options != null && options.nullFill != null ? options.nullFill : false)
+                .setNullFill(options != null && options.nullFill != null && options.nullFill)
                 .addAllColumnsToUngroup(options != null && options.columnsToUngroup != null
                         ? columnsToNameList(options.columnsToUngroup)
                         : Collections.emptyList())));
@@ -887,7 +668,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table without those columns
      */
     @JsMethod
-    default JsPendingTable dropColumn(ReadonlyArray<Column.ColumnOrName> columnsToDrop) {
+    default JsPendingTable dropColumns(ReadonlyArray<Column.ColumnOrName> columnsToDrop) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setDropColumns(DropColumnsRequest.newBuilder()
@@ -897,13 +678,10 @@ public interface JsTableOperations extends ServerObject {
                 .addAllColumnNames(columnsToNameList(columnsToDrop))));
     }
 
-    private static List<String> columnsToNameList(ReadonlyArray<Column.ColumnOrName> columnsToDrop) {
-        return columnsToDrop.asList().stream().map(Column.ColumnOrName.COLUMN_NAME).toList();
+    private static List<String> columnsToNameList(ReadonlyArray<Column.ColumnOrName> columns) {
+        return columns.asList().stream().map(Column.ColumnOrName.COLUMN_NAME).toList();
     }
-    // endregion
 
-
-    // region methods from Table
     // @JsMethod
     // JsTableOperations meta();
 
@@ -931,12 +709,17 @@ public interface JsTableOperations extends ServerObject {
 
     // getSubTable
 
-    // @JsMethod
-    // JsTableOperations flatten();
+    /**
+     * Creates a version of this table with a flat rowset.
+     * 
+     * @return a new table with a flat rowset
+     */
+    @JsMethod
+    default JsTableOperations flatten() {
+        Ticket ticket = getConnection().getTickets().newExportTicket();
 
-
-
-    // endregion
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setFlatten(FlattenRequest.getDefaultInstance()));
+    }
 
     // TODO options
     // @JsMethod

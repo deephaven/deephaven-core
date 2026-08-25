@@ -17,7 +17,7 @@ import jsinterop.annotations.JsType;
  * <p>
  * If {@code columns} is null or empty in an {@code aggBy} call, the aggregation applies to all non-key columns.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public sealed class ColumnAggregation extends Aggregation
         permits AbsSum, ApproxPercentile, Avg, CountDistinct, Distinct, First, Formula, Freeze, Group, Last, Max,
         Median, Min, Percentile, SortedFirst, SortedLast, Std, Sum, TDigest, Unique, Var, WAvg, WSum {

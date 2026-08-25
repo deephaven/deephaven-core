@@ -28,7 +28,7 @@ import jsinterop.annotations.JsType;
  * @see ColumnAggregation
  * @see AggregationUnion
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public abstract sealed class Aggregation
         permits ColumnAggregation, Count, CountWhere, Partition, FirstRowKey, LastRowKey {
 
@@ -322,7 +322,7 @@ public abstract sealed class Aggregation
      * @return an aggregation
      */
     @JsMethod
-    public static SortedFirst AggSortedFirst(ReadonlyArray<Sort> sortedColumns,
+    public static SortedFirst AggSortedFirst(ReadonlyArray<Sort.SortUnion> sortedColumns,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns) {
         SortedFirst agg = new SortedFirst();
         agg.sortedColumns = sortedColumns;
@@ -338,7 +338,7 @@ public abstract sealed class Aggregation
      * @return an aggregation
      */
     @JsMethod
-    public static SortedLast AggSortedLast(ReadonlyArray<Sort> sortedColumns,
+    public static SortedLast AggSortedLast(ReadonlyArray<Sort.SortUnion> sortedColumns,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columns) {
         SortedLast agg = new SortedLast();
         agg.sortedColumns = sortedColumns;

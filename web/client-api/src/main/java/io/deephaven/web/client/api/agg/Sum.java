@@ -9,7 +9,7 @@ import jsinterop.annotations.JsType;
 /**
  * Computes the sum of values within each aggregation group.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Sum extends ColumnAggregation {
     @TsLiteral
     public final String type = "Sum";

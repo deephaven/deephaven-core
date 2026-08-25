@@ -10,7 +10,7 @@ import jsinterop.annotations.JsType;
 /**
  * Computes the distinct values within each aggregation group and stores them as arrays/vectors.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Distinct extends ColumnAggregation {
     @TsLiteral
     public final String type = "Distinct";

@@ -9,7 +9,7 @@ import jsinterop.annotations.JsType;
 /**
  * Computes the minimum value within each aggregation group.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Min extends ColumnAggregation {
     @TsLiteral
     public final String type = "Min";

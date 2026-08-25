@@ -10,7 +10,7 @@ import jsinterop.annotations.JsType;
 /**
  * Computes an exact percentile within each aggregation group.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Percentile extends ColumnAggregation {
     @TsLiteral
     public final String type = "Percentile";

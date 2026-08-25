@@ -9,7 +9,7 @@ import jsinterop.annotations.JsType;
 /**
  * Computes the maximum value within each aggregation group.
  */
-@JsType
+@JsType(namespace = "dh.agg")
 public final class Max extends ColumnAggregation {
     @TsLiteral
     public final String type = "Max";
