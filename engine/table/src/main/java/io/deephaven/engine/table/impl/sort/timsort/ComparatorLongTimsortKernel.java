@@ -109,7 +109,7 @@ public final class ComparatorLongTimsortKernel {
                 if (!descending) {
                     // search for a non-descending run
                     current = next;
-                    while (endRun < length && geq(next = valuesToSort.get(endRun), current)) {
+                    while (endRun < offset + length && geq(next = valuesToSort.get(endRun), current)) {
                         current = next;
                         endRun++;
                     }
@@ -117,7 +117,7 @@ public final class ComparatorLongTimsortKernel {
                     // search for a strictly descending run; we can not have any equal values, or we will break the
                     // sort's stability guarantee
                     current = next;
-                    while (endRun < length && lt(next = valuesToSort.get(endRun), current)) {
+                    while (endRun < offset + length && lt(next = valuesToSort.get(endRun), current)) {
                         current = next;
                         endRun++;
                     }

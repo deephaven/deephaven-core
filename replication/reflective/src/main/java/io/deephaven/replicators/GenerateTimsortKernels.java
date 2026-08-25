@@ -838,7 +838,8 @@ public class GenerateTimsortKernels {
                     .beginControlFlow("if (!descending)")
                     .addComment("search for a non-descending run")
                     .addStatement("current = next")
-                    .beginControlFlow("while (endRun < length && geq(next = valuesToSort.get(endRun), current))")
+                    .beginControlFlow(
+                            "while (endRun < offset + length && geq(next = valuesToSort.get(endRun), current))")
                     .addStatement("current = next")
                     .addStatement("endRun++")
                     .endControlFlow()
@@ -847,7 +848,8 @@ public class GenerateTimsortKernels {
                             "search for a strictly descending run; we can not have any equal values, or we will break the")
                     .addComment("sort's stability guarantee")
                     .addStatement("current = next")
-                    .beginControlFlow("while (endRun < length && lt(next = valuesToSort.get(endRun), current))")
+                    .beginControlFlow(
+                            "while (endRun < offset + length && lt(next = valuesToSort.get(endRun), current))")
                     .addStatement("current = next")
                     .addStatement("endRun++")
                     .endControlFlow()

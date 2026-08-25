@@ -81,7 +81,7 @@ public final class ComparatorIndirectTimsortKernel {
                 if (!descending) {
                     // search for a non-descending run
                     currentPos = nextPos;
-                    while (endRun < length && geq(context, valuesToSort0, nextPos = positions.get(endRun), currentPos)) {
+                    while (endRun < offset + length && geq(context, valuesToSort0, nextPos = positions.get(endRun), currentPos)) {
                         currentPos = nextPos;
                         endRun++;
                     }
@@ -89,7 +89,7 @@ public final class ComparatorIndirectTimsortKernel {
                     // search for a strictly descending run; we can not have any equal values, or we will break the
                     // sort's stability guarantee
                     currentPos = nextPos;
-                    while (endRun < length && lt(context, valuesToSort0, nextPos = positions.get(endRun), currentPos)) {
+                    while (endRun < offset + length && lt(context, valuesToSort0, nextPos = positions.get(endRun), currentPos)) {
                         currentPos = nextPos;
                         endRun++;
                     }

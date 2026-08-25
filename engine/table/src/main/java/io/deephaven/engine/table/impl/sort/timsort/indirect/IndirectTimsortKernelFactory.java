@@ -678,7 +678,7 @@ public class IndirectTimsortKernelFactory {
                     .beginControlFlow("if (!descending)")
                     .addComment("search for a non-descending run")
                     .addStatement("currentPos = nextPos")
-                    .beginControlFlow("while (endRun < length && "
+                    .beginControlFlow("while (endRun < offset + length && "
                             + opCall("geq", "nextPos = positions.get(endRun)", "currentPos") + ")")
                     .addStatement("currentPos = nextPos")
                     .addStatement("endRun++")
@@ -688,7 +688,7 @@ public class IndirectTimsortKernelFactory {
                             "search for a strictly descending run; we can not have any equal values, or we will break the")
                     .addComment("sort's stability guarantee")
                     .addStatement("currentPos = nextPos")
-                    .beginControlFlow("while (endRun < length && "
+                    .beginControlFlow("while (endRun < offset + length && "
                             + opCall("lt", "nextPos = positions.get(endRun)", "currentPos") + ")")
                     .addStatement("currentPos = nextPos")
                     .addStatement("endRun++")

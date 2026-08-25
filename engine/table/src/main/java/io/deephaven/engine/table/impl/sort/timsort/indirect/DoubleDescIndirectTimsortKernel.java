@@ -76,7 +76,7 @@ public final class DoubleDescIndirectTimsortKernel {
                 if (!descending) {
                     // search for a non-descending run
                     currentPos = nextPos;
-                    while (endRun < length && geq(valuesToSort0, nextPos = positions.get(endRun), currentPos)) {
+                    while (endRun < offset + length && geq(valuesToSort0, nextPos = positions.get(endRun), currentPos)) {
                         currentPos = nextPos;
                         endRun++;
                     }
@@ -84,7 +84,7 @@ public final class DoubleDescIndirectTimsortKernel {
                     // search for a strictly descending run; we can not have any equal values, or we will break the
                     // sort's stability guarantee
                     currentPos = nextPos;
-                    while (endRun < length && lt(valuesToSort0, nextPos = positions.get(endRun), currentPos)) {
+                    while (endRun < offset + length && lt(valuesToSort0, nextPos = positions.get(endRun), currentPos)) {
                         currentPos = nextPos;
                         endRun++;
                     }
