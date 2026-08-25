@@ -5,13 +5,11 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.SortSpec;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortKernelFactory;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
@@ -110,13 +108,11 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         parent.assertSortable(sortColumnNames);
 
         if (QueryTable.USE_INDIRECT_SORT_KERNELS) {
-            // Resolve (compiling on demand if necessary) the multi-column sort kernel for this shape now, while we
+            // Resolve (compiling on demand if necessary) the multi-column sort kernel for this sort now, while we
             // are on a thread whose ExecutionContext has a QueryCompiler; the sort listener may otherwise be the
-            // first to need it, on an update graph thread that cannot compile. For a refreshing blink table the
-            // initial sort is empty, so the listener is always first.
-            IndirectTimsortKernelFactory.prepareKernel(
-                    Arrays.stream(sortColumns).map(ColumnSource::getChunkType).toArray(ChunkType[]::new),
-                    sortOrder, comparators);
+            // first to need it, on an update graph thread that cannot compile. For an initially empty table (a
+            // refreshing blink table, for instance) the listener is always first.
+            SortHelpers.prepareSortKernel(sortOrder, sortColumns, comparators, comparatorsRespectEquality);
         }
 
         // This sort operation might leverage a data index.

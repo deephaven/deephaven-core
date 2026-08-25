@@ -290,6 +290,44 @@ public class SortHelpers {
     }
 
     /**
+     * The indices of the sort columns that actually participate in a sort. Columns whose source is row-key agnostic are
+     * dropped: every row holds the same value, so the column cannot disambiguate any pair of rows. A column is only
+     * dropped when its comparator respects equality; a comparator with respectsEquality=false may still rely on the
+     * column's sort pass for tie-handling order.
+     */
+    private static int[] effectiveSortColumns(
+            final ColumnSource<Comparable<?>>[] columnsToSortBy,
+            final boolean[] comparatorsRespectEquality) {
+        return IntStream.range(0, columnsToSortBy.length)
+                .filter(ii -> !isSkippableConstantSortColumn(columnsToSortBy[ii], comparatorsRespectEquality[ii]))
+                .toArray();
+    }
+
+    /**
+     * Resolve (compiling on demand if necessary) the multi-column sort kernel that {@link #getSortedKeys} will use for
+     * these sort columns, so that a later sort on a thread whose ExecutionContext cannot compile — an update graph
+     * thread — finds the kernel already cached. The row-key agnostic columns that getSortedKeys drops are dropped here
+     * too, so the shape prepared is the shape used.
+     */
+    static void prepareSortKernel(
+            final SortingOrder[] order,
+            final ColumnSource<Comparable<?>>[] columnsToSortBy,
+            final Comparator[] comparators,
+            final boolean[] comparatorsRespectEquality) {
+        final int[] survivors = effectiveSortColumns(columnsToSortBy, comparatorsRespectEquality);
+        final ChunkType[] chunkTypes = new ChunkType[survivors.length];
+        final SortingOrder[] effectiveOrder = new SortingOrder[survivors.length];
+        final Comparator[] effectiveComparators = new Comparator[survivors.length];
+        for (int dst = 0; dst < survivors.length; ++dst) {
+            final int ii = survivors[dst];
+            chunkTypes[dst] = columnsToSortBy[ii].getChunkType();
+            effectiveOrder[dst] = order[ii];
+            effectiveComparators[dst] = comparators[ii];
+        }
+        IndirectTimsortKernelFactory.prepareKernel(chunkTypes, effectiveOrder, effectiveComparators);
+    }
+
+    /**
      * SortMapping that emits the input RowSet's row keys in their natural order without allocating an array up front.
      * Used when every sort column is row-key agnostic, so the sort is a no-op.
      */
@@ -345,37 +383,25 @@ public class SortHelpers {
             return EMPTY_SORT_MAPPING;
         }
 
-        // Drop sort columns whose source is row-key agnostic: every row holds the same value, so the column cannot
-        // disambiguate any pair of rows. We can only skip when the comparator respects equality - a comparator with
-        // respectsEquality=false may still rely on the column's sort pass for tie-handling order.
-        final ColumnSource<Comparable<?>>[] columnsToSortByForFilter = columnsToSortBy;
-        final boolean[] comparatorsRespectEqualityForFilter = comparatorsRespectEquality;
-        final int survivors = (int) IntStream.range(0, columnsToSortBy.length)
-                .filter(ii -> !isSkippableConstantSortColumn(
-                        columnsToSortByForFilter[ii], comparatorsRespectEqualityForFilter[ii]))
-                .count();
-        if (survivors == 0) {
+        final int[] survivors = effectiveSortColumns(columnsToSortBy, comparatorsRespectEquality);
+        if (survivors.length == 0) {
             return new IdentitySortMapping(rowSetToSort);
         }
-        if (survivors < columnsToSortBy.length) {
-            final SortingOrder[] newOrder = new SortingOrder[survivors];
+        if (survivors.length < columnsToSortBy.length) {
+            final SortingOrder[] newOrder = new SortingOrder[survivors.length];
             // noinspection unchecked
-            final ColumnSource<Comparable<?>>[] newOriginalColumnsToSortBy = new ColumnSource[survivors];
+            final ColumnSource<Comparable<?>>[] newOriginalColumnsToSortBy = new ColumnSource[survivors.length];
             // noinspection unchecked
-            final ColumnSource<Comparable<?>>[] newColumnsToSortBy = new ColumnSource[survivors];
-            final Comparator[] newComparators = new Comparator[survivors];
-            final boolean[] newComparatorsRespectEquality = new boolean[survivors];
-            int dst = 0;
-            for (int ii = 0; ii < columnsToSortBy.length; ++ii) {
-                if (isSkippableConstantSortColumn(columnsToSortBy[ii], comparatorsRespectEquality[ii])) {
-                    continue;
-                }
+            final ColumnSource<Comparable<?>>[] newColumnsToSortBy = new ColumnSource[survivors.length];
+            final Comparator[] newComparators = new Comparator[survivors.length];
+            final boolean[] newComparatorsRespectEquality = new boolean[survivors.length];
+            for (int dst = 0; dst < survivors.length; ++dst) {
+                final int ii = survivors[dst];
                 newOrder[dst] = order[ii];
                 newOriginalColumnsToSortBy[dst] = originalColumnsToSortBy[ii];
                 newColumnsToSortBy[dst] = columnsToSortBy[ii];
                 newComparators[dst] = comparators[ii];
                 newComparatorsRespectEquality[dst] = comparatorsRespectEquality[ii];
-                ++dst;
             }
             order = newOrder;
             originalColumnsToSortBy = newOriginalColumnsToSortBy;

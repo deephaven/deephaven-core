@@ -5,8 +5,12 @@ package io.deephaven.engine.table.impl.sort.timsort;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.ComparatorSortColumn;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortHelpers;
@@ -15,9 +19,13 @@ import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortKernelFactory;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -25,7 +33,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -37,6 +47,7 @@ import static io.deephaven.engine.util.TableTools.floatCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.shortCol;
+import static io.deephaven.engine.util.TableTools.stringCol;
 
 /**
  * Verifies that {@link QueryTable#sort} produces identical results whether the multi-column timsort kernel or the
@@ -352,5 +363,60 @@ public class TestMultiColumnSort {
                 SortColumn.desc(ColumnName.of("IntB")),
                 SortColumn.asc(ColumnName.of("ObjB")),
                 SortColumn.desc(ColumnName.of("FloatB")))));
+    }
+
+    /**
+     * A sort column whose source is row-key agnostic (every row holds the same value) is dropped before a kernel is
+     * selected. The kernel for the shape that remains must already be compiled when the sort listener first needs it:
+     * the listener may run on an update graph thread whose ExecutionContext cannot compile, and for an initially empty
+     * table the listener is the first to sort anything.
+     */
+    @Test
+    public void testRowKeyAgnosticSortColumnOnUpdateThread() {
+        final QueryTable base = TstUtils.testRefreshingTable(intCol("IntA"), longCol("LongB"), stringCol("ObjB"));
+        final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>(base.getColumnSourceMap());
+        sources.put("Const", NullValueColumnSource.getInstance(int.class, null));
+        final QueryTable source = new QueryTable(base.getRowSet(), sources);
+        source.setRefreshing(true);
+
+        // a shape (with and without the constant column) that no other test compiles, so the kernel cache cannot
+        // already hold it
+        final List<SortColumn> sortColumns = List.of(
+                SortColumn.asc(ColumnName.of("IntA")),
+                SortColumn.desc(ColumnName.of("Const")),
+                SortColumn.desc(ColumnName.of("LongB")),
+                SortColumn.asc(ColumnName.of("ObjB")));
+        // constructed while the table is empty, on a thread whose context has a QueryCompiler
+        final Table sorted = source.sort(sortColumns);
+
+        final int[] intA = {3, 1, 2, 1, 3, 2};
+        final long[] longB = {1, 2, 3, 4, 5, 6};
+        final String[] objB = {"b", "a", "c", "a", "b", "c"};
+
+        // the first rows arrive under a context with no QueryCompiler, as they would on an update graph thread
+        final ExecutionContext context = ExecutionContext.getContext();
+        final ExecutionContext noCompiler = ExecutionContext.newBuilder()
+                .captureQueryScope()
+                .captureQueryLibrary()
+                .setUpdateGraph(context.getUpdateGraph())
+                .setOperationInitializer(context.getOperationInitializer())
+                .build();
+        final ControlledUpdateGraph updateGraph = context.getUpdateGraph().cast();
+        try (final SafeCloseable ignored = noCompiler.open()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet added = RowSetFactory.fromRange(0, intA.length - 1);
+                TstUtils.addToTable(source, added, intCol("IntA", intA), longCol("LongB", longB),
+                        col("ObjB", objB), intCol("Const"));
+                source.notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
+            });
+        }
+
+        TestCase.assertFalse("sorted.isFailed()", ((BaseTable<?>) sorted).isFailed());
+        final int[] constValues = new int[intA.length];
+        java.util.Arrays.fill(constValues, QueryConstants.NULL_INT);
+        final Table expected = TableTools.newTable(
+                intCol("IntA", intA), longCol("LongB", longB), col("ObjB", objB), intCol("Const", constValues))
+                .sort(sortColumns);
+        assertTableEquals(expected, sorted);
     }
 }
