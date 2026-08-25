@@ -22,7 +22,33 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
             toWrap = orig.wrappedOK;
             shiftAmount += orig.shiftAmount;
         }
+        validateShift(toWrap, shiftAmount);
         return (shiftAmount == 0) ? toWrap : new ShiftedRowSequence(toWrap, shiftAmount);
+    }
+
+    /**
+     * Every key this sequence exposes must be a legal row key: the shift must not push the wrapped sequence's first key
+     * below zero, nor its last key past {@link Long#MAX_VALUE}. Validating once here keeps the per-call paths free of
+     * overflow concerns for the keys themselves; only query arguments, which may legally be {@code Long.MAX_VALUE} in
+     * shifted space, still require care.
+     */
+    private static void validateShift(final RowSequence toWrap, final long shiftAmount) {
+        if (shiftAmount == 0 || toWrap == null || toWrap.isEmpty()) {
+            return;
+        }
+        if (shiftAmount < 0) {
+            final long first = toWrap.firstRowKey();
+            if (first + shiftAmount < 0) {
+                throw new IllegalArgumentException("Invalid shift: shiftAmount=" + shiftAmount
+                        + " would make firstRowKey=" + first + " negative");
+            }
+        } else {
+            final long last = toWrap.lastRowKey();
+            if (last + shiftAmount < 0) {
+                throw new IllegalArgumentException("Invalid shift: shiftAmount=" + shiftAmount
+                        + " overflows lastRowKey=" + last);
+            }
+        }
     }
 
     private long shiftAmount;
@@ -49,6 +75,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
             this.shiftAmount = shiftAmount;
             this.wrappedOK = toWrap;
         }
+        validateShift(this.wrappedOK, this.shiftAmount);
         invalidateRowSequenceAsChunkImpl();
         return this;
     }
@@ -88,7 +115,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
         @Override
         public RowSequence getNextRowSequenceThrough(long maxKeyInclusive) {
-            reusableOK.reset(wrappedIt.getNextRowSequenceThrough(maxKeyInclusive - shiftAmount), shiftAmount);
+            reusableOK.reset(wrappedIt.getNextRowSequenceThrough(unshiftSaturated(maxKeyInclusive)), shiftAmount);
             return reusableOK;
         }
 
@@ -100,7 +127,16 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
         @Override
         public boolean advance(long nextKey) {
-            return wrappedIt.advance(nextKey - shiftAmount);
+            final long unshifted = nextKey - shiftAmount;
+            if (shiftAmount < 0 && unshifted < nextKey) {
+                // The requested key is beyond any key this sequence can contain; saturating would position
+                // us before the requested key, so exhaust the wrapped iterator instead.
+                if (wrappedIt.advance(Long.MAX_VALUE)) {
+                    wrappedIt.getNextRowSequenceWithLength(Long.MAX_VALUE);
+                }
+                return false;
+            }
+            return wrappedIt.advance(unshifted);
         }
 
         @Override
@@ -121,10 +157,28 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
     @Override
     public RowSequence getRowSequenceByKeyRange(long startRowKeyInclusive, long endRowKeyInclusive) {
+        final long unshiftedStart = startRowKeyInclusive - shiftAmount;
+        if (shiftAmount < 0 && unshiftedStart < startRowKeyInclusive) {
+            // The unshifted start is past the end of the key space; nothing can qualify.
+            return RowSequenceFactory.EMPTY;
+        }
         return wrap(
-                wrappedOK.getRowSequenceByKeyRange(startRowKeyInclusive - shiftAmount,
-                        endRowKeyInclusive - shiftAmount),
+                wrappedOK.getRowSequenceByKeyRange(unshiftedStart, unshiftSaturated(endRowKeyInclusive)),
                 shiftAmount);
+    }
+
+    /**
+     * Remove our shift from a key provided in shifted space, saturating at {@link Long#MAX_VALUE} rather than
+     * overflowing; e.g. {@code Long.MAX_VALUE} used as a "no upper bound" argument combined with a negative shift must
+     * keep meaning "no upper bound". Only valid for inclusive upper bounds; positioning operations like {@code advance}
+     * must treat an overflowing target as "past the end" instead.
+     */
+    private long unshiftSaturated(final long shiftedKey) {
+        final long unshifted = shiftedKey - shiftAmount;
+        if (shiftAmount < 0 && unshifted < shiftedKey) {
+            return Long.MAX_VALUE;
+        }
+        return unshifted;
     }
 
     @Override

@@ -12,6 +12,7 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownPredicateManager;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -70,6 +71,7 @@ public final class ParquetTableFilterTest {
 
     private static File rootFile;
     private boolean whereDataIndexEnabled;
+    private double configuredDictionaryThreshold;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -83,12 +85,16 @@ public final class ParquetTableFilterTest {
         // noinspection ResultOfMethodCallIgnored
         rootFile.mkdirs();
         whereDataIndexEnabled = QueryTable.USE_DATA_INDEX_FOR_WHERE;
+
+        configuredDictionaryThreshold = QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = Double.MAX_VALUE;
     }
 
     @After
     public void tearDown() {
         FileUtils.deleteRecursively(rootFile);
         QueryTable.USE_DATA_INDEX_FOR_WHERE = whereDataIndexEnabled;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = configuredDictionaryThreshold;
     }
 
     private Table[] splitTable(final Table source, int numSplits, boolean randomSizes) {
@@ -1875,6 +1881,127 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal = null"));
         filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal != null"));
         filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal == `Cat`"));
+    }
+
+    /** The value the threshold tests filter for; {@link #writeAndReadDictionaryTable} always includes it. */
+    private static final String THRESHOLD_MATCH_VALUE = "animal_0";
+
+    /** Rows in the threshold fixtures. The dictionary sizes below are derived from it, not hard-coded. */
+    private static final int THRESHOLD_ROW_COUNT = 100;
+
+    /**
+     * The fraction the boundary tests run at, in place of the configured one. The configured value cannot be relied on
+     * to express this boundary: {@code 0} is a documented setting that disables the optimization, and any fraction
+     * outside {@code [0.02, 1.0]} asks for a dictionary that {@link #THRESHOLD_ROW_COUNT} rows cannot hold — too few
+     * distinct entries to build a fixture at one end, more than one per row at the other. {@link #setUp} and
+     * {@link #tearDown} still save and restore whatever is configured.
+     */
+    private static final double THRESHOLD_TEST_FRACTION = 0.25;
+
+    /**
+     * The smallest dictionary {@link #THRESHOLD_TEST_FRACTION} declines to read for {@link #THRESHOLD_ROW_COUNT} rows.
+     * Pushdown is skipped once a dictionary holds at least {@code rows * fraction} entries, so this is 25 — meaning 25
+     * entries decline and 24 proceed.
+     */
+    private static int smallestDecliningDictionarySize() {
+        return (int) (THRESHOLD_ROW_COUNT * THRESHOLD_TEST_FRACTION);
+    }
+
+    /**
+     * Write {@code rowCount} rows drawn from a dictionary of {@code distinctValues} animals as a single
+     * dictionary-encoded row group without row group statistics, and read it back. Cycling keeps the column unsorted,
+     * and omitting the statistics keeps the cheaper metadata action from resolving anything, so the dictionary action
+     * decides the outcome.
+     */
+    private static Table writeAndReadDictionaryTable(
+            final String name,
+            final int rowCount,
+            final int distinctValues) {
+        final String[] animals = new String[rowCount];
+        for (int ii = 0; ii < rowCount; ii++) {
+            animals[ii] = "animal_" + (ii % distinctValues);
+        }
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setWriteRowGroupStatistics(false)
+                .build();
+        final String destPath = Path.of(rootFile.getPath(), name) + ".parquet";
+        writeTable(TableTools.newTable(stringCol("animal", animals)), destPath, writeInstructions);
+        return ParquetTools.readTable(destPath).coalesce();
+    }
+
+    /**
+     * Run the pushdown actions available at or below the dictionary action's cost against {@code diskTable} and return
+     * what they resolved.
+     */
+    private static PushdownResult runPushdownThroughDictionary(final Table diskTable, final String filterExpr) {
+        final WhereFilter filter = getExpression(filterExpr);
+        filter.init(diskTable.getDefinition());
+        Assert.assertEquals("Expected a single column in the filter: " + filterExpr, 1, filter.getColumns().size());
+
+        final ColumnSource<?> columnSource = diskTable.getColumnSource(filter.getColumns().get(0));
+        final PushdownPredicateManager ppm = PushdownPredicateManager.getSharedPPM(List.of(columnSource));
+        Assert.assertNotNull("pushdown predicate manager", ppm);
+
+        try (final PushdownFilterContext context = ppm.makePushdownFilterContext(filter, List.of(columnSource))) {
+            final CompletableFuture<PushdownResult> resultFuture = new CompletableFuture<>();
+            ppm.pushdownFilter(
+                    filter,
+                    diskTable.getRowSet(),
+                    false,
+                    context,
+                    PushdownResult.REGION_DICTIONARY_DATA_COST,
+                    new ImmediateJobScheduler(),
+                    resultFuture::complete,
+                    resultFuture::completeExceptionally);
+            return resultFuture.join();
+        }
+    }
+
+    /**
+     * Reading and filtering a whole dictionary costs O(dictionary), so it only pays off when enough rows remain that
+     * filtering them directly would cost more. This test and {@link #dictionaryPushdownThresholdProceedsTest()} sit on
+     * the two dictionary sizes either side of that boundary — the smallest that declines and the largest that proceeds
+     * — at {@link #THRESHOLD_TEST_FRACTION}, the heuristic that the other dictionary tests here deliberately disable.
+     */
+    @Test
+    public void dictionaryPushdownThresholdDeclinesTest() {
+        // The smallest dictionary that declines: 100 * 0.25 = 25, and 25 >= 25, so reading the dictionary does not pay
+        // for itself and every row must be left for the filter to evaluate directly.
+        final Table diskTable = writeAndReadDictionaryTable(
+                "dictionaryThresholdDeclines", THRESHOLD_ROW_COUNT, smallestDecliningDictionarySize());
+        final String filterExpr = "animal == `" + THRESHOLD_MATCH_VALUE + "`";
+        final long expectedMatches = diskTable.where(filterExpr).size();
+        assertTrue(expectedMatches > 0);
+
+        // First with the heuristic still disabled, so that the assertions below pin the threshold rather than some
+        // other reason this fixture's dictionary could not be used.
+        try (final PushdownResult pinnedOpen = runPushdownThroughDictionary(diskTable, filterExpr)) {
+            assertEquals(expectedMatches, pinnedOpen.match().size());
+            assertTrue("maybeMatch should be empty", pinnedOpen.maybeMatch().isEmpty());
+        }
+
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = THRESHOLD_TEST_FRACTION;
+        try (final PushdownResult result = runPushdownThroughDictionary(diskTable, filterExpr)) {
+            assertTrue("match should be empty", result.match().isEmpty());
+            assertEquals(diskTable.size(), result.maybeMatch().size());
+        }
+    }
+
+    @Test
+    public void dictionaryPushdownThresholdProceedsTest() {
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = THRESHOLD_TEST_FRACTION;
+
+        // One entry fewer over the same hundred rows -- the largest dictionary that still proceeds: 100 * 0.25 = 25,
+        // and 24 < 25, so the dictionary is worth reading and resolves every row exactly.
+        final Table diskTable = writeAndReadDictionaryTable(
+                "dictionaryThresholdProceeds", THRESHOLD_ROW_COUNT, smallestDecliningDictionarySize() - 1);
+        final String filterExpr = "animal == `" + THRESHOLD_MATCH_VALUE + "`";
+        final long expectedMatches = diskTable.where(filterExpr).size();
+        assertTrue(expectedMatches > 0);
+        try (final PushdownResult result = runPushdownThroughDictionary(diskTable, filterExpr)) {
+            assertEquals(expectedMatches, result.match().size());
+            assertTrue("maybeMatch should be empty", result.maybeMatch().isEmpty());
+        }
     }
 
     @Test

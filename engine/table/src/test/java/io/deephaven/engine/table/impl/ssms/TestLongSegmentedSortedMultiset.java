@@ -41,7 +41,9 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.TreeMap;
 
@@ -110,11 +112,13 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
     }
 
     public void testIterator() {
-        // exercise the empty, singleton (size == 1), single-leaf, and multi-leaf representations
-        checkIterator(0);
-        checkIterator(1);
-        checkIterator(3);
-        checkIterator(20);
+        // node sizes that put the same value counts in different representations
+        for (final int nodeSize : new int[] {4, 8}) {
+            // exercise the empty, singleton (size == 1), single-leaf, and multi-leaf representations
+            for (final int valueCount : new int[] {0, 1, 3, 4, 8, 20}) {
+                checkIterator(nodeSize, valueCount);
+            }
+        }
     }
 
     /**
@@ -395,35 +399,57 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
         applyRemove(subject, reference, prefix, new int[] {1, 3, 11}, new int[] {1, 2, 1});
     }
 
+    /**
+     * {@link LongSegmentedSortedMultiset#subVector} is exclusive at its end, and -- like every Vector -- must accept
+     * offsets outside {@code [0, size())}, which read as the null value rather than throwing. Pin every representation
+     * against {@link LongVectorDirect}, the reference implementation of that contract.
+     */
     public void testPartialCopy() {
-        final int nodeSize = 8;
-        final LongSegmentedSortedMultiset ssm = new LongSegmentedSortedMultiset(nodeSize);
-
-        final long[] data = new long[24];
-        try (final WritableLongChunk<Values> valuesChunk = WritableLongChunk.makeWritableChunk(24);
-             final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(24)) {
-
-            for (int ii = 0; ii < 24; ii++) {
-                data[ii] = (long) ('a' + ii);
-                countsChunk.set(ii, 1);
-                valuesChunk.set(ii, data[ii]);
+        // node sizes that put the same value counts in different representations
+        for (final int nodeSize : new int[] {4, 8}) {
+            // empty, singleton, partial leaf, exactly-full leaf, two full leaves, and many leaves
+            for (final int valueCount : new int[] {0, 1, 3, 4, 8, 24}) {
+                checkPartialCopy(nodeSize, valueCount);
             }
+        }
+    }
 
-            ssm.insert(valuesChunk, countsChunk);
+    private void checkPartialCopy(final int nodeSize, final int valueCount) {
+        final long[] values = new long[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (long) ('a' + ii);
+        }
+        final LongSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+        final LongVector reference = new LongVectorDirect(values);
+        final String prefix = "nodeSize=" + nodeSize + ", valueCount=" + valueCount;
+
+        assertArrayEquals(prefix, values, ssm.toArray()/*EXTRA*/);
+
+        // an offset outside [0, size()) reads as null; it is neither an error nor a peek at a leaf's unused slots
+        assertEquals(prefix, NULL_LONG, ssm.get(-1));
+        assertEquals(prefix, NULL_LONG, ssm.get(valueCount));
+        assertEquals(prefix, NULL_LONG, ssm.get(valueCount + 1));
+        assertEquals(prefix, NULL_LONG, ssm.get(Long.MAX_VALUE));
+
+        // sub-ranges that fall short of, span, and overrun each end
+        for (int from = -3; from <= valueCount + 3; ++from) {
+            for (int to = from; to <= valueCount + 3; ++to) {
+                final String message = prefix + ", from=" + from + ", to=" + to;
+                final LongVector expected = reference.subVector(from, to);
+                final LongVector actual = ssm.subVector(from, to);
+                assertEquals(message, to - from, actual.size());
+                assertArrayEquals(message, expected.toArray(), actual.toArray()/*EXTRA*/);
+                for (int ii = 0; ii < to - from; ++ii) {
+                    assertEquals(message, expected.get(ii), actual.get(ii));
+                }
+            }
         }
 
-        assertArrayEquals(data, ssm.toArray()/*EXTRA*/);
-        assertArrayEquals(data, ssm.subVector(0, 23).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data,0, 4), ssm.subVector(0, 3).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 0, 8), ssm.subVector(0, 7).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 0, 16), ssm.subVector(0, 15).toArray()/*EXTRA*/);
-
-        assertArrayEquals(Arrays.copyOfRange(data, 2, 6), ssm.subVector(2, 5).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 2, 12), ssm.subVector(2, 11).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 7, 12), ssm.subVector(7, 11).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 7, 16), ssm.subVector(7, 15).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 11, 16), ssm.subVector(11, 15).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 2, 20), ssm.subVector(2, 19).toArray()/*EXTRA*/);
+        // positions are read individually, in the order given, may repeat, and may fall outside [0, size())
+        final long[] positions =
+                new long[] {valueCount - 1, -1, 0, valueCount, valueCount / 2, 0, Long.MAX_VALUE};
+        assertArrayEquals(prefix, reference.subVectorByPositions(positions).toArray(),
+                ssm.subVectorByPositions(positions).toArray()/*EXTRA*/);
     }
 
     // region SortFixupSanityCheck
@@ -774,21 +800,21 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
         final LongSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
 
-        final Long[] boxed = new Long[valueCount];
-        for (int ii = 0; ii < valueCount; ++ii) {
-            boxed[ii] = values[ii];
-        }
-
         // a Vector with identical contents is equal, in both directions, and anything equal must hash alike -- so the
         // SSM has to use the same shared Vector helper that the *VectorDirect implementations use, and compare
         // elements the same way that helper hashes them, rather than either with a scheme of its own
         assertEqualBothWays(ssm, ssm.getDirect());
         assertEqualBothWays(ssm, new LongVectorDirect(values));
 
-        // the boxed comparison only runs in one direction for the primitive variants, because a primitive SSM is a
-        // LongVector rather than an ObjectVector and so is not a comparand ObjectVectorDirect will accept
-        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
-        assertEquals(ssm.hashCode(), new ObjectVectorDirect<>(boxed).hashCode());
+        // region BoxedEquals
+        // a boxed Vector of the same values is not equal in either direction: it would hold a null reference wherever
+        // this SSM holds the null sentinel, so accepting it would make equal values hash differently
+        final Long[] boxed = new Long[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            boxed[ii] = values[ii];
+        }
+        assertNotEqualBothWays(ssm, new ObjectVectorDirect<>(boxed));
+        // endregion BoxedEquals
 
         // another SSM holding the same values is equal however those values happen to be laid out: equality is a
         // property of the contents, and identical contents can occupy different leaf structures, since leaves need
@@ -818,11 +844,6 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
             longer[ii] = (long) ('a' + ii);
         }
         assertFalse(ssm.equals(new LongVectorDirect(longer)));
-        final Long[] longerBoxed = new Long[valueCount + 1];
-        for (int ii = 0; ii < longerBoxed.length; ++ii) {
-            longerBoxed[ii] = (long) ('a' + ii);
-        }
-        assertFalse(ssm.equals(new ObjectVectorDirect<>(longerBoxed)));
 
         // a Vector that differs from the original in a single position is not equal; check the first, middle, and last
         if (valueCount > 0) {
@@ -831,10 +852,6 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
                 final long[] modifiedValues = values.clone();
                 modifiedValues[position] = different;
                 assertFalse(ssm.equals(new LongVectorDirect(modifiedValues)));
-
-                final Long[] modifiedBoxed = boxed.clone();
-                modifiedBoxed[position] = different;
-                assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
             }
         }
     }
@@ -858,36 +875,59 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
         assertFalse(rhs + " should not equal " + lhs, rhs.equals(lhs));
     }
 
-    private void checkIterator(int valueCount) {
-        final int nodeSize = 4;
+    private void checkIterator(final int nodeSize, final int valueCount) {
         final long[] values = new long[valueCount];
         for (int ii = 0; ii < valueCount; ++ii) {
             values[ii] = (long) ('a' + ii);
         }
         final LongSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+        // the reference implementation of the slice contract, including the null values owed for offsets outside
+        // [0, size())
+        final LongVector reference = new LongVectorDirect(values);
+        final String prefix = "nodeSize=" + nodeSize + ", valueCount=" + valueCount;
 
         // a full traversal must visit every element in order
         try (final ValueIteratorOfLong it = ssm.iterator()) {
-            assertEquals(valueCount, it.remaining());
+            assertEquals(prefix, valueCount, it.remaining());
             for (int ii = 0; ii < valueCount; ++ii) {
-                assertTrue(it.hasNext());
-                assertEquals(values[ii], it.nextLong());
+                assertTrue(prefix, it.hasNext());
+                assertEquals(prefix, values[ii], it.nextLong());
             }
-            assertFalse(it.hasNext());
+            assertFalse(prefix, it.hasNext());
         }
 
         // every sub-range must resolve its starting leaf correctly and stop at the right position; for a multi-leaf
-        // SSM the start may land mid-leaf, on a leaf boundary, or past several whole leaves
-        for (int from = 0; from <= valueCount; ++from) {
-            for (int to = from; to <= valueCount; ++to) {
+        // SSM the start may land mid-leaf, on a leaf boundary, or past several whole leaves. Ranges that fall outside
+        // [0, size()) are legal, and iterate as null at those offsets.
+        for (int from = -3; from <= valueCount + 3; ++from) {
+            for (int to = from; to <= valueCount + 3; ++to) {
+                final String message = prefix + ", from=" + from + ", to=" + to;
                 try (final ValueIteratorOfLong it = ssm.iterator(from, to)) {
-                    assertEquals(to - from, it.remaining());
+                    assertEquals(message, to - from, it.remaining());
                     for (int ii = from; ii < to; ++ii) {
-                        assertTrue(it.hasNext());
-                        assertEquals(values[ii], it.nextLong());
-                        assertEquals(to - ii - 1, it.remaining());
+                        assertTrue(message, it.hasNext());
+                        assertEquals(message, reference.get(ii), it.nextLong());
+                        assertEquals(message, to - ii - 1, it.remaining());
                     }
-                    assertFalse(it.hasNext());
+                    assertFalse(message, it.hasNext());
+
+                    // an exhausted iterator must not hand back whatever value happens to be stored next
+                    try {
+                        it.nextLong();
+                        fail(message + ": expected a NoSuchElementException from an exhausted iterator");
+                    } catch (NoSuchElementException expected) {
+                        // expected
+                    }
+                }
+
+                // documented equivalence: iterator(from, to) matches subVector(from, to).iterator()
+                try (final ValueIteratorOfLong it = ssm.iterator(from, to);
+                     final ValueIteratorOfLong sliceIt = ssm.subVector(from, to).iterator()) {
+                    while (sliceIt.hasNext()) {
+                        assertTrue(message, it.hasNext());
+                        assertEquals(message, sliceIt.nextLong(), it.nextLong());
+                    }
+                    assertFalse(message, it.hasNext());
                 }
             }
         }
@@ -909,31 +949,33 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
         final LongSegmentedSortedMultiset ssm = makeSsm(nodeSize, sortedValues);
         final long[] stored = ssm.toArray();
 
-        // boxing the null sentinel yields a non-null element holding the sentinel value, which compares equal
+        // the null sentinel is an ordinary value to a LongVector comparison: equal both ways, and hashing alike
+        assertEqualBothWays(ssm, new LongVectorDirect(stored));
+
+        // boxing the sentinel yields a non-null element holding the sentinel value...
         final Long[] boxedSentinel = new Long[stored.length];
         for (int ii = 0; ii < stored.length; ++ii) {
             boxedSentinel[ii] = stored[ii];
         }
-        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedSentinel)));
+        // ...but a boxed Vector is still not a LongVector, so it is not equal in either direction
+        assertNotEqualBothWays(ssm, new ObjectVectorDirect<>(boxedSentinel));
 
-        // a literal null also compares equal to the stored null sentinel
+        // a boxed Vector holding a literal null where this SSM holds the sentinel is likewise not equal. This is the
+        // case that made the branch unsound: the two would have compared equal while hashing differently, since
+        // hashCode() hashes the sentinel and a boxed Vector hashes the null reference.
         final Long[] boxedNull = boxedSentinel.clone();
         for (int ii = 0; ii < stored.length; ++ii) {
             if (stored[ii] == NULL_LONG) {
                 boxedNull[ii] = null;
             }
         }
-        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedNull)));
+        final ObjectVectorDirect<Long> boxedNullVector = new ObjectVectorDirect<>(boxedNull);
+        assertNotEqualBothWays(ssm, boxedNullVector);
 
-        // a null at a position holding a non-null value is not equal
-        for (int ii = 0; ii < stored.length; ++ii) {
-            if (stored[ii] != NULL_LONG) {
-                final Long[] boxedWrongNull = boxedSentinel.clone();
-                boxedWrongNull[ii] = null;
-                assertFalse(ssm.equals(new ObjectVectorDirect<>(boxedWrongNull)));
-                break;
-            }
-        }
+        // ... and a hash lookup keyed on that boxed Vector must therefore miss rather than silently mismatch
+        final Map<Object, String> map = new HashMap<>();
+        map.put(boxedNullVector, "boxed");
+        assertNull(map.get(ssm));
     }
     // endregion NullEquals
 

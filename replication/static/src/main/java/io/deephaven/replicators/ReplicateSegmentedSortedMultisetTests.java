@@ -86,8 +86,13 @@ public class ReplicateSegmentedSortedMultisetTests {
                 "\\.nextObject\\(\\)", ".next()");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
         lines = removeRegion(lines, "SortFixupSanityCheck");
-        // the null-sentinel equality semantics are specific to the primitive types
+        // the null-sentinel equality semantics are specific to the primitive types; that region holds the only
+        // HashMap use, so its import goes with it
         lines = removeRegion(lines, "NullEquals");
+        lines = removeImport(lines, "\\s*import java\\.util\\.HashMap;");
+        // an Object SSM *is* an ObjectVector, so a boxed Vector of its values is equal -- the assertions just above,
+        // which the primitive-vector case replicates into, already cover it
+        lines = removeRegion(lines, "BoxedEquals");
         FileUtils.writeLines(objectFile, ReplicationUtils.fixupChunkAttributes(lines));
     }
 }

@@ -1,38 +1,25 @@
 plugins {
-    id 'java-library'
     id 'io.deephaven.project.register'
 }
 
 description 'Barrage Benchmark: Benchmarks for Barrage message serialization/deserialization'
 
-sourceSets {
-    test {
-        java {
-            srcDir 'src/benchmark/java'
-        }
-    }
-}
-
-test {
-    failOnNoDiscoveredTests = false
-}
-
 dependencies {
-    testImplementation project(':extensions-barrage')
-    testImplementation project(':engine-table')
-    testImplementation project(':BenchmarkSupport')
-    testImplementation libs.arrow.vector
-    testImplementation libs.flatbuffers.java
-    testImplementation platform(libs.grpc.bom)
-    testImplementation libs.grpc.api
-    testImplementation TestTools.projectDependency(project, 'engine-rowset')
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    implementation project(':extensions-barrage')
+    implementation project(':engine-table')
+    implementation project(':BenchmarkSupport')
+    implementation libs.arrow.vector
+    implementation libs.flatbuffers.java
+    implementation platform(libs.grpc.bom)
+    implementation libs.grpc.api
+    implementation TestTools.projectDependency(project, 'engine-rowset')
+    implementation TestTools.projectDependency(project, 'engine-table')
 
-    testAnnotationProcessor libs.jmh.generator.annprocess
-    testCompileOnly libs.jmh.generator.annprocess
+    annotationProcessor libs.jmh.generator.annprocess
+    compileOnly libs.jmh.generator.annprocess
 
-    testRuntimeOnly project(':configs')
-    testRuntimeOnly project(':test-configs')
+    runtimeOnly project(':configs')
+    runtimeOnly project(':test-configs')
 }
 
 def createJmhTask = {
@@ -41,7 +28,7 @@ def createJmhTask = {
         new File("$rootDir/tmp/logs").mkdirs()
 
         task.workingDir "$rootDir/tmp/workspace"
-        task.classpath = sourceSets.test.runtimeClasspath
+        task.classpath = sourceSets.main.runtimeClasspath
         task.mainClass.set 'io.deephaven.benchmarking.runner.BenchmarkRunner'
 
         // arguments to pass to the application

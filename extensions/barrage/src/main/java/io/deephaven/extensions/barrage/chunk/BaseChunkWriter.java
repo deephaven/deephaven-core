@@ -70,6 +70,18 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
     }
 
     @Override
+    public DrainableColumn getEmptyInputStream(
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
+        try (Context context = makeContext(emptyChunkSupplier.get(), 0)) {
+            // Route through the registry-aware overload so a composite writer (e.g. RunEndEncodedChunkWriter) that
+            // forwards dictionaryRegistry to a nested dictionary-encoded child does so here too, and a
+            // DictionaryChunkWriter itself registers its state even for this empty payload.
+            return getInputStream(context, null, options, dictionaryRegistry);
+        }
+    }
+
+    @Override
     public Context makeContext(@NotNull SOURCE_CHUNK_TYPE chunk, long rowOffset) {
         if (transformer == null) {
             return new Context(chunk, rowOffset);

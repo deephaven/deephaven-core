@@ -143,13 +143,14 @@ public abstract class SingleRange implements OrderedLongSet {
         if (rangeStart() <= key && key <= rangeEnd()) {
             return this;
         }
-        if (key + 1 < rangeStart()) {
+        // Note subtractions rather than key + 1 comparisons: key + 1 overflows for key == Long.MAX_VALUE.
+        if (key < rangeStart()) {
+            if (rangeStart() - key == 1) {
+                return make(key, rangeEnd());
+            }
             return OrderedLongSet.twoRanges(key, key, rangeStart(), rangeEnd());
         }
-        if (key + 1 == rangeStart()) {
-            return make(key, rangeEnd());
-        }
-        if (rangeEnd() + 1 == key) {
+        if (key - rangeEnd() == 1) {
             return make(rangeStart(), key);
         }
         return OrderedLongSet.twoRanges(rangeStart(), rangeEnd(), key, key);
@@ -185,10 +186,12 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixAppendRange(final long startKey, final long endKey) {
-        if (rangeEnd() + 1 < startKey) {
+        // Note subtractions rather than rangeEnd() + 1 comparisons: rangeEnd() + 1 overflows for
+        // rangeEnd() == Long.MAX_VALUE.
+        if (startKey - rangeEnd() > 1) {
             return OrderedLongSet.twoRanges(rangeStart(), rangeEnd(), startKey, endKey);
         }
-        if (rangeEnd() + 1 == startKey) {
+        if (startKey - rangeEnd() == 1) {
             return make(rangeStart(), endKey);
         }
         throw new IllegalStateException("startKey(=" + startKey + ") < rangeEnd(=" + rangeEnd() + ")");
@@ -241,7 +244,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixSubindexByKeyOnNew(final long startKey, final long endKey) {
-        if (startKey > rangeEnd() || endKey < rangeStart()) {
+        if (endKey < startKey || startKey > rangeEnd() || endKey < rangeStart()) {
             return OrderedLongSet.EMPTY;
         }
         if (startKey == rangeStart() && endKey == rangeEnd()) {

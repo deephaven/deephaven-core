@@ -95,6 +95,7 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     public void close() {
         prevInnerSet.ixRelease();
         prevInnerSet = null; // Force NPE on use after tracking
+        prev.assign(OrderedLongSet.EMPTY);
         changeTimeStep = -1;
         indexer = null;
         super.close();
