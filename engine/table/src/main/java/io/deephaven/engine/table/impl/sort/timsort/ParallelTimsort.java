@@ -149,9 +149,10 @@ public class ParallelTimsort {
     /**
      * Run the segment sorts and the pairwise merge tree over them, blocking until the root merge is complete.
      */
-    private static void sortTree(final int size, final int segments, final SegmentSorter segmentSorter,
+    private static void sortTree(final int size, final int requestedSegments, final SegmentSorter segmentSorter,
             final RunMerger runMerger) {
-        final int segmentSize = (size + segments - 1) / segments;
+        final int segmentSize = segmentSize(size, requestedSegments);
+        final int segments = segmentCount(size, segmentSize);
 
         final ExecutionContext executionContext = ExecutionContext.getContext();
         // The tasks must run on the operation initializer thread pool, even when the sort is initiated from a
@@ -193,6 +194,20 @@ public class ParallelTimsort {
         } finally {
             SortHelpers.accumulateSchedulerPerformance(jobScheduler);
         }
+    }
+
+    /** The rows per segment when splitting {@code size} rows into (at most) {@code requestedSegments} segments. */
+    public static int segmentSize(final int size, final int requestedSegments) {
+        return (size + requestedSegments - 1) / requestedSegments;
+    }
+
+    /**
+     * The number of segments of {@code segmentSize} rows that cover {@code size} rows. Because the segment size is
+     * rounded up, this can be fewer than the segment count it was derived from (23 rows in 16 segments of 2 need only
+     * 12), and iterating over the requested count would produce empty or negative-length trailing segments.
+     */
+    public static int segmentCount(final int size, final int segmentSize) {
+        return (size + segmentSize - 1) / segmentSize;
     }
 
     private static List<MergeNode> buildMergeTree(final int size, final int segments, final int segmentSize) {
@@ -259,12 +274,13 @@ public class ParallelTimsort {
             final WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             final WritableIntChunk<ChunkPositions> positions,
             final int size,
-            final int segments) {
+            final int requestedSegments) {
         // the gather must not reuse the sorting scheduler: reading its accumulated performance waits for its jobs,
         // so it is consumed once, after the sort completes. It must be an operation initializer scheduler, not the
         // update graph's; see sortTree.
         final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
-        final int segmentSize = (size + segments - 1) / segments;
+        final int segmentSize = segmentSize(size, requestedSegments);
+        final int segments = segmentCount(size, segmentSize);
         try (final WritableLongChunk<PERMUTE_VALUES_ATTR> originalKeys = WritableLongChunk.makeWritableChunk(size)) {
             try {
                 // the gather reads the copied keys at arbitrary positions, so the copy phase must be complete

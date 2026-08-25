@@ -1155,8 +1155,9 @@ public class SortHelpers {
      */
     private static void fillValuesParallel(final boolean usePrev, final RowSequence ok,
             final ColumnSource<?> columnSource, final WritableChunk<Values> values, final int sortSize,
-            final int fillSegments) {
-        final int segmentSize = (sortSize + fillSegments - 1) / fillSegments;
+            final int requestedSegments) {
+        final int segmentSize = ParallelTimsort.segmentSize(sortSize, requestedSegments);
+        final int fillSegments = ParallelTimsort.segmentCount(sortSize, segmentSize);
 
         // slice the input positions serially; the fills proceed in parallel
         final RowSequence[] segmentRows = new RowSequence[fillSegments];
