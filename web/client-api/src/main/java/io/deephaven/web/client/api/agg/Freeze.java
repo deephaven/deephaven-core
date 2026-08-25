@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsType;
 
 /**
@@ -11,7 +10,6 @@ import jsinterop.annotations.JsType;
  * underlying data updates. This is useful for capturing an initial state.
  */
 @JsType
-@TsInterface
 public final class Freeze extends ColumnAggregation {
     public final String type = "Freeze";
 }

@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsType;
 
 /**
@@ -14,7 +13,6 @@ import jsinterop.annotations.JsType;
  * This aggregation is not supported in {@code aggAllBy} — use it only with {@code aggBy}.
  */
 @JsType
-@TsInterface
 public final class LastRowKey extends Aggregation {
     public final String type = "LastRowKey";
 

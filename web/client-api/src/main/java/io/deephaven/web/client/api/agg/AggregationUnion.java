@@ -9,6 +9,7 @@ import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 
 /**
  * Union type representing all aggregation variants accepted by {@code aggBy}. This includes both column-based
@@ -27,115 +28,171 @@ import jsinterop.annotations.JsType;
 public interface AggregationUnion {
     @JsOverlay
     @TsUnionMember
-    AbsSum asAbsSum();
+    default AbsSum asAbsSum() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    ApproxPercentile asApproxPercentile();
+    default ApproxPercentile asApproxPercentile() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Avg asAvg();
+    default Avg asAvg() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    CountDistinct asCountDistinct();
+    default CountDistinct asCountDistinct() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Distinct asDistinct();
+    default Distinct asDistinct() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    First asFirst();
+    default First asFirst() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Formula asFormula();
+    default Formula asFormula() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Freeze asFreeze();
+    default Freeze asFreeze() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Group asGroup();
+    default Group asGroup() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Last asLast();
+    default Last asLast() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Max asMax();
+    default Max asMax() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Median asMedian();
+    default Median asMedian() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Min asMin();
+    default Min asMin() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Percentile asPercentile();
+    default Percentile asPercentile() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    SortedFirst asSortedFirst();
+    default SortedFirst asSortedFirst() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    SortedLast asSortedLast();
+    default SortedLast asSortedLast() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Std asStd();
+    default Std asStd() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Sum asSum();
+    default Sum asSum() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    TDigest asTDigest();
+    default TDigest asTDigest() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Unique asUnique();
+    default Unique asUnique() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Var asVar();
+    default Var asVar() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    WAvg asWAvg();
+    default WAvg asWAvg() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    WSum asWSum();
+    default WSum asWSum() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Count asCount();
+    default Count asCount() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    CountWhere asCountWhere();
+    default CountWhere asCountWhere() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    Partition asPartition();
+    default Partition asPartition() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    FirstRowKey asFirstRowKey();
+    default FirstRowKey asFirstRowKey() {
+        return Js.uncheckedCast(this);
+    }
 
     @JsOverlay
     @TsUnionMember
-    LastRowKey asLastRowKey();
+    default LastRowKey asLastRowKey() {
+        return Js.uncheckedCast(this);
+    }
 
     /**
      * Helper to read the type discriminant from any aggregation variant. Not visible from JS/TS as part of this union,
@@ -144,4 +201,3 @@ public interface AggregationUnion {
     @JsProperty
     String getType();
 }
-

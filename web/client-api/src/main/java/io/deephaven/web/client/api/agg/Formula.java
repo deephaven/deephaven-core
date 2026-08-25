@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsType;
 
 /**
@@ -15,7 +14,6 @@ import jsinterop.annotations.JsType;
  * of each group's values, where {@code each} is replaced by the column's vector for that group.
  */
 @JsType
-@TsInterface
 public final class Formula extends ColumnAggregation {
     public final String type = "Formula";
 

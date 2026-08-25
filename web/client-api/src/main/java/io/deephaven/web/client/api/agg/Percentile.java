@@ -3,14 +3,13 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 /**
  * Computes an exact percentile within each aggregation group.
  */
 @JsType
-@TsInterface
 public final class Percentile extends ColumnAggregation {
     public final String type = "Percentile";
 
@@ -22,5 +21,6 @@ public final class Percentile extends ColumnAggregation {
      * {@code true}, the two middle values are averaged. When {@code false}, the smaller value is used. Only applies to
      * numeric types. Defaults to {@code false}.
      */
-    public boolean averageEvenlyDivided;
+    @JsNullable
+    public Boolean averageEvenlyDivided;
 }

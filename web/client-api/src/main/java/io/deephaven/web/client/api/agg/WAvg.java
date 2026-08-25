@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import io.deephaven.web.client.api.Column.ColumnOrName;
 import jsinterop.annotations.JsType;
 
@@ -12,7 +11,6 @@ import jsinterop.annotations.JsType;
  * weight, and the result is the sum of weighted values divided by the sum of weights.
  */
 @JsType
-@TsInterface
 public final class WAvg extends ColumnAggregation {
     public final String type = "WAvg";
 

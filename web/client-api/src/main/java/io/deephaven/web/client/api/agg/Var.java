@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsType;
 
 /**
@@ -14,7 +13,6 @@ import jsinterop.annotations.JsType;
  * correction</a>, which ensures that the sample variance will be an unbiased estimator of population variance.
  */
 @JsType
-@TsInterface
 public final class Var extends ColumnAggregation {
     public final String type = "Var";
 }

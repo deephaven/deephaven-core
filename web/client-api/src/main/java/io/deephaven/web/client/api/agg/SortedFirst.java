@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import elemental2.core.ReadonlyArray;
 import io.deephaven.web.client.api.Sort;
 import jsinterop.annotations.JsType;
@@ -13,7 +12,6 @@ import jsinterop.annotations.JsType;
  * equivalent to sorting each group by the given columns and taking the first row's values.
  */
 @JsType
-@TsInterface
 public final class SortedFirst extends ColumnAggregation {
     public final String type = "SortedFirst";
 

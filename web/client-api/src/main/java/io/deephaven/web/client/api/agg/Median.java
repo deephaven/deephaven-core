@@ -3,14 +3,13 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 /**
  * Computes the median value within each aggregation group.
  */
 @JsType
-@TsInterface
 public final class Median extends ColumnAggregation {
     public final String type = "Median";
 
@@ -19,5 +18,6 @@ public final class Median extends ColumnAggregation {
      * {@code true}, the two middle values are averaged. When {@code false}, the smaller value is used. Only applies to
      * numeric types. Defaults to {@code true}.
      */
-    public boolean averageEvenlyDivided;
+    @JsNullable
+    public Boolean averageEvenlyDivided;
 }

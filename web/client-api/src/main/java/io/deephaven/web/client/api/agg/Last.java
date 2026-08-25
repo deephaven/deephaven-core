@@ -3,14 +3,12 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsType;
 
 /**
  * Returns the last value within each aggregation group.
  */
 @JsType
-@TsInterface
 public final class Last extends ColumnAggregation {
     public final String type = "Last";
 }

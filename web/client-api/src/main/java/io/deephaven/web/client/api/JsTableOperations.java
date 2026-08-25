@@ -32,6 +32,7 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
@@ -589,7 +590,7 @@ public interface JsTableOperations extends ServerObject {
                         .setSpec(spec);
         ColumnAggregation colAgg = Js.cast(aggUnion);
         if (colAgg.columns != null) {
-            colsBuilder.addAllMatchPairs(columnsToNameList(colAgg.columns));
+            colsBuilder.addAllMatchPairs(JsTable.MatchPairUnion.toStringArray(colAgg.columns));
         }
 
         return result.setColumns(colsBuilder);
@@ -618,13 +619,13 @@ public interface JsTableOperations extends ServerObject {
             case "CountDistinct": {
                 CountDistinct countDistinct = aggUnion.asCountDistinct();
                 spec.setCountDistinct(AggSpec.AggSpecCountDistinct.newBuilder()
-                        .setCountNulls(countDistinct.countNulls));
+                        .setCountNulls(countDistinct.countNulls != null && countDistinct.countNulls));
                 break;
             }
             case "Distinct": {
                 Distinct distinct = aggUnion.asDistinct();
                 spec.setDistinct(AggSpec.AggSpecDistinct.newBuilder()
-                        .setIncludeNulls(distinct.includeNulls));
+                        .setIncludeNulls(distinct.includeNulls != null && distinct.includeNulls));
                 break;
             }
             case "First":
@@ -652,7 +653,7 @@ public interface JsTableOperations extends ServerObject {
             case "Median": {
                 Median median = aggUnion.asMedian();
                 spec.setMedian(AggSpec.AggSpecMedian.newBuilder()
-                        .setAverageEvenlyDivided(median.averageEvenlyDivided));
+                        .setAverageEvenlyDivided(median.averageEvenlyDivided == null || median.averageEvenlyDivided));
                 break;
             }
             case "Min":
@@ -662,7 +663,7 @@ public interface JsTableOperations extends ServerObject {
                 Percentile pct = aggUnion.asPercentile();
                 spec.setPercentile(AggSpec.AggSpecPercentile.newBuilder()
                         .setPercentile(pct.percentile)
-                        .setAverageEvenlyDivided(pct.averageEvenlyDivided));
+                        .setAverageEvenlyDivided(pct.averageEvenlyDivided != null && pct.averageEvenlyDivided));
                 break;
             }
             case "SortedFirst": {
@@ -703,7 +704,7 @@ public interface JsTableOperations extends ServerObject {
             case "Unique": {
                 Unique unique = aggUnion.asUnique();
                 spec.setUnique(AggSpec.AggSpecUnique.newBuilder()
-                        .setIncludeNulls(unique.includeNulls));
+                        .setIncludeNulls(unique.includeNulls != null && unique.includeNulls));
                 // TODO support null sentinels
                 break;
             }
@@ -729,10 +730,41 @@ public interface JsTableOperations extends ServerObject {
         return spec;
     }
 
+    /**
+     *
+     */
+    @TsInterface
+    @JsType(namespace = "dh")
+    class AggByOptions {
+        /**
+         * The aggregations to apply
+         */
+        ReadonlyArray<AggregationUnion> aggregations;
+
+        /**
+         * Whether to keep result rows for groups that are initially empty or become empty as a result of updates. Each
+         * agregation operator defines its own values for empty groups. Defaults to false if unspecified.
+         */
+        @Nullable
+        Boolean preserveEmpty;
+
+        /**
+         * An optional table whose distinct combinations of values for the {@link #groupByColumns} should be used to
+         * create an initial set of aggregation groups. All other columns are ignored.
+         */
+        @JsNullable
+        JsTableOperations initialGroups;
+
+        /**
+         * The columns to group by. Must be specified if {@link #initialGroups} is non-null. If empty or unspecified,
+         * the result will be a single group containing all rows in the table.
+         */
+        @JsNullable
+        ReadonlyArray<Column.ColumnOrName> groupByColumns;
+    }
+
     @JsMethod
-    default JsTableOperations aggBy(ReadonlyArray<AggregationUnion> aggregations, boolean preserveEmpty,
-            @JsNullable JsTableOperations initialGroups,
-            @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+    default JsTableOperations aggBy(AggByOptions options) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         AggregateRequest.Builder aggBuilder = AggregateRequest.newBuilder()
@@ -740,21 +772,21 @@ public interface JsTableOperations extends ServerObject {
                 .setSourceId(TableReference.newBuilder()
                         .setTicket(typedTicket().getTicket())
                         .build())
-                .setPreserveEmpty(preserveEmpty);
+                .setPreserveEmpty(options.preserveEmpty != null && options.preserveEmpty);
 
-        for (int i = 0; i < aggregations.getLength(); i++) {
-            AggregationUnion aggUnion = aggregations.getAt(i);
+        for (int i = 0; i < options.aggregations.getLength(); i++) {
+            AggregationUnion aggUnion = options.aggregations.getAt(i);
             io.deephaven.proto.backplane.grpc.Aggregation.Builder agg = makeAggregation(aggUnion);
             aggBuilder.addAggregations(agg);
         }
 
-        if (initialGroups != null) {
+        if (options.initialGroups != null) {
             aggBuilder.setInitialGroupsId(TableReference.newBuilder()
-                    .setTicket(initialGroups.typedTicket().getTicket())
+                    .setTicket(options.initialGroups.typedTicket().getTicket())
                     .build());
         }
-        if (groupByColumns != null) {
-            aggBuilder.addAllGroupByColumns(groupByColumns.asList().stream()
+        if (options.groupByColumns != null) {
+            aggBuilder.addAllGroupByColumns(options.groupByColumns.asList().stream()
                     .map(Column.ColumnOrName.COLUMN_NAME)
                     .toList());
         }
@@ -815,14 +847,12 @@ public interface JsTableOperations extends ServerObject {
          * Indicates if the ungrouped table should allow disparate sized arrays filling shorter columns with null
          * values. If false, then all arrays must be the same length. Defaults to false.
          */
-        @JsProperty
         @JsNullable
         public Boolean nullFill;
 
         /**
          * Specific columns to ungroup. If absent or empty, all columns in the table will be ungrouped.
          */
-        @JsProperty
         @JsNullable
         public ReadonlyArray<Column.ColumnOrName> columnsToUngroup;
     }

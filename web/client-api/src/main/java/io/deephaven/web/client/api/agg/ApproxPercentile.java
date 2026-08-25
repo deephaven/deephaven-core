@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
@@ -12,7 +11,6 @@ import jsinterop.annotations.JsType;
  * very large data sets where an exact percentile would be too expensive to compute.
  */
 @JsType
-@TsInterface
 public final class ApproxPercentile extends ColumnAggregation {
     public final String type = "ApproxPercentile";
 
@@ -27,4 +25,3 @@ public final class ApproxPercentile extends ColumnAggregation {
     @JsNullable
     public Double compression;
 }
-

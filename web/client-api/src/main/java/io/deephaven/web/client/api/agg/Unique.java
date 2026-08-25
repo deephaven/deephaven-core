@@ -3,7 +3,7 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 /**
@@ -11,7 +11,6 @@ import jsinterop.annotations.JsType;
  * more than one distinct value, the result is null (or a non-unique sentinel value, if supported).
  */
 @JsType
-@TsInterface
 public final class Unique extends ColumnAggregation {
     public final String type = "Unique";
 
@@ -20,6 +19,7 @@ public final class Unique extends ColumnAggregation {
      * are unique. When {@code true}, a group containing both null and a single non-null value is considered non-unique.
      * Defaults to {@code false}.
      */
-    public boolean includeNulls;
+    @JsNullable
+    public Boolean includeNulls;
     // TODO non-unique sentinel values
 }

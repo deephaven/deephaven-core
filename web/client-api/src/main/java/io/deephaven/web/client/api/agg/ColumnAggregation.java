@@ -3,9 +3,8 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import elemental2.core.ReadonlyArray;
-import io.deephaven.web.client.api.Column.ColumnOrName;
+import io.deephaven.web.client.api.JsTable.MatchPairUnion;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
@@ -19,7 +18,6 @@ import jsinterop.annotations.JsType;
  * If {@code columns} is null or empty in an {@code aggBy} call, the aggregation applies to all non-key columns.
  */
 @JsType
-@TsInterface
 public sealed class ColumnAggregation extends Aggregation
         permits AbsSum, ApproxPercentile, Avg, CountDistinct, Distinct, First, Formula, Freeze, Group, Last, Max,
         Median, Min, Percentile, SortedFirst, SortedLast, Std, Sum, TDigest, Unique, Var, WAvg, WSum {
@@ -28,7 +26,6 @@ public sealed class ColumnAggregation extends Aggregation
      * The column(s) to aggregate, which can be renaming expressions (e.g. {@code "new_col = col"}). When null or empty,
      * the aggregation applies to all non-key columns (valid only in {@code aggAllBy}).
      */
-    // TODO handle match pairs
     @JsNullable
-    public ReadonlyArray<ColumnOrName> columns;
+    public ReadonlyArray<MatchPairUnion> columns;
 }

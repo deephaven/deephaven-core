@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.agg;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
@@ -12,7 +11,6 @@ import jsinterop.annotations.JsType;
  * calculations. This stores a compressed representation of the data distribution.
  */
 @JsType
-@TsInterface
 public final class TDigest extends ColumnAggregation {
     public final String type = "TDigest";
 
