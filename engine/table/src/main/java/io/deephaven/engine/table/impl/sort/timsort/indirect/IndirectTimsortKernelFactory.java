@@ -87,8 +87,8 @@ public class IndirectTimsortKernelFactory {
     /** The element type, chunk classes, and comparison for one sort key column of a given chunk type. */
     enum ColumnType {
         // @formatter:off
-        // chars sort with Deephaven null-aware semantics, matching LongSortKernel.makeContext
-        NULL_AWARE_CHAR("NullAwareChar", CharChunk.class, TypeName.CHAR, CharComparisons.class),
+        // chars sort with Deephaven null-aware semantics (NULL_CHAR first), like every other column type
+        CHAR("Char", CharChunk.class, TypeName.CHAR, CharComparisons.class),
         BYTE("Byte", ByteChunk.class, TypeName.BYTE, Byte.class),
         SHORT("Short", ShortChunk.class, TypeName.SHORT, Short.class),
         INT("Int", IntChunk.class, TypeName.INT, Integer.class),
@@ -116,7 +116,7 @@ public class IndirectTimsortKernelFactory {
         static @Nullable ColumnType forChunkType(final ChunkType chunkType) {
             switch (chunkType) {
                 case Char:
-                    return NULL_AWARE_CHAR;
+                    return CHAR;
                 case Byte:
                     return BYTE;
                 case Short:

@@ -21,7 +21,7 @@ import java.lang.Override;
 import java.lang.UnsupportedOperationException;
 
 /**
- * This implements a timsort kernel for a sort key (NullAwareChar) that never moves the column values:
+ * This implements a timsort kernel for a sort key (Char descending) that never moves the column values:
  * it permutes a parallel chunk of int positions, reading values through the positions for each
  * comparison (comparing each column in turn, only reading later columns on ties). The row keys are
  * not permuted during the sort either; they are assembled in a single linear pass at the end.
@@ -29,26 +29,26 @@ import java.lang.UnsupportedOperationException;
  * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public final class NullAwareCharIndirectTimsortKernel {
-    private NullAwareCharIndirectTimsortKernel() {
+public final class CharDescIndirectTimsortKernel {
+    private CharDescIndirectTimsortKernel() {
         throw new UnsupportedOperationException();
     }
 
-    public static <PERMUTE_VALUES_ATTR extends Any> NullAwareCharIndirectSortKernelContext<PERMUTE_VALUES_ATTR> createContext(
+    public static <PERMUTE_VALUES_ATTR extends Any> CharDescIndirectSortKernelContext<PERMUTE_VALUES_ATTR> createContext(
             final int size) {
-        return new NullAwareCharIndirectSortKernelContext<>(size);
+        return new CharDescIndirectSortKernelContext<>(size);
     }
 
     /**
      * Sort the positions chunk such that the values it points to are ordered by this kernel's sort key,
      * comparing each column in turn; the value chunks themselves are not modified.
      */
-    public static void sort(NullAwareCharIndirectSortKernelContext<?> context,
+    public static void sort(CharDescIndirectSortKernelContext<?> context,
             WritableIntChunk<ChunkPositions> positions, CharChunk<?> valuesToSort0) {
         timSort(context, positions, valuesToSort0, 0, positions.size());
     }
 
-    private static void timSort(NullAwareCharIndirectSortKernelContext<?> context,
+    private static void timSort(CharDescIndirectSortKernelContext<?> context,
             WritableIntChunk<ChunkPositions> positions, CharChunk<?> valuesToSort0, int offset,
             int length) {
         if (length <= 1) {
@@ -125,7 +125,7 @@ public final class NullAwareCharIndirectTimsortKernel {
     }
 
     private static int doComparison0(char lhs, char rhs) {
-        return CharComparisons.compare(lhs, rhs);
+        return -1 * CharComparisons.compare(lhs, rhs);
     }
 
     /**
@@ -153,7 +153,7 @@ public final class NullAwareCharIndirectTimsortKernel {
         return compareColumns(valuesToSort0, lhsPos, rhsPos) <= 0;
     }
 
-    private static void ensureMergeInvariants(NullAwareCharIndirectSortKernelContext<?> context,
+    private static void ensureMergeInvariants(CharDescIndirectSortKernelContext<?> context,
             WritableIntChunk<ChunkPositions> positions, CharChunk<?> valuesToSort0) {
         while (context.runCount > 1) {
             final int xIndex = context.runCount - 1;
@@ -192,7 +192,7 @@ public final class NullAwareCharIndirectTimsortKernel {
         }
     }
 
-    private static void merge(NullAwareCharIndirectSortKernelContext<?> context,
+    private static void merge(CharDescIndirectSortKernelContext<?> context,
             WritableIntChunk<ChunkPositions> positions, CharChunk<?> valuesToSort0, int start1,
             int length1, int length2) {
         // we know that we can never have zero length runs, because there is a minimum run size enforced; and at the
@@ -231,7 +231,7 @@ public final class NullAwareCharIndirectTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static void frontMerge(NullAwareCharIndirectSortKernelContext<?> context,
+    private static void frontMerge(CharDescIndirectSortKernelContext<?> context,
             WritableIntChunk<ChunkPositions> positions, CharChunk<?> valuesToSort0,
             final int mergeStartPosition, final int start2, final int length2) {
         int tempCursor = 0;
@@ -315,7 +315,7 @@ public final class NullAwareCharIndirectTimsortKernel {
      * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static void backMerge(NullAwareCharIndirectSortKernelContext<?> context,
+    private static void backMerge(CharDescIndirectSortKernelContext<?> context,
             WritableIntChunk<ChunkPositions> positions, CharChunk<?> valuesToSort0,
             final int mergeStartPosition, final int length1) {
         final int run1End = mergeStartPosition + length1;
@@ -395,7 +395,7 @@ public final class NullAwareCharIndirectTimsortKernel {
         }
     }
 
-    private static void copyToTemporary(NullAwareCharIndirectSortKernelContext<?> context,
+    private static void copyToTemporary(CharDescIndirectSortKernelContext<?> context,
             IntChunk<ChunkPositions> positions, int mergeStartPosition, int remaining1) {
         context.temporaryPositions.setSize(remaining1);
         context.temporaryPositions.copyFromChunk(positions, mergeStartPosition, 0, remaining1);
@@ -457,7 +457,7 @@ public final class NullAwareCharIndirectTimsortKernel {
         positions.set(b, tempPos);
     }
 
-    public static class NullAwareCharIndirectSortKernelContext<PERMUTE_VALUES_ATTR extends Any> implements MultiColumnSortKernel<PERMUTE_VALUES_ATTR> {
+    public static class CharDescIndirectSortKernelContext<PERMUTE_VALUES_ATTR extends Any> implements MultiColumnSortKernel<PERMUTE_VALUES_ATTR> {
         int minGallop;
 
         int runCount = 0;
@@ -474,7 +474,7 @@ public final class NullAwareCharIndirectTimsortKernel {
 
         private WritableLongChunk<PERMUTE_VALUES_ATTR> temporaryKeys;
 
-        private NullAwareCharIndirectSortKernelContext(int size) {
+        private CharDescIndirectSortKernelContext(int size) {
             this.size = size;
             temporaryPositions = WritableIntChunk.makeWritableChunk((size + 2) / 2);
             runStarts = new int[(size + 31) / 32];
@@ -494,7 +494,7 @@ public final class NullAwareCharIndirectTimsortKernel {
             for (int ii = 0; ii < sortSize; ++ii) {
                 positions.set(ii, ii);
             }
-            NullAwareCharIndirectTimsortKernel.sort(this, positions, valuesToSort[0].asCharChunk());
+            CharDescIndirectTimsortKernel.sort(this, positions, valuesToSort[0].asCharChunk());
             // assemble the permuted row keys in a single linear pass rather than permuting them during the sort
             temporaryKeys.copyFromChunk(valuesToPermute, 0, 0, sortSize);
             for (int ii = 0; ii < sortSize; ++ii) {
@@ -505,13 +505,13 @@ public final class NullAwareCharIndirectTimsortKernel {
         @Override
         public void sortPositions(WritableIntChunk<ChunkPositions> positions,
                 WritableChunk<? extends Any>[] valuesToSort, int offset, int length) {
-            NullAwareCharIndirectTimsortKernel.timSort(this, positions, valuesToSort[0].asCharChunk(), offset, length);
+            CharDescIndirectTimsortKernel.timSort(this, positions, valuesToSort[0].asCharChunk(), offset, length);
         }
 
         @Override
         public void mergePositions(WritableIntChunk<ChunkPositions> positions,
                 WritableChunk<? extends Any>[] valuesToSort, int start1, int length1, int length2) {
-            NullAwareCharIndirectTimsortKernel.merge(this, positions, valuesToSort[0].asCharChunk(), start1, length1, length2);
+            CharDescIndirectTimsortKernel.merge(this, positions, valuesToSort[0].asCharChunk(), start1, length1, length2);
         }
 
         @Override

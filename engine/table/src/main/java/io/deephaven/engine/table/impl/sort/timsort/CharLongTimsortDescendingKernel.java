@@ -7,16 +7,16 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sort.timsort;
 
-import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.engine.table.impl.sort.ByteSortKernel;
+import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.compare.CharComparisons;
 import java.lang.Override;
@@ -27,18 +27,18 @@ import java.lang.Override;
  * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
  * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
-public final class NullAwareCharByteTimsortKernel {
-    private NullAwareCharByteTimsortKernel() {
+public final class CharLongTimsortDescendingKernel {
+    private CharLongTimsortDescendingKernel() {
     }
 
-    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> NullAwareCharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
+    public <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContextInstance(
             int size) {
-        return new NullAwareCharByteSortKernelContext<>(size);
+        return new CharLongSortKernelContext<>(size);
     }
 
-    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> NullAwareCharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
             final int size) {
-        return new NullAwareCharByteTimsortKernel().createContextInstance(size);
+        return new CharLongTimsortDescendingKernel().createContextInstance(size);
     }
 
     /**
@@ -49,8 +49,8 @@ public final class NullAwareCharByteTimsortKernel {
      * fewer runs sorted on each pass.
      */
     static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void sort(
-            NullAwareCharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
-            WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort,
             IntChunk<? extends ChunkPositions> offsetsIn,
             IntChunk<? extends ChunkLengths> lengthsIn) {
@@ -70,15 +70,15 @@ public final class NullAwareCharByteTimsortKernel {
      * fewer runs sorted on each pass.
      */
     public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void sort(
-            NullAwareCharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
-            WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort) {
         context.kernel().timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
     }
 
     private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
-            NullAwareCharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
-            WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort, int offset, int length) {
         if (length <= 1) {
             return;
@@ -154,7 +154,8 @@ public final class NullAwareCharByteTimsortKernel {
     }
 
     private static int doComparison(char lhs, char rhs) {
-        return CharComparisons.compare(lhs, rhs);
+        // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
+        return -1 * CharComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting
@@ -201,8 +202,8 @@ public final class NullAwareCharByteTimsortKernel {
      * fresh occurrence of runs in cache memory and making merge decisions relatively simple.
      */
     private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
-            NullAwareCharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
-            WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort) {
         while (context.runCount > 1) {
             final int xIndex = context.runCount - 1;
@@ -242,8 +243,8 @@ public final class NullAwareCharByteTimsortKernel {
     }
 
     private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
-            NullAwareCharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
-            WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort, int start1, int length1,
             int length2) {
         // we know that we can never have zero length runs, because there is a minimum run size enforced; and at the
@@ -285,8 +286,8 @@ public final class NullAwareCharByteTimsortKernel {
      * We eventually need to do galloping here, but are skipping that for now
      */
     private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
-            NullAwareCharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
-            WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort, final int mergeStartPosition,
             final int start2, final int length2) {
         int tempCursor = 0;
@@ -374,8 +375,8 @@ public final class NullAwareCharByteTimsortKernel {
      * We eventually need to do galloping here, but are skipping that for now
      */
     private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
-            NullAwareCharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
-            WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort, final int mergeStartPosition,
             final int length1) {
         final int run1End = mergeStartPosition + length1;
@@ -459,8 +460,8 @@ public final class NullAwareCharByteTimsortKernel {
     }
 
     private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void copyToTemporary(
-            NullAwareCharByteSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
-            WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            CharLongSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
             WritableCharChunk<SORT_VALUES_ATTR> valuesToSort, int mergeStartPosition,
             int remaining1) {
         context.temporaryValues.setSize(remaining1);
@@ -470,8 +471,8 @@ public final class NullAwareCharByteTimsortKernel {
     }
 
     private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void copyToChunk(
-            ByteChunk<PERMUTE_VALUES_ATTR> rowSetSource, CharChunk<SORT_VALUES_ATTR> valuesSource,
-            WritableByteChunk<PERMUTE_VALUES_ATTR> permuteValuesDest,
+            LongChunk<PERMUTE_VALUES_ATTR> rowSetSource, CharChunk<SORT_VALUES_ATTR> valuesSource,
+            WritableLongChunk<PERMUTE_VALUES_ATTR> permuteValuesDest,
             WritableCharChunk<SORT_VALUES_ATTR> sortValuesDest, int sourceStart, int destStart,
             int length) {
         sortValuesDest.copyFromChunk(valuesSource, sourceStart, destStart, length);
@@ -512,7 +513,7 @@ public final class NullAwareCharByteTimsortKernel {
         return lo;
     }
 
-    private void insertionSort(WritableByteChunk<?> valuesToPermute,
+    private void insertionSort(WritableLongChunk<?> valuesToPermute,
             WritableCharChunk<?> valuesToSort, int offset, int length) {
         // this could eventually be done with intrinsics (AVX 512/64 bits for long keys == 16 elements, and can be
         // combined up to 256)
@@ -523,9 +524,9 @@ public final class NullAwareCharByteTimsortKernel {
         }
     }
 
-    private static void swap(WritableByteChunk<?> valuesToPermute,
+    private static void swap(WritableLongChunk<?> valuesToPermute,
             WritableCharChunk<?> valuesToSort, int a, int b) {
-        final byte tempPermuteValue = valuesToPermute.get(a);
+        final long tempPermuteValue = valuesToPermute.get(a);
         final char tempChar = valuesToSort.get(a);
         valuesToPermute.set(a, valuesToPermute.get(b));
         valuesToSort.set(a, valuesToSort.get(b));
@@ -533,7 +534,7 @@ public final class NullAwareCharByteTimsortKernel {
         valuesToSort.set(b, tempChar);
     }
 
-    public class NullAwareCharByteSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> implements ByteSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
+    public class CharLongSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> implements LongSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
         int minGallop;
 
         int runCount = 0;
@@ -542,12 +543,12 @@ public final class NullAwareCharByteTimsortKernel {
 
         private final int[] runLengths;
 
-        private final WritableByteChunk<PERMUTE_VALUES_ATTR> temporaryKeys;
+        private final WritableLongChunk<PERMUTE_VALUES_ATTR> temporaryKeys;
 
         private final WritableCharChunk<SORT_VALUES_ATTR> temporaryValues;
 
-        private NullAwareCharByteSortKernelContext(int size) {
-            temporaryKeys = WritableByteChunk.makeWritableChunk((size + 2) / 2);
+        private CharLongSortKernelContext(int size) {
+            temporaryKeys = WritableLongChunk.makeWritableChunk((size + 2) / 2);
             temporaryValues = WritableCharChunk.makeWritableChunk((size + 2) / 2);
             runStarts = new int[(size + 31) / 32];
             runLengths = new int[(size + 31) / 32];
@@ -555,30 +556,30 @@ public final class NullAwareCharByteTimsortKernel {
         }
 
         @Override
-        public void sort(WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+        public void sort(WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort) {
-            NullAwareCharByteTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk());
+            CharLongTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk());
         }
 
         @Override
-        public void sort(WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+        public void sort(WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort,
                 IntChunk<? extends ChunkPositions> offsetsIn,
                 IntChunk<? extends ChunkLengths> lengthsIn) {
-            NullAwareCharByteTimsortKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk(), offsetsIn, lengthsIn);
+            CharLongTimsortDescendingKernel.this.sort(this, valuesToPermute, valuesToSort.asWritableCharChunk(), offsetsIn, lengthsIn);
         }
 
         @Override
-        public void sort(WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+        public void sort(WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort, int offset, int length) {
-            NullAwareCharByteTimsortKernel.this.timSort(this, valuesToPermute, valuesToSort.asWritableCharChunk(), offset, length);
+            CharLongTimsortDescendingKernel.this.timSort(this, valuesToPermute, valuesToSort.asWritableCharChunk(), offset, length);
         }
 
         @Override
-        public void merge(WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+        public void merge(WritableLongChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
                 WritableChunk<SORT_VALUES_ATTR> valuesToSort, int start1, int length1,
                 int length2) {
-            NullAwareCharByteTimsortKernel.this.merge(this, valuesToPermute, valuesToSort.asWritableCharChunk(), start1, length1, length2);
+            CharLongTimsortDescendingKernel.this.merge(this, valuesToPermute, valuesToSort.asWritableCharChunk(), start1, length1, length2);
         }
 
         @Override
@@ -587,8 +588,8 @@ public final class NullAwareCharByteTimsortKernel {
             temporaryValues.close();
         }
 
-        private NullAwareCharByteTimsortKernel kernel() {
-            return NullAwareCharByteTimsortKernel.this;
+        private CharLongTimsortDescendingKernel kernel() {
+            return CharLongTimsortDescendingKernel.this;
         }
     }
 }

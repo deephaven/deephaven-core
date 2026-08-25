@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Character;
+import io.deephaven.util.compare.CharComparisons;
 import java.lang.UnsupportedOperationException;
 
 /**
@@ -115,7 +115,7 @@ public final class CharTimsortKernel {
     }
 
     private static int doComparison(char lhs, char rhs) {
-        return Character.compare(lhs, rhs);
+        return CharComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

@@ -34,9 +34,9 @@ public final class IndirectTimsortDispatcher {
         switch (chunkTypes[0]) {
             case Char:
             if (order[0] == SortingOrder.Ascending) {
-                return NullAwareCharIndirectTimsortKernel.createContext(size);
+                return CharIndirectTimsortKernel.createContext(size);
             }
-            return NullAwareCharDescIndirectTimsortKernel.createContext(size);
+            return CharDescIndirectTimsortKernel.createContext(size);
             case Byte:
             if (order[0] == SortingOrder.Ascending) {
                 return ByteIndirectTimsortKernel.createContext(size);

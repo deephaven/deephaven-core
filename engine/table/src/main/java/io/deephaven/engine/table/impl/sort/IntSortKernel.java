@@ -35,9 +35,9 @@ public interface IntSortKernel<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR
         switch (chunkType) {
             case Char:
                 if (order == SortingOrder.Ascending) {
-                    return NullAwareCharIntTimsortKernel.createContext(size);
+                    return CharIntTimsortKernel.createContext(size);
                 } else {
-                    return NullAwareCharIntTimsortDescendingKernel.createContext(size);
+                    return CharIntTimsortDescendingKernel.createContext(size);
                 }
             case Byte:
                 if (order == SortingOrder.Ascending) {
@@ -121,8 +121,8 @@ public interface IntSortKernel<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR
     }
 
     /**
-     * Merge two adjacent sorted runs, [start1, start1 + length1) and [start1 + length1, start1 + length1 + length2),
-     * of the values in valuesToSort into a single sorted run, permuting the valuesToPermute chunk in the same way.
+     * Merge two adjacent sorted runs, [start1, start1 + length1) and [start1 + length1, start1 + length1 + length2), of
+     * the values in valuesToSort into a single sorted run, permuting the valuesToPermute chunk in the same way.
      *
      * @param valuesToPermute the values permuted aintside the sorted values
      * @param valuesToSort the values to merge

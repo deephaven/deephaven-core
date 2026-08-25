@@ -17,7 +17,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Character;
+import io.deephaven.util.compare.CharComparisons;
 import java.lang.Override;
 
 /**
@@ -153,7 +153,7 @@ public final class CharIntTimsortKernel {
     }
 
     private static int doComparison(char lhs, char rhs) {
-        return Character.compare(lhs, rhs);
+        return CharComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

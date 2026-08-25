@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Character;
+import io.deephaven.util.compare.CharComparisons;
 import java.lang.UnsupportedOperationException;
 
 /**
@@ -116,7 +116,7 @@ public final class CharTimsortDescendingKernel {
 
     private static int doComparison(char lhs, char rhs) {
         // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
-        return -1 * Character.compare(lhs, rhs);
+        return -1 * CharComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

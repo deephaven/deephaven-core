@@ -31,9 +31,9 @@ public interface LongSortKernel<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATT
         switch (chunkType) {
             case Char:
                 if (order == SortingOrder.Ascending) {
-                    return NullAwareCharLongTimsortKernel.createContext(size);
+                    return CharLongTimsortKernel.createContext(size);
                 } else {
-                    return NullAwareCharLongTimsortDescendingKernel.createContext(size);
+                    return CharLongTimsortDescendingKernel.createContext(size);
                 }
             case Byte:
                 if (order == SortingOrder.Ascending) {

@@ -250,15 +250,14 @@ public class GenerateTimsortKernels {
         return new KeyKind(namePart, chunks, new StaticCompare(ClassName.get(comparisonsClass)));
     }
 
-    private static final KeyKind CHAR_KIND = boxedKind(CHAR_CHUNKS, Character.class);
+    // chars sort with Deephaven null-aware semantics (NULL_CHAR first), like every other engine column type
+    private static final KeyKind CHAR_KIND = comparisonsKind("Char", CHAR_CHUNKS, CharComparisons.class);
     private static final KeyKind BYTE_KIND = boxedKind(BYTE_CHUNKS, Byte.class);
     private static final KeyKind SHORT_KIND = boxedKind(SHORT_CHUNKS, Short.class);
     private static final KeyKind INT_KIND = boxedKind(INT_CHUNKS, Integer.class);
     private static final KeyKind LONG_KIND = boxedKind(LONG_CHUNKS, Long.class);
     private static final KeyKind FLOAT_KIND = comparisonsKind("Float", FLOAT_CHUNKS, FloatComparisons.class);
     private static final KeyKind DOUBLE_KIND = comparisonsKind("Double", DOUBLE_CHUNKS, DoubleComparisons.class);
-    private static final KeyKind NULL_AWARE_CHAR_KIND =
-            new KeyKind("NullAwareChar", CHAR_CHUNKS, new StaticCompare(ClassName.get(CharComparisons.class)));
     private static final KeyKind OBJECT_KIND = new KeyKind("Object", OBJECT_CHUNKS, new ObjectCompare());
     private static final KeyKind COMPARATOR_KIND = new KeyKind("Comparator", OBJECT_CHUNKS, new ComparatorCompare());
 
@@ -429,22 +428,17 @@ public class GenerateTimsortKernels {
 
 
     /**
-     * The set of kernels to generate; deliberately identical to the set produced by ReplicateSortKernel: descending
-     * plain-char permute kernels are omitted (the null-aware kernels are used for engine char sorts), while the
-     * values-only char descending kernel does exist. The comparator kernel exists only for ascending long permutation.
+     * The set of kernels to generate: ascending and descending kernels for every key kind, both values-only and
+     * permuting byte, int, or long chunks. The comparator kernel exists only for ascending long permutation.
      */
     private static List<KernelSpec> allSpecs() {
         final List<KeyKind> standardKinds = List.of(CHAR_KIND, BYTE_KIND, SHORT_KIND, INT_KIND, LONG_KIND,
-                FLOAT_KIND, DOUBLE_KIND, NULL_AWARE_CHAR_KIND, OBJECT_KIND);
+                FLOAT_KIND, DOUBLE_KIND, OBJECT_KIND);
 
         final List<KernelSpec> specs = new ArrayList<>();
         for (final ChunkFamily permute : new ChunkFamily[] {null, BYTE_CHUNKS, INT_CHUNKS, LONG_CHUNKS}) {
             for (final KeyKind kind : standardKinds) {
                 specs.add(spec(kind, permute, Direction.ASCENDING));
-                if (kind == CHAR_KIND && permute != null) {
-                    // the descending char permute kernels are not replicated; NullAwareChar serves that purpose
-                    continue;
-                }
                 specs.add(spec(kind, permute, Direction.DESCENDING));
             }
         }
