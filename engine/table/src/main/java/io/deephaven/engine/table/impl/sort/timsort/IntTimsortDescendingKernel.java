@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Integer;
+import io.deephaven.util.compare.IntComparisons;
 import java.lang.UnsupportedOperationException;
 
 /**
@@ -116,7 +116,7 @@ public final class IntTimsortDescendingKernel {
 
     private static int doComparison(int lhs, int rhs) {
         // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
-        return -1 * Integer.compare(lhs, rhs);
+        return -1 * IntComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

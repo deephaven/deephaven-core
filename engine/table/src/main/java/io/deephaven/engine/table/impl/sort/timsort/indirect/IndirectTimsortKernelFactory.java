@@ -36,10 +36,14 @@ import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.compare.FloatComparisons;
+import io.deephaven.util.compare.IntComparisons;
+import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.compare.ObjectComparisons;
+import io.deephaven.util.compare.ShortComparisons;
 import org.jetbrains.annotations.Nullable;
 
 import javax.lang.model.element.Modifier;
@@ -87,12 +91,12 @@ public class IndirectTimsortKernelFactory {
     /** The element type, chunk classes, and comparison for one sort key column of a given chunk type. */
     enum ColumnType {
         // @formatter:off
-        // chars sort with Deephaven null-aware semantics (NULL_CHAR first), like every other column type
+        // every column type compares with its io.deephaven.util.compare class: the engine's null-aware ordering
         CHAR("Char", CharChunk.class, TypeName.CHAR, CharComparisons.class),
-        BYTE("Byte", ByteChunk.class, TypeName.BYTE, Byte.class),
-        SHORT("Short", ShortChunk.class, TypeName.SHORT, Short.class),
-        INT("Int", IntChunk.class, TypeName.INT, Integer.class),
-        LONG("Long", LongChunk.class, TypeName.LONG, Long.class),
+        BYTE("Byte", ByteChunk.class, TypeName.BYTE, ByteComparisons.class),
+        SHORT("Short", ShortChunk.class, TypeName.SHORT, ShortComparisons.class),
+        INT("Int", IntChunk.class, TypeName.INT, IntComparisons.class),
+        LONG("Long", LongChunk.class, TypeName.LONG, LongComparisons.class),
         FLOAT("Float", FloatChunk.class, TypeName.FLOAT, FloatComparisons.class),
         DOUBLE("Double", DoubleChunk.class, TypeName.DOUBLE, DoubleComparisons.class),
         OBJECT("Object", ObjectChunk.class, ClassName.OBJECT, ObjectComparisons.class);

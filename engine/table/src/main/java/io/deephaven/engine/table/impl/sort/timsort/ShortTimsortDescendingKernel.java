@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Short;
+import io.deephaven.util.compare.ShortComparisons;
 import java.lang.UnsupportedOperationException;
 
 /**
@@ -116,7 +116,7 @@ public final class ShortTimsortDescendingKernel {
 
     private static int doComparison(short lhs, short rhs) {
         // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
-        return -1 * Short.compare(lhs, rhs);
+        return -1 * ShortComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

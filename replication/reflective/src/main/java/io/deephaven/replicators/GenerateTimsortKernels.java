@@ -45,9 +45,13 @@ import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.engine.table.impl.sort.timsort.indirect.IndirectTimsortKernelFactory;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.compare.FloatComparisons;
+import io.deephaven.util.compare.IntComparisons;
+import io.deephaven.util.compare.LongComparisons;
+import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.util.compare.ObjectComparisons;
 
 import javax.lang.model.element.Modifier;
@@ -166,7 +170,7 @@ public class GenerateTimsortKernels {
         }
     }
 
-    /** Comparison via a static two-argument compare method, e.g. {@code Character.compare(lhs, rhs)}. */
+    /** Comparison via a static two-argument compare method, e.g. {@code IntComparisons.compare(lhs, rhs)}. */
     static final class StaticCompare implements Comparison {
         private final ClassName compareClass;
 
@@ -241,21 +245,18 @@ public class GenerateTimsortKernels {
         throw new IllegalArgumentException("no direct sort kernel interface permutes " + permute.name + " values");
     }
 
-    private static KeyKind boxedKind(final ChunkFamily chunks, final Class<?> boxed) {
-        return new KeyKind(chunks.name, chunks, new StaticCompare(ClassName.get(boxed)));
-    }
-
     private static KeyKind comparisonsKind(final String namePart, final ChunkFamily chunks,
             final Class<?> comparisonsClass) {
         return new KeyKind(namePart, chunks, new StaticCompare(ClassName.get(comparisonsClass)));
     }
 
-    // chars sort with Deephaven null-aware semantics (NULL_CHAR first), like every other engine column type
+    // every primitive compares with its io.deephaven.util.compare class, so the kernels share the engine's
+    // null-aware ordering (nulls first; NULL_CHAR is not the smallest char in Java order, and NaN is not comparable)
     private static final KeyKind CHAR_KIND = comparisonsKind("Char", CHAR_CHUNKS, CharComparisons.class);
-    private static final KeyKind BYTE_KIND = boxedKind(BYTE_CHUNKS, Byte.class);
-    private static final KeyKind SHORT_KIND = boxedKind(SHORT_CHUNKS, Short.class);
-    private static final KeyKind INT_KIND = boxedKind(INT_CHUNKS, Integer.class);
-    private static final KeyKind LONG_KIND = boxedKind(LONG_CHUNKS, Long.class);
+    private static final KeyKind BYTE_KIND = comparisonsKind("Byte", BYTE_CHUNKS, ByteComparisons.class);
+    private static final KeyKind SHORT_KIND = comparisonsKind("Short", SHORT_CHUNKS, ShortComparisons.class);
+    private static final KeyKind INT_KIND = comparisonsKind("Int", INT_CHUNKS, IntComparisons.class);
+    private static final KeyKind LONG_KIND = comparisonsKind("Long", LONG_CHUNKS, LongComparisons.class);
     private static final KeyKind FLOAT_KIND = comparisonsKind("Float", FLOAT_CHUNKS, FloatComparisons.class);
     private static final KeyKind DOUBLE_KIND = comparisonsKind("Double", DOUBLE_CHUNKS, DoubleComparisons.class);
     private static final KeyKind OBJECT_KIND = new KeyKind("Object", OBJECT_CHUNKS, new ObjectCompare());

@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Short;
+import io.deephaven.util.compare.ShortComparisons;
 import java.lang.UnsupportedOperationException;
 
 /**
@@ -115,7 +115,7 @@ public final class ShortTimsortKernel {
     }
 
     private static int doComparison(short lhs, short rhs) {
-        return Short.compare(lhs, rhs);
+        return ShortComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

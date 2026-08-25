@@ -16,7 +16,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
-import java.lang.Byte;
+import io.deephaven.util.compare.ByteComparisons;
 import java.lang.Override;
 import java.lang.UnsupportedOperationException;
 
@@ -125,7 +125,7 @@ public final class ByteDescIndirectTimsortKernel {
     }
 
     private static int doComparison0(byte lhs, byte rhs) {
-        return -1 * Byte.compare(lhs, rhs);
+        return -1 * ByteComparisons.compare(lhs, rhs);
     }
 
     /**

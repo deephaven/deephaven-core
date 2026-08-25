@@ -15,7 +15,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
-import java.lang.Integer;
+import io.deephaven.util.compare.IntComparisons;
 import java.lang.Override;
 import java.lang.UnsupportedOperationException;
 
@@ -124,7 +124,7 @@ public final class IntIndirectTimsortKernel {
     }
 
     private static int doComparison0(int lhs, int rhs) {
-        return Integer.compare(lhs, rhs);
+        return IntComparisons.compare(lhs, rhs);
     }
 
     /**

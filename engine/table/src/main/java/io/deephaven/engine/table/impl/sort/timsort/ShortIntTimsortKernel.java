@@ -17,8 +17,8 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.compare.ShortComparisons;
 import java.lang.Override;
-import java.lang.Short;
 
 /**
  * This implements a timsort kernel for Shorts.
@@ -153,7 +153,7 @@ public final class ShortIntTimsortKernel {
     }
 
     private static int doComparison(short lhs, short rhs) {
-        return Short.compare(lhs, rhs);
+        return ShortComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

@@ -17,7 +17,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Byte;
+import io.deephaven.util.compare.ByteComparisons;
 import java.lang.Override;
 
 /**
@@ -154,7 +154,7 @@ public final class ByteIntTimsortDescendingKernel {
 
     private static int doComparison(byte lhs, byte rhs) {
         // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
-        return -1 * Byte.compare(lhs, rhs);
+        return -1 * ByteComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

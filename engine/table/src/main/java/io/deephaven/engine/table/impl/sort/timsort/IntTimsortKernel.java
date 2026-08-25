@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Integer;
+import io.deephaven.util.compare.IntComparisons;
 import java.lang.UnsupportedOperationException;
 
 /**
@@ -115,7 +115,7 @@ public final class IntTimsortKernel {
     }
 
     private static int doComparison(int lhs, int rhs) {
-        return Integer.compare(lhs, rhs);
+        return IntComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

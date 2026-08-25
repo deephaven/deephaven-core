@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Long;
+import io.deephaven.util.compare.LongComparisons;
 import java.lang.UnsupportedOperationException;
 
 /**
@@ -115,7 +115,7 @@ public final class LongTimsortKernel {
     }
 
     private static int doComparison(long lhs, long rhs) {
-        return Long.compare(lhs, rhs);
+        return LongComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

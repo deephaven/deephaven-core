@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Byte;
+import io.deephaven.util.compare.ByteComparisons;
 import java.lang.UnsupportedOperationException;
 
 /**
@@ -116,7 +116,7 @@ public final class ByteTimsortDescendingKernel {
 
     private static int doComparison(byte lhs, byte rhs) {
         // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)
-        return -1 * Byte.compare(lhs, rhs);
+        return -1 * ByteComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

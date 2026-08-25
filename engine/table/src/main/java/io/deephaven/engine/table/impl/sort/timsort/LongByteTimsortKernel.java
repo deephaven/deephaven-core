@@ -18,7 +18,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.table.impl.sort.ByteSortKernel;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Long;
+import io.deephaven.util.compare.LongComparisons;
 import java.lang.Override;
 
 /**
@@ -154,7 +154,7 @@ public final class LongByteTimsortKernel {
     }
 
     private static int doComparison(long lhs, long rhs) {
-        return Long.compare(lhs, rhs);
+        return LongComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

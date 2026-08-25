@@ -15,7 +15,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Integer;
+import io.deephaven.util.compare.IntComparisons;
 import java.lang.Override;
 
 /**
@@ -151,7 +151,7 @@ public final class IntIntTimsortKernel {
     }
 
     private static int doComparison(int lhs, int rhs) {
-        return Integer.compare(lhs, rhs);
+        return IntComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting

@@ -16,8 +16,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.table.impl.sort.MultiColumnSortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
+import io.deephaven.util.compare.ShortComparisons;
 import java.lang.Override;
-import java.lang.Short;
 import java.lang.UnsupportedOperationException;
 
 /**
@@ -125,7 +125,7 @@ public final class ShortDescIndirectTimsortKernel {
     }
 
     private static int doComparison0(short lhs, short rhs) {
-        return -1 * Short.compare(lhs, rhs);
+        return -1 * ShortComparisons.compare(lhs, rhs);
     }
 
     /**

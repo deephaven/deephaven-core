@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.annotations.VisibleForTesting;
-import java.lang.Byte;
+import io.deephaven.util.compare.ByteComparisons;
 import java.lang.UnsupportedOperationException;
 
 /**
@@ -115,7 +115,7 @@ public final class ByteTimsortKernel {
     }
 
     private static int doComparison(byte lhs, byte rhs) {
-        return Byte.compare(lhs, rhs);
+        return ByteComparisons.compare(lhs, rhs);
     }
 
     @VisibleForTesting
