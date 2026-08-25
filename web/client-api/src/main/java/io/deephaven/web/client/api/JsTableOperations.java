@@ -503,7 +503,8 @@ public interface JsTableOperations extends ServerObject {
                         .setTicket(typedTicket().getTicket())
                         .build())
                 .setResultId(ticket)
-                .addAllGroupByColumns(groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
+                .addAllGroupByColumns(
+                        groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
     }
 
     /**
@@ -525,7 +526,8 @@ public interface JsTableOperations extends ServerObject {
                         .setTicket(typedTicket().getTicket())
                         .build())
                 .setSpec(spec)
-                .addAllGroupByColumns(groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
+                .addAllGroupByColumns(
+                        groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
     }
 
     /**
@@ -581,45 +583,182 @@ public interface JsTableOperations extends ServerObject {
                 .setResultId(ticket)));
     }
 
-    // @JsMethod
-    // JsTableOperations countBy(Column.ColumnOrName columName, ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    //
-    // @JsMethod
-    // JsTableOperations firstBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations lastBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations minBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations maxBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations sumBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations avgBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations medianBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations stdBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations varBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations absSumBy(ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations wsumBy(Column.ColumnOrName weightColumn, ReadonlyArray<Column.ColumnOrName> groupByColumns);
-    //
-    // @JsMethod
-    // JsTableOperations wavgBy(Column.ColumnOrName weightColumn, ReadonlyArray<Column.ColumnOrName> groupByColumns);
+    /**
+     * Counts the number of rows in each group, storing the result in a new column.
+     *
+     * @param columnName the name of the new column to hold the row counts
+     * @param groupByColumns columns to group by; if omitted, counts all rows into a single result
+     * @return a new table with a count column and optional group-by columns
+     */
+    @JsMethod
+    default JsTableOperations countBy(String columnName,
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        Ticket ticket = getConnection().getTickets().newExportTicket();
+
+        AggregateRequest.Builder aggBuilder = AggregateRequest.newBuilder()
+                .setResultId(ticket)
+                .setSourceId(TableReference.newBuilder()
+                        .setTicket(typedTicket().getTicket())
+                        .build())
+                .addAggregations(io.deephaven.proto.backplane.grpc.Aggregation.newBuilder()
+                        .setCount(io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount.newBuilder()
+                                .setColumnName(columnName)));
+        if (groupByColumns != null) {
+            aggBuilder.addAllGroupByColumns(columnsToNameList(groupByColumns));
+        }
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder));
+    }
+
+    /**
+     * Returns the first row of each group.
+     *
+     * @param groupByColumns columns to group by; if omitted, returns the first row of the table
+     * @return a new table with the first row from each group
+     */
+    @JsMethod
+    default JsTableOperations firstBy(@JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setFirst(AggSpec.AggSpecFirst.getDefaultInstance()), groupByColumns);
+    }
+
+    /**
+     * Returns the last row of each group.
+     *
+     * @param groupByColumns columns to group by; if omitted, returns the last row of the table
+     * @return a new table with the last row from each group
+     */
+    @JsMethod
+    default JsTableOperations lastBy(
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setLast(AggSpec.AggSpecLast.getDefaultInstance()), groupByColumns);
+    }
+
+    /**
+     * Returns the minimum value of each column within each group.
+     *
+     * @param groupByColumns columns to group by; if omitted, computes the minimum across all rows
+     * @return a new table with the minimum values
+     */
+    @JsMethod
+    default JsTableOperations minBy(
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setMin(AggSpec.AggSpecMin.getDefaultInstance()), groupByColumns);
+    }
+
+    /**
+     * Returns the maximum value of each column within each group.
+     *
+     * @param groupByColumns columns to group by; if omitted, computes the maximum across all rows
+     * @return a new table with the maximum values
+     */
+    @JsMethod
+    default JsTableOperations maxBy(
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setMax(AggSpec.AggSpecMax.getDefaultInstance()), groupByColumns);
+    }
+
+    /**
+     * Computes the sum of each column within each group.
+     *
+     * @param groupByColumns columns to group by; if omitted, computes the sum across all rows
+     * @return a new table with the sums
+     */
+    @JsMethod
+    default JsTableOperations sumBy(
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setSum(AggSpec.AggSpecSum.getDefaultInstance()), groupByColumns);
+    }
+
+    /**
+     * Computes the arithmetic mean of each column within each group.
+     *
+     * @param groupByColumns columns to group by; if omitted, computes the average across all rows
+     * @return a new table with the averages
+     */
+    @JsMethod
+    default JsTableOperations avgBy(
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setAvg(AggSpec.AggSpecAvg.getDefaultInstance()), groupByColumns);
+    }
+
+    /**
+     * Computes the median of each column within each group. When the group size is even, averages the two middle values
+     * for numeric types.
+     *
+     * @param groupByColumns columns to group by; if omitted, computes the median across all rows
+     * @return a new table with the medians
+     */
+    @JsMethod
+    default JsTableOperations medianBy(
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setMedian(
+                AggSpec.AggSpecMedian.newBuilder().setAverageEvenlyDivided(true)), groupByColumns);
+    }
+
+    /**
+     * Computes the sample standard deviation of each column within each group, using Bessel's correction.
+     *
+     * @param groupByColumns columns to group by; if omitted, computes the standard deviation across all rows
+     * @return a new table with the standard deviations
+     */
+    @JsMethod
+    default JsTableOperations stdBy(
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setStd(AggSpec.AggSpecStd.getDefaultInstance()), groupByColumns);
+    }
+
+    /**
+     * Computes the sample variance of each column within each group, using Bessel's correction.
+     *
+     * @param groupByColumns columns to group by; if omitted, computes the variance across all rows
+     * @return a new table with the variances
+     */
+    @JsMethod
+    default JsTableOperations varBy(
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setVar(AggSpec.AggSpecVar.getDefaultInstance()), groupByColumns);
+    }
+
+    /**
+     * Computes the sum of absolute values of each column within each group.
+     *
+     * @param groupByColumns columns to group by; if omitted, computes the absolute sum across all rows
+     * @return a new table with the absolute sums
+     */
+    @JsMethod
+    default JsTableOperations absSumBy(
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setAbsSum(AggSpec.AggSpecAbsSum.getDefaultInstance()), groupByColumns);
+    }
+
+    /**
+     * Computes the weighted sum of each column within each group. Each value is multiplied by the corresponding weight,
+     * and the results are summed.
+     *
+     * @param weightColumn the column containing the weights
+     * @param groupByColumns columns to group by; if omitted, computes the weighted sum across all rows
+     * @return a new table with the weighted sums
+     */
+    @JsMethod
+    default JsTableOperations wsumBy(Column.ColumnOrName weightColumn,
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setWeightedSum(
+                AggSpec.AggSpecWeighted.newBuilder().setWeightColumn(weightColumn.columnName())), groupByColumns);
+    }
+
+    /**
+     * Computes the weighted average of each column within each group. Each value is multiplied by the corresponding
+     * weight, and the result is the sum of weighted values divided by the sum of weights.
+     *
+     * @param weightColumn the column containing the weights
+     * @param groupByColumns columns to group by; if omitted, computes the weighted average across all rows
+     * @return a new table with the weighted averages
+     */
+    @JsMethod
+    default JsTableOperations wavgBy(Column.ColumnOrName weightColumn,
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        return aggAllBySpec(AggSpec.newBuilder().setWeightedAvg(
+                AggSpec.AggSpecWeighted.newBuilder().setWeightColumn(weightColumn.columnName())), groupByColumns);
+    }
 
     @TsInterface
     @JsType(namespace = "dh")
@@ -680,6 +819,23 @@ public interface JsTableOperations extends ServerObject {
 
     private static List<String> columnsToNameList(ReadonlyArray<Column.ColumnOrName> columns) {
         return columns.asList().stream().map(Column.ColumnOrName.COLUMN_NAME).toList();
+    }
+
+    /**
+     * Helper for convenience aggregation methods that build an {@link AggregateAllRequest} with a pre-built
+     * {@link AggSpec}.
+     */
+    private JsTableOperations aggAllBySpec(AggSpec.Builder spec,
+            ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+        Ticket ticket = getConnection().getTickets().newExportTicket();
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest.newBuilder()
+                .setResultId(ticket)
+                .setSourceId(TableReference.newBuilder()
+                        .setTicket(typedTicket().getTicket())
+                        .build())
+                .setSpec(spec)
+                .addAllGroupByColumns(
+                        groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
     }
 
     // @JsMethod
