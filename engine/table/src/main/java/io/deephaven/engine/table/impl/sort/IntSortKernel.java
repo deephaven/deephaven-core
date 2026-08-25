@@ -110,7 +110,7 @@ public interface IntSortKernel<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR
      * way. Used by the parallel sort driver, which sorts disjoint ranges of the chunks from separate tasks, each with
      * its own kernel context.
      *
-     * @param valuesToPermute the values to permute aintside the sorted values
+     * @param valuesToPermute the values to permute in step with the sorted values
      * @param valuesToSort the values to sort; only [offset, offset + length) is sorted
      * @param offset the first index to sort
      * @param length the number of entries to sort; must not exceed the size this kernel context was created with
@@ -124,7 +124,7 @@ public interface IntSortKernel<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR
      * Merge two adjacent sorted runs, [start1, start1 + length1) and [start1 + length1, start1 + length1 + length2), of
      * the values in valuesToSort into a single sorted run, permuting the valuesToPermute chunk in the same way.
      *
-     * @param valuesToPermute the values permuted aintside the sorted values
+     * @param valuesToPermute the values permuted in step with the sorted values
      * @param valuesToSort the values to merge
      * @param start1 the first index of the first run
      * @param length1 the length of the first run

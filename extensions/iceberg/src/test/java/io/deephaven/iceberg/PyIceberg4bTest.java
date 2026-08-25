@@ -14,6 +14,7 @@ import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,11 @@ class PyIceberg4bTest {
     void setUp(@TempDir Path rootDir) throws Exception {
         engineCleanup.setUp();
         catalogAdapter = dbResource.openReadWriteCatalog("pyiceberg-4", rootDir);
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        engineCleanup.tearDown();
     }
 
     @Test

@@ -20,6 +20,7 @@ import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -63,6 +64,11 @@ class PyIceberg2Test {
     void setUp() throws Exception {
         engineCleanup.setUp();
         catalogAdapter = dbResource.openCatalog("pyiceberg-2");
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        engineCleanup.tearDown();
     }
 
     @Test
