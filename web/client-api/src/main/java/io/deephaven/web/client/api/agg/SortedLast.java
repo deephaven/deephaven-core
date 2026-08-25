@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.agg;
 
+import com.vertispan.tsdefs.annotations.TsLiteral;
 import elemental2.core.ReadonlyArray;
 import io.deephaven.web.client.api.Sort;
 import jsinterop.annotations.JsType;
@@ -13,6 +14,7 @@ import jsinterop.annotations.JsType;
  */
 @JsType
 public final class SortedLast extends ColumnAggregation {
+    @TsLiteral
     public final String type = "SortedLast";
 
     /** The columns to sort by when determining which row is "last" within each group. */

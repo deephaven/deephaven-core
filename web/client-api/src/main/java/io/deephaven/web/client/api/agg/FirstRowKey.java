@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.agg;
 
+import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsType;
 
 /**
@@ -14,6 +15,7 @@ import jsinterop.annotations.JsType;
  */
 @JsType
 public final class FirstRowKey extends Aggregation {
+    @TsLiteral
     public final String type = "FirstRowKey";
 
     /** The output column name to hold the first row key for each group. */

@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.agg;
 
+import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
@@ -15,6 +16,7 @@ import jsinterop.annotations.JsType;
  */
 @JsType
 public final class Partition extends Aggregation {
+    @TsLiteral
     public final String type = "Partition";
 
     /** The output column name to hold the sub-table for each group. */

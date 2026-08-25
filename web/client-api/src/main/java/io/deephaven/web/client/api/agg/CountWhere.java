@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.agg;
 
+import com.vertispan.tsdefs.annotations.TsLiteral;
 import elemental2.core.ReadonlyArray;
 import jsinterop.annotations.JsType;
 
@@ -15,6 +16,7 @@ import jsinterop.annotations.JsType;
  */
 @JsType
 public final class CountWhere extends Aggregation {
+    @TsLiteral
     public final String type = "CountWhere";
 
     /** The output column name to hold the filtered row count for each group. */

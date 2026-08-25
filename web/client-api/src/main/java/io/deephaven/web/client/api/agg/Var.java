@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.agg;
 
+import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsType;
 
 /**
@@ -14,5 +15,6 @@ import jsinterop.annotations.JsType;
  */
 @JsType
 public final class Var extends ColumnAggregation {
+    @TsLiteral
     public final String type = "Var";
 }

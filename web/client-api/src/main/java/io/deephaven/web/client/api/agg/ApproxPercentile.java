@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.agg;
 
+import com.vertispan.tsdefs.annotations.TsLiteral;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
@@ -12,6 +13,7 @@ import jsinterop.annotations.JsType;
  */
 @JsType
 public final class ApproxPercentile extends ColumnAggregation {
+    @TsLiteral
     public final String type = "ApproxPercentile";
 
     /** The percentile to calculate. Must be in the range [0.0, 1.0]. */
