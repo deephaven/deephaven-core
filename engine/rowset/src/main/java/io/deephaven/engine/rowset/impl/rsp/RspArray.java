@@ -1940,6 +1940,84 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         ++size;
     }
 
+    /**
+     * Make room for and place every span accumulated in {@code pending}, with a single pass over our arrays; the
+     * batched form of {@link #open}. Leaves {@code pending} empty.
+     *
+     * <p>
+     * Callers must not have marked any span for removal (see {@link #markIndexAsRemoved}) while these positions were
+     * accumulating: removals are recorded as array indices, and moving spans here would leave those indices pointing at
+     * the wrong spans.
+     */
+    protected void applyPendingSpanInserts(final PendingSpanInserts pending) {
+        final int deltaSpans = pending.size;
+        if (deltaSpans == 0) {
+            return;
+        }
+        ensureSizeCanGrowBy(deltaSpans);
+        // Walk the pending spans from last to first, so that each block of our spans is moved to its final place
+        // exactly once: everything from the current position to the last span not yet moved slides right by the number
+        // of pending spans still to be placed after it.
+        int dstIdx = size + deltaSpans - 1;
+        int srcIdx = size - 1;
+        for (int p = deltaSpans - 1; p >= 0; --p) {
+            final int position = pending.positions[p];
+            final int n = srcIdx - position + 1;
+            if (n > 0) {
+                arrayCopies(position, dstIdx - n + 1, n);
+                dstIdx -= n;
+                srcIdx = position - 1;
+            }
+            spanInfos[dstIdx] = pending.spanInfos[p];
+            spans[dstIdx] = pending.spans[p];
+            --dstIdx;
+        }
+        size += deltaSpans;
+        modifiedSpan(pending.positions[0]);
+        pending.clear();
+    }
+
+    /**
+     * Apply both halves of what a batched mutation leaves outstanding: the spans marked for removal, and the spans
+     * waiting to be inserted.
+     *
+     * <p>
+     * The two cannot just be applied one after the other. Removals are recorded as indices into our arrays as they
+     * stand, and pending positions are too, so whichever goes first moves the other's targets. Compacting the removals
+     * out only ever moves spans left, by the number of marked spans preceding them, so removals first plus that same
+     * count taken off each pending position puts every insert where it belongs. The mapping also holds for a position
+     * naming a marked span -- it lands on the first span surviving after it, which is where inserting before the marked
+     * span would have put it -- though no caller produces one: a caller only queues a position it searched out, and
+     * marked spans always sit before the point its searches start from.
+     */
+    protected void applyPendingSpanEdits(final PendingSpanInserts pending,
+            final MutableObject<SortedRanges> madeNullSpansMu) {
+        final SortedRanges madeNullSpans = madeNullSpansMu.getValue();
+        // A null tracker means the removals stopped being recorded and the collect below scans for them instead; either
+        // way there may be marked spans, and it is the marks in our arrays that the remap reads.
+        final boolean anyMarkedForRemoval = madeNullSpans == null || madeNullSpans.getCardinality() > 0;
+        if (anyMarkedForRemoval && pending.size() > 0) {
+            int markedBefore = 0;
+            int p = 0;
+            for (int i = 0; i < size && p < pending.size(); ++i) {
+                while (p < pending.size() && pending.positionAt(p) == i) {
+                    pending.setPositionAt(p, i - markedBefore);
+                    ++p;
+                }
+                if (spanInfos[i] == -1) {
+                    ++markedBefore;
+                }
+            }
+            // Anything left names our end, which is past every marked span.
+            while (p < pending.size()) {
+                pending.setPositionAt(p, pending.positionAt(p) - markedBefore);
+                ++p;
+            }
+        }
+        collectRemovedIndicesIfAny(madeNullSpansMu);
+        applyPendingSpanInserts(pending);
+    }
+
     private void open(final int i) {
         ensureSizeCanGrowBy(1);
         final int dstPos = i + 1;
@@ -1959,6 +2037,56 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     public void insertFullBlockSpanAtIndex(final int i, final long key, final long flen) {
         open(i);
         setFullBlockSpan(i, key, flen);
+    }
+
+    /**
+     * Whether a full block span for {@code key} covering {@code flen} blocks can be placed among our spans as-is, with
+     * no merging: adjacent full block spans have to be represented as a single span, and any span of ours inside the
+     * blocks it covers would have to be absorbed by it. Neither is true when this returns true, so the span can simply
+     * be written where it goes.
+     *
+     * <p>
+     * The neighbours are named explicitly because the span may be going into a gap or over a span of ours: inserting it
+     * before the span at {@code i} makes the neighbours {@code i - 1} and {@code i}, while writing it over the span at
+     * {@code i} makes them {@code i - 1} and {@code i + 1}.
+     *
+     * <p>
+     * Neither neighbour may be a span marked for removal: such a span keeps its old span object, so its length and key
+     * would read as a real span's. No caller can hand one over, because marked spans always sit before the index the
+     * caller's search started from.
+     *
+     * @param leftIdx index of the span before it, or -1 if it would be our first
+     * @param rightIdx index of the first span after it, or {@code size} if it would be our last
+     * @param key the key of the span's first block
+     * @param flen the span's length in blocks; greater than zero
+     * @return true if the span neither merges with nor absorbs a span of ours
+     */
+    protected boolean fullBlockSpanNeedsNoMerge(final int leftIdx, final int rightIdx, final long key,
+            final long flen) {
+        final long lastKey = getKeyForLastBlockInFullSpan(key, flen);
+        if (rightIdx < size) {
+            final long rightSpanInfo = spanInfos[rightIdx];
+            final long rightKey = spanInfoToKey(rightSpanInfo);
+            if (uLessOrEqual(rightKey, lastKey)) {
+                return false;
+            }
+            if (rightKey - lastKey == BLOCK_SIZE && getFullBlockSpanLen(rightSpanInfo, spans[rightIdx]) > 0) {
+                return false;
+            }
+        }
+        if (leftIdx >= 0) {
+            final long leftSpanInfo = spanInfos[leftIdx];
+            final long leftFlen = getFullBlockSpanLen(leftSpanInfo, spans[leftIdx]);
+            if (leftFlen > 0) {
+                // Signed on purpose: a left full block span that overlaps us puts its last key past ours, and the
+                // negative difference has to compare as less than a block, which it would not unsigned.
+                final long leftLastKey = getKeyForLastBlockInFullSpan(spanInfoToKey(leftSpanInfo), leftFlen);
+                if (key - leftLastKey <= BLOCK_SIZE) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
@@ -1998,8 +2126,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         ensureSizeCanGrowBy(buf.size - 1);
         final int dstPos = i + buf.size;
         final int srcPos = i + 1;
-        final int count = size - srcPos;
-        arrayCopies(srcPos, dstPos, count);
+        if (dstPos != srcPos) {
+            arrayCopies(srcPos, dstPos, size - srcPos);
+        }
         for (int j = 0; j < buf.size; ++j) {
             spanInfos[i + j] = buf.spanInfos[j];
             spans[i + j] = buf.spans[j];
@@ -2845,6 +2974,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         private SortedRangesInt sortedRangesInt;
         private SortedRangesInt madeNullSortedRanges;
         private ArraysBuf rspArraysBuf;
+        private PendingSpanInserts pendingSpanInserts;
         private SpanView[] spanViewStack = ZERO_LENGTH_SPAN_VIEW_ARRAY;
         private int stackEnd = 0;
         private int stackGrowAmount = 0;
@@ -2877,6 +3007,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             madeNullSortedRanges.clear();
             return madeNullSortedRanges;
+        }
+
+        PendingSpanInserts getPendingSpanInserts() {
+            if (pendingSpanInserts == null) {
+                pendingSpanInserts = new PendingSpanInserts();
+            } else {
+                pendingSpanInserts.clear();
+            }
+            return pendingSpanInserts;
         }
 
         ArraysBuf getArraysBuf(final int minCapacity) {
@@ -2962,12 +3101,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return;
         }
 
-        // Do a first pass finding all the containers on other for a key not present in this;
-        // this way we try our best to avoid an O(n^2) scenario where we have to move later
-        // spans to make space for earlier new keys over and over.
+        // Do a first pass finding all the spans on other for a key not present in this; this way we
+        // try our best to avoid an O(n^2) scenario where we have to move later spans to make space
+        // for earlier new keys over and over. A full block span is only taken in this pass when it
+        // can be inserted verbatim; one that has to merge with, or absorb, a span of ours is left to
+        // the second pass, which is where that logic lives.
 
         // The first pass will accumulate pairs of (a, b) = (other's idx, this' idx) in this array,
-        // for indices a of other that correspond to containers that will be inserted in b
+        // for indices a of other that correspond to spans that will be inserted in b
         // in this.
         final WorkData wd = workDataPerThread.get();
         int[] idxPairs = wd.getIntArray();
@@ -2980,10 +3121,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         boolean tryAddToSecondPassSkips = true;
         int startPos = 0;
         for (int otherIdx = 0; otherIdx < other.size; ++otherIdx) {
-            final Object otherSpan = other.spans[otherIdx];
-            if (isFullBlockSpan(otherSpan)) {
-                continue;
-            }
+            final long otherFlen = getFullBlockSpanLen(other.spanInfos[otherIdx], other.spans[otherIdx]);
             final long otherSpanKey = shiftAmount + other.getKey(otherIdx);
             int i = unsignedBinarySearch(this::getKey, startPos, size, otherSpanKey);
             if (i >= 0) {
@@ -2994,7 +3132,31 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (i == size) {
                 break;
             }
-            // At this point we know this container from other has a key that is not
+            startPos = i;
+            // Whether a full block span of ours ending at or after otherSpanKey already accounts for it.
+            boolean coveredOnOurLeft = false;
+            if (i > 0) {
+                final Object span = spans[i - 1];
+                final long spanInfo = spanInfos[i - 1];
+                final long flen = getFullBlockSpanLen(spanInfo, span);
+                if (flen > 0) {
+                    final long kSpan = spanInfoToKey(spanInfo);
+                    final long kSpanLast = getKeyForLastBlockInSpan(kSpan, flen);
+                    if (kSpanLast >= otherSpanKey) {
+                        coveredOnOurLeft = true;
+                    }
+                }
+            }
+            if (otherFlen > 0) {
+                // A full block span covers more than its first key, so being covered on our left says
+                // nothing about the rest of it; and inserting it verbatim is only correct when it neither
+                // merges with an adjacent full block span of ours nor covers any span of ours. Anything
+                // else is the second pass' job.
+                if (coveredOnOurLeft || !fullBlockSpanNeedsNoMerge(i - 1, i, otherSpanKey, otherFlen)) {
+                    continue;
+                }
+            }
+            // At this point we know this span from other has a key that is not
             // in our spans array; either it is part of a full block span,
             // and can be skipped altogether, or it will be added in this
             // first pass. Either way, it needs to be skipped in the second pass.
@@ -3006,19 +3168,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     secondPassSkips = sr;
                 }
             }
-
-            startPos = i;
-            if (i > 0) {
-                final Object span = spans[i - 1];
-                final long spanInfo = spanInfos[i - 1];
-                final long flen = getFullBlockSpanLen(spanInfo, span);
-                if (flen > 0) {
-                    final long kSpan = spanInfoToKey(spanInfo);
-                    final long kSpanLast = getKeyForLastBlockInSpan(kSpan, flen);
-                    if (kSpanLast >= otherSpanKey) {
-                        continue;
-                    }
-                }
+            if (coveredOnOurLeft) {
+                continue;
             }
             if (idxPairsCount + 2 > idxPairs.length) {
                 final int[] newArr;
@@ -3529,6 +3680,74 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 }
                 return andIdx + 1;
             }
+        }
+    }
+
+    /**
+     * Spans to be inserted into an {@link RspArray} at positions established ahead of time, so that room for all of
+     * them can be made in a single pass. Inserting them one at a time shifts the tail of the array once per span, which
+     * is quadratic when many spans go into a long array.
+     *
+     * <p>
+     * A position is an index into the array as it stands while entries accumulate; nothing moves until
+     * {@link RspArray#applyPendingSpanInserts} runs, so a caller can keep searching the array while it fills this in.
+     * Positions must be pushed in non-decreasing order; entries sharing a position keep their push order.
+     */
+    protected static final class PendingSpanInserts {
+        private static final int INITIAL_CAPACITY = 16;
+        private int[] positions = new int[INITIAL_CAPACITY];
+        private long[] spanInfos = new long[INITIAL_CAPACITY];
+        private Object[] spans = new Object[INITIAL_CAPACITY];
+        private int size;
+
+        int size() {
+            return size;
+        }
+
+        int positionAt(final int i) {
+            return positions[i];
+        }
+
+        void setPositionAt(final int i, final int position) {
+            positions[i] = position;
+        }
+
+        void clear() {
+            // Whatever we were holding is in the array now; don't keep containers alive through this cache.
+            java.util.Arrays.fill(spans, 0, size, null);
+            size = 0;
+        }
+
+        private void ensureCanGrowByOne() {
+            if (size < positions.length) {
+                return;
+            }
+            final int newCapacity = 2 * positions.length;
+            positions = java.util.Arrays.copyOf(positions, newCapacity);
+            spanInfos = java.util.Arrays.copyOf(spanInfos, newCapacity);
+            spans = java.util.Arrays.copyOf(spans, newCapacity);
+        }
+
+        void pushSingleton(final int position, final long value) {
+            ensureCanGrowByOne();
+            positions[size] = position;
+            spanInfos[size] = value;
+            spans[size] = null;
+            ++size;
+        }
+
+        void pushContainer(final int position, final long key, final Container container) {
+            ensureCanGrowByOne();
+            positions[size] = position;
+            setContainerSpanRaw(spanInfos, spans, size, key, container);
+            ++size;
+        }
+
+        void pushFullBlockSpan(final int position, final long key, final long flen) {
+            ensureCanGrowByOne();
+            positions[size] = position;
+            setFullBlockSpanRaw(size, spanInfos, spans, key, flen);
+            ++size;
         }
     }
 
