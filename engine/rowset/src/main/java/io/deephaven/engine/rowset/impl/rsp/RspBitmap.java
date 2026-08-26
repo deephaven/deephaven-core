@@ -1675,45 +1675,46 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 final long end = it.currentRangeEnd();
                 final long firstBlockKey = highBits(start);
                 final long lastBlockKey = highBits(end);
-                final boolean coversFirstBlockWholly = lowBitsAsInt(start) == 0
+                final boolean fullyCoversFirstBlock = lowBitsAsInt(start) == 0
                         && (firstBlockKey != lastBlockKey || lowBitsAsInt(end) == BLOCK_LAST);
-                final boolean coversLastBlockWholly = lowBitsAsInt(end) == BLOCK_LAST
+                final boolean fullyCoversLastBlock = lowBitsAsInt(end) == BLOCK_LAST
                         && (firstBlockKey != lastBlockKey || lowBitsAsInt(start) == 0);
-                // The run of blocks the range covers completely, if any. A single block range is its own run when it
-                // covers that block whole; computing the run's end by stepping back a block would underflow there.
-                final boolean hasWholeBlockRun;
-                final long firstWholeBlockKey;
-                final long lastWholeBlockKey;
+                // The run of blocks the range covers completely, which becomes one full block span. A single block
+                // range is its own run when it covers that block fully; computing the run's end by stepping back a
+                // block would underflow there.
+                final boolean hasFullBlockSpan;
+                final long firstFullBlockKey;
+                final long lastFullBlockKey;
                 if (firstBlockKey == lastBlockKey) {
-                    hasWholeBlockRun = coversFirstBlockWholly;
-                    firstWholeBlockKey = firstBlockKey;
-                    lastWholeBlockKey = lastBlockKey;
+                    hasFullBlockSpan = fullyCoversFirstBlock;
+                    firstFullBlockKey = firstBlockKey;
+                    lastFullBlockKey = lastBlockKey;
                 } else {
-                    firstWholeBlockKey = coversFirstBlockWholly ? firstBlockKey : nextKey(firstBlockKey);
-                    lastWholeBlockKey = coversLastBlockWholly ? lastBlockKey : lastBlockKey - BLOCK_SIZE;
-                    hasWholeBlockRun = uLessOrEqual(firstWholeBlockKey, lastWholeBlockKey);
+                    firstFullBlockKey = fullyCoversFirstBlock ? firstBlockKey : nextKey(firstBlockKey);
+                    lastFullBlockKey = fullyCoversLastBlock ? lastBlockKey : lastBlockKey - BLOCK_SIZE;
+                    hasFullBlockSpan = uLessOrEqual(firstFullBlockKey, lastFullBlockKey);
                 }
                 // In ascending key order: the partial first block, the run of complete blocks, the partial last block.
-                for (int which = 0; which < 3; ++which) {
+                for (int blockSegment = 0; blockSegment < 3; ++blockSegment) {
                     final long blockKey;
                     final long keyInBlock;
                     final long flen;
-                    if (which == 0) {
-                        if (coversFirstBlockWholly) {
+                    if (blockSegment == 0) {
+                        if (fullyCoversFirstBlock) {
                             continue;
                         }
                         blockKey = firstBlockKey;
                         keyInBlock = start;
                         flen = 0;
-                    } else if (which == 1) {
-                        if (!hasWholeBlockRun) {
+                    } else if (blockSegment == 1) {
+                        if (!hasFullBlockSpan) {
                             continue;
                         }
-                        blockKey = firstWholeBlockKey;
+                        blockKey = firstFullBlockKey;
                         keyInBlock = -1;
-                        flen = distanceInBlocks(firstWholeBlockKey, lastWholeBlockKey) + 1;
+                        flen = distanceInBlocks(firstFullBlockKey, lastFullBlockKey) + 1;
                     } else {
-                        if (firstBlockKey == lastBlockKey || coversLastBlockWholly) {
+                        if (firstBlockKey == lastBlockKey || fullyCoversLastBlock) {
                             continue;
                         }
                         blockKey = lastBlockKey;
