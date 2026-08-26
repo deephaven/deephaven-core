@@ -23,8 +23,7 @@ Add the Deephaven Java client dependencies to your project. Use the version that
 
 ```groovy syntax
 dependencies {
-    implementation 'io.deephaven:deephaven-java-client-session:0.36.1'
-    implementation 'io.deephaven:deephaven-java-client-flight:0.36.1'
+    implementation 'io.deephaven:deephaven-java-client-flight-dagger:0.36.1'
     implementation 'io.deephaven:deephaven-qst:0.36.1'
 }
 ```
