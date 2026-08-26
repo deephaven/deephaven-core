@@ -131,6 +131,74 @@ public class RspBitmapSplitBatchingTest {
         checkRemoveRanges(recv, arg);
     }
 
+    /**
+     * Several ranges inside ONE block of a full block span. A range iterator can revisit a block, unlike andNot's
+     * per-block spans, so what is left of that block has to be findable again for each range after the first.
+     */
+    @Test
+    public void testSeveralRemoveRangesInOneBlock() {
+        final RspBitmap recv = fullBlockSpans(1, 5, 8); // one 5-block span
+        final WritableRowSet arg = RowSetFactory.empty();
+        final long base = 3 * BS; // all inside block 3
+        arg.insertRange(base + 0, base + 1);
+        arg.insertRange(base + 12, base + 13);
+        arg.insertRange(base + 16, base + 16);
+        arg.insertRange(base + 22, base + 22);
+        arg.insertRange(base + 25, base + 27);
+        checkRemoveRanges(recv, arg);
+    }
+
+    /** Ranges revisiting one block, then moving on to a later block of the same span. */
+    @Test
+    public void testRemoveRangesRevisitBlockThenMoveOn() {
+        final RspBitmap recv = fullBlockSpans(2, 6, 10);
+        final WritableRowSet arg = RowSetFactory.empty();
+        arg.insertRange(1 * BS + 10, 1 * BS + 20);
+        arg.insertRange(1 * BS + 100, 1 * BS + 200); // same block again
+        arg.insertRange(4 * BS + 5, 4 * BS + 9); // later block, same original span
+        arg.insertRange(11 * BS + 5, 11 * BS + 9); // the second span
+        checkRemoveRanges(recv, arg);
+    }
+
+    /** Randomized removeRanges with ranges deliberately clustered within blocks as well as within spans. */
+    @Test
+    public void testRandomRemoveRangesClusteredInBlocks() {
+        final Random rand = new Random(4231);
+        for (int trial = 0; trial < 200; ++trial) {
+            RspBitmap recv = RspBitmap.makeEmpty();
+            long block = 0;
+            final List<long[]> spans = new ArrayList<>();
+            for (int i = 0; i < 8; ++i) {
+                final int blocks = 1 + rand.nextInt(5);
+                recv = recv.appendRangeUnsafe(block * BS, (block + blocks) * BS - 1);
+                spans.add(new long[] {block, blocks});
+                block += blocks + 1 + rand.nextInt(2);
+            }
+            recv.finishMutations();
+
+            final WritableRowSet arg = RowSetFactory.empty();
+            for (final long[] sp : spans) {
+                final long b = sp[0] + rand.nextInt((int) sp[1]);
+                // several ranges inside the same block, ascending and disjoint
+                long cursor = b * BS + rand.nextInt(50);
+                final int pieces = 1 + rand.nextInt(4);
+                for (int k = 0; k < pieces && cursor < (b + 1) * BS - 2; ++k) {
+                    final long s = cursor + 1 + rand.nextInt(80);
+                    final long e = Math.min(s + rand.nextInt(40), (b + 1) * BS - 1);
+                    if (s > e) {
+                        break;
+                    }
+                    arg.insertRange(s, e);
+                    cursor = e + 1;
+                }
+            }
+            if (arg.isEmpty()) {
+                continue;
+            }
+            checkRemoveRanges(recv, arg);
+        }
+    }
+
     /** Randomized: full block spans of assorted lengths, removals clustered so several share a span. */
     @Test
     public void testRandomClusteredRemovals() {
