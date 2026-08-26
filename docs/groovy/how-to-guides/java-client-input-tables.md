@@ -88,8 +88,11 @@ public class DeviceStatusTracker {
                         runExample(flight, allocator);
                     } finally {
                         // Wait for session close before shutting down the channel
-                        flight.session().closeFuture().get(5, TimeUnit.SECONDS);
-                        flight.close();
+                        try {
+                            flight.session().closeFuture().get(5, TimeUnit.SECONDS);
+                        } finally {
+                            flight.close();
+                        }
                     }
                 } finally {
                     channel.shutdownNow();
