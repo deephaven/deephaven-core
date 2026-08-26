@@ -1968,8 +1968,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 dstIdx -= n;
                 srcIdx = position - 1;
             }
-            spanInfos[dstIdx] = pending.spanInfos[p];
-            spans[dstIdx] = pending.spans[p];
+            final Object pendingSpan = pending.spans[p];
+            if (pendingSpan instanceof Container) {
+                // Each queued span is placed once, so this is the one place worth normalizing its representation.
+                setContainerSpanRaw(spanInfos, spans, dstIdx, pending.spanInfos[p],
+                        maybeOptimize((Container) pendingSpan));
+            } else {
+                spanInfos[dstIdx] = pending.spanInfos[p];
+                spans[dstIdx] = pendingSpan;
+            }
             --dstIdx;
         }
         size += deltaSpans;
@@ -2122,6 +2129,55 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     /**
      * Replace the span at index i with the keys and spans from buf,
      */
+    /**
+     * Take {@code [start, end]} out of the span a split most recently queued, which must be what was left of block
+     * {@code blockKey}. Lets a caller working through ascending ranges come back to a block whose remainder is still
+     * queued rather than in our arrays, without having to settle the whole queue to reach it.
+     *
+     * <p>
+     * Only the last queued span is considered. Ranges arrive in ascending order and a split queues the pieces below the
+     * one it leaves in place, so the block a caller can return to is always the one queued last. The pieces a split
+     * queues are freshly built, never shared, so editing one in place cannot reach another rowset.
+     *
+     * @param pending the queued spans
+     * @param blockKey the block the range falls in
+     * @param start first key to remove, within that block
+     * @param end last key to remove, within that block
+     * @return whether that block's remainder was the span queued last, and the removal was applied to it. When it is
+     *         not, the block is not in the queue at all: either nothing of it survived the earlier range, or its
+     *         remainder went into the array rather than the queue, and an ordinary search finds it.
+     */
+    protected boolean removeFromLastPendingSpan(final PendingSpanInserts pending, final long blockKey,
+            final long start, final long end) {
+        final int last = pending.size() - 1;
+        final long spanInfo = pending.spanInfoAt(last);
+        final Object span = pending.spanAt(last);
+        if (span == null) {
+            final long value = spanInfoToSingletonSpanValue(spanInfo);
+            if (highBits(value) != blockKey) {
+                return false;
+            }
+            if (uLessOrEqual(start, value) && uLessOrEqual(value, end)) {
+                pending.dropLast();
+            }
+            return true;
+        }
+        if (isFullBlockSpan(span) || spanInfoToKey(spanInfo) != blockKey) {
+            return false;
+        }
+        final Container result = ((Container) span).iremove(lowBitsAsInt(start), lowBitsAsInt(end) + 1);
+        if (result.isEmpty()) {
+            pending.dropLast();
+        } else if (result.isSingleElement()) {
+            pending.setLast(blockKey | result.first(), null);
+        } else {
+            // Left as it is: a later range in this same block may edit it again, and the queued spans are optimized
+            // once each, where they are placed.
+            pending.setLast(blockKey, result);
+        }
+        return true;
+    }
+
     /**
      * Put the spans in {@code buf} where the span at index {@code i} is, without moving anything: the last of them
      * takes the slot and the rest are queued to be inserted before it. The batched counterpart of
@@ -3741,6 +3797,24 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             positions[i] = position;
         }
 
+        long spanInfoAt(final int i) {
+            return spanInfos[i];
+        }
+
+        Object spanAt(final int i) {
+            return spans[i];
+        }
+
+        void setLast(final long spanInfo, final Object span) {
+            spanInfos[size - 1] = spanInfo;
+            spans[size - 1] = span;
+        }
+
+        void dropLast() {
+            --size;
+            spans[size] = null;
+        }
+
         void clear() {
             // Whatever we were holding is in the array now; don't keep containers alive through this cache.
             java.util.Arrays.fill(spans, 0, size, null);
@@ -4527,24 +4601,30 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     public void removeRangesUnsafeNoWriteCheck(final RowSet.RangeIterator rit) {
         try {
             final WorkData wd = workDataPerThread.get();
-            MutableObject<SortedRanges> madeNullSpansMu = getWorkSortedRangesMutableObject(wd);
+            final MutableObject<SortedRanges> madeNullSpansMu = getWorkSortedRangesMutableObject(wd);
             final PendingSpanInserts pending = wd.getPendingSpanInserts();
             int i = 0;
             // Last block a range ended in, so we can tell when the next range comes back to it.
             long lastEndBlockKey = -1;
             while (rit.hasNext()) {
                 rit.next();
-                final long start = rit.currentRangeStart();
+                long start = rit.currentRangeStart();
                 final long end = rit.currentRangeEnd();
-                if (pending.size() > 0 && lastEndBlockKey != -1
-                        && uLessOrEqual(highBits(start), lastEndBlockKey)) {
-                    // This range comes back to a block an earlier one already took a bite out of. Splitting a full
-                    // block span leaves what is left of its last touched block queued rather than in our arrays, so
-                    // that block would not be found; settle everything queued before going on. Only the first range
-                    // to come back pays for this: afterwards the block is a container of ours, which needs no split.
-                    applyPendingSpanEdits(pending, madeNullSpansMu);
-                    madeNullSpansMu = getWorkSortedRangesMutableObject(wd);
-                    i = 0;
+                if (pending.size() > 0 && highBits(start) == lastEndBlockKey) {
+                    // This range comes back to the block an earlier one already took a bite out of. Splitting a full
+                    // block span leaves what is left of that block queued rather than in our arrays, so a search would
+                    // not find it -- but it is the span queued last, since ranges arrive in ascending order and a split
+                    // queues only the pieces below the one it leaves in place. So take this range out of it where it
+                    // sits, rather than settling the whole queue to reach it.
+                    final long blockLastKey = lastEndBlockKey + BLOCK_LAST;
+                    if (removeFromLastPendingSpan(pending, lastEndBlockKey, start, uMin(end, blockLastKey))) {
+                        if (uLessOrEqual(end, blockLastKey)) {
+                            lastEndBlockKey = highBits(end);
+                            continue;
+                        }
+                        // The rest of the range is past that block; our arrays hold those spans.
+                        start = nextKey(lastEndBlockKey);
+                    }
                 }
                 i = removeRange(i, start, end, madeNullSpansMu, pending, wd);
                 lastEndBlockKey = highBits(end);
