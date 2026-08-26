@@ -3,7 +3,7 @@ title: Packaging custom code and dependencies
 sidebar_label: Python packaging
 ---
 
-[Python packaging](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/) enables you to create distributable packages containing custom code, command-line tools, and managed dependencies. Deephaven's pip-installable packages integrate seamlessly with modern Python packaging tools, allowing you to build reusable libraries and executable scripts that leverage Deephaven's query engine. This guide walks through the concepts and patterns for packaging Deephaven-based Python projects.
+[Python packaging](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/) enables you to create distributable packages containing custom code, command-line tools, and managed dependencies. Deephaven's pip-installable packages integrate seamlessly with modern Python packaging tools, allowing you to build reusable libraries and executable scripts that leverage Deephaven's query engine. This guide walks through the concepts and patterns for packaging Deephaven-based Python projects. 
 
 Python packaging with [`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/) provides:
 
