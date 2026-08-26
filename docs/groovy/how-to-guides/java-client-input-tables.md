@@ -69,76 +69,80 @@ import java.util.concurrent.TimeUnit;
 public class DeviceStatusTracker {
 
     public static void main(String[] args) throws Exception {
-        // Connect to Deephaven server
+        // Each resource is wrapped so cleanup happens even if later initialization fails
         BufferAllocator allocator = new RootAllocator();
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
-        ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:10000")
-                .usePlaintext()
-                .build();
-
-        FlightSession flight = DaggerDeephavenFlightRoot.create().factoryBuilder()
-                .managedChannel(channel)
-                .scheduler(scheduler)
-                .allocator(allocator)
-                .build()
-                .newFlightSession();
-
         try {
-            // Define schema with column headers
-            ColumnHeader<String> deviceIdCol = ColumnHeader.ofString("DeviceId");
-            ColumnHeader<String> statusCol = ColumnHeader.ofString("Status");
-            ColumnHeader<Instant> lastSeenCol = ColumnHeader.ofInstant("LastSeen");
-
-            TableHeader header = TableHeader.of(deviceIdCol, statusCol, lastSeenCol);
-
-            // Create a keyed input table - DeviceId is the key
-            // Adding a row with an existing DeviceId updates that row
-            TableSpec inputTableSpec = InMemoryKeyBackedInputTable.of(
-                    header, java.util.List.of("DeviceId"));
-
-            // Use try-with-resources to ensure handle is closed even if publish() fails
-            ScopeId scopeId;
-            try (TableHandle inputTableHandle = flight.session().execute(inputTableSpec)) {
-                // Publish so it's visible in the UI (check http://localhost:10000)
-                flight.session().publish("device_status", inputTableHandle).get(5, TimeUnit.SECONDS);
-                // Handle closes here - the server-side table persists via the query scope
-                scopeId = new ScopeId("device_status");
-            }
-
-            // Add initial devices
-            updateDevice(flight, scopeId, allocator, deviceIdCol, statusCol, lastSeenCol,
-                    "sensor-001", "online");
-            updateDevice(flight, scopeId, allocator, deviceIdCol, statusCol, lastSeenCol,
-                    "sensor-002", "online");
-            updateDevice(flight, scopeId, allocator, deviceIdCol, statusCol, lastSeenCol,
-                    "sensor-003", "offline");
-
-            // Update sensor-001's status (replaces the previous row)
-            updateDevice(flight, scopeId, allocator, deviceIdCol, statusCol, lastSeenCol,
-                    "sensor-001", "maintenance");
-
-            // Delete sensor-003
-            NewTable keysToDelete = deviceIdCol.row("sensor-003").newTable();
-            flight.deleteFromInputTable(scopeId, keysToDelete, allocator)
-                    .get(5, TimeUnit.SECONDS);
-
-            System.out.println("Device status table updated.");
-
-        } finally {
+            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
             try {
-                flight.close();
-            } finally {
+                ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:10000")
+                        .usePlaintext()
+                        .build();
                 try {
-                    channel.shutdownNow();
-                } finally {
+                    FlightSession flight = DaggerDeephavenFlightRoot.create().factoryBuilder()
+                            .managedChannel(channel)
+                            .scheduler(scheduler)
+                            .allocator(allocator)
+                            .build()
+                            .newFlightSession();
                     try {
-                        scheduler.shutdownNow();
+                        runExample(flight, allocator);
                     } finally {
-                        allocator.close();
+                        // Wait for session close before shutting down the channel
+                        flight.session().closeFuture().get(5, TimeUnit.SECONDS);
+                        flight.close();
                     }
+                } finally {
+                    channel.shutdownNow();
                 }
+            } finally {
+                scheduler.shutdownNow();
             }
+        } finally {
+            allocator.close();
         }
+    }
+
+    private static void runExample(FlightSession flight, BufferAllocator allocator)
+            throws Exception {
+        // Define schema with column headers
+        ColumnHeader<String> deviceIdCol = ColumnHeader.ofString("DeviceId");
+        ColumnHeader<String> statusCol = ColumnHeader.ofString("Status");
+        ColumnHeader<Instant> lastSeenCol = ColumnHeader.ofInstant("LastSeen");
+
+        TableHeader header = TableHeader.of(deviceIdCol, statusCol, lastSeenCol);
+
+        // Create a keyed input table - DeviceId is the key
+        // Adding a row with an existing DeviceId updates that row
+        TableSpec inputTableSpec = InMemoryKeyBackedInputTable.of(
+                header, java.util.List.of("DeviceId"));
+
+        // Use try-with-resources to ensure handle is closed even if publish() fails
+        ScopeId scopeId;
+        try (TableHandle inputTableHandle = flight.session().execute(inputTableSpec)) {
+            // Publish so it's visible in the UI (check http://localhost:10000)
+            flight.session().publish("device_status", inputTableHandle).get(5, TimeUnit.SECONDS);
+            // Handle closes here - the server-side table persists via the query scope
+            scopeId = new ScopeId("device_status");
+        }
+
+        // Add initial devices
+        updateDevice(flight, scopeId, allocator, deviceIdCol, statusCol, lastSeenCol,
+                "sensor-001", "online");
+        updateDevice(flight, scopeId, allocator, deviceIdCol, statusCol, lastSeenCol,
+                "sensor-002", "online");
+        updateDevice(flight, scopeId, allocator, deviceIdCol, statusCol, lastSeenCol,
+                "sensor-003", "offline");
+
+        // Update sensor-001's status (replaces the previous row)
+        updateDevice(flight, scopeId, allocator, deviceIdCol, statusCol, lastSeenCol,
+                "sensor-001", "maintenance");
+
+        // Delete sensor-003
+        NewTable keysToDelete = deviceIdCol.row("sensor-003").newTable();
+        flight.deleteFromInputTable(scopeId, keysToDelete, allocator)
+                .get(5, TimeUnit.SECONDS);
+
+        System.out.println("Device status table updated.");
     }
 
     private static void updateDevice(
