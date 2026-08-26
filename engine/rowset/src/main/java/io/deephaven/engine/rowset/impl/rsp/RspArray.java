@@ -3477,8 +3477,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     setFullBlockSpan(idxEnd, nextKey, newflen);
                     src = idxEnd;
                 } else {
-                    insertFullBlockSpanAtIndex(dst, nextKey, newflen);
-                    src = dst;
+                    // Both halves of one span of ours survive, so the second needs a slot of its own. It takes this
+                    // one and the first half is queued to be inserted before it, which costs no shifting: other's keys
+                    // only go up, so the second half is the one a later span of other can come back to.
+                    pending.pushFullBlockSpan(idxBegin, keyAtIdxBegin,
+                            distanceInBlocks(keyAtIdxBegin, removeKey));
+                    setFullBlockSpan(idxBegin, nextKey, newflen);
+                    src = dst = idxBegin;
                 }
             }
             if (dst < src) {

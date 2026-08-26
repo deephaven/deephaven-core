@@ -199,6 +199,90 @@ public class RspBitmapSplitBatchingTest {
         }
     }
 
+    /** A whole block removed from the middle of a bigger full block span: both halves survive. */
+    @Test
+    public void testFullBlockSpanRemovedFromMiddle() {
+        final RspBitmap recv = fullBlockSpans(3, 5, 8);
+        RspBitmap arg = RspBitmap.makeEmpty();
+        arg = arg.appendRangeUnsafe(2 * BS, 3 * BS - 1); // all of block 2 of the first span
+        arg.finishMutations();
+        checkAndNot(recv, arg);
+    }
+
+    /**
+     * Two whole-block removals from the SAME original full block span. The second has to find the half the first left
+     * behind.
+     */
+    @Test
+    public void testTwoFullBlockSpansRemovedFromOneSpan() {
+        final RspBitmap recv = fullBlockSpans(2, 7, 10);
+        RspBitmap arg = RspBitmap.makeEmpty();
+        arg = arg.appendRangeUnsafe(1 * BS, 2 * BS - 1); // block 1
+        arg = arg.appendRangeUnsafe(4 * BS, 5 * BS - 1); // block 4, same original span
+        arg.finishMutations();
+        checkAndNot(recv, arg);
+    }
+
+    /** Whole-block removals at the very start and very end of a span, where only one half survives. */
+    @Test
+    public void testFullBlockSpanRemovedAtEnds() {
+        final RspBitmap recv = fullBlockSpans(2, 4, 8);
+        RspBitmap arg = RspBitmap.makeEmpty();
+        arg = arg.appendRangeUnsafe(0, 1 * BS - 1); // first block of span one
+        arg = arg.appendRangeUnsafe(11 * BS, 12 * BS - 1); // last block of span two
+        arg.finishMutations();
+        checkAndNot(recv, arg);
+    }
+
+    /** A multi-block removal covering the tail of one span and the head of the next. */
+    @Test
+    public void testFullBlockSpanRemovalAcrossTwoSpans() {
+        RspBitmap recv = RspBitmap.makeEmpty();
+        recv = recv.appendRangeUnsafe(0, 4L * BS - 1); // blocks 0..3
+        recv = recv.appendRangeUnsafe(4L * BS, 9L * BS - 1); // blocks 4..8, adjacent so one span
+        recv = recv.appendRangeUnsafe(12L * BS, 16L * BS - 1);
+        recv.finishMutations();
+        RspBitmap arg = RspBitmap.makeEmpty();
+        arg = arg.appendRangeUnsafe(2L * BS, 6L * BS - 1); // blocks 2..5
+        arg.finishMutations();
+        checkAndNot(recv, arg);
+    }
+
+    /** Randomized whole-block removals, several per original span. */
+    @Test
+    public void testRandomFullBlockSpanRemovals() {
+        final Random rand = new Random(99887);
+        for (int trial = 0; trial < 200; ++trial) {
+            RspBitmap recv = RspBitmap.makeEmpty();
+            long block = 0;
+            final List<long[]> spans = new ArrayList<>();
+            for (int i = 0; i < 8; ++i) {
+                final int blocks = 2 + rand.nextInt(6);
+                recv = recv.appendRangeUnsafe(block * BS, (block + blocks) * BS - 1);
+                spans.add(new long[] {block, blocks});
+                block += blocks + 1 + rand.nextInt(2);
+            }
+            recv.finishMutations();
+
+            final TreeSet<Long> removeBlocks = new TreeSet<>();
+            for (final long[] sp : spans) {
+                final int howMany = rand.nextInt(3);
+                for (int k = 0; k < howMany; ++k) {
+                    removeBlocks.add(sp[0] + rand.nextInt((int) sp[1]));
+                }
+            }
+            if (removeBlocks.isEmpty()) {
+                continue;
+            }
+            RspBitmap arg = RspBitmap.makeEmpty();
+            for (final long b : removeBlocks) {
+                arg = arg.appendRangeUnsafe(b * BS, (b + 1) * BS - 1);
+            }
+            arg.finishMutations();
+            checkAndNot(recv, arg);
+        }
+    }
+
     /** Randomized: full block spans of assorted lengths, removals clustered so several share a span. */
     @Test
     public void testRandomClusteredRemovals() {
