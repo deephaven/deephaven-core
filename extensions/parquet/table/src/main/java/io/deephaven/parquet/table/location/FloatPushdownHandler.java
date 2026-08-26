@@ -11,8 +11,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
-
 final class FloatPushdownHandler {
 
     /**
@@ -66,11 +64,15 @@ final class FloatPushdownHandler {
     static boolean maybeOverlaps(
             @NotNull final MatchFilter matchFilter,
             @NotNull final Statistics<?> statistics) {
+        if (matchFilter.getMatchOptions().inverted()) {
+            // NaN satisfies any inverted match, and the statistics cannot prove its absence: conforming writers
+            // omit NaN from min/max. Absent that proof, the row group cannot be excluded.
+            return true;
+        }
         final Object[] values = matchFilter.getValues();
-        final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
             // No values to check against
-            return invertMatch;
+            return false;
         }
         // Skip pushdown-based filtering for nulls and NaNs to err on the safer side instead of adding more complex
         // handling logic.
@@ -87,10 +89,7 @@ final class FloatPushdownHandler {
             // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
             return true;
         }
-        if (!invertMatch) {
-            return maybeMatches(mutableMin.get(), mutableMax.get(), unboxedValues);
-        }
-        return maybeMatchesInverse(mutableMin.get(), mutableMax.get(), unboxedValues);
+        return maybeMatches(mutableMin.get(), mutableMax.get(), unboxedValues);
     }
 
     /**
@@ -106,33 +105,5 @@ final class FloatPushdownHandler {
             }
         }
         return false;
-    }
-
-    /**
-     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array. This
-     * is done by checking whether {@code [min, max]} overlaps with every open gap produced by excluding the given
-     * values. For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
-     *
-     * <pre>
-     * [..., v_0), (v_0, v_1), . . , (v_n-2, v_n-1), (v_n-1, ...]
-     * </pre>
-     * 
-     * where {@code ...} represents the extreme ends of the range.
-     */
-    private static boolean maybeMatchesInverse(
-            final float min,
-            final float max,
-            @NotNull final float[] values) {
-        Arrays.sort(values);
-        if (min < values[0]) {
-            return true;
-        }
-        final int numValues = values.length;
-        for (int i = 0; i < numValues - 1; i++) {
-            if (maybeOverlapsRangeImpl(min, max, values[i], false, values[i + 1], false)) {
-                return true;
-            }
-        }
-        return max > values[numValues - 1];
     }
 }

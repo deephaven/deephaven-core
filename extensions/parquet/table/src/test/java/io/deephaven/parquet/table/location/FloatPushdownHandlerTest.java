@@ -149,8 +149,8 @@ public class FloatPushdownHandlerTest {
                 new MatchFilter(MatchOptions.INVERTED, "f", -1f, 0f, 1f),
                 floatStats(-5f, 5f)));
 
-        // stats fully covered by exclusion list
-        assertFalse(FloatPushdownHandler.maybeOverlaps(
+        // Fully covered by the exclusion list, but still not excludable: the statistics cannot rule out a NaN.
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchOptions.INVERTED, "f", 42f),
                 floatStats(42f, 42f)));
 
@@ -191,5 +191,21 @@ public class FloatPushdownHandlerTest {
         assertTrue(FloatPushdownHandler.maybeOverlaps(
                 new MatchFilter(MatchOptions.INVERTED, "i", 5, nextAfterFive),
                 floatStats(5.0f, nextAfterFive)));
+    }
+
+    /**
+     * {@code {min=1.0, max=1.0}} is what a conforming writer emits for both {@code {1.0}} and {@code {1.0, NaN}}, so it
+     * cannot rule out a NaN, and a NaN would satisfy the inverted match.
+     */
+    @Test
+    public void floatInvertedMatchCannotExcludeInvisibleNaN() {
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchOptions.INVERTED, "f", 1.0f),
+                floatStats(1.0f, 1.0f)));
+
+        // A regular match over the same statistics is unaffected: NaN never equals a non-NaN value.
+        assertFalse(FloatPushdownHandler.maybeOverlaps(
+                new MatchFilter(MatchOptions.REGULAR, "f", 2.0f),
+                floatStats(1.0f, 1.0f)));
     }
 }

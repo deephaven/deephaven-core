@@ -1299,6 +1299,45 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "X == 10");
     }
 
+    /**
+     * A spec-conforming writer omits NaN when computing min/max, so a row group holding a NaN is indistinguishable from
+     * one that does not. Deephaven orders NaN above every other float and an inverted match accepts it
+     * ({@code NaN != 1.0} is true), so excluding such a row group on the strength of its statistics drops the NaN row.
+     * <p>
+     * Deephaven's own writer is immune: it writes NaN <i>into</i> min/max, which the read-side statistics builder then
+     * rejects, disabling statistics pushdown for the column (see {@code MinMaxFromStatisticsTest.testStatisticsWithNaN}
+     * and {@code TODO (DH-10771)}). An external writer is therefore required to reach this, which is why the fixture is
+     * checked in rather than written by the test. It was produced once with pyarrow 25.0.1 (recorded in the file as
+     * {@code parquet-cpp-arrow version 25.0.1}):
+     *
+     * <pre>
+     * import pyarrow as pa, pyarrow.parquet as pq
+     * table = pa.table({"F": pa.array([1.0, float("nan")], type=pa.float32())})
+     * pq.write_table(table, "ReferenceParquetExternalNaNStats.parquet", version="2.6", compression="none")
+     * # statistics read back as: has_min_max=True min=1.0 max=1.0 null_count=0
+     * </pre>
+     */
+    @Test
+    public void nanRowsSurviveInvertedMatchStatisticsPushdown() {
+        final String path =
+                ParquetTableFilterTest.class.getResource("/ReferenceParquetExternalNaNStats.parquet").getFile();
+        final Table diskTable = readTable(path);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+        assertEquals("fixture holds one NaN row", 1, memTable.where("isNaN(F)").size());
+
+        // The NaN row matches, and the statistics {min=1.0, max=1.0} give no hint that it exists.
+        filterAndVerifyResults(diskTable, memTable, "F != 1.0");
+        filterAndVerifyResults(diskTable, memTable, "F not in 1.0, 3.0");
+
+        // Shapes that NaN cannot match are unaffected. A regular match never matches NaN, and every range filter
+        // Deephaven builds is bounded by MAX_FLOAT, which NaN sorts above.
+        filterAndVerifyResults(diskTable, memTable, "F == 1.0");
+        filterAndVerifyResults(diskTable, memTable, "F > 0.5");
+        filterAndVerifyResults(diskTable, memTable, "F < 2.0");
+    }
+
     @Test
     public void filterArrayColumnsTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_filterArrayColumnsTest.parquet").toString();
