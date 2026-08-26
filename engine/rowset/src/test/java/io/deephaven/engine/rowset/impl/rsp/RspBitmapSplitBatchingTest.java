@@ -25,43 +25,90 @@ public class RspBitmapSplitBatchingTest {
 
     private static final long BS = BLOCK_SIZE;
 
-    private static TreeSet<Long> keysOf(final RspBitmap rb) {
-        final TreeSet<Long> keys = new TreeSet<>();
-        rb.forEachLong(v -> {
-            keys.add(v);
+    private static List<long[]> rangesOf(final RspBitmap rb) {
+        final List<long[]> out = new ArrayList<>();
+        rb.forEachLongRange((s, e) -> {
+            out.add(new long[] {s, e});
             return true;
         });
-        return keys;
+        return out;
     }
 
-    private static void assertKeysAre(final TreeSet<Long> expected, final RspBitmap actual) {
-        final List<Long> got = new ArrayList<>();
-        actual.forEachLong(v -> {
-            got.add(v);
+    private static List<long[]> rangesOf(final RowSet rs) {
+        final List<long[]> out = new ArrayList<>();
+        rs.forEachRowKeyRange((s, e) -> {
+            out.add(new long[] {s, e});
             return true;
         });
-        assertEquals(new ArrayList<>(expected), got);
+        return out;
     }
 
-    /** andNot the argument out of the receiver, checking the key set and our structural invariants. */
+    /**
+     * {@code from} minus {@code remove}, by interval arithmetic on the ranges themselves. Deliberately not built from
+     * the key sets: a block is 65536 keys, so enumerating them would cost millions of boxed longs per trial, and this
+     * stays independent of the code under test either way. Both arguments must be ascending and disjoint.
+     */
+    private static List<long[]> minusRanges(final List<long[]> from, final List<long[]> remove) {
+        final List<long[]> out = new ArrayList<>();
+        for (final long[] r : from) {
+            long start = r[0];
+            final long end = r[1];
+            for (final long[] x : remove) {
+                if (x[1] < start) {
+                    continue;
+                }
+                if (x[0] > end) {
+                    break;
+                }
+                if (x[0] > start) {
+                    out.add(new long[] {start, Math.min(x[0] - 1, end)});
+                }
+                start = Math.max(start, x[1] + 1);
+                if (start > end) {
+                    break;
+                }
+            }
+            if (start <= end) {
+                out.add(new long[] {start, end});
+            }
+        }
+        return out;
+    }
+
+    private static String render(final List<long[]> ranges) {
+        final StringBuilder sb = new StringBuilder();
+        for (final long[] r : ranges) {
+            sb.append(r[0]).append('-').append(r[1]).append(' ');
+        }
+        return sb.toString();
+    }
+
+    private static void assertRangesAre(final List<long[]> expected, final RspBitmap actual) {
+        assertEquals(render(expected), render(rangesOf(actual)));
+        long card = 0;
+        for (final long[] r : expected) {
+            card += r[1] - r[0] + 1;
+        }
+        assertEquals("cardinality", card, actual.getCardinality());
+    }
+
+    /** andNot the argument out of the receiver, checking the ranges and our structural invariants. */
     private static void checkAndNot(final RspBitmap receiver, final RspBitmap arg) {
-        final TreeSet<Long> expected = keysOf(receiver);
-        expected.removeAll(keysOf(arg));
+        final List<long[]> expected = minusRanges(rangesOf(receiver), rangesOf(arg));
         final RspBitmap w = receiver.writeCheck();
         w.andNotEqualsUnsafeNoWriteCheck(arg);
         w.finishMutations();
         w.validate("after andNot");
-        assertKeysAre(expected, w);
+        assertRangesAre(expected, w);
     }
 
     private static void checkRemoveRanges(final RspBitmap receiver, final WritableRowSet arg) {
-        final TreeSet<Long> expected = keysOf(receiver);
-        arg.forAllRowKeys(expected::remove);
+        final List<long[]> expected = minusRanges(rangesOf(receiver), rangesOf(arg));
         final RspBitmap w = receiver.writeCheck();
         w.removeRangesUnsafeNoWriteCheck(arg.rangeIterator());
         w.finishMutations();
         w.validate("after removeRanges");
-        assertKeysAre(expected, w);
+        assertRangesAre(expected, w);
     }
 
     private static RspBitmap fullBlockSpans(final int count, final int blocksEach, final int stride) {
@@ -164,7 +211,7 @@ public class RspBitmapSplitBatchingTest {
     @Test
     public void testRandomRemoveRangesClusteredInBlocks() {
         final Random rand = new Random(4231);
-        for (int trial = 0; trial < 200; ++trial) {
+        for (int trial = 0; trial < 5000; ++trial) {
             RspBitmap recv = RspBitmap.makeEmpty();
             long block = 0;
             final List<long[]> spans = new ArrayList<>();
@@ -234,16 +281,20 @@ public class RspBitmapSplitBatchingTest {
         checkAndNot(recv, arg);
     }
 
-    /** A multi-block removal covering the tail of one span and the head of the next. */
+    /** A multi-block removal covering the tail of one span, a gap, and the head of the next. */
     @Test
     public void testFullBlockSpanRemovalAcrossTwoSpans() {
         RspBitmap recv = RspBitmap.makeEmpty();
         recv = recv.appendRangeUnsafe(0, 4L * BS - 1); // blocks 0..3
-        recv = recv.appendRangeUnsafe(4L * BS, 9L * BS - 1); // blocks 4..8, adjacent so one span
+        // Block 4 is deliberately left empty: adjacent full block spans are merged into one, so without a gap here
+        // the two ranges below would be a single span and the removal would never reach more than one of ours.
+        recv = recv.appendRangeUnsafe(5L * BS, 9L * BS - 1); // blocks 5..8
         recv = recv.appendRangeUnsafe(12L * BS, 16L * BS - 1);
         recv.finishMutations();
+        assertEquals("receiver must hold three distinct spans", 3, recv.size());
         RspBitmap arg = RspBitmap.makeEmpty();
-        arg = arg.appendRangeUnsafe(2L * BS, 6L * BS - 1); // blocks 2..5
+        arg = arg.appendRangeUnsafe(2L * BS, 7L * BS - 1); // blocks 2..6: our first span's tail, the gap, the second's
+                                                           // head
         arg.finishMutations();
         checkAndNot(recv, arg);
     }
@@ -252,7 +303,7 @@ public class RspBitmapSplitBatchingTest {
     @Test
     public void testRandomFullBlockSpanRemovals() {
         final Random rand = new Random(99887);
-        for (int trial = 0; trial < 200; ++trial) {
+        for (int trial = 0; trial < 5000; ++trial) {
             RspBitmap recv = RspBitmap.makeEmpty();
             long block = 0;
             final List<long[]> spans = new ArrayList<>();
@@ -287,7 +338,7 @@ public class RspBitmapSplitBatchingTest {
     @Test
     public void testRandomClusteredRemovals() {
         final Random rand = new Random(23407);
-        for (int trial = 0; trial < 300; ++trial) {
+        for (int trial = 0; trial < 5000; ++trial) {
             RspBitmap recv = RspBitmap.makeEmpty();
             long block = 0;
             final List<long[]> spans = new ArrayList<>();
@@ -300,17 +351,17 @@ public class RspBitmapSplitBatchingTest {
             }
             recv.finishMutations();
 
-            final TreeSet<Long> toRemove = new TreeSet<>();
+            // Ranges, not keys: an entire block is one range rather than 65536 appends.
+            final java.util.TreeMap<Long, Long> toRemove = new java.util.TreeMap<>();
             for (final long[] sp : spans) {
                 final int removals = rand.nextInt(4);
                 for (int r = 0; r < removals; ++r) {
                     final long b = sp[0] + rand.nextInt((int) sp[1]);
                     if (rand.nextInt(4) == 0) {
-                        for (long v = b * BS; v < (b + 1) * BS; ++v) {
-                            toRemove.add(v); // an entire block
-                        }
+                        toRemove.put(b * BS, (b + 1) * BS - 1); // an entire block
                     } else {
-                        toRemove.add(b * BS + rand.nextInt((int) BS));
+                        final long v = b * BS + rand.nextInt((int) BS);
+                        toRemove.putIfAbsent(v, v);
                     }
                 }
             }
@@ -318,8 +369,13 @@ public class RspBitmapSplitBatchingTest {
                 continue;
             }
             RspBitmap arg = RspBitmap.makeEmpty();
-            for (final long v : toRemove) {
-                arg = arg.appendUnsafe(v);
+            long prevEnd = -2;
+            for (final java.util.Map.Entry<Long, Long> e : toRemove.entrySet()) {
+                if (e.getKey() <= prevEnd) {
+                    continue; // subsumed by a whole-block range already appended
+                }
+                arg = arg.appendRangeUnsafe(Math.max(e.getKey(), prevEnd + 1), e.getValue());
+                prevEnd = e.getValue();
             }
             arg.finishMutations();
             checkAndNot(recv, arg);
