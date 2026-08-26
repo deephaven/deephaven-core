@@ -38,9 +38,6 @@ import pyarrow as pa
 from pydeephaven import Session
 from datetime import datetime, timezone
 
-# Connect to Deephaven server (localhost:10000 is the default)
-session = Session()
-
 # Define schema for device status
 schema = pa.schema(
     [
@@ -50,68 +47,69 @@ schema = pa.schema(
     ]
 )
 
-# Create a keyed input table - DeviceId is the key
-# Adding a row with an existing DeviceId updates that row
-input_table = session.input_table(schema=schema, key_cols="DeviceId")
+# Use context manager to ensure session is closed on success or failure
+with Session() as session:
+    # Create a keyed input table - DeviceId is the key
+    # Adding a row with an existing DeviceId updates that row
+    input_table = session.input_table(schema=schema, key_cols="DeviceId")
 
-# Bind to a name so it's visible in the UI (check http://localhost:10000)
-session.bind_table("device_status", input_table)
+    # Bind to a name so it's visible in the UI (check http://localhost:10000)
+    session.bind_table("device_status", input_table)
 
+    def update_device(device_id: str, status: str):
+        """Add or update a device's status."""
+        pa_table = pa.table(
+            {
+                "DeviceId": [device_id],
+                "Status": [status],
+                "LastSeen": pa.array(
+                    [datetime.now(timezone.utc)], type=pa.timestamp("ns", tz="UTC")
+                ),
+            }
+        )
 
-def update_device(device_id: str, status: str):
-    """Add or update a device's status."""
-    pa_table = pa.table(
-        {
-            "DeviceId": [device_id],
-            "Status": [status],
-            "LastSeen": pa.array(
-                [datetime.now(timezone.utc)], type=pa.timestamp("ns", tz="UTC")
-            ),
-        }
-    )
+        uploaded = session.import_table(pa_table)
+        try:
+            input_table.add(uploaded)  # Inserts or updates based on DeviceId
+        finally:
+            session.release(uploaded.ticket)
 
-    uploaded = session.import_table(pa_table)
-    input_table.add(uploaded)  # Inserts or updates based on DeviceId
-    session.release(uploaded.ticket)
+    def remove_device(device_id: str):
+        """Remove a device from the table."""
+        keys = pa.table({"DeviceId": [device_id]})
+        uploaded = session.import_table(keys)
+        try:
+            input_table.delete(uploaded)
+        finally:
+            session.release(uploaded.ticket)
 
+    # Example usage
+    update_device("sensor-001", "online")
+    update_device("sensor-002", "online")
+    update_device("sensor-003", "offline")
 
-def remove_device(device_id: str):
-    """Remove a device from the table."""
-    keys = pa.table({"DeviceId": [device_id]})
-    uploaded = session.import_table(keys)
-    input_table.delete(uploaded)
-    session.release(uploaded.ticket)
+    # Update sensor-001's status (replaces the previous row)
+    update_device("sensor-001", "maintenance")
 
-
-# Example usage
-update_device("sensor-001", "online")
-update_device("sensor-002", "online")
-update_device("sensor-003", "offline")
-
-# Update sensor-001's status (replaces the previous row)
-update_device("sensor-001", "maintenance")
-
-# Remove sensor-003
-remove_device("sensor-003")
-
-session.close()
+    # Remove sensor-003
+    remove_device("sensor-003")
 ```
 
 ## Memory management
 
 Each call to `import_table` creates a temporary table on the server. If you don't release these tables, they accumulate and consume server memory.
 
-**Always call `session.release(table.ticket)` after adding data to the input table.**
+**Always call `session.release(table.ticket)` after adding data to the input table.** Use `try`/`finally` to ensure cleanup even if the add fails:
 
 ```python skip-test
 # Upload data
 uploaded = session.import_table(pa_table)
-
-# Add to input table
-input_table.add(uploaded)
-
-# Release the temporary table
-session.release(uploaded.ticket)
+try:
+    # Add to input table
+    input_table.add(uploaded)
+finally:
+    # Release the temporary table (even on failure)
+    session.release(uploaded.ticket)
 ```
 
 ## Input table types
@@ -136,8 +134,10 @@ With keyed tables, you can delete rows by providing just the key values:
 # Delete rows by key
 keys_to_delete = pa.table({"DeviceId": ["sensor-001", "sensor-003"]})
 uploaded_keys = session.import_table(keys_to_delete)
-input_table.delete(uploaded_keys)
-session.release(uploaded_keys.ticket)
+try:
+    input_table.delete(uploaded_keys)
+finally:
+    session.release(uploaded_keys.ticket)
 ```
 
 ### Append-only
@@ -178,8 +178,10 @@ batch_data = {
 # Upload entire batch at once
 pa_table = pa.table(batch_data, schema=schema)
 uploaded = session.import_table(pa_table)
-input_table.add(uploaded)
-session.release(uploaded.ticket)
+try:
+    input_table.add(uploaded)
+finally:
+    session.release(uploaded.ticket)
 ```
 
 ## Related documentation

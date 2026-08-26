@@ -222,8 +222,10 @@ client_session.bind_table("prices", input_table)
 # Stream data: create Arrow table, upload, add, release
 data = pa.table({"Symbol": ["AAPL", "GOOG"], "Price": [150.0, 140.0]})
 uploaded = client_session.import_table(data)
-input_table.add(uploaded)
-client_session.release(uploaded.ticket)  # Prevent memory leak
+try:
+    input_table.add(uploaded)
+finally:
+    client_session.release(uploaded.ticket)  # Prevent memory leak
 ```
 
 For a complete guide on streaming patterns, memory management, and input table types, see [Client input tables](../how-to-guides/client-input-tables.md).

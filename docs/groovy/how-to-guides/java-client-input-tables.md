@@ -125,10 +125,19 @@ public class DeviceStatusTracker {
             System.out.println("Device status table updated.");
 
         } finally {
-            flight.close();
-            channel.shutdownNow();
-            scheduler.shutdownNow();
-            allocator.close();
+            try {
+                flight.close();
+            } finally {
+                try {
+                    channel.shutdownNow();
+                } finally {
+                    try {
+                        scheduler.shutdownNow();
+                    } finally {
+                        allocator.close();
+                    }
+                }
+            }
         }
     }
 
