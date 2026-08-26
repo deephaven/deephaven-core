@@ -59,6 +59,7 @@ import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.parquet.table.ParquetTools.*;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -1229,6 +1230,73 @@ public final class ParquetTableFilterTest {
 
         final Table expected = TableTools.newTable(TableTools.col("animal", "Dog", "Cat", "Horse", "Horse"));
         assertTableEquals(memTable, expected);
+    }
+
+    /**
+     * Parquet {@code min}/{@code max} statistics summarize non-null values only, so null rows are invisible to every
+     * statistics handler. An inverted match matches nulls engine-side, so it must never exclude a row group on the
+     * strength of those statistics alone, or the null rows are silently dropped.
+     */
+    @Test
+    public void nullRowsSurviveInvertedMatchStatisticsPushdown() {
+        {
+            // Engine-side {@code NULL_INT != 5} is true, but the row group statistics are {min=5, max=5} and leave the
+            // handler no room for a non-matching value.
+            final String destPath = Path.of(rootFile.getPath(), "invertedMatchWithNullInt.parquet").toString();
+            writeTable(newTable(intCol("X", 5, NULL_INT)), destPath);
+            final Table diskTable = readTable(destPath);
+            final Table memTable = diskTable.select();
+
+            filterAndVerifyResults(diskTable, memTable, "X != 5");
+        }
+
+        {
+            // The same shape on a String column, where the values also reach the dictionary path.
+            final String destPath = Path.of(rootFile.getPath(), "invertedMatchWithNullString.parquet").toString();
+            writeTable(newTable(stringCol("Status", "OK", "OK", null)), destPath);
+            final Table diskTable = readTable(destPath);
+            final Table memTable = diskTable.select();
+
+            filterAndVerifyResults(diskTable, memTable, "Status != `OK`");
+        }
+    }
+
+    /**
+     * A null-matching range filter must also preserve null rows. {@code X < 5} is encoded as {@code [NULL_INT, 5)} and
+     * Deephaven orders null below every value, so it matches the null row, while statistics of {@code {min=10, max=10}}
+     * carry no evidence that the row exists.
+     * <p>
+     * Unlike the inverted match above, this was already correct before the null guard: each range handler bails out
+     * when either bound is the null sentinel (e.g. {@code IntPushdownHandler.maybeOverlaps}), so the interval test is
+     * never reached. That bail-out is per-handler and carries a {@code TODO (DH-19666): Improve handling of nulls},
+     * which is exactly the kind of local convention a future tightening could drop; this test pins the behaviour at the
+     * level a user observes it.
+     */
+    @Test
+    public void nullRowsSurviveRangeFilterStatisticsPushdown() {
+        final String destPath = Path.of(rootFile.getPath(), "rangeWithNullInt.parquet").toString();
+        writeTable(newTable(intCol("X", 10, NULL_INT)), destPath);
+        final Table diskTable = readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable, "X < 5");
+        filterAndVerifyResults(diskTable, memTable, "X <= 5");
+    }
+
+    /**
+     * The converse of the two tests above: filters that cannot match null are unaffected by the null guard and still
+     * produce correct results against a row group that contains nulls. Note that this asserts results, not pruning --
+     * the guard's cost, if it were ever over-applied, would show up as lost pruning rather than wrong rows.
+     */
+    @Test
+    public void nullExcludingFiltersOverNullableColumn() {
+        final String destPath = Path.of(rootFile.getPath(), "nullExcludingFilters.parquet").toString();
+        writeTable(newTable(intCol("X", 10, NULL_INT)), destPath);
+        final Table diskTable = readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable, "X > 5");
+        filterAndVerifyResults(diskTable, memTable, "X == 10");
     }
 
     @Test

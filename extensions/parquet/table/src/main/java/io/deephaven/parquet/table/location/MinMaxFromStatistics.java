@@ -61,6 +61,11 @@ import java.util.function.LongConsumer;
  * This class assumes that the statistics provided are valid and {@link ParquetPushdownUtils#areStatisticsUsable
  * usable}.
  * <p>
+ * The extracted min/max values describe the <i>non-null</i> values in a row group; parquet statistics never fold nulls
+ * into them. Nothing here, and nothing in the handlers built on top of it, can therefore see a row group's null rows.
+ * Callers that need to account for nulls must consult the null count separately, via
+ * {@link ParquetPushdownUtils#isKnownFreeOfNulls}.
+ * <p>
  * The general structure is that based on the type requested by user, we first try to extract the min/max values from
  * the logical type, and if that fails, we try to extract them from the primitive type. If both fail, we return
  * {@code false}.

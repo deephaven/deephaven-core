@@ -662,8 +662,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
 
         if (action == ROW_GROUP_METADATA) {
-            return pushdownRowGroupMetadata(selection, filterCtx.filterForMetadataFiltering(), actionCtx.columnIndices,
-                    input);
+            return pushdownRowGroupMetadata(selection, filterCtx, actionCtx, input);
         }
         if (action == IN_MEMORY_DATA_INDEX) {
             final BasicDataIndex dataIndex =
@@ -855,14 +854,27 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     private PushdownResult pushdownRowGroupMetadata(
             final RowSet selection,
-            final WhereFilter filter,
-            final List<Integer> columnIndices,
+            final RegionedPushdownFilterContext ctx,
+            final ActionContext actionCtx,
             final PushdownResult result) {
+        final WhereFilter filter = ctx.filterForMetadataFiltering();
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
         // Only one column in these filters
-        final Integer columnIndex = columnIndices.get(0);
+        final Integer columnIndex = actionCtx.columnIndices.get(0);
+
+        // Parquet min/max statistics summarize non-null values only, so null rows are invisible to every handler
+        // below. A filter that can match nulls -- or that throws when it sees one -- therefore may not exclude a row
+        // group unless the statistics prove the row group holds no nulls. This is the same gate the dictionary path
+        // applies in pushdownFilterDictionary().
+        final boolean mustPreserveNulls =
+                ctx.filterNullBehavior() != BasePushdownFilterContext.FilterNullBehavior.EXCLUDES_NULLS;
+        // resolveColumns() has verified that this is a flat, top-level, primitive column, so the field's own repetition
+        // determines the leaf's maximum repetition level.
+        final int maxRepetitionLevel =
+                parquetSchema.getType(actionCtx.parquetColumnNames[0]).isRepetition(Type.Repetition.REPEATED) ? 1 : 0;
+
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
             final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
@@ -871,7 +883,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // can return "match" for scenarios like filter of {X == 3}, and statistics of {min=3, max=3, num_nulls=0}.
             // Similarly, if filter is {X == null}, and statistics is {hasNonNullValue=false, num_nulls=<row-group
             // size>}, we can return "match" for the row group.
-            if (!ParquetPushdownUtils.areStatisticsUsable(statistics)) {
+            if (mustPreserveNulls && !ParquetPushdownUtils.isKnownFreeOfNulls(statistics, maxRepetitionLevel)) {
+                // We cannot rule out null rows that the statistics do not describe, so keep the whole row group.
+                maybeOverlaps = true;
+            } else if (!ParquetPushdownUtils.areStatisticsUsable(statistics)) {
                 // We assume it overlaps if we cannot use the statistics.
                 maybeOverlaps = true;
             } else if (filter instanceof ByteRangeFilter) {
