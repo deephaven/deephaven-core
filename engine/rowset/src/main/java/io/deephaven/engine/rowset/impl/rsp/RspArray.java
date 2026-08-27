@@ -1970,7 +1970,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             final Object pendingSpan = pending.spans[p];
             if (pendingSpan instanceof Container) {
-                // Each queued span is placed once, so this is the one place worth normalizing its representation.
+                // Each queued span is inserted once, so we normalize its representation.
                 setContainerSpanRaw(spanInfos, spans, dstIdx, pending.spanInfos[p],
                         maybeOptimize((Container) pendingSpan));
             } else {
@@ -2127,17 +2127,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * Replace the span at index i with the keys and spans from buf,
-     */
-    /**
      * Take {@code [start, end]} out of the span a split most recently queued, which must be what was left of block
      * {@code blockKey}. Lets a caller working through ascending ranges come back to a block whose remainder is still
      * queued rather than in our arrays, without having to settle the whole queue to reach it.
      *
      * <p>
-     * Only the last queued span is considered. Ranges arrive in ascending order and a split queues the pieces below the
-     * one it leaves in place, so the block a caller can return to is always the one queued last. The pieces a split
-     * queues are freshly built, never shared, so editing one in place cannot reach another rowset.
+     * Only the last queued span is considered. Ranges arrive in ascending order and a split queues the pieces before
+     * the last one that is left in the spans array. The caller can only return to the one in spans or the last queued
+     * block.
      *
      * @param pending the queued spans
      * @param blockKey the block the range falls in
@@ -2184,8 +2181,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      * {@link #replaceSpanAtIndex}, for a caller that keeps searching our spans as it goes.
      *
      * <p>
-     * The last one is the one that stays because {@code buf} is in ascending key order, so it is the only piece a
-     * caller working through ascending keys can come back to.
+     * The last span remains in the {@code spans} array because {@code buf} is in ascending key order, so it is the only
+     * piece a caller working through ascending keys can come back to.
      *
      * @param i index of the span being replaced; must not be a span marked for removal
      * @param buf the spans to put there, in ascending key order; must not be empty
@@ -2201,6 +2198,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         modifiedSpan(i);
     }
 
+    /**
+     * Replace the span at index i with the keys and spans from buf,
+     */
     public void replaceSpanAtIndex(final int i, final ArraysBuf buf) {
         ensureSizeCanGrowBy(buf.size - 1);
         final int dstPos = i + buf.size;
@@ -4611,11 +4611,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 long start = rit.currentRangeStart();
                 final long end = rit.currentRangeEnd();
                 if (pending.size() > 0 && highBits(start) == lastEndBlockKey) {
-                    // This range comes back to the block an earlier one already took a bite out of. Splitting a full
+                    // This range comes back to the block an earlier range already took a bite out of. Splitting a full
                     // block span leaves what is left of that block queued rather than in our arrays, so a search would
-                    // not find it -- but it is the span queued last, since ranges arrive in ascending order and a split
-                    // queues only the pieces below the one it leaves in place. So take this range out of it where it
-                    // sits, rather than settling the whole queue to reach it.
+                    // not find it -- but it is the span queued last since ranges arrive in ascending order and a split
+                    // queues only the pieces before the one it leaves in spans. So take this range out of the pending
+                    // block.
                     final long blockLastKey = lastEndBlockKey + BLOCK_LAST;
                     if (removeFromLastPendingSpan(pending, lastEndBlockKey, start, uMin(end, blockLastKey))) {
                         if (uLessOrEqual(end, blockLastKey)) {
