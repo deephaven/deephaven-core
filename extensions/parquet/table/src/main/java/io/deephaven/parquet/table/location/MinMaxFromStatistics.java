@@ -92,9 +92,6 @@ final class MinMaxFromStatistics {
             @NotNull final Statistics<?> statistics,
             @NotNull final ByteConsumer minSetter,
             @NotNull final ByteConsumer maxSetter) {
-        if (!statistics.hasNonNullValue()) {
-            throw new IllegalStateException("Statistics must have a non-null value");
-        }
         final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
         if (logicalType instanceof LogicalTypeAnnotation.IntLogicalTypeAnnotation) {

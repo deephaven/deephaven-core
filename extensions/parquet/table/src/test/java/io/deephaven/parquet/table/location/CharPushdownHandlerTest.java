@@ -25,8 +25,10 @@ import static org.junit.Assert.*;
 public class CharPushdownHandlerTest {
 
     private static Statistics<?> charStats(char minInc, char maxInc) {
+        // UINT_16, matching what Deephaven writes for a char column (TypeInfos). A UINT_8 annotation would be
+        // rejected by any real writer for values above 255 -- including Character.MAX_VALUE, used below.
         final PrimitiveType col = Types.required(INT32)
-                .as(LogicalTypeAnnotation.intType(8, /* signed */ false))
+                .as(LogicalTypeAnnotation.intType(16, /* signed */ false))
                 .named("charCol");
         return Statistics.getBuilderForReading(col)
                 .withMin(BytesUtils.intToBytes(minInc))

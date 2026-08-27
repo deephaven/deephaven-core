@@ -117,6 +117,12 @@ final class LongPushdownHandler {
      * <pre>
      * [..., v_0), (v_0, v_1), . . , (v_n-2, v_n-1), (v_n-1, ...]
      * </pre>
+     * <p>
+     * Gaps between adjacent values are deliberately treated as non-empty. {@code X not in (5, 6)} against statistics
+     * {@code [5, 6]} reports "maybe" although no integer lies strictly between 5 and 6. Closing that would need
+     * per-type successor arithmetic -- and the floating-point equivalent, where the next representable value depends
+     * on the type -- for a purely performance win, in code whose failure mode is wrong results. Left as is; the tests
+     * record the tighter answer in their comments.
      * 
      * where {@code ...} represents the extreme ends of the range.
      */
