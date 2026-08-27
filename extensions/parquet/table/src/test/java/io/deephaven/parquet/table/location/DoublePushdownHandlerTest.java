@@ -287,6 +287,33 @@ public class DoublePushdownHandlerTest {
     }
 
     /**
+     * A NaN upper bound stands for "unbounded above" only when it is <i>exclusive</i>, which is how the {@code lt},
+     * {@code leq}, {@code gt} and {@code geq} factories build it -- so every filter the query path produces keeps
+     * pruning, as the last two assertions re-check. Held <i>inclusively</i>, the bound matches the NaN rows themselves:
+     * {@code DoubleComparisons} places NaN equal to itself, so the chunk filter the engine installs admits them, while
+     * a conforming writer keeps NaN out of {@code min}/{@code max} and no statistics can prove a row group holds none.
+     * Reading an inclusive bound as unbounded above would exclude a row group whose NaN rows match.
+     */
+    @Test
+    public void doubleInclusiveNaNUpperBoundCannotExcludeNaNRows() {
+        // A row group of {1.0, 2.0, NaN}: a conforming writer emits [1.0, 2.0], leaving the NaN invisible.
+        final Statistics<?> stats = doubleStats(1.0, 2.0);
+
+        // `[5.0, NaN]` matches every value >= 5.0 *and* every NaN, so the invisible NaN row forbids excluding this
+        // row group -- even though nothing in [1.0, 2.0] reaches 5.0.
+        assertTrue(evaluate(new DoubleRangeFilter("d", 5.0, Double.NaN), stats));
+        assertTrue(evaluate(new DoubleRangeFilter("d", 5.0, Double.NaN, true, true), stats));
+
+        // The degenerate `[NaN, NaN]`, which matches exactly the NaN rows.
+        assertTrue(evaluate(new DoubleRangeFilter("d", Double.NaN, Double.NaN, true, true), stats));
+
+        // Exclusive NaN uppers cannot match a NaN row, so they still prune: declining the inclusive case above costs
+        // no pruning that was previously available.
+        assertFalse(evaluate(DoubleRangeFilter.gt("d", 5.0), stats));
+        assertFalse(evaluate(DoubleRangeFilter.geq("d", 5.0), stats));
+    }
+
+    /**
      * Resolves the filter to an evaluator and applies it to one row group's statistics, as
      * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
      */

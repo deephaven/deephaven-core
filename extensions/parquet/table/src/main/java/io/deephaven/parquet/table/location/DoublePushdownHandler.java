@@ -33,8 +33,20 @@ import org.jetbrains.annotations.Nullable;
  *
  * A conforming writer leaves NaN out of {@code min}/{@code max} entirely, so no statistics can prove a row group holds
  * none. Every NaN row satisfies an inverted match, which is why -- unlike the integral handlers -- there is no
- * {@code maybeMatchesInverse} here and an inverted match is declined outright. A NaN among a regular match's values is
- * declined for the same reason: the statistics cannot place it.
+ * {@code maybeMatchesInverse} here: an inverted match keeps every row group instead. A regular match with a NaN among
+ * its values keeps every row group for the same reason, the statistics being unable to place it.
+ * <p>
+ * A range filter whose upper bound is an <i>inclusive</i> NaN matches the NaN rows too, so it also keeps every row
+ * group. That it matches is {@link io.deephaven.util.compare.DoubleComparisons} semantics -- the ordering the engine
+ * itself filters and sorts by -- in which NaN sits above every value and compares equal to itself, so the chunk filter
+ * built for the range admits those rows.
+ * <p>
+ * Keeping every row group in that case gives up no pruning that was available before, because nothing in the query path
+ * produces such a bound. The {@code lt}, {@code leq}, {@code gt} and {@code geq} factories are the source of every
+ * range filter a parsed query, a client, or the UI builds, and all four make a NaN upper bound <b>exclusive</b> --
+ * deliberately, so that the results omit NaN. An exclusive NaN upper bound still reads as "unbounded above" here and
+ * prunes exactly as it did before; only a filter built directly through a public constructor can present an inclusive
+ * one.
  *
  * <h2>Nulls</h2>
  *
@@ -87,17 +99,26 @@ final class DoublePushdownHandler {
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final DoubleRangeFilter doubleRangeFilter) {
         // DoubleRangeFilter's constructor orders the pair with DoubleComparisons, under which the null sentinel
         // is below every value and NaN above every one. So `lower` is the only end that can be NULL_DOUBLE, and
-        // `upper` the only end that can be NaN; each marks the filter as unbounded at that end.
+        // `upper` the only end that can be NaN.
         final double dhLower = doubleRangeFilter.getLower();
         final double dhUpper = doubleRangeFilter.getUpper();
+        final boolean lowerInclusive = doubleRangeFilter.isLowerInclusive();
+        final boolean upperInclusive = doubleRangeFilter.isUpperInclusive();
+        if (Double.isNaN(dhUpper) && upperInclusive) {
+            // Only an *exclusive* NaN upper bound means "unbounded above". Held inclusively it matches the NaN rows
+            // themselves, since DoubleComparisons.leq(NaN, NaN) holds, and no statistics can prove a row group holds
+            // none of them. The lt/leq/gt/geq factories -- and so every range filter a parsed query, a client, or the
+            // UI produces -- always make the bound exclusive; the public constructors do not, so such a filter keeps
+            // every row group here rather than being read as unbounded above.
+            return StatisticsEvaluator.ALWAYS_MAYBE;
+        }
         final boolean filterUnboundedBelow = dhLower == QueryConstants.NULL_DOUBLE;
+        // Exclusive past the check above, so it rules out the NaN rows and constrains nothing else.
         final boolean filterUnboundedAbove = Double.isNaN(dhUpper);
         if (filterUnboundedBelow && filterUnboundedAbove) {
             // The filter constrains nothing at either end.
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }
-        final boolean lowerInclusive = doubleRangeFilter.isLowerInclusive();
-        final boolean upperInclusive = doubleRangeFilter.isUpperInclusive();
         return statistics -> {
             final MutableObject<Double> mutableMin = new MutableObject<>();
             final MutableObject<Double> mutableMax = new MutableObject<>();
@@ -147,7 +168,7 @@ final class DoublePushdownHandler {
 
     /**
      * Prepares the match filter for evaluation against row group statistics: for a regular match, whether the
-     * statistics range intersects any of its values. An inverted match is declined here; see "NaN" on this class.
+     * statistics range intersects any of its values. An inverted match keeps every row group; see "NaN" on this class.
      */
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final MatchFilter matchFilter) {
         if (matchFilter.getMatchOptions().inverted()) {

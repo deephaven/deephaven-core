@@ -5,8 +5,10 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.select.InstantRangeFilter;
+import io.deephaven.engine.table.impl.select.LongRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.BytesUtils;
 import org.apache.parquet.column.statistics.Statistics;
@@ -17,6 +19,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.time.Instant;
+import java.util.List;
 
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 import static org.junit.Assert.*;
@@ -32,6 +35,18 @@ public class InstantPushdownHandlerTest {
         return Statistics.getBuilderForReading(col)
                 .withMin(BytesUtils.longToBytes(minInc.toEpochMilli()))
                 .withMax(BytesUtils.longToBytes(maxInc.toEpochMilli()))
+                .withNumNulls(0L)
+                .build();
+    }
+
+    private static Statistics<?> instantStatsMicros(final Instant minInc, final Instant maxInc) {
+        final PrimitiveType col = Types.required(INT64)
+                .as(LogicalTypeAnnotation.timestampType(/* adjustedToUTC */ true,
+                        LogicalTypeAnnotation.TimeUnit.MICROS))
+                .named("instCol");
+        return Statistics.getBuilderForReading(col)
+                .withMin(BytesUtils.longToBytes(DateTimeUtils.epochMicros(minInc)))
+                .withMax(BytesUtils.longToBytes(DateTimeUtils.epochMicros(maxInc)))
                 .withNumNulls(0L)
                 .build();
     }
@@ -179,6 +194,40 @@ public class InstantPushdownHandlerTest {
                 new MatchFilter(MatchOptions.INVERTED, "t",
                         (Object) null),
                 instantStatsMillis(Instant.ofEpochMilli(10L), Instant.ofEpochMilli(20L))));
+    }
+
+    /**
+     * An {@link InstantRangeFilter} must resolve to this handler and not to {@code LongPushdownHandler}, which claims
+     * any {@link LongRangeFilter} and so would claim this subclass too if it were offered the filter first. Only this
+     * handler converts the statistics out of the file's timestamp unit; the long handler reads them raw, comparing
+     * epoch-nanosecond filter bounds against microseconds or milliseconds and excluding every row group of a file that
+     * a writer other than Deephaven stamped. Nanosecond files agree unit-for-unit and hide the difference, as does
+     * every other test here: they call the typed overload directly and so never exercise the resolution that picks the
+     * handler.
+     */
+    @Test
+    public void instantRangeFilterResolvesToUnitAwareHandler() {
+        final Instant rowGroupMin = Instant.parse("2021-01-01T00:00:00Z");
+        final Instant rowGroupMax = Instant.parse("2021-12-31T00:00:00Z");
+
+        // Contains the row group outright, so no row group may be excluded.
+        final InstantRangeFilter containing = new InstantRangeFilter("t",
+                DateTimeUtils.epochNanos(Instant.parse("2020-01-01T00:00:00Z")),
+                DateTimeUtils.epochNanos(Instant.parse("2022-01-01T00:00:00Z")),
+                true, true);
+        // Falls entirely before it, so every row group must still be excluded -- the evaluator has not simply gone
+        // blind.
+        final InstantRangeFilter disjoint = new InstantRangeFilter("t",
+                DateTimeUtils.epochNanos(Instant.parse("2019-01-01T00:00:00Z")),
+                DateTimeUtils.epochNanos(Instant.parse("2019-06-01T00:00:00Z")),
+                true, true);
+
+        for (final Statistics<?> stats : List.of(
+                instantStatsMicros(rowGroupMin, rowGroupMax),
+                instantStatsMillis(rowGroupMin, rowGroupMax))) {
+            assertTrue(StatisticsEvaluator.resolveHandler(containing).maybeOverlaps(stats));
+            assertFalse(StatisticsEvaluator.resolveHandler(disjoint).maybeOverlaps(stats));
+        }
     }
 
     /**

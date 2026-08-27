@@ -97,8 +97,15 @@ interface StatisticsEvaluator {
 
     /**
      * Every handler, in the order they are offered the filter. Each returns {@code null} for a filter it does not
-     * serve. {@code StringPushdownHandler} must precede {@code ComparablePushdownHandler}, which is last because it
-     * claims whatever the others did not.
+     * serve.
+     * <p>
+     * Order is load-bearing wherever one handler's filter type is a subtype of another's, since a handler claims a
+     * filter by {@code instanceof} and the first to claim it wins. {@link InstantRangeFilter} extends
+     * {@link LongRangeFilter}, so {@code InstantPushdownHandler} must precede {@code LongPushdownHandler}: the long
+     * handler would otherwise claim every Instant range filter and compare its epoch-nanosecond bounds against
+     * statistics left in the file's own timestamp unit, excluding every row group of a millisecond- or
+     * microsecond-stamped file. {@code StringPushdownHandler} must likewise precede {@code ComparablePushdownHandler},
+     * which is last because it claims whatever the others did not.
      */
     List<Function<WhereFilter, StatisticsEvaluator>> HANDLERS = List.of(
             StringPushdownHandler::maybeCreateEvaluator,
@@ -106,14 +113,20 @@ interface StatisticsEvaluator {
             CharPushdownHandler::maybeCreateEvaluator,
             ShortPushdownHandler::maybeCreateEvaluator,
             IntPushdownHandler::maybeCreateEvaluator,
+            InstantPushdownHandler::maybeCreateEvaluator,
             LongPushdownHandler::maybeCreateEvaluator,
             FloatPushdownHandler::maybeCreateEvaluator,
             DoublePushdownHandler::maybeCreateEvaluator,
-            InstantPushdownHandler::maybeCreateEvaluator,
             SingleSidedComparableRangePushdownHandler::maybeCreateEvaluator,
             ComparablePushdownHandler::maybeCreateEvaluator);
 
-    private static StatisticsEvaluator resolveHandler(@NotNull final WhereFilter filter) {
+    /**
+     * Offers {@code filter} to each handler in {@link #HANDLERS} order and returns the first evaluator claimed, or
+     * {@link #ALWAYS_MAYBE} if none was. Visible to the package so tests can pin the resolution itself, which the
+     * ordering above depends on; callers outside this file want {@link #maybeMakeForFilter}, which also applies the
+     * null gate.
+     */
+    static StatisticsEvaluator resolveHandler(@NotNull final WhereFilter filter) {
         if (filter instanceof MatchFilter && ((MatchFilter) filter).getColumnType() == null) {
             throw new IllegalStateException("Filter not initialized with a column type: " + filter);
         }
