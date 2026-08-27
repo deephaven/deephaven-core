@@ -45,13 +45,13 @@ Within a single table, Deephaven splits the data into chunks and processes the c
 ```python test-set=parallel order=large_table
 from deephaven import empty_table
 
-# Calculate values for 1 million rows
-large_table = empty_table(1_000_000).update(
+# Calculate values for 5 million rows
+large_table = empty_table(5_000_000).update(
     ["Price = i * 0.01", "Quantity = i % 1000", "Total = Price * Quantity"]
 )
 ```
 
-With 1 million rows and 4 cores, Deephaven assigns roughly 250,000 rows to each core. All four cores compute their rows simultaneously, so the work completes about 4 times faster than if a single core processed all rows sequentially.
+With 5 million rows and 4 cores, Deephaven assigns roughly 1,250,000 rows to each core. All four cores compute their rows simultaneously, so the work completes about 4 times faster than if a single core processed all rows sequentially.
 
 ## When it works
 
@@ -140,7 +140,7 @@ def get_next_id():
 result = empty_table(100).update("ID = get_next_id()")
 ```
 
-The intent is for each row to get a unique ID: 1, 2, 3, and so on. On free-threaded Python builds, Deephaven may parallelize Python-backed formulas, so multiple cores can call `get_next_id` at the same time. This doesn't throw an error — it silently produces wrong values like:
+The intent is for each row to get a unique ID: 1, 2, 3, and so on. On free-threaded Python builds with a table larger than the default `QueryTable.minimumParallelSelectRows` (about 4.2 million rows), Deephaven may parallelize Python-backed formulas, so multiple cores can call `get_next_id` at the same time. This doesn't throw an error — it silently produces wrong values like:
 
 | ID |
 | -- |
@@ -151,6 +151,9 @@ The intent is for each row to get a unique ID: 1, 2, 3, and so on. On free-threa
 | 5  |
 | 5  |
 | 7  |
+
+> [!NOTE]
+> This example uses only 100 rows for clarity. With 100 rows, the formula is evaluated serially by default; the race and duplicate IDs shown above would appear only on a table above the default parallelization threshold (about 4.2 million rows) or with a lowered threshold.
 
 Two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
 
@@ -175,6 +178,9 @@ def get_next_id():
 col = Selectable.parse("ID = get_next_id()").with_serial()
 result = empty_table(100).update(col)
 ```
+
+> [!NOTE]
+> `with_serial` is needed for larger tables that Deephaven would otherwise parallelize. With only 100 rows, the formula is already evaluated serially by default, so the result is correct even without `with_serial`.
 
 **Trade-off**: Sequential processing uses only one core, so it's slower than parallel processing. Only use `with_serial` when your formula requires it for correctness.
 

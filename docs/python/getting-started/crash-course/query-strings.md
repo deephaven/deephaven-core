@@ -578,7 +578,7 @@ t = empty_table(10).update("X = get_element_stateless(ii)")
 
 **Stateful** functions - those that read or modify external state - produce **incorrect results** when parallelized. Deephaven cannot automatically detect whether your code is stateful; it's your responsibility to identify stateful functions and force sequential execution.
 
-This stateful function increments a counter. On free-threaded Python builds, Deephaven may parallelize Python-backed formulas. Without [`with_serial()`](../../reference/query-language/types/Selectable.md#with_serial), that parallel execution corrupts the results:
+This stateful function increments a counter. On a large enough table, Deephaven may parallelize Python-backed formulas. Without [`with_serial()`](../../reference/query-language/types/Selectable.md#with_serial), that parallel execution would corrupt the results:
 
 ```python skip-test
 my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -594,6 +594,9 @@ def get_next_element_stateful() -> int:
 # WRONG: parallel execution causes race conditions
 t_wrong = empty_table(10).update("X = get_next_element_stateful()")
 ```
+
+> [!NOTE]
+> This example uses 10 rows for illustration. By default, Deephaven evaluates a 10-row update serially, so the actual result would be 0 through 9. The duplicate/missing output below shows what would happen if the operation were parallelized.
 
 ```python test-set=2
 from deephaven.table import Selectable

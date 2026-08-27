@@ -41,15 +41,15 @@ When new data arrives in `trades`, Deephaven updates `highValue`, `bySymbol`, an
 When computing values within a single table, Deephaven divides the rows among available cores:
 
 ```groovy test-set=parallel order=largeTable
-// Calculate values for 1 million rows
-largeTable = emptyTable(1_000_000).update(
+// Calculate values for 5 million rows
+largeTable = emptyTable(5_000_000).update(
     "Price = i * 0.01",
     "Quantity = i % 1000",
     "Total = Price * Quantity"
 )
 ```
 
-With 1 million rows and 4 cores, Deephaven assigns roughly 250,000 rows to each core. All four cores compute their rows simultaneously, so the work completes about 4 times faster than if a single core processed all rows sequentially.
+With 5 million rows and 4 cores, Deephaven assigns roughly 1,250,000 rows to each core. All four cores compute their rows simultaneously, so the work completes about 4 times faster than if a single core processed all rows sequentially.
 
 ## When it works
 
@@ -122,10 +122,13 @@ getNextId = {
 }
 
 // INCORRECT: parallel execution corrupts the counter
-result = emptyTable(100).update("ID = getNextId()")
+result = emptyTable(5_000_000).update("ID = getNextId()")
 ```
 
 The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with parallelization, multiple cores call `getNextId` at the same time. Two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
+
+> [!NOTE]
+> This example uses only 100 rows for clarity. On a table larger than the default `QueryTable.minimumParallelSelectRows` (about 4.2 million rows), Deephaven would parallelize this formula and the race described above would produce duplicate and skipped IDs.
 
 ### The fix: force sequential processing with `withSerial`
 
@@ -141,6 +144,9 @@ counter = new AtomicInteger(0)
 col = Selectable.parse("ID = counter.incrementAndGet()").withSerial()
 result = emptyTable(100).update([col])
 ```
+
+> [!NOTE]
+> `withSerial` is needed for larger tables that Deephaven would otherwise parallelize. With only 100 rows, the formula is already evaluated serially by default, so the result is correct even without `withSerial`.
 
 **Trade-off**: Sequential processing uses only one core, so it's slower than parallel processing. Only use `withSerial` when your formula requires it for correctness.
 

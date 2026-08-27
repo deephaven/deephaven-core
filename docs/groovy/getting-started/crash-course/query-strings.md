@@ -512,7 +512,7 @@ t = emptyTable(10).update("X = getElementStateless(ii)")
 
 **Stateful** functions - those that read or modify external state - produce **incorrect results** when parallelized. Deephaven cannot automatically detect whether your code is stateful; it's your responsibility to identify stateful functions and force sequential execution.
 
-This stateful function increments a counter. Without [`withSerial()`](../../reference/query-language/types/Selectable.md#withserial), parallel execution corrupts the results:
+This stateful function increments a counter. On a large enough table, without [`withSerial()`](../../reference/query-language/types/Selectable.md#withserial), parallel execution would corrupt the results:
 
 ```groovy skip-test
 myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -526,6 +526,9 @@ getNextElementStateful = {
 // WRONG: parallel execution causes race conditions
 tWrong = emptyTable(10).update("X = getNextElementStateful()")
 ```
+
+> [!NOTE]
+> This example uses 10 rows for illustration. By default, Deephaven evaluates a 10-row update serially, so the actual result would be 0 through 9. The duplicate/missing output below shows what would happen if the operation were parallelized.
 
 ```groovy test-set=2
 import io.deephaven.api.Selectable
