@@ -1385,23 +1385,26 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         if (getCardinality() != other.getCardinality()) {
             return false;
         }
-        final RspRangeIterator it = getRangeIterator();
-        final RspRangeIterator oit = other.getRangeIterator();
-        while (it.hasNext()) {
-            if (!oit.hasNext()) {
-                return false;
+        // An iterator run to the end gives back the reference it holds by itself; one abandoned at the first
+        // difference below has to be closed for that to happen.
+        try (final RspRangeIterator it = getRangeIterator();
+                final RspRangeIterator oit = other.getRangeIterator()) {
+            while (it.hasNext()) {
+                if (!oit.hasNext()) {
+                    return false;
+                }
+                it.next();
+                oit.next();
+                if (it.start() != oit.start()) {
+                    return false;
+                }
+                if (it.end() != oit.end()) {
+                    return false;
+                }
             }
-            it.next();
-            oit.next();
-            if (it.start() != oit.start()) {
-                return false;
-            }
-            if (it.end() != oit.end()) {
-                return false;
-            }
+            // no need to check for oit.hasNext() since we checked for cardinality already.
+            return true;
         }
-        // no need to check for oit.hasNext() since we checked for cardinality already.
-        return true;
     }
 
     public void finishMutations() {
