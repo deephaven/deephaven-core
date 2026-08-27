@@ -39,8 +39,8 @@ The `QueryTable` has the following user-configurable properties:
 | [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
-| [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |
-| [Stateless select by default](#stateless-by-default)                | `QueryTable.statelessSelectByDefault`                    | false      |
+| [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | true       |
+| [Stateless select by default](#stateless-by-default)                | `QueryTable.statelessSelectByDefault`                    | true       |
 
 Each property is described below, roughly categorized by similarity.
 
