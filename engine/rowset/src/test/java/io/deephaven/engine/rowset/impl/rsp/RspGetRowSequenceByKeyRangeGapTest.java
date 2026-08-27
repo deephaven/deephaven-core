@@ -87,4 +87,61 @@ public class RspGetRowSequenceByKeyRangeGapTest {
         }
     }
 
+    /**
+     * The range ends in the gap before a span's first key, so the last key it includes belongs to the span before that
+     * one. A full block span at block 5, a container at block 6, and an end key inside block 6 but below the
+     * container's first key.
+     */
+    @Test
+    public void testRangeEndingInAGapBeforeASpansFirstKey() {
+        try (final WritableRowSet rs = rspOf(new long[] {5 * BS, 6 * BS - 1}, new long[] {6 * BS + 677,
+                6 * BS + 729})) {
+            check(rs, 5 * BS + 3364, 6 * BS + 95);
+        }
+    }
+
+    /** The same shape where the range ends in a gap before a singleton span, and before a full block span. */
+    @Test
+    public void testRangeEndingInAGapBeforeOtherSpanKinds() {
+        try (final WritableRowSet singleton = rspOf(new long[] {5 * BS, 6 * BS - 1}, new long[] {6 * BS + 700,
+                6 * BS + 700})) {
+            check(singleton, 5 * BS + 10, 6 * BS + 95);
+        }
+        try (final WritableRowSet fullBlock = rspOf(new long[] {5 * BS, 6 * BS - 1}, new long[] {8 * BS, 9 * BS - 1})) {
+            check(fullBlock, 5 * BS + 10, 7 * BS + 95);
+        }
+    }
+
+    /** Randomized: ranges whose ends land in gaps, in blocks before, inside and after the rowset. */
+    @Test
+    public void testRandomKeyRangesIncludingGaps() {
+        final Random rand = new Random(23491);
+        for (int trial = 0; trial < 500; ++trial) {
+            final List<long[]> ranges = new ArrayList<>();
+            long block = 1 + rand.nextInt(3);
+            for (int i = 0; i < 6; ++i) {
+                final long base = block * BS;
+                if (rand.nextInt(4) == 0) {
+                    ranges.add(new long[] {base, base + BS - 1}); // full block span
+                } else if (rand.nextInt(3) == 0) {
+                    ranges.add(new long[] {base + rand.nextInt(100), base + rand.nextInt(100)}); // maybe singleton
+                } else {
+                    final long s = base + rand.nextInt(1000);
+                    ranges.add(new long[] {s, s + rand.nextInt(500)});
+                }
+                block += 1 + rand.nextInt(3); // leave gaps
+            }
+            final List<long[]> fixed = new ArrayList<>();
+            for (final long[] r : ranges) {
+                fixed.add(new long[] {Math.min(r[0], r[1]), Math.max(r[0], r[1])});
+            }
+            try (final WritableRowSet rs = rspOf(fixed.toArray(new long[0][]))) {
+                for (int k = 0; k < 4; ++k) {
+                    final long lo = (long) rand.nextInt((int) (block * BS));
+                    final long hi = lo + rand.nextInt((int) (2 * BS));
+                    check(rs, lo, hi);
+                }
+            }
+        }
+    }
 }

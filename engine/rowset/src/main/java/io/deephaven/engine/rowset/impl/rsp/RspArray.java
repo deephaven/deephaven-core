@@ -4871,7 +4871,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 return RowSequenceFactory.EMPTY;
             }
         }
-        final long cardBeforeEndKeyIdx = cardinalityBeforeMaybeAcc(endKeyIdx, beforeCardCtx);
+        long cardBeforeEndKeyIdx = cardinalityBeforeMaybeAcc(endKeyIdx, beforeCardCtx);
         long absoluteEndPos;
         if (endKeyIdxWasNegative) {
             absoluteEndPos = cardBeforeEndKeyIdx + getSpanCardinalityAtIndexMaybeAcc(endKeyIdx) - 1;
@@ -4907,6 +4907,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             startKeyIdx = startIdx;
             cardBeforeStartKeyIdx = cardBeforeStartIdx;
             startOffsetOut = startOffsetIn;
+        }
+        if (absoluteEndPos < cardBeforeEndKeyIdx) {
+            // The range ends in the gap before this span's first key, so the last position it includes belongs to the
+            // span before it. The start side above makes the mirror-image adjustment when its position lands past the
+            // end of its span.
+            --endKeyIdx;
+            cardBeforeEndKeyIdx -= getSpanCardinalityAtIndexMaybeAcc(endKeyIdx);
         }
         final long relativeEndOffset = absoluteEndPos - cardBeforeEndKeyIdx;
         final long endOffsetOut;
