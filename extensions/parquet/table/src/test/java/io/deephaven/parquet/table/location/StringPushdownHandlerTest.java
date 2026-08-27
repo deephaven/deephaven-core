@@ -118,7 +118,8 @@ public class StringPushdownHandlerTest {
 
     /**
      * Filters this handler does not serve must return {@code null} from {@code prepare} so the dispatcher falls
-     * through. Case-insensitive matches belong to {@link CaseInsensitiveStringMatchPushdownHandler}.
+     * through. Case-insensitive matches are never pushed down at all -- see
+     * {@link StringPushdownHandler#maybeCreateEvaluator}.
      */
     @Test
     public void prepareDeclinesFiltersItDoesNotServe() {

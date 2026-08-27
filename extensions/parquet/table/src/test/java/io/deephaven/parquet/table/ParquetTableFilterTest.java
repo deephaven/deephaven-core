@@ -1370,6 +1370,51 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "X < `" + fullwidthA + "`");
     }
 
+    /**
+     * Case-insensitive matching is not pushed down to row group statistics, because those statistics are byte-order
+     * extremes and case-insensitive equality is not monotonic with respect to that order.
+     * <p>
+     * The first block is the direct case: statistics min={@code "Banana"} (0x42...), max={@code "apple"} (0x61...), and
+     * {@code "apple".compareToIgnoreCase("Banana") < 0}, so a folded interval test excludes a row group that plainly
+     * contains the value. The second is the inverted case: min and max are case variants of one word, which bounds
+     * nothing about how many distinct values lie between them.
+     */
+    @Test
+    public void caseInsensitiveMatchesAreNotPrunedByStatistics() {
+        {
+            final String destPath = Path.of(rootFile.getPath(), "icaseMatch.parquet").toString();
+            writeTable(newTable(stringCol("X", "Banana", "apple")), destPath);
+            final Table diskTable = readTable(destPath);
+            final Table memTable = diskTable.select();
+
+            filterAndVerifyResults(diskTable, memTable, "X icase in `apple`");
+            filterAndVerifyResults(diskTable, memTable, "X icase in `BANANA`");
+        }
+
+        {
+            final String destPath = Path.of(rootFile.getPath(), "icaseInvertedMatch.parquet").toString();
+            writeTable(newTable(stringCol("X", "FOO", "MID", "foo")), destPath);
+            final Table diskTable = readTable(destPath);
+            final Table memTable = diskTable.select();
+
+            // Byte-order min="FOO", max="foo", and "FOO".equalsIgnoreCase("foo") -- but "MID" sits between them.
+            filterAndVerifyResults(diskTable, memTable, "X icase not in `foo`");
+        }
+
+        {
+            // String.equalsIgnoreCase matches characters far outside ASCII to ASCII ones, which is why no
+            // interval over a value's ASCII case variants could have been used instead. U+212A KELVIN SIGN
+            // encodes as E2 84 AA, well above the byte range of an all-ASCII row group.
+            final String destPath = Path.of(rootFile.getPath(), "icaseNonAsciiFold.parquet").toString();
+            writeTable(newTable(stringCol("X", "\u212A", "zzz")), destPath);
+            final Table diskTable = readTable(destPath);
+            final Table memTable = diskTable.select();
+
+            assertEquals("premise: U+212A equalsIgnoreCase \"k\"", 1, memTable.where("X icase in `k`").size());
+            filterAndVerifyResults(diskTable, memTable, "X icase in `k`");
+        }
+    }
+
     @Test
     public void filterArrayColumnsTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_filterArrayColumnsTest.parquet").toString();

@@ -635,36 +635,6 @@ public class MinMaxFromStatisticsTest {
     // Strings
 
     @Test
-    public void stringLogicalStatisticsAreMaterialised() {
-        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
-                .as(LogicalTypeAnnotation.stringType())
-                .named("strBinary");
-        final Statistics<?> stats = buildStats(
-                colType, "aaa".getBytes(StandardCharsets.UTF_8), "zzz".getBytes(StandardCharsets.UTF_8), 0L);
-        final MutableObject<String> min = new MutableObject<>();
-        final MutableObject<String> max = new MutableObject<>();
-        assertMatches(
-                MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
-                min, "aaa",
-                max, "zzz");
-    }
-
-    @Test
-    public void enumLogicalStatisticsAreMaterialised() {
-        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
-                .as(LogicalTypeAnnotation.enumType())
-                .named("enumBinary");
-        final Statistics<?> stats = buildStats(
-                colType, "ALPHA".getBytes(StandardCharsets.UTF_8), "ZETA".getBytes(StandardCharsets.UTF_8), 0L);
-        final MutableObject<String> min = new MutableObject<>();
-        final MutableObject<String> max = new MutableObject<>();
-        assertMatches(
-                MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
-                min, "ALPHA",
-                max, "ZETA");
-    }
-
-    @Test
     public void stringBytesAreReturnedVerbatim() {
         final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
                 .as(LogicalTypeAnnotation.stringType())
@@ -676,7 +646,7 @@ public class MinMaxFromStatisticsTest {
 
         final MutableObject<byte[]> min = new MutableObject<>();
         final MutableObject<byte[]> max = new MutableObject<>();
-        assertTrue(MinMaxFromStatistics.getMinMaxForStringBytes(stats, min::setValue, max::setValue));
+        assertTrue(MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue));
         assertArrayEquals(truncatedMin, min.getValue());
         assertArrayEquals(rawMax, max.getValue());
     }
@@ -691,7 +661,7 @@ public class MinMaxFromStatisticsTest {
 
         final MutableObject<byte[]> min = new MutableObject<>();
         final MutableObject<byte[]> max = new MutableObject<>();
-        assertTrue(MinMaxFromStatistics.getMinMaxForStringBytes(stats, min::setValue, max::setValue));
+        assertTrue(MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue));
         assertArrayEquals("ALPHA".getBytes(StandardCharsets.UTF_8), min.getValue());
         assertArrayEquals("ZETA".getBytes(StandardCharsets.UTF_8), max.getValue());
     }
@@ -704,7 +674,7 @@ public class MinMaxFromStatisticsTest {
 
         final MutableObject<byte[]> min = new MutableObject<>();
         final MutableObject<byte[]> max = new MutableObject<>();
-        assertFalse(MinMaxFromStatistics.getMinMaxForStringBytes(stats, min::setValue, max::setValue));
+        assertFalse(MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue));
     }
 
     /**
@@ -723,18 +693,6 @@ public class MinMaxFromStatisticsTest {
         final MutableObject<Comparable<?>> max = new MutableObject<>();
         assertFalse(MinMaxFromStatistics.getMinMaxForComparable(
                 stats, min::setValue, max::setValue, String.class));
-    }
-
-    @Test
-    public void binaryWithoutStringLogicalTypeIsRejected() {
-        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY).named("rawBinary");
-        final Statistics<?> stats = buildStats(
-                colType, "foo".getBytes(StandardCharsets.UTF_8), "qux".getBytes(StandardCharsets.UTF_8), 0L);
-        final MutableObject<String> min = new MutableObject<>();
-        final MutableObject<String> max = new MutableObject<>();
-        assertRejected(
-                MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
-                min, max);
     }
 
     // Instants

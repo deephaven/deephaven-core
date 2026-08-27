@@ -937,7 +937,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 } else if (dhColumnType == double.class || dhColumnType == Double.class) {
                     maybeOverlaps = DoublePushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else if (dhColumnType == String.class && matchFilter.getMatchOptions().caseInsensitive()) {
-                    maybeOverlaps = CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(matchFilter, statistics);
+                    // Case-insensitive matching is deliberately not pushed down; see the note on
+                    // StringPushdownHandler.maybeCreateEvaluator. Row group statistics cannot bound it.
+                    maybeOverlaps = true;
                 } else if (dhColumnType == Instant.class) {
                     maybeOverlaps = InstantPushdownHandler.maybeOverlaps(matchFilter, statistics);
                 } else {

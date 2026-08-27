@@ -70,8 +70,27 @@ final class StringPushdownHandler {
 
     /**
      * Creates an evaluator for {@code filter} against row group statistics, or returns {@code null} if this handler
-     * does not serve it. Case-insensitive match filters are not served here; they go to
-     * {@link CaseInsensitiveStringMatchPushdownHandler}.
+     * does not serve it.
+     * <p>
+     * <b>Case-insensitive matches are never served, by design.</b> These statistics are extremes under byte order, and
+     * case-insensitive equality is not monotonic with respect to it, so {@code [min, max]} containment says nothing
+     * about whether a case variant of a filter value is present. The natural repair -- widening each value into the
+     * interval spanned by its case variants -- does not work either, because {@link String#equalsIgnoreCase} matches
+     * characters far outside ASCII to ASCII ones:
+     * <ul>
+     * <li>U+212A KELVIN SIGN ({@code E2 84 AA}) equals {@code "k"}</li>
+     * <li>U+017F LATIN SMALL LETTER LONG S ({@code C5 BF}) equals {@code "s"}</li>
+     * <li>U+0130 and U+0131 ({@code C4 B0}, {@code C4 B1}) equal {@code "i"}</li>
+     * </ul>
+     * A row group whose entire byte range sits above the ASCII range can therefore still contain a match for a purely
+     * ASCII filter value, and an ASCII-only interval would wrongly exclude it. A sound interval would have to span the
+     * full case-equivalence class of every character, which is wide enough to rarely exclude anything.
+     * <p>
+     * The inverted form is worse: excluding a row group requires proving it holds a single distinct value, and
+     * statistics that are permitted to be <i>truncated</i> bounds cannot establish that.
+     * <p>
+     * These filters are not lost, only resolved elsewhere -- the dictionary path applies the real chunk filter to a row
+     * group's dictionary, which handles case-insensitivity exactly.
      */
     @Nullable
     static Evaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
@@ -218,7 +237,7 @@ final class StringPushdownHandler {
     private static byte[][] minMaxBytes(@NotNull final Statistics<?> statistics) {
         final MutableObject<byte[]> min = new MutableObject<>();
         final MutableObject<byte[]> max = new MutableObject<>();
-        if (!MinMaxFromStatistics.getMinMaxForStringBytes(statistics, min::setValue, max::setValue)) {
+        if (!MinMaxFromStatistics.getMinMaxForStrings(statistics, min::setValue, max::setValue)) {
             return null;
         }
         if (min.getValue() == null || max.getValue() == null) {

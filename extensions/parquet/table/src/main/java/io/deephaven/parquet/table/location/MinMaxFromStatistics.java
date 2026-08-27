@@ -392,7 +392,7 @@ final class MinMaxFromStatistics {
     }
 
     /**
-     * Attempts to retrieve the minimum and maximum for a STRING/ENUM column as raw UTF-8 bytes.
+     * Attempts to retrieve the minimum and maximum for a STRING/ENUM column, as raw bytes.
      * <p>
      * Parquet defines the extremes for these columns under unsigned byte-wise order, which is not Java's
      * {@link String#compareTo} order, so the bytes must be compared as bytes. The values are also permitted to be
@@ -400,7 +400,7 @@ final class MinMaxFromStatistics {
      * equal to the true minimum and a truncated maximum byte-wise greater than or equal to the true maximum, which
      * keeps them valid bounds but means neither is necessarily a value in the row group, nor even valid UTF-8.
      */
-    static boolean getMinMaxForStringBytes(
+    static boolean getMinMaxForStrings(
             @NotNull final Statistics<?> statistics,
             @NotNull final Consumer<byte[]> minSetter,
             @NotNull final Consumer<byte[]> maxSetter) {
@@ -411,31 +411,6 @@ final class MinMaxFromStatistics {
             verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.BINARY);
             minSetter.accept(statistics.getMinBytes());
             maxSetter.accept(statistics.getMaxBytes());
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Attempts to retrieve the minimum and maximum string from the given {@code statistics}.
-     * <p>
-     * The decoded values must not be used for ordering: parquet orders these statistics by unsigned bytes, decoding is
-     * lossy for truncated bounds, and {@link String#compareTo} is a different order besides. Use
-     * {@link #getMinMaxForStringBytes} for anything that compares.
-     */
-    static boolean getMinMaxForStrings(
-            @NotNull final Statistics<?> statistics,
-            @NotNull final Consumer<String> minSetter,
-            @NotNull final Consumer<String> maxSetter) {
-        final PrimitiveType parquetColType = statistics.type();
-        final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
-        if (logicalType instanceof LogicalTypeAnnotation.StringLogicalTypeAnnotation
-                || logicalType instanceof LogicalTypeAnnotation.EnumLogicalTypeAnnotation) {
-            verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.BINARY);
-            final String minString = statistics.minAsString();
-            final String maxString = statistics.maxAsString();
-            minSetter.accept(minString);
-            maxSetter.accept(maxString);
             return true;
         }
         return false;
