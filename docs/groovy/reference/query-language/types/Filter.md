@@ -15,7 +15,7 @@ Use `Filter.from` when you have filter conditions as strings. Note that `Filter.
 ```groovy syntax
 import io.deephaven.api.filter.Filter
 
-// Filter.from() returns an array; use [0] to get the single filter
+// Filter.from() returns a collection; use [0] to get the single filter
 myFilter = Filter.from("X > 5")[0]
 ```
 
@@ -43,12 +43,11 @@ Forces the filter to evaluate sequentially on a single core, processing rows one
 
 ```groovy order=source,result
 import io.deephaven.api.filter.Filter
-import java.util.concurrent.atomic.AtomicInteger
 
-rowsChecked = new AtomicInteger(0)
+rowsChecked = [0] as int[]
 
 checkValue = { int x ->
-    rowsChecked.incrementAndGet()  // Side effect: modifies external state
+    rowsChecked[0]++  // Side effect: modifies external state
     return x > 5
 }
 

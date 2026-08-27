@@ -138,7 +138,7 @@ import java.util.concurrent.atomic.AtomicInteger
 counter = new AtomicInteger(0)
 
 // Force sequential processing for this formula
-col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
+col = Selectable.parse("ID = counter.incrementAndGet()").withSerial()
 result = emptyTable(100).update([col])
 ```
 

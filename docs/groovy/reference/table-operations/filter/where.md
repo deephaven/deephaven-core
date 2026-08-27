@@ -115,19 +115,18 @@ This filter tracks how many rows it evaluates. Without serial execution, the cou
 
 ```groovy order=source,result
 import io.deephaven.api.filter.Filter
-import java.util.concurrent.atomic.AtomicInteger
 
-rowsChecked = new AtomicInteger(0)
+rowsChecked = [0] as int[]
 
 checkValue = { int x ->
-    rowsChecked.incrementAndGet()  // Side effect: modifies external state
+    rowsChecked[0]++  // Side effect: modifies external state
     return x > 5
 }
 
 source = emptyTable(100).update("X = i")
 
 // Use .withSerial because the filter has side effects
-// Filter.from() returns an array; [0] gets the single filter
+// Filter.from() returns a collection; [0] gets the single filter
 f = Filter.from("(boolean)checkValue(X)")[0].withSerial()
 result = source.where(f)
 ```

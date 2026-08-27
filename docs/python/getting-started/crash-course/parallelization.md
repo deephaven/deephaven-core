@@ -140,7 +140,7 @@ def get_next_id():
 result = empty_table(100).update("ID = get_next_id()")
 ```
 
-The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with parallelization, multiple cores call `get_next_id` at the same time. This doesn't throw an error — it silently produces wrong values like:
+The intent is for each row to get a unique ID: 1, 2, 3, and so on. On free-threaded Python builds, Deephaven may parallelize Python-backed formulas, so multiple cores can call `get_next_id` at the same time. This doesn't throw an error — it silently produces wrong values like:
 
 | ID |
 | -- |

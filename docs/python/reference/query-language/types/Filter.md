@@ -23,7 +23,7 @@ my_filter = Filter.from_("X > 5")
 Use filter functions for null checks, boolean combinations, and special value tests. These functions return `Filter` objects that you can combine or modify.
 
 ```python syntax
-from deephaven.filters import is_null, not_, and_, or_
+from deephaven.filters import Filter, is_null, not_, and_, or_
 
 null_filter = is_null("X")
 not_null_filter = not_(is_null("Y"))
