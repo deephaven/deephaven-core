@@ -548,7 +548,11 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return RowSetUtils.append(logOutput, rangeIterator());
+        // Logging stops after a couple hundred ranges, leaving the iterator holding a reference to us; closing it
+        // here is what gives that reference back.
+        try (final RowSet.RangeIterator it = rangeIterator()) {
+            return RowSetUtils.append(logOutput, it);
+        }
     }
 
     @Override
