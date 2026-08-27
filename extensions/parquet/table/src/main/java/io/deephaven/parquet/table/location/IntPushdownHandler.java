@@ -13,7 +13,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,10 +24,9 @@ import java.util.Arrays;
  *
  * <h2>Usage</h2>
  *
- * For a match filter, call {@link #maybeCreateEvaluator} once and apply the evaluator it returns to each row group in
- * turn. Unboxing the filter's values and sorting them for the inverted walk both happen during that single call, rather
- * than once per row group. {@link #maybeOverlaps(MatchFilter, Statistics)} performs both steps for a single row group.
- * {@link #maybeOverlaps(IntRangeFilter, Statistics)} serves range filters, which need no preparation.
+ * Call {@link #maybeCreateEvaluator} once per filter and apply the evaluator it returns to each row group in turn.
+ * Everything that depends only on the filter -- unboxing a match filter's values, sorting them for the inverted walk,
+ * reading a range filter's bounds -- happens in that single call rather than once per row group.
  * <p>
  * The interval arithmetic lives in {@link #maybeOverlapsRangeImpl}. {@link #maybeMatches} reuses it by testing each of
  * the filter's values as the closed range {@code [v, v]}, and {@link #maybeMatchesInverse} by testing the gaps between
@@ -36,21 +34,14 @@ import java.util.Arrays;
  *
  * <h2>Nulls</h2>
  *
- * {@link StatisticsEvaluator} describes the two reasons a row can read back as null in Deephaven. This class answers
- * for one of them and not the other.
- * <ul>
- * <li>A <b>stored sentinel</b> -- a value equal to {@code NULL_INT} -- is this class's business. To Parquet it is an
- * ordinary value, sitting inside {@code min}/{@code max} like any other, so the tests here account for it: a match
- * filter keeps the sentinel among its values, and an unbounded-below range filter looks for it explicitly.</li>
- * <li>A <b>Parquet null</b> is not. Such a row is invisible to {@code min}/{@code max}, so nothing here can see one or
- * rule one out. {@code StatisticsEvaluator.maybeMakeForFilter} gates on that before any of this runs.</li>
- * </ul>
- * These methods therefore answer from {@code min}/{@code max} alone, and are <b>not</b> correct in isolation for a
- * filter that a null row satisfies -- {@code X == null}, {@code X != v}, {@code X < v}. Called directly they will
- * exclude a row group whose Parquet nulls such a filter would have matched. Reach them through
- * {@code StatisticsEvaluator.maybeMakeForFilter} for an answer that accounts for those rows.
+ * Of the two sources of a Deephaven null that {@link StatisticsEvaluator} describes, only the <b>stored sentinel</b> --
+ * a value equal to {@code NULL_INT} -- is this class's business. To Parquet it is an ordinary value, sitting inside
+ * {@code min}/{@code max} like any other, so the tests here account for it: a match filter keeps the sentinel among its
+ * values, and an unbounded-below range filter looks for it explicitly.
  * <p>
- * A null used as a <i>bound</i> is a different question again, and is read as "the filter is unbounded at that end".
+ * <b>These methods are not correct in isolation</b> for a filter that a null row satisfies -- {@code X == null},
+ * {@code X != v}, {@code X < v}. Called directly they will exclude a row group whose Parquet nulls such a filter would
+ * have matched; reach them through {@code StatisticsEvaluator.maybeMakeForFilter}, which gates on those rows.
  */
 final class IntPushdownHandler {
 

@@ -42,6 +42,12 @@ import java.time.Instant;
  * by the gate in {@link #maybeMakeForFilter}, which is why a handler called directly is not correct in isolation for a
  * filter that a null row satisfies. The handlers for {@link String} and the other object types have no sentinel
  * encoding and so face only the first route; they simply drop a null from the values.
+ * <p>
+ * A null used as a range filter's <i>bound</i> is a third question, and can only ever be the <b>lower</b> bound: every
+ * {@code RangeFilter} constructor orders its pair with the null-aware comparisons, under which the sentinel sits below
+ * every value, so it always lands there and an upper bound is never the sentinel. The primitive and {@link Instant}
+ * handlers read such a bound as "the filter is unbounded below"; the object-typed handlers, having no sentinel
+ * encoding, decline it instead.
  */
 @FunctionalInterface
 interface StatisticsEvaluator {

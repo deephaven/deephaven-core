@@ -7,7 +7,6 @@ import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.compare.ObjectComparisons;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

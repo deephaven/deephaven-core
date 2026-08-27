@@ -45,12 +45,11 @@ import java.util.Comparator;
  * bounds rather than values present in the data; such a bound still brackets the data in byte order, but decoding one
  * can turn a partial character into U+FFFD and destroy that property.
  * <p>
- * <b>Nulls.</b> {@link StatisticsEvaluator} describes the two reasons a row can read back as null in Deephaven, and
- * neither is this class's business. A String has no sentinel encoding, so a Deephaven null comes solely from a Parquet
- * null, which {@code min}/{@code max} never describe. A null is dropped from a match filter's values here, and
- * {@code StatisticsEvaluator.maybeMakeForFilter} gates on such rows before any of this runs; these evaluators answer
- * from {@code min}/{@code max} alone and are <b>not</b> correct in isolation for a filter that a null row satisfies.
- * Null <i>bounds</i> on a range filter are a separate question, and are declined.
+ * <b>Nulls.</b> Of the two sources of a Deephaven null that {@link StatisticsEvaluator} describes, neither is this
+ * class's business: a String has no sentinel encoding, so a Deephaven null comes solely from a Parquet null, and a null
+ * is simply dropped from a match filter's values here. <b>These evaluators are not correct in isolation</b> for a
+ * filter that a null row satisfies; reach them through {@code StatisticsEvaluator.maybeMakeForFilter}, which gates on
+ * those rows. Null <i>bounds</i> on a range filter are a separate question, and are declined.
  * <p>
  * <b>Usage.</b> Call {@link #maybeCreateEvaluator} once per filter, then {@link StatisticsEvaluator#maybeOverlaps} once
  * per row group. Everything that depends only on the filter -- encoding the values, sorting them, and testing the
@@ -112,8 +111,10 @@ final class StringPushdownHandler {
     }
 
     /**
-     * Equality does not depend on the ordering used, so this needs no restriction on the values: a value whose UTF-8
-     * encoding falls outside the byte-order interval is simply not present in the row group.
+     * Equality does not depend on the ordering used, so this needs no <i>ordering</i> restriction on the values: a
+     * value whose UTF-8 encoding falls outside the byte-order interval will not be present in the row group. That
+     * conclusion needs each filter value to encode faithfully to UTF-8 -- a separate requirement, since two strings
+     * sharing an encoding would break it; see {@link #utf8}.
      */
     private static StatisticsEvaluator createMatchEvaluator(@NotNull final MatchFilter matchFilter) {
         final Object[] values = matchFilter.getValues();
@@ -127,7 +128,12 @@ final class StringPushdownHandler {
         int numNonNull = 0;
         for (final Object value : values) {
             if (value instanceof String) {
-                allEncoded[numNonNull++] = utf8((String) value);
+                final byte[] encodedValue = utf8((String) value);
+                if (encodedValue == null) {
+                    // No faithful UTF-8 encoding, so its bytes are those of some other string; see utf8.
+                    return StatisticsEvaluator.ALWAYS_MAYBE;
+                }
+                allEncoded[numNonNull++] = encodedValue;
             } else if (value != null) {
                 // Not a String, so it has no encoding to compare against the statistics.
                 return StatisticsEvaluator.ALWAYS_MAYBE;
@@ -182,6 +188,10 @@ final class StringPushdownHandler {
         }
         final byte[] lowerBytes = utf8((String) lower);
         final byte[] upperBytes = utf8((String) upper);
+        if (lowerBytes == null || upperBytes == null) {
+            // A bound with no faithful UTF-8 encoding cannot be compared in the byte domain; see utf8.
+            return StatisticsEvaluator.ALWAYS_MAYBE;
+        }
         final boolean lowerInclusive = rangeFilter.isLowerInclusive();
         final boolean upperInclusive = rangeFilter.isUpperInclusive();
         return statistics -> {
@@ -210,6 +220,10 @@ final class StringPushdownHandler {
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }
         final byte[] pivotBytes = utf8((String) pivot);
+        if (pivotBytes == null) {
+            // A pivot with no faithful UTF-8 encoding cannot be compared in the byte domain; see utf8.
+            return StatisticsEvaluator.ALWAYS_MAYBE;
+        }
         final boolean inclusive = rangeFilter.isLowerInclusive();
         final boolean isGreaterThan = rangeFilter.isGreaterThan();
         return statistics -> {
@@ -248,8 +262,22 @@ final class StringPushdownHandler {
         return value.codePoints().allMatch(cp -> cp < FIRST_DIVERGENT_CODE_POINT);
     }
 
+    /**
+     * Encodes {@code value} to UTF-8, or returns {@code null} if it has no faithful encoding.
+     * <p>
+     * A Java String may hold an <b>unpaired surrogate</b>, which is not a Unicode scalar value and so has no UTF-8 form
+     * at all. {@link String#getBytes(java.nio.charset.Charset)} substitutes {@code '?'} (0x3F) for it rather than
+     * failing, and those bytes are the bytes of a <i>different</i> string -- {@code "\uD800"} encodes to exactly what
+     * {@code "?"} does. Comparing against them is neither order- nor equality-preserving: a row group holding
+     * {@code "A"} would be excluded from {@code X < "\uD800"}, which it matches, and an inverted match on
+     * {@code "\uD800"} would exclude a row group of {@code "?"}, every row of which matches. Such a value is declined
+     * instead.
+     */
+    @Nullable
     private static byte[] utf8(@NotNull final String value) {
-        return value.getBytes(StandardCharsets.UTF_8);
+        final byte[] encoded = value.getBytes(StandardCharsets.UTF_8);
+        // The substitution is not reversible, so a faithful encoding is exactly one that round-trips.
+        return new String(encoded, StandardCharsets.UTF_8).equals(value) ? encoded : null;
     }
 
     /**

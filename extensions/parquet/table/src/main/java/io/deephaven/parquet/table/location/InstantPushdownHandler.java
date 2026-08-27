@@ -9,7 +9,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,17 +25,15 @@ import java.util.Arrays;
  *
  * <h2>Nulls</h2>
  *
- * {@link StatisticsEvaluator} describes the two reasons a row can read back as null in Deephaven. Instant behaves like
- * the primitives rather than like the other object types: its null is the {@code NULL_LONG} sentinel in the underlying
- * long, so a <b>stored sentinel</b> reads back as null while Parquet counts no null at all. That case is this class's
- * business, and needs no special machinery -- the sentinel is left among the filter's values and tested against
- * {@code min}/{@code max} like any other, a null {@link Instant} converting to exactly that sentinel through
+ * Of the two sources of a Deephaven null that {@link StatisticsEvaluator} describes, only the <b>stored sentinel</b> is
+ * this class's business. Instant behaves like the primitives rather than like the other object types: its null is the
+ * {@code NULL_LONG} sentinel in the underlying long, so a stored value equal to it reads back as null while Parquet
+ * counts no null at all. That needs no special machinery -- the sentinel is left among the filter's values and tested
+ * against {@code min}/{@code max} like any other, a null {@link Instant} converting to exactly that sentinel through
  * {@link DateTimeUtils#epochNanos(Instant)}.
  * <p>
- * A <b>Parquet null</b> is not. Such a row is invisible to {@code min}/{@code max}, so nothing here can see one or rule
- * one out; {@code StatisticsEvaluator.maybeMakeForFilter} gates on that before any of this runs. These methods
- * therefore answer from {@code min}/{@code max} alone and are <b>not</b> correct in isolation for a filter that a null
- * row satisfies.
+ * <b>These methods are not correct in isolation</b> for a filter that a null row satisfies; reach them through
+ * {@code StatisticsEvaluator.maybeMakeForFilter}, which gates on those rows.
  */
 final class InstantPushdownHandler {
 

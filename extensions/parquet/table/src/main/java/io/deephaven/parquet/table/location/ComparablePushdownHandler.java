@@ -8,10 +8,8 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.compare.ObjectComparisons;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
@@ -27,12 +25,12 @@ import java.util.Arrays;
  *
  * <h2>Nulls</h2>
  *
- * {@link StatisticsEvaluator} describes the two reasons a row can read back as null in Deephaven. Neither is this
- * class's business: these types have no sentinel encoding, so a Deephaven null comes solely from a <b>Parquet null</b>,
- * which {@code min}/{@code max} never describe. A null is dropped from the filter's values here, and
- * {@code StatisticsEvaluator.maybeMakeForFilter} gates on such rows before any of this runs. These methods therefore
- * answer from {@code min}/{@code max} alone and are <b>not</b> correct in isolation for a filter that a null row
- * satisfies.
+ * Of the two sources of a Deephaven null that {@link StatisticsEvaluator} describes, neither is this class's business:
+ * these types have no sentinel encoding, so a Deephaven null comes solely from a Parquet null, and a null is simply
+ * dropped from the filter's values here.
+ * <p>
+ * <b>These methods are not correct in isolation</b> for a filter that a null row satisfies; reach them through
+ * {@code StatisticsEvaluator.maybeMakeForFilter}, which gates on those rows.
  * <p>
  * A value that is not {@link Comparable} is a different matter and is declined outright, having no place in the
  * ordering at all.

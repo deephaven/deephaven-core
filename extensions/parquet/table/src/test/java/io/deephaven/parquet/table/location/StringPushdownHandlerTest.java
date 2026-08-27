@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -35,6 +36,8 @@ public class StringPushdownHandlerTest {
     private static final String FULLWIDTH_A = "ａ";
     /** U+1F600 GRINNING FACE -- UTF-8 {@code F0 9F 98 80}, UTF-16 surrogate pair {@code D83D DE00}. */
     private static final String EMOJI = "😀";
+    /** A lone high surrogate: not a Unicode scalar value, so it has no UTF-8 encoding at all. */
+    private static final String LONE_SURROGATE = "\uD800";
 
     private static final TableDefinition TABLE_DEFINITION =
             TableDefinition.of(ColumnDefinition.ofString("strCol"));
@@ -356,6 +359,53 @@ public class StringPushdownHandlerTest {
         // The greater-than direction is unchanged.
         assertFalse(evaluate(singleSidedFilter("zzz", true, true), stats));
         assertTrue(evaluate(singleSidedFilter("aaa", true, true), stats));
+    }
+
+    /**
+     * An unpaired surrogate is not a Unicode scalar value and has no UTF-8 form, so {@code String.getBytes(UTF_8)}
+     * substitutes {@code '?'} (0x3F) -- exactly the bytes of the genuine string {@code "?"}. Comparing against those
+     * bytes is neither order- nor equality-preserving, so such a filter value cannot be pushed down at all.
+     * <p>
+     * Deephaven can never read one out of a Parquet column ({@code Binary.toStringUsingUTF8} decodes malformed bytes to
+     * U+FFFD, and well-formed UTF-8 cannot encode a surrogate), so this only arises for a hand-built filter. It is
+     * still not safe to prune on: the comparison the engine performs is well defined in UTF-16, and it disagrees.
+     */
+    @Test
+    public void unpairedSurrogateValuesAreNotPushedDown() {
+        assertEquals("the premise: it encodes to the bytes of \"?\"",
+                "?", new String(LONE_SURROGATE.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
+
+        // `X < "\uD800"` matches "A" -- 0x0041 is below 0xD800 in UTF-16 -- but the pivot encodes to 0x3F, which is
+        // *above* "A" in byte order, so pruning on it would drop the row group.
+        assertTrue("A".compareTo(LONE_SURROGATE) < 0);
+        assertTrue(evaluate(singleSidedFilter(LONE_SURROGATE, false, false), stringStats("A", "A")));
+
+        // Two-sided range with a surrogate at either end.
+        assertTrue(evaluate(rangeFilter("A", LONE_SURROGATE, true, true), stringStats("B", "B")));
+        assertTrue(evaluate(rangeFilter(LONE_SURROGATE, "zzz", true, true), stringStats("B", "B")));
+
+        // `X not in ("\uD800")` matches every row of a row group holding only "?", since "?" is a different string.
+        assertTrue(evaluate(matchFilter(MatchOptions.INVERTED, LONE_SURROGATE), stringStats("?", "?")));
+
+        // A regular match is declined for the same reason, though it could not have gone wrong on its own.
+        assertTrue(evaluate(matchFilter(MatchOptions.REGULAR, LONE_SURROGATE), stringStats("?", "?")));
+
+        // One bad value poisons the whole list; the others cannot be trusted to stand for it.
+        assertTrue(evaluate(matchFilter(MatchOptions.REGULAR, "aaa", LONE_SURROGATE), stringStats("zzz", "zzz")));
+    }
+
+    /**
+     * The encodability check must not catch valid supplementary characters. A surrogate <i>pair</i> is a scalar value
+     * with a perfectly good UTF-8 encoding, so those filters keep pruning exactly as before.
+     */
+    @Test
+    public void pairedSurrogatesStillPruneNormally() {
+        // The emoji is U+1F600, stored as the pair D83D DE00, and round-trips through UTF-8 unchanged.
+        assertEquals(EMOJI, new String(EMOJI.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
+
+        // Still served, and still able to exclude: nothing in ["aaa", "bbb"] can equal the emoji.
+        assertFalse(evaluate(matchFilter(MatchOptions.REGULAR, EMOJI), stringStats("aaa", "bbb")));
+        assertTrue(evaluate(matchFilter(MatchOptions.REGULAR, EMOJI), stringStats(FULLWIDTH_A, EMOJI)));
     }
 
     /**
