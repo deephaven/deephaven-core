@@ -742,7 +742,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             spanInfos[i] = src.spanInfos[isrc];
             final Object span = src.spans[isrc];
             spans[i] = span;
-            if (span == null || span == FULL_BLOCK_SPAN_MARKER) {
+            if (span == null || isFullBlockSpan(span)) {
+                // Beyond 0xFFFF blocks a full block span is a boxed Long rather than the marker; neither form is a
+                // container, and neither has sharing to record.
                 continue;
             }
             if (span instanceof short[]) {
