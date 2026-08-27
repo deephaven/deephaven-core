@@ -11,14 +11,10 @@ import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
-import io.deephaven.api.JoinAddition;
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.Strings;
 import io.deephaven.proto.backplane.grpc.AggSpec;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
-import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
@@ -46,7 +42,7 @@ import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import org.jspecify.annotations.NonNull;
+import jsinterop.base.Js;
 
 import java.util.Collections;
 import java.util.List;
@@ -488,26 +484,26 @@ public interface JsTableOperations extends ServerObject {
         @TsLiteral
         @TsUnionMember
         @JsOverlay
-        public static final String ERROR_ON_DUPLICATE = "ERROR_ON_DUPLICATE";
+        String ERROR_ON_DUPLICATE = "ERROR_ON_DUPLICATE";
         @TsLiteral
         @TsUnionMember
         @JsOverlay
-        public static final String FIRST_MATCH = "FIRST_MATCH";
+        String FIRST_MATCH = "FIRST_MATCH";
         @TsLiteral
         @TsUnionMember
         @JsOverlay
-        public static final String LAST_MATCH = "LAST_MATCH";
+        String LAST_MATCH = "LAST_MATCH";
         @TsLiteral
         @TsUnionMember
         @JsOverlay
-        public static final String EXACTLY_ONE_MATCH = "EXACTLY_ONE_MATCH";
+        String EXACTLY_ONE_MATCH = "EXACTLY_ONE_MATCH";
 
 
     }
 
     // TODO add an options type for these various flags?
     @JsMethod
-    default JsTableOperations naturalJoin(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
+    default JsPendingTable naturalJoin(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<String> columnsToAdd, @JsOptional @JsNullable NaturalJoinType joinType) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
@@ -550,7 +546,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the joined columns
      */
     @JsMethod
-    default JsTableOperations exactJoin(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
+    default JsPendingTable exactJoin(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<String> columnsToAdd) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
@@ -578,7 +574,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the joined columns
      */
     @JsMethod
-    default JsTableOperations join(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
+    default JsPendingTable join(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<String> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
@@ -599,7 +595,7 @@ public interface JsTableOperations extends ServerObject {
         return call(ticket, BatchTableRequest.Operation.newBuilder().setCrossJoin(request));
     }
 
-    @TsUnion
+    @TsUnion(anonymous = false)
     @JsType(namespace = JsPackage.GLOBAL, name = "String", isNative = true)
     interface AsOfMatchRule {
         @TsLiteral
@@ -633,9 +629,9 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the joined columns
      */
     @JsMethod
-    default JsTableOperations asOfJoin(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
+    default JsPendingTable asOfJoin(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<String> columnsToAdd,
-            @JsOptional @JsNullable @TsTypeRef(AsOfMatchRule.class) String asOfMatchRule) {
+            @JsOptional @JsNullable AsOfMatchRule asOfMatchRule) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
         AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
 
@@ -649,9 +645,9 @@ public interface JsTableOperations extends ServerObject {
             if (inferredMatchRule == null) {
                 throw new IllegalArgumentException("Cannot infer match rule for column " + builder.getAsOfColumn() + ", specify asOfMatchRule argument or clarify the formula");
             }
-            asOfMatchRule = inferredMatchRule;
+            asOfMatchRule = Js.cast(inferredMatchRule);
         }
-        switch (asOfMatchRule) {
+        switch (asOfMatchRule.toString()) {
             case AsOfMatchRule.GREATER_THAN:
             case AsOfMatchRule.GREATER_THAN_EQUAL:
                 batch.setRaj(builder);
@@ -701,7 +697,7 @@ public interface JsTableOperations extends ServerObject {
         return call(ticket, BatchTableRequest.Operation.newBuilder().setRaj(builder));
     }
 
-    private AjRajTablesRequest.@NonNull Builder makeAjReq(JsTableOperations table, ReadonlyArray<String> matches, ReadonlyArray<String> columnsToAdd, Ticket ticket) {
+    private AjRajTablesRequest.Builder makeAjReq(JsTableOperations table, ReadonlyArray<String> matches, ReadonlyArray<String> columnsToAdd, Ticket ticket) {
         AjRajTablesRequest.Builder builder = AjRajTablesRequest.newBuilder()
                 .setResultId(ticket)
                 .setLeftId(TableReference.newBuilder()
@@ -722,7 +718,7 @@ public interface JsTableOperations extends ServerObject {
 
     // TODO add args in a js-ish way
     // @JsMethod
-    // JsTableOperations rangeJoin(JsTableOperations rightTable,
+    // JsPendingTable rangeJoin(JsTableOperations rightTable,
 
     /**
      * Groups the table by the specified columns, accumulating the other columns into arrays. If no columns are
@@ -732,7 +728,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a table with one row per group
      */
     @JsMethod
-    default JsTableOperations groupBy(@JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+    default JsPendingTable groupBy(@JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest.newBuilder()
@@ -752,7 +748,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with these aggregations applied to the data in this table
      */
     @JsMethod
-    default JsTableOperations aggAllBy(AggAllByUnion aggUnion,
+    default JsPendingTable aggAllBy(AggAllByUnion aggUnion,
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
@@ -774,7 +770,7 @@ public interface JsTableOperations extends ServerObject {
      * @return
      */
     @JsMethod
-    default JsTableOperations aggBy(AggByOptions options) {
+    default JsPendingTable aggBy(AggByOptions options) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         AggregateRequest.Builder aggBuilder = AggregateRequest.newBuilder()
@@ -806,7 +802,7 @@ public interface JsTableOperations extends ServerObject {
 
     // TODO options
     // @JsMethod
-    // JsTableOperations updateBy();
+    // default JsPendingTable updateBy() {}
 
     /**
      * Creates a new table with only the distinct values of the specified columns. If no columns are specified, all columns will be used.
@@ -814,7 +810,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with only the distinct values of the specified columns
      */
     @JsMethod
-    default JsTableOperations selectDistinct(@JsNullable @JsOptional ReadonlyArray<Column.ColumnOrName> columnNames) {
+    default JsPendingTable selectDistinct(@JsNullable @JsOptional ReadonlyArray<Column.ColumnOrName> columnNames) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setSelect(SelectOrUpdateRequest.newBuilder()
@@ -833,7 +829,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with a count column and optional group-by columns
      */
     @JsMethod
-    default JsTableOperations countBy(String columnName,
+    default JsPendingTable countBy(String columnName,
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
@@ -858,7 +854,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the first row from each group
      */
     @JsMethod
-    default JsTableOperations firstBy(@JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+    default JsPendingTable firstBy(@JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setFirst(AggSpec.AggSpecFirst.getDefaultInstance()), groupByColumns);
     }
 
@@ -869,7 +865,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the last row from each group
      */
     @JsMethod
-    default JsTableOperations lastBy(
+    default JsPendingTable lastBy(
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setLast(AggSpec.AggSpecLast.getDefaultInstance()), groupByColumns);
     }
@@ -881,7 +877,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the minimum values
      */
     @JsMethod
-    default JsTableOperations minBy(
+    default JsPendingTable minBy(
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setMin(AggSpec.AggSpecMin.getDefaultInstance()), groupByColumns);
     }
@@ -893,7 +889,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the maximum values
      */
     @JsMethod
-    default JsTableOperations maxBy(
+    default JsPendingTable maxBy(
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setMax(AggSpec.AggSpecMax.getDefaultInstance()), groupByColumns);
     }
@@ -905,7 +901,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the sums
      */
     @JsMethod
-    default JsTableOperations sumBy(
+    default JsPendingTable sumBy(
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setSum(AggSpec.AggSpecSum.getDefaultInstance()), groupByColumns);
     }
@@ -917,7 +913,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the averages
      */
     @JsMethod
-    default JsTableOperations avgBy(
+    default JsPendingTable avgBy(
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setAvg(AggSpec.AggSpecAvg.getDefaultInstance()), groupByColumns);
     }
@@ -930,7 +926,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the medians
      */
     @JsMethod
-    default JsTableOperations medianBy(
+    default JsPendingTable medianBy(
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setMedian(
                 AggSpec.AggSpecMedian.newBuilder().setAverageEvenlyDivided(true)), groupByColumns);
@@ -943,7 +939,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the standard deviations
      */
     @JsMethod
-    default JsTableOperations stdBy(
+    default JsPendingTable stdBy(
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setStd(AggSpec.AggSpecStd.getDefaultInstance()), groupByColumns);
     }
@@ -955,7 +951,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the variances
      */
     @JsMethod
-    default JsTableOperations varBy(
+    default JsPendingTable varBy(
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setVar(AggSpec.AggSpecVar.getDefaultInstance()), groupByColumns);
     }
@@ -967,7 +963,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the absolute sums
      */
     @JsMethod
-    default JsTableOperations absSumBy(
+    default JsPendingTable absSumBy(
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setAbsSum(AggSpec.AggSpecAbsSum.getDefaultInstance()), groupByColumns);
     }
@@ -981,7 +977,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the weighted sums
      */
     @JsMethod
-    default JsTableOperations wsumBy(Column.ColumnOrName weightColumn,
+    default JsPendingTable wsumBy(Column.ColumnOrName weightColumn,
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setWeightedSum(
                 AggSpec.AggSpecWeighted.newBuilder().setWeightColumn(weightColumn.columnName())), groupByColumns);
@@ -996,7 +992,7 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the weighted averages
      */
     @JsMethod
-    default JsTableOperations wavgBy(Column.ColumnOrName weightColumn,
+    default JsPendingTable wavgBy(Column.ColumnOrName weightColumn,
             @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setWeightedAvg(
                 AggSpec.AggSpecWeighted.newBuilder().setWeightColumn(weightColumn.columnName())), groupByColumns);
@@ -1067,7 +1063,7 @@ public interface JsTableOperations extends ServerObject {
      * Helper for convenience aggregation methods that build an {@link AggregateAllRequest} with a pre-built
      * {@link AggSpec}.
      */
-    private JsTableOperations aggAllBySpec(AggSpec.Builder spec,
+    private JsPendingTable aggAllBySpec(AggSpec.Builder spec,
             ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
         return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest.newBuilder()
@@ -1121,5 +1117,5 @@ public interface JsTableOperations extends ServerObject {
 
     // TODO options
     // @JsMethod
-    // JsTableOperations downsample();
+    // JsPendingTable downsample();
 }
