@@ -734,7 +734,9 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final RowSequence ixGetRowSequenceByPosition(final long startPositionInclusive, final long length) {
-        if (startPositionInclusive >= ixCardinality() || length == 0) {
+        // A length of zero or less asks for nothing. Falling through with a negative one would build a row sequence
+        // whose end lies before its start, reporting a negative size rather than an empty one.
+        if (startPositionInclusive >= ixCardinality() || length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
         final long s = rangeStart() + startPositionInclusive;

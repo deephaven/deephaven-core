@@ -36,28 +36,71 @@ public class RowSequenceContractTest {
         }
     }
 
-    /** Asking for zero keys yields an empty sequence, wherever in the rowset the request starts. */
+    /**
+     * Asking for no keys yields an empty sequence, wherever in the rowset the request starts.
+     *
+     * <p>
+     * The fixture stays a single range on purpose: inserting a second, disjoint range would move the SingleRange case
+     * onto another implementation, and its own guard would go untested.
+     */
     @Test
-    public void testZeroLengthIsEmpty() {
+    public void testNonPositiveLengthIsEmpty() {
         for (int i = 0; i < NAMES.length; ++i) {
-            final String what = NAMES[i];
             try (final WritableRowSet rs = backing(i, 5)) {
-                rs.insertRange(100, 104);
-                for (final long pos : new long[] {0, 2, rs.size() - 1}) {
-                    try (final RowSequence seq = rs.getRowSequenceByPosition(pos, 0)) {
-                        assertEquals(what + ": size at " + pos, 0, seq.size());
-                        assertTrue(what + ": isEmpty at " + pos, seq.isEmpty());
-                        assertTrue(what + ": no keys at " + pos, seq.forEachRowKey(k -> {
-                            throw new AssertionError(what + ": produced key " + k);
-                        }));
+                assertBackedBy(NAMES[i], rs);
+                for (final long length : new long[] {0, -1, -3}) {
+                    for (final long pos : new long[] {0, 2, rs.size() - 1}) {
+                        assertEmptyAt(NAMES[i], rs, pos, length);
                     }
-                }
-                // A negative length asks for nothing at all, the same as zero.
-                try (final RowSequence seq = rs.getRowSequenceByPosition(0, -1)) {
-                    assertEquals(what + ": size for a negative length", 0, seq.size());
                 }
             }
         }
+    }
+
+    /**
+     * The same, at a position inside a later range. SingleRange is absent by definition -- it cannot hold two disjoint
+     * ranges -- so this covers only the implementations that can.
+     */
+    @Test
+    public void testNonPositiveLengthIsEmptyAcrossSeveralRanges() {
+        for (int i = 1; i < NAMES.length; ++i) {
+            try (final WritableRowSet rs = backing(i, 5)) {
+                rs.insertRange(100, 104);
+                for (final long length : new long[] {0, -1}) {
+                    for (final long pos : new long[] {0, 4, 6, rs.size() - 1}) {
+                        assertEmptyAt(NAMES[i] + ", several ranges", rs, pos, length);
+                    }
+                }
+            }
+        }
+    }
+
+    /** Guards the fixture itself: a case meant to exercise one implementation must still be on it. */
+    private static void assertBackedBy(final String what, final WritableRowSet rs) {
+        final String backing = ((WritableRowSetImpl) rs).getInnerSet().getClass().getSimpleName();
+        final String expected = what.equals("single range") ? "SingleRange"
+                : what.equals("sorted ranges") ? "SortedRanges" : "Rsp";
+        assertTrue(what + " is backed by " + backing, backing.contains(expected));
+    }
+
+    private static void assertEmptyAt(final String what, final WritableRowSet rs, final long pos, final long length) {
+        final String where = what + " at position " + pos + " for length " + length;
+        try (final RowSequence seq = rs.getRowSequenceByPosition(pos, length)) {
+            assertEmpty(where, seq);
+        }
+        // A row sequence carries its own copy of the same guard, which a caller reaches by slicing again.
+        try (final RowSequence whole = rs.getRowSequenceByPosition(0, rs.size());
+                final RowSequence seq = whole.getRowSequenceByPosition(pos, length)) {
+            assertEmpty(where + ", sliced again", seq);
+        }
+    }
+
+    private static void assertEmpty(final String where, final RowSequence seq) {
+        assertEquals(where + ": size", 0, seq.size());
+        assertTrue(where + ": isEmpty", seq.isEmpty());
+        assertTrue(where + ": no keys", seq.forEachRowKey(k -> {
+            throw new AssertionError(where + ": produced key " + k);
+        }));
     }
 
     /**
