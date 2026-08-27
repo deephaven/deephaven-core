@@ -2078,6 +2078,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     private static class SearchIteratorImpl implements RowSet.SearchIterator {
         private final RspRangeIterator it;
         private long curr = 0;
+        // The first key of the current range not yet produced. It equals curr while curr itself is still to be
+        // produced, and steps past the range's end once the range is done -- except at the top of the key space, where
+        // stepping past Long.MAX_VALUE wraps to a value below curr. Hence the next >= curr guards below.
         private long next = 0;
         private long currRangeEnd = -1;
 
@@ -2092,7 +2095,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
         @Override
         public boolean hasNext() {
-            if (next <= currRangeEnd) {
+            if (next >= curr && next <= currRangeEnd) {
                 return true;
             }
             return it.hasNext();
@@ -2105,7 +2108,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
         @Override
         public long nextLong() {
-            if (next <= currRangeEnd) {
+            if (next >= curr && next <= currRangeEnd) {
                 curr = next++;
             } else {
                 it.next();
