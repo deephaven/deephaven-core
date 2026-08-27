@@ -53,6 +53,8 @@
               {
                 "label": "Query Parallelization",
                 "path": "getting-started/crash-course/parallelization.md"
+              },
+              {
                 "label": "Recipes, not loops!",
                 "path": "getting-started/crash-course/vectorization-vs-loops.md"
               },

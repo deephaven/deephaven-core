@@ -62,6 +62,8 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 Learn how Deephaven automatically uses multiple CPU cores to dramatically improve query performance, and how to write queries that leverage parallelization effectively.
 
+</CoreTutorialCard>
+
 <CoreTutorialCard to="/core/docs/getting-started/crash-course/vectorization-vs-loops/">
 
 ## Recipes, not loops!
