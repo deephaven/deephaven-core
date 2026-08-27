@@ -375,10 +375,17 @@ public abstract class SingleRange implements OrderedLongSet {
         private final long end;
         private long curr;
 
+        /**
+         * Whether the walk has yet to produce anything. Held as a flag rather than by parking {@code curr} one past the
+         * end: that would wrap for a range ending at the last key of the key space, leaving the position below the
+         * range's start and nothing to iterate.
+         */
+        private boolean beforeFirst = true;
+
         public ReverseIter(final long rangeStart, final long rangeEnd) {
             start = rangeStart;
             end = rangeEnd;
-            curr = rangeEnd + 1;
+            curr = rangeEnd;
         }
 
         @Override
@@ -386,7 +393,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
         @Override
         public boolean hasNext() {
-            return start < curr;
+            return beforeFirst ? start <= end : start < curr;
         }
 
         @Override
@@ -396,16 +403,23 @@ public abstract class SingleRange implements OrderedLongSet {
 
         @Override
         public long nextLong() {
-            return --curr;
+            if (beforeFirst) {
+                beforeFirst = false;
+            } else {
+                --curr;
+            }
+            return curr;
         }
 
         @Override
         public boolean advance(long v) {
             if (v < start) {
                 curr = start;
+                beforeFirst = false;
                 return false;
             }
-            curr = Math.min(v, Math.min(curr, end)); // it might not have been started yet.
+            curr = Math.min(v, curr);
+            beforeFirst = false;
             return true;
         }
 
