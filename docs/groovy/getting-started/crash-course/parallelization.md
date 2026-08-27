@@ -18,7 +18,7 @@ Deephaven distributes work across cores in two ways:
 
 When one table feeds into several downstream tables, Deephaven computes those downstream tables simultaneously. In this example, `trades` feeds into three separate tables using [`where`](../../reference/table-operations/filter/where.md), [`aggBy`](../../reference/table-operations/group-and-aggregate/aggBy.md), and [`tail`](../../reference/table-operations/filter/tail.md):
 
-```groovy test-set=parallel order=trades,highValue,bySymbol,recent
+```groovy test-set=parallel order=null
 import static io.deephaven.api.agg.Aggregation.*
 
 // Create a table that adds a new row every second
@@ -128,7 +128,7 @@ result = emptyTable(5_000_000).update("ID = getNextId()")
 The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with parallelization, multiple cores call `getNextId` at the same time. Two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
 
 > [!NOTE]
-> This example uses only 100 rows for clarity. On a table larger than the default `QueryTable.minimumParallelSelectRows` (about 4.2 million rows), Deephaven would parallelize this formula and the race described above would produce duplicate and skipped IDs.
+> This example uses 5 million rows, which crosses the default `QueryTable.minimumParallelSelectRows` (about 4.2 million rows). With a smaller table, Deephaven would evaluate the formula serially and the race would not occur.
 
 ### The fix: force sequential processing with `withSerial`
 

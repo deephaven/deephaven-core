@@ -20,7 +20,7 @@ Parallelization occurs at two levels:
 
 When you create multiple tables from the same source, Deephaven computes them simultaneously. In this example, three independent tables derive from `marketData`:
 
-```groovy order=marketData,withMetrics,highVolume,recentTrades
+```groovy order=null
 // Create a live table that adds a row every second
 marketData = timeTable("PT1s").update(
     "Symbol = `SYM` + (int)(i % 5)",
@@ -193,20 +193,24 @@ The [`ConcurrencyControl`](https://deephaven.io/core/javadoc/io/deephaven/api/Co
 
 This example demonstrates why some code needs serialization. A function maintains global state:
 
-```groovy order=t
-import java.util.concurrent.atomic.AtomicInteger
+```groovy skip-test
+// Use a one-element int[] so parallel access can corrupt it
+counter = [0] as int[]
 
-counter = new AtomicInteger(0)
-t = emptyTable(1_000_000).update("A = counter.getAndIncrement()", "B = counter.getAndIncrement()")
+getAndIncrement = { counter[0]++ }
+
+t = emptyTable(5_000_000).update("A = getAndIncrement()", "B = getAndIncrement()")
 ```
 
 Without serialization, parallel execution causes race conditions where multiple threads read and update `counter` simultaneously. This doesn't throw an error — it silently produces wrong values:
 
-```groovy should-fail
-import java.util.concurrent.atomic.AtomicInteger
+```groovy skip-test
+// Use a one-element int[] so parallel access can corrupt it
+counter = [0] as int[]
 
-counter = new AtomicInteger(0)
-bad_result = emptyTable(10).update("A = counter.getAndIncrement()", "B = counter.getAndIncrement()")
+getAndIncrement = { counter[0]++ }
+
+bad_result = emptyTable(5_000_000).update("A = getAndIncrement()", "B = getAndIncrement()")
 ```
 
 Parallel execution causes inconsistent values because multiple threads increment `counter` concurrently. You may see results like:
@@ -227,13 +231,15 @@ To force serial execution for a column calculation, create a `Selectable` object
 
 ```groovy order=result
 import io.deephaven.api.Selectable
-import java.util.concurrent.atomic.AtomicInteger
 
-counter = new AtomicInteger(0)
+// Use a one-element int[] so the result is only correct when serialized
+counter = [0] as int[]
+
+getAndIncrement = { counter[0]++ }
 
 // Force serial execution - rows processed one at a time, in order
-col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
-result = emptyTable(10).update([col])
+col = Selectable.parse("ID = getAndIncrement()").withSerial()
+result = emptyTable(5_000_000).update([col])
 ```
 
 When a Selectable is serial:

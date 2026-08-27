@@ -40,6 +40,7 @@ The `QueryTable` has the following user-configurable properties:
 | [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
 | [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
 | [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | true       |
+| [Stateless select by default](#stateless-by-default)                | `QueryTable.statelessSelectByDefault`                    | true       |
 
 Each property is described below, roughly categorized by similarity.
 
@@ -221,9 +222,10 @@ The recycler capacity determines how many array blocks are kept in memory for po
 
 Starting in Deephaven 41, the engine assumes that filter and select operations can be executed in parallel by default. To force sequential execution, use the [`Filter`](../reference/query-language/types/Filter.md) or [`Selectable`](../reference/query-language/types/Selectable.md) classes with [serialization methods](./query-engine/parallelization.md#serialization).
 
-| Property Name                          | Default Value | Description                                                                                         |
-| -------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------- |
-| `QueryTable.statelessFiltersByDefault` | true          | Enables the engine to assume that filters are stateless by default, allowing for more optimizations |
+| Property Name                          | Default Value | Description                                                                                                   |
+| -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------- |
+| `QueryTable.statelessFiltersByDefault` | true          | Enables the engine to assume that filters are stateless by default, allowing for more optimizations           |
+| `QueryTable.statelessSelectByDefault`  | true          | Enables the engine to assume that select operations are stateless by default, allowing for more optimizations |
 
 For more details, see the Pydoc on [ConcurrencyControl](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl).
 

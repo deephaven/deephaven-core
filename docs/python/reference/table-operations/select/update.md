@@ -57,7 +57,7 @@ result = source.update(formulas=["A", "X = B", "Y = sqrt(C)"])
 
 ## Serial execution
 
-By default, Deephaven parallelizes `update` calculations across multiple CPU cores. If your formula has side effects or depends on row order, use `.with_serial()` to force sequential processing.
+By default, Deephaven parallelizes `update` calculations across multiple CPU cores. If your formula has side effects or depends on row order, use `.with_serial` to force sequential processing.
 
 ```python order=result
 from deephaven.table import Selectable

@@ -49,7 +49,7 @@ result = emptyTable(10).update([col])
 ```
 
 > [!IMPORTANT]
-> Concurrency control methods (`withSerial`, `withDeclaredBarriers`, `withRespectedBarriers`) only work with [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md). While [`view`](../../table-operations/select/view.md) and [`updateView`](../../table-operations/select/update-view.md) accept `Selectable` objects, they compute values on-demand and cannot enforce processing order. [`lazyUpdate`](../../table-operations/select/lazy-update.md) does not accept `Selectable` objects.
+> Concurrency control methods (`withSerial`, `withDeclaredBarriers`, `withRespectedBarriers`) only work with [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md). While [`view`](../../table-operations/select/view.md) and [`updateView`](../../table-operations/select/update-view.md) accept `Selectable` objects, they compute values on-demand and cannot enforce processing order. [`lazyUpdate`](../../table-operations/select/lazy-update.md) also accepts `Selectable` objects, but it cannot enforce processing order.
 
 ### `withDeclaredBarriers` and `withRespectedBarriers`
 

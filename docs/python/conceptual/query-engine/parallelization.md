@@ -20,7 +20,7 @@ Parallelization occurs at two levels:
 
 When you create multiple tables from the same source, Deephaven computes them simultaneously. In this example, three independent tables derive from `market_data`:
 
-```python order=market_data,with_metrics,high_volume,recent_trades
+```python order=null
 from deephaven import time_table
 
 # Create a live table that adds a row every second
@@ -202,7 +202,7 @@ The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.c
 
 This example demonstrates why some code needs serialization. A function maintains global state:
 
-```python order=t
+```python skip-test
 from deephaven import empty_table
 
 counter = 0
@@ -215,14 +215,14 @@ def get_and_increment_counter() -> int:
     return ret
 
 
-t = empty_table(1_000_000).update(
+t = empty_table(5_000_000).update(
     ["A = get_and_increment_counter()", "B = get_and_increment_counter()"]
 )
 ```
 
 Without serialization, parallel execution causes race conditions where multiple threads read and update `counter` simultaneously. This produces incorrect results:
 
-```python should-fail
+```python skip-test
 from deephaven import empty_table
 
 counter = 0
@@ -235,7 +235,7 @@ def get_and_increment_counter() -> int:
     return ret
 
 
-bad_result = empty_table(10).update(
+bad_result = empty_table(5_000_000).update(
     ["A = get_and_increment_counter()", "B = get_and_increment_counter()"]
 )
 ```
@@ -271,7 +271,7 @@ def get_and_increment_counter() -> int:
 
 # Force serial execution - rows processed one at a time, in order
 col = Selectable.parse("ID = get_and_increment_counter()").with_serial()
-result = empty_table(1_000_000).update(col)
+result = empty_table(5_000_000).update(col)
 ```
 
 When a Selectable is serial:

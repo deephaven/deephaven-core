@@ -37,7 +37,7 @@ These methods control how Deephaven evaluates the filter. By default, Deephaven 
 
 ### `with_serial`
 
-Forces the filter to evaluate sequentially on a single core, processing rows one at a time in order. Use this when the filter has side effects or depends on row order. On a source with more than 131,072 rows, the filter would otherwise be evaluated in parallel, so `with_serial` is the protection you need for larger inputs.
+Forces the filter to evaluate sequentially on a single core, processing rows one at a time in order. Use this when the filter has side effects or depends on row order. On a source with more than 131,072 rows, the filter would otherwise be evaluated in parallel; use `with_serial` to protect larger inputs.
 
 ```python order=source,result
 from deephaven.filters import Filter

@@ -18,7 +18,7 @@ Deephaven distributes work across cores in two ways:
 
 When one table feeds into several downstream tables, Deephaven computes those downstream tables simultaneously. In this example, `trades` feeds into three separate tables using [`where`](../../reference/table-operations/filter/where.md), [`agg_by`](../../reference/table-operations/group-and-aggregate/aggBy.md), and [`tail`](../../reference/table-operations/filter/tail.md):
 
-```python test-set=parallel order=trades,high_value,by_symbol,recent
+```python test-set=parallel order=null
 from deephaven import time_table, agg
 
 # Create a table that adds a new row every second
