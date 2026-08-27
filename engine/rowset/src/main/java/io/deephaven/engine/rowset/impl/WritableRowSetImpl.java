@@ -231,7 +231,19 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insertWithShift(final long shiftAmount, final RowSet other) {
         preMutationHook();
-        assign(innerSet.ixInsertWithShift(shiftAmount, getInnerSet(other)));
+        if (other == this) {
+            // Applying this to ourselves is not a no-op the way self-insertion is; it unions in a shifted copy of
+            // our own keys. The ix* implementations build the result by mutating in place, so the operand being
+            // read needs a reference of its own -- holding one makes that mutation copy first.
+            final OrderedLongSet shifted = innerSet.ixCowRef();
+            try {
+                assign(innerSet.ixInsertWithShift(shiftAmount, shifted));
+            } finally {
+                shifted.ixRelease();
+            }
+        } else {
+            assign(innerSet.ixInsertWithShift(shiftAmount, getInnerSet(other)));
+        }
         postMutationHook();
     }
 
