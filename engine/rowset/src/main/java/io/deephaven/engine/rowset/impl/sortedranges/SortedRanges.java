@@ -1564,12 +1564,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 final long min = Math.min(s1, s2);
                 final long max = Math.max(e1, e2);
                 if (max == Long.MAX_VALUE) {
-                    // The merged range reaches the top of the key space, so neither side can hold anything further and
-                    // there is nowhere to advance to.
+                    // The merged range reaches the top of the key space, so there is nowhere to advance to. Whatever
+                    // either iterator still holds unread lies inside [min, MAX], so we are done: breaking here instead
+                    // would reach the leftover drains below, which would append those covered ranges after a range
+                    // ending at MAX and leave the result out of order with an overflowed cardinality.
                     if (!res.trySimpleAppend(min, max)) {
                         return null;
                     }
-                    break;
+                    return res;
                 }
                 final boolean it1Valid = it1.advance(max + 1);
                 final boolean it2Valid = it2.advance(max + 1);

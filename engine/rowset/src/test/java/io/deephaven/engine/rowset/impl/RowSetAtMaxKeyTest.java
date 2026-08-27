@@ -6,11 +6,11 @@ package io.deephaven.engine.rowset.impl;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
+import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -54,13 +54,16 @@ public class RowSetAtMaxKeyTest {
         return new WritableRowSetImpl(SingleRange.make(start, end));
     }
 
-    /** A handful of ranges, which RowSetFactory backs with SortedRanges. */
+    /**
+     * Built as SortedRanges explicitly: going through RowSetFactory would hand back a SingleRange for a lone range, and
+     * these cases are about the sorted ranges code.
+     */
     private static WritableRowSet sortedRangesOf(final long[]... ranges) {
-        final WritableRowSet rs = RowSetFactory.empty();
-        for (final long[] r : ranges) {
-            rs.insertRange(r[0], r[1]);
+        SortedRanges sr = SortedRanges.makeSingleRange(ranges[0][0], ranges[0][1]);
+        for (int i = 1; i < ranges.length; ++i) {
+            sr = sr.addRange(ranges[i][0], ranges[i][1]);
         }
-        return rs;
+        return new WritableRowSetImpl(sr);
     }
 
     /** Collects keys, failing rather than hanging if the walk runs past what the rowset holds. */
@@ -320,8 +323,14 @@ public class RowSetAtMaxKeyTest {
         final String expected = expectedUnion(receiver, argument);
         try (final WritableRowSet rs = sortedRangesOf(receiver);
                 final WritableRowSet other = sortedRangesOf(argument)) {
+            // Guard the fixture: these cases are about the sorted ranges union, so both operands must be on it.
+            for (final WritableRowSet operand : new WritableRowSet[] {rs, other}) {
+                final String backing = ((WritableRowSetImpl) operand).getInnerSet().getClass().getSimpleName();
+                assertTrue("operand is backed by " + backing, backing.contains("SortedRanges"));
+            }
             rs.insert(other);
             assertEquals("insert " + render(rangesOf(other)), expected, render(rangesOf(rs)));
+            ((WritableRowSetImpl) rs).getInnerSet().ixValidate("after insert");
         }
         try (final WritableRowSet rs = sortedRangesOf(receiver);
                 final WritableRowSet other = sortedRangesOf(argument);
@@ -339,6 +348,23 @@ public class RowSetAtMaxKeyTest {
         checkInsert(new long[][] {{MAX - 3, MAX}}, new long[][] {{MAX - 8, MAX - 4}});
         checkInsert(new long[][] {{MAX, MAX}}, new long[][] {{5, 9}});
         checkInsert(new long[][] {{5, 9}}, new long[][] {{MAX, MAX}});
+    }
+
+    /**
+     * Ranges lying *after* the one that merges up to MAX. Nothing can follow a range ending at the top of the key
+     * space, so those ranges are already inside the merged result and must not be appended after it.
+     */
+    @Test
+    public void testSortedRangesUnionAtTheLastKeyWithTrailingRanges() {
+        // The receiver has two ranges left unread when the argument's range merges up to MAX.
+        checkInsert(new long[][] {{100, 200}, {300, 400}, {500, 600}}, new long[][] {{150, 160}, {170, MAX}});
+        // And the mirror image: the argument is the side left holding ranges.
+        checkInsert(new long[][] {{150, 160}, {170, MAX}}, new long[][] {{100, 200}, {300, 400}, {500, 600}});
+        // Both sides still holding several.
+        checkInsert(new long[][] {{100, 200}, {700, 800}, {900, 1000}},
+                new long[][] {{150, MAX}, {2000, 2100}, {3000, 3100}});
+        // The merge to MAX happens on the very first pair, so everything else is a leftover.
+        checkInsert(new long[][] {{100, MAX}}, new long[][] {{150, 160}, {300, 400}, {500, 600}});
     }
 
     /**
