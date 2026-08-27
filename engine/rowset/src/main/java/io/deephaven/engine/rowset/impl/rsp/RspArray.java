@@ -4059,11 +4059,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final long flen = view.getFullBlockSpanLen();
             final long key = view.getKey();
             if (flen > 0) {
-                final long oneAfterLast = key + flen * BLOCK_SIZE;
-                for (long v = key + offset; v < oneAfterLast; ++v) {
+                // Bounded by the span's last key rather than by one past it: a span reaching the top of the key
+                // space would overflow there, and the loop would read that as having nothing to visit.
+                final long lastKey = getKeyForLastBlockInFullSpan(key, flen) + BLOCK_LAST;
+                for (long v = key + offset; v <= lastKey; ++v) {
                     final boolean wantMore = lc.accept(v);
                     if (!wantMore) {
                         return false;
+                    }
+                    if (v == lastKey) {
+                        break;
                     }
                 }
                 return true;
@@ -4096,11 +4101,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final long flen = view.getFullBlockSpanLen();
             final long key = view.getKey();
             if (flen > 0) {
-                final long oneAfterLast = key + flen * BLOCK_SIZE;
-                for (long v = key; v < oneAfterLast; ++v) {
+                // Bounded by the span's last key rather than by one past it: a span reaching the top of the key
+                // space would overflow there, and the loop would read that as having nothing to visit.
+                final long lastKey = getKeyForLastBlockInFullSpan(key, flen) + BLOCK_LAST;
+                for (long v = key; v <= lastKey; ++v) {
                     final boolean wantMore = lc.accept(v);
                     if (!wantMore) {
                         return false;
+                    }
+                    if (v == lastKey) {
+                        break;
                     }
                 }
                 return true;
