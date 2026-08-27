@@ -225,7 +225,7 @@ uploaded = client_session.import_table(data)
 try:
     input_table.add(uploaded)
 finally:
-    client_session.release(uploaded.ticket)  # Prevent memory leak
+    uploaded.close()  # Releases server resources and marks object closed
 ```
 
 For a complete guide on streaming patterns, memory management, and input table types, see [Client input tables](../how-to-guides/client-input-tables.md).

@@ -25,7 +25,7 @@ The basic pattern for sending data from a Python client is:
 2. **Prepare data** in your client application.
 3. **Convert to PyArrow** and upload with [`Session.import_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.import_table).
 4. **Add to the input table** with [`InputTable.add`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.InputTable.add). For keyed tables, this inserts new rows or updates existing ones.
-5. **Release the uploaded table** with [`Session.release`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.release) to prevent memory leaks.
+5. **Close the uploaded table** with [`Table.close`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table.close) to release server resources and prevent memory leaks.
 
 Repeat steps 2-5 as needed.
 
@@ -72,7 +72,7 @@ with Session() as session:
         try:
             input_table.add(uploaded)  # Inserts or updates based on DeviceId
         finally:
-            session.release(uploaded.ticket)
+            uploaded.close()
 
     def remove_device(device_id: str):
         """Remove a device from the table."""
@@ -81,7 +81,7 @@ with Session() as session:
         try:
             input_table.delete(uploaded)
         finally:
-            session.release(uploaded.ticket)
+            uploaded.close()
 
     # Example usage
     update_device("sensor-001", "online")
@@ -99,7 +99,7 @@ with Session() as session:
 
 Each call to `import_table` creates a temporary table on the server. If you don't release these tables, they accumulate and consume server memory.
 
-**Always call `session.release(table.ticket)` after adding data to the input table.** Use `try`/`finally` to ensure cleanup even if the add fails:
+**Always call `close` on uploaded tables after adding data to the input table.** This releases the server-side export and marks the local object as closed. Use `try`/`finally` to ensure cleanup even if the add fails:
 
 ```python skip-test
 # Upload data
@@ -108,8 +108,8 @@ try:
     # Add to input table
     input_table.add(uploaded)
 finally:
-    # Release the temporary table (even on failure)
-    session.release(uploaded.ticket)
+    # Close the temporary table (even on failure)
+    uploaded.close()
 ```
 
 ## Input table types
@@ -137,7 +137,7 @@ uploaded_keys = session.import_table(keys_to_delete)
 try:
     input_table.delete(uploaded_keys)
 finally:
-    session.release(uploaded_keys.ticket)
+    uploaded_keys.close()
 ```
 
 ### Append-only
@@ -181,7 +181,7 @@ uploaded = session.import_table(pa_table)
 try:
     input_table.add(uploaded)
 finally:
-    session.release(uploaded.ticket)
+    uploaded.close()
 ```
 
 ## Related documentation

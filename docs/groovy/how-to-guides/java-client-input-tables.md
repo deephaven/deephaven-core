@@ -19,12 +19,12 @@ Use client-side input tables when:
 
 ## Setup
 
-Add the Deephaven Java client dependencies to your project. Use the version that matches your Deephaven server. For Gradle:
+Add the Deephaven Java client dependencies to your project. Replace `<version>` with the version that matches your Deephaven server (e.g., `0.36.1`). For Gradle:
 
 ```groovy syntax
 dependencies {
-    implementation 'io.deephaven:deephaven-java-client-flight-dagger:0.36.1'
-    implementation 'io.deephaven:deephaven-qst:0.36.1'
+    implementation 'io.deephaven:deephaven-java-client-flight-dagger:<version>'
+    implementation 'io.deephaven:deephaven-qst:<version>'
 }
 ```
 
