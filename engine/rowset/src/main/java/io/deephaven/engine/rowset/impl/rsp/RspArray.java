@@ -1972,8 +1972,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 dstIdx -= n;
                 srcIdx = position - 1;
             }
-            spanInfos[dstIdx] = pending.spanInfos[p];
-            spans[dstIdx] = pending.spans[p];
+            final Object pendingSpan = pending.spans[p];
+            if (pendingSpan instanceof Container) {
+                // Each queued span is inserted once, so we normalize its representation.
+                setContainerSpanRaw(spanInfos, spans, dstIdx, pending.spanInfos[p],
+                        maybeOptimize((Container) pendingSpan));
+            } else {
+                spanInfos[dstIdx] = pending.spanInfos[p];
+                spans[dstIdx] = pendingSpan;
+            }
             --dstIdx;
         }
         size += deltaSpans;
@@ -2120,6 +2127,78 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     public void removeSpanAtIndex(final int i) {
         collapseRange(i, i + 1);
+        modifiedSpan(i);
+    }
+
+    /**
+     * Take {@code [start, end]} out of the span a split most recently queued, which must be what was left of block
+     * {@code blockKey}. Lets a caller working through ascending ranges come back to a block whose remainder is still
+     * queued rather than in our arrays, without having to settle the whole queue to reach it.
+     *
+     * <p>
+     * Only the last queued span is considered. Ranges arrive in ascending order and a split queues the pieces before
+     * the last one that is left in the spans array. The caller can only return to the one in spans or the last queued
+     * block.
+     *
+     * @param pending the queued spans
+     * @param blockKey the block the range falls in
+     * @param start first key to remove, within that block
+     * @param end last key to remove, within that block
+     * @return whether that block's remainder was the span queued last, and the removal was applied to it. When it is
+     *         not, the block is not in the queue at all: either nothing of it survived the earlier range, or its
+     *         remainder went into the array rather than the queue, and an ordinary search finds it.
+     */
+    protected boolean removeFromLastPendingSpan(final PendingSpanInserts pending, final long blockKey,
+            final long start, final long end) {
+        final int last = pending.size() - 1;
+        final long spanInfo = pending.spanInfoAt(last);
+        final Object span = pending.spanAt(last);
+        if (span == null) {
+            final long value = spanInfoToSingletonSpanValue(spanInfo);
+            if (highBits(value) != blockKey) {
+                return false;
+            }
+            if (uLessOrEqual(start, value) && uLessOrEqual(value, end)) {
+                pending.dropLast();
+            }
+            return true;
+        }
+        if (isFullBlockSpan(span) || spanInfoToKey(spanInfo) != blockKey) {
+            return false;
+        }
+        final Container result = ((Container) span).iremove(lowBitsAsInt(start), lowBitsAsInt(end) + 1);
+        if (result.isEmpty()) {
+            pending.dropLast();
+        } else if (result.isSingleElement()) {
+            pending.setLast(blockKey | result.first(), null);
+        } else {
+            // Left as it is: a later range in this same block may edit it again, and the queued spans are optimized
+            // once each, where they are placed.
+            pending.setLast(blockKey, result);
+        }
+        return true;
+    }
+
+    /**
+     * Put the spans in {@code buf} where the span at index {@code i} is, without moving anything: the last of them
+     * takes the slot and the rest are queued to be inserted before it. The batched counterpart of
+     * {@link #replaceSpanAtIndex}, for a caller that keeps searching our spans as it goes.
+     *
+     * <p>
+     * The last span remains in the {@code spans} array because {@code buf} is in ascending key order, so it is the only
+     * piece a caller working through ascending keys can come back to.
+     *
+     * @param i index of the span being replaced; must not be a span marked for removal
+     * @param buf the spans to put there, in ascending key order; must not be empty
+     * @param pending collects the spans that go before the one taking the slot
+     */
+    protected void replaceSpanAtIndexBatched(final int i, final ArraysBuf buf, final PendingSpanInserts pending) {
+        final int last = buf.size - 1;
+        for (int j = 0; j < last; ++j) {
+            pending.push(i, buf.spanInfos[j], buf.spans[j]);
+        }
+        spanInfos[i] = buf.spanInfos[last];
+        spans[i] = buf.spans[last];
         modifiedSpan(i);
     }
 
@@ -3310,6 +3389,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      */
     private int andNotEqualsSpan(final int startPos, final RspArray other, final int otherIdx,
             final MutableObject<SortedRanges> madeNullSpansMu,
+            final PendingSpanInserts pending,
             final WorkData wd) {
         try (SpanView otherView = wd.borrowSpanView(other, otherIdx)) {
             final long removeKey = otherView.getKey();
@@ -3348,27 +3428,26 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                         }
                         final long firstKey = getKey(i);
                         final long endKey = firstKey + BLOCK_SIZE * (flen - 1); // inclusive
+                        // Removing part of block removeKey breaks this span into up to three: the full blocks before
+                        // it, what is left of block removeKey itself, and the full blocks after it. The last piece that
+                        // survives stays in this slot and the earlier ones are queued to be inserted before it, so
+                        // nothing shifts here. Keeping the *last* piece is what makes that safe: other's keys only go
+                        // up, so a later span of other can only land in that piece, and it has to stay findable.
                         if (uLess(firstKey, removeKey)) {
-                            if (uLess(removeKey, endKey)) {
-                                final ArraysBuf buf = wd.getArraysBuf(3);
-                                buf.pushFullBlockSpan(firstKey, distanceInBlocks(firstKey, removeKey));
-                                buf.pushContainer(keyNotContainer, notContainer);
-                                buf.pushFullBlockSpan(removeKey + BLOCK_SIZE, distanceInBlocks(removeKey, endKey));
-                                replaceSpanAtIndex(i, buf);
-                            } else {
-                                final ArraysBuf buf = wd.getArraysBuf(2);
-                                buf.pushFullBlockSpan(firstKey, distanceInBlocks(firstKey, removeKey));
-                                buf.pushContainer(keyNotContainer, notContainer);
-                                replaceSpanAtIndex(i, buf);
-                            }
-                            return i + 2;
+                            pending.pushFullBlockSpan(i, firstKey, distanceInBlocks(firstKey, removeKey));
                         }
                         if (uLess(removeKey, endKey)) {
-                            final ArraysBuf buf = wd.getArraysBuf(2);
-                            buf.pushContainer(keyNotContainer, notContainer);
-                            buf.pushFullBlockSpan(removeKey + BLOCK_SIZE, distanceInBlocks(removeKey, endKey));
-                            replaceSpanAtIndex(i, buf);
-                        } else if (notContainer == null) {
+                            if (notContainer == null) {
+                                pending.pushSingleton(i, keyNotContainer);
+                            } else {
+                                pending.pushContainer(i, keyNotContainer, notContainer);
+                            }
+                            setFullBlockSpan(i, removeKey + BLOCK_SIZE, distanceInBlocks(removeKey, endKey));
+                            // Our searches carry on from the piece left here, which a later removal may split again.
+                            return i;
+                        }
+                        // removeKey is this span's last block, so what is left of it is the piece that stays.
+                        if (notContainer == null) {
                             setSingletonSpan(i, keyNotContainer);
                         } else {
                             setContainerSpan(i, keyNotContainer, notContainer);
@@ -3464,8 +3543,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     setFullBlockSpan(idxEnd, nextKey, newflen);
                     src = idxEnd;
                 } else {
-                    insertFullBlockSpanAtIndex(dst, nextKey, newflen);
-                    src = dst;
+                    // Both halves of one span of ours survive, so the second needs a slot of its own. It takes this
+                    // one and the first half is queued to be inserted before it, which costs no shifting: other's keys
+                    // only go up, so the second half is the one a later span of other can come back to.
+                    pending.pushFullBlockSpan(idxBegin, keyAtIdxBegin,
+                            distanceInBlocks(keyAtIdxBegin, removeKey));
+                    setFullBlockSpan(idxBegin, nextKey, newflen);
+                    src = dst = idxBegin;
                 }
             }
             if (dst < src) {
@@ -3495,13 +3579,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         final WorkData wd = workDataPerThread.get();
         final MutableObject<SortedRanges> madeNullSpansMu = getWorkSortedRangesMutableObject(wd);
+        final PendingSpanInserts pending = wd.getPendingSpanInserts();
         for (int andNotIdx = firstKey; andNotIdx < other.size; ++andNotIdx) {
-            startPos = andNotEqualsSpan(startPos, other, andNotIdx, madeNullSpansMu, wd);
+            startPos = andNotEqualsSpan(startPos, other, andNotIdx, madeNullSpansMu, pending, wd);
             if (startPos >= size) {
                 break;
             }
         }
-        collectRemovedIndicesIfAny(madeNullSpansMu);
+        applyPendingSpanEdits(pending, madeNullSpansMu);
     }
 
     private void collectRemovedIndicesUnsafeNoWriteCheck(final SortedRanges madeNullSpans) {
@@ -3722,6 +3807,24 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             positions[i] = position;
         }
 
+        long spanInfoAt(final int i) {
+            return spanInfos[i];
+        }
+
+        Object spanAt(final int i) {
+            return spans[i];
+        }
+
+        void setLast(final long spanInfo, final Object span) {
+            spanInfos[size - 1] = spanInfo;
+            spans[size - 1] = span;
+        }
+
+        void dropLast() {
+            --size;
+            spans[size] = null;
+        }
+
         void clear() {
             // Whatever we were holding is in the array now; don't keep containers alive through this cache.
             java.util.Arrays.fill(spans, 0, size, null);
@@ -3750,6 +3853,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             ensureCanGrowByOne();
             positions[size] = position;
             setContainerSpanRaw(spanInfos, spans, size, key, container);
+            ++size;
+        }
+
+        void push(final int position, final long spanInfo, final Object span) {
+            ensureCanGrowByOne();
+            positions[size] = position;
+            spanInfos[size] = spanInfo;
+            spans[size] = span;
             ++size;
         }
 
@@ -4386,6 +4497,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      */
     private int removeRangeInSpan(final int i, final long spanInfo, final long key, final long start, final long end,
             final MutableObject<SortedRanges> madeNullSpansMu,
+            final PendingSpanInserts pending,
             final WorkData wd) {
         final Object span = spans[i];
         try (SpanView view = wd.borrowSpanView(this, i, spanInfo, span)) {
@@ -4408,17 +4520,17 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (kStart == kEnd) {
                     if (rsEnd - rsStart < BLOCK_LAST) {
                         setToRangeOfOnesMinusRangeForKey(buf, kStart, rsStart, rsEnd);
-                        returnValue = i + buf.size - 1;
+                        returnValue = i;
                     }
                 } else {
                     final long c1End = Math.min(kEnd, nextKey(kStart)) - 1;
                     if (rsStart != kStart || c1End - rsStart < BLOCK_LAST) {
                         setToRangeOfOnesMinusRangeForKey(buf, kStart, rsStart, c1End);
-                        returnValue = i + buf.size - 1;
+                        returnValue = i;
                     }
                     if (rsEnd - kEnd < BLOCK_LAST) {
                         setToRangeOfOnesMinusRangeForKey(buf, kEnd, kEnd, rsEnd);
-                        returnValue = i + buf.size - 1;
+                        returnValue = i;
                     }
                 }
                 final long posSpanFirstKey = nextKey(kEnd);
@@ -4427,7 +4539,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     buf.pushFullBlockSpan(posSpanFirstKey, posflen);
                 }
                 if (buf.size > 0) {
-                    replaceSpanAtIndex(i, buf);
+                    replaceSpanAtIndexBatched(i, buf, pending);
                     return returnValue;
                 }
                 // the full span is being removed.
@@ -4470,12 +4582,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     public void removeRangeUnsafeNoWriteCheck(final long start, final long end) {
         final WorkData wd = workDataPerThread.get();
         final MutableObject<SortedRanges> madeNullSpansMu = getWorkSortedRangesMutableObject(wd);
-        removeRange(0, start, end, madeNullSpansMu, wd);
-        collectRemovedIndicesIfAny(madeNullSpansMu);
+        final PendingSpanInserts pending = wd.getPendingSpanInserts();
+        removeRange(0, start, end, madeNullSpansMu, pending, wd);
+        applyPendingSpanEdits(pending, madeNullSpansMu);
     }
 
     private int removeRange(final int fromIdx, final long start, final long end,
             final MutableObject<SortedRanges> madeNullSpansMu,
+            final PendingSpanInserts pending,
             final WorkData wd) {
         final long startHiBits = highBits(start);
         int i = getSpanIndex(fromIdx, startHiBits);
@@ -4493,7 +4607,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (blockKey > kEnd) {
                 break;
             }
-            i = removeRangeInSpan(i, spanInfo, blockKey, start, end, madeNullSpansMu, wd);
+            i = removeRangeInSpan(i, spanInfo, blockKey, start, end, madeNullSpansMu, pending, wd);
             if (i >= 0) {
                 last = i;
                 ++i;
@@ -4508,17 +4622,37 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         try {
             final WorkData wd = workDataPerThread.get();
             final MutableObject<SortedRanges> madeNullSpansMu = getWorkSortedRangesMutableObject(wd);
+            final PendingSpanInserts pending = wd.getPendingSpanInserts();
             int i = 0;
+            // Last block a range ended in, so we can tell when the next range comes back to it.
+            long lastEndBlockKey = -1;
             while (rit.hasNext()) {
                 rit.next();
-                final long start = rit.currentRangeStart();
+                long start = rit.currentRangeStart();
                 final long end = rit.currentRangeEnd();
-                i = removeRange(i, start, end, madeNullSpansMu, wd);
+                if (pending.size() > 0 && highBits(start) == lastEndBlockKey) {
+                    // This range comes back to the block an earlier range already took a bite out of. Splitting a full
+                    // block span leaves what is left of that block queued rather than in our arrays, so a search would
+                    // not find it -- but it is the span queued last since ranges arrive in ascending order and a split
+                    // queues only the pieces before the one it leaves in spans. So take this range out of the pending
+                    // block.
+                    final long blockLastKey = lastEndBlockKey + BLOCK_LAST;
+                    if (removeFromLastPendingSpan(pending, lastEndBlockKey, start, uMin(end, blockLastKey))) {
+                        if (uLessOrEqual(end, blockLastKey)) {
+                            lastEndBlockKey = highBits(end);
+                            continue;
+                        }
+                        // The rest of the range is past that block; our arrays hold those spans.
+                        start = nextKey(lastEndBlockKey);
+                    }
+                }
+                i = removeRange(i, start, end, madeNullSpansMu, pending, wd);
+                lastEndBlockKey = highBits(end);
                 if (i >= size) {
                     break;
                 }
             }
-            collectRemovedIndicesIfAny(madeNullSpansMu);
+            applyPendingSpanEdits(pending, madeNullSpansMu);
         } finally {
             rit.close();
         }
