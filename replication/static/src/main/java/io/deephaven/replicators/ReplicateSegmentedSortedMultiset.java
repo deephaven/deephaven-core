@@ -64,6 +64,7 @@ public class ReplicateSegmentedSortedMultiset {
                 ReplicateSegmentedSortedMultiset::fixupObjectHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare,
+                ReplicateSegmentedSortedMultiset::fixupObjectIterator,
                 ReplicateSegmentedSortedMultiset::fixupKeyArrayAllocation);
 
         final List<String> files = charToAllButBoolean(TASK,
@@ -364,6 +365,17 @@ public class ReplicateSegmentedSortedMultiset {
                 "\\.toObjectArray\\(", ".toArray(");
     }
 
+    private static List<String> fixupObjectIterator(List<String> lines) {
+        // There is no ValueIteratorOfObject; the Object variant iterates as a generic ValueIterator<Object>, whose
+        // element accessor is Iterator.next() rather than the primitive variants' nextObject().
+        return globalReplacements(lines,
+                "ValueIteratorOfObject iterator\\(", "ValueIterator<Object> iterator(",
+                "ValueIteratorOfObject inRangeIterator\\(", "ValueIterator<Object> inRangeIterator(",
+                "new ValueIteratorOfObject\\(\\)", "new ValueIterator<Object>()",
+                "public Object nextObject\\(\\)", "public Object next()",
+                "ValueIteratorOfObject", "ValueIterator");
+    }
+
     private static List<String> fixupSsmConstructor(List<String> lines) {
         return replaceRegion(lines, "Constructor",
                 Collections.singletonList("    private final Class componentType;\n" +
@@ -399,35 +411,31 @@ public class ReplicateSegmentedSortedMultiset {
                         "    }"));
     }
 
+    /**
+     * The replicated {@code equalsArray} already takes the right parameter type -- {@code CharVector} becomes
+     * {@code ObjectVector}, which is what an Object SSM is -- so only its iteration needs adjusting: there is no
+     * {@code CloseablePrimitiveIteratorOfObject}, and the generic
+     * {@link io.deephaven.engine.primitive.iterator.CloseableIterator} that replaces it is drained with {@code next()}
+     * rather than the primitive variants' {@code nextObject()}.
+     */
     private static List<String> fixupObjectCompare(List<String> lines) {
-        lines = removeRegion(lines, "VectorEquals");
-        // the primitive iterator is only used by the (now removed) primitive-vector equalsArray overload
+        lines = globalReplacements(lines,
+                "equalsArray\\(ObjectVector o\\)", "equalsArray(ObjectVector<?> o)",
+                "equalsArray\\(\\(ObjectVector\\) o\\)", "equalsArray((ObjectVector<?>) o)",
+                "final CloseablePrimitiveIteratorOfObject oit", "final CloseableIterator<?> oit",
+                "oit\\.nextObject\\(\\)", "oit.next()");
         lines = removeImport(lines, "\\s*import .*CloseablePrimitiveIteratorOfObject;");
-        lines = replaceRegion(lines, "EqualsArrayTypeCheck", Collections.singletonList(
-                "        if(getComponentType() != o.getComponentType()) {\n" +
-                        "            return false;\n" +
-                        "        }"));
-        lines = replaceRegion(lines, "DirObjectEquals",
-                Collections.singletonList(
-                        "                if(!Objects.equals(directoryValues[ii], that.directoryValues[ii])) {\n" +
-                                "                    return false;\n" +
-                                "                }"));
-        lines = replaceRegion(lines, "SingletonEquals",
-                Collections.singletonList(
-                        "            return Objects.equals(get(0), that.get(0));"));
-        return replaceRegion(lines, "LeafObjectEquals",
-                Collections.singletonList(
-                        "                if(!Objects.equals(leafValues[li][ai], that.leafValues[otherLeaf][otherLeafIdx++])) {\n"
-                                +
-                                "                    return false;\n" +
-                                "                }"));
+        return addImport(lines, "import io.deephaven.engine.primitive.iterator.CloseableIterator;");
     }
 
     private static void insertInstantExtensions(String longPath) throws IOException {
         final File longFile = new File(longPath);
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
 
+        // the Instant extensions are the only place a primitive SSM deals in ObjectVector, so the template does not
+        // import it
         lines = addImport(lines,
+                "import io.deephaven.vector.ObjectVector;",
                 "import io.deephaven.vector.ObjectVectorDirect;",
                 "import io.deephaven.time.DateTimeUtils;");
         lines = addImport(lines, Instant.class);
@@ -487,52 +495,56 @@ public class ReplicateSegmentedSortedMultiset {
                         "    }",
                         "",
                         "    private Instant[] keyArrayAsInstants() {",
-                        "        return keyArrayAsInstants(0, size()-1);",
+                        "        return keyArrayAsInstants(0, size());",
                         "    }",
                         "",
                         "    /**",
-                        "     * Create an array of the current keys beginning with the first (inclusive) and ending with the last (inclusive)",
-                        "     * @param first",
-                        "     * @param last",
-                        "     * @return",
+                        "     * Create an array of the current keys from {@code fromIndexInclusive} (inclusive) to {@code toIndexExclusive}",
+                        "     * (exclusive). Following the Vector contract, offsets outside {@code [0, size())} are legal and contribute",
+                        "     * {@code null} rather than an error.",
+                        "     *",
+                        "     * @param fromIndexInclusive The first offset to include",
+                        "     * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include",
+                        "     * @return An array of the requested keys, of length {@code toIndexExclusive - fromIndexInclusive}",
                         "     */",
-                        "    private Instant[] keyArrayAsInstants(long first, long last) {",
-                        "        if(isEmpty()) {",
+                        "    private Instant[] keyArrayAsInstants(final long fromIndexInclusive, final long toIndexExclusive) {",
+                        "        Require.leq(fromIndexInclusive, \"fromIndexInclusive\", toIndexExclusive, \"toIndexExclusive\");",
+                        "",
+                        "        final int totalSize =",
+                        "                LongSizedDataStructure.intSize(\"keyArrayAsInstants\", toIndexExclusive - fromIndexInclusive);",
+                        "        if (totalSize == 0) {",
                         "            return DateTimeUtils.ZERO_LENGTH_INSTANT_ARRAY;",
                         "        }",
                         "",
-                        "        final int totalSize = (int)(last - first + 1);",
-                        "        final Instant[] keyArray = new Instant[intSize()];",
+                        "        // out-of-range offsets are left as the null elements the fresh array already holds",
+                        "        final Instant[] keyArray = new Instant[totalSize];",
+                        "        final long firstIncluded = Math.max(fromIndexInclusive, 0);",
+                        "        final long lastExcluded = Math.max(Math.min(toIndexExclusive, size), firstIncluded);",
+                        "        final int destOffset = (int)(firstIncluded - fromIndexInclusive);",
+                        "        int remaining = (int)(lastExcluded - firstIncluded);",
+                        "        if (remaining == 0) {",
+                        "            return keyArray;",
+                        "        }",
+                        "",
                         "        if (leafCount == 1) {",
-                        "            for(int ii = 0; ii < totalSize; ii++) {",
-                        "                keyArray[ii] = DateTimeUtils.epochNanosToInstant(directoryValues == null ? singletonValue : directoryValues[ii + (int)first]);",
+                        "            for(int ii = 0; ii < remaining; ii++) {",
+                        "                keyArray[destOffset + ii] = DateTimeUtils.epochNanosToInstant(directoryValues == null ? singletonValue : directoryValues[ii + (int)firstIncluded]);",
                         "            }",
-                        "        } else if (leafCount > 0) {",
-                        "            int offset = 0;",
-                        "            int copied = 0;",
-                        "            int skipped = 0;",
-                        "            for (int li = 0; li < leafCount; ++li) {",
-                        "                if(skipped < first) {",
-                        "                    final int toSkip = (int)first - skipped;",
-                        "                    if(toSkip < leafSizes[li]) {",
-                        "                        final int nToCopy = Math.min(leafSizes[li] - toSkip, totalSize);",
-                        "                        for(int jj = 0; jj < nToCopy; jj++) {",
-                        "                            keyArray[jj] = DateTimeUtils.epochNanosToInstant(leafValues[li][jj + toSkip]);",
-                        "                        }",
-                        "                        copied = nToCopy;",
-                        "                        offset = copied;",
-                        "                        skipped = (int)first;",
-                        "                    } else {",
-                        "                        skipped += leafSizes[li];",
-                        "                    }",
-                        "                } else {",
-                        "                    int nToCopy = Math.min(leafSizes[li], totalSize - copied);",
-                        "                    for(int jj = 0; jj < nToCopy; jj++) {",
-                        "                        keyArray[jj + offset] = DateTimeUtils.epochNanosToInstant(leafValues[li][jj]);",
-                        "                    }",
-                        "                    offset += leafSizes[li];",
-                        "                    copied += nToCopy;",
+                        "        } else {",
+                        "            int dest = destOffset;",
+                        "            int toSkip = (int)firstIncluded;",
+                        "            for (int li = 0; li < leafCount && remaining > 0; ++li) {",
+                        "                if(toSkip >= leafSizes[li]) {",
+                        "                    toSkip -= leafSizes[li];",
+                        "                    continue;",
                         "                }",
+                        "                final int nToCopy = Math.min(leafSizes[li] - toSkip, remaining);",
+                        "                for(int jj = 0; jj < nToCopy; jj++) {",
+                        "                    keyArray[dest + jj] = DateTimeUtils.epochNanosToInstant(leafValues[li][jj + toSkip]);",
+                        "                }",
+                        "                dest += nToCopy;",
+                        "                remaining -= nToCopy;",
+                        "                toSkip = 0;",
                         "            }",
                         "        }",
                         "        return keyArray;",

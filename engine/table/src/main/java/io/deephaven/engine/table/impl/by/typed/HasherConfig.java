@@ -3,9 +3,9 @@
 //
 package io.deephaven.engine.table.impl.by.typed;
 
-import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.MethodSpec;
-import com.squareup.javapoet.ParameterSpec;
+import com.palantir.javapoet.CodeBlock;
+import com.palantir.javapoet.MethodSpec;
+import com.palantir.javapoet.ParameterSpec;
 import groovyjarjarantlr4.v4.runtime.misc.NotNull;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;

@@ -725,11 +725,16 @@ public abstract class UpdateBy {
                 return;
             }
 
+            // Operations with multiple column inputs like WeightedAvg/WeightedSum may have duplicate source indices
+            // (when the value and weight columns are the same, e.g.). This isn't an error, but will break our caching
+            // strategy if we don't filter for duplicates.
+            final int[] uniqueSrcIndices = IntStream.of(srcIndices).distinct().toArray();
+
             jobScheduler.iterateParallel(executionContext,
                     chainAppendables(this, stringAndIndexToAppendable("-cacheOperatorInputSources", winIdx)),
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, srcIndices.length,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, uniqueSrcIndices.length,
                     (context, idx, nestedErrorConsumer, sourceComplete) -> createCachedColumnSource(
-                            srcIndices[idx], sourceComplete, nestedErrorConsumer),
+                            uniqueSrcIndices[idx], sourceComplete, nestedErrorConsumer),
                     onCachingComplete,
                     () -> {
                     },
@@ -939,11 +944,9 @@ public abstract class UpdateBy {
             upstream.release();
 
             // accumulate performance data
-            final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
-            if (accumulated != null) {
-                if (initialStep) {
-                    QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(accumulated);
-                } else {
+            if (!initialStep) {
+                final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
+                if (accumulated != null) {
                     source.getUpdateGraph().addNotification(new TerminalNotification() {
                         @Override
                         public void run() {
@@ -958,6 +961,18 @@ public abstract class UpdateBy {
 
             // continue
             onCleanupComplete.run();
+        }
+
+        /**
+         * Record the performance from an initial operation into the current nugget.
+         */
+        void recordPerformance() {
+            Assert.assertion(initialStep, "Must be on an initial step!");
+            final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
+            if (accumulated == null) {
+                return;
+            }
+            QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(accumulated);
         }
 
         /**
@@ -1071,8 +1086,10 @@ public abstract class UpdateBy {
                 AsyncClientErrorNotifier.reportError(error);
             }
         } catch (IOException e) {
-            throw new UncheckedTableException(
+            final UncheckedTableException uncheckedTableException = new UncheckedTableException(
                     "Exception while delivering async client error notification for " + sourceEntry, error);
+            uncheckedTableException.addSuppressed(e);
+            throw uncheckedTableException;
         }
     }
 

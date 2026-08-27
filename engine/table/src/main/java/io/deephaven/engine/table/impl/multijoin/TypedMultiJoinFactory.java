@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl.multijoin;
 
-import com.squareup.javapoet.CodeBlock;
+import com.palantir.javapoet.CodeBlock;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.by.typed.HasherConfig;
 

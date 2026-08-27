@@ -19,14 +19,18 @@ import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.PoisonedUpdateGraph;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.GridAttributes;
 import io.deephaven.engine.table.Table;
@@ -36,10 +40,13 @@ import io.deephaven.engine.table.impl.ComparatorRegistry;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
+import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarrageOptions;
+import io.deephaven.extensions.barrage.ColumnEncoding;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
@@ -48,8 +55,12 @@ import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
+import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistryImpl;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
+import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.DeephavenTableMetadata;
@@ -101,6 +112,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -110,6 +122,7 @@ import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -138,6 +151,54 @@ public class BarrageUtil {
     public static final long MAX_SNAPSHOT_CELL_COUNT =
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
                     "maxSnapshotCellCount", 1L << 24);
+
+    /** Global switch: when false, auto-inference never selects REE; user-supplied schema REE is always honored. */
+    static final boolean REE_AUTO_DETECT_ENABLED =
+            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.ree.autoDetectEnabled", false);
+
+    /**
+     * Global switch: when false, auto-inference never selects dictionary encoding; user-supplied schema dictionary
+     * encoding is always honored. Only String and other Object columns are eligible for dictionary auto-detection.
+     */
+    static final boolean DICT_AUTO_DETECT_ENABLED =
+            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.dictionary.autoDetectEnabled", false);
+
+    /**
+     * Whether to sample columns at schema-inference time to detect low-cardinality patterns for dictionary
+     * auto-encoding. Symbol-table-backed columns are detected structurally regardless of this switch.
+     */
+    static final boolean DICT_SAMPLING_ENABLED =
+            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.dictionary.samplingEnabled", true);
+
+    /**
+     * Maximum ratio of (estimated distinct values / sampled rows) that triggers dictionary auto-encoding for a String
+     * or Object column. At the default of 0.1, at least 90% of the sampled rows must be repeats of an already-seen
+     * value.
+     */
+    private static final double DICT_CARDINALITY_RATIO_THRESHOLD =
+            Configuration.getInstance().getDoubleWithDefault("BarrageUtil.dictionary.cardinalityRatioThreshold", 0.1);
+
+    /** Whether to sample columns at schema-inference time to detect run patterns for REE auto-encoding. */
+    static final boolean REE_SAMPLING_ENABLED =
+            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.ree.samplingEnabled", true);
+
+    /** Number of rows to sample per column when estimating run ratios. */
+    private static final int REE_SAMPLE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("BarrageUtil.ree.sampleSize", 1024);
+
+    /**
+     * Maximum ratio of (estimated runs / sampled rows) that triggers REE auto-encoding. At the default of 0.5, a column
+     * must average at least 2 rows per run to be encoded.
+     */
+    private static final double REE_RUN_RATIO_THRESHOLD =
+            Configuration.getInstance().getDoubleWithDefault("BarrageUtil.ree.runRatioThreshold", 0.5);
+
+    /**
+     * Minimum table row count before sampling is attempted; too few rows make the estimate noisy. Must be strictly less
+     * than {@link #REE_SAMPLE_SIZE}.
+     */
+    static final int REE_MIN_SAMPLE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("BarrageUtil.ree.minSampleSize", 16);
 
     /**
      * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
@@ -281,7 +342,7 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     public static byte[] createSubscriptionRequestMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSubscriptionOptions options) {
         return createSubscriptionRequestMetadataBytes(ticketId, options, null, null, false);
     }
@@ -297,7 +358,7 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     public static byte[] createSubscriptionRequestMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSubscriptionOptions options,
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
@@ -320,10 +381,10 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     public static byte[] createSubscriptionRequestMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSubscriptionOptions options,
             final @Nullable ByteBuffer viewportBuffer,
-            @Nullable final byte[] columns,
+            final byte @Nullable [] columns,
             final boolean reverseViewport,
             final byte requestType) {
 
@@ -370,7 +431,7 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     public static byte[] createSnapshotRequestMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSnapshotOptions options) {
         return createSnapshotRequestMetadataBytes(ticketId, options, null, null, false);
     }
@@ -386,7 +447,7 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     static public byte[] createSnapshotRequestMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSnapshotOptions options,
             @Nullable final RowSet viewport,
             @Nullable final BitSet columns,
@@ -435,7 +496,7 @@ public class BarrageUtil {
      * @return the subscription request payload
      */
     public static byte[] createSerializationOptionsMetadataBytes(
-            @NotNull final byte[] ticketId,
+            final byte @NotNull [] ticketId,
             @Nullable final BarrageSubscriptionOptions options) {
         final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
@@ -464,23 +525,148 @@ public class BarrageUtil {
     }
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
-        return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
+        return schemaBytes(fbb -> makeTableSchemaPayload(fbb, DEFAULT_SNAPSHOT_OPTIONS, table));
     }
 
     public static ByteString schemaBytesFromTableDefinition(
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
             final boolean isFlat) {
-        return schemaBytes(fbb -> makeTableSchemaPayload(
-                fbb, DEFAULT_SNAPSHOT_OPTIONS, tableDefinition, attributes, isFlat));
+        return schemaBytes(fbb -> makeSchema(DEFAULT_SNAPSHOT_OPTIONS, tableDefinition, attributes, isFlat)
+                .getSchema(fbb));
     }
 
     public static Schema schemaFromTable(@NotNull final Table table) {
-        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), table.getAttributes(), table.isFlat());
+        return schemaForTable(DEFAULT_SNAPSHOT_OPTIONS, table);
     }
 
-    public static Schema toSchema(final TableDefinition definition, Map<String, Object> attributes, boolean isFlat) {
-        return makeSchema(DEFAULT_SNAPSHOT_OPTIONS, definition, attributes, isFlat);
+    private static Schema schemaForTable(
+            @NotNull final BarrageOptions options,
+            @NotNull final Table table) {
+        // When the user has supplied an explicit schema, take the encodings from it verbatim so
+        // that auto-inference never overrides an explicit choice. Otherwise infer encodings from
+        // the live table data when either the REE or the dictionary auto-detect enable is set. In
+        // both cases rebuild Deephaven field metadata from the table definition so clients always
+        // receive complete type information.
+        final Map<String, ColumnEncoding> encodings;
+        final boolean encodingsFromAttribute = table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+        if (encodingsFromAttribute) {
+            encodings = encodingsFromSchema((Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE));
+        } else if (REE_AUTO_DETECT_ENABLED || DICT_AUTO_DETECT_ENABLED) {
+            encodings = inferEncodings(table);
+        } else {
+            encodings = Map.of();
+        }
+        final Schema schema =
+                makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(), encodings);
+        logSchemaForTable(table, encodings, encodingsFromAttribute, schema);
+        return schema;
+    }
+
+    /**
+     * Logs the wire encodings chosen for {@code table} at DEBUG, and the complete Arrow schema at TRACE. Enable either
+     * by raising the level of this class's logger; neither the encoding summary nor the (much larger) schema text is
+     * rendered unless the corresponding level is enabled, so a quiet logger costs only the level check.
+     *
+     * @param table the table being exported
+     * @param encodings the encodings selected for {@code table}, keyed by column name
+     * @param encodingsFromAttribute whether the encodings came from an explicit {@link Table#BARRAGE_SCHEMA_ATTRIBUTE}
+     *        rather than from auto-detection
+     * @param schema the resulting schema
+     */
+    private static void logSchemaForTable(
+            @NotNull final Table table,
+            @NotNull final Map<String, ColumnEncoding> encodings,
+            final boolean encodingsFromAttribute,
+            @NotNull final Schema schema) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+
+        // Prefer the key the user already uses to name this table in the Barrage performance logs.
+        final String performanceKey = BarragePerformanceLog.getKeyFor(table);
+        final String tableKey = performanceKey == null ? table.getDescription() : performanceKey;
+
+        final String source;
+        if (encodingsFromAttribute) {
+            source = "explicit " + Table.BARRAGE_SCHEMA_ATTRIBUTE;
+        } else if (REE_AUTO_DETECT_ENABLED || DICT_AUTO_DETECT_ENABLED) {
+            source = "auto-detection";
+        } else {
+            source = "auto-detection (disabled)";
+        }
+
+        final StringBuilder encodingSummary = new StringBuilder();
+        for (final String columnName : table.getDefinition().getColumnNames()) {
+            final ColumnEncoding encoding = encodings.get(columnName);
+            if (encoding == null) {
+                continue;
+            }
+            if (encodingSummary.length() > 0) {
+                encodingSummary.append(", ");
+            }
+            encodingSummary.append(columnName).append('=');
+            if (encoding.isRunEndEncoded()) {
+                encodingSummary.append("REE(").append(encoding.runEndWidth()).append(')');
+            }
+            if (encoding.isDictionaryEncoded()) {
+                if (encoding.isRunEndEncoded()) {
+                    encodingSummary.append('+');
+                }
+                encodingSummary.append("DICT(").append(encoding.dictWidth()).append(')');
+            }
+        }
+        if (encodingSummary.length() == 0) {
+            encodingSummary.append("none");
+        }
+
+        log.debug().append("Barrage schema for ").append(tableKey)
+                .append(": ").append(table.getDefinition().numColumns())
+                .append(" columns, encodings from ").append(source)
+                .append(": ").append(encodingSummary).endl();
+
+        if (log.isTraceEnabled()) {
+            // Schema.toString() renders every field (and its encoding) on a single line; Schema.toJson() would be
+            // more detailed, but embeds newlines in the log entry.
+            log.trace().append("Barrage schema for ").append(tableKey)
+                    .append(": ").append(schema.toString()).endl();
+        }
+    }
+
+    private static Map<String, ColumnEncoding> encodingsFromSchema(final Schema schema) {
+        final Map<String, ColumnEncoding> encodings = new HashMap<>();
+        for (final Field field : schema.getFields()) {
+            ColumnEncoding encoding = null;
+            // Run-end encoding is expressed on the parent field; the dictionary (if any) lives on the REE values child.
+            // For a plain dictionary column the dictionary is on the field itself.
+            final Field dictBearingField;
+            if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+                final List<Field> children = field.getChildren();
+                final int bitWidth = (!children.isEmpty() && children.get(0).getType() instanceof ArrowType.Int)
+                        ? ((ArrowType.Int) children.get(0).getType()).getBitWidth()
+                        : 32; // 32 bit if not specified
+                encoding = ColumnEncoding.of(ColumnEncoding.RunEndWidth.fromBitWidth(bitWidth), null);
+                dictBearingField = children.size() > 1 ? children.get(1) : null;
+            } else {
+                dictBearingField = field;
+            }
+
+            if (dictBearingField != null && isDictionaryEncoded(dictBearingField)) {
+                final org.apache.arrow.vector.types.pojo.DictionaryEncoding dict = dictBearingField.getDictionary();
+                final int bitWidth = (dict.getIndexType() instanceof ArrowType.Int)
+                        ? dict.getIndexType().getBitWidth()
+                        : 32; // 32 bit if not specified
+                final ColumnEncoding.DictWidth dictWidth = ColumnEncoding.DictWidth.fromBitWidth(bitWidth);
+                encoding = encoding == null
+                        ? ColumnEncoding.of(null, dictWidth)
+                        : encoding.withDictionary(dictWidth);
+            }
+
+            if (encoding != null) {
+                encodings.put(field.getName(), encoding);
+            }
+        }
+        return encodings;
     }
 
     public static ByteString schemaBytes(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
@@ -499,10 +685,23 @@ public class BarrageUtil {
     public static int makeTableSchemaPayload(
             @NotNull final FlatBufferBuilder builder,
             @NotNull final BarrageOptions options,
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final Map<String, Object> attributes,
-            final boolean isFlat) {
-        return makeSchema(options, tableDefinition, attributes, isFlat).getSchema(builder);
+            @NotNull final Table table) {
+        return schemaForTable(options, table).getSchema(builder);
+    }
+
+    /**
+     * Wraps each field of {@code base} in an outer Arrow {@code List} type, mirroring the columnsAsList wire
+     * transformation applied by {@link io.deephaven.extensions.barrage.BarrageMessageWriterImpl}. Use this when the
+     * schema message must match data that will be sent with columnsAsList=true but the base schema was computed without
+     * that option (e.g. in {@code io.deephaven.server.barrage.BarrageMessageProducer}).
+     */
+    public static Schema schemaWithColumnsAsList(@NotNull final Schema base) {
+        final List<Field> wrapped = base.getFields().stream()
+                .map(f -> new Field(f.getName(),
+                        new FieldType(false, Types.MinorType.LIST.getType(), null, f.getMetadata()),
+                        Collections.singletonList(f)))
+                .collect(Collectors.toList());
+        return new Schema(wrapped, base.getCustomMetadata());
     }
 
     public static Schema makeSchema(
@@ -510,14 +709,43 @@ public class BarrageUtil {
             @NotNull final TableDefinition tableDefinition,
             @NotNull final Map<String, Object> attributes,
             final boolean isFlat) {
+        return makeSchema(options, tableDefinition, attributes, isFlat, Map.of());
+    }
+
+    static Schema makeSchema(
+            @NotNull final BarrageOptions options,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Map<String, Object> attributes,
+            final boolean isFlat,
+            @NotNull final Map<String, ColumnEncoding> encodings) {
         final Map<String, String> schemaMetadata = attributesToMetadata(attributes, isFlat);
         final Map<String, String> descriptions = GridAttributes.getColumnDescriptions(attributes);
         final InputTableUpdater inputTableUpdater = (InputTableUpdater) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         maybeAddInputTableMetadata(tableDefinition, schemaMetadata, inputTableUpdater);
+        final boolean columnsAsList = options.columnsAsList();
+        // Assign sequential dictionary ids to columns that need them. Every dictionary-encoded column
+        // gets its own unique id; shared dictionaries (two columns referencing the same id) are not
+        // currently expressible through this API because ColumnEncoding carries no id.
+        final AtomicInteger nextDictId = new AtomicInteger(0);
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTableUpdater, tableDefinition, tableDefinition.getColumns(),
                 ignored -> new HashMap<>(),
-                attributes, options.columnsAsList())
+                attributes, columnsAsList)
+                .map(field -> {
+                    final ColumnEncoding encoding = encodings.get(field.getName());
+                    if (encoding == null) {
+                        return field;
+                    }
+                    // When columnsAsList wraps the logical field in an outer List, apply the encoding to the inner
+                    // child so the encoding order is List<REE<Dictionary<values>>> rather than REE<List<values>>.
+                    if (columnsAsList && field.getType().getTypeID() == ArrowType.ArrowTypeID.List) {
+                        final Field inner = applyEncoding(field.getChildren().get(0), encoding, nextDictId);
+                        return new Field(field.getName(),
+                                new FieldType(false, Types.MinorType.LIST.getType(), null, field.getMetadata()),
+                                Collections.singletonList(inner));
+                    }
+                    return applyEncoding(field, encoding, nextDictId);
+                })
                 .collect(Collectors.toList());
         return new Schema(fields, schemaMetadata);
     }
@@ -599,9 +827,7 @@ public class BarrageUtil {
             @NotNull final Function<String, Map<String, String>> fieldMetadataFactory,
             @NotNull final Map<String, Object> attributes) {
         return columnDefinitionsToFields(columnDescriptions, inputTableUpdater, tableDefinition, columnDefinitions,
-                fieldMetadataFactory,
-                attributes,
-                false);
+                fieldMetadataFactory, attributes, false);
     }
 
     private static boolean isDataTypeSortable(final Class<?> dataType) {
@@ -634,7 +860,6 @@ public class BarrageUtil {
                     .collect(Collectors.toSet());
         }
 
-        final Schema targetSchema;
         final Set<String> formatColumns = new HashSet<>();
         final Map<String, Field> fieldMap = new LinkedHashMap<>();
 
@@ -732,7 +957,7 @@ public class BarrageUtil {
         };
 
         if (wireFormatSpecified) {
-            targetSchema = (Schema) attributes.get(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+            final Schema targetSchema = (Schema) attributes.get(Table.BARRAGE_SCHEMA_ATTRIBUTE);
             targetSchema.getFields().forEach(field -> fieldMap.put(field.getName(), field));
 
             fieldMap.keySet().stream()
@@ -785,6 +1010,13 @@ public class BarrageUtil {
 
         if (field.getType().getTypeID() == ArrowType.ArrowTypeID.Map) {
             return new BarrageTypeInfo<>(Map.class, null, field);
+        }
+
+        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+            // The Deephaven column type is determined by the values child (child[1]); the run_ends
+            // child (child[0]) is purely an index. Delegate to the values child so that its
+            // deephaven:type / deephaven:componentType metadata are honoured.
+            return getDefaultType(field.getChildren().get(1));
         }
 
         final Class<?> columnType = getDefaultType(field, explicitClass);
@@ -886,6 +1118,9 @@ public class BarrageUtil {
                 }
             case Map:
                 return Map.class;
+            case RunEndEncoded:
+                // Delegate to the values child (child[1]); run_ends (child[0]) is just an index.
+                return getDefaultType(arrowField.getChildren().get(1), null);
             case Union:
             case Null:
                 return Object.class;
@@ -983,10 +1218,6 @@ public class BarrageUtil {
                 i -> Field.convertField(schema.fields(i)),
                 i -> visitor -> {
                     final org.apache.arrow.flatbuf.Field field = schema.fields(i);
-                    if (field.dictionary() != null) {
-                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                "Dictionary encoding is not supported: " + field.name());
-                    }
                     for (int j = 0; j < field.customMetadataLength(); j++) {
                         final KeyValue keyValue = field.customMetadata(j);
                         visitor.accept(keyValue.key(), keyValue.value());
@@ -1056,18 +1287,18 @@ public class BarrageUtil {
             if (options != null && options.columnsAsList()) {
                 field = field.getChildren().get(0);
             }
-            Class<?> defaultType = getDefaultType(field, type.getValue());
+            Class<?> defaultType = getDefaultType(field, type.get());
 
-            if (type.getValue() == null) {
+            if (type.get() == null) {
                 type.setValue(defaultType);
-            } else if (type.getValue() == boolean.class || type.getValue() == Boolean.class) {
+            } else if (type.get() == boolean.class || type.get() == Boolean.class) {
                 // force to boxed boolean to allow nullability in the column sources
                 type.setValue(Boolean.class);
             }
-            if (defaultType == ObjectVector.class && componentType.getValue() == null) {
+            if (defaultType == ObjectVector.class && componentType.get() == null) {
                 componentType.setValue(getDefaultType(field.getChildren().get(0), null));
             }
-            columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
+            columns[i] = ColumnDefinition.fromGenericType(name, type.get(), componentType.get());
         }
 
         final Schema resultSchema;
@@ -1158,6 +1389,297 @@ public class BarrageUtil {
             return isTypeNativelySupported(typ.getComponentType());
         }
         return false;
+    }
+
+    /**
+     * Returns {@code true} when the given Arrow SDK field is Run-End Encoded with Int16 (16-bit signed) run_ends. Used
+     * to detect whether any column's chunk writer is constrained to batches of at most {@link Short#MAX_VALUE} rows.
+     */
+    public static boolean isReeInt16Field(final Field field) {
+        if (!(field.getType() instanceof ArrowType.RunEndEncoded)) {
+            return false;
+        }
+        final List<Field> children = field.getChildren();
+        if (children.isEmpty()) {
+            return false;
+        }
+        final Field runEnds = children.get(0);
+        return (runEnds.getType() instanceof ArrowType.Int)
+                && ((ArrowType.Int) runEnds.getType()).getBitWidth() == 16;
+    }
+
+    /**
+     * Applies {@code encoding} to {@code field}, composing facets inner-to-outer: dictionary encoding is applied to the
+     * value field first, then that (possibly dictionary-encoded) field is wrapped in run-end encoding. The result is
+     * {@code RunEndEncoded<Dictionary<values>>} when both facets are present, a single layer when only one is present,
+     * or the field unchanged when neither is.
+     */
+    private static Field applyEncoding(final Field field, final ColumnEncoding encoding,
+            final AtomicInteger nextDictId) {
+        // The base field may already carry the full encoding when it was derived from an explicit
+        // BARRAGE_SCHEMA_ATTRIBUTE (columnDefinitionsToFields honours it). In that case the field is already
+        // RunEndEncoded with its dictionary, if any, on the values child; re-applying would erroneously attach a
+        // dictionary to the RunEndEncoded parent. Treat an already-run-end-encoded field as fully encoded.
+        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+            return field;
+        }
+        Field result = field;
+        if (encoding.isDictionaryEncoded()) {
+            result = toDictionaryField(result, encoding, nextDictId.getAndIncrement());
+        }
+        if (encoding.isRunEndEncoded()) {
+            result = toReeField(result, encoding);
+        }
+        return result;
+    }
+
+    private static Field toReeField(final Field field, final ColumnEncoding encoding) {
+        if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+            return field;
+        }
+        final ArrowType runEndsType;
+        if (encoding.runEndWidth() == ColumnEncoding.RunEndWidth.INT16) {
+            runEndsType = Types.MinorType.SMALLINT.getType();
+        } else if (encoding.runEndWidth() == ColumnEncoding.RunEndWidth.INT64) {
+            runEndsType = Types.MinorType.BIGINT.getType();
+        } else {
+            runEndsType = Types.MinorType.INT.getType();
+        }
+        final Field runEndsField = new Field(
+                "run_ends",
+                new FieldType(false, runEndsType, null),
+                Collections.emptyList());
+        final Field valuesField = new Field(
+                "values",
+                new FieldType(field.isNullable(), field.getType(), field.getDictionary(), field.getMetadata()),
+                field.getChildren());
+        return new Field(
+                field.getName(),
+                new FieldType(false, new ArrowType.RunEndEncoded(), null, field.getMetadata()),
+                List.of(runEndsField, valuesField));
+    }
+
+    /**
+     * Returns {@code true} if {@code field} carries a {@link org.apache.arrow.vector.types.pojo.DictionaryEncoding},
+     * i.e. it is dictionary-encoded. Dictionary encoding is identified by the presence of a DictionaryEncoding on the
+     * field, not by its Arrow type ID.
+     */
+    public static boolean isDictionaryEncoded(@NotNull final org.apache.arrow.vector.types.pojo.Field field) {
+        return field.getDictionary() != null;
+    }
+
+    /**
+     * Wraps {@code field} in an Arrow dictionary-encoded field. The field keeps its logical value type; a
+     * {@link org.apache.arrow.vector.types.pojo.DictionaryEncoding} is set on it that dictates the integer index type
+     * (Int16, Int32, or Int64). The dictionary id is derived from the field's existing dictionary if present, or
+     * synthesised sequentially by the caller (see {@code makeSchema}).
+     */
+    private static Field toDictionaryField(final Field field, final ColumnEncoding encoding, final long dictId) {
+        if (isDictionaryEncoded(field)) {
+            // Already dictionary-encoded — honour the existing id and index type.
+            return field;
+        }
+        final ArrowType indexType;
+        if (encoding.dictWidth() == ColumnEncoding.DictWidth.INT8) {
+            indexType = Types.MinorType.TINYINT.getType();
+        } else if (encoding.dictWidth() == ColumnEncoding.DictWidth.INT16) {
+            indexType = Types.MinorType.SMALLINT.getType();
+        } else if (encoding.dictWidth() == ColumnEncoding.DictWidth.INT64) {
+            indexType = Types.MinorType.BIGINT.getType();
+        } else {
+            indexType = Types.MinorType.INT.getType();
+        }
+        final org.apache.arrow.vector.types.pojo.DictionaryEncoding dictEncoding =
+                new org.apache.arrow.vector.types.pojo.DictionaryEncoding(dictId, false,
+                        (ArrowType.Int) indexType);
+        return new Field(field.getName(),
+                new FieldType(field.isNullable(), field.getType(), dictEncoding, field.getMetadata()),
+                field.getChildren());
+    }
+
+    /**
+     * Samples {@code sampleSize} rows from {@code rowSet} and returns the ratio of estimated run count to rows sampled.
+     * A ratio near 0 means the column is highly repetitive; 1.0 means every consecutive pair differs.
+     */
+    static Map<String, ColumnEncoding> inferEncodings(@NotNull final Table table) {
+        final Map<String, ColumnEncoding> encodings = new HashMap<>();
+
+        // Structural REE detection inspects only attributes and source types; no snapshot required.
+        if (REE_AUTO_DETECT_ENABLED) {
+            detectStructuralRunEndEncoding(table, encodings);
+        }
+
+        // The remaining detection reads live data and must run under a consistent snapshot. It works from a single
+        // sampled row set: structural dictionary detection probes each column's regions through the sample (which
+        // bounds the number of regions inspected while remaining a good low-cardinality hint), and REE/dictionary
+        // sampling estimates run length and cardinality from the same rows.
+        final boolean detectStructuralDict = DICT_AUTO_DETECT_ENABLED;
+        final boolean reeSample = REE_AUTO_DETECT_ENABLED && REE_SAMPLING_ENABLED;
+        final boolean dictSample = DICT_AUTO_DETECT_ENABLED && DICT_SAMPLING_ENABLED;
+        if (detectStructuralDict || reeSample || dictSample) {
+            ConstructSnapshot.callDataSnapshotFunction("BarrageUtil.inferEncodings",
+                    ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(),
+                            (NotificationStepSource) table),
+                    (usePrev, beforeClockValue) -> {
+                        final RowSet rowSetToUse = usePrev ? table.getRowSet().prev() : table.getRowSet();
+                        try (final WritableRowSet sampleRowSet = buildEncodingSampleRowSet(rowSetToUse)) {
+                            if (sampleRowSet != null) {
+                                // Structural dictionary detection is a cheap, high-confidence hint; run it first so a
+                                // symbol-table-backed column is marked without needing the cardinality pass.
+                                if (detectStructuralDict) {
+                                    detectStructuralDictionaryEncoding(table, sampleRowSet, encodings);
+                                }
+                                if (reeSample || dictSample) {
+                                    sampleColumnsForEncoding(table, encodings, usePrev, sampleRowSet, reeSample,
+                                            dictSample);
+                                }
+                            }
+                        }
+                        return true;
+                    });
+        }
+
+        return encodings;
+    }
+
+    /**
+     * Builds a row set sampling {@code rowSetToUse}: up to {@link #REE_SAMPLE_SIZE} rows drawn as
+     * {@link #REE_MIN_SAMPLE_SIZE}-row chunks evenly distributed across the row set. Returns {@code null} when the row
+     * set has fewer than {@link #REE_MIN_SAMPLE_SIZE} rows (too few to sample meaningfully). The returned row set is
+     * owned by the caller and must be closed.
+     */
+    @Nullable
+    static WritableRowSet buildEncodingSampleRowSet(@NotNull final RowSet rowSetToUse) {
+        if (rowSetToUse.size() < REE_MIN_SAMPLE_SIZE) {
+            return null;
+        }
+        // Build a single RowSet of REE_MIN_SAMPLE_SIZE chunks evenly distributed across the rowset.
+        final int chunkSize = (int) Math.min(REE_MIN_SAMPLE_SIZE, rowSetToUse.size());
+        final int sampleSize = (int) Math.min(REE_SAMPLE_SIZE, rowSetToUse.size());
+        final int numChunks = sampleSize / chunkSize;
+        final int stride = (int) rowSetToUse.size() / numChunks;
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        try (final RowSequence.Iterator it = rowSetToUse.getRowSequenceIterator()) {
+            while (it.hasMore()) {
+                final RowSequence rows = it.getNextRowSequenceWithLength(chunkSize);
+                builder.appendRowSequence(rows);
+                it.getNextRowSequenceWithLength(stride - chunkSize);
+            }
+        }
+        return builder.build();
+    }
+
+    /**
+     * Marks columns that are structurally constant for run-end encoding: single-value (or null) sources, and the key
+     * columns of a merged partitioned table (constant per region).
+     */
+    static void detectStructuralRunEndEncoding(
+            @NotNull final Table table,
+            @NotNull final Map<String, ColumnEncoding> encodings) {
+        // Single-value sources are an obvious win, should always be encoded.
+        table.getColumnSourceMap().forEach((name, source) -> {
+            if (source instanceof NullValueColumnSource || source instanceof SingleValueColumnSource) {
+                encodings.put(name, ColumnEncoding.RUN_END_ENCODED_INT32);
+            }
+        });
+
+        // Partition tables that have been merged will have constant key columns per region.
+        if (Boolean.TRUE.equals(table.getAttribute(Table.MERGED_TABLE_ATTRIBUTE))
+                && table.hasAttribute(Table.KEY_COLUMNS_ATTRIBUTE)) {
+            for (final String col : ((String) table.getAttribute(Table.KEY_COLUMNS_ATTRIBUTE)).split(",")) {
+                encodings.put(col, ColumnEncoding.RUN_END_ENCODED_INT32);
+            }
+        }
+    }
+
+    /**
+     * Marks columns whose sources are backed by a dictionary/symbol table (e.g. regioned String columns) for dictionary
+     * encoding. A symbol-table-backed source stores a small set of distinct values behind integer identifiers, so it is
+     * a reliable low-cardinality hint that a wire dictionary will pay off. This does not reuse the source's dictionary
+     * -- the writer rebuilds its own from the materialized values -- so it is purely a benefit heuristic, not a
+     * correctness requirement. Accordingly it probes only {@code sampleRowSet}, bounding the number of regions
+     * inspected.
+     */
+    static void detectStructuralDictionaryEncoding(
+            @NotNull final Table table,
+            @NotNull final RowSet sampleRowSet,
+            @NotNull final Map<String, ColumnEncoding> encodings) {
+        table.getColumnSourceMap().forEach((name, source) -> {
+            if (!SymbolTableSource.hasSymbolTable(source, sampleRowSet)) {
+                return;
+            }
+            // Augment rather than replace.
+            encodings.compute(name, (k, existing) -> existing == null
+                    ? ColumnEncoding.DICTIONARY_ENCODED_INT32
+                    : existing.withDictionary(ColumnEncoding.DictWidth.INT32));
+        });
+    }
+
+    static void sampleColumnsForEncoding(
+            @NotNull final Table table,
+            @NotNull final Map<String, ColumnEncoding> encodings,
+            final boolean usePrev,
+            @NotNull final RowSet sampleRowSet,
+            final boolean detectRee,
+            final boolean detectDict) {
+        final int actualSampleSize = sampleRowSet.intSize();
+        try (final WritableBooleanChunk<Values> isEqualNext = detectRee
+                ? WritableBooleanChunk.makeWritableChunk(actualSampleSize - 1)
+                : null) {
+            table.getColumnSourceMap().forEach((name, source) -> {
+                // Augment rather than replace.
+                final ColumnEncoding existing = encodings.get(name);
+                boolean useRee = existing != null && existing.isRunEndEncoded();
+                boolean useDict = existing != null && existing.isDictionaryEncoded();
+                try (final ColumnSource.GetContext context = source.makeGetContext(actualSampleSize)) {
+                    final Chunk<? extends Values> chunk = usePrev
+                            ? source.getPrevChunk(context, sampleRowSet)
+                            : source.getChunk(context, sampleRowSet);
+                    // We only auto-detect dictionary on Object columns.
+                    if (source.getChunkType() == ChunkType.Object) {
+                        // Compute the run count and distinct-value cardinality in a single pass.
+                        final ObjectChunk<?, ? extends Values> objectChunk = chunk.asObjectChunk();
+                        final HashSet<Object> distinct = detectDict ? new HashSet<>() : null;
+                        int numRuns = 1;
+                        Object prev = objectChunk.get(0);
+                        if (detectDict) {
+                            distinct.add(prev);
+                        }
+                        for (int i = 1; i < objectChunk.size(); ++i) {
+                            final Object next = objectChunk.get(i);
+                            if (detectRee && !Objects.equals(prev, next)) {
+                                ++numRuns;
+                            }
+                            if (detectDict) {
+                                distinct.add(next);
+                            }
+                            prev = next;
+                        }
+                        // REE and dictionary are independent facets: when sampling shows an advantage for both,
+                        // the column is doubly-encoded as RunEndEncoded<Dictionary<...>>.
+                        useRee |= detectRee && (double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD;
+                        // A dictionary only makes sense with at least two distinct values, otherwise REE-only is better
+                        // (and will have been detected).
+                        useDict |= detectDict && distinct.size() > 1
+                                && (double) distinct.size() / chunk.size() < DICT_CARDINALITY_RATIO_THRESHOLD;
+                    } else if (detectRee) {
+                        ChunkEquals.makeEqual(source.getChunkType()).equalNext(chunk, isEqualNext);
+                        int numRuns = 1;
+                        for (int i = 0; i < isEqualNext.size(); ++i) {
+                            if (!isEqualNext.get(i)) {
+                                ++numRuns;
+                            }
+                        }
+                        useRee |= (double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD;
+                    }
+                }
+                if (useRee || useDict) {
+                    encodings.put(name, ColumnEncoding.of(
+                            useRee ? ColumnEncoding.RunEndWidth.INT32 : null,
+                            useDict ? ColumnEncoding.DictWidth.INT32 : null));
+                }
+            });
+        }
     }
 
     public static Field arrowFieldFor(
@@ -1305,6 +1827,51 @@ public class BarrageUtil {
         return new Field(name, fieldType, children);
     }
 
+    /**
+     * Returns the maximum batch size imposed by the schema: {@link Short#MAX_VALUE} when any field uses Int16 Run-End
+     * Encoding, otherwise {@link BarrageMessageWriterImpl#DEFAULT_BATCH_SIZE}.
+     */
+    private static int maxBatchSizeForSchema(@NotNull final Schema schema) {
+        return schema.getFields().stream().anyMatch(BarrageUtil::isReeInt16Field)
+                ? Short.MAX_VALUE
+                : BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE;
+    }
+
+    /**
+     * Converts an Arrow SDK schema to a column-name → flatbuf-Field map for use by chunk writers.
+     */
+    private static Map<String, org.apache.arrow.flatbuf.Field> buildFlatbufFieldMap(
+            @NotNull final Schema schema) {
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = new HashMap<>();
+        // noinspection DataFlowIssue
+        schema.getFields().forEach(f -> {
+            final FlatBufferBuilder fbb = new FlatBufferBuilder();
+            final int offset = f.getField(fbb);
+            fbb.finish(offset);
+            fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
+        });
+        return fieldFor;
+    }
+
+    /**
+     * Returns snapshot options whose effective batch size does not exceed {@code maxBatchSize}. When
+     * {@code maxBatchSize} equals {@link BarrageMessageWriterImpl#DEFAULT_BATCH_SIZE} the original options are returned
+     * unchanged.
+     */
+    private static BarrageSnapshotOptions effectiveSnapshotOptions(
+            @NotNull final BarrageSnapshotOptions options,
+            final int maxBatchSize) {
+        if (maxBatchSize == BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE) {
+            return options;
+        }
+        final int requested = options.batchSize();
+        final int effective = requested <= 0 ? maxBatchSize : Math.min(requested, maxBatchSize);
+        if (effective == requested) {
+            return options;
+        }
+        return options.withBatchSize(effective);
+    }
+
     public static void createAndSendStaticSnapshot(
             BarrageMessageWriter.Factory bmwFactory,
             BaseTable<?> table,
@@ -1318,27 +1885,17 @@ public class BarrageUtil {
         long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
         double snapshotNanosPerCell = 0.0;
 
-        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor;
-        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            fieldFor = new HashMap<>();
-            final Schema targetSchema = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
-            // noinspection DataFlowIssue
-            targetSchema.getFields().forEach(f -> {
-                final FlatBufferBuilder fbb = new FlatBufferBuilder();
-                final int offset = f.getField(fbb);
-                fbb.finish(offset);
-                fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
-            });
-        } else {
-            fieldFor = null;
-        }
+        final Schema effectiveSchema = schemaForTable(snapshotRequestOptions, table);
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = buildFlatbufFieldMap(effectiveSchema);
+        snapshotRequestOptions =
+                effectiveSnapshotOptions(snapshotRequestOptions, maxBatchSizeForSchema(effectiveSchema));
 
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
                         ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
-                        fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
+                        fieldFor.getOrDefault(cd.getName(), flatbufFieldFor(cd, Map.of())))))
                 .toArray(ChunkWriter[]::new);
 
         final long columnCount =
@@ -1386,11 +1943,13 @@ public class BarrageUtil {
                         if (rsIt.hasMore()) {
                             listener.onNext(bmw.getSnapshotView(snapshotRequestOptions,
                                     snapshotViewport, false,
-                                    msg.rowsIncluded, columns));
+                                    msg.rowsIncluded, columns,
+                                    new DictionaryWriterRegistryImpl()));
                         } else {
                             listener.onNext(bmw.getSnapshotView(snapshotRequestOptions,
                                     viewport, reverseViewport,
-                                    msg.rowsIncluded, columns));
+                                    msg.rowsIncluded, columns,
+                                    new DictionaryWriterRegistryImpl()));
                         }
                     }
 
@@ -1450,30 +2009,16 @@ public class BarrageUtil {
             return;
         }
 
-        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor;
-        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
-            fieldFor = new HashMap<>();
-            // Extract the target schema from the table attributes
-            final Schema targetSchema = (Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
-            // noinspection DataFlowIssue
-            // Iterate over each field, serialize it to a FlatBuffer, and store it in the map
-            targetSchema.getFields().forEach(f -> {
-                final FlatBufferBuilder fbb = new FlatBufferBuilder();
-                final int offset = f.getField(fbb);
-                fbb.finish(offset);
-                fieldFor.put(f.getName(), org.apache.arrow.flatbuf.Field.getRootAsField(fbb.dataBuffer()));
-            });
-        } else {
-            // No custom schema provided, keep the map null to rely on default field generation
-            fieldFor = null;
-        }
+        final Schema effectiveSchema = schemaForTable(options, table);
+        final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = buildFlatbufFieldMap(effectiveSchema);
+        options = effectiveSnapshotOptions(options, maxBatchSizeForSchema(effectiveSchema));
 
         // noinspection unchecked
         final ChunkWriter<Chunk<Values>>[] chunkWriters = table.getDefinition().getColumns().stream()
                 .map(cd -> DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(
                         ReinterpretUtils.maybeConvertToPrimitiveDataType(cd.getDataType()),
                         cd.getComponentType(),
-                        fieldFor != null ? fieldFor.get(cd.getName()) : flatbufFieldFor(cd, Map.of()))))
+                        fieldFor.getOrDefault(cd.getName(), flatbufFieldFor(cd, Map.of())))))
                 .toArray(ChunkWriter[]::new);
 
         // otherwise snapshot the entire request and send to the client
@@ -1496,7 +2041,8 @@ public class BarrageUtil {
                 final RowSet keySpaceViewport = viewport != null
                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
                         : null) {
-            listener.onNext(bmw.getSnapshotView(options, viewport, reverseViewport, keySpaceViewport, columns));
+            listener.onNext(bmw.getSnapshotView(options, viewport, reverseViewport, keySpaceViewport, columns,
+                    new DictionaryWriterRegistryImpl()));
         }
     }
 }

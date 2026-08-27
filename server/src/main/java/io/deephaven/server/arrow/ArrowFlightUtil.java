@@ -130,7 +130,7 @@ public class ArrowFlightUtil {
                         // push the schema to the listener
                         listener.onNext(streamGeneratorFactory.getSchemaView(
                                 fbb -> BarrageUtil.makeTableSchemaPayload(fbb, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
-                                        table.getDefinition(), table.getAttributes(), table.isFlat())));
+                                        table)));
 
                         // shared code between `DoGet` and `BarrageSnapshotRequest`
                         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
@@ -216,9 +216,14 @@ public class ArrowFlightUtil {
                         "Schema must be processed before record-batch messages");
             }
 
+            if (mi.header.headerType() == MessageHeader.DictionaryBatch) {
+                addDictionaryBatch(mi);
+                return;
+            }
+
             if (mi.header.headerType() != MessageHeader.RecordBatch) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Only schema/record-batch messages supported, instead got "
+                        "Only schema/record-batch/dictionary-batch messages supported, instead got "
                                 + MessageHeader.name(mi.header.headerType()));
             }
 

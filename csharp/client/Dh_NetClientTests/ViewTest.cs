@@ -6,8 +6,8 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class ViewTest {
-  [Fact]
-  public void View() {
+  [Test]
+  public async Task View() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var table = ctx.TestTable;
 
@@ -19,6 +19,6 @@ public class ViewTest {
     expected.AddColumn("Close", [53.8, 88.5, 38.7, 453, 26.7, 544.9, 13.4]);
     expected.AddColumn("Volume", [(Int64)87000, 6060842, 138000, 138000000, 19000, 48300, 1500]);
 
-    TableComparer.AssertSame(expected, t1);
+    await Assert.That(() => TableComparer.AssertSame(expected, t1)).ThrowsNothing();
   }
 }

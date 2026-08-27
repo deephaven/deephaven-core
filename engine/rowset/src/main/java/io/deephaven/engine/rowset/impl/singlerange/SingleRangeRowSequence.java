@@ -160,17 +160,14 @@ public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements Si
             if (sizeLeft <= 0) {
                 return false;
             }
-            final long last;
-            if (currEnd == -1) {
-                last = currStart + sizeLeft - 1;
-            } else {
-                last = currEnd + 1 + sizeLeft - 1;
-            }
+            // The first key not yet consumed; anything at or before it makes the advance a no-op.
+            final long next = (currEnd == -1) ? currStart : currEnd + 1;
+            final long last = next + sizeLeft - 1;
             if (last < toKey) {
                 sizeLeft = 0;
                 return false;
             }
-            if (toKey > currStart) {
+            if (toKey > next) {
                 currStart = toKey;
                 currEnd = -1;
                 sizeLeft = last - currStart + 1;

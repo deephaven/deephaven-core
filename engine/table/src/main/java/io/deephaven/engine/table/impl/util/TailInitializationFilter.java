@@ -279,7 +279,9 @@ public class TailInitializationFilter {
         if (!source.isAddOnly()) {
             throw new IllegalArgumentException("TailInitializationFilter requires an add-only table as input.");
         }
-        source.getUpdateGraph().checkInitiateSerialTableOperation();
+        if (source.isRefreshing()) {
+            source.getUpdateGraph().checkInitiateSerialTableOperation();
+        }
         return source;
     }
 

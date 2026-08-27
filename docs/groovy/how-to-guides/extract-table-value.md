@@ -33,7 +33,7 @@ For different data types, use the appropriate `ColumnVectors` method:
 
 ## table.getColumnSource() (row key access)
 
-The [`getColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#getColumnSource(java.lang.String)) method returns a [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) that provides access to column data by **row key**, not positional index.
+The [`getColumnSource`](../reference/table-operations/metadata/getColumnSource.md) method returns a [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) that provides access to column data by **row key**, not positional index.
 
 ```groovy order=:log test-set=2
 result = newTable(
@@ -44,7 +44,8 @@ columnSource = result.getColumnSource("Integers")
 println columnSource
 ```
 
-> [!IMPORTANT] > `ColumnSource` methods like `get(rowKey)` use **row keys**, not positional indices. Row keys are the internal identifiers for rows and may not match positional indices, especially in filtered or modified tables.
+> [!IMPORTANT]
+> `ColumnSource` methods like `get(rowKey)` use **row keys**, not positional indices. Row keys are the internal identifiers for rows and may not match positional indices, especially in filtered or modified tables.
 
 For primitive columns, use type-specific methods for better performance:
 
@@ -79,6 +80,6 @@ while (iterator.hasNext()) {
 - [`ColumnVectors`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html)
 - [Iterate over tables](iterate-table-vectors.md)
 - [How do row keys and positional indices behave?](https://deephaven.io/core/docs/reference/community-questions/shifts/)
-- [`getColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#getColumnSource(java.lang.String))
+- [`getColumnSource`](../reference/table-operations/metadata/getColumnSource.md)
 - [`columnIterator`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#columnIterator(java.lang.String))
 - [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html)

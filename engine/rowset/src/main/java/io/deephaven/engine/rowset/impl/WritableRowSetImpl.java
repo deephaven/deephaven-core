@@ -126,6 +126,14 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final void insert(final RowSet added) {
+        if (added == this) {
+            // Self-insertion is a no-op (and the ix* implementations must not mutate while iterating
+            // themselves), but the mutation hooks must still fire; e.g. unmodifiable views reject every
+            // mutator via their hooks.
+            preMutationHook();
+            postMutationHook();
+            return;
+        }
         preMutationHook();
         assign(innerSet.ixInsert(getInnerSet(added)));
         postMutationHook();
@@ -156,19 +164,44 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void remove(final RowSet removed) {
         preMutationHook();
-        assign(innerSet.ixRemove(getInnerSet(removed)));
+        if (removed == this) {
+            // Self-removal empties the set; the ix* implementations must not mutate while iterating themselves.
+            assign(OrderedLongSet.EMPTY);
+        } else {
+            assign(innerSet.ixRemove(getInnerSet(removed)));
+        }
         postMutationHook();
     }
 
     @Override
     public final void update(final RowSet added, final RowSet removed) {
         preMutationHook();
-        assign(innerSet.ixUpdate(getInnerSet(added), getInnerSet(removed)));
+        // Guard self-aliasing; the ix* implementations must not mutate while iterating themselves.
+        if (added == this) {
+            if (removed != this) {
+                // Inserting ourselves is a no-op against our post-removal state; only the removal has effect.
+                assign(innerSet.ixRemove(getInnerSet(removed)));
+            }
+            // added == removed == this: the removal and insertion cancel; we are unchanged.
+        } else if (removed == this) {
+            // Removing all of our keys, then inserting added: we become added.
+            assign(getInnerSet(added).ixCowRef());
+        } else {
+            assign(innerSet.ixUpdate(getInnerSet(added), getInnerSet(removed)));
+        }
         postMutationHook();
     }
 
     @Override
     public final void retain(final RowSet rowSetToIntersect) {
+        if (rowSetToIntersect == this) {
+            // Self-retention is a no-op (and the ix* implementations must not mutate while iterating
+            // themselves), but the mutation hooks must still fire; e.g. unmodifiable views reject every
+            // mutator via their hooks.
+            preMutationHook();
+            postMutationHook();
+            return;
+        }
         preMutationHook();
         assign(innerSet.ixRetain(getInnerSet(rowSetToIntersect)));
         postMutationHook();
@@ -365,22 +398,23 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
             return subSetByPositionRange(positions.firstRowKey(), positions.lastRowKey() + 1);
         }
         final MutableLong currentOffset = new MutableLong();
-        final RowSequence.Iterator iter = getRowSequenceIterator();
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        positions.forEachRowKeyRange((start, end) -> {
-            if (currentOffset.get() < start) {
-                // skip items until the beginning of this range
-                iter.getNextRowSequenceWithLength(start - currentOffset.get());
-                currentOffset.set(start);
-            }
-            if (!iter.hasMore()) {
-                return false;
-            }
-            iter.getNextRowSequenceWithLength(end + 1 - currentOffset.get())
-                    .forAllRowKeyRanges(builder::appendRange);
-            currentOffset.set(end + 1);
-            return iter.hasMore();
-        });
+        try (final RowSequence.Iterator iter = getRowSequenceIterator()) {
+            positions.forEachRowKeyRange((start, end) -> {
+                if (currentOffset.get() < start) {
+                    // skip items until the beginning of this range
+                    iter.getNextRowSequenceWithLength(start - currentOffset.get());
+                    currentOffset.set(start);
+                }
+                if (!iter.hasMore()) {
+                    return false;
+                }
+                iter.getNextRowSequenceWithLength(end + 1 - currentOffset.get())
+                        .forAllRowKeyRanges(builder::appendRange);
+                currentOffset.set(end + 1);
+                return iter.hasMore();
+            });
+        }
         return builder.build();
     }
 

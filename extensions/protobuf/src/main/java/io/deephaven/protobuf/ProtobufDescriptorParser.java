@@ -18,7 +18,7 @@ public final class ProtobufDescriptorParser {
      *
      * <p>
      * Parsing proceeds through each {@link Descriptor#getFields() descriptor field} that matches
-     * {@link FieldOptions#include()}}. By default, this is {@code true} for all fields.
+     * {@link FieldOptions#include()}. By default, this is {@code true} for all fields.
      *
      * <p>
      * For simple types, the fields are parsed as:
@@ -161,6 +161,11 @@ public final class ProtobufDescriptorParser {
      * <p>
      * The {@link FieldPath} context is kept during traversal and is an important part of the returned message
      * functions. Callers will typically use the returned field path to assign appropriate names to the functions.
+     *
+     * <p>
+     * Descriptors which are cyclic, or have descendant that are cyclic, are not currently supported; any cycles must be
+     * broken by {@link FieldOptions#exclude() excluding} one of the fields that leads to, or is part of, the cycle. If
+     * a cycle is detected, an {@link IllegalArgumentException} with a descriptive error message will be thrown.
      *
      * @param descriptor the descriptor
      * @param options the options

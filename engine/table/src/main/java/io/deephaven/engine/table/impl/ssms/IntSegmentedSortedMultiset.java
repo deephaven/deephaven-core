@@ -8,14 +8,15 @@
 package io.deephaven.engine.table.impl.ssms;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
-import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.IntComparisons;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfInt;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -27,7 +28,7 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
 import java.util.Arrays;
-import java.util.Objects;
+import java.util.NoSuchElementException;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -2767,55 +2768,72 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     }
 
     private int[] keyArray() {
-        return keyArray(0, size - 1);
+        return keyArray(0, size);
     }
 
     /**
-     * Create an array of the current keys beginning with the first (inclusive) and ending with the last (inclusive)
-     * 
-     * @param first
-     * @param last
-     * @return
+     * Create an array of the current keys from {@code fromIndexInclusive} (inclusive) to {@code toIndexExclusive}
+     * (exclusive). Following the {@link IntVector} contract, offsets outside {@code [0, size())} are legal and
+     * contribute the null value rather than an error.
+     *
+     * @param fromIndexInclusive The first offset to include
+     * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include
+     * @return An array of the requested keys, of length {@code toIndexExclusive - fromIndexInclusive}
      */
-    private int[] keyArray(long first, long last) {
-        if (isEmpty()) {
+    private int[] keyArray(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+
+        final int totalSize =
+                LongSizedDataStructure.intSize("keyArray", toIndexExclusive - fromIndexInclusive);
+        if (totalSize == 0) {
             // region EmptyKeyArrayAllocation
             return ArrayTypeUtils.EMPTY_INT_ARRAY;
             // endregion EmptyKeyArrayAllocation
         }
 
-        final int totalSize = (int) (last - first + 1);
         // region KeyArrayAllocation
         final int[] keyArray = new int[totalSize];
         // endregion KeyArrayAllocation
+
+        // the requested range may extend past either end of this SSM; those offsets read as null
+        final long firstIncluded = Math.max(fromIndexInclusive, 0);
+        final long lastExcluded = Math.max(Math.min(toIndexExclusive, size), firstIncluded);
+        int remaining = (int) (lastExcluded - firstIncluded);
+        if (remaining == 0) {
+            // the range lies entirely outside this SSM, so every offset is null
+            Arrays.fill(keyArray, NULL_INT);
+            return keyArray;
+        }
+
+        // null only what the copy below will not reach: with something in range, destOffset is within the result and
+        // destOffset + remaining is at most its length
+        final int destOffset = (int) (firstIncluded - fromIndexInclusive);
+        if (destOffset > 0) {
+            Arrays.fill(keyArray, 0, destOffset, NULL_INT);
+        }
+        if (destOffset + remaining < totalSize) {
+            Arrays.fill(keyArray, destOffset + remaining, totalSize, NULL_INT);
+        }
+
         if (leafCount == 1) {
             if (directoryValues == null) {
-                keyArray[0] = singletonValue;
+                keyArray[destOffset] = singletonValue;
             } else {
-                System.arraycopy(directoryValues, (int) first, keyArray, 0, totalSize);
+                System.arraycopy(directoryValues, (int) firstIncluded, keyArray, destOffset, remaining);
             }
-        } else if (leafCount > 0) {
-            int offset = 0;
-            int copied = 0;
-            int skipped = 0;
-            for (int li = 0; li < leafCount && copied < totalSize; ++li) {
-                if (skipped < first) {
-                    final int toSkip = (int) first - skipped;
-                    if (toSkip < leafSizes[li]) {
-                        final int nToCopy = Math.min(leafSizes[li] - toSkip, totalSize);
-                        System.arraycopy(leafValues[li], toSkip, keyArray, 0, nToCopy);
-                        copied = nToCopy;
-                        offset = copied;
-                        skipped = (int) first;
-                    } else {
-                        skipped += leafSizes[li];
-                    }
-                } else {
-                    int nToCopy = Math.min(leafSizes[li], totalSize - copied);
-                    System.arraycopy(leafValues[li], 0, keyArray, offset, nToCopy);
-                    offset += leafSizes[li];
-                    copied += nToCopy;
+        } else {
+            int dest = destOffset;
+            int toSkip = (int) firstIncluded;
+            for (int li = 0; li < leafCount && remaining > 0; ++li) {
+                if (toSkip >= leafSizes[li]) {
+                    toSkip -= leafSizes[li];
+                    continue;
                 }
+                final int nToCopy = Math.min(leafSizes[li] - toSkip, remaining);
+                System.arraycopy(leafValues[li], toSkip, keyArray, dest, nToCopy);
+                dest += nToCopy;
+                remaining -= nToCopy;
+                toSkip = 0;
             }
         }
         return keyArray;
@@ -2927,8 +2945,9 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     // region IntVector
     @Override
     public int get(long index) {
-        if (index < 0 || index > size()) {
-            throw new IllegalArgumentException("Illegal index " + index + " current size: " + size());
+        // offsets outside [0, size()) are legal and read as null, per the IntVector contract
+        if (index < 0 || index >= size()) {
+            return NULL_INT;
         }
 
         if (leafCount == 1) {
@@ -2945,8 +2964,123 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         throw new IllegalStateException("Index " + index + " not found in this SSM");
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * The inherited implementation is positional, and {@link #get(long)} rescans the leaf directory on every element,
+     * making a traversal {@code O(size * leafCount)}. Walking the leaves instead makes it {@code O(size)}, which
+     * matters because the iterator-based {@link #hashCode()} and {@link #equals(Object)} run per row per cycle when an
+     * SSM-valued column is used as an aggregation key.
+     */
+    @Override
+    public ValueIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+
+        // The requested slice may extend past either end of this SSM; those offsets are legal and iterate as null.
+        // Split it into the leading nulls, the part this SSM actually stores, and the trailing nulls.
+        final long totalWanted = toIndexExclusive - fromIndexInclusive;
+        final long prefixNulls = fromIndexInclusive < 0 ? Math.min(-fromIndexInclusive, totalWanted) : 0;
+        final long innerFrom = Math.max(fromIndexInclusive, 0);
+        final long innerLength = innerFrom < size ? Math.min(size - innerFrom, totalWanted - prefixNulls) : 0;
+
+        return ValueIteratorOfInt.wrapWithNulls(
+                innerLength == 0 ? null : inRangeIterator(innerFrom, innerFrom + innerLength),
+                prefixNulls,
+                totalWanted - prefixNulls - innerLength);
+    }
+
+    /**
+     * Iterate a non-empty slice of the values this SSM stores. Both bounds must lie within {@code [0, size()]}.
+     *
+     * @param fromIndexInclusive The first offset to include
+     * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    private ValueIteratorOfInt inRangeIterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        if (leafCount <= 1) {
+            // Empty, singleton, and single-leaf SSMs store their values contiguously, so get(long) is already O(1).
+            return new ValueIteratorOfInt() {
+
+                private long nextIndex = fromIndexInclusive;
+
+                @Override
+                public int nextInt() {
+                    if (nextIndex >= toIndexExclusive) {
+                        throw new NoSuchElementException();
+                    }
+                    // O(1): with at most one leaf there is no directory to rescan, so this is a single array read
+                    return get(nextIndex++);
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return nextIndex < toIndexExclusive;
+                }
+
+                @Override
+                public long remaining() {
+                    return toIndexExclusive - nextIndex;
+                }
+            };
+        }
+
+        // Resolve the starting leaf once; from there each element is a constant-time step.
+        // Scanned rather than binary searched: that needs a prefix sum of leafSizes, which then has to be maintained.
+        int firstLeaf = 0;
+        long firstOffset = fromIndexInclusive;
+        while (firstLeaf < leafCount && firstOffset >= leafSizes[firstLeaf]) {
+            firstOffset -= leafSizes[firstLeaf++];
+        }
+
+        final int startLeaf = firstLeaf;
+        final int startOffset = (int) firstOffset;
+
+        return new ValueIteratorOfInt() {
+
+            private int leaf = startLeaf;
+            private int offset = startOffset;
+            private long remaining = toIndexExclusive - fromIndexInclusive;
+
+            // Safe to cache: consumers drain the iterator synchronously, so no split can intervene.
+            private int[] values = startLeaf < leafCount ? leafValues[startLeaf] : null;
+            private int leafSize = startLeaf < leafCount ? leafSizes[startLeaf] : 0;
+
+            @Override
+            public int nextInt() {
+                if (remaining <= 0) {
+                    throw new NoSuchElementException();
+                }
+                while (offset >= leafSize) {
+                    if (++leaf >= leafCount) {
+                        // unreachable: the bounds were clamped to this SSM's size before we were constructed
+                        throw new IllegalStateException(
+                                "Index " + (toIndexExclusive - remaining) + " not found in this SSM");
+                    }
+                    offset = 0;
+                    values = leafValues[leaf];
+                    leafSize = leafSizes[leaf];
+                }
+                --remaining;
+                return values[offset++];
+            }
+
+            @Override
+            public boolean hasNext() {
+                return remaining > 0;
+            }
+
+            @Override
+            public long remaining() {
+                return remaining;
+            }
+        };
+    }
+
     @Override
     public IntVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        // materialized rather than a IntVectorSlice view: an SSM is live and mutable, and a slice would capture our
+        // size at construction and then read stale bounds
         return new IntVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
     }
 
@@ -2982,7 +3116,6 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     }
     // endregion
 
-    // region VectorEquals
     private boolean equalsArray(IntVector o) {
         if (size() != o.size()) {
             return false;
@@ -2991,74 +3124,12 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         // iterate o exactly once; random access via get can be expensive for some Vector implementations
         try (final CloseablePrimitiveIteratorOfInt oit = o.iterator()) {
             if (size == 1) {
-                return get(0) == oit.nextInt();
+                return IntComparisons.eq(get(0), oit.nextInt());
             }
 
             if (leafCount == 1) {
                 for (int ii = 0; ii < size; ii++) {
-                    // region DirObjectEquals
-                    if (directoryValues[ii] != oit.nextInt()) {
-                        return false;
-                    }
-                    // endregion DirObjectEquals
-                }
-
-                return true;
-            }
-
-            for (int li = 0; li < leafCount; ++li) {
-                for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    if (leafValues[li][ai] != oit.nextInt()) {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-    }
-    // endregion VectorEquals
-
-    private boolean equalsArray(ObjectVector<?> o) {
-        // region EqualsArrayTypeCheck
-        if (o.getComponentType() != int.class && o.getComponentType() != Integer.class) {
-            return false;
-        }
-        // endregion EqualsArrayTypeCheck
-
-        if (size() != o.size()) {
-            return false;
-        }
-
-        // iterate o exactly once; random access via get can be expensive for some Vector implementations
-        try (final CloseableIterator<?> oit = o.iterator()) {
-            if (size == 1) {
-                final Integer val = (Integer) oit.next();
-                // region VectorEquals
-                if (val == null) {
-                    // a null value matches our stored null sentinel; comparing the boxed sentinel via Objects.equals
-                    // would incorrectly report inequality
-                    return get(0) == NULL_INT;
-                }
-                // endregion VectorEquals
-
-                return Objects.equals(get(0), val);
-            }
-
-            if (leafCount == 1) {
-                for (int ii = 0; ii < size; ii++) {
-                    final Integer val = (Integer) oit.next();
-                    // region VectorEquals
-                    if (val == null) {
-                        // a null value matches only our stored null sentinel
-                        if (directoryValues[ii] != NULL_INT) {
-                            return false;
-                        }
-                        continue;
-                    }
-                    // endregion VectorEquals
-
-                    if (!Objects.equals(directoryValues[ii], val)) {
+                    if (!IntComparisons.eq(directoryValues[ii], oit.nextInt())) {
                         return false;
                     }
                 }
@@ -3068,18 +3139,7 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
 
             for (int li = 0; li < leafCount; ++li) {
                 for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    final Integer val = (Integer) oit.next();
-                    // region VectorEquals
-                    if (val == null) {
-                        // a null value matches only our stored null sentinel
-                        if (leafValues[li][ai] != NULL_INT) {
-                            return false;
-                        }
-                        continue;
-                    }
-                    // endregion VectorEquals
-
-                    if (!Objects.equals(leafValues[li][ai], val)) {
+                    if (!IntComparisons.eq(leafValues[li][ai], oit.nextInt())) {
                         return false;
                     }
                 }
@@ -3089,94 +3149,72 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
         }
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Equal to any {@link IntVector} holding the same values, including another SSM: an SSM <em>is</em> a
+     * {@link IntVector}, so it takes the same element-wise path rather than a structural comparison of leaf layouts.
+     * Two SSMs can hold identical values in different layouts -- leaves need not be full, and the node sizes need not
+     * agree -- so layout is not a sound basis for equality.
+     *
+     * <p>
+     * Nothing else is equal, exactly as {@link IntVector#equals(IntVector, Object)} requires: a Vector that stores
+     * its elements some other way cannot be accepted without breaking the {@link #hashCode()} contract, and would not
+     * be reciprocated in any case, since that Vector's own {@code equals} rejects a {@link IntVector}.
+     */
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof IntSegmentedSortedMultiset)) {
-            // region VectorEquals
-            if (o instanceof IntVector) {
-                return equalsArray((IntVector) o);
-            }
-            // endregion VectorEquals
-
-            if (o instanceof ObjectVector) {
-                return equalsArray((ObjectVector) o);
-            }
-            return false;
-        }
-        final IntSegmentedSortedMultiset that = (IntSegmentedSortedMultiset) o;
-
-        if (size() != that.size()) {
-            return false;
-        }
-
-        if (size == 1) {
-            // region SingletonEquals
-            return get(0) == that.get(0);
-            // endregion SingletonEquals
-        }
-
-        if (leafCount == 1) {
-            if (that.leafCount != 1 || size != that.size) {
-                return false;
-            }
-
-            for (int ii = 0; ii < size; ii++) {
-                // region DirObjectEquals
-                if (directoryValues[ii] != that.directoryValues[ii]) {
-                    return false;
-                }
-                // endregion DirObjectEquals
-            }
-
+        if (this == o) {
             return true;
         }
 
-        int otherLeaf = 0;
-        int otherLeafIdx = 0;
-        for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                // region LeafObjectEquals
-                if (leafValues[li][ai] != that.leafValues[otherLeaf][otherLeafIdx++]) {
-                    return false;
-                }
-                // endregion LeafObjectEquals
-
-                if (otherLeafIdx >= that.leafSizes[otherLeaf]) {
-                    otherLeaf++;
-                    otherLeafIdx = 0;
-                }
-
-                if (otherLeaf >= that.leafCount) {
-                    return false;
-                }
-            }
+        if (o instanceof IntVector) {
+            return equalsArray((IntVector) o);
         }
 
-        return true;
+        return false;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * {@link #equals(Object)} accepts any Vector with matching contents, so this must produce exactly the hash
+     * {@link IntVector#hashCode(IntVector)} would: the same seed, the same multiplier, and the same per-element
+     * {@link IntComparisons#hashCode(int)}. That per-element hash is also why {@link #equals(Object)} must compare
+     * elements with {@link IntComparisons#eq(int, int)} rather than {@code ==}.
+     *
+     * <p>
+     * Walking the leaves here rather than delegating to the helper avoids an iterator per call, which is worth roughly
+     * 2x once the values span more than one leaf. Since that duplicates the helper's formula,
+     * {@code TestIntSegmentedSortedMultiset#testHashCodeMatchesVectorHelper} pins the two against each other across
+     * every representation so they cannot drift apart.
+     */
     @Override
     public int hashCode() {
-        if (size == 1) {
-            return Objects.hash(size) * 31 + Objects.hash(get(0));
+        int result = 1;
+        if (size == 0) {
+            return result;
         }
 
         if (leafCount == 1) {
-            int result = Objects.hash(size);
-            for (int ii = 0; ii < size; ii++) {
-                result = result * 31 + Objects.hash(directoryValues[ii]);
+            if (directoryValues == null) {
+                return 31 * result + IntComparisons.hashCode(singletonValue);
+            }
+
+            for (int ii = 0; ii < size; ++ii) {
+                result = 31 * result + IntComparisons.hashCode(directoryValues[ii]);
             }
 
             return result;
         }
 
-        int result = Objects.hash(leafCount, size);
-
         for (int li = 0; li < leafCount; ++li) {
-            for (int ai = 0; ai < leafSizes[li]; ai++) {
-                result = result * 31 + Objects.hash(leafValues[li][ai]);
+            final int[] values = leafValues[li];
+            final int leafSz = leafSizes[li];
+            for (int ai = 0; ai < leafSz; ++ai) {
+                result = 31 * result + IntComparisons.hashCode(values[ai]);
             }
         }
 

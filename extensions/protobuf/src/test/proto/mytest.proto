@@ -235,3 +235,23 @@ message FieldPathTesting {
   }
   Foo foo = 1;
 }
+
+// A message that is self-cyclic
+message SelfReferential {
+  int32 value = 1;
+  SelfReferential child = 2;
+}
+
+// A message that has a indirect cycle
+message CycleA {
+  CycleB b = 1;
+}
+
+message CycleB {
+  CycleA a = 1;
+}
+
+// A message whose children have a cycle (this message itself is not part of the cycle)
+message LollypopCycle {
+  CycleA child = 1;
+}

@@ -201,7 +201,10 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                 AsyncClientErrorNotifier.reportError(error);
             }
         } catch (IOException ioe) {
-            throw new UncheckedTableException("Exception while reporting async error for " + entry, ioe);
+            final UncheckedTableException uncheckedTableException =
+                    new UncheckedTableException("Exception while reporting async error for " + entry, error);
+            uncheckedTableException.addSuppressed(ioe);
+            throw uncheckedTableException;
         }
     }
 

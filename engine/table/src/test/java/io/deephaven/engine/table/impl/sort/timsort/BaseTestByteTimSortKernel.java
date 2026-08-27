@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.tuple.generated.ByteLongLongTuple;
 import io.deephaven.tuple.generated.ByteLongTuple;
 import io.deephaven.engine.table.impl.sort.findruns.ByteFindRunsKernel;
@@ -35,13 +36,13 @@ import java.util.stream.Collectors;
 public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
     public static Comparator<ByteLongTuple> getJavaComparator() {
-        return Comparator.comparing(ByteLongTuple::getFirstElement);
+        return Comparator.comparing(ByteLongTuple::getFirstElement, ByteComparisons::compare);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
     public static Comparator<ByteLongLongTuple> getJavaMultiComparator() {
-        return Comparator.comparing(ByteLongLongTuple::getFirstElement).thenComparing(ByteLongLongTuple::getSecondElement);
+        return Comparator.comparing(ByteLongLongTuple::getFirstElement, ByteComparisons::compare).thenComparing(ByteLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
@@ -181,7 +182,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
 
         public void run() {
             // region mergesort
-            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Byte.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
+            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> ByteComparisons.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
         }
     }
@@ -515,7 +516,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
 
     // region comparison functions
     private static int doComparison(byte lhs, byte rhs) {
-        return Byte.compare(lhs, rhs);
+        return ByteComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

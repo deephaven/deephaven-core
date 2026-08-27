@@ -56,6 +56,14 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 </CoreTutorialCard>
 
+<CoreTutorialCard to="/core/docs/getting-started/crash-course/vectorization-vs-loops/">
+
+## Recipes, not loops!
+
+Understand why Deephaven uses declarative recipes instead of loops. Learn the paradigm shift that unlocks automatic real-time updates.
+
+</CoreTutorialCard>
+
 <CoreTutorialCard to="/core/docs/getting-started/crash-course/plots/">
 
 ## Real-time plots

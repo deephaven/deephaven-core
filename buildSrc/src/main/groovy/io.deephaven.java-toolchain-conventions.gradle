@@ -15,11 +15,11 @@ plugins {
 def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '21')
 def compilerVendor = project.hasProperty('compilerVendor') ?  JvmVendorSpec.matching((String)project.property('compilerVendor')): null
 
-def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
+def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '17')
 def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '21')
 def runtimeVendor = project.hasProperty('runtimeVendor') ?  JvmVendorSpec.matching((String)project.property('runtimeVendor')): null
 
-def testLanguageLevel = Integer.parseInt((String)project.findProperty('testLanguageLevel') ?: '11')
+def testLanguageLevel = Integer.parseInt((String)project.findProperty('testLanguageLevel') ?: '17')
 def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '21')
 def testRuntimeVendor = project.hasProperty('testRuntimeVendor') ?  JvmVendorSpec.matching((String)project.property('testRuntimeVendor')): null
 

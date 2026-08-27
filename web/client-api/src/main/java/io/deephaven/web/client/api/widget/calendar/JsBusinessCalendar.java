@@ -6,10 +6,8 @@ package io.deephaven.web.client.api.widget.calendar;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
-import elemental2.core.JsObject;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
-import io.deephaven.web.client.api.widget.calendar.enums.JsDayOfWeek;
 import io.deephaven.web.client.fu.JsCollectors;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
@@ -27,7 +25,6 @@ public class JsBusinessCalendar {
 
     public JsBusinessCalendar(FigureDescriptor.BusinessCalendarDescriptor businessCalendarDescriptor) {
         this.businessCalendarDescriptor = businessCalendarDescriptor;
-        JsObject.freeze(this.businessCalendarDescriptor);
         timeZone = JsTimeZone.getTimeZone(businessCalendarDescriptor.getTimeZone());
         businessPeriods = businessCalendarDescriptor.getBusinessPeriodsList().stream()
                 .map(JsBusinessPeriod::new)

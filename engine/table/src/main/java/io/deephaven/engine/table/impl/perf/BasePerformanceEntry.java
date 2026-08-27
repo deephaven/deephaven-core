@@ -7,6 +7,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.readtracker.impl.QueryPerformanceReadTracker;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.profiling.ThreadProfiler;
 import org.jetbrains.annotations.NotNull;
 
@@ -241,6 +242,11 @@ public class BasePerformanceEntry implements LogOutputAppendable {
                 .append(", startDataReadBytes=").append(startDataReadBytes)
                 .append(", startMetadataOperationNanos=").append(startMetadataOperationNanos)
                 .append(", startMetadataOperationCount=").append(startMetadataOperationCount);
+    }
+
+    @Override
+    public String toString() {
+        return new LogOutputStringImpl().append(this).toString();
     }
 
     /**

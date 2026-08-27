@@ -325,14 +325,18 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @return the key in post-shift space
      */
     public long apply(final long keyToShift) {
-        for (int shiftIdx = 0; shiftIdx < size(); shiftIdx++) {
-            if (getBeginRange(shiftIdx) > keyToShift) {
-                // no shift applies so we are already in post-shift space
-                return keyToShift;
-            }
-            if (getEndRange(shiftIdx) >= keyToShift) {
-                // this shift applies, add the delta to get post-shift
-                return keyToShift + getShiftDelta(shiftIdx);
+        // Shift ranges are ordered and do not overlap (see validate()), so at most one contains keyToShift and it can
+        // be found by bisection; a key in a gap between ranges, or outside them all, is already in post-shift space.
+        int lo = 0;
+        int hi = size() - 1;
+        while (lo <= hi) {
+            final int mid = (lo + hi) >>> 1;
+            if (getEndRange(mid) < keyToShift) {
+                lo = mid + 1;
+            } else if (getBeginRange(mid) > keyToShift) {
+                hi = mid - 1;
+            } else {
+                return keyToShift + getShiftDelta(mid);
             }
         }
         return keyToShift;
@@ -445,24 +449,25 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
 
     public void forAllInRowSet(final RowSet filterRowSet, final SingleElementShiftCallback callback) {
         boolean hasReverseShift = false;
-        RowSet.SearchIterator it = filterRowSet.reverseIterator();
-        FORWARD_SHIFT: for (int ii = size() - 1; ii >= 0; --ii) {
-            final long delta = getShiftDelta(ii);
-            if (delta < 0) {
-                hasReverseShift = true;
-                continue;
-            }
-            final long start = getBeginRange(ii);
-            final long end = getEndRange(ii);
-            if (!it.advance(end)) {
-                break;
-            }
-            while (it.currentValue() >= start) {
-                callback.shift(it.currentValue(), delta);
-                if (!it.hasNext()) {
-                    break FORWARD_SHIFT;
+        try (final RowSet.SearchIterator it = filterRowSet.reverseIterator()) {
+            FORWARD_SHIFT: for (int ii = size() - 1; ii >= 0; --ii) {
+                final long delta = getShiftDelta(ii);
+                if (delta < 0) {
+                    hasReverseShift = true;
+                    continue;
                 }
-                it.nextLong();
+                final long start = getBeginRange(ii);
+                final long end = getEndRange(ii);
+                if (!it.advance(end)) {
+                    break;
+                }
+                while (it.currentValue() >= start) {
+                    callback.shift(it.currentValue(), delta);
+                    if (!it.hasNext()) {
+                        break FORWARD_SHIFT;
+                    }
+                    it.nextLong();
+                }
             }
         }
 
@@ -470,24 +475,25 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             return;
         }
 
-        it = filterRowSet.searchIterator();
-        final int size = size();
-        REVERSE_SHIFT: for (int ii = 0; ii < size; ++ii) {
-            final long delta = getShiftDelta(ii);
-            if (delta > 0) {
-                continue;
-            }
-            final long start = getBeginRange(ii);
-            final long end = getEndRange(ii);
-            if (!it.advance(start)) {
-                break;
-            }
-            while (it.currentValue() <= end) {
-                callback.shift(it.currentValue(), delta);
-                if (!it.hasNext()) {
-                    break REVERSE_SHIFT;
+        try (final RowSet.SearchIterator it = filterRowSet.searchIterator()) {
+            final int size = size();
+            REVERSE_SHIFT: for (int ii = 0; ii < size; ++ii) {
+                final long delta = getShiftDelta(ii);
+                if (delta > 0) {
+                    continue;
                 }
-                it.nextLong();
+                final long start = getBeginRange(ii);
+                final long end = getEndRange(ii);
+                if (!it.advance(start)) {
+                    break;
+                }
+                while (it.currentValue() <= end) {
+                    callback.shift(it.currentValue(), delta);
+                    if (!it.hasNext()) {
+                        break REVERSE_SHIFT;
+                    }
+                    it.nextLong();
+                }
             }
         }
     }
@@ -1116,16 +1122,19 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
 
         @Override
         public void close() {
-            preShiftKeys.close();
+            // Idempotent: build() closes internally, and callers may also use try-with-resources.
+            if (preShiftKeys != null) {
+                preShiftKeys.close();
+                preShiftKeys = null;
+            }
             if (preShiftKeysIteratorForward != null) {
                 preShiftKeysIteratorForward.close();
+                preShiftKeysIteratorForward = null;
             }
             if (preShiftKeysIteratorReverse != null) {
                 preShiftKeysIteratorReverse.close();
+                preShiftKeysIteratorReverse = null;
             }
-            preShiftKeys = null;
-            preShiftKeysIteratorForward = null;
-            preShiftKeysIteratorReverse = null;
             shiftData = null;
         }
     }

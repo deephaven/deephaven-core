@@ -12,8 +12,10 @@ import io.deephaven.plugin.options.AcceptsPluginOptions;
 import io.deephaven.plugin.options.PluginOptions;
 import io.deephaven.plugin.type.ObjectType;
 
+import javax.inject.Named;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -23,8 +25,12 @@ import java.util.stream.Collectors;
 @Module
 public interface PluginModule {
     @Provides
-    static PluginOptions pluginOptions(ColumnExpressionValidator validator) {
-        return PluginOptions.builder().columnExpressionValidator(validator).build();
+    static PluginOptions pluginOptions(ColumnExpressionValidator validator,
+            @Named("authTransform") PluginOptions.AuthorizationTransformer authTransform,
+            @Named("accessPermittedPredicate") Predicate<Object> accessPermitted) {
+        return PluginOptions.builder().columnExpressionValidator(validator)
+                .authorizationTransformer(authTransform)
+                .isAccessPermitted(accessPermitted).build();
     }
 
     @Provides

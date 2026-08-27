@@ -6,8 +6,8 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class InputTableTest {
-  [Fact]
-  public void TestInputTableAppend() {
+  [Test]
+  public async Task TestInputTableAppend() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var tm = ctx.Client.Manager;
 
@@ -20,7 +20,7 @@ public class InputTableTest {
       var expected = new TableMaker();
       expected.AddColumn("A", [(Int64)0, 1, 2]);
       expected.AddColumn("B", [(Int64)100, 101, 102]);
-      TableComparer.AssertSame(expected, inputTable);
+      await Assert.That(() => TableComparer.AssertSame(expected, inputTable)).ThrowsNothing();
     }
 
     var tableToAdd = tm.EmptyTable(2).Update("A = ii", "B = ii + 200");
@@ -33,13 +33,13 @@ public class InputTableTest {
       var expected = new TableMaker();
       expected.AddColumn("A", aData);
       expected.AddColumn("B", bData);
-      TableComparer.AssertSame(expected, inputTable);
+      await Assert.That(() => TableComparer.AssertSame(expected, inputTable)).ThrowsNothing();
     }
   }
 
 
-  [Fact]
-  public void TestInputTableKeyed() {
+  [Test]
+  public async Task TestInputTableKeyed() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var tm = ctx.Client.Manager;
 
@@ -48,28 +48,27 @@ public class InputTableTest {
     var inputTable = tm.InputTable(source, "A");
 
 
-    // expect input_table to be {0, 100}, {1, 101}, {2, 102}
+    // expect inputTable to be {0, 100}, {1, 101}, {2, 102}
     {
       var aData = new Int64[] { 0, 1, 2 };
       var bData = new Int64[] { 100, 101, 102 };
       var expected = new TableMaker();
       expected.AddColumn("A", aData);
       expected.AddColumn("B", bData);
-      TableComparer.AssertSame(expected, inputTable);
+      await Assert.That(() => TableComparer.AssertSame(expected, inputTable)).ThrowsNothing();
     }
-
 
     var tableToAdd = tm.EmptyTable(2).Update("A = ii", "B = ii + 200");
     inputTable.AddTable(tableToAdd);
 
-    // Because key is "A", expect input_table to be {0, 200}, {1, 201}, {2, 102}
+    // Because key is "A", expect inputTable to be {0, 200}, {1, 201}, {2, 102}
     {
       var aData = new Int64[] { 0, 1, 2 };
       var bData = new Int64[] { 200, 201, 102 };
       var expected = new TableMaker();
       expected.AddColumn("A", aData);
       expected.AddColumn("B", bData);
-      TableComparer.AssertSame(expected, inputTable);
+      await Assert.That(() => TableComparer.AssertSame(expected, inputTable)).ThrowsNothing();
     }
   }
 }

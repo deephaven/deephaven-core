@@ -92,8 +92,12 @@ public class ByteChunkReader extends BaseChunkReader<WritableByteChunk<Values>> 
             final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableByteChunk<Values> chunk,
             final int offset) throws IOException {
-        for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-            chunk.set(offset + ii, is.readByte());
+        // Bytes have no endianness, so transfer the payload directly into the chunk's backing array in bounded windows
+        // rather than one DataInput#readByte call per element (and without materializing the whole payload at once).
+        for (int ei = 0; ei < nodeInfo.numElements;) {
+            final int length = Math.min(Math.max(1, BULK_READ_BUFFER_BYTES), nodeInfo.numElements - ei);
+            is.readFully(chunk.array(), chunk.arrayOffset() + offset + ei, length);
+            ei += length;
         }
     }
 
@@ -106,35 +110,33 @@ public class ByteChunkReader extends BaseChunkReader<WritableByteChunk<Values>> 
         final int numElements = nodeInfo.numElements;
         final int numValidityWords = (numElements + 63) / 64;
 
-        int ei = 0;
-        int pendingSkips = 0;
+        // The payload carries a value slot for every element, including nulls; transfer it directly into the chunk's
+        // backing array in bounded windows, then overwrite the invalid positions with the null value.
+        for (int ei = 0; ei < numElements;) {
+            final int length = Math.min(Math.max(1, BULK_READ_BUFFER_BYTES), numElements - ei);
+            is.readFully(chunk.array(), chunk.arrayOffset() + offset + ei, length);
+            ei += length;
+        }
 
+        int ei = 0;
         for (int vi = 0; vi < numValidityWords; ++vi) {
             int bitsLeftInThisWord = Math.min(64, numElements - vi * 64);
             long validityWord = isValid.get(vi);
             do {
                 if ((validityWord & 1) == 1) {
-                    if (pendingSkips > 0) {
-                        is.skipBytes(pendingSkips * Byte.BYTES);
-                        chunk.fillWithNullValue(offset + ei, pendingSkips);
-                        ei += pendingSkips;
-                        pendingSkips = 0;
-                    }
-                    chunk.set(offset + ei++, is.readByte());
-                    validityWord >>= 1;
-                    bitsLeftInThisWord--;
+                    // Skip the run of valid slots (already read) to the next null.
+                    final int valids = Math.min(Long.numberOfTrailingZeros(~validityWord), bitsLeftInThisWord);
+                    ei += valids;
+                    validityWord >>= valids;
+                    bitsLeftInThisWord -= valids;
                 } else {
-                    final int skips = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);
-                    pendingSkips += skips;
-                    validityWord >>= skips;
-                    bitsLeftInThisWord -= skips;
+                    final int nulls = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);
+                    chunk.fillWithNullValue(offset + ei, nulls);
+                    ei += nulls;
+                    validityWord >>= nulls;
+                    bitsLeftInThisWord -= nulls;
                 }
             } while (bitsLeftInThisWord > 0);
-        }
-
-        if (pendingSkips > 0) {
-            is.skipBytes(pendingSkips * Byte.BYTES);
-            chunk.fillWithNullValue(offset + ei, pendingSkips);
         }
     }
 }
