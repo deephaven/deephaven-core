@@ -89,7 +89,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public void resetTo(@NotNull final RowSet other) {
         final OrderedLongSet otherInnerSet = getInnerSet(other);
         preMutationHook();
-        assign(otherInnerSet.ixCowRef());
+        assignRef(otherInnerSet);
         postMutationHook();
     }
 
@@ -100,6 +100,24 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         }
         innerSet.ixRelease();
         innerSet = maybeNewImpl;
+    }
+
+    /**
+     * Adopt a copy-on-write reference to {@code other}, which may be the set we already hold.
+     * <p>
+     * The reference is acquired only if it is going to be stored. Acquiring first and handing the result to
+     * {@link #assign} would leak it whenever {@code other} is already our inner set, since {@code assign} keeps what it
+     * has and never sees a reference to release.
+     *
+     * @param other The set to reference
+     */
+    void assignRef(final OrderedLongSet other) {
+        invalidateRowSequenceAsChunkImpl();
+        if (other == innerSet) {
+            return;
+        }
+        innerSet.ixRelease();
+        innerSet = other.ixCowRef();
     }
 
     @Override
@@ -185,7 +203,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
             // added == removed == this: the removal and insertion cancel; we are unchanged.
         } else if (removed == this) {
             // Removing all of our keys, then inserting added: we become added.
-            assign(getInnerSet(added).ixCowRef());
+            assignRef(getInnerSet(added));
         } else {
             assign(innerSet.ixUpdate(getInnerSet(added), getInnerSet(removed)));
         }
@@ -555,7 +573,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public void readExternal(@NotNull final ObjectInput in) throws IOException {
         try (final RowSet readRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(in)) {
-            assign(getInnerSet(readRowSet).ixCowRef());
+            assignRef(getInnerSet(readRowSet));
         }
     }
 
