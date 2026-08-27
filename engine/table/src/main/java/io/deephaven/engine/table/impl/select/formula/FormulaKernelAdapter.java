@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -306,33 +307,41 @@ public class FormulaKernelAdapter extends io.deephaven.engine.table.impl.select.
         WritableLongChunk<OrderedRowKeys> kChunk = null;
 
         final String[] sources = sourceDescriptor.sources;
-        // Create whichever of the three special chunks we need
-        for (final String source : sources) {
-            switch (source) {
-                case "i":
-                    iChunk = WritableIntChunk.makeWritableChunk(chunkCapacity);
-                    break;
-                case "ii":
-                    iiChunk = WritableLongChunk.makeWritableChunk(chunkCapacity);
-                    break;
-                case "k":
-                    kChunk = WritableLongChunk.makeWritableChunk(chunkCapacity);
-                    break;
+        // Everything allocated here is owned by partiallyBuilt until the AdapterContext exists to take ownership, so
+        // that a failure part way through does not orphan the chunks and contexts already created.
+        try (final SafeCloseableList partiallyBuilt = new SafeCloseableList()) {
+            // Create whichever of the three special chunks we need
+            for (final String source : sources) {
+                switch (source) {
+                    case "i":
+                        iChunk = partiallyBuilt.add(WritableIntChunk.makeWritableChunk(chunkCapacity));
+                        break;
+                    case "ii":
+                        iiChunk = partiallyBuilt.add(WritableLongChunk.makeWritableChunk(chunkCapacity));
+                        break;
+                    case "k":
+                        kChunk = partiallyBuilt.add(WritableLongChunk.makeWritableChunk(chunkCapacity));
+                        break;
+                }
             }
-        }
 
-        // Make contexts -- we leave nulls in the slots where i, ii, or k would be.
-        final ColumnSource.GetContext[] sourceContexts = new ColumnSource.GetContext[sources.length];
-        for (int ii = 0; ii < sources.length; ++ii) {
-            final String name = sources[ii];
-            if (name.equals("i") || name.equals("ii") || name.equals("k")) {
-                continue;
+            // Make contexts -- we leave nulls in the slots where i, ii, or k would be.
+            final ColumnSource.GetContext[] sourceContexts =
+                    partiallyBuilt.addArray(new ColumnSource.GetContext[sources.length]);
+            for (int ii = 0; ii < sources.length; ++ii) {
+                final String name = sources[ii];
+                if (name.equals("i") || name.equals("ii") || name.equals("k")) {
+                    continue;
+                }
+                final ColumnSource cs = columnSources.get(name);
+                sourceContexts[ii] = cs.makeGetContext(chunkCapacity);
             }
-            final ColumnSource cs = columnSources.get(name);
-            sourceContexts[ii] = cs.makeGetContext(chunkCapacity);
+            final FillContext kernelContext = partiallyBuilt.add(kernel.makeFillContext(chunkCapacity));
+            final AdapterContext result =
+                    new AdapterContext(iChunk, iiChunk, kChunk, sourceContexts, kernelContext);
+            partiallyBuilt.clear();
+            return result;
         }
-        final FillContext kernelContext = kernel.makeFillContext(chunkCapacity);
-        return new AdapterContext(iChunk, iiChunk, kChunk, sourceContexts, kernelContext);
     }
 
     private static class AdapterContext implements FillContext {
