@@ -142,6 +142,36 @@ public class RowSequenceContractTest {
     }
 
     /**
+     * The same clamp at the top of the key space, where an unsaturated endpoint calculation would wrap: a slice near
+     * {@link Long#MAX_VALUE} asked for every remaining key must answer with them, not with an inverted range.
+     */
+    @Test
+    public void testHugeLengthIsClampedAtTheTopOfTheKeySpace() {
+        final long max = Long.MAX_VALUE;
+        for (int i = 0; i < NAMES.length; ++i) {
+            // Ends at the last key, so the endpoint calculation lands exactly on MAX.
+            try (final WritableRowSet rs = backing(i, max - 4)) {
+                assertBackedBy(NAMES[i], rs);
+                assertEquals("fixture ends at the last key", max, rs.lastRowKey());
+                for (final long length : new long[] {Long.MAX_VALUE, Long.MAX_VALUE - 1, 100}) {
+                    final String where = NAMES[i] + " for length " + length;
+                    try (final RowSequence seq = rs.getRowSequenceByPosition(2, length)) {
+                        assertEquals(where + ": size", 3, seq.size());
+                        assertEquals(where + ": first key", max - 2, seq.firstRowKey());
+                        assertEquals(where + ": last key", max, seq.lastRowKey());
+                        final List<Long> keys = new ArrayList<>();
+                        seq.forEachRowKey(k -> {
+                            keys.add(k);
+                            return keys.size() <= 3;
+                        });
+                        assertEquals(where + ": keys", List.of(max - 2, max - 1, max), keys);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Filling a range chunk goes by its capacity. The size it arrives with says nothing about how much room there is,
      * and a caller who has already zeroed it is still owed the ranges.
      */
