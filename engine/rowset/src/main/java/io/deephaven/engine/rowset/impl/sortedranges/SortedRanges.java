@@ -4275,16 +4275,25 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             rspAns.finishMutations();
             return rspAns;
         }
+        // Shifting by zero has nothing to move, so it hands back a reference to other rather than a copy of it; that
+        // reference is ours to give back once we are done reading through it.
         if (other instanceof SortedRanges) {
-            SortedRanges sr = (SortedRanges) other;
-            sr = sr.applyShiftOnNew(shiftAmount);
-            return ixInsertImpl(sr);
+            final SortedRanges shifted = ((SortedRanges) other).applyShiftOnNew(shiftAmount);
+            try {
+                return ixInsertImpl(shifted);
+            } finally {
+                shifted.ixRelease();
+            }
         }
-        RspBitmap rsp = (RspBitmap) other;
-        rsp = rsp.applyOffsetOnNew(shiftAmount).getWriteRef();
-        rsp.insertOrderedLongSetUnsafeNoWriteCheck(this);
-        rsp.finishMutations();
-        return rsp;
+        final RspBitmap shifted = ((RspBitmap) other).applyOffsetOnNew(shiftAmount);
+        final RspBitmap ans = shifted.getWriteRef();
+        if (ans != shifted) {
+            // A shared set copies itself to be written to, leaving the reference we asked for unused.
+            shifted.ixRelease();
+        }
+        ans.insertOrderedLongSetUnsafeNoWriteCheck(this);
+        ans.finishMutations();
+        return ans;
     }
 
     private OrderedLongSet ixInsertImpl(final SortedRanges addedSar) {
