@@ -4374,10 +4374,13 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return r;
             }
         } else {
-            final RowSet.RangeIterator rit = keys.ixRangeIterator();
-            final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
-            if (invertOnNew(rit, builder, maxPosition)) {
-                return builder.getOrderedLongSet();
+            // The walk stops as soon as maxPosition is reached, leaving the iterator holding a reference to keys;
+            // closing it is what gives that reference back.
+            try (final RowSet.RangeIterator rit = keys.ixRangeIterator()) {
+                final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
+                if (invertOnNew(rit, builder, maxPosition)) {
+                    return builder.getOrderedLongSet();
+                }
             }
         }
         throw new IllegalArgumentException("keys argument has elements not in the rowSet");

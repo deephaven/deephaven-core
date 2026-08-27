@@ -772,31 +772,34 @@ public abstract class SingleRange implements OrderedLongSet {
     @Override
     public final OrderedLongSet ixInvertOnNew(final OrderedLongSet keys, final long maximumPosition) {
         final BuilderSequential b = new OrderedLongSetBuilderSequential();
-        final RowSet.RangeIterator it = keys.ixRangeIterator();
         final String exStr = "invert for non-existing key:";
-        while (it.hasNext()) {
-            it.next();
-            final long start = it.currentRangeStart();
-            final long end = it.currentRangeEnd();
-            final long startPos = start - rangeStart();
-            if (startPos < 0) {
-                throw new IllegalArgumentException(exStr + start);
-            }
-            if (startPos > maximumPosition) {
-                break;
-            }
-            long endPos = startPos;
-            if (start != end) {
-                endPos = end - rangeStart();
-                if (endPos < 0) {
-                    throw new IllegalArgumentException(exStr + end);
+        // The walk stops as soon as maximumPosition is reached, leaving the iterator holding a reference to keys;
+        // closing it is what gives that reference back.
+        try (final RowSet.RangeIterator it = keys.ixRangeIterator()) {
+            while (it.hasNext()) {
+                it.next();
+                final long start = it.currentRangeStart();
+                final long end = it.currentRangeEnd();
+                final long startPos = start - rangeStart();
+                if (startPos < 0) {
+                    throw new IllegalArgumentException(exStr + start);
                 }
+                if (startPos > maximumPosition) {
+                    break;
+                }
+                long endPos = startPos;
+                if (start != end) {
+                    endPos = end - rangeStart();
+                    if (endPos < 0) {
+                        throw new IllegalArgumentException(exStr + end);
+                    }
+                }
+                if (endPos > maximumPosition) {
+                    b.appendRange(startPos, maximumPosition);
+                    break;
+                }
+                b.appendRange(startPos, endPos);
             }
-            if (endPos > maximumPosition) {
-                b.appendRange(startPos, maximumPosition);
-                break;
-            }
-            b.appendRange(startPos, endPos);
         }
         return b.getOrderedLongSet();
     }
