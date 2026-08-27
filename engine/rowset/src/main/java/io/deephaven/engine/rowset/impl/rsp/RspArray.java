@@ -746,7 +746,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 continue;
             }
             if (span instanceof short[]) {
+                // A packed ArrayContainer's shared flag lives in its owner's spanInfo word, so unlike a Container --
+                // whose flag travels with the object -- marking only this copy would leave the source believing it
+                // still owns the short[] exclusively, free to edit it in place underneath us.
                 spanInfos[i] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+                src.spanInfos[isrc] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
                 continue;
             }
             // span instanceof Container
