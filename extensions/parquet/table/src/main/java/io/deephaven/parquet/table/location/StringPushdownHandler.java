@@ -45,6 +45,13 @@ import java.util.Comparator;
  * bounds rather than values present in the data; such a bound still brackets the data in byte order, but decoding one
  * can turn a partial character into U+FFFD and destroy that property.
  * <p>
+ * <b>Nulls.</b> {@link StatisticsEvaluator} describes the two reasons a row can read back as null in Deephaven, and
+ * neither is this class's business. A String has no sentinel encoding, so a Deephaven null comes solely from a Parquet
+ * null, which {@code min}/{@code max} never describe. A null is dropped from a match filter's values here, and
+ * {@code StatisticsEvaluator.maybeMakeForFilter} gates on such rows before any of this runs; these evaluators answer
+ * from {@code min}/{@code max} alone and are <b>not</b> correct in isolation for a filter that a null row satisfies.
+ * Null <i>bounds</i> on a range filter are a separate question, and are declined.
+ * <p>
  * <b>Usage.</b> Call {@link #maybeCreateEvaluator} once per filter, then {@link StatisticsEvaluator#maybeOverlaps} once
  * per row group. Everything that depends only on the filter -- encoding the values, sorting them, and testing the
  * bounds for order divergence -- happens in {@code maybeCreateEvaluator}, so none of it is repeated for every row
@@ -115,16 +122,27 @@ final class StringPushdownHandler {
             // No values to check against
             return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : statistics -> false;
         }
-        final byte[][] encoded = new byte[values.length][];
-        for (int i = 0; i < values.length; i++) {
-            if (!(values[i] instanceof String)) {
-                // Skip pushdown-based filtering for nulls and non-strings to err on the safer side instead of adding
-                // more complex handling logic.
-                // TODO (DH-19666): Improve handling of nulls
+        // Nulls are dropped here; the null gate in StatisticsEvaluator answers for them.
+        final byte[][] allEncoded = new byte[values.length][];
+        int numNonNull = 0;
+        for (final Object value : values) {
+            if (value instanceof String) {
+                allEncoded[numNonNull++] = utf8((String) value);
+            } else if (value != null) {
+                // Not a String, so it has no encoding to compare against the statistics.
                 return StatisticsEvaluator.ALWAYS_MAYBE;
             }
-            encoded[i] = utf8((String) values[i]);
+            // A null falls through and is simply dropped.
         }
+        if (numNonNull == 0) {
+            // Nothing but null was given. `X != null` matches any non-null value, and usable statistics guarantee
+            // at least one exists; `X == null` reaches here only for a row group with no Parquet nulls to match.
+            return invertMatch
+                    ? StatisticsEvaluator.ALWAYS_MAYBE
+                    : statistics -> false;
+        }
+        final byte[][] encoded =
+                numNonNull == values.length ? allEncoded : Arrays.copyOf(allEncoded, numNonNull);
         if (!invertMatch) {
             return statistics -> {
                 final byte[][] minMax = minMaxBytes(statistics);
@@ -141,7 +159,7 @@ final class StringPushdownHandler {
             };
         }
         // Sorted once here; maybeMatchesInverse walks the gaps between adjacent values, with the same
-        // byte comparator it uses. Non-Strings -- null among them -- were rejected above.
+        // byte comparator it uses. Non-Strings were rejected above and nulls were removed.
         Arrays.sort(encoded, BYTES);
         return statistics -> {
             final byte[][] minMax = minMaxBytes(statistics);
@@ -153,9 +171,10 @@ final class StringPushdownHandler {
         final Comparable<?> lower = rangeFilter.getLower();
         final Comparable<?> upper = rangeFilter.getUpper();
         if (!(lower instanceof String) || !(upper instanceof String)) {
-            // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
-            // logic.
-            // TODO (DH-19666): Improve handling of nulls
+            // Not reachable from a parsed comparison: RangeFilter always supplies both bounds. Nor is it clear what
+            // a null bound should mean -- Deephaven orders null below every value, so a null lower reads as
+            // "unbounded below" while a null upper reads as an empty range, and no filter expresses either. Declined
+            // rather than guessed.
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }
         if (!comparesIdenticallyInBothOrders((String) lower) || !comparesIdenticallyInBothOrders((String) upper)) {
@@ -180,13 +199,13 @@ final class StringPushdownHandler {
         }
         final Comparable<?> pivot = rangeFilter.getPivot();
         if (!(pivot instanceof String)) {
-            // A null pivot is not produced by any parsed comparison, and null is not orderable against itself here.
-            // TODO (DH-19666): Improve handling of nulls
+            // Not reachable from a parsed comparison, and null is not orderable against itself here: Deephaven
+            // orders null below every value, so `X < null` is empty and `X > null` is everything, and no parsed
+            // filter expresses either. Declined rather than guessed.
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }
-        // `X < v` and `X <= v` are evaluated too. They match null rows -- Deephaven orders null below every value --
-        // which is why this used to decline them, but that is now accounted for once by the null guard in
-        // ParquetTableLocation.pushdownRowGroupMetadata.
+        // `X < v` and `X <= v` accept a null row, since Deephaven orders null under every value; `X > v` cannot.
+        // A String has no sentinel encoding, so the null gate in maybeMakeForFilter settles that on its own.
         if (!comparesIdenticallyInBothOrders((String) pivot)) {
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }

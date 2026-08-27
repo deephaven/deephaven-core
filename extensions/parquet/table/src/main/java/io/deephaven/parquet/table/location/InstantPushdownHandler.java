@@ -5,41 +5,93 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.InstantRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Arrays;
 
+/**
+ * Applies an {@link InstantRangeFilter} or an Instant-typed {@link MatchFilter} to one row group's {@code min}/{@code
+ * max} statistics, answering whether that row group could hold a matching row.
+ * <p>
+ * Values are compared as epoch nanoseconds, delegating the interval arithmetic to {@link LongPushdownHandler}.
+ * {@link #maybeCreateEvaluator} resolves a match filter once -- converting its values, and sorting them for the
+ * inverted walk -- and returns an evaluator to apply to each row group in turn.
+ *
+ * <h2>Nulls</h2>
+ *
+ * {@link StatisticsEvaluator} describes the two reasons a row can read back as null in Deephaven. Instant behaves like
+ * the primitives rather than like the other object types: its null is the {@code NULL_LONG} sentinel in the underlying
+ * long, so a <b>stored sentinel</b> reads back as null while Parquet counts no null at all. That case is this class's
+ * business, and needs no special machinery -- the sentinel is left among the filter's values and tested against
+ * {@code min}/{@code max} like any other, a null {@link Instant} converting to exactly that sentinel through
+ * {@link DateTimeUtils#epochNanos(Instant)}.
+ * <p>
+ * A <b>Parquet null</b> is not. Such a row is invisible to {@code min}/{@code max}, so nothing here can see one or rule
+ * one out; {@code StatisticsEvaluator.maybeMakeForFilter} gates on that before any of this runs. These methods
+ * therefore answer from {@code min}/{@code max} alone and are <b>not</b> correct in isolation for a filter that a null
+ * row satisfies.
+ */
 final class InstantPushdownHandler {
 
-    static boolean maybeOverlaps(
-            final InstantRangeFilter instantRangeFilter,
-            final Statistics<?> statistics) {
-        // Null rows are accounted for by the null guard in ParquetTableLocation.pushdownRowGroupMetadata:
-        // a filter that can match null (`X < v` does) reaches this only for row groups proven to hold
-        // none, and a filter that cannot match null is unaffected by their presence.
+    /**
+     * Resolves {@code filter} to an evaluator, or returns {@code null} if this handler does not serve it. This is the
+     * entry point {@link StatisticsEvaluator} dispatches through; the typed overloads below skip the column-type test,
+     * since choosing this handler already asserts the type.
+     */
+    @Nullable
+    static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
+        if (filter instanceof InstantRangeFilter) {
+            return maybeCreateEvaluator((InstantRangeFilter) filter);
+        }
+        if (filter instanceof MatchFilter) {
+            final MatchFilter matchFilter = (MatchFilter) filter;
+            if (matchFilter.getColumnType() == Instant.class) {
+                return maybeCreateEvaluator(matchFilter);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Prepares the range filter for evaluation: whether the statistics range intersects the range it defines.
+     */
+    static StatisticsEvaluator maybeCreateEvaluator(final InstantRangeFilter instantRangeFilter) {
         final long dhLower = instantRangeFilter.getLower();
         final long dhUpper = instantRangeFilter.getUpper();
-        final MutableObject<Instant> mutableMin = new MutableObject<>();
-        final MutableObject<Instant> mutableMax = new MutableObject<>();
-        if (!MinMaxFromStatistics.getMinMaxForInstants(statistics, mutableMin::setValue, mutableMax::setValue)) {
-            // Statistics could not be processed, so assume that we overlap.
-            return true;
-        }
-        final long min = DateTimeUtils.epochNanos(mutableMin.get());
-        final long max = DateTimeUtils.epochNanos(mutableMax.get());
-        if (dhLower == QueryConstants.NULL_LONG) {
-            // Filter is unbounded below; can only match if the upper bound is above this row group's minimum.
-            return instantRangeFilter.isUpperInclusive() ? min <= dhUpper : min < dhUpper;
-        }
-        return LongPushdownHandler.maybeOverlapsRangeImpl(
-                min, max,
-                dhLower, instantRangeFilter.isLowerInclusive(),
-                dhUpper, instantRangeFilter.isUpperInclusive());
+        final boolean unboundedBelow = dhLower == QueryConstants.NULL_LONG;
+        final boolean lowerInclusive = instantRangeFilter.isLowerInclusive();
+        final boolean upperInclusive = instantRangeFilter.isUpperInclusive();
+        return statistics -> {
+            final MutableObject<Instant> mutableMin = new MutableObject<>();
+            final MutableObject<Instant> mutableMax = new MutableObject<>();
+            if (!MinMaxFromStatistics.getMinMaxForInstants(statistics, mutableMin::setValue, mutableMax::setValue)) {
+                // Statistics could not be processed, so assume that we overlap.
+                return true;
+            }
+            final long min = DateTimeUtils.epochNanos(mutableMin.get());
+            final long max = DateTimeUtils.epochNanos(mutableMax.get());
+            if (unboundedBelow) {
+                if (min <= QueryConstants.NULL_LONG && QueryConstants.NULL_LONG <= max) {
+                    // A stored value equal to the sentinel reads back as null and so matches too. Unlike a Parquet
+                    // null it is an ordinary value here, covered by min/max rather than by the null gate in
+                    // maybeMakeForFilter.
+                    return true;
+                }
+                // Filter is unbounded below; can only match if the upper bound is above this row group's minimum.
+                return upperInclusive ? min <= dhUpper : min < dhUpper;
+            }
+            return LongPushdownHandler.maybeOverlapsRangeImpl(
+                    min, max,
+                    dhLower, lowerInclusive,
+                    dhUpper, upperInclusive);
+        };
     }
 
     /**
@@ -52,21 +104,19 @@ final class InstantPushdownHandler {
             // No values to check against
             return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : statistics -> false;
         }
-        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
-        // logic.
-        // TODO (DH-19666): Improve handling of nulls
+        // Null deliberately stays among the values; see "Nulls" on this class.
         final long[] instantNanos = new long[values.length];
         for (int i = 0; i < values.length; i++) {
             final Object value = values[i];
-            if (!(value instanceof Instant)) {
+            if (value != null && !(value instanceof Instant)) {
+                // Not an Instant, so the statistics cannot place it.
                 return StatisticsEvaluator.ALWAYS_MAYBE;
             }
-            instantNanos[i] = DateTimeUtils.epochNanos((Instant) value);
+            final long nanos = DateTimeUtils.epochNanos((Instant) value);
+            instantNanos[i] = nanos;
         }
         if (invertMatch) {
-            // LongPushdownHandler.maybeMatchesInverse walks the gaps between adjacent values and requires
-            // them sorted; sorted once here rather than for every row group. Values that are not Instants
-            // -- null among them -- were rejected above, so nothing can sort to the wrong end.
+            // The gap walk requires sorted values; sorted once here rather than per row group.
             Arrays.sort(instantNanos);
         }
         return statistics -> {
@@ -84,12 +134,4 @@ final class InstantPushdownHandler {
         };
     }
 
-    /**
-     * Convenience for a single row group; prefer {@link #maybeCreateEvaluator} when iterating over several.
-     */
-    static boolean maybeOverlaps(
-            @NotNull final MatchFilter matchFilter,
-            @NotNull final Statistics<?> statistics) {
-        return maybeCreateEvaluator(matchFilter).maybeOverlaps(statistics);
-    }
 }

@@ -5,42 +5,99 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.compare.ObjectComparisons;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
+/**
+ * Applies a {@link ComparableRangeFilter} or an object-typed {@link MatchFilter} to one row group's {@code min}/{@code
+ * max} statistics, answering whether that row group could hold a matching row.
+ * <p>
+ * This is the fallback for column types with no handler of their own -- dates and times among them -- and serves only
+ * those {@link MinMaxFromStatistics#getMinMaxForComparable} can decode; for anything else it declines. Values are
+ * ordered with {@link io.deephaven.util.compare.ObjectComparisons}, matching the engine. {@link String} is deliberately
+ * <i>not</i> served here, because Parquet orders those statistics by unsigned bytes rather than by
+ * {@link String#compareTo}; see {@link StringPushdownHandler}.
+ *
+ * <h2>Nulls</h2>
+ *
+ * {@link StatisticsEvaluator} describes the two reasons a row can read back as null in Deephaven. Neither is this
+ * class's business: these types have no sentinel encoding, so a Deephaven null comes solely from a <b>Parquet null</b>,
+ * which {@code min}/{@code max} never describe. A null is dropped from the filter's values here, and
+ * {@code StatisticsEvaluator.maybeMakeForFilter} gates on such rows before any of this runs. These methods therefore
+ * answer from {@code min}/{@code max} alone and are <b>not</b> correct in isolation for a filter that a null row
+ * satisfies.
+ * <p>
+ * A value that is not {@link Comparable} is a different matter and is declined outright, having no place in the
+ * ordering at all.
+ */
 final class ComparablePushdownHandler {
 
-    static boolean maybeOverlaps(
-            @NotNull final ComparableRangeFilter comparableRangeFilter,
-            @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
-        // logic.
-        // TODO (DH-19666): Improve handling of nulls
+    /**
+     * Resolves {@code filter} to an evaluator, or returns {@code null} if this handler does not serve it. This is the
+     * entry point {@link StatisticsEvaluator} dispatches through, and is tried last: it claims whatever earlier
+     * handlers did not, for the column types {@link MinMaxFromStatistics#canDecodeComparable can be decoded}. A type
+     * that cannot be decoded is declined here rather than per row group, so the caller can skip the row groups
+     * outright.
+     */
+    @Nullable
+    static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
+        if (filter instanceof ComparableRangeFilter) {
+            final ComparableRangeFilter rangeFilter = (ComparableRangeFilter) filter;
+            return MinMaxFromStatistics.canDecodeComparable(rangeFilter.getColumnType())
+                    ? maybeCreateEvaluator(rangeFilter)
+                    : null;
+        }
+        if (filter instanceof MatchFilter) {
+            final MatchFilter matchFilter = (MatchFilter) filter;
+            return MinMaxFromStatistics.canDecodeComparable(matchFilter.getColumnType())
+                    ? maybeCreateEvaluator(matchFilter)
+                    : null;
+        }
+        return null;
+    }
+
+    /**
+     * Prepares the range filter for evaluation: whether the statistics range intersects the range it defines. A null
+     * bound resolves to {@link StatisticsEvaluator#ALWAYS_MAYBE} here, so the caller can skip the row groups rather
+     * than ask about each in turn.
+     */
+    static StatisticsEvaluator maybeCreateEvaluator(@NotNull final ComparableRangeFilter comparableRangeFilter) {
         final Comparable<?> dhLower = comparableRangeFilter.getLower();
         final Comparable<?> dhUpper = comparableRangeFilter.getUpper();
         if (dhLower == null || dhUpper == null) {
-            return true;
+            // Not reachable from a parsed comparison: RangeFilter always supplies both bounds. Nor is it clear what
+            // a null bound should mean -- Deephaven orders null below every value, so a null lower reads as
+            // "unbounded below" while a null upper reads as an empty range, and no filter expresses either. Declined
+            // rather than guessed.
+            return StatisticsEvaluator.ALWAYS_MAYBE;
         }
         // Get the column type from the filter
         final Class<?> dhColumnType = comparableRangeFilter.getColumnType();
         if (dhColumnType == null) {
             throw new IllegalStateException("Filter not initialized with a column type: " + comparableRangeFilter);
         }
-        final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
-        final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
-        if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
-                dhColumnType)) {
-            // Statistics could not be processed, so we assume that we overlap.
-            return true;
-        }
-        return maybeOverlapsRangeImpl(
-                mutableMin.get(), mutableMax.get(),
-                dhLower, comparableRangeFilter.isLowerInclusive(),
-                dhUpper, comparableRangeFilter.isUpperInclusive());
+        final boolean lowerInclusive = comparableRangeFilter.isLowerInclusive();
+        final boolean upperInclusive = comparableRangeFilter.isUpperInclusive();
+        return statistics -> {
+            final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
+            final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
+            if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
+                    dhColumnType)) {
+                // Statistics could not be processed, so we assume that we overlap.
+                return true;
+            }
+            return maybeOverlapsRangeImpl(
+                    mutableMin.get(), mutableMax.get(),
+                    dhLower, lowerInclusive,
+                    dhUpper, upperInclusive);
+        };
     }
 
     /**
@@ -71,17 +128,27 @@ final class ComparablePushdownHandler {
             // No values to check against
             return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : statistics -> false;
         }
-        final Comparable<?>[] comparableValues = new Comparable[values.length];
-        for (int i = 0; i < values.length; i++) {
-            final Object value = values[i];
-            if (!(value instanceof Comparable)) {
-                // Skip pushdown-based filtering for nulls or non-comparable values to err on the safer side instead
-                // of adding more complex handling logic.
-                // TODO (DH-19666): Improve handling of nulls
+        // Nulls are dropped here; the null gate in StatisticsEvaluator answers for them.
+        final Comparable<?>[] allValues = new Comparable[values.length];
+        int numNonNull = 0;
+        for (final Object value : values) {
+            if (value instanceof Comparable) {
+                allValues[numNonNull++] = (Comparable<?>) value;
+            } else if (value != null) {
+                // Not Comparable, so it cannot be ordered against the statistics at all.
                 return StatisticsEvaluator.ALWAYS_MAYBE;
             }
-            comparableValues[i] = (Comparable<?>) value;
+            // A null falls through and is simply dropped.
         }
+        if (numNonNull == 0) {
+            // Nothing but null was given. `X != null` matches any non-null value, and usable statistics guarantee
+            // at least one exists; `X == null` reaches here only for a row group with no Parquet nulls to match.
+            return invertMatch
+                    ? StatisticsEvaluator.ALWAYS_MAYBE
+                    : statistics -> false;
+        }
+        final Comparable<?>[] comparableValues =
+                numNonNull == values.length ? allValues : Arrays.copyOf(allValues, numNonNull);
         // Get the column type from the filter
         final Class<?> dhColumnType = matchFilter.getColumnType();
         if (dhColumnType == null) {
@@ -90,7 +157,7 @@ final class ComparablePushdownHandler {
         if (invertMatch) {
             // Sorted once here; maybeMatchesInverse walks the gaps between adjacent values. Natural
             // ordering matches the ObjectComparisons the gap walk uses, for the non-null values that
-            // are all that reach this point -- nulls are not Comparable and were rejected above.
+            // are all that reach this point -- nulls were removed above.
             Arrays.sort(comparableValues);
         }
         return statistics -> {
@@ -107,14 +174,6 @@ final class ComparablePushdownHandler {
         };
     }
 
-    /**
-     * Convenience for a single row group; prefer {@link #maybeCreateEvaluator} when iterating over several.
-     */
-    static boolean maybeOverlaps(
-            @NotNull final MatchFilter matchFilter,
-            @NotNull final Statistics<?> statistics) {
-        return maybeCreateEvaluator(matchFilter).maybeOverlaps(statistics);
-    }
 
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.

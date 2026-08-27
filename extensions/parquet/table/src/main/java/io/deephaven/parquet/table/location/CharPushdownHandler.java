@@ -5,43 +5,103 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.CharRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
+/**
+ * Applies a {@link CharRangeFilter} or a char-typed {@link MatchFilter} to one row group's {@code min}/{@code max}
+ * statistics, answering whether that row group could hold a matching row.
+ *
+ * <h2>Usage</h2>
+ *
+ * For a match filter, call {@link #maybeCreateEvaluator} once and apply the evaluator it returns to each row group in
+ * turn. Unboxing the filter's values and sorting them for the inverted walk both happen during that single call, rather
+ * than once per row group. {@link #maybeOverlaps(MatchFilter, Statistics)} performs both steps for a single row group.
+ * {@link #maybeOverlaps(CharRangeFilter, Statistics)} serves range filters, which need no preparation.
+ * <p>
+ * The interval arithmetic lives in {@link #maybeOverlapsRangeImpl}. {@link #maybeMatches} reuses it by testing each of
+ * the filter's values as the closed range {@code [v, v]}, and {@link #maybeMatchesInverse} by testing the gaps between
+ * adjacent values.
+ *
+ * <h2>Nulls</h2>
+ *
+ * {@link StatisticsEvaluator} describes the two reasons a row can read back as null in Deephaven. This class answers
+ * for one of them and not the other.
+ * <ul>
+ * <li>A <b>stored sentinel</b> -- a value equal to {@code NULL_CHAR} -- is this class's business. To Parquet it is an
+ * ordinary value, sitting inside {@code min}/{@code max} like any other, so the tests here account for it: a match
+ * filter keeps the sentinel among its values, and an unbounded-below range filter looks for it explicitly.</li>
+ * <li>A <b>Parquet null</b> is not. Such a row is invisible to {@code min}/{@code max}, so nothing here can see one or
+ * rule one out. {@code StatisticsEvaluator.maybeMakeForFilter} gates on that before any of this runs.</li>
+ * </ul>
+ * These methods therefore answer from {@code min}/{@code max} alone, and are <b>not</b> correct in isolation for a
+ * filter that a null row satisfies -- {@code X == null}, {@code X != v}, {@code X < v}. Called directly they will
+ * exclude a row group whose Parquet nulls such a filter would have matched. Reach them through
+ * {@code StatisticsEvaluator.maybeMakeForFilter} for an answer that accounts for those rows.
+ * <p>
+ * A null used as a <i>bound</i> is a different question again, and is read as "the filter is unbounded at that end".
+ */
 final class CharPushdownHandler {
 
     /**
-     * Verifies that the statistics range intersects the range defined by the filter.
+     * Resolves {@code filter} to an evaluator, or returns {@code null} if this handler does not serve it. This is the
+     * entry point {@link StatisticsEvaluator} dispatches through; the typed overloads below skip the column-type test,
+     * since choosing this handler already asserts the type.
      */
-    static boolean maybeOverlaps(
-            @NotNull final CharRangeFilter charRangeFilter,
-            @NotNull final Statistics<?> statistics) {
-        // Null rows are accounted for by the null guard in ParquetTableLocation.pushdownRowGroupMetadata:
-        // a filter that can match null (`X < v` does) reaches this only for row groups proven to hold
-        // none, and a filter that cannot match null is unaffected by their presence.
+    @Nullable
+    static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
+        if (filter instanceof CharRangeFilter) {
+            return maybeCreateEvaluator((CharRangeFilter) filter);
+        }
+        if (filter instanceof MatchFilter) {
+            final MatchFilter matchFilter = (MatchFilter) filter;
+            final Class<?> columnType = matchFilter.getColumnType();
+            if (columnType == char.class || columnType == Character.class) {
+                return maybeCreateEvaluator(matchFilter);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Prepares the range filter for evaluation: whether the statistics range intersects the range it defines.
+     */
+    static StatisticsEvaluator maybeCreateEvaluator(@NotNull final CharRangeFilter charRangeFilter) {
         final char dhLower = charRangeFilter.getLower();
         final char dhUpper = charRangeFilter.getUpper();
-        final MutableObject<Character> mutableMin = new MutableObject<>();
-        final MutableObject<Character> mutableMax = new MutableObject<>();
-        if (!MinMaxFromStatistics.getMinMaxForChars(statistics, mutableMin::setValue, mutableMax::setValue)) {
-            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
-            return true;
-        }
-        if (dhLower == QueryConstants.NULL_CHAR) {
-            // Filter is unbounded below; can only match if the upper bound is above this row group's minimum.
-            return charRangeFilter.isUpperInclusive()
-                    ? mutableMin.get() <= dhUpper
-                    : mutableMin.get() < dhUpper;
-        }
-        return maybeOverlapsRangeImpl(
-                mutableMin.get(), mutableMax.get(),
-                dhLower, charRangeFilter.isLowerInclusive(),
-                dhUpper, charRangeFilter.isUpperInclusive());
+        final boolean unboundedBelow = dhLower == QueryConstants.NULL_CHAR;
+        final boolean lowerInclusive = charRangeFilter.isLowerInclusive();
+        final boolean upperInclusive = charRangeFilter.isUpperInclusive();
+        return statistics -> {
+            final MutableObject<Character> mutableMin = new MutableObject<>();
+            final MutableObject<Character> mutableMax = new MutableObject<>();
+            if (!MinMaxFromStatistics.getMinMaxForChars(statistics, mutableMin::setValue, mutableMax::setValue)) {
+                // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+                return true;
+            }
+            if (unboundedBelow) {
+                if (mutableMin.get() <= QueryConstants.NULL_CHAR
+                        && QueryConstants.NULL_CHAR <= mutableMax.get()) {
+                    // A stored value equal to the sentinel reads back as null and so matches too. Unlike a Parquet
+                    // null it is an ordinary value here, covered by min/max rather than by the null gate in
+                    // maybeMakeForFilter.
+                    return true;
+                }
+                // Filter is unbounded below; can only match if the upper bound is above this row group's minimum.
+                return upperInclusive ? mutableMin.get() <= dhUpper : mutableMin.get() < dhUpper;
+            }
+            return maybeOverlapsRangeImpl(
+                    mutableMin.get(), mutableMax.get(),
+                    dhLower, lowerInclusive,
+                    dhUpper, upperInclusive);
+        };
     }
 
     /**
@@ -70,20 +130,12 @@ final class CharPushdownHandler {
             // No values to check against
             return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : statistics -> false;
         }
-        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
-        // logic.
-        // TODO (DH-19666): Improve handling of nulls.
+        // Null deliberately stays among the values; see "Nulls" on this class.
         final char[] unboxedValues = ArrayTypeUtils.getUnboxedCharArray(values);
-        for (final char value : unboxedValues) {
-            if (value == QueryConstants.NULL_CHAR) {
-                return StatisticsEvaluator.ALWAYS_MAYBE;
-            }
-        }
         if (invertMatch) {
-            // Sorted once here; maybeMatchesInverse walks the gaps between adjacent values. Sorting
-            // numerically is only correct because the loop above has already rejected the null sentinel:
-            // for some types it does not sort where Deephaven orders it, so a null reaching this point
-            // would land at the wrong end and corrupt the gap walk.
+            // Arrays.sort is correct here (even though NULL need not sort where Deephaven likes it): we walk
+            // the *gaps* between adjacent values and test them against min/max with the same primitive comparisons,
+            // so the values must be in that order rather than Deephaven's.
             Arrays.sort(unboxedValues);
         }
         return statistics -> {
@@ -97,15 +149,6 @@ final class CharPushdownHandler {
                     ? maybeMatchesInverse(mutableMin.get(), mutableMax.get(), unboxedValues)
                     : maybeMatches(mutableMin.get(), mutableMax.get(), unboxedValues);
         };
-    }
-
-    /**
-     * Convenience for a single row group; prefer {@link #maybeCreateEvaluator} when iterating over several.
-     */
-    static boolean maybeOverlaps(
-            @NotNull final MatchFilter matchFilter,
-            @NotNull final Statistics<?> statistics) {
-        return maybeCreateEvaluator(matchFilter).maybeOverlaps(statistics);
     }
 
     /**

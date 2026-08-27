@@ -725,6 +725,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // Cannot push down filters on group types
             return false;
         }
+        if (parquetType.isRepetition(Type.Repetition.REPEATED)) {
+            // A repeated column's statistics describe leaf values rather than rows -- one row spans many of them, and
+            // num_nulls counts leaf nulls, not null rows. Neither can be read as a statement about rows, so decline
+            // rather than interpret them. Deephaven never writes such a column (arrays and vectors are written as
+            // nested LIST groups, which the path check above rejects), but other writers do.
+            return false;
+        }
         if (parquetType.asPrimitiveType().columnOrder() != ColumnOrder.typeDefined()) {
             // We only handle typeDefined min/max right now; if new orders get defined in the future, they need to
             // be explicitly handled
@@ -864,21 +871,21 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Only one column in these filters
         final Integer columnIndex = actionCtx.columnIndices.get(0);
 
-        // Parquet min/max statistics summarize non-null values only, so null rows are invisible to every handler
-        // below. A filter that can match nulls -- or that throws when it sees one -- therefore may not exclude a row
-        // group unless the statistics prove the row group holds no nulls. This is the same gate the dictionary path
-        // applies in pushdownFilterDictionary().
-        final boolean mustPreserveNulls =
-                ctx.filterNullBehavior() != BasePushdownFilterContext.FilterNullBehavior.EXCLUDES_NULLS;
-        // resolveColumns() has verified that this is a flat, top-level, primitive column, so the field's own repetition
-        // determines the leaf's maximum repetition level.
-        final int maxRepetitionLevel =
-                parquetSchema.getType(actionCtx.parquetColumnNames[0]).isRepetition(Type.Repetition.REPEATED) ? 1 : 0;
-
         // Resolve the filter against the column type once, not once per row group. Everything that depends only on
         // the filter -- unboxing its values into a primitive array, sorting them, encoding them, deciding whether
         // the type is supported at all -- happens here, and the loop below is left with just the statistics.
-        final StatisticsEvaluator evaluator = StatisticsEvaluator.forFilter(filter);
+        //
+        // TODO (DH-19666): Hoist this to the filter context. The evaluator is a pure function of (filter, ctx), and
+        // both are per-filter rather than per-location -- ctx is created once in AbstractFilterExecution and shared
+        // across locations -- so nothing here depends on this location. As written the unboxing, sorting and encoding
+        // above are repeated once per location, which on a table with many partitions is the dominant per-location
+        // cost of metadata pushdown. Memoizing the evaluator on the RegionedPushdownFilterContext would build it once
+        // for the whole filter.
+        final StatisticsEvaluator evaluator = StatisticsEvaluator.maybeMakeForFilter(filter, ctx);
+        if (evaluator == null) {
+            // Nothing about this filter can be bounded by statistics, so every row group would be kept.
+            return result.copy();
+        }
 
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
@@ -888,10 +895,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // can return "match" for scenarios like filter of {X == 3}, and statistics of {min=3, max=3, num_nulls=0}.
             // Similarly, if filter is {X == null}, and statistics is {hasNonNullValue=false, num_nulls=<row-group
             // size>}, we can return "match" for the row group.
-            if (mustPreserveNulls && !ParquetPushdownUtils.isKnownFreeOfNulls(statistics, maxRepetitionLevel)) {
-                // We cannot rule out null rows that the statistics do not describe, so keep the whole row group.
-                maybeOverlaps = true;
-            } else if (!ParquetPushdownUtils.areStatisticsUsable(statistics)) {
+            if (!ParquetPushdownUtils.areStatisticsUsable(statistics)) {
                 // We assume it overlaps if we cannot use the statistics.
                 maybeOverlaps = true;
             } else {

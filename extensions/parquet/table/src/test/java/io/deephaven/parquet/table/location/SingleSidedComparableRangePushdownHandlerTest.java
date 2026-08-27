@@ -74,11 +74,11 @@ public class SingleSidedComparableRangePushdownHandlerTest {
                 LocalDate.of(2020, 1, 1),
                 LocalDate.of(2020, 12, 31));
 
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 ssFilter("dateCol", LocalDate.of(2020, 6, 15), true, true), stats));
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 ssFilter("dateCol", LocalDate.of(2020, 12, 31), false, true), stats));
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 ssFilter("dateCol", LocalDate.of(2021, 1, 1), true, true), stats));
     }
 
@@ -88,9 +88,9 @@ public class SingleSidedComparableRangePushdownHandlerTest {
                 LocalDateTime.of(2022, 1, 1, 0, 0),
                 LocalDateTime.of(2022, 1, 1, 12, 0));
 
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 6, 0), true, true), stats));
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 12, 0), false, true), stats));
     }
 
@@ -98,7 +98,7 @@ public class SingleSidedComparableRangePushdownHandlerTest {
     public void nullPivotDisablesPushdown() {
         final Statistics<?> stats = dateStats(LocalDate.of(2020, 1, 1), LocalDate.of(2020, 12, 31));
 
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 ssFilter("dateCol", null, true, true), stats));
     }
 
@@ -112,17 +112,17 @@ public class SingleSidedComparableRangePushdownHandlerTest {
         final Statistics<?> stats = dateStats(LocalDate.of(2020, 6, 1), LocalDate.of(2020, 12, 31));
 
         // Nothing in this row group precedes 2020-01-01.
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 ssFilter("dateCol", LocalDate.of(2020, 1, 1), true, false), stats));
 
         // But plenty precedes 2020-09-01.
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 ssFilter("dateCol", LocalDate.of(2020, 9, 1), true, false), stats));
 
         // Boundary at the minimum itself.
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 ssFilter("dateCol", LocalDate.of(2020, 6, 1), true, false), stats));
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 ssFilter("dateCol", LocalDate.of(2020, 6, 1), false, false), stats));
     }
 
@@ -134,15 +134,24 @@ public class SingleSidedComparableRangePushdownHandlerTest {
 
         // Nothing in this row group precedes its own minimum, so both of these exclude it. Both assertions were
         // previously assertTrue, pinning the blanket decline that less-than filters used to receive.
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 ssFilter("ldtCol", LocalDateTime.of(2021, 12, 31, 23, 59), true, false), stats));
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 0, 0), false, false), stats));
 
         // Inclusive of the minimum, and above it, there is something to find.
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 0, 0), true, false), stats));
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 6, 0), true, false), stats));
     }
+
+    /**
+     * Resolves the filter to an evaluator and applies it to one row group's statistics, as
+     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     */
+    private static boolean evaluate(final SingleSidedComparableRangeFilter filter, final Statistics<?> stats) {
+        return SingleSidedComparableRangePushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
+    }
+
 }

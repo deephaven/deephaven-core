@@ -80,7 +80,7 @@ public class FloatRangeExhaustiveTest {
                     for (final float pivot : INTERESTING) {
                         final FloatRangeFilter filter = factories.get(f).apply(pivot);
                         filter.init(TABLE_DEFINITION);
-                        final boolean handlerSaysMaybe = FloatPushdownHandler.maybeOverlaps(filter, stats);
+                        final boolean handlerSaysMaybe = evaluate(filter, stats);
                         if (handlerSaysMaybe) {
                             continue;
                         }
@@ -122,4 +122,13 @@ public class FloatRangeExhaustiveTest {
             return matched;
         }
     }
+
+    /**
+     * Resolves the filter to an evaluator and applies it to one row group's statistics, as
+     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     */
+    private static boolean evaluate(final FloatRangeFilter filter, final Statistics<?> stats) {
+        return FloatPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
+    }
+
 }

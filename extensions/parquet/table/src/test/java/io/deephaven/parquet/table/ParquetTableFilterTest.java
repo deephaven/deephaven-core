@@ -1266,11 +1266,11 @@ public final class ParquetTableFilterTest {
      * Deephaven orders null below every value, so it matches the null row, while statistics of {@code {min=10, max=10}}
      * carry no evidence that the row exists.
      * <p>
-     * Unlike the inverted match above, this was already correct before the null guard: each range handler bails out
-     * when either bound is the null sentinel (e.g. {@code IntPushdownHandler.maybeOverlaps}), so the interval test is
-     * never reached. That bail-out is per-handler and carries a {@code TODO (DH-19666): Improve handling of nulls},
-     * which is exactly the kind of local convention a future tightening could drop; this test pins the behaviour at the
-     * level a user observes it.
+     * Unlike the inverted match above, this was already correct before the null guard, for a reason that has since gone
+     * away: each range handler declined outright when either bound was the null sentinel. They no longer decline -- a
+     * sentinel lower bound now reads as "the filter is unbounded below" and the interval test runs -- so the guard in
+     * {@code pushdownRowGroupMetadata} is the only thing keeping the null row. This test pins the behaviour at the
+     * level a user observes it, independent of which layer is responsible for it.
      */
     @Test
     public void nullRowsSurviveRangeFilterStatisticsPushdown() {
@@ -1486,6 +1486,47 @@ public final class ParquetTableFilterTest {
 
             assertPrunes("sval < `k010000`", diskTable, tableSize);
             assertPrunes("sval > `k090000`", diskTable, tableSize);
+        } finally {
+            QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = savedThreshold;
+        }
+    }
+
+    /**
+     * {@code X == null} can now exclude a row group outright, where the handlers previously declined any match filter
+     * with a null among its values. It is sound only where the statistics rule out both of Deephaven's null sources: a
+     * Parquet null, which {@code min}/{@code max} never describe and {@code num_nulls} does, and -- for the primitive
+     * types, whose null is a sentinel value -- a stored value equal to that sentinel. {@link #testForExtremes} covers
+     * the second source, with a file that stores every sentinel as a real value.
+     * <p>
+     * Dictionary pushdown is disabled here on purpose: it would answer these filters on its own and mask whether the
+     * statistics path did anything.
+     */
+    @Test
+    public void isNullPrunesRowGroupsProvenFreeOfNulls() {
+        final String destPath = Path.of(rootFile.getPath(), "isNullPruning").toString();
+        final int tableSize = 100_000;
+        // A single null row, in the sixth of ten row groups. The other nine hold no nulls at all.
+        final Table source = TableTools.emptyTable(tableSize).update(
+                "ival = ii == 55_000 ? null : (int) ii",
+                "sval = ii == 55_000 ? null : `k` + String.format(`%06d`, ii)");
+        writeTables(destPath, splitTable(source, 10, false), EMPTY);
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        final double savedThreshold = QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = 0.0;
+        try {
+            // Correctness first: the null row must survive, and no other row may.
+            filterAndVerifyResults(diskTable, memTable, "ival == null");
+            filterAndVerifyResults(diskTable, memTable, "sval == null");
+            filterAndVerifyResults(diskTable, memTable, "ival != null");
+            filterAndVerifyResults(diskTable, memTable, "sval != null");
+            filterAndVerifyResults(diskTable, memTable, "ival in 42, null");
+
+            // Then pruning: only the row groups that can hold a match need to be read.
+            assertPrunes("ival == null", diskTable, tableSize);
+            assertPrunes("sval == null", diskTable, tableSize);
+            assertPrunes("ival in 42, null", diskTable, tableSize);
         } finally {
             QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = savedThreshold;
         }

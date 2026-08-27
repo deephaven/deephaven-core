@@ -38,18 +38,15 @@ final class ParquetPushdownUtils {
      * ordering. The test below is also written in the safe direction: an absent count reads as
      * {@link Statistics#isNumNullsSet()} {@code == false} rather than as a count of zero, so it can never be mistaken
      * for a proof that there are no nulls.
+     * <p>
+     * The count is read as a number of null <i>rows</i>, which holds only for a column with no repetition -- for a
+     * repeated column one row spans many leaf values and the count is of leaf nulls.
+     * {@code ParquetTableLocation.isSupportedForPushdown} declines repeated columns, so no such column reaches here.
      *
      * @param statistics the row group statistics for the column, possibly {@code null}
-     * @param maxRepetitionLevel the maximum repetition level of the column
      */
-    static boolean isKnownFreeOfNulls(final Statistics<?> statistics, final int maxRepetitionLevel) {
+    static boolean isProvenFreeOfNulls(final Statistics<?> statistics) {
         if (statistics == null) {
-            return false;
-        }
-        if (maxRepetitionLevel != 0) {
-            // For a repeated column, null_count counts nulls at the leaf definition level rather than null rows: a
-            // single row spans many leaf values, and an empty or null array contributes leaf nulls. The count cannot
-            // be read as a statement about rows, so we decline to interpret it.
             return false;
         }
         return statistics.isNumNullsSet() && statistics.getNumNulls() == 0;

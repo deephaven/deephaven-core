@@ -64,7 +64,7 @@ import java.util.function.LongConsumer;
  * The extracted min/max values describe the <i>non-null</i> values in a row group; parquet statistics never fold nulls
  * into them. Nothing here, and nothing in the handlers built on top of it, can therefore see a row group's null rows.
  * Callers that need to account for nulls must consult the null count separately, via
- * {@link ParquetPushdownUtils#isKnownFreeOfNulls}.
+ * {@link ParquetPushdownUtils#isProvenFreeOfNulls}.
  * <p>
  * The general structure is that based on the type requested by user, we first try to extract the min/max values from
  * the logical type, and if that fails, we try to extract them from the primitive type. If both fail, we return
@@ -365,6 +365,18 @@ final class MinMaxFromStatistics {
         return false;
     }
 
+    /**
+     * Whether {@link #getMinMaxForComparable} can decode statistics for {@code columnType}. Knowable from the type
+     * alone, so a handler can decline at evaluator-creation time rather than failing once per row group.
+     */
+    static boolean canDecodeComparable(final Class<?> columnType) {
+        // Strings are deliberately excluded; see the note in getMinMaxForComparable.
+        return columnType == Instant.class
+                || columnType == LocalDateTime.class
+                || columnType == LocalDate.class
+                || columnType == LocalTime.class;
+    }
+
     static boolean getMinMaxForComparable(
             @NotNull final Statistics<?> statistics,
             @NotNull final Consumer<Comparable<?>> minSetter,
@@ -384,7 +396,12 @@ final class MinMaxFromStatistics {
         } else if (columnType == LocalTime.class) {
             return getMinMaxForLocalTimes(statistics, minSetter::accept, maxSetter::accept);
         }
-        // TODO (DH-19666): Add support for more types like BigDecimal and BigInteger min/max values
+        // TODO (DH-19666): Add support for more types. Boolean is the cheapest: the format defines its column order
+        // as "false, true", Boolean is Comparable, and Deephaven writes a native Parquet BOOLEAN, so `flag == true`
+        // could prune where today it does not. BigDecimal and BigInteger are the other candidates.
+        //
+        // Note that adding a type here requires adding it to canDecodeComparable above as well, or the new support
+        // will never be reached -- the handlers decline undecodable types at evaluator-creation time.
         return false;
     }
 

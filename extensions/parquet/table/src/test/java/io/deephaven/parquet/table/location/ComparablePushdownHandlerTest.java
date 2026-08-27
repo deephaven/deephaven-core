@@ -87,13 +87,13 @@ public class ComparablePushdownHandlerTest {
                     LocalDate.of(2020, 1, 1),
                     LocalDate.of(2020, 12, 31));
 
-            assertTrue(ComparablePushdownHandler.maybeOverlaps(
+            assertTrue(evaluate(
                     makeComparableRangeFilter("dateCol",
                             LocalDate.of(2020, 3, 1),
                             LocalDate.of(2020, 6, 1), true, true),
                     stats2020));
 
-            assertFalse(ComparablePushdownHandler.maybeOverlaps(
+            assertFalse(evaluate(
                     makeComparableRangeFilter("dateCol",
                             LocalDate.of(2019, 1, 1),
                             LocalDate.of(2019, 12, 31), true, true),
@@ -104,22 +104,22 @@ public class ComparablePushdownHandlerTest {
                     LocalDate.of(2020, 6, 1),
                     LocalDate.of(2020, 6, 30));
 
-            assertTrue(ComparablePushdownHandler.maybeOverlaps(
+            assertTrue(evaluate(
                     makeMatchFilter(MatchOptions.REGULAR, "dateCol",
                             LocalDate.of(2020, 6, 15), LocalDate.of(2021, 1, 1)),
                     stats));
 
-            assertFalse(ComparablePushdownHandler.maybeOverlaps(
+            assertFalse(evaluate(
                     makeMatchFilter(MatchOptions.REGULAR, "dateCol",
                             LocalDate.of(2019, 12, 31), LocalDate.of(2021, 1, 1)),
                     stats));
 
-            assertTrue(ComparablePushdownHandler.maybeOverlaps(
+            assertTrue(evaluate(
                     makeMatchFilter(MatchOptions.INVERTED, "dateCol",
                             LocalDate.of(2020, 6, 15)),
                     stats));
 
-            assertFalse(ComparablePushdownHandler.maybeOverlaps(
+            assertFalse(evaluate(
                     makeMatchFilter(MatchOptions.INVERTED,
                             "dateCol", LocalDate.of(2020, 6, 1)),
                     dateStats(LocalDate.of(2020, 6, 1),
@@ -134,13 +134,13 @@ public class ComparablePushdownHandlerTest {
             final LocalDateTime dtEnd = LocalDateTime.of(2021, 3, 31, 23, 59, 59);
             final Statistics<?> statsMarch = dateTimeStats(dtStart, dtEnd);
 
-            assertTrue(ComparablePushdownHandler.maybeOverlaps(
+            assertTrue(evaluate(
                     makeComparableRangeFilter("localDateTimeCol",
                             LocalDateTime.of(2021, 3, 10, 0, 0),
                             LocalDateTime.of(2021, 3, 20, 0, 0), true, true),
                     statsMarch));
 
-            assertFalse(ComparablePushdownHandler.maybeOverlaps(
+            assertFalse(evaluate(
                     makeComparableRangeFilter("localDateTimeCol",
                             LocalDateTime.of(2021, 2, 1, 0, 0),
                             LocalDateTime.of(2021, 2, 28, 23, 59, 59), true, true),
@@ -151,28 +151,41 @@ public class ComparablePushdownHandlerTest {
                     LocalDateTime.of(2022, 1, 1, 0, 0),
                     LocalDateTime.of(2022, 1, 1, 12, 0));
 
-            assertTrue(ComparablePushdownHandler.maybeOverlaps(
+            assertTrue(evaluate(
                     makeMatchFilter(MatchOptions.REGULAR, "localDateTimeCol",
                             LocalDateTime.of(2022, 1, 1, 6, 0)),
                     stats));
 
-            assertFalse(ComparablePushdownHandler.maybeOverlaps(
+            assertFalse(evaluate(
                     makeMatchFilter(MatchOptions.REGULAR, "localDateTimeCol",
                             LocalDateTime.of(2021, 12, 31, 23, 59)),
                     stats));
 
             // single‑point stats excluded
-            assertFalse(ComparablePushdownHandler.maybeOverlaps(
+            assertFalse(evaluate(
                     makeMatchFilter(MatchOptions.INVERTED, "localDateTimeCol",
                             LocalDateTime.of(2022, 1, 1, 0, 0)),
                     dateTimeStats(LocalDateTime.of(2022, 1, 1, 0, 0),
                             LocalDateTime.of(2022, 1, 1, 0, 0))));
 
             // exclusion miss
-            assertTrue(ComparablePushdownHandler.maybeOverlaps(
+            assertTrue(evaluate(
                     makeMatchFilter(MatchOptions.INVERTED, "localDateTimeCol",
                             LocalDateTime.of(2021, 12, 31, 23, 59)),
                     stats));
         }
     }
+
+    /**
+     * Resolves the filter to an evaluator and applies it to one row group's statistics, as
+     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     */
+    private static boolean evaluate(final ComparableRangeFilter filter, final Statistics<?> stats) {
+        return ComparablePushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
+    }
+
+    private static boolean evaluate(final MatchFilter filter, final Statistics<?> stats) {
+        return ComparablePushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
+    }
+
 }

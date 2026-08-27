@@ -5,24 +5,82 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.FloatRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+/**
+ * Applies a {@link FloatRangeFilter} or a float-typed {@link MatchFilter} to one row group's {@code min}/{@code max}
+ * statistics, answering whether that row group could hold a matching row.
+ *
+ * <h2>Usage</h2>
+ *
+ * For a match filter, {@link #maybeCreateEvaluator} resolves the filter once and returns an evaluator to apply to each
+ * row group in turn. {@link #maybeOverlaps(MatchFilter, Statistics)} wraps both steps for a single row group;
+ * {@link #maybeOverlaps(FloatRangeFilter, Statistics)} serves range filters. The interval arithmetic lives in
+ * {@link #maybeOverlapsRangeImpl}, which {@link #maybeMatches} reuses by testing each of the filter's values as the
+ * closed range {@code [v, v]}.
+ *
+ * <h2>NaN</h2>
+ *
+ * A conforming writer leaves NaN out of {@code min}/{@code max} entirely, so no statistics can prove a row group holds
+ * none. Every NaN row satisfies an inverted match, which is why -- unlike the integral handlers -- there is no
+ * {@code maybeMatchesInverse} here and an inverted match is declined outright. A NaN among a regular match's values is
+ * declined for the same reason: the statistics cannot place it.
+ *
+ * <h2>Nulls</h2>
+ *
+ * {@link StatisticsEvaluator} describes the two reasons a row can read back as null in Deephaven. This class answers
+ * for one of them and not the other.
+ * <ul>
+ * <li>A <b>stored sentinel</b> -- a value equal to {@code NULL_FLOAT} -- is this class's business. To Parquet it is an
+ * ordinary value, sitting inside {@code min}/{@code max} like any other, so the tests here account for it: a match
+ * filter keeps the sentinel among its values, and an unbounded-below range filter looks for it explicitly.</li>
+ * <li>A <b>Parquet null</b> is not. Such a row is invisible to {@code min}/{@code max}, so nothing here can see one or
+ * rule one out. {@code StatisticsEvaluator.maybeMakeForFilter} gates on that before any of this runs.</li>
+ * </ul>
+ * These methods therefore answer from {@code min}/{@code max} alone, and are <b>not</b> correct in isolation for a
+ * filter that a null row satisfies -- {@code X == null}, {@code X < v}. Called directly they will exclude a row group
+ * whose Parquet nulls such a filter would have matched. Reach them through
+ * {@code StatisticsEvaluator.maybeMakeForFilter} for an answer that accounts for those rows.
+ * <p>
+ * Note that {@code NULL_FLOAT} is not the bottom of the domain: the infinities lie outside it. A row group holding
+ * negative infinity therefore brackets the sentinel, and {@code X == null} declines to exclude that row group. The
+ * answer is still correct, and this is the only case where the sentinel costs pruning on a Deephaven-written file,
+ * which can contain no stored sentinel at all.
+ */
 final class FloatPushdownHandler {
 
     /**
-     * Verifies that the statistics range intersects the range defined by the filter.
+     * Resolves {@code filter} to an evaluator, or returns {@code null} if this handler does not serve it. This is the
+     * entry point {@link StatisticsEvaluator} dispatches through; the typed overloads below skip the column-type test,
+     * since choosing this handler already asserts the type.
      */
-    static boolean maybeOverlaps(
-            @NotNull final FloatRangeFilter floatRangeFilter,
-            @NotNull final Statistics<?> statistics) {
-        // Null rows are accounted for by the null guard in ParquetTableLocation.pushdownRowGroupMetadata:
-        // a filter that can match null (`X < v` does) reaches this only for row groups proven to hold
-        // none, and a filter that cannot match null is unaffected by their presence.
-        //
+    @Nullable
+    static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
+        if (filter instanceof FloatRangeFilter) {
+            return maybeCreateEvaluator((FloatRangeFilter) filter);
+        }
+        if (filter instanceof MatchFilter) {
+            final MatchFilter matchFilter = (MatchFilter) filter;
+            final Class<?> columnType = matchFilter.getColumnType();
+            if (columnType == float.class || columnType == Float.class) {
+                return maybeCreateEvaluator(matchFilter);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Prepares the range filter for evaluation: whether the statistics range intersects the range it defines. A filter
+     * that constrains nothing at either end resolves to {@link StatisticsEvaluator#ALWAYS_MAYBE} here, so the caller
+     * can skip the row groups rather than ask about each in turn.
+     */
+    static StatisticsEvaluator maybeCreateEvaluator(@NotNull final FloatRangeFilter floatRangeFilter) {
         // FloatRangeFilter's constructor orders the pair with FloatComparisons, under which the null sentinel
         // is below every value and NaN above every one. So `lower` is the only end that can be NULL_FLOAT, and
         // `upper` the only end that can be NaN; each marks the filter as unbounded at that end.
@@ -32,30 +90,37 @@ final class FloatPushdownHandler {
         final boolean filterUnboundedAbove = Float.isNaN(dhUpper);
         if (filterUnboundedBelow && filterUnboundedAbove) {
             // The filter constrains nothing at either end.
-            return true;
+            return StatisticsEvaluator.ALWAYS_MAYBE;
         }
-        final MutableObject<Float> mutableMin = new MutableObject<>();
-        final MutableObject<Float> mutableMax = new MutableObject<>();
-        if (!MinMaxFromStatistics.getMinMaxForFloats(statistics, mutableMin::setValue, mutableMax::setValue)) {
-            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
-            return true;
-        }
-        if (filterUnboundedAbove) {
-            // Filter is unbounded above; can only match if the lower bound is below this row group's maximum.
-            return floatRangeFilter.isLowerInclusive()
-                    ? mutableMax.get() >= dhLower
-                    : mutableMax.get() > dhLower;
-        }
-        if (filterUnboundedBelow) {
-            // Filter is unbounded below; can only match if the upper bound is above this row group's minimum.
-            return floatRangeFilter.isUpperInclusive()
-                    ? mutableMin.get() <= dhUpper
-                    : mutableMin.get() < dhUpper;
-        }
-        return maybeOverlapsRangeImpl(
-                mutableMin.get(), mutableMax.get(),
-                dhLower, floatRangeFilter.isLowerInclusive(),
-                dhUpper, floatRangeFilter.isUpperInclusive());
+        final boolean lowerInclusive = floatRangeFilter.isLowerInclusive();
+        final boolean upperInclusive = floatRangeFilter.isUpperInclusive();
+        return statistics -> {
+            final MutableObject<Float> mutableMin = new MutableObject<>();
+            final MutableObject<Float> mutableMax = new MutableObject<>();
+            if (!MinMaxFromStatistics.getMinMaxForFloats(statistics, mutableMin::setValue, mutableMax::setValue)) {
+                // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+                return true;
+            }
+            if (filterUnboundedAbove) {
+                // Filter is unbounded above; can only match if the lower bound is below this row group's maximum.
+                return lowerInclusive ? mutableMax.get() >= dhLower : mutableMax.get() > dhLower;
+            }
+            if (filterUnboundedBelow) {
+                if (mutableMin.get() <= QueryConstants.NULL_FLOAT
+                        && QueryConstants.NULL_FLOAT <= mutableMax.get()) {
+                    // A stored value equal to the sentinel reads back as null and so matches too. Unlike a Parquet
+                    // null it is an ordinary value here, covered by min/max rather than by the null gate in
+                    // maybeMakeForFilter.
+                    return true;
+                }
+                // Filter is unbounded below; can only match if the upper bound is above this row group's minimum.
+                return upperInclusive ? mutableMin.get() <= dhUpper : mutableMin.get() < dhUpper;
+            }
+            return maybeOverlapsRangeImpl(
+                    mutableMin.get(), mutableMax.get(),
+                    dhLower, lowerInclusive,
+                    dhUpper, upperInclusive);
+        };
     }
 
     /**
@@ -78,17 +143,11 @@ final class FloatPushdownHandler {
 
     /**
      * Prepares the match filter for evaluation against row group statistics: for a regular match, whether the
-     * statistics range intersects any of its values.
-     * <p>
-     * An <i>inverted</i> match is never served, and returns {@link StatisticsEvaluator#ALWAYS_MAYBE} at the top of this
-     * method. Unlike the integral handlers there is no {@code maybeMatchesInverse} here at all, because no statistics
-     * can justify excluding a row group from one -- see the note on that early return.
+     * statistics range intersects any of its values. An inverted match is declined here; see "NaN" on this class.
      */
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final MatchFilter matchFilter) {
         if (matchFilter.getMatchOptions().inverted()) {
-            // NaN satisfies any inverted match, and the statistics cannot prove its absence: conforming writers
-            // omit NaN from min/max. Absent that proof, the row group cannot be excluded. Everything below is
-            // therefore the regular-match path only.
+            // Everything below is therefore the regular-match path only.
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }
         final Object[] values = matchFilter.getValues();
@@ -96,12 +155,10 @@ final class FloatPushdownHandler {
             // No values to check against
             return statistics -> false;
         }
-        // Skip pushdown-based filtering for nulls and NaNs to err on the safer side instead of adding more complex
-        // handling logic.
-        // TODO (DH-19666): Improve handling of nulls
+        // Null deliberately stays among the values; see "Nulls" on this class.
         final float[] unboxedValues = ArrayTypeUtils.getUnboxedFloatArray(values);
         for (final float value : unboxedValues) {
-            if (Float.isNaN(value) || value == QueryConstants.NULL_FLOAT) {
+            if (Float.isNaN(value)) {
                 return StatisticsEvaluator.ALWAYS_MAYBE;
             }
         }
@@ -114,15 +171,6 @@ final class FloatPushdownHandler {
             }
             return maybeMatches(mutableMin.get(), mutableMax.get(), unboxedValues);
         };
-    }
-
-    /**
-     * Convenience for a single row group; prefer {@link #maybeCreateEvaluator} when iterating over several.
-     */
-    static boolean maybeOverlaps(
-            @NotNull final MatchFilter matchFilter,
-            @NotNull final Statistics<?> statistics) {
-        return maybeCreateEvaluator(matchFilter).maybeOverlaps(statistics);
     }
 
     /**

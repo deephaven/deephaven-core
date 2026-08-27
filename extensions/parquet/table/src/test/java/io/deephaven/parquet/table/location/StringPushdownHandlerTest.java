@@ -93,7 +93,7 @@ public class StringPushdownHandlerTest {
     private static boolean evaluate(final WhereFilter filter, final Statistics<?> stats) {
         final StatisticsEvaluator evaluator = StringPushdownHandler.maybeCreateEvaluator(filter);
         assertNotNull("handler should serve " + filter, evaluator);
-        return evaluator.maybeOverlaps(stats);
+        return apply(evaluator, stats);
     }
 
     /**
@@ -107,13 +107,13 @@ public class StringPushdownHandlerTest {
         assertNotNull(evaluator);
 
         // Same evaluator, three different row groups, each answered on its own merits.
-        assertTrue(evaluator.maybeOverlaps(stringStats("aaa", "zzz")));
-        assertFalse(evaluator.maybeOverlaps(stringStats("mmm", "zzz")));
-        assertTrue(evaluator.maybeOverlaps(stringStats("ccc", "eee")));
+        assertTrue(apply(evaluator, stringStats("aaa", "zzz")));
+        assertFalse(apply(evaluator, stringStats("mmm", "zzz")));
+        assertTrue(apply(evaluator, stringStats("ccc", "eee")));
 
         // And repeating a row group gives the same answer -- the evaluator is not consumed by use.
-        assertFalse(evaluator.maybeOverlaps(stringStats("mmm", "zzz")));
-        assertTrue(evaluator.maybeOverlaps(stringStats("aaa", "zzz")));
+        assertFalse(apply(evaluator, stringStats("mmm", "zzz")));
+        assertTrue(apply(evaluator, stringStats("aaa", "zzz")));
     }
 
     /**
@@ -298,14 +298,30 @@ public class StringPushdownHandlerTest {
      * behaviour and keeps the row group unless the null count proves there are none.
      */
     @Test
-    public void nullsAreDeclined() {
+    public void nullMatchValuesArePushedDown() {
+        // Built with numNulls == 0, so the row group is proven free of nulls.
         final Statistics<?> stats = stringStats("ccc", "mmm");
 
-        // Null among the match values, both directions. "zzz" alone would otherwise be excluded.
-        assertTrue(evaluate(matchFilter(MatchOptions.REGULAR, "zzz", null), stats));
+        // A String has no sentinel encoding -- a Deephaven null String comes only from a Parquet null -- so the null
+        // is dropped from the values and the null gate in StatisticsEvaluator.maybeMakeForFilter answers for them.
+
+        // `X == null` excludes a row group that holds no nulls.
+        assertFalse(evaluate(matchFilter(MatchOptions.REGULAR, new Object[] {null}), stats));
+
+        // `X in ("zzz", null)` prunes exactly as `X == "zzz"` would.
+        assertFalse(evaluate(matchFilter(MatchOptions.REGULAR, "zzz", null), stats));
+
+        // `X not in ("zzz", null)` prunes as `X != "zzz"` would; here [ccc, mmm] holds values other than "zzz".
         assertTrue(evaluate(matchFilter(MatchOptions.INVERTED, "zzz", null), stats));
-        assertTrue(evaluate(
-                matchFilter(MatchOptions.REGULAR, new Object[] {null}), stats));
+    }
+
+    /**
+     * Null bounds are a different question from null match values, and are still declined. See
+     * {@link #nullMatchValuesArePushedDown} for the half that is not.
+     */
+    @Test
+    public void nullRangeBoundsAreDeclined() {
+        final Statistics<?> stats = stringStats("ccc", "mmm");
 
         // Null bounds on a two-sided range. "nnn".."zzz" alone would otherwise be excluded.
         assertTrue(evaluate(rangeFilter(null, "zzz", true, true), stats));
@@ -341,4 +357,13 @@ public class StringPushdownHandlerTest {
         assertFalse(evaluate(singleSidedFilter("zzz", true, true), stats));
         assertTrue(evaluate(singleSidedFilter("aaa", true, true), stats));
     }
+
+    /**
+     * Applies {@code evaluator} to one row group, deriving whether the group is free of nulls from the statistics as
+     * {@link ParquetTableLocation} does for a flat column.
+     */
+    private static boolean apply(final StatisticsEvaluator evaluator, final Statistics<?> stats) {
+        return evaluator.maybeOverlaps(stats);
+    }
+
 }

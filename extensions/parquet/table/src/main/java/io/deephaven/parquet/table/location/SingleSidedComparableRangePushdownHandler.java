@@ -4,15 +4,36 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.compare.ObjectComparisons;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 final class SingleSidedComparableRangePushdownHandler {
 
-    static boolean maybeOverlaps(
-            final SingleSidedComparableRangeFilter sscrf,
-            final Statistics<?> statistics) {
+    /**
+     * Resolves {@code filter} to an evaluator, or returns {@code null} if this handler does not serve it. A column type
+     * {@link MinMaxFromStatistics#canDecodeComparable cannot decode} is declined here rather than per row group.
+     */
+    @Nullable
+    static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
+        if (!(filter instanceof SingleSidedComparableRangeFilter)) {
+            return null;
+        }
+        final SingleSidedComparableRangeFilter rangeFilter = (SingleSidedComparableRangeFilter) filter;
+        return MinMaxFromStatistics.canDecodeComparable(rangeFilter.getColumnType())
+                ? maybeCreateEvaluator(rangeFilter)
+                : null;
+    }
+
+    /**
+     * Prepares the single-sided range filter for evaluation. A null pivot resolves to
+     * {@link StatisticsEvaluator#ALWAYS_MAYBE} here, so the caller can skip the row groups rather than ask about each
+     * in turn.
+     */
+    static StatisticsEvaluator maybeCreateEvaluator(final SingleSidedComparableRangeFilter sscrf) {
         final Comparable<?> pivot = sscrf.getPivot();
         final boolean isGreaterThan = sscrf.isGreaterThan();
         if (sscrf.isLowerInclusive() != sscrf.isUpperInclusive()) {
@@ -21,27 +42,29 @@ final class SingleSidedComparableRangePushdownHandler {
         }
         final boolean isInclusive = sscrf.isLowerInclusive();
         if (pivot == null) {
-            // A null pivot is not produced by any parsed comparison, and null is not orderable against itself here.
-            // TODO (DH-19666): Improve handling of nulls
-            return true;
+            // Not reachable from a parsed comparison, and null is not orderable against itself here: Deephaven
+            // orders null below every value, so `X < null` is empty and `X > null` is everything, and no parsed
+            // filter expresses either. Declined rather than guessed.
+            return StatisticsEvaluator.ALWAYS_MAYBE;
         }
-        // Note `X < v` and `X <= v` are evaluated too. They match null rows -- Deephaven orders null below every
-        // value -- which is why this used to decline them, but that is now accounted for once by the null guard in
-        // ParquetTableLocation.pushdownRowGroupMetadata.
+        // `X < v` and `X <= v` accept a null row, since Deephaven orders null under every value; `X > v` cannot.
+        // These types have no sentinel encoding, so the null gate in maybeMakeForFilter settles that on its own.
         final Class<?> dhColumnType = sscrf.getColumnType();
         if (dhColumnType == null) {
             throw new IllegalStateException("Filter not initialized with a column type: " + sscrf);
         }
-        final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
-        final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
-        if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
-                dhColumnType)) {
-            // Statistics could not be processed, so we assume that we overlap.
-            return true;
-        }
-        return maybeOverlapsImpl(
-                mutableMin.getValue(), mutableMax.getValue(),
-                pivot, isInclusive, isGreaterThan);
+        return statistics -> {
+            final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
+            final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
+            if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
+                    dhColumnType)) {
+                // Statistics could not be processed, so we assume that we overlap.
+                return true;
+            }
+            return maybeOverlapsImpl(
+                    mutableMin.getValue(), mutableMax.getValue(),
+                    pivot, isInclusive, isGreaterThan);
+        };
     }
 
     /**

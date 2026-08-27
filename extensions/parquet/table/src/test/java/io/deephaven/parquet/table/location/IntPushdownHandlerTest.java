@@ -40,50 +40,50 @@ public class IntPushdownHandlerTest {
         final Statistics<?> stats = intStats(-500, 500);
 
         // range wholly inside
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new IntRangeFilter("i", -200, 200, true, true), stats));
 
         // filter equal to statistics inclusive
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new IntRangeFilter("i", -500, 500, true, true), stats));
 
         // half-open overlaps
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new IntRangeFilter("i", -500, 0, true, false), stats));
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new IntRangeFilter("i", 0, 500, false, true), stats));
 
         // edge inclusive vs exclusive
-        assertFalse(IntPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new IntRangeFilter("i", -500, -500, false, false), stats));
-        assertFalse(IntPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new IntRangeFilter("i", 500, 500, false, false), stats));
 
         // single-point inside
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new IntRangeFilter("i", 123, 123, true, true), stats));
 
         // disjoint below and above
-        assertFalse(IntPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new IntRangeFilter("i", -2000, -1500, true, true), stats));
-        assertFalse(IntPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new IntRangeFilter("i", 1500, 2000, true, true), stats));
 
         // constructor value-swap still overlaps
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new IntRangeFilter("i", 100, -100, true, true), stats));
 
         // NULL bound disables push-down
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new IntRangeFilter("i", QueryConstants.NULL_INT, 0, true, true), stats));
 
         // stats at full int domain
         final Statistics<?> statsFull = intStats(Integer.MIN_VALUE, Integer.MAX_VALUE);
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new IntRangeFilter("i", 0, 0, true, true), statsFull));
 
         // Overlapping (3,3] with stats [3, 4] should return false
-        assertFalse(IntPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new IntRangeFilter("i", 3, 3, false, true), intStats(3, 4)));
     }
 
@@ -92,13 +92,13 @@ public class IntPushdownHandlerTest {
         final Statistics<?> stats = intStats(10, 30);
 
         // unsorted list with duplicates, one inside
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.REGULAR,
                         "i", 50, 15, 22, 22),
                 stats));
 
         // all values outside
-        assertFalse(IntPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR,
                         "i", 100, 200),
                 stats));
@@ -108,51 +108,58 @@ public class IntPushdownHandlerTest {
         final Object[] withInside = new Object[many.length + 1];
         System.arraycopy(many, 0, withInside, 0, many.length);
         withInside[withInside.length - 1] = 25;
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "i", withInside), stats));
 
         // empty list
-        assertFalse(IntPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "i"), stats));
 
-        // list containing NULL
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        // A null among the values no longer declines push-down. To Parquet the sentinel is an ordinary value,
+        // so it is tested against min/max like any other; Parquet nulls are ruled out separately, by the
+        // null gate in StatisticsEvaluator.maybeMakeForFilter.
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "i",
                         QueryConstants.NULL_INT, 50),
                 stats));
+
+        // ...but a row group whose values reach the sentinel may hold rows that read back as null.
+        assertTrue(evaluate(
+                new MatchFilter(MatchOptions.REGULAR, "i", QueryConstants.NULL_INT),
+                intStats(QueryConstants.NULL_INT, 30)));
     }
 
     @Test
     public void intInvertMatchFilterScenarios() {
         // gaps remain inside stats
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "i", -1, 0, 1),
                 intStats(-5, 5)));
 
         // stats fully covered by exclusion list
-        assertFalse(IntPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "i", 42),
                 intStats(42, 42)));
 
         // exclude 10-19 leaves a gap 0-9 and 20-29
         final Object[] exclude = IntStream.range(10, 20).boxed().toArray();
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "i", exclude),
                 intStats(0, 29)));
 
         // empty exclusion list
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "i"),
                 intStats(1, 2)));
 
         // NULL disables push-down
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "i", QueryConstants.NULL_INT),
                 intStats(5, 6)));
 
         // Inverse match of {5, 6} against statistics [5, 6] should return false but currently returns true since
         // the implementation assumes the range (5, 6) overlaps with the statistics range [5, 6].
-        assertTrue(IntPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "i", 5, 6),
                 intStats(5, 6)));
     }
@@ -167,17 +174,39 @@ public class IntPushdownHandlerTest {
     public void evaluatorIsReusableAcrossRowGroups() {
         final StatisticsEvaluator regular =
                 IntPushdownHandler.maybeCreateEvaluator(new MatchFilter(MatchOptions.REGULAR, "i", 30, 10, 20));
-        assertTrue(regular.maybeOverlaps(intStats(5, 15)));
-        assertFalse(regular.maybeOverlaps(intStats(100, 200)));
-        assertTrue(regular.maybeOverlaps(intStats(25, 35)));
+        assertTrue(apply(regular, intStats(5, 15)));
+        assertFalse(apply(regular, intStats(100, 200)));
+        assertTrue(apply(regular, intStats(25, 35)));
         // Repeating a row group gives the same answer.
-        assertFalse(regular.maybeOverlaps(intStats(100, 200)));
+        assertFalse(apply(regular, intStats(100, 200)));
 
         // Values deliberately supplied out of order: the inverse walk needs them sorted, once, at creation.
         final StatisticsEvaluator inverted =
                 IntPushdownHandler.maybeCreateEvaluator(new MatchFilter(MatchOptions.INVERTED, "i", 30, 10, 20));
-        assertTrue(inverted.maybeOverlaps(intStats(0, 100)));
-        assertFalse(inverted.maybeOverlaps(intStats(10, 10)));
-        assertTrue(inverted.maybeOverlaps(intStats(0, 100)));
+        assertTrue(apply(inverted, intStats(0, 100)));
+        assertFalse(apply(inverted, intStats(10, 10)));
+        assertTrue(apply(inverted, intStats(0, 100)));
     }
+
+    /**
+     * Applies {@code evaluator} to one row group, deriving whether the group is free of nulls from the statistics as
+     * {@link ParquetTableLocation} does for a flat column.
+     */
+    private static boolean apply(final StatisticsEvaluator evaluator, final Statistics<?> stats) {
+        return evaluator.maybeOverlaps(stats);
+    }
+
+
+    /**
+     * Resolves the filter to an evaluator and applies it to one row group's statistics, as
+     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     */
+    private static boolean evaluate(final IntRangeFilter filter, final Statistics<?> stats) {
+        return IntPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
+    }
+
+    private static boolean evaluate(final MatchFilter filter, final Statistics<?> stats) {
+        return IntPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
+    }
+
 }

@@ -42,51 +42,77 @@ public class CharPushdownHandlerTest {
         final Statistics<?> statsAZ = charStats('A', 'Z');
 
         // range wholly inside
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new CharRangeFilter("c", 'B', 'Y', true, true), statsAZ));
 
         // filter equal to statistics inclusive
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new CharRangeFilter("c", 'A', 'Z', true, true), statsAZ));
 
         // half-open overlaps
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new CharRangeFilter("c", 'A', 'M', true, false), statsAZ));
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new CharRangeFilter("c", 'M', 'Z', false, true), statsAZ));
 
         // edge inclusive vs exclusive
-        assertFalse(CharPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new CharRangeFilter("c", 'A', 'A', false, false), statsAZ));
-        assertFalse(CharPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new CharRangeFilter("c", 'Z', 'Z', false, false), statsAZ));
 
         // single-point inside
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new CharRangeFilter("c", 'M', 'M', true, true), statsAZ));
 
         // disjoint below and above
-        assertFalse(CharPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new CharRangeFilter("c", '0', '9', true, true), statsAZ));
-        assertFalse(CharPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new CharRangeFilter("c", 'a', 'f', true, true), statsAZ));
 
         // constructor value-swap still overlaps
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new CharRangeFilter("c", 'Y', 'B', true, true), statsAZ));
 
         // NULL bound disables push-down
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new CharRangeFilter("c", QueryConstants.NULL_CHAR, 'C', true, true), statsAZ));
 
         // statistics at char domain extremes
         final Statistics<?> statsFull = charStats(Character.MIN_VALUE, Character.MAX_VALUE);
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new CharRangeFilter("c", 'A', 'A', true, true), statsFull));
 
         // Overlapping (a,a] with stats [a, b] should return false
-        assertFalse(CharPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new CharRangeFilter("i", 'a', 'a', false, true), charStats('a', 'b')));
+    }
+
+    /**
+     * {@code X < v} accepts a null row, and Deephaven surfaces a null from two places. A Parquet null is answered by
+     * the null gate in {@code StatisticsEvaluator.maybeMakeForFilter}; a stored value equal to {@code NULL_CHAR} reads
+     * back as null and has to be found in min/max instead.
+     * <p>
+     * char is the type where that second case bites. Its sentinel is {@code Character.MAX_VALUE}, the <i>top</i> of the
+     * value domain, while Deephaven orders null at the <i>bottom</i> -- so a row group whose values run up to the
+     * sentinel has a high {@code min} and would otherwise be excluded by a filter that those very rows satisfy. The
+     * integral types are accidentally safe here, their sentinel being {@code MIN_VALUE}.
+     */
+    @Test
+    public void unboundedBelowRangeKeepsRowGroupsThatCanReadBackAsNull() {
+        // `X < 'A'`, per RangeFilter.makeRangeFilter: [NULL_CHAR, 'A').
+        final CharRangeFilter lessThanA = new CharRangeFilter("c", QueryConstants.NULL_CHAR, 'A', true, false);
+
+        // No Parquet nulls, but the values reach the sentinel, so those rows read back as null and match.
+        assertTrue(evaluate(
+                lessThanA, charStats('Z', QueryConstants.NULL_CHAR)));
+
+        // No Parquet nulls and no sentinel among the values: nothing here can be below 'A'.
+        assertFalse(evaluate(lessThanA, charStats('Z', 'z')));
+
+        // The Parquet-null half of the question is not this handler's: see
+        // PushdownHandlerNullStatisticsTest#nullGateKeepsRowGroupsThatMayHoldParquetNulls.
     }
 
     @Test
@@ -94,13 +120,13 @@ public class CharPushdownHandlerTest {
         final Statistics<?> stats = charStats('G', 'P');
 
         // unsorted list with duplicates, at least one inside
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.REGULAR,
                         "c", 'x', 'C', 'M', 'M', 'a'),
                 stats));
 
         // all values outside after sort
-        assertFalse(CharPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR,
                         "c", 'q', 'r', 's'),
                 stats));
@@ -112,27 +138,34 @@ public class CharPushdownHandlerTest {
         final Object[] withInside = new Object[many.length + 1];
         System.arraycopy(many, 0, withInside, 0, many.length);
         withInside[withInside.length - 1] = 'H'; // inside
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "c", withInside), stats));
 
         // empty list
-        assertFalse(CharPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "c"), stats));
 
-        // list containing NULL disables push-down
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        // A null among the values no longer declines push-down. To Parquet the sentinel is an ordinary value,
+        // so it is tested against min/max like any other; Parquet nulls are ruled out separately, by the
+        // null gate in StatisticsEvaluator.maybeMakeForFilter.
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "c", QueryConstants.NULL_CHAR, 'X'), stats));
+
+        // ...but a row group whose values reach the sentinel may hold rows that read back as null.
+        assertTrue(evaluate(
+                new MatchFilter(MatchOptions.REGULAR, "c", QueryConstants.NULL_CHAR),
+                charStats('G', QueryConstants.NULL_CHAR)));
     }
 
     @Test
     public void charInvertMatchFilterScenarios() {
         // stats B..G; NOT IN {C,D,E} leaves gaps
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "c", 'E', 'C', 'D'),
                 charStats('B', 'G')));
 
         // stats D..D; NOT IN {D} removes the only value, leaving no gap inside stats
-        assertFalse(CharPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "c", 'D'),
                 charStats('D', 'D')));
 
@@ -141,22 +174,22 @@ public class CharPushdownHandlerTest {
                 .filter(c -> c != 'M') // exclude all but M
                 .mapToObj(c -> (char) c)
                 .toArray();
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "c", exclude),
                 charStats('A', 'Z')));
 
         // excluding nothing (empty list) treated as maybe overlap
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "c"), charStats('A', 'B')));
 
         // NULL value disables push-down in inverted mode
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "c", QueryConstants.NULL_CHAR),
                 charStats('A', 'B')));
 
         // Inverse match of {'A', 'B'} against statistics ['A', 'A'] should return false but currently returns true
         // since the implementation assumes the range ('A', 'B') overlaps with the statistics range ['A', 'B'].
-        assertTrue(CharPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "i", 'A', 'B'),
                 charStats('A', 'B')));
     }
@@ -169,14 +202,27 @@ public class CharPushdownHandlerTest {
     @Test
     public void sentinelLowerBoundIsReadAsTheBottomOfTheDomain() {
         // Values below 'm' exist here, so this must not be excluded.
-        assertTrue(CharPushdownHandler.maybeOverlaps(CharRangeFilter.lt("c", 'm'), charStats('a', 'f')));
-        assertTrue(CharPushdownHandler.maybeOverlaps(CharRangeFilter.leq("c", 'm'), charStats('a', 'f')));
+        assertTrue(evaluate(CharRangeFilter.lt("c", 'm'), charStats('a', 'f')));
+        assertTrue(evaluate(CharRangeFilter.leq("c", 'm'), charStats('a', 'f')));
 
         // Nothing below 'm' here, so it still prunes.
-        assertFalse(CharPushdownHandler.maybeOverlaps(CharRangeFilter.lt("c", 'm'), charStats('n', 'z')));
+        assertFalse(evaluate(CharRangeFilter.lt("c", 'm'), charStats('n', 'z')));
 
         // The greater-than direction is bounded by MAX_CHAR and was already sound.
-        assertTrue(CharPushdownHandler.maybeOverlaps(CharRangeFilter.gt("c", 'm'), charStats('n', 'z')));
-        assertFalse(CharPushdownHandler.maybeOverlaps(CharRangeFilter.gt("c", 'm'), charStats('a', 'f')));
+        assertTrue(evaluate(CharRangeFilter.gt("c", 'm'), charStats('n', 'z')));
+        assertFalse(evaluate(CharRangeFilter.gt("c", 'm'), charStats('a', 'f')));
     }
+
+    /**
+     * Resolves the filter to an evaluator and applies it to one row group's statistics, as
+     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     */
+    private static boolean evaluate(final CharRangeFilter filter, final Statistics<?> stats) {
+        return CharPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
+    }
+
+    private static boolean evaluate(final MatchFilter filter, final Statistics<?> stats) {
+        return CharPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
+    }
+
 }

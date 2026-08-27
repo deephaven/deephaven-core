@@ -51,11 +51,11 @@ public class ParquetPushdownUtilsTest {
     }
 
     @Test
-    public void testKnownFreeOfNulls() {
+    public void testProvenFreeOfNulls() {
         // A reported count of zero is the only proof that there are no nulls.
-        assertTrue(ParquetPushdownUtils.isKnownFreeOfNulls(doubleStats(10.0, 100.0, 0L), 0));
-        assertFalse(ParquetPushdownUtils.isKnownFreeOfNulls(doubleStats(10.0, 100.0, 1L), 0));
-        assertFalse(ParquetPushdownUtils.isKnownFreeOfNulls(null, 0));
+        assertTrue(ParquetPushdownUtils.isProvenFreeOfNulls(doubleStats(10.0, 100.0, 0L)));
+        assertFalse(ParquetPushdownUtils.isProvenFreeOfNulls(doubleStats(10.0, 100.0, 1L)));
+        assertFalse(ParquetPushdownUtils.isProvenFreeOfNulls(null));
 
         // An absent null_count must never be mistaken for a count of zero. The getter returns a -1 sentinel rather
         // than throwing, so isNumNullsSet() is the only safe test; pin both, since a sentinel that ever became 0
@@ -63,14 +63,14 @@ public class ParquetPushdownUtilsTest {
         final Statistics<?> noNullCount = doubleStatsWithoutNullCount(10.0, 100.0);
         assertFalse(noNullCount.isNumNullsSet());
         assertEquals(-1L, noNullCount.getNumNulls());
-        assertFalse(ParquetPushdownUtils.isKnownFreeOfNulls(noNullCount, 0));
+        assertFalse(ParquetPushdownUtils.isProvenFreeOfNulls(noNullCount));
 
-        // For a repeated column the count is over leaf values rather than rows, so it says nothing about null rows.
-        assertFalse(ParquetPushdownUtils.isKnownFreeOfNulls(doubleStats(10.0, 100.0, 0L), 1));
+        // A repeated column, whose count is over leaf values rather than rows, never reaches here: it is declined
+        // upstream by ParquetTableLocation.isSupportedForPushdown.
 
         // The min/max gate and the null-count gate are independent: statistics whose min/max were discarded can still
         // carry a usable count, and usable min/max do not imply a usable count.
         assertTrue(ParquetPushdownUtils.areStatisticsUsable(noNullCount));
-        assertFalse(ParquetPushdownUtils.isKnownFreeOfNulls(noNullCount, 0));
+        assertFalse(ParquetPushdownUtils.isProvenFreeOfNulls(noNullCount));
     }
 }
