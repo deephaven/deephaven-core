@@ -1554,7 +1554,13 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             return OrderedLongSet.EMPTY;
         }
         // subSetByPositionRange tends to create small indices, it pays off to check for compacting the result.
-        return result.ixCompact();
+        final OrderedLongSet compacted = result.ixCompact();
+        if (compacted != result) {
+            // A subrange covering everything hands back a reference to us rather than a copy, and compacting then
+            // answers with a different set, leaving that reference ours to give back.
+            result.ixRelease();
+        }
+        return compacted;
     }
 
     @Override
@@ -1568,7 +1574,13 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             return OrderedLongSet.EMPTY;
         }
         // subSetByKeyRange tends to create small indices, it pays off to check for compacting the result.
-        return result.ixCompact();
+        final OrderedLongSet compacted = result.ixCompact();
+        if (compacted != result) {
+            // A subrange covering everything hands back a reference to us rather than a copy, and compacting then
+            // answers with a different set, leaving that reference ours to give back.
+            result.ixRelease();
+        }
+        return compacted;
     }
 
     // API assumption: added and removed are disjoint.

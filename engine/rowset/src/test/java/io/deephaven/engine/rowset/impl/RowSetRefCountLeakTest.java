@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
@@ -151,6 +152,37 @@ public class RowSetRefCountLeakTest {
         // A real shift copies, so the reference asked for is the one used; keep that path pinned.
         assertHoldsSteady("shifted insert", bitmap,
                 () -> SortedRanges.makeSingleRange(5, 7).ixInsertWithShift(11, bitmap));
+    }
+
+    /**
+     * Taking a subrange that covers the whole set hands back a reference to the set itself rather than a copy; if the
+     * result is then compacted onto a different implementation, that reference has to be given back.
+     */
+    @Test
+    public void testWholeSetSubrangeThatCompactsDoesNotRetainTheSource() {
+        // One span holding one contiguous range, so compacting turns it into a SingleRange.
+        final RspBitmap inner = RspBitmap.makeSingleRange(5, 9);
+        try (final WritableRowSetImpl rs = rowSetOf(inner)) {
+            assertHoldsSteady("whole-set key range subset", inner, () -> {
+                try (final RowSet sub = rs.subSetByKeyRange(rs.firstRowKey(), rs.lastRowKey())) {
+                    assertEquals("the subset is the whole set", rs.size(), sub.size());
+                }
+            });
+            assertHoldsSteady("whole-set position range subset", inner, () -> {
+                try (final RowSet sub = rs.subSetByPositionRange(0, rs.size())) {
+                    assertEquals("the subset is the whole set", rs.size(), sub.size());
+                }
+            });
+        }
+        // A bitmap that cannot compact keeps the reference it handed out, which is correct; pin that too.
+        final RspBitmap wide = manyBlockRsp(5);
+        try (final WritableRowSetImpl rs = rowSetOf(wide)) {
+            assertHoldsSteady("whole-set subset of a bitmap that cannot compact", wide, () -> {
+                try (final RowSet sub = rs.subSetByKeyRange(rs.firstRowKey(), rs.lastRowKey())) {
+                    assertEquals("the subset is the whole set", rs.size(), sub.size());
+                }
+            });
+        }
     }
 
     // 3.4 -- logging stops after a couple hundred ranges, abandoning the iterator there.
