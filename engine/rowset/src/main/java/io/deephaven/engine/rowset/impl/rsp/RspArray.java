@@ -2552,6 +2552,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 // Every key in a full block span is present, so the offset from its first key is the position.
                 return prevAcc + val - k;
             }
+            if (val < view.getKey()) {
+                // In a gap before this span's block, as the singleton and full block span cases above also allow. The
+                // container only knows the low bits of its own block, so searching it for a key from an earlier block
+                // would answer about an unrelated position.
+                return ~prevAcc;
+            }
             final int cf = view.getContainer().find(lowBits(val));
             if (cf >= 0) {
                 return prevAcc + cf;
