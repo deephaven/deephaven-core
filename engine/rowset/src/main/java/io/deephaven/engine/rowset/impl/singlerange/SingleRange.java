@@ -105,9 +105,15 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final boolean ixForEachLong(final LongAbortableConsumer lc) {
-        for (long v = rangeStart(); v <= rangeEnd(); ++v) {
+        final long end = rangeEnd();
+        for (long v = rangeStart(); v <= end; ++v) {
             if (!lc.accept(v)) {
                 return false;
+            }
+            if (v == end) {
+                // Stepping past the end would wrap when it is the last key of the key space, and the wrapped value
+                // compares as still inside the range.
+                break;
             }
         }
         return true;
