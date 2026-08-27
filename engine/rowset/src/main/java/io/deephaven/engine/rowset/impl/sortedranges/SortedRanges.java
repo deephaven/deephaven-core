@@ -990,6 +990,13 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         long iPrevData = iData;
         do {
             final long targetPos = inputPositions.nextLong();
+            if (targetPos < 0 || targetPos >= cardinality) {
+                // No key at that position, which is what the other implementations answer as well. Walking on would
+                // run past the ranges we hold and read the array's unused tail, where the entries of a range that was
+                // removed are still sitting.
+                outputKeys.accept(RowSequence.NULL_ROW_KEY);
+                continue;
+            }
             while (iPos < targetPos) {
                 ++i;
                 iData = packedGet(i);
