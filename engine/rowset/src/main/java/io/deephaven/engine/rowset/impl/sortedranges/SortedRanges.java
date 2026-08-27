@@ -1956,7 +1956,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     public final RowSequence getRowSequenceByPosition(final long pos, long length) {
         final long card = getCardinality();
-        if (isEmpty() || pos >= card) {
+        if (isEmpty() || pos >= card || length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
         if (pos + length >= card) {
