@@ -185,6 +185,43 @@ public class RowSetRefCountLeakTest {
         }
     }
 
+    /**
+     * A single-range receiver builds its answer by inserting itself into a reference to the argument. Holding that
+     * reference is what makes the argument shared, so the insert copies and the reference goes unused.
+     *
+     * <p>
+     * The result is released each time, as the callers of these methods do: when the insert answers with the argument
+     * itself the reference legitimately transfers to the result, and a test that dropped it would look like a leak.
+     */
+    @Test
+    public void testInsertIntoASingleRangeReceiverDoesNotRetainTheArgument() {
+        // Above the receiver's range, so inserting it genuinely changes the argument and forces the copy.
+        SortedRanges above = SortedRanges.makeSingleRange(1000, 1100);
+        for (int i = 3; i < 12; ++i) {
+            above = above.addRange(i * BLOCK_SIZE, i * BLOCK_SIZE + 50);
+        }
+        final SortedRanges sortedRanges = above;
+        final RspBitmap bitmap = manyBlockRsp(1005);
+
+        assertHoldsSteady("insert of a bitmap", bitmap, () -> release(SingleRange.make(5, 7).ixInsert(bitmap)));
+        assertHoldsSteady("insert of sorted ranges", sortedRanges,
+                () -> release(SingleRange.make(5, 7).ixInsert(sortedRanges)));
+        assertHoldsSteady("unshifted insert with shift", bitmap,
+                () -> release(SingleRange.make(5, 7).ixInsertWithShift(0, bitmap)));
+        assertHoldsSteady("shifted insert with shift", bitmap,
+                () -> release(SingleRange.make(5, 7).ixInsertWithShift(11, bitmap)));
+
+        // An argument whose keys the receiver already covers takes no reference at all; pin that path too.
+        final RspBitmap covered = RspBitmap.makeSingleRange(6, 6);
+        assertHoldsSteady("insert of an argument we already cover", covered,
+                () -> release(SingleRange.make(5, 7).ixInsert(covered)));
+    }
+
+    /** Give back an owned reference, the way the callers of the ix* methods do. */
+    private static void release(final OrderedLongSet ols) {
+        ols.ixRelease();
+    }
+
     // 3.4 -- logging stops after a couple hundred ranges, abandoning the iterator there.
 
     @Test

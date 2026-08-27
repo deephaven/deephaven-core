@@ -712,8 +712,22 @@ public abstract class SingleRange implements OrderedLongSet {
         if (added instanceof SingleRange) {
             return ixInsertRange(added.ixFirstKey(), added.ixLastKey());
         }
+        // Taking a reference is what makes added shared, so the insert below copies rather than editing in place and
+        // the reference we asked for goes unused.
         final OrderedLongSet ix = added.ixCowRef();
-        return ix.ixInsertRange(rangeStart(), rangeEnd());
+        return insertOurRangeInto(ix);
+    }
+
+    /**
+     * Insert our own range into {@code ix}, a reference we own, releasing it if the insert answered with a different
+     * set.
+     */
+    private OrderedLongSet insertOurRangeInto(final OrderedLongSet ix) {
+        final OrderedLongSet ans = ix.ixInsertRange(rangeStart(), rangeEnd());
+        if (ans != ix) {
+            ix.ixRelease();
+        }
+        return ans;
     }
 
     @Override
@@ -729,7 +743,9 @@ public abstract class SingleRange implements OrderedLongSet {
         if (other instanceof SingleRange) {
             return ixInsertRange(ansFirst, ansLast);
         }
-        return other.ixShiftOnNew(shiftAmount).ixInsertRange(rangeStart(), rangeEnd());
+        // A zero shift hands back a reference to other rather than a copy of it, so this reference is ours to give
+        // back once the insert has answered.
+        return insertOurRangeInto(other.ixShiftOnNew(shiftAmount));
     }
 
     @Override
