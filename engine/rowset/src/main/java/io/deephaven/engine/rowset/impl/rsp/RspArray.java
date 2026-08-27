@@ -746,7 +746,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 continue;
             }
             if (span instanceof short[]) {
+                // A packed ArrayContainer's shared flag lives in its owner's spanInfo word, so unlike a Container --
+                // whose flag travels with the object -- marking only this copy would leave the source believing it
+                // still owns the short[] exclusively, free to edit it in place underneath us.
                 spanInfos[i] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+                src.spanInfos[isrc] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
                 continue;
             }
             // span instanceof Container
@@ -2627,6 +2631,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 // Every key in a full block span is present, so the offset from its first key is the position.
                 return prevAcc + val - k;
             }
+            if (val < view.getKey()) {
+                // In a gap before this span's block, as the singleton and full block span cases above also allow. The
+                // container only knows the low bits of its own block, so searching it for a key from an earlier block
+                // would answer about an unrelated position.
+                return ~prevAcc;
+            }
             final int cf = view.getContainer().find(lowBits(val));
             if (cf >= 0) {
                 return prevAcc + cf;
@@ -4160,11 +4170,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final long flen = view.getFullBlockSpanLen();
             final long key = view.getKey();
             if (flen > 0) {
-                final long oneAfterLast = key + flen * BLOCK_SIZE;
-                for (long v = key + offset; v < oneAfterLast; ++v) {
+                // Bounded by the span's last key rather than by one past it: a span reaching the top of the key
+                // space would overflow there, and the loop would read that as having nothing to visit.
+                final long lastKey = getKeyForLastBlockInFullSpan(key, flen) + BLOCK_LAST;
+                for (long v = key + offset; v <= lastKey; ++v) {
                     final boolean wantMore = lc.accept(v);
                     if (!wantMore) {
                         return false;
+                    }
+                    if (v == lastKey) {
+                        break;
                     }
                 }
                 return true;
@@ -4197,11 +4212,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final long flen = view.getFullBlockSpanLen();
             final long key = view.getKey();
             if (flen > 0) {
-                final long oneAfterLast = key + flen * BLOCK_SIZE;
-                for (long v = key; v < oneAfterLast; ++v) {
+                // Bounded by the span's last key rather than by one past it: a span reaching the top of the key
+                // space would overflow there, and the loop would read that as having nothing to visit.
+                final long lastKey = getKeyForLastBlockInFullSpan(key, flen) + BLOCK_LAST;
+                for (long v = key; v <= lastKey; ++v) {
                     final boolean wantMore = lc.accept(v);
                     if (!wantMore) {
                         return false;
+                    }
+                    if (v == lastKey) {
+                        break;
                     }
                 }
                 return true;
@@ -4995,7 +5015,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 return RowSequenceFactory.EMPTY;
             }
         }
-        final long cardBeforeEndKeyIdx = cardinalityBeforeMaybeAcc(endKeyIdx, beforeCardCtx);
+        long cardBeforeEndKeyIdx = cardinalityBeforeMaybeAcc(endKeyIdx, beforeCardCtx);
         long absoluteEndPos;
         if (endKeyIdxWasNegative) {
             absoluteEndPos = cardBeforeEndKeyIdx + getSpanCardinalityAtIndexMaybeAcc(endKeyIdx) - 1;
@@ -5031,6 +5051,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             startKeyIdx = startIdx;
             cardBeforeStartKeyIdx = cardBeforeStartIdx;
             startOffsetOut = startOffsetIn;
+        }
+        if (absoluteEndPos < cardBeforeEndKeyIdx) {
+            // The range ends in the gap before this span's first key, so the last position it includes belongs to the
+            // span before it. The start side above makes the mirror-image adjustment when its position lands past the
+            // end of its span.
+            --endKeyIdx;
+            cardBeforeEndKeyIdx -= getSpanCardinalityAtIndexMaybeAcc(endKeyIdx);
         }
         final long relativeEndOffset = absoluteEndPos - cardBeforeEndKeyIdx;
         final long endOffsetOut;

@@ -13,9 +13,15 @@ import io.deephaven.engine.rowset.RowSequence;
  */
 public interface SingleRangeMixin extends RowSequence {
     default boolean forEachRowKey(final LongAbortableConsumer lc) {
-        for (long v = rangeStart(); v <= rangeEnd(); ++v) {
+        final long end = rangeEnd();
+        for (long v = rangeStart(); v <= end; ++v) {
             if (!lc.accept(v)) {
                 return false;
+            }
+            if (v == end) {
+                // Stepping past the end would wrap when it is the last key of the key space, and the wrapped value
+                // compares as still inside the range.
+                break;
             }
         }
         return true;
@@ -26,7 +32,9 @@ public interface SingleRangeMixin extends RowSequence {
     }
 
     default RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
-        if (startPositionInclusive >= size() || length == 0) {
+        // A length of zero or less asks for nothing. Falling through with a negative one would build a row sequence
+        // whose end lies before its start, reporting a negative size rather than an empty one.
+        if (startPositionInclusive >= size() || length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
         final long s = rangeStart() + startPositionInclusive;

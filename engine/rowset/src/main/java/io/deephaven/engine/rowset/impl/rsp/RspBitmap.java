@@ -1385,23 +1385,26 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         if (getCardinality() != other.getCardinality()) {
             return false;
         }
-        final RspRangeIterator it = getRangeIterator();
-        final RspRangeIterator oit = other.getRangeIterator();
-        while (it.hasNext()) {
-            if (!oit.hasNext()) {
-                return false;
+        // An iterator run to the end gives back the reference it holds by itself; one abandoned at the first
+        // difference below has to be closed for that to happen.
+        try (final RspRangeIterator it = getRangeIterator();
+                final RspRangeIterator oit = other.getRangeIterator()) {
+            while (it.hasNext()) {
+                if (!oit.hasNext()) {
+                    return false;
+                }
+                it.next();
+                oit.next();
+                if (it.start() != oit.start()) {
+                    return false;
+                }
+                if (it.end() != oit.end()) {
+                    return false;
+                }
             }
-            it.next();
-            oit.next();
-            if (it.start() != oit.start()) {
-                return false;
-            }
-            if (it.end() != oit.end()) {
-                return false;
-            }
+            // no need to check for oit.hasNext() since we checked for cardinality already.
+            return true;
         }
-        // no need to check for oit.hasNext() since we checked for cardinality already.
-        return true;
     }
 
     public void finishMutations() {
@@ -1948,21 +1951,24 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             return false;
         }
         long pendingLast = -1;
-        final RowSet.RangeIterator it = sr.getRangeIterator();
-        int i = 0;
-        while (it.hasNext()) {
-            it.next();
-            final long start = it.currentRangeStart();
-            if (pendingLast != -1) {
-                i = overlapsRange(i, pendingLast + 1, start - 1);
-                if (i >= 0) {
-                    return false;
+        // The walk stops as soon as one of our keys turns up in a gap, with the rest of sr's ranges unread; closing
+        // the iterator is what returns the reference it holds on sr.
+        try (final RowSet.RangeIterator it = sr.getRangeIterator()) {
+            int i = 0;
+            while (it.hasNext()) {
+                it.next();
+                final long start = it.currentRangeStart();
+                if (pendingLast != -1) {
+                    i = overlapsRange(i, pendingLast + 1, start - 1);
+                    if (i >= 0) {
+                        return false;
+                    }
+                    i = ~i;
                 }
-                i = ~i;
+                pendingLast = it.currentRangeEnd();
             }
-            pendingLast = it.currentRangeEnd();
+            return true;
         }
-        return true;
     }
 
     @Override
@@ -2085,6 +2091,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     private static class SearchIteratorImpl implements RowSet.SearchIterator {
         private final RspRangeIterator it;
         private long curr = 0;
+        // The first key of the current range not yet produced. It equals curr while curr itself is still to be
+        // produced, and steps past the range's end once the range is done -- except at the top of the key space, where
+        // stepping past Long.MAX_VALUE wraps to a value below curr. Hence the next >= curr guards below.
         private long next = 0;
         private long currRangeEnd = -1;
 
@@ -2099,7 +2108,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
         @Override
         public boolean hasNext() {
-            if (next <= currRangeEnd) {
+            if (next >= curr && next <= currRangeEnd) {
                 return true;
             }
             return it.hasNext();
@@ -2112,7 +2121,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
         @Override
         public long nextLong() {
-            if (next <= currRangeEnd) {
+            if (next >= curr && next <= currRangeEnd) {
                 curr = next++;
             } else {
                 it.next();

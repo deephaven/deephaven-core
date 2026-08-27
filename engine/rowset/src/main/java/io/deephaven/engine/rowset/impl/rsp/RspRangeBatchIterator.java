@@ -230,8 +230,12 @@ public class RspRangeBatchIterator implements SafeCloseable {
                     return chunkDelta / 2;
                 }
                 p.next();
-                // This span can't be a full block span: it would have been merged with the previous one.
-                // Therefore at this point we know p.span() is an RB Container.
+                if (getFullBlockSpanLen(p.spanInfo(), p.span()) > 0) {
+                    // Adjacent full block spans are merged into one, but ones separated by an empty block are not, so
+                    // the span after a full block span can be another. Go back and emit it as a span in its own right;
+                    // reading it as a container would fail, since its span object is the full block span marker.
+                    continue;
+                }
                 s = p.span();
             }
             spanInfo = p.spanInfo();

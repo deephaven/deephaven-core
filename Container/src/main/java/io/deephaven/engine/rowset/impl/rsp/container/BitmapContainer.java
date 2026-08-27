@@ -352,6 +352,11 @@ public final class BitmapContainer extends Container implements Cloneable {
         final BitmapContainer ans;
         if (inPlace) {
             ans = this;
+            // Only the words holding the retained range are written below, and the cardinality is recomputed from
+            // just those, so any values outside the range have to be cleared here. A fresh container needs none of
+            // this because its words start out zero.
+            java.util.Arrays.fill(ans.bitmap, 0, ctx.iFirst, 0L);
+            java.util.Arrays.fill(ans.bitmap, ctx.iLast + 1, ans.bitmap.length, 0L);
         } else {
             ans = new BitmapContainer();
         }
