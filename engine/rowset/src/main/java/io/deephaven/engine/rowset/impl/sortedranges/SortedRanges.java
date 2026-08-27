@@ -1522,7 +1522,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             long s2 = it2.currentRangeStart();
             long e2 = it2.currentRangeEnd();
             while (true) {
-                if (e1 + 1 < s2) {
+                // Nothing lies past a range ending at Long.MAX_VALUE, so looking one key beyond it -- which wraps to a
+                // negative key -- must not be read as a gap before the other range.
+                if (e1 != Long.MAX_VALUE && e1 + 1 < s2) {
                     if (!res.trySimpleAppend(s1, e1)) {
                         return null;
                     }
@@ -1537,7 +1539,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     e1 = it1.currentRangeEnd();
                     continue;
                 }
-                if (e2 + 1 < s1) {
+                if (e2 != Long.MAX_VALUE && e2 + 1 < s1) {
                     if (!res.trySimpleAppend(s2, e2)) {
                         return null;
                     }
@@ -1555,6 +1557,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 // The ranges are adjacent or overlap.
                 final long min = Math.min(s1, s2);
                 final long max = Math.max(e1, e2);
+                if (max == Long.MAX_VALUE) {
+                    // The merged range reaches the top of the key space, so neither side can hold anything further and
+                    // there is nowhere to advance to.
+                    if (!res.trySimpleAppend(min, max)) {
+                        return null;
+                    }
+                    break;
+                }
                 final boolean it1Valid = it1.advance(max + 1);
                 final boolean it2Valid = it2.advance(max + 1);
                 if (it1Valid) {
