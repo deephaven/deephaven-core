@@ -180,7 +180,9 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
                         false);
             }
 
-            validateIndexesEqual("pre-update rowSet", rowSet, tableToValidate.getRowSet().copyPrev());
+            try (final RowSet prevRowSet = tableToValidate.getRowSet().copyPrev()) {
+                validateIndexesEqual("pre-update rowSet", rowSet, prevRowSet);
+            }
             rowSet.remove(upstream.removed());
             Arrays.stream(columnInfos).forEach((ci) -> ci.remove(upstream.removed()));
 
@@ -189,8 +191,9 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             upstream.shifted().apply(rowSet);
 
             if (aggressiveUpdateValidation) {
-                final RowSet unmodified = rowSet.minus(upstream.modified());
-                validateValues("post-shift unmodified", ModifiedColumnSet.ALL, unmodified, false, false);
+                try (final RowSet unmodified = rowSet.minus(upstream.modified())) {
+                    validateValues("post-shift unmodified", ModifiedColumnSet.ALL, unmodified, false, false);
+                }
                 validateValues("post-shift unmodified columns", upstream.modifiedColumnSet(), upstream.modified(),
                         false,
                         true);
@@ -198,8 +201,11 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
 
             // added
             if (rowSet.overlaps(upstream.added())) {
-                noteIssue(() -> "post-shift rowSet contains rows that are added: "
-                        + rowSet.intersect(upstream.added()));
+                noteIssue(() -> {
+                    try (final RowSet addedInRowSet = rowSet.intersect(upstream.added())) {
+                        return "post-shift rowSet contains rows that are added: " + addedInRowSet;
+                    }
+                });
             }
             rowSet.insert(upstream.added());
             validateIndexesEqual("post-update rowSet", rowSet, tableToValidate.getRowSet());
@@ -208,12 +214,19 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             // modified
             updateValues(upstream.modifiedColumnSet(), upstream.modified(), false);
             if (upstream.added().overlaps(upstream.modified())) {
-                noteIssue(() -> "added contains rows that are modified (post-shift): "
-                        + upstream.added().intersect(upstream.modified()));
+                noteIssue(() -> {
+                    try (final RowSet addedAndModified = upstream.added().intersect(upstream.modified())) {
+                        return "added contains rows that are modified (post-shift): " + addedAndModified;
+                    }
+                });
             }
             if (upstream.removed().overlaps(upstream.getModifiedPreShift())) {
-                noteIssue(() -> "removed contains rows that are modified (pre-shift): "
-                        + upstream.removed().intersect(upstream.getModifiedPreShift()));
+                noteIssue(() -> {
+                    try (final RowSet removedAndModified =
+                            upstream.removed().intersect(upstream.getModifiedPreShift())) {
+                        return "removed contains rows that are modified (pre-shift): " + removedAndModified;
+                    }
+                });
             }
 
             if (!issues.isEmpty()) {
@@ -240,13 +253,14 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             return;
         }
 
-        final RowSet missing = expected.minus(actual);
-        final RowSet excess = actual.minus(expected);
-        if (missing.isNonempty()) {
-            noteIssue(() -> what + " expected.minus(actual)=" + missing);
-        }
-        if (excess.isNonempty()) {
-            noteIssue(() -> what + " actual.minus(expected)=" + excess);
+        try (final RowSet missing = expected.minus(actual);
+                final RowSet excess = actual.minus(expected)) {
+            if (missing.isNonempty()) {
+                noteIssue(() -> what + " expected.minus(actual)=" + missing);
+            }
+            if (excess.isNonempty()) {
+                noteIssue(() -> what + " actual.minus(expected)=" + excess);
+            }
         }
     }
 
@@ -417,7 +431,9 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
 
         @Override
         public void shift(final long beginRange, final long endRange, final long shiftDelta) {
-            ((RowSetShiftCallback) expectedSource).shift(rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
+            try (final RowSet keysToShift = rowSet.subSetByKeyRange(beginRange, endRange)) {
+                ((RowSetShiftCallback) expectedSource).shift(keysToShift, shiftDelta);
+            }
         }
 
         public void remove(final RowSet toRemove) {
