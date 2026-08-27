@@ -208,4 +208,72 @@ public class DoublePushdownHandlerTest {
                 new MatchFilter(MatchOptions.REGULAR, "d", 2.0),
                 doubleStats(1.0, 1.0)));
     }
+
+    /**
+     * Both ends of a parsed double comparison are unusual. {@code X < v} arrives as {@code [NULL_DOUBLE, v)}, and
+     * {@code NULL_DOUBLE} is {@code -Double.MAX_VALUE}, which sits <i>above</i> negative infinity; {@code X > v}
+     * arrives as {@code (v, NaN]}, NaN being chosen because Deephaven orders it above every value so the results
+     * exclude it. Read literally, every comparison against NaN is false and the row group would always be pruned. The
+     * handler substitutes the true infinities.
+     */
+    @Test
+    public void doubleSentinelAndNaNBoundsAreReadAsTheDomainExtremes() {
+        // NaN upper bound: values above 5 exist here, so this must not be excluded.
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.gt("x", 5.0), doubleStats(1.0, 10.0)));
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.geq("x", 5.0), doubleStats(1.0, 10.0)));
+
+        // Nothing above 5 here, so it still prunes.
+        assertFalse(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.gt("x", 5.0), doubleStats(1.0, 3.0)));
+
+        // Null sentinel lower bound, the mirror case.
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.lt("x", 5.0), doubleStats(1.0, 3.0)));
+        assertFalse(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.lt("x", 5.0), doubleStats(10.0, 10.0)));
+
+        // A row group whose maximum is negative infinity still matches "< 5"; NULL_DOUBLE sits above it, so
+        // reading the sentinel literally as the lower bound would have excluded this.
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.lt("x", 5.0),
+                doubleStats(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY)));
+    }
+
+    /**
+     * {@code X > v} is built as {@code (v, NaN)} with the upper bound <i>exclusive</i>. Under Deephaven's ordering NaN
+     * is above every value, so "exclusive of NaN" means every value except NaN -- up to and including positive
+     * infinity. Substituting the infinity for NaN therefore has to make that bound inclusive; leaving it exclusive
+     * would exclude a row group whose values are all positive infinity, which do match.
+     */
+    @Test
+    public void doublePositiveInfinityMatchesGreaterThan() {
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.gt("x", 5.0),
+                doubleStats(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY)));
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.geq("x", 5.0),
+                doubleStats(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY)));
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.gt("x", 5.0), doubleStats(1.0, Double.POSITIVE_INFINITY)));
+    }
+
+    /**
+     * {@code >} and {@code >=} differ only in {@code isLowerInclusive}, and the only input that distinguishes them is a
+     * row group whose maximum is exactly the pivot: nothing there is strictly greater, but the maximum itself satisfies
+     * {@code >=}. The same holds mirrored for {@code <} against the minimum.
+     */
+    @Test
+    public void doubleStrictAndInclusiveBoundsDifferAtTheExtreme() {
+        assertFalse(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.gt("x", 10.0), doubleStats(1.0, 10.0)));
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.geq("x", 10.0), doubleStats(1.0, 10.0)));
+
+        assertFalse(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.lt("x", 1.0), doubleStats(1.0, 10.0)));
+        assertTrue(DoublePushdownHandler.maybeOverlaps(
+                DoubleRangeFilter.leq("x", 1.0), doubleStats(1.0, 10.0)));
+    }
 }

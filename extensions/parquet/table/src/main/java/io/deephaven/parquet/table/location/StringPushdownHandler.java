@@ -45,22 +45,14 @@ import java.util.Comparator;
  * bounds rather than values present in the data; such a bound still brackets the data in byte order, but decoding one
  * can turn a partial character into U+FFFD and destroy that property.
  * <p>
- * <b>Usage.</b> Call {@link #maybeCreateEvaluator} once per filter, then {@link Evaluator#maybeOverlaps} once per row
- * group. Everything that depends only on the filter -- encoding the values, sorting them, and testing the bounds for
- * order divergence -- happens in {@code maybeCreateEvaluator}, so none of it is repeated for every row group.
+ * <b>Usage.</b> Call {@link #maybeCreateEvaluator} once per filter, then {@link StatisticsEvaluator#maybeOverlaps} once
+ * per row group. Everything that depends only on the filter -- encoding the values, sorting them, and testing the
+ * bounds for order divergence -- happens in {@code maybeCreateEvaluator}, so none of it is repeated for every row
+ * group.
  */
 final class StringPushdownHandler {
 
     private static final Comparator<byte[]> BYTES = Arrays::compareUnsigned;
-
-    /** A single filter, resolved to the byte domain, applied to one row group's statistics at a time. */
-    @FunctionalInterface
-    interface Evaluator {
-        boolean maybeOverlaps(@NotNull Statistics<?> statistics);
-    }
-
-    /** Used when the filter cannot be answered from statistics at all; decided once, not per row group. */
-    private static final Evaluator ALWAYS_MAYBE = statistics -> true;
 
     /**
      * The first code point for which UTF-8 and UTF-16 disagree on ordering. See
@@ -93,7 +85,7 @@ final class StringPushdownHandler {
      * group's dictionary, which handles case-insensitivity exactly.
      */
     @Nullable
-    static Evaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
+    static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
         if (filter instanceof MatchFilter) {
             final MatchFilter matchFilter = (MatchFilter) filter;
             if (matchFilter.getColumnType() != String.class || matchFilter.getMatchOptions().caseInsensitive()) {
@@ -116,12 +108,12 @@ final class StringPushdownHandler {
      * Equality does not depend on the ordering used, so this needs no restriction on the values: a value whose UTF-8
      * encoding falls outside the byte-order interval is simply not present in the row group.
      */
-    private static Evaluator createMatchEvaluator(@NotNull final MatchFilter matchFilter) {
+    private static StatisticsEvaluator createMatchEvaluator(@NotNull final MatchFilter matchFilter) {
         final Object[] values = matchFilter.getValues();
         final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
             // No values to check against
-            return invertMatch ? ALWAYS_MAYBE : statistics -> false;
+            return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : statistics -> false;
         }
         final byte[][] encoded = new byte[values.length][];
         for (int i = 0; i < values.length; i++) {
@@ -129,7 +121,7 @@ final class StringPushdownHandler {
                 // Skip pushdown-based filtering for nulls and non-strings to err on the safer side instead of adding
                 // more complex handling logic.
                 // TODO (DH-19666): Improve handling of nulls
-                return ALWAYS_MAYBE;
+                return StatisticsEvaluator.ALWAYS_MAYBE;
             }
             encoded[i] = utf8((String) values[i]);
         }
@@ -148,7 +140,8 @@ final class StringPushdownHandler {
                 return false;
             };
         }
-        // Sorted once here; maybeMatchesInverse walks the gaps between adjacent values.
+        // Sorted once here; maybeMatchesInverse walks the gaps between adjacent values, with the same
+        // byte comparator it uses. Non-Strings -- null among them -- were rejected above.
         Arrays.sort(encoded, BYTES);
         return statistics -> {
             final byte[][] minMax = minMaxBytes(statistics);
@@ -156,17 +149,17 @@ final class StringPushdownHandler {
         };
     }
 
-    private static Evaluator createRangeEvaluator(@NotNull final ComparableRangeFilter rangeFilter) {
+    private static StatisticsEvaluator createRangeEvaluator(@NotNull final ComparableRangeFilter rangeFilter) {
         final Comparable<?> lower = rangeFilter.getLower();
         final Comparable<?> upper = rangeFilter.getUpper();
         if (!(lower instanceof String) || !(upper instanceof String)) {
             // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
             // logic.
             // TODO (DH-19666): Improve handling of nulls
-            return ALWAYS_MAYBE;
+            return StatisticsEvaluator.ALWAYS_MAYBE;
         }
         if (!comparesIdenticallyInBothOrders((String) lower) || !comparesIdenticallyInBothOrders((String) upper)) {
-            return ALWAYS_MAYBE;
+            return StatisticsEvaluator.ALWAYS_MAYBE;
         }
         final byte[] lowerBytes = utf8((String) lower);
         final byte[] upperBytes = utf8((String) upper);
@@ -179,31 +172,41 @@ final class StringPushdownHandler {
         };
     }
 
-    private static Evaluator createSingleSidedEvaluator(@NotNull final SingleSidedComparableRangeFilter rangeFilter) {
+    private static StatisticsEvaluator createSingleSidedEvaluator(
+            @NotNull final SingleSidedComparableRangeFilter rangeFilter) {
         if (rangeFilter.isLowerInclusive() != rangeFilter.isUpperInclusive()) {
             throw new IllegalStateException("SingleSidedComparableRangeFilter must have both bounds inclusive or " +
                     "exclusive: " + rangeFilter);
         }
         final Comparable<?> pivot = rangeFilter.getPivot();
-        if (!(pivot instanceof String) || !rangeFilter.isGreaterThan()) {
-            // Skip pushdown-based filtering for nulls (which are considered smaller than any value), to err on the
-            // safer side instead of adding more complex handling logic.
+        if (!(pivot instanceof String)) {
+            // A null pivot is not produced by any parsed comparison, and null is not orderable against itself here.
             // TODO (DH-19666): Improve handling of nulls
-            return ALWAYS_MAYBE;
+            return StatisticsEvaluator.ALWAYS_MAYBE;
         }
+        // `X < v` and `X <= v` are evaluated too. They match null rows -- Deephaven orders null below every value --
+        // which is why this used to decline them, but that is now accounted for once by the null guard in
+        // ParquetTableLocation.pushdownRowGroupMetadata.
         if (!comparesIdenticallyInBothOrders((String) pivot)) {
-            return ALWAYS_MAYBE;
+            return StatisticsEvaluator.ALWAYS_MAYBE;
         }
         final byte[] pivotBytes = utf8((String) pivot);
         final boolean inclusive = rangeFilter.isLowerInclusive();
+        final boolean isGreaterThan = rangeFilter.isGreaterThan();
         return statistics -> {
             final byte[][] minMax = minMaxBytes(statistics);
             if (minMax == null) {
                 // Statistics could not be processed, so we assume that we overlap.
                 return true;
             }
-            final int cmp = BYTES.compare(minMax[1], pivotBytes);
-            return inclusive ? cmp >= 0 : cmp > 0;
+            if (isGreaterThan) {
+                // Some value can exceed the pivot only if the largest one does.
+                final int cmp = BYTES.compare(minMax[1], pivotBytes);
+                return inclusive ? cmp >= 0 : cmp > 0;
+            }
+            // ... and fall below it only if the smallest one does.
+            final int cmp = BYTES.compare(minMax[0], pivotBytes);
+            return inclusive ? cmp <= 0 : cmp < 0;
         };
     }
 

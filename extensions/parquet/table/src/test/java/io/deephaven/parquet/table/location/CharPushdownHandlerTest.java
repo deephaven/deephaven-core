@@ -160,4 +160,23 @@ public class CharPushdownHandlerTest {
                 new MatchFilter(MatchOptions.INVERTED, "i", 'A', 'B'),
                 charStats('A', 'B')));
     }
+
+    /**
+     * {@code X < v} arrives as {@code [NULL_CHAR, v)}, and {@code NULL_CHAR} is {@code Character.MAX_VALUE} -- the
+     * numerically <i>largest</i> char, though it denotes the bottom of the ordering. Read literally it makes the
+     * interval look empty, which would prune every row group. The handler substitutes {@code MIN_CHAR}.
+     */
+    @Test
+    public void sentinelLowerBoundIsReadAsTheBottomOfTheDomain() {
+        // Values below 'm' exist here, so this must not be excluded.
+        assertTrue(CharPushdownHandler.maybeOverlaps(CharRangeFilter.lt("c", 'm'), charStats('a', 'f')));
+        assertTrue(CharPushdownHandler.maybeOverlaps(CharRangeFilter.leq("c", 'm'), charStats('a', 'f')));
+
+        // Nothing below 'm' here, so it still prunes.
+        assertFalse(CharPushdownHandler.maybeOverlaps(CharRangeFilter.lt("c", 'm'), charStats('n', 'z')));
+
+        // The greater-than direction is bounded by MAX_CHAR and was already sound.
+        assertTrue(CharPushdownHandler.maybeOverlaps(CharRangeFilter.gt("c", 'm'), charStats('n', 'z')));
+        assertFalse(CharPushdownHandler.maybeOverlaps(CharRangeFilter.gt("c", 'm'), charStats('a', 'f')));
+    }
 }

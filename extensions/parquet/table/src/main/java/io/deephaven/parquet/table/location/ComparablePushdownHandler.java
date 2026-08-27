@@ -64,23 +64,21 @@ final class ComparablePushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
      */
-    static boolean maybeOverlaps(
-            @NotNull final MatchFilter matchFilter,
-            @NotNull final Statistics<?> statistics) {
+    static StatisticsEvaluator maybeCreateEvaluator(@NotNull final MatchFilter matchFilter) {
         final Object[] values = matchFilter.getValues();
         final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
             // No values to check against
-            return invertMatch;
+            return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : statistics -> false;
         }
         final Comparable<?>[] comparableValues = new Comparable[values.length];
         for (int i = 0; i < values.length; i++) {
             final Object value = values[i];
             if (!(value instanceof Comparable)) {
-                // Skip pushdown-based filtering for nulls or non-comparable values to err on the safer side instead of
-                // adding more complex handling logic.
+                // Skip pushdown-based filtering for nulls or non-comparable values to err on the safer side instead
+                // of adding more complex handling logic.
                 // TODO (DH-19666): Improve handling of nulls
-                return true;
+                return StatisticsEvaluator.ALWAYS_MAYBE;
             }
             comparableValues[i] = (Comparable<?>) value;
         }
@@ -89,17 +87,33 @@ final class ComparablePushdownHandler {
         if (dhColumnType == null) {
             throw new IllegalStateException("Filter not initialized with a column type: " + matchFilter);
         }
-        final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
-        final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
-        if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
-                dhColumnType)) {
-            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
-            return true;
+        if (invertMatch) {
+            // Sorted once here; maybeMatchesInverse walks the gaps between adjacent values. Natural
+            // ordering matches the ObjectComparisons the gap walk uses, for the non-null values that
+            // are all that reach this point -- nulls are not Comparable and were rejected above.
+            Arrays.sort(comparableValues);
         }
-        if (!invertMatch) {
-            return maybeMatches(mutableMin.get(), mutableMax.get(), comparableValues);
-        }
-        return maybeMatchesInverse(mutableMin.get(), mutableMax.get(), comparableValues);
+        return statistics -> {
+            final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
+            final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
+            if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
+                    dhColumnType)) {
+                // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+                return true;
+            }
+            return invertMatch
+                    ? maybeMatchesInverse(mutableMin.get(), mutableMax.get(), comparableValues)
+                    : maybeMatches(mutableMin.get(), mutableMax.get(), comparableValues);
+        };
+    }
+
+    /**
+     * Convenience for a single row group; prefer {@link #maybeCreateEvaluator} when iterating over several.
+     */
+    static boolean maybeOverlaps(
+            @NotNull final MatchFilter matchFilter,
+            @NotNull final Statistics<?> statistics) {
+        return maybeCreateEvaluator(matchFilter).maybeOverlaps(statistics);
     }
 
     /**
@@ -132,7 +146,6 @@ final class ComparablePushdownHandler {
             @NotNull final Comparable<?> min,
             @NotNull final Comparable<?> max,
             @NotNull final Comparable<?>[] values) {
-        Arrays.sort(values);
         if (ObjectComparisons.lt(min, values[0])) {
             return true;
         }

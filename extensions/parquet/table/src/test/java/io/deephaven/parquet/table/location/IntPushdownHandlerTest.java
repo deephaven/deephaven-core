@@ -156,4 +156,28 @@ public class IntPushdownHandlerTest {
                 new MatchFilter(MatchOptions.INVERTED, "i", 5, 6),
                 intStats(5, 6)));
     }
+
+    /**
+     * The evaluator is built once per filter and applied to each row group in turn, so it must not depend on any
+     * particular statistics object and must not be consumed by use. This matters most for the inverted match, whose
+     * values are sorted at creation -- {@code maybeMatchesInverse} walks the gaps between adjacent values and now
+     * relies on that having already happened.
+     */
+    @Test
+    public void evaluatorIsReusableAcrossRowGroups() {
+        final StatisticsEvaluator regular =
+                IntPushdownHandler.maybeCreateEvaluator(new MatchFilter(MatchOptions.REGULAR, "i", 30, 10, 20));
+        assertTrue(regular.maybeOverlaps(intStats(5, 15)));
+        assertFalse(regular.maybeOverlaps(intStats(100, 200)));
+        assertTrue(regular.maybeOverlaps(intStats(25, 35)));
+        // Repeating a row group gives the same answer.
+        assertFalse(regular.maybeOverlaps(intStats(100, 200)));
+
+        // Values deliberately supplied out of order: the inverse walk needs them sorted, once, at creation.
+        final StatisticsEvaluator inverted =
+                IntPushdownHandler.maybeCreateEvaluator(new MatchFilter(MatchOptions.INVERTED, "i", 30, 10, 20));
+        assertTrue(inverted.maybeOverlaps(intStats(0, 100)));
+        assertFalse(inverted.maybeOverlaps(intStats(10, 10)));
+        assertTrue(inverted.maybeOverlaps(intStats(0, 100)));
+    }
 }

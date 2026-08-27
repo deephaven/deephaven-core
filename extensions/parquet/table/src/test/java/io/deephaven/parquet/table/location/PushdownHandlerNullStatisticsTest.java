@@ -141,7 +141,7 @@ public class PushdownHandlerNullStatisticsTest {
     public void stringHandlerIgnoresNullCount() {
         final MatchFilter outside = new MatchFilter(MatchOptions.REGULAR, "strCol", "zzz");
         outside.init(TABLE_DEFINITION);
-        final StringPushdownHandler.Evaluator evaluator = StringPushdownHandler.maybeCreateEvaluator(outside);
+        final StatisticsEvaluator evaluator = StringPushdownHandler.maybeCreateEvaluator(outside);
         assertNotNull(evaluator);
 
         assertIndifferentToNullCount("string match outside the statistics",

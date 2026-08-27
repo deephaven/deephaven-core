@@ -1415,6 +1415,82 @@ public final class ParquetTableFilterTest {
         }
     }
 
+    /**
+     * Every parsed comparison becomes a single-sided filter with a sentinel planted on the open end -- {@code X < 5} is
+     * {@code [NULL_INT, 5)}, {@code X > 5} is {@code (5, MAX_INT]} -- and for floating point {@code gt}/{@code geq}
+     * plant {@code NaN} as the upper bound. Handlers used to bail the moment they saw either, so the sentinel was never
+     * read as the bound it already is, and pruning was lost for whole classes of filter.
+     * <p>
+     * The bail-out existed because such filters match null rows that statistics cannot see. That is now handled once,
+     * centrally, by the null guard in {@code pushdownRowGroupMetadata}, so the handlers can read the bound.
+     */
+    @Test
+    public void sentinelBoundedRangeFiltersStillPrune() {
+        final String destPath = Path.of(rootFile.getPath(), "sentinelBoundedRanges").toString();
+        final int tableSize = 100_000;
+        final Table source = TableTools.emptyTable(tableSize).update(
+                "val = (int) ii", "lval = (long) ii", "dval = (double) ii", "cval = (char) (ii % 60000)");
+        writeTables(destPath, splitTable(source, 10, false), EMPTY);
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        // Correctness first: every one of these must agree with the in-memory oracle.
+        for (final String expr : new String[] {
+                "val < 10000", "val <= 10000", "val > 90000", "val >= 90000",
+                "lval < 10000", "lval <= 10000", "lval > 90000",
+                "dval < 10000.0", "dval <= 10000.0", "dval > 90000.0", "dval >= 90000.0"}) {
+            filterAndVerifyResults(diskTable, memTable, expr);
+        }
+
+        // Then pruning: a selective filter must not scan the whole table. Row groups are 10k rows, so a filter
+        // selecting the first or last tenth should touch far fewer than all 100k rows.
+        assertPrunes("val < 10000", diskTable, tableSize);
+        assertPrunes("val > 90000", diskTable, tableSize);
+        assertPrunes("lval < 10000", diskTable, tableSize);
+        assertPrunes("dval < 10000.0", diskTable, tableSize);
+        assertPrunes("dval > 90000.0", diskTable, tableSize);
+    }
+
+    private static void assertPrunes(final String expr, final Table diskTable, final int tableSize) {
+        final RowSetCapturingFilter capturing = new RowSetCapturingFilter(getExpression(expr));
+        diskTable.where(capturing).coalesce();
+        Assert.assertTrue(expr + " should prune row groups, but scanned " + capturing.numRowsProcessed()
+                + " of " + tableSize + " rows",
+                capturing.numRowsProcessed() < tableSize / 2);
+    }
+
+    /**
+     * The same sentinel story for object-typed columns. {@code X < v} on a String or date column arrives as a
+     * single-sided filter with {@code isGreaterThan == false}, which the handlers used to decline outright because such
+     * a filter matches null rows. The null guard in {@code pushdownRowGroupMetadata} accounts for those rows centrally
+     * now, so the comparison is evaluated.
+     * <p>
+     * Dictionary pushdown is disabled here on purpose: it would answer these filters on its own and mask whether the
+     * statistics path did anything.
+     */
+    @Test
+    public void objectTypedLessThanFiltersPrune() {
+        final String destPath = Path.of(rootFile.getPath(), "objectLessThan").toString();
+        final int tableSize = 100_000;
+        final Table source = TableTools.emptyTable(tableSize)
+                .update("sval = `k` + String.format(`%06d`, ii)");
+        writeTables(destPath, splitTable(source, 10, false), EMPTY);
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        final double savedThreshold = QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = 0.0;
+        try {
+            filterAndVerifyResults(diskTable, memTable, "sval < `k010000`");
+            filterAndVerifyResults(diskTable, memTable, "sval > `k090000`");
+
+            assertPrunes("sval < `k010000`", diskTable, tableSize);
+            assertPrunes("sval > `k090000`", diskTable, tableSize);
+        } finally {
+            QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = savedThreshold;
+        }
+    }
+
     @Test
     public void filterArrayColumnsTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_filterArrayColumnsTest.parquet").toString();

@@ -875,10 +875,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final int maxRepetitionLevel =
                 parquetSchema.getType(actionCtx.parquetColumnNames[0]).isRepetition(Type.Repetition.REPEATED) ? 1 : 0;
 
-        // String columns are compared in the byte domain rather than in String.compareTo order. Everything that
-        // depends only on the filter -- encoding its values to UTF-8, sorting them, testing its bounds for
-        // UTF-8/UTF-16 order divergence -- is done once here rather than for every row group below.
-        final StringPushdownHandler.Evaluator stringEvaluator = StringPushdownHandler.maybeCreateEvaluator(filter);
+        // Resolve the filter against the column type once, not once per row group. Everything that depends only on
+        // the filter -- unboxing its values into a primitive array, sorting them, encoding them, deciding whether
+        // the type is supported at all -- happens here, and the loop below is left with just the statistics.
+        final StatisticsEvaluator evaluator = StatisticsEvaluator.forFilter(filter);
 
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
@@ -894,60 +894,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             } else if (!ParquetPushdownUtils.areStatisticsUsable(statistics)) {
                 // We assume it overlaps if we cannot use the statistics.
                 maybeOverlaps = true;
-            } else if (stringEvaluator != null) {
-                maybeOverlaps = stringEvaluator.maybeOverlaps(statistics);
-            } else if (filter instanceof ByteRangeFilter) {
-                maybeOverlaps = BytePushdownHandler.maybeOverlaps((ByteRangeFilter) filter, statistics);
-            } else if (filter instanceof CharRangeFilter) {
-                maybeOverlaps = CharPushdownHandler.maybeOverlaps((CharRangeFilter) filter, statistics);
-            } else if (filter instanceof ShortRangeFilter) {
-                maybeOverlaps = ShortPushdownHandler.maybeOverlaps((ShortRangeFilter) filter, statistics);
-            } else if (filter instanceof IntRangeFilter) {
-                maybeOverlaps = IntPushdownHandler.maybeOverlaps((IntRangeFilter) filter, statistics);
-            } else if (filter instanceof InstantRangeFilter) {
-                maybeOverlaps = InstantPushdownHandler.maybeOverlaps((InstantRangeFilter) filter, statistics);
-            } else if (filter instanceof LongRangeFilter) {
-                maybeOverlaps = LongPushdownHandler.maybeOverlaps((LongRangeFilter) filter, statistics);
-            } else if (filter instanceof FloatRangeFilter) {
-                maybeOverlaps = FloatPushdownHandler.maybeOverlaps((FloatRangeFilter) filter, statistics);
-            } else if (filter instanceof DoubleRangeFilter) {
-                maybeOverlaps = DoublePushdownHandler.maybeOverlaps((DoubleRangeFilter) filter, statistics);
-            } else if (filter instanceof ComparableRangeFilter) {
-                maybeOverlaps = ComparablePushdownHandler.maybeOverlaps((ComparableRangeFilter) filter, statistics);
-            } else if (filter instanceof SingleSidedComparableRangeFilter) {
-                maybeOverlaps = SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                        (SingleSidedComparableRangeFilter) filter, statistics);
-            } else if (filter instanceof MatchFilter) {
-                final MatchFilter matchFilter = (MatchFilter) filter;
-                final Class<?> dhColumnType = matchFilter.getColumnType();
-                if (dhColumnType == null) {
-                    throw new IllegalStateException("Filter not initialized with a column type: " + filter);
-                } else if (dhColumnType == byte.class || dhColumnType == Byte.class) {
-                    maybeOverlaps = BytePushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == char.class || dhColumnType == Character.class) {
-                    maybeOverlaps = CharPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == short.class || dhColumnType == Short.class) {
-                    maybeOverlaps = ShortPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == int.class || dhColumnType == Integer.class) {
-                    maybeOverlaps = IntPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == long.class || dhColumnType == Long.class) {
-                    maybeOverlaps = LongPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == float.class || dhColumnType == Float.class) {
-                    maybeOverlaps = FloatPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == double.class || dhColumnType == Double.class) {
-                    maybeOverlaps = DoublePushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == String.class && matchFilter.getMatchOptions().caseInsensitive()) {
-                    // Case-insensitive matching is deliberately not pushed down; see the note on
-                    // StringPushdownHandler.maybeCreateEvaluator. Row group statistics cannot bound it.
-                    maybeOverlaps = true;
-                } else if (dhColumnType == Instant.class) {
-                    maybeOverlaps = InstantPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else {
-                    maybeOverlaps = ComparablePushdownHandler.maybeOverlaps(matchFilter, statistics);
-                }
             } else {
-                // Unsupported filter type for push down, so assume it overlaps.
-                maybeOverlaps = true;
+                maybeOverlaps = evaluator.maybeOverlaps(statistics);
             }
             if (maybeOverlaps) {
                 maybeBuilder.appendRowSequence(rs);

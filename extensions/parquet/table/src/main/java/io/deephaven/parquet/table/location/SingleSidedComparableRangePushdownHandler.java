@@ -20,12 +20,14 @@ final class SingleSidedComparableRangePushdownHandler {
                     "exclusive: " + sscrf);
         }
         final boolean isInclusive = sscrf.isLowerInclusive();
-        if (pivot == null || !isGreaterThan) {
-            // Skip pushdown-based filtering for nulls (which are considered smaller than any value), to err on the
-            // safer side instead of adding more complex handling logic.
+        if (pivot == null) {
+            // A null pivot is not produced by any parsed comparison, and null is not orderable against itself here.
             // TODO (DH-19666): Improve handling of nulls
             return true;
         }
+        // Note `X < v` and `X <= v` are evaluated too. They match null rows -- Deephaven orders null below every
+        // value -- which is why this used to decline them, but that is now accounted for once by the null guard in
+        // ParquetTableLocation.pushdownRowGroupMetadata.
         final Class<?> dhColumnType = sscrf.getColumnType();
         if (dhColumnType == null) {
             throw new IllegalStateException("Filter not initialized with a column type: " + sscrf);

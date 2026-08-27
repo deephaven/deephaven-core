@@ -208,4 +208,72 @@ public class FloatPushdownHandlerTest {
                 new MatchFilter(MatchOptions.REGULAR, "f", 2.0f),
                 floatStats(1.0f, 1.0f)));
     }
+
+    /**
+     * Both ends of a parsed float comparison are unusual. {@code X < v} arrives as {@code [NULL_FLOAT, v)}, and
+     * {@code NULL_FLOAT} is {@code -Float.MAX_VALUE}, which sits <i>above</i> negative infinity; {@code X > v} arrives
+     * as {@code (v, NaN]}, NaN being chosen because Deephaven orders it above every value so the results exclude it.
+     * Read literally, every comparison against NaN is false and the row group would always be pruned. The handler
+     * substitutes the true infinities.
+     */
+    @Test
+    public void floatSentinelAndNaNBoundsAreReadAsTheDomainExtremes() {
+        // NaN upper bound: values above 5 exist here, so this must not be excluded.
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.gt("x", 5.0f), floatStats(1.0f, 10.0f)));
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.geq("x", 5.0f), floatStats(1.0f, 10.0f)));
+
+        // Nothing above 5 here, so it still prunes.
+        assertFalse(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.gt("x", 5.0f), floatStats(1.0f, 3.0f)));
+
+        // Null sentinel lower bound, the mirror case.
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.lt("x", 5.0f), floatStats(1.0f, 3.0f)));
+        assertFalse(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.lt("x", 5.0f), floatStats(10.0f, 10.0f)));
+
+        // A row group whose maximum is negative infinity still matches "< 5"; NULL_FLOAT sits above it, so
+        // reading the sentinel literally as the lower bound would have excluded this.
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.lt("x", 5.0f),
+                floatStats(Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY)));
+    }
+
+    /**
+     * {@code X > v} is built as {@code (v, NaN)} with the upper bound <i>exclusive</i>. Under Deephaven's ordering NaN
+     * is above every value, so "exclusive of NaN" means every value except NaN -- up to and including positive
+     * infinity. Substituting the infinity for NaN therefore has to make that bound inclusive; leaving it exclusive
+     * would exclude a row group whose values are all positive infinity, which do match.
+     */
+    @Test
+    public void floatPositiveInfinityMatchesGreaterThan() {
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.gt("x", 5.0f),
+                floatStats(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)));
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.geq("x", 5.0f),
+                floatStats(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)));
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.gt("x", 5.0f), floatStats(1f, Float.POSITIVE_INFINITY)));
+    }
+
+    /**
+     * {@code >} and {@code >=} differ only in {@code isLowerInclusive}, and the only input that distinguishes them is a
+     * row group whose maximum is exactly the pivot: nothing there is strictly greater, but the maximum itself satisfies
+     * {@code >=}. The same holds mirrored for {@code <} against the minimum.
+     */
+    @Test
+    public void floatStrictAndInclusiveBoundsDifferAtTheExtreme() {
+        assertFalse(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.gt("x", 10.0f), floatStats(1.0f, 10.0f)));
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.geq("x", 10.0f), floatStats(1.0f, 10.0f)));
+
+        assertFalse(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.lt("x", 1.0f), floatStats(1.0f, 10.0f)));
+        assertTrue(FloatPushdownHandler.maybeOverlaps(
+                FloatRangeFilter.leq("x", 1.0f), floatStats(1.0f, 10.0f)));
+    }
 }

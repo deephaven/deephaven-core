@@ -102,13 +102,28 @@ public class SingleSidedComparableRangePushdownHandlerTest {
                 ssFilter("dateCol", null, true, true), stats));
     }
 
+    /**
+     * {@code X < v} matches null rows, because Deephaven orders null below every value. That used to be reason enough
+     * to decline it here; the null guard in {@code pushdownRowGroupMetadata} now accounts for those rows centrally, so
+     * the comparison is evaluated.
+     */
     @Test
-    public void lessThanFiltersSkipPushdown() {
+    public void lessThanFiltersAreEvaluated() {
         final Statistics<?> stats = dateStats(LocalDate.of(2020, 6, 1), LocalDate.of(2020, 12, 31));
 
-        // A pivot below the whole range would be excludable on the interval alone; less-than declines regardless.
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        // Nothing in this row group precedes 2020-01-01.
+        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
                 ssFilter("dateCol", LocalDate.of(2020, 1, 1), true, false), stats));
+
+        // But plenty precedes 2020-09-01.
+        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+                ssFilter("dateCol", LocalDate.of(2020, 9, 1), true, false), stats));
+
+        // Boundary at the minimum itself.
+        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+                ssFilter("dateCol", LocalDate.of(2020, 6, 1), true, false), stats));
+        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+                ssFilter("dateCol", LocalDate.of(2020, 6, 1), false, false), stats));
     }
 
     @Test
@@ -117,12 +132,17 @@ public class SingleSidedComparableRangePushdownHandlerTest {
                 LocalDateTime.of(2022, 1, 1, 0, 0),
                 LocalDateTime.of(2022, 1, 1, 12, 0));
 
-        // always return true for greater than filters
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        // Nothing in this row group precedes its own minimum, so both of these exclude it. Both assertions were
+        // previously assertTrue, pinning the blanket decline that less-than filters used to receive.
+        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
                 ssFilter("ldtCol", LocalDateTime.of(2021, 12, 31, 23, 59), true, false), stats));
-
-        // always return true for less than filters
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
                 ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 0, 0), false, false), stats));
+
+        // Inclusive of the minimum, and above it, there is something to find.
+        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+                ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 0, 0), true, false), stats));
+        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+                ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 6, 0), true, false), stats));
     }
 }

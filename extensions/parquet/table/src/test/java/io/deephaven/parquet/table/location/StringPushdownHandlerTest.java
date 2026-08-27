@@ -91,7 +91,7 @@ public class StringPushdownHandlerTest {
      * this handler actually serves the filter.
      */
     private static boolean evaluate(final WhereFilter filter, final Statistics<?> stats) {
-        final StringPushdownHandler.Evaluator evaluator = StringPushdownHandler.maybeCreateEvaluator(filter);
+        final StatisticsEvaluator evaluator = StringPushdownHandler.maybeCreateEvaluator(filter);
         assertNotNull("handler should serve " + filter, evaluator);
         return evaluator.maybeOverlaps(stats);
     }
@@ -102,7 +102,7 @@ public class StringPushdownHandlerTest {
      */
     @Test
     public void preparedEvaluatorIsReusableAcrossRowGroups() {
-        final StringPushdownHandler.Evaluator evaluator =
+        final StatisticsEvaluator evaluator =
                 StringPushdownHandler.maybeCreateEvaluator(matchFilter(MatchOptions.REGULAR, "ddd", "bbb"));
         assertNotNull(evaluator);
 
@@ -317,20 +317,28 @@ public class StringPushdownHandlerTest {
 
     /**
      * {@code X < v} and {@code X <= v} arrive as a single-sided filter with {@code isGreaterThan == false} (see
-     * {@code RangeFilter.makeComparableRangeFilter}). Deephaven orders null below every value, so such a filter matches
-     * null rows, and the statistics cannot see them -- the handler declines rather than prune. Note this is now doubly
-     * conservative: the null guard in {@code pushdownRowGroupMetadata} already covers the same case, and could let this
-     * be relaxed for row groups whose null count proves they hold none.
+     * {@code RangeFilter.makeComparableRangeFilter}). They match null rows, because Deephaven orders null below every
+     * value, and that used to be reason enough to decline them here. The null guard in {@code pushdownRowGroupMetadata}
+     * now accounts for those rows centrally, so the bound can be read and the comparison evaluated: some value falls
+     * below the pivot only if the smallest one does.
      */
     @Test
-    public void lessThanIsDeclined() {
+    public void lessThanIsEvaluated() {
         final Statistics<?> stats = stringStats("ccc", "mmm");
 
-        // Both would be excluded on the byte interval alone; both are kept.
-        assertTrue(evaluate(singleSidedFilter("aaa", true, false), stats));
-        assertTrue(evaluate(singleSidedFilter("aaa", false, false), stats));
+        // Nothing here is below "aaa", so the row group is excluded.
+        assertFalse(evaluate(singleSidedFilter("aaa", true, false), stats));
+        assertFalse(evaluate(singleSidedFilter("aaa", false, false), stats));
 
-        // The greater-than direction is unaffected and still prunes.
+        // Values below "kkk" do exist.
+        assertTrue(evaluate(singleSidedFilter("kkk", true, false), stats));
+
+        // Boundary: (min, ...) exclusive of the minimum itself has nothing below it.
+        assertTrue(evaluate(singleSidedFilter("ccc", true, false), stats));
+        assertFalse(evaluate(singleSidedFilter("ccc", false, false), stats));
+
+        // The greater-than direction is unchanged.
         assertFalse(evaluate(singleSidedFilter("zzz", true, true), stats));
+        assertTrue(evaluate(singleSidedFilter("aaa", true, true), stats));
     }
 }

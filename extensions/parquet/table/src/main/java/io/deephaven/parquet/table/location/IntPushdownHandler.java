@@ -25,19 +25,22 @@ final class IntPushdownHandler {
     static boolean maybeOverlaps(
             @NotNull final IntRangeFilter intRangeFilter,
             @NotNull final Statistics<?> statistics) {
-        // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
-        // logic.
-        // TODO (DH-19666): Improve handling of nulls
+        // Null rows are accounted for by the null guard in ParquetTableLocation.pushdownRowGroupMetadata:
+        // a filter that can match null (`X < v` does) reaches this only for row groups proven to hold
+        // none, and a filter that cannot match null is unaffected by their presence.
         final int dhLower = intRangeFilter.getLower();
         final int dhUpper = intRangeFilter.getUpper();
-        if (dhLower == QueryConstants.NULL_INT || dhUpper == QueryConstants.NULL_INT) {
-            return true;
-        }
         final MutableObject<Integer> mutableMin = new MutableObject<>();
         final MutableObject<Integer> mutableMax = new MutableObject<>();
         if (!MinMaxFromStatistics.getMinMaxForInts(statistics, mutableMin::setValue, mutableMax::setValue)) {
             // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
             return true;
+        }
+        if (dhLower == QueryConstants.NULL_INT) {
+            // Filter is unbounded below; can only match if the upper bound is above this row group's minimum.
+            return intRangeFilter.isUpperInclusive()
+                    ? mutableMin.get() <= dhUpper
+                    : mutableMin.get() < dhUpper;
         }
         return maybeOverlapsRangeImpl(
                 mutableMin.get(), mutableMax.get(),
@@ -64,14 +67,12 @@ final class IntPushdownHandler {
     /**
      * Verifies that the statistics range intersects any point provided in the match filter.
      */
-    static boolean maybeOverlaps(
-            @NotNull final MatchFilter matchFilter,
-            @NotNull final Statistics<?> statistics) {
+    static StatisticsEvaluator maybeCreateEvaluator(@NotNull final MatchFilter matchFilter) {
         final Object[] values = matchFilter.getValues();
         final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
             // No values to check against
-            return invertMatch;
+            return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : statistics -> false;
         }
         // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
         // logic.
@@ -79,19 +80,36 @@ final class IntPushdownHandler {
         final int[] unboxedValues = ArrayTypeUtils.getUnboxedIntArray(values);
         for (final int value : unboxedValues) {
             if (value == QueryConstants.NULL_INT) {
-                return true;
+                return StatisticsEvaluator.ALWAYS_MAYBE;
             }
         }
-        final MutableObject<Integer> mutableMin = new MutableObject<>();
-        final MutableObject<Integer> mutableMax = new MutableObject<>();
-        if (!MinMaxFromStatistics.getMinMaxForInts(statistics, mutableMin::setValue, mutableMax::setValue)) {
-            // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
-            return true;
+        if (invertMatch) {
+            // Sorted once here; maybeMatchesInverse walks the gaps between adjacent values. Sorting
+            // numerically is only correct because the loop above has already rejected the null sentinel:
+            // for some types it does not sort where Deephaven orders it, so a null reaching this point
+            // would land at the wrong end and corrupt the gap walk.
+            Arrays.sort(unboxedValues);
         }
-        if (!invertMatch) {
-            return maybeMatches(mutableMin.get(), mutableMax.get(), unboxedValues);
-        }
-        return maybeMatchesInverse(mutableMin.get(), mutableMax.get(), unboxedValues);
+        return statistics -> {
+            final MutableObject<Integer> mutableMin = new MutableObject<>();
+            final MutableObject<Integer> mutableMax = new MutableObject<>();
+            if (!MinMaxFromStatistics.getMinMaxForInts(statistics, mutableMin::setValue, mutableMax::setValue)) {
+                // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+                return true;
+            }
+            return invertMatch
+                    ? maybeMatchesInverse(mutableMin.get(), mutableMax.get(), unboxedValues)
+                    : maybeMatches(mutableMin.get(), mutableMax.get(), unboxedValues);
+        };
+    }
+
+    /**
+     * Convenience for a single row group; prefer {@link #maybeCreateEvaluator} when iterating over several.
+     */
+    static boolean maybeOverlaps(
+            @NotNull final MatchFilter matchFilter,
+            @NotNull final Statistics<?> statistics) {
+        return maybeCreateEvaluator(matchFilter).maybeOverlaps(statistics);
     }
 
     /**
@@ -120,8 +138,8 @@ final class IntPushdownHandler {
      * <p>
      * Gaps between adjacent values are deliberately treated as non-empty. {@code X not in (5, 6)} against statistics
      * {@code [5, 6]} reports "maybe" although no integer lies strictly between 5 and 6. Closing that would need
-     * per-type successor arithmetic -- and the floating-point equivalent, where the next representable value depends
-     * on the type -- for a purely performance win, in code whose failure mode is wrong results. Left as is; the tests
+     * per-type successor arithmetic -- and the floating-point equivalent, where the next representable value depends on
+     * the type -- for a purely performance win, in code whose failure mode is wrong results. Left as is; the tests
      * record the tighter answer in their comments.
      * 
      * where {@code ...} represents the extreme ends of the range.
@@ -130,7 +148,6 @@ final class IntPushdownHandler {
             final int min,
             final int max,
             @NotNull final int[] values) {
-        Arrays.sort(values);
         if (min < values[0]) {
             return true;
         }
