@@ -1294,21 +1294,24 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 if (flen > 0) {
                     final long k = spanInfoToKey(spanInfo);
                     final long spanCard = flen * BLOCK_SIZE;
-                    final long sLastPlusOne = k + spanCard;
+                    // The span's last key rather than one past it: a span reaching the top of the key space has no key
+                    // past its end, and holding one would wrap negative and read as though every key were beyond it.
+                    final long sLast = k + spanCard - 1;
                     while (true) {
                         final long startPos = prevCap + it.currentRangeStart() - k;
                         if (startPos > maxPos) {
                             return;
                         }
-                        final long end = uMin(sLastPlusOne - 1, it.currentRangeEnd());
+                        final long end = uMin(sLast, it.currentRangeEnd());
                         final long endPos = prevCap + end - k;
                         if (endPos > maxPos) {
                             builder.accept(startPos, maxPos);
                             return;
                         }
                         builder.accept(startPos, endPos);
-                        if (it.currentRangeEnd() >= sLastPlusOne) {
-                            it.postpone(sLastPlusOne);
+                        if (uGreater(it.currentRangeEnd(), sLast)) {
+                            // Only reached when something lies past sLast, so sLast is below the last key here.
+                            it.postpone(sLast + 1);
                             startIndex = i + 1;
                             if (acc == null) {
                                 knownIdx = startIndex;
@@ -1320,7 +1323,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                             return;
                         }
                         it.next();
-                        if (it.currentRangeStart() >= sLastPlusOne) {
+                        if (uGreater(it.currentRangeStart(), sLast)) {
                             startIndex = i + 1;
                             if (acc == null) {
                                 knownIdx = startIndex;
