@@ -1162,28 +1162,34 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     public final boolean overlaps(final RowSet.RangeIterator rangeIter) {
-        if (isEmpty()) {
-            return false;
-        }
-        if (!rangeIter.advance(first())) {
-            return false;
-        }
-        int i = 0;
-        final long last = last();
-        while (true) {
-            final long start = rangeIter.currentRangeStart();
-            if (last < start) {
+        // We take ownership of rangeIter, as subsetOf does: an answer is usually reached with ranges still unread,
+        // and closing the iterator is what returns the reference it holds on the rowset it walks.
+        try {
+            if (isEmpty()) {
                 return false;
             }
-            final long end = rangeIter.currentRangeEnd();
-            i = overlapsRangeInternal(i, pack(start), pack(end));
-            if (i < 0) {
-                return true;
-            }
-            if (!rangeIter.hasNext()) {
+            if (!rangeIter.advance(first())) {
                 return false;
             }
-            rangeIter.next();
+            int i = 0;
+            final long last = last();
+            while (true) {
+                final long start = rangeIter.currentRangeStart();
+                if (last < start) {
+                    return false;
+                }
+                final long end = rangeIter.currentRangeEnd();
+                i = overlapsRangeInternal(i, pack(start), pack(end));
+                if (i < 0) {
+                    return true;
+                }
+                if (!rangeIter.hasNext()) {
+                    return false;
+                }
+                rangeIter.next();
+            }
+        } finally {
+            rangeIter.close();
         }
     }
 
