@@ -11,6 +11,9 @@ import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -101,6 +104,41 @@ public class RowSequenceContractTest {
         assertTrue(where + ": no keys", seq.forEachRowKey(k -> {
             throw new AssertionError(where + ": produced key " + k);
         }));
+    }
+
+    /**
+     * A length larger than what remains is a request for everything from the position onwards, not an invitation to
+     * overflow. All three implementations must clamp it the same way.
+     */
+    @Test
+    public void testHugeLengthIsClampedToWhatRemains() {
+        for (int i = 0; i < NAMES.length; ++i) {
+            try (final WritableRowSet rs = backing(i, 10)) {
+                // A second, disjoint range would move the SingleRange case onto another implementation.
+                if (i != 0) {
+                    rs.insertRange(100, 104);
+                }
+                assertBackedBy(NAMES[i], rs);
+                final long remaining = rs.size() - 2;
+                for (final long length : new long[] {Long.MAX_VALUE, Long.MAX_VALUE - 1, rs.size() + 1000}) {
+                    final String where = NAMES[i] + " for length " + length;
+                    try (final RowSequence seq = rs.getRowSequenceByPosition(2, length)) {
+                        assertEquals(where + ": size", remaining, seq.size());
+                        final List<Long> keys = new ArrayList<>();
+                        assertTrue(where + ": walk completes", seq.forEachRowKey(k -> {
+                            keys.add(k);
+                            // A wrapped end bound walks off the end of the rowset; stop rather than exhaust memory.
+                            return keys.size() <= remaining;
+                        }));
+                        assertEquals(where + ": keys", remaining, keys.size());
+                        try (final RowSet expected = rs.subSetByPositionRange(2, rs.size())) {
+                            assertEquals(where + ": last key", expected.lastRowKey(),
+                                    keys.get(keys.size() - 1).longValue());
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**

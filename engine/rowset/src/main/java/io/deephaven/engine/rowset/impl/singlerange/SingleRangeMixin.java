@@ -38,7 +38,10 @@ public interface SingleRangeMixin extends RowSequence {
             return RowSequenceFactory.EMPTY;
         }
         final long s = rangeStart() + startPositionInclusive;
-        final long e = Math.min(s + length - 1, rangeEnd());
+        // Clamped as a remaining count rather than as s + length - 1, which overflows for a very large length and
+        // would put the end below the start.
+        final long remaining = size() - startPositionInclusive;
+        final long e = s + Math.min(length, remaining) - 1;
         return new SingleRangeRowSequence(s, e);
     }
 
