@@ -1639,7 +1639,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     }
 
     public void insertOrderedLongSetUnsafeNoWriteCheck(final SortedRanges sr) {
-        makeRoomForPartiallyCoveredBlocks(sr);
+        makeRoomForPartiallyCoveredBlocks(0, sr);
         addRangesUnsafeNoWriteCheck(sr.getRangeIterator());
     }
 
@@ -1654,8 +1654,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * singletons holding a key the insert is about to add anyway, so our invariants hold throughout. The run is only
      * taken when it can be placed as-is; a run that would have to merge with, or absorb, a span of ours is left to the
      * insert, which is what knows how to do that.
+     *
+     * @param shiftAmount added to every key in {@code sr} before it is inserted; not necessarily a multiple of the
+     *        block size, so a range can land in a different block than the one it came from
+     * @param sr the ranges about to be inserted
      */
-    private void makeRoomForPartiallyCoveredBlocks(final SortedRanges sr) {
+    private void makeRoomForPartiallyCoveredBlocks(final long shiftAmount, final SortedRanges sr) {
         if (size == 0) {
             // Nothing to make room in; the insert takes its append path.
             return;
@@ -1671,8 +1675,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             // than walking the rest of the ranges to reject them one at a time.
             ranges: while (it.hasNext()) {
                 it.next();
-                final long start = it.currentRangeStart();
-                final long end = it.currentRangeEnd();
+                final long start = it.currentRangeStart() + shiftAmount;
+                final long end = it.currentRangeEnd() + shiftAmount;
                 final long firstBlockKey = highBits(start);
                 final long lastBlockKey = highBits(end);
                 final boolean fullyCoversFirstBlock = lowBitsAsInt(start) == 0
@@ -2037,6 +2041,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     public OrderedLongSet ixInsertWithShift(final long shiftAmount, final SortedRanges sr) {
         final RspBitmap ans = getWriteRef();
+        // Same reasoning as the unshifted insert: without this, every range starting a block we lack shifts the tail of
+        // our spans array on its own, which is quadratic when both sides are large.
+        ans.makeRoomForPartiallyCoveredBlocks(shiftAmount, sr);
         int i = 0;
         try (final RowSet.RangeIterator rit = sr.getRangeIterator()) {
             while (rit.hasNext()) {
