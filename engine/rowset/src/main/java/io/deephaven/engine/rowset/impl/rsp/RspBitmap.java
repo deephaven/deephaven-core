@@ -1947,21 +1947,24 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             return false;
         }
         long pendingLast = -1;
-        final RowSet.RangeIterator it = sr.getRangeIterator();
-        int i = 0;
-        while (it.hasNext()) {
-            it.next();
-            final long start = it.currentRangeStart();
-            if (pendingLast != -1) {
-                i = overlapsRange(i, pendingLast + 1, start - 1);
-                if (i >= 0) {
-                    return false;
+        // The walk stops as soon as one of our keys turns up in a gap, with the rest of sr's ranges unread; closing
+        // the iterator is what returns the reference it holds on sr.
+        try (final RowSet.RangeIterator it = sr.getRangeIterator()) {
+            int i = 0;
+            while (it.hasNext()) {
+                it.next();
+                final long start = it.currentRangeStart();
+                if (pendingLast != -1) {
+                    i = overlapsRange(i, pendingLast + 1, start - 1);
+                    if (i >= 0) {
+                        return false;
+                    }
+                    i = ~i;
                 }
-                i = ~i;
+                pendingLast = it.currentRangeEnd();
             }
-            pendingLast = it.currentRangeEnd();
+            return true;
         }
-        return true;
     }
 
     @Override
