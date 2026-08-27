@@ -617,17 +617,17 @@ t_correct = empty_table(10).update(col)
 ```
 
 | Without `with_serial` (wrong) | With `with_serial` (correct) |
-| ------------------------------- | ------------------------------ |
-| 0                               | 0                              |
-| 1                               | 1                              |
-| 2                               | 2                              |
-| 2                               | 3                              |
-| 4                               | 4                              |
-| 5                               | 5                              |
-| 5                               | 6                              |
-| 7                               | 7                              |
-| 8                               | 8                              |
-| 8                               | 9                              |
+| ----------------------------- | ---------------------------- |
+| 0                             | 0                            |
+| 1                             | 1                            |
+| 2                             | 2                            |
+| 2                             | 3                            |
+| 4                             | 4                            |
+| 5                             | 5                            |
+| 5                             | 6                            |
+| 7                             | 7                            |
+| 8                             | 8                            |
+| 8                             | 9                            |
 
 The wrong output has duplicates (two 2s, two 5s, two 8s) and missing values (no 3, 6, or 9) because multiple cores incremented `idx` simultaneously.
 
