@@ -33,6 +33,7 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FLOAT;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -661,6 +662,67 @@ public class MinMaxFromStatisticsTest {
                 MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
                 min, "ALPHA",
                 max, "ZETA");
+    }
+
+    @Test
+    public void stringBytesAreReturnedVerbatim() {
+        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.stringType())
+                .named("strBinary");
+        // A truncated lower bound: a valid byte-order bound that is not valid UTF-8, so decoding it would be lossy.
+        final byte[] truncatedMin = java.util.Arrays.copyOf("日本語".getBytes(StandardCharsets.UTF_8), 4);
+        final byte[] rawMax = "zzz".getBytes(StandardCharsets.UTF_8);
+        final Statistics<?> stats = buildStats(colType, truncatedMin, rawMax, 0L);
+
+        final MutableObject<byte[]> min = new MutableObject<>();
+        final MutableObject<byte[]> max = new MutableObject<>();
+        assertTrue(MinMaxFromStatistics.getMinMaxForStringBytes(stats, min::setValue, max::setValue));
+        assertArrayEquals(truncatedMin, min.getValue());
+        assertArrayEquals(rawMax, max.getValue());
+    }
+
+    @Test
+    public void enumBytesAreReturned() {
+        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.enumType())
+                .named("enumBinary");
+        final Statistics<?> stats = buildStats(colType,
+                "ALPHA".getBytes(StandardCharsets.UTF_8), "ZETA".getBytes(StandardCharsets.UTF_8), 0L);
+
+        final MutableObject<byte[]> min = new MutableObject<>();
+        final MutableObject<byte[]> max = new MutableObject<>();
+        assertTrue(MinMaxFromStatistics.getMinMaxForStringBytes(stats, min::setValue, max::setValue));
+        assertArrayEquals("ALPHA".getBytes(StandardCharsets.UTF_8), min.getValue());
+        assertArrayEquals("ZETA".getBytes(StandardCharsets.UTF_8), max.getValue());
+    }
+
+    @Test
+    public void stringBytesRejectBinaryWithoutLogicalType() {
+        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY).named("rawBinary");
+        final Statistics<?> stats = buildStats(colType,
+                "foo".getBytes(StandardCharsets.UTF_8), "qux".getBytes(StandardCharsets.UTF_8), 0L);
+
+        final MutableObject<byte[]> min = new MutableObject<>();
+        final MutableObject<byte[]> max = new MutableObject<>();
+        assertFalse(MinMaxFromStatistics.getMinMaxForStringBytes(stats, min::setValue, max::setValue));
+    }
+
+    /**
+     * String columns must not be served through the Comparable path, which would compare the decoded values in UTF-16
+     * order rather than the unsigned byte order parquet used to build the statistics.
+     */
+    @Test
+    public void comparableAccessorDeclinesStrings() {
+        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.stringType())
+                .named("strBinary");
+        final Statistics<?> stats = buildStats(colType,
+                "aaa".getBytes(StandardCharsets.UTF_8), "zzz".getBytes(StandardCharsets.UTF_8), 0L);
+
+        final MutableObject<Comparable<?>> min = new MutableObject<>();
+        final MutableObject<Comparable<?>> max = new MutableObject<>();
+        assertFalse(MinMaxFromStatistics.getMinMaxForComparable(
+                stats, min::setValue, max::setValue, String.class));
     }
 
     @Test

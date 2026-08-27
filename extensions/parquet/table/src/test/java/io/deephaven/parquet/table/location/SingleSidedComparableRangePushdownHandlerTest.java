@@ -27,17 +27,6 @@ import static org.junit.Assert.*;
 @Category(OutOfBandTest.class)
 public class SingleSidedComparableRangePushdownHandlerTest {
 
-    private static Statistics<?> stringStats(final String minInc, final String maxInc) {
-        final PrimitiveType col = Types.required(BINARY)
-                .as(LogicalTypeAnnotation.stringType())
-                .named("strCol");
-        return Statistics.getBuilderForReading(col)
-                .withMin(minInc.getBytes(StandardCharsets.UTF_8))
-                .withMax(maxInc.getBytes(StandardCharsets.UTF_8))
-                .withNumNulls(0L)
-                .build();
-    }
-
     private static Statistics<?> dateStats(final LocalDate minInc, final LocalDate maxInc) {
         final PrimitiveType col = Types.required(INT32)
                 .as(LogicalTypeAnnotation.dateType())
@@ -63,7 +52,6 @@ public class SingleSidedComparableRangePushdownHandlerTest {
     }
 
     private static final TableDefinition TABLE_DEF = TableDefinition.of(
-            ColumnDefinition.ofString("strCol"),
             ColumnDefinition.of("dateCol", Type.find(LocalDate.class)),
             ColumnDefinition.of("ldtCol", Type.find(LocalDateTime.class)));
 
@@ -78,30 +66,7 @@ public class SingleSidedComparableRangePushdownHandlerTest {
         return sscrf;
     }
 
-    @Test
-    public void stringGreaterThanScenarios() {
-        final Statistics<?> stats = stringStats("alpha", "omega");
-
-        // inside
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "beta", true, true), stats));
-
-        // at max, inclusive
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "omega", true, true), stats));
-
-        // at max, exclusive
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "omega", false, true), stats));
-
-        // above max, inclusive
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "zzzz", true, true), stats));
-
-        // below min
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "aardvark", true, true), stats));
-    }
+    // String columns are served by StringPushdownHandler; see StringPushdownHandlerTest.
 
     @Test
     public void dateGreaterThanScenarios() {
@@ -131,18 +96,19 @@ public class SingleSidedComparableRangePushdownHandlerTest {
 
     @Test
     public void nullPivotDisablesPushdown() {
-        final Statistics<?> stats = stringStats("a", "b");
+        final Statistics<?> stats = dateStats(LocalDate.of(2020, 1, 1), LocalDate.of(2020, 12, 31));
 
         assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", null, true, true), stats));
+                ssFilter("dateCol", null, true, true), stats));
     }
 
     @Test
     public void lessThanFiltersSkipPushdown() {
-        final Statistics<?> stats = stringStats("m", "z");
+        final Statistics<?> stats = dateStats(LocalDate.of(2020, 6, 1), LocalDate.of(2020, 12, 31));
 
+        // A pivot below the whole range would be excludable on the interval alone; less-than declines regardless.
         assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "q", true, false), stats));
+                ssFilter("dateCol", LocalDate.of(2020, 1, 1), true, false), stats));
     }
 
     @Test

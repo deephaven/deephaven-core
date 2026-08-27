@@ -30,17 +30,6 @@ import static org.junit.Assert.*;
 @Category(OutOfBandTest.class)
 public class ComparablePushdownHandlerTest {
 
-    private static Statistics<?> stringStats(final String minInc, final String maxInc) {
-        final PrimitiveType col = Types.required(BINARY)
-                .as(LogicalTypeAnnotation.stringType())
-                .named("strCol");
-        return Statistics.getBuilderForReading(col)
-                .withMin(minInc.getBytes(StandardCharsets.UTF_8))
-                .withMax(maxInc.getBytes(StandardCharsets.UTF_8))
-                .withNumNulls(0L)
-                .build();
-    }
-
     private static Statistics<?> dateStats(final LocalDate minInc, final LocalDate maxInc) {
         final PrimitiveType col = Types.required(INT32)
                 .as(LogicalTypeAnnotation.dateType())
@@ -67,7 +56,6 @@ public class ComparablePushdownHandlerTest {
     }
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
-            ColumnDefinition.ofString("strCol"),
             ColumnDefinition.of("dateCol", Type.find(LocalDate.class)),
             ColumnDefinition.of("localDateTimeCol", Type.find(LocalDateTime.class)));
 
@@ -89,105 +77,8 @@ public class ComparablePushdownHandlerTest {
         return filter;
     }
 
-    @Test
-    public void rangeFilterScenarios() {
-        final Statistics<?> statsAZ = stringStats("aaa", "zzz");
-
-        // range wholly inside
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeComparableRangeFilter("strCol", "bbb", "yyy", true, true), statsAZ));
-
-        // filter equal to statistics inclusive
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeComparableRangeFilter("strCol", "aaa", "zzz", true, true), statsAZ));
-
-        // half-open overlaps
-        assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeComparableRangeFilter("strCol", "aaa", "aaa", false, false), statsAZ));
-
-        // disjoint below
-        assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeComparableRangeFilter("strCol", "000", "111", true, true), statsAZ));
-
-        // disjoint above
-        assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeComparableRangeFilter("strCol", "~~~", "zz{", true, true), statsAZ));
-
-        // swapped bounds
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeComparableRangeFilter("strCol", "yyy", "bbb", true, true), statsAZ));
-
-        // null disables push‑down
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeComparableRangeFilter("strCol", null, "ccc", true, true), statsAZ));
-
-        // Overlapping ('aaa', 'aaa'] with stats ['aaa', 'bbb'] should return false
-        assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeComparableRangeFilter("strCol", "aaa", "aaa", false, true), stringStats("aaa", "bbb")));
-    }
-
-    @Test
-    public void regularMatchFilterScenarios() {
-        final Statistics<?> stats = stringStats("alpha", "omega");
-
-        // hit
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.REGULAR, "strCol", "Foo", "beta", "OMEGA"), stats));
-
-        // all below
-        assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.REGULAR, "strCol", "000", "abc"), stats));
-
-        // all above
-        assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.REGULAR, "strCol", "zzz", "zzz1"), stats));
-
-        // empty list
-        assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.REGULAR, "strCol"), stats));
-
-        // null entry
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.REGULAR, "strCol", "mu", null), stats));
-    }
-
-    @Test
-    public void invertedMatchFilterScenarios() {
-        // stats alpha..delta ; NOT IN {beta}
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.INVERTED, "strCol", "beta"),
-                stringStats("alpha", "delta")));
-
-        // single‑point stats excluded
-        assertFalse(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.INVERTED, "strCol", "gamma"),
-                stringStats("gamma", "gamma")));
-
-        // single‑point stats, exclusion miss
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.INVERTED, "strCol", "theta"),
-                stringStats("gamma", "gamma")));
-
-        // stats span equals two exclusion points
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.INVERTED, "strCol", "bar", "baz"),
-                stringStats("bar", "baz")));
-
-        // empty exclusion list
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.INVERTED, "strCol"),
-                stringStats("a", "b")));
-
-        // null in the exclusion list
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.INVERTED, "strCol", (Object) null),
-                stringStats("x", "y")));
-
-        // exclusion list with a value that is in the stats range
-        assertTrue(ComparablePushdownHandler.maybeOverlaps(
-                makeMatchFilter(MatchOptions.INVERTED, "strCol", "x", "y"),
-                stringStats("x", "y")));
-    }
+    // String columns are served by StringPushdownHandler, which compares parquet's byte-ordered
+    // statistics in the byte domain; its coverage lives in StringPushdownHandlerTest.
 
     @Test
     public void localDateFilterScenarios() {

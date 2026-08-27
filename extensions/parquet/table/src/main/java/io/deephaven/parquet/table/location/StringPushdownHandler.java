@@ -1,0 +1,267 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.parquet.table.location;
+
+import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.parquet.column.statistics.Statistics;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Comparator;
+
+/**
+ * Pushdown handler for {@code String} columns.
+ * <p>
+ * <b>Ordering.</b> Parquet defines these statistics as the extremes under <b>unsigned byte-wise</b> order. From the
+ * format's {@code ColumnOrder} definition (see the {@code parquet-format} thrift, mirrored in
+ * {@code org.apache.parquet.format.ColumnOrder}): {@code UTF8 - unsigned byte-wise comparison},
+ * {@code ENUM - unsigned byte-wise comparison}, and, absent a logical type,
+ * {@code BYTE_ARRAY - unsigned byte-wise comparison}. That table applies only when the column declares the type-defined
+ * order, which {@link ParquetPushdownUtils#areStatisticsUsable} establishes by requiring
+ * {@code columnOrder() == typeDefined()}. parquet-mr computes the extremes accordingly, via
+ * {@code UNSIGNED_LEXICOGRAPHICAL_BINARY_COMPARATOR} -- unsigned bytes, ties broken by length, which is exactly
+ * {@link java.util.Arrays#compareUnsigned(byte[], byte[])}.
+ * <p>
+ * Deephaven, by contrast, compares strings with {@link String#compareTo}, which is <b>UTF-16 code-unit</b> order. The
+ * two disagree: UTF-8 encodes a supplementary code point with a lead byte of {@code F0}..{@code F4}, above the
+ * {@code EE}/{@code EF} of U+E000..U+FFFF, but UTF-16 encodes it as a surrogate pair whose first unit (D800..DFFF)
+ * falls <i>below</i> E000. Decoding the statistics and comparing the results is therefore unsound: for a row group
+ * holding both kinds of character the decoded pair is not merely misplaced but inverted, with {@code min > max}.
+ * <p>
+ * <b>Encoding.</b> This handler works entirely in the byte domain: statistics are read as raw bytes and filter values
+ * are encoded to UTF-8. That encoding is the inverse of the read path, which materializes these columns with
+ * {@code Binary.toStringUsingUTF8()} (see {@code StringMaterializer}), so a filter value encodes back to the bytes the
+ * column was decoded from. Only the two sides agreeing matters here; the handler never decodes, and so never has to
+ * assume the stored bytes are well-formed.
+ * <p>
+ * Staying in bytes is also what makes <i>truncated</i> bounds safe. The format permits statistics to be shortened
+ * bounds rather than values present in the data; such a bound still brackets the data in byte order, but decoding one
+ * can turn a partial character into U+FFFD and destroy that property.
+ * <p>
+ * <b>Usage.</b> Call {@link #maybeCreateEvaluator} once per filter, then {@link Evaluator#maybeOverlaps} once per row
+ * group. Everything that depends only on the filter -- encoding the values, sorting them, and testing the bounds for
+ * order divergence -- happens in {@code maybeCreateEvaluator}, so none of it is repeated for every row group.
+ */
+final class StringPushdownHandler {
+
+    private static final Comparator<byte[]> BYTES = Arrays::compareUnsigned;
+
+    /** A single filter, resolved to the byte domain, applied to one row group's statistics at a time. */
+    @FunctionalInterface
+    interface Evaluator {
+        boolean maybeOverlaps(@NotNull Statistics<?> statistics);
+    }
+
+    /** Used when the filter cannot be answered from statistics at all; decided once, not per row group. */
+    private static final Evaluator ALWAYS_MAYBE = statistics -> true;
+
+    /**
+     * The first code point for which UTF-8 and UTF-16 disagree on ordering. See
+     * {@link #comparesIdenticallyInBothOrders}.
+     */
+    private static final int FIRST_DIVERGENT_CODE_POINT = 0xE000;
+
+    /**
+     * Creates an evaluator for {@code filter} against row group statistics, or returns {@code null} if this handler
+     * does not serve it. Case-insensitive match filters are not served here; they go to
+     * {@link CaseInsensitiveStringMatchPushdownHandler}.
+     */
+    @Nullable
+    static Evaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
+        if (filter instanceof MatchFilter) {
+            final MatchFilter matchFilter = (MatchFilter) filter;
+            if (matchFilter.getColumnType() != String.class || matchFilter.getMatchOptions().caseInsensitive()) {
+                return null;
+            }
+            return createMatchEvaluator(matchFilter);
+        }
+        if (filter instanceof ComparableRangeFilter) {
+            final ComparableRangeFilter rangeFilter = (ComparableRangeFilter) filter;
+            return rangeFilter.getColumnType() == String.class ? createRangeEvaluator(rangeFilter) : null;
+        }
+        if (filter instanceof SingleSidedComparableRangeFilter) {
+            final SingleSidedComparableRangeFilter rangeFilter = (SingleSidedComparableRangeFilter) filter;
+            return rangeFilter.getColumnType() == String.class ? createSingleSidedEvaluator(rangeFilter) : null;
+        }
+        return null;
+    }
+
+    /**
+     * Equality does not depend on the ordering used, so this needs no restriction on the values: a value whose UTF-8
+     * encoding falls outside the byte-order interval is simply not present in the row group.
+     */
+    private static Evaluator createMatchEvaluator(@NotNull final MatchFilter matchFilter) {
+        final Object[] values = matchFilter.getValues();
+        final boolean invertMatch = matchFilter.getMatchOptions().inverted();
+        if (values == null || values.length == 0) {
+            // No values to check against
+            return invertMatch ? ALWAYS_MAYBE : statistics -> false;
+        }
+        final byte[][] encoded = new byte[values.length][];
+        for (int i = 0; i < values.length; i++) {
+            if (!(values[i] instanceof String)) {
+                // Skip pushdown-based filtering for nulls and non-strings to err on the safer side instead of adding
+                // more complex handling logic.
+                // TODO (DH-19666): Improve handling of nulls
+                return ALWAYS_MAYBE;
+            }
+            encoded[i] = utf8((String) values[i]);
+        }
+        if (!invertMatch) {
+            return statistics -> {
+                final byte[][] minMax = minMaxBytes(statistics);
+                if (minMax == null) {
+                    // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
+                    return true;
+                }
+                for (final byte[] value : encoded) {
+                    if (BYTES.compare(minMax[0], value) <= 0 && BYTES.compare(minMax[1], value) >= 0) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+        }
+        // Sorted once here; maybeMatchesInverse walks the gaps between adjacent values.
+        Arrays.sort(encoded, BYTES);
+        return statistics -> {
+            final byte[][] minMax = minMaxBytes(statistics);
+            return minMax == null || maybeMatchesInverse(minMax[0], minMax[1], encoded);
+        };
+    }
+
+    private static Evaluator createRangeEvaluator(@NotNull final ComparableRangeFilter rangeFilter) {
+        final Comparable<?> lower = rangeFilter.getLower();
+        final Comparable<?> upper = rangeFilter.getUpper();
+        if (!(lower instanceof String) || !(upper instanceof String)) {
+            // Skip pushdown-based filtering for nulls to err on the safer side instead of adding more complex handling
+            // logic.
+            // TODO (DH-19666): Improve handling of nulls
+            return ALWAYS_MAYBE;
+        }
+        if (!comparesIdenticallyInBothOrders((String) lower) || !comparesIdenticallyInBothOrders((String) upper)) {
+            return ALWAYS_MAYBE;
+        }
+        final byte[] lowerBytes = utf8((String) lower);
+        final byte[] upperBytes = utf8((String) upper);
+        final boolean lowerInclusive = rangeFilter.isLowerInclusive();
+        final boolean upperInclusive = rangeFilter.isUpperInclusive();
+        return statistics -> {
+            final byte[][] minMax = minMaxBytes(statistics);
+            return minMax == null || overlapsRange(minMax[0], minMax[1],
+                    lowerBytes, lowerInclusive, upperBytes, upperInclusive);
+        };
+    }
+
+    private static Evaluator createSingleSidedEvaluator(@NotNull final SingleSidedComparableRangeFilter rangeFilter) {
+        if (rangeFilter.isLowerInclusive() != rangeFilter.isUpperInclusive()) {
+            throw new IllegalStateException("SingleSidedComparableRangeFilter must have both bounds inclusive or " +
+                    "exclusive: " + rangeFilter);
+        }
+        final Comparable<?> pivot = rangeFilter.getPivot();
+        if (!(pivot instanceof String) || !rangeFilter.isGreaterThan()) {
+            // Skip pushdown-based filtering for nulls (which are considered smaller than any value), to err on the
+            // safer side instead of adding more complex handling logic.
+            // TODO (DH-19666): Improve handling of nulls
+            return ALWAYS_MAYBE;
+        }
+        if (!comparesIdenticallyInBothOrders((String) pivot)) {
+            return ALWAYS_MAYBE;
+        }
+        final byte[] pivotBytes = utf8((String) pivot);
+        final boolean inclusive = rangeFilter.isLowerInclusive();
+        return statistics -> {
+            final byte[][] minMax = minMaxBytes(statistics);
+            if (minMax == null) {
+                // Statistics could not be processed, so we assume that we overlap.
+                return true;
+            }
+            final int cmp = BYTES.compare(minMax[1], pivotBytes);
+            return inclusive ? cmp >= 0 : cmp > 0;
+        };
+    }
+
+    /**
+     * Whether comparisons <i>against</i> {@code value} give the same answer in unsigned byte order as in
+     * {@link String#compareTo} order, whatever the other operand is.
+     * <p>
+     * Two strings are ordered by their first differing code point, and UTF-8 preserves code-point order, so the orders
+     * can only disagree when that code point is supplementary in one operand and in U+E000..U+FFFF in the other. If
+     * every code point of {@code value} is below U+E000, neither case can arise at the deciding position: any code
+     * point of the other operand that is at least U+E000 -- supplementary or not -- compares greater under both
+     * encodings. That makes byte-order comparisons against {@code value} sound for an arbitrary counterparty, which is
+     * what lets range filters be evaluated in the byte domain at all.
+     * <p>
+     * This must be a property of the filter's bound, not of the statistics. {@code min}/{@code max} bound only the
+     * endpoints of the byte interval and say nothing about its interior, so a row group whose extremes are plain ASCII
+     * can still hold a supplementary code point.
+     */
+    private static boolean comparesIdenticallyInBothOrders(@NotNull final String value) {
+        return value.codePoints().allMatch(cp -> cp < FIRST_DIVERGENT_CODE_POINT);
+    }
+
+    private static byte[] utf8(@NotNull final String value) {
+        return value.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Reads the row group's byte-order extremes, returning {@code null} if they cannot be used.
+     */
+    @Nullable
+    private static byte[][] minMaxBytes(@NotNull final Statistics<?> statistics) {
+        final MutableObject<byte[]> min = new MutableObject<>();
+        final MutableObject<byte[]> max = new MutableObject<>();
+        if (!MinMaxFromStatistics.getMinMaxForStringBytes(statistics, min::setValue, max::setValue)) {
+            return null;
+        }
+        if (min.getValue() == null || max.getValue() == null) {
+            return null;
+        }
+        return new byte[][] {min.getValue(), max.getValue()};
+    }
+
+    /**
+     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array, by
+     * checking whether it overlaps any of the open gaps left by excluding them. {@code values} must be sorted.
+     */
+    private static boolean maybeMatchesInverse(
+            @NotNull final byte[] min,
+            @NotNull final byte[] max,
+            @NotNull final byte[][] values) {
+        if (BYTES.compare(min, values[0]) < 0) {
+            return true;
+        }
+        for (int i = 0; i < values.length - 1; i++) {
+            if (overlapsRange(min, max, values[i], false, values[i + 1], false)) {
+                return true;
+            }
+        }
+        return BYTES.compare(max, values[values.length - 1]) > 0;
+    }
+
+    /**
+     * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
+     */
+    private static boolean overlapsRange(
+            @NotNull final byte[] min, @NotNull final byte[] max,
+            @NotNull final byte[] lower, final boolean lowerInclusive,
+            @NotNull final byte[] upper, final boolean upperInclusive) {
+        final int lowerToUpper = BYTES.compare(lower, upper);
+        if ((upperInclusive && lowerInclusive) ? lowerToUpper > 0 : lowerToUpper >= 0) {
+            return false; // Empty range, no overlap
+        }
+        // Following logic assumes (min, max) to be a continuous range and not granular. So (a,b) will be considered
+        // as "maybe overlapping" with [a, b] where b follows immediately after a.
+        final int minToUpper = BYTES.compare(min, upper);
+        final int maxToLower = BYTES.compare(max, lower);
+        return (upperInclusive ? minToUpper <= 0 : minToUpper < 0)
+                && (lowerInclusive ? maxToLower >= 0 : maxToLower > 0);
+    }
+}

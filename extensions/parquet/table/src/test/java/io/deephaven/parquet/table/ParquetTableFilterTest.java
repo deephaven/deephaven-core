@@ -1338,6 +1338,38 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "F < 2.0");
     }
 
+    /**
+     * Parquet BINARY/STRING statistics are extremes under <b>unsigned-byte (UTF-8)</b> order, but Java
+     * {@code String.compareTo} is <b>UTF-16 code-unit</b> order. The two disagree whenever a supplementary-plane
+     * character is compared against one in U+E000..U+FFFF: UTF-8 puts {@code F0 ...} above {@code EF ...}, while UTF-16
+     * puts the surrogates D800..DFFF below E000.
+     * <p>
+     * Here the row group is {@code {"\uD83D\uDE00", "\uFF41"}} (grinning face U+1F600, fullwidth a U+FF41). Parquet
+     * records min=fullwidth-a, max=emoji; in Java order the emoji is the smaller of the two, so a "max >= value" test
+     * against fullwidth-a fails for a value that is the row group's own minimum.
+     */
+    @Test
+    public void supplementaryPlaneStringsSurviveStatisticsPushdown() {
+        final String fullwidthA = "\uFF41";
+        final String emoji = "\uD83D\uDE00";
+
+        final String destPath = Path.of(rootFile.getPath(), "supplementaryPlaneStrings.parquet").toString();
+        writeTable(newTable(stringCol("X", emoji, fullwidthA)), destPath);
+        final Table diskTable = readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+
+        filterAndVerifyResults(diskTable, memTable, "X = `" + fullwidthA + "`");
+        filterAndVerifyResults(diskTable, memTable, "X = `" + emoji + "`");
+        filterAndVerifyResults(diskTable, memTable, "X in `" + fullwidthA + "`, `zzz`");
+        filterAndVerifyResults(diskTable, memTable, "X != `" + emoji + "`");
+
+        // Range filters over the same data.
+        filterAndVerifyResults(diskTable, memTable, "X >= `" + fullwidthA + "`");
+        filterAndVerifyResults(diskTable, memTable, "X < `" + fullwidthA + "`");
+    }
+
     @Test
     public void filterArrayColumnsTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_filterArrayColumnsTest.parquet").toString();

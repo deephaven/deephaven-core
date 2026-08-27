@@ -875,6 +875,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final int maxRepetitionLevel =
                 parquetSchema.getType(actionCtx.parquetColumnNames[0]).isRepetition(Type.Repetition.REPEATED) ? 1 : 0;
 
+        // String columns are compared in the byte domain rather than in String.compareTo order. Everything that
+        // depends only on the filter -- encoding its values to UTF-8, sorting them, testing its bounds for
+        // UTF-8/UTF-16 order divergence -- is done once here rather than for every row group below.
+        final StringPushdownHandler.Evaluator stringEvaluator = StringPushdownHandler.maybeCreateEvaluator(filter);
+
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
             final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
@@ -889,6 +894,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             } else if (!ParquetPushdownUtils.areStatisticsUsable(statistics)) {
                 // We assume it overlaps if we cannot use the statistics.
                 maybeOverlaps = true;
+            } else if (stringEvaluator != null) {
+                maybeOverlaps = stringEvaluator.maybeOverlaps(statistics);
             } else if (filter instanceof ByteRangeFilter) {
                 maybeOverlaps = BytePushdownHandler.maybeOverlaps((ByteRangeFilter) filter, statistics);
             } else if (filter instanceof CharRangeFilter) {
