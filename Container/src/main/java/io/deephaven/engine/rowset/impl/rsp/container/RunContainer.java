@@ -2157,10 +2157,11 @@ public final class RunContainer extends Container {
         int k = 0;
         for (; (k < nbrruns) && (getValueAsInt(k) < rangeStart); ++k) {
             ans.valueslength[2 * k] = valueslength[2 * k];
-            final short len = valueslength[2 * k + 1];
-            ans.valueslength[2 * k + 1] = len;
+            ans.valueslength[2 * k + 1] = valueslength[2 * k + 1];
             ++ans.nbrruns;
-            ans.cardinality += len + 1;
+            // Widened as unsigned: a run of more than 32768 values has a stored length whose short is negative, and
+            // counting that as a signed value takes 65536 off the cardinality.
+            ans.cardinality += getLengthAsInt(k) + 1;
         }
         ans.smartAppendForXor((short) rangeStart, (short) (rangeEnd - rangeStart - 1));
         for (; k < nbrruns; ++k) {
