@@ -15,7 +15,6 @@ import java.util.List;
 
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Inverting keys that live in the last block of the key space. The block one past that block starts at
@@ -117,14 +116,37 @@ public class RspBitmapInvertAtMaxKeyTest {
         }
     }
 
-    /** maxPos truncation still applies at the top of the key space. */
+    private static List<String> invertRanges(final RowSet rs, final RowSet keys, final long maxPosition) {
+        final List<String> out = new ArrayList<>();
+        try (final RowSet positions = rs.invert(keys, maxPosition)) {
+            positions.forEachRowKeyRange((s, e) -> {
+                out.add(s + "-" + e);
+                return true;
+            });
+        }
+        return out;
+    }
+
+    /** maxPosition is inclusive, and still applies at the top of the key space. */
     @Test(timeout = 30_000)
     public void testInvertTruncatedByMaxPositionAtTheTop() {
         try (final WritableRowSet rs = rspOf(new long[] {MAX - 5, MAX});
-                final RowSet keys = rs.copy();
-                final RowSet positions = rs.invert(keys, 2)) {
-            assertTrue("truncated to the requested positions", positions.size() <= 3);
-            assertEquals("first position", 0, positions.firstRowKey());
+                final RowSet keys = rs.copy()) {
+            assertEquals("six keys", 6, rs.size());
+            // Positions 0 through maxPosition inclusive, and no more.
+            assertEquals("maxPosition 0", List.of("0-0"), invertRanges(rs, keys, 0));
+            assertEquals("maxPosition 2", List.of("0-2"), invertRanges(rs, keys, 2));
+            assertEquals("maxPosition 4", List.of("0-4"), invertRanges(rs, keys, 4));
+            // At and beyond the last position nothing is dropped.
+            assertEquals("maxPosition 5", List.of("0-5"), invertRanges(rs, keys, 5));
+            assertEquals("maxPosition past the end", List.of("0-5"), invertRanges(rs, keys, 100));
+        }
+        // The same over a full block span reaching the last key, where the truncation arithmetic uses the span length.
+        try (final WritableRowSet rs = rspOf(new long[] {TOP_BLOCK, MAX});
+                final RowSet keys = rs.copy()) {
+            assertEquals("full block span, maxPosition 2", List.of("0-2"), invertRanges(rs, keys, 2));
+            assertEquals("full block span, maxPosition at its end", List.of("0-" + (BLOCK_SIZE - 1)),
+                    invertRanges(rs, keys, BLOCK_SIZE - 1));
         }
     }
 }
