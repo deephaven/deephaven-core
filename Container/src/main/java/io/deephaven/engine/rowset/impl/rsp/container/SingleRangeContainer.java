@@ -108,8 +108,6 @@ public final class SingleRangeContainer extends ImmutableContainer {
     public Container andRange(final int rangeBegin, final int rangeEnd) {
         final int begin = begin();
         final int end = end();
-        // An empty or backwards range intersects nothing. Without this the bounds below would build a container whose
-        // end precedes its start rather than an empty one.
         if (rangeEnd <= rangeBegin || rangeEnd <= begin || end <= rangeBegin) {
             return Container.empty();
         }
@@ -586,8 +584,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
     @Override
     public Container remove(final int rangeFirst, final int rangeEnd) {
         if (rangeEnd <= rangeFirst) {
-            // Nothing to remove. Carrying on would split us around a range that covers no keys, leaving two runs that
-            // are adjacent, or overlapping when the range runs backwards.
+            // Nothing to remove.
             return this;
         }
         final int rangeLast = rangeEnd - 1;

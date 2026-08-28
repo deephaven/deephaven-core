@@ -906,8 +906,6 @@ public class ArrayContainer extends Container {
     public Container inot(final int firstOfRange, final int exclusiveEndOfRange) {
         // TODO: may need to convert to a RunContainer
         if (exclusiveEndOfRange <= firstOfRange) {
-            // Nothing to flip, as not() also answers. Carrying on would take the end one before the start, which for
-            // a range starting at zero wraps to the top of the block and makes the whole container look in range.
             return this;
         }
         // determine the span of array indices to be affected

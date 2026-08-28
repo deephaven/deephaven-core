@@ -2007,8 +2007,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (isEmpty() || pos >= card || length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
-        // Compared as a remaining count rather than as pos + length, which overflows for a very large length and
-        // would leave the request unclamped.
         if (length > card - pos) {
             length = card - pos;
         }

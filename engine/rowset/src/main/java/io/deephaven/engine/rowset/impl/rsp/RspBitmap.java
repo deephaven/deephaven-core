@@ -1294,8 +1294,6 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 if (flen > 0) {
                     final long k = spanInfoToKey(spanInfo);
                     final long spanCard = flen * BLOCK_SIZE;
-                    // The span's last key rather than one past it: a span reaching the top of the key space has no key
-                    // past its end, and holding one would wrap negative and read as though every key were beyond it.
                     final long sLast = k + spanCard - 1;
                     while (true) {
                         final long startPos = prevCap + it.currentRangeStart() - k;
@@ -1559,8 +1557,6 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         // subSetByPositionRange tends to create small indices, it pays off to check for compacting the result.
         final OrderedLongSet compacted = result.ixCompact();
         if (compacted != result) {
-            // A subrange covering everything hands back a reference to us rather than a copy, and compacting then
-            // answers with a different set, leaving that reference ours to give back.
             result.ixRelease();
         }
         return compacted;
@@ -1579,8 +1575,6 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         // subSetByKeyRange tends to create small indices, it pays off to check for compacting the result.
         final OrderedLongSet compacted = result.ixCompact();
         if (compacted != result) {
-            // A subrange covering everything hands back a reference to us rather than a copy, and compacting then
-            // answers with a different set, leaving that reference ours to give back.
             result.ixRelease();
         }
         return compacted;

@@ -2159,8 +2159,6 @@ public final class RunContainer extends Container {
             ans.valueslength[2 * k] = valueslength[2 * k];
             ans.valueslength[2 * k + 1] = valueslength[2 * k + 1];
             ++ans.nbrruns;
-            // Widened as unsigned: a run of more than 32768 values has a stored length whose short is negative, and
-            // counting that as a signed value takes 65536 off the cardinality.
             ans.cardinality += getLengthAsInt(k) + 1;
         }
         ans.smartAppendForXor((short) rangeStart, (short) (rangeEnd - rangeStart - 1));

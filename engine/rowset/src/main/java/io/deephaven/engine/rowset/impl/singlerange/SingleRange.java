@@ -712,8 +712,6 @@ public abstract class SingleRange implements OrderedLongSet {
         if (added instanceof SingleRange) {
             return ixInsertRange(added.ixFirstKey(), added.ixLastKey());
         }
-        // Taking a reference is what makes added shared, so the insert below copies rather than editing in place and
-        // the reference we asked for goes unused.
         final OrderedLongSet ix = added.ixCowRef();
         return insertOurRangeInto(ix);
     }
@@ -743,8 +741,6 @@ public abstract class SingleRange implements OrderedLongSet {
         if (other instanceof SingleRange) {
             return ixInsertRange(ansFirst, ansLast);
         }
-        // A zero shift hands back a reference to other rather than a copy of it, so this reference is ours to give
-        // back once the insert has answered.
         return insertOurRangeInto(other.ixShiftOnNew(shiftAmount));
     }
 
@@ -756,8 +752,6 @@ public abstract class SingleRange implements OrderedLongSet {
             return RowSequenceFactory.EMPTY;
         }
         final long s = rangeStart() + startPositionInclusive;
-        // Clamped as a remaining count rather than as s + length - 1, which overflows for a very large length and
-        // would put the end below the start.
         final long remaining = ixCardinality() - startPositionInclusive;
         final long e = s + Math.min(length, remaining) - 1;
         return new SingleRangeRowSequence(s, e);
