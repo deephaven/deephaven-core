@@ -318,8 +318,15 @@ public final class SingleRangeContainer extends ImmutableContainer {
     }
 
     private static final class ReverseIter extends IterBase implements ShortAdvanceIterator {
+        /**
+         * One past the container's last value, where {@code curr} starts. While {@code curr} still holds it the
+         * iterator has not stepped onto a value yet, and {@code curr} names no member.
+         */
+        private final int beforeStart;
+
         public ReverseIter(final SingleRangeContainer s) {
             super(s.end(), s.begin());
+            beforeStart = s.end();
         }
 
         @Override
@@ -330,6 +337,11 @@ public final class SingleRangeContainer extends ImmutableContainer {
         @Override
         public boolean advance(final int v) {
             if (v >= curr) {
+                if (curr == beforeStart) {
+                    // Not stepped yet, so we are sitting past the last value; advancing to a key at or above the
+                    // container means landing on that value rather than reporting the position past it.
+                    --curr;
+                }
                 return true;
             }
             if (v < last) {
