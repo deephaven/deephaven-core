@@ -160,6 +160,12 @@ public final class ParquetColumnRegionByte<ATTR extends Any> extends ParquetColu
 
         if (ctx.matchFilter() != null) {
             final MatchFilter matchFilter = ctx.matchFilter();
+            if (matchFilter.getValues().length == 0) {
+                // Nothing to search for, so the answer is known without touching the data.
+                return matchFilter.getMatchOptions().inverted()
+                        ? PushdownResult.allMatch(selection)
+                        : PushdownResult.noneMatch(selection);
+            }
             try (final RowSet matches = ByteRegionBinarySearchKernel.binarySearchMatch(
                     this,
                     selection.firstRowKey(),

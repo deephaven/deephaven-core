@@ -91,6 +91,15 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
         if (matchFilter != null) {
             final Class<?> dataType = columnSource.getType();
             final Object[] values = matchFilter.getValues();
+            if (values.length == 0) {
+                // Nothing to search for, so the answer is known without touching the data.
+                onComplete.accept(matchFilter.getMatchOptions().inverted()
+                        ? PushdownResult.allMatch(selection)
+                        : PushdownResult.noneMatch(selection));
+                return;
+            }
+            // Safe to search for these values directly: MatchFilter has already removed any NaN the filter does not
+            // intend to match, so the search's NaN == NaN equality cannot disagree with the filter's own.
             try (final RowSet matching =
                     binarySearchMatch(columnSource, dataType, selection, sortColumn, values, usePrev)) {
                 // Handle normal / inverted match filters:
@@ -118,6 +127,12 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
 
     /**
      * Helper method to call correct kernel based on data type.
+     *
+     * <p>
+     * NB: Equality and ordering tests are performed using the type-specific Comparison classes. In the case of float /
+     * double, this returns NaN == NaN -> true. Therefore NaN should be included in the search values IFF it is desired
+     * to match NaN values (i.e. MatchOptions.nanMatch() is true). MatchFilter creation already handles this and will
+     * remove any user-provided NaN from the search values when nanMatch is false.
      */
     public static RowSet binarySearchMatch(
             @NotNull final ColumnSource<?> source,

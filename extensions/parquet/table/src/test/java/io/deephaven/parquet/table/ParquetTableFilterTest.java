@@ -15,6 +15,8 @@ import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownPredicateManager;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -1486,6 +1488,61 @@ public final class ParquetTableFilterTest {
      * pq.write_table(table, "example.parquet")
      * </pre>
      */
+    /**
+     * Sorted region pushdown answers match filters with a binary search whose equality treats NaN as equal to itself,
+     * while {@code ==} and {@code !=} follow IEEE 754, where NaN equals nothing at all. The region emits its result as
+     * an exact match with nothing left for a residual pass to repair, so those filters have to decline the search
+     * rather than answer it. Every file here is written sorted and tagged, so the filters reach the per-region sorted
+     * action rather than the table-level one; the oracle is the same query with sorted pushdown switched off.
+     */
+    @Test
+    public void sortedFlatPartitionsNaNTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_sortedFlatPartitionsNaN").toString();
+        final int tableSize = 100_000;
+
+        // Deephaven ordering puts nulls first and NaN last, so a sorted file carries both at its edges.
+        final Table sorted = TableTools.emptyTable(tableSize)
+                .update("sorted_double = ii % 997 == 0 ? NULL_DOUBLE : (ii % 991 == 0 ? Double.NaN : (double) ii)")
+                .sort("sorted_double");
+
+        final Table[] partitions = splitTable(sorted, 7, false);
+        for (int ii = 0; ii < partitions.length; ii++) {
+            partitions[ii] = SortedColumnsAttribute.withOrderForColumn(
+                    partitions[ii], "sorted_double", SortingOrder.Ascending);
+        }
+        writeTables(destPath, partitions, EMPTY);
+
+        // IEEE 754: nothing equals NaN, and NaN differs from itself.
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double == NaN");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double != NaN");
+        // "in" opts into NaN matching itself, which the binary search can answer.
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double in NaN");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double not in NaN");
+        // Ordinary comparisons keep their pushdown and must be unaffected.
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double == 500.0");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double != 500.0");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double == null");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double != null");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double >= 500.0");
+    }
+
+    /**
+     * Asserts that the table at {@code destPath} answers {@code filters} identically with sorted-column pushdown
+     * enabled and disabled. The table is re-read for each side so that neither result is served from the other's
+     * memoized {@code where}.
+     */
+    private static void verifyAgainstDisabledSortedPushdown(final String destPath, final String... filters) {
+        final Table expected;
+        final boolean originalSetting = QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION;
+        QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = true;
+        try {
+            expected = ParquetTools.readTable(destPath).where(filters).coalesce();
+        } finally {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = originalSetting;
+        }
+        assertTableEquals(expected, ParquetTools.readTable(destPath).where(filters).coalesce());
+    }
+
     @Test
     public void testFilteringNaN() {
         // Read the reference parquet file with NaN values generated using PyArrow.

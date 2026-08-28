@@ -143,6 +143,12 @@ public final class ParquetColumnRegionInt<ATTR extends Any> extends ParquetColum
 
         if (ctx.matchFilter() != null) {
             final MatchFilter matchFilter = ctx.matchFilter();
+            if (matchFilter.getValues().length == 0) {
+                // Nothing to search for, so the answer is known without touching the data.
+                return matchFilter.getMatchOptions().inverted()
+                        ? PushdownResult.allMatch(selection)
+                        : PushdownResult.noneMatch(selection);
+            }
             try (final RowSet matches = IntRegionBinarySearchKernel.binarySearchMatch(
                     this,
                     selection.firstRowKey(),

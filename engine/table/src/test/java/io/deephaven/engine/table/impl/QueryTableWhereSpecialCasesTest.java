@@ -131,6 +131,18 @@ public class QueryTableWhereSpecialCasesTest {
             final String charColName,
             final Filter charFilter,
             final CharPredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateCharFilterOnSource(table, charColName, charFilter, predicate);
+        validateCharFilterOnSource(table.sort(charColName), charColName, charFilter, predicate);
+        validateCharFilterOnSource(table.sortDescending(charColName), charColName, charFilter, predicate);
+    }
+
+    private void validateCharFilterOnSource(
+            final Table table,
+            final String charColName,
+            final Filter charFilter,
+            final CharPredicate predicate) {
         final Table result = table.where(charFilter);
         try (final var it = result.characterColumnIterator(charColName)) {
             while (it.hasNext()) {
@@ -154,6 +166,18 @@ public class QueryTableWhereSpecialCasesTest {
     }
 
     private void validateByteFilter(
+            final Table table,
+            final String byteColName,
+            final Filter byteFilter,
+            final BytePredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateByteFilterOnSource(table, byteColName, byteFilter, predicate);
+        validateByteFilterOnSource(table.sort(byteColName), byteColName, byteFilter, predicate);
+        validateByteFilterOnSource(table.sortDescending(byteColName), byteColName, byteFilter, predicate);
+    }
+
+    private void validateByteFilterOnSource(
             final Table table,
             final String byteColName,
             final Filter byteFilter,
@@ -185,6 +209,18 @@ public class QueryTableWhereSpecialCasesTest {
             final String shortColName,
             final Filter shortFilter,
             final ShortPredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateShortFilterOnSource(table, shortColName, shortFilter, predicate);
+        validateShortFilterOnSource(table.sort(shortColName), shortColName, shortFilter, predicate);
+        validateShortFilterOnSource(table.sortDescending(shortColName), shortColName, shortFilter, predicate);
+    }
+
+    private void validateShortFilterOnSource(
+            final Table table,
+            final String shortColName,
+            final Filter shortFilter,
+            final ShortPredicate predicate) {
         final Table result = table.where(shortFilter);
         try (final var it = result.shortColumnIterator(shortColName)) {
             while (it.hasNext()) {
@@ -208,6 +244,18 @@ public class QueryTableWhereSpecialCasesTest {
     }
 
     private void validateIntFilter(
+            final Table table,
+            final String intColName,
+            final Filter intFilter,
+            final IntPredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateIntFilterOnSource(table, intColName, intFilter, predicate);
+        validateIntFilterOnSource(table.sort(intColName), intColName, intFilter, predicate);
+        validateIntFilterOnSource(table.sortDescending(intColName), intColName, intFilter, predicate);
+    }
+
+    private void validateIntFilterOnSource(
             final Table table,
             final String intColName,
             final Filter intFilter,
@@ -239,6 +287,18 @@ public class QueryTableWhereSpecialCasesTest {
             final String longColName,
             final Filter longFilter,
             final LongPredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateLongFilterOnSource(table, longColName, longFilter, predicate);
+        validateLongFilterOnSource(table.sort(longColName), longColName, longFilter, predicate);
+        validateLongFilterOnSource(table.sortDescending(longColName), longColName, longFilter, predicate);
+    }
+
+    private void validateLongFilterOnSource(
+            final Table table,
+            final String longColName,
+            final Filter longFilter,
+            final LongPredicate predicate) {
         final Table result = table.where(longFilter);
         try (final var it = result.longColumnIterator(longColName)) {
             while (it.hasNext()) {
@@ -262,6 +322,18 @@ public class QueryTableWhereSpecialCasesTest {
     }
 
     private void validateFloatFilter(
+            final Table table,
+            final String floatColName,
+            final Filter floatFilter,
+            final FloatPredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateFloatFilterOnSource(table, floatColName, floatFilter, predicate);
+        validateFloatFilterOnSource(table.sort(floatColName), floatColName, floatFilter, predicate);
+        validateFloatFilterOnSource(table.sortDescending(floatColName), floatColName, floatFilter, predicate);
+    }
+
+    private void validateFloatFilterOnSource(
             final Table table,
             final String floatColName,
             final Filter floatFilter,
@@ -293,6 +365,18 @@ public class QueryTableWhereSpecialCasesTest {
             final String doubleColName,
             final Filter doubleFilter,
             final DoublePredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateDoubleFilterOnSource(table, doubleColName, doubleFilter, predicate);
+        validateDoubleFilterOnSource(table.sort(doubleColName), doubleColName, doubleFilter, predicate);
+        validateDoubleFilterOnSource(table.sortDescending(doubleColName), doubleColName, doubleFilter, predicate);
+    }
+
+    private void validateDoubleFilterOnSource(
+            final Table table,
+            final String doubleColName,
+            final Filter doubleFilter,
+            final DoublePredicate predicate) {
         final Table result = table.where(doubleFilter);
         try (final var it = result.doubleColumnIterator(doubleColName)) {
             while (it.hasNext()) {
@@ -316,6 +400,36 @@ public class QueryTableWhereSpecialCasesTest {
     }
 
     // endregion Predicate Testing
+
+    /** A short string column with mixed case and a null, plus the ordering the sorted pushdown would see. */
+    private static Table sortedStrings(final boolean descending) {
+        final Table source = newTable(stringCol("S", "alpha", "BETA", "Alpha", null, "beta"));
+        return descending ? source.sortDescending("S") : source.sort("S");
+    }
+
+    /**
+     * Sorted-column pushdown answers a match filter with a binary search that navigates by {@code compareTo}, which is
+     * case significant, so it cannot reach the rows a case-insensitive filter matches. Its result is emitted as an
+     * exact match with nothing left for a residual pass to repair, so such a filter has to decline the search rather
+     * than answer it with the rows the search happens to visit.
+     */
+    @Test
+    public void testCaseInsensitiveMatchOnSortedColumn() {
+        for (final boolean descending : new boolean[] {false, true}) {
+            for (final String filter : new String[] {"S icase in `alpha`", "S icase not in `alpha`"}) {
+                // A fresh table per side, so neither result is served from the other's memoized where().
+                final boolean originalSetting = QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION;
+                final Table expected;
+                QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = true;
+                try {
+                    expected = sortedStrings(descending).where(filter).coalesce();
+                } finally {
+                    QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = originalSetting;
+                }
+                assertTableEquals(expected, sortedStrings(descending).where(filter).coalesce());
+            }
+        }
+    }
 
     @Test
     public void testRangeGTZero() {
