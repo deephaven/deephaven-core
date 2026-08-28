@@ -72,19 +72,20 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    [Deephaven C++ client installation guide](https://github.com/deephaven/deephaven-core/blob/main/cpp-client/BUILDING.md).
    Follow the instructions at least through "Build and Install Deephaven C++ client". After that, you will have both the
    Deephaven C++ client and any C++ libraries it depends on installed in a particular directory of your choosing.
-   In what follows, we assume that directory is `/path/to/dhcpp`.
+   The build instructions for C++ leave you with an environment variable `DHCPP` that points to this installation
+   directory. In what follows, we call that directory `$DHCPP`.
 
-3. Set environment variables from the C++ client installation required for building the R client:
+2. Set environment variables from the C++ client installation required for building the R client:
    ```bash
-   source /path/to/dhcpp/env.sh
+   source $DHCPP/env.sh
    ```
-   where `/path/to/dhcpp` is the directory you created in step 1 above.
    Ensure the necessary environment variables are set by checking their values as follows:
    ```
    echo $DHCPP
    echo $LD_LIBRARY_PATH
    echo $NCPUS
    echo $CMAKE_PREFIX_PATH
+   echo $DHSRC
    ```
 
    For faster compilation of the R client and its dependencies (particularly the Arrow R client),
@@ -93,23 +94,12 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
     export MAKE="make -j$NCPUS"
    ```
    
-   Refer to the instructions on the C++ client installation for more details on the `dhcpp` directory.
+   Refer to the instructions on the C++ client installation for more details on the `$DHCPP` directory.
 
-4. The C++ client installation will have left you with a local clone of the full [Deephaven Core Git repository](https://github.com/deephaven/deephaven-core).
-   Navigate to the `deephaven-core/R/rdeephaven` directory within that clone.
+3. The C++ client installation will have left you with a local clone of the full [Deephaven Core Git repository](https://github.com/deephaven/deephaven-core).
+   Navigate to the `$DHSRC/deephaven-core/R/rdeephaven` directory within that clone.
 
-   If you prefer to have an isolated directory where the Deephaven R client source code will live, use git's sparse-checkout:
-   ```bash
-   mkdir rdeephaven
-   cd rdeephaven
-   git init
-   git remote add -f origin https://github.com/deephaven/deephaven-core.git
-   git config core.sparseCheckout true
-   echo "R/rdeephaven" >> .git/info/sparse-checkout
-   git pull origin main
-   ```
-
-5. Start an R console inside the `rdeephaven` directory by running `R`. In that console, install the Deephaven R client dependencies:
+4. Start an R console inside the `rdeephaven` directory by running `R`. In that console, install the Deephaven R client dependencies:
    ```r
    install.packages(c('Rcpp', 'arrow', 'R6', 'dplyr', 'xml2', 'rmarkdown', 'knitr'))
    ```
@@ -119,7 +109,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ```
    This is needed over the typical `install.packages()` to ensure that the vignettes get built and installed.
 
-6. Now, run
+5. Now, run
    ```r
    library(rdeephaven)
    ```
@@ -127,10 +117,10 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    
    For an introduction to the package, run `vignette("rdeephaven")`.
 
-7. The `LD_LIBRARY_PATH` environment variable set in step 2 is necessary for loading the R client once it is installed.
+6. The `LD_LIBRARY_PATH` environment variable set in step 2 is necessary for loading the R client once it is installed.
    Therefore, you must set `LD_LIBRARY_PATH` manually at the start of each session by running the following command:
    ```bash
-   source /path/to/dhcpp/env.sh
+   source $DHCPP/env.sh
    ```
    This will set `LD_LIBRARY_PATH`, as well as the other environment variables from step 2.
    
@@ -143,11 +133,10 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    fi
    ```
    This will automatically set `LD_LIBRARY_PATH` at the beginning of every session _for this user_, so that any process (R or RStudio) may access its value.
-   If you move the dhcpp directory, or need to point R to another version of it, `current_dhcpp_dir` should be modified accordingly.
 
 ## Common Errors
 
-- **Cannot compile the R client**
+  - **Cannot compile the R client**
 
    If an error like this occurs in step 4:
    ```bash
@@ -156,34 +145,19 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
       |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~
    compilation terminated.
    ```
-   this means that the C++ compiler does not know where to find the relevant header files for the Deephaven C++ client. This can happen for a handul of reasons:
-   1. Step 1 was skipped, and the Deephaven C++ client was not installed. In this case, please ensure that the client is installed before attempting to build the R client.
-   2. The Deephaven C++ client is installed, but the `DHCPP` environment variable is not set. To test this, run
-      ```bash
-      echo $DHCPP
-      ```
-      If this returns an empty string, set `DHCPP` according to the instructions in step 2a with
-      ```bash
-      source /path/to/dhcpp/env.sh
-      ```
-   3. The Deephaven C++ client is installed and the `DHCPP` environment variable is set, but the current project is not configured to allow the compiler
-      to access the Deephaven `dhcpp` and `src` directories. This is more difficult to give advice on, as it is an IDE-dependent problem. Consult your IDE's
-      documentation on C/C++ compiler include paths for more information.
+   this usually means that $DHCPP is not set or the directory has not been populated.
+   Please confirm you have run the steps above.
 
   - **Cannot load the R client**
 
       Once the R client is successfully installed, you may try to load it at a later date, only to find this error:
-     ```bash
+      ```bash
       > library(rdeephaven)
       Error: package or namespace load failed for ‘rdeephaven’ in dyn.load(file, DLLpath = DLLpath, ...):
        unable to load shared object '/home/user/R/x86_64-pc-linux-gnu-library/4.4/rdeephaven/libs/rdeephaven.so':
         libdhclient.so: cannot open shared object file: No such file or directory
       ```
-      This very likely means that the `LD_LIBRARY_PATH` environment variable is not set. To rectify this, run
-      ```bash
-      source /path/to/dhcpp/env.sh
-      ```
-      from the parent session and try again. Alternatively, see step 6 for a way to solve this problem semi-permanently.
+      To rectify this, confirm that LD_LIBRARY_PATH is set. You can set it by running source $DHCPP/env.sh
 
       RStudio presents its own solution to this problem that RStudio users may want to use instead of the semi-permanent solution in step 6.
       RStudio supports using a `.Renviron` file for setting environment variables. If the correct environment variables are currently set (see step 2),

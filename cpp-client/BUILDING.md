@@ -21,12 +21,13 @@ an existing server running Deephaven Core, you should be able to
 connect to that. However, if you don't have one, you can follow the
 instructions [here](https://deephaven.io/core/docs/getting-started/launch-build/).
 
-Note that it is only possible to build a server on Linux. Building a server on
-Windows is not currently supported.
+Note that although the client is supported on both Linux and Windows,
+at this time it's only possible to build a server on Linux. Building a
+server on Windows is not currently supported.
 
 You can build and install client libraries, tests, and examples
 without having a server installed. However you will eventually need to
-connect a server when you want to run them.
+connect to a server when you want to run them.
 
 # Building the C++ client on Ubuntu 22.04
 
@@ -72,7 +73,7 @@ connect a server when you want to run them.
    The three main build types of a standard cmake build are supported,
    `Release`, `Debug` and `RelWithDebInfo`.  By default. `build-dependencies.sh`
    creates a `RelWithDebInfo` build.  To create a `Release` build, set the
-   environment variable `BUILD_TYPE=Release` (1)
+   environment variable `BUILD_TYPE=Release` (see note 1)
 
    Edit your local copy of the script if necessary to reflect your selection
    of build tools and build target; Defaults point to Ubuntu system's g++,
@@ -98,7 +99,7 @@ connect a server when you want to run them.
    sources for the libraries will be downloaded, cloned from their
    github repositories.  You can ask `build-dependencies.sh` to remove
    the downloaded sources once the libraries have been built by
-   passing to it the `--clean` flag.  The default cmake build target is `Debug`,
+   passing to it the `--clean` flag.  The default cmake build target is `RelWithDebInfo`,
    which would make it useful to keep the downloaded sources for
    debug/development purposes.  If `Release` versions are preferred,
    an environment variable `BUILD_TYPE` set to `Release` can be used
@@ -111,8 +112,9 @@ connect a server when you want to run them.
    The `env.sh` file contains environment variable definitions in bourne
    shell syntax (compatible with bash) that will indicate to cmake
    the location of the libraries just built, via definition of a suitable
-   `CMAKE_PREFIX_PATH`.  This file is intended to be `source`'d
-   from a shell where you plan to build the C++ client.
+   `CMAKE_PREFIX_PATH`.
+   This file is intended to be used by saying `source env.sh` from
+   a shell where you plan to build the C++ client.
 
 6. Build and install Deephaven C++ client.  Running `build-dependencies.sh` should have
    created an `env.sh` file that we source below to set relevant environment variables for
@@ -157,13 +159,20 @@ connect a server when you want to run them.
    ```
 
 8. (Optional) run the unit tests
-   This assumes the build created on step 7 is available in the same directory.
+   The tests get installed, you can just run:
+
+    ```
+    $DHCPP/bin/dhclient_tests
+    ```
+
+   If you want to build the tests from sources:
 
     ```
     cd $DHSRC/deephaven-core/cpp-client/deephaven/build/tests
     make -j$NCPUS
     ./tests
     ```
+   This assumes the build created on step 7 is available in the same directory.
 
 9. Building in different distributions or with older toolchains.
    While we don't support other linux distributions or GCC versions earlier
