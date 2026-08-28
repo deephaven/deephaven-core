@@ -3035,6 +3035,11 @@ public final class RunContainer extends Container {
 
     @Override
     public int nextValue(final short fromValue) {
+        if (nbrruns == 0) {
+            // Nothing at or above the bound. Without this the search below lands before the first run and we would
+            // ask for a first value that does not exist.
+            return -1;
+        }
         int index = unsignedInterleavedBinarySearch(valueslength, 0, nbrruns, fromValue);
         int effectiveIndex = index >= 0 ? index : -index - 2;
         if (effectiveIndex == -1) {
