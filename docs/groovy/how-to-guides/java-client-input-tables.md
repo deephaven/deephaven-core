@@ -28,6 +28,30 @@ dependencies {
 }
 ```
 
+### JVM configuration
+
+On Java 9+, Arrow requires reflective access to `java.nio.Buffer`. Add this JVM option to avoid `InaccessibleObjectException`:
+
+```text syntax
+--add-opens=java.base/java.nio=ALL-UNNAMED
+```
+
+For Gradle's `application` plugin, configure the run task:
+
+```groovy syntax
+application {
+    applicationDefaultJvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
+}
+```
+
+Or for a specific `JavaExec` task:
+
+```groovy syntax
+tasks.named('run', JavaExec) {
+    jvmArgs += ['--add-opens=java.base/java.nio=ALL-UNNAMED']
+}
+```
+
 ## Basic pattern
 
 The basic pattern for sending data from a Java client is:
