@@ -30,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-import static io.deephaven.util.QueryConstants.MAX_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 /**
@@ -168,7 +167,7 @@ public final class ParquetColumnRegionFloat<ATTR extends Any> extends ParquetCol
                         firstSortedColumn,
                         rangeFilter.getUpper(),
                         rangeFilter.isUpperInclusive());
-            } else if (rangeFilter.getUpper() == MAX_FLOAT && rangeFilter.isUpperInclusive()) {
+            } else if (Float.isNaN(rangeFilter.getUpper()) && rangeFilter.isUpperInclusive()) {
                 // Only need to find the lower bound, as the upper bound includes all values.
                 matches = FloatRegionBinarySearchKernel.binarySearchMin(
                         this,
@@ -179,6 +178,9 @@ public final class ParquetColumnRegionFloat<ATTR extends Any> extends ParquetCol
                         rangeFilter.isLowerInclusive());
             } else {
                 // Find the lower and upper bounds.
+                // gt() and geq() build a NaN upper bound that is exclusive, so the common greater-than filters
+                // land here rather than short-circuiting: the trailing NaN block has to be located and excluded,
+                // which needs the upper bound searched as well as the lower.
                 matches = FloatRegionBinarySearchKernel.binarySearchMinMax(
                         this,
                         selection.firstRowKey(),

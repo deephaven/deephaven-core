@@ -21,7 +21,6 @@ import io.deephaven.engine.table.impl.sort.timsort.FloatTimsortKernel;
 import io.deephaven.util.compare.FloatComparisons;
 
 import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.insertionPoint;
-import static io.deephaven.util.QueryConstants.MAX_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -48,10 +47,13 @@ public class FloatColumnBinarySearchKernel {
         if (filter.getLower() == NULL_FLOAT && filter.isLowerInclusive()) {
             return binarySearchMax(source, selection, sortColumn, filter.getUpper(), filter.isUpperInclusive(),
                     usePrev);
-        } else if (filter.getUpper() == MAX_FLOAT && filter.isUpperInclusive()) {
+        } else if (Float.isNaN(filter.getUpper()) && filter.isUpperInclusive()) {
             return binarySearchMin(source, selection, sortColumn, filter.getLower(), filter.isLowerInclusive(),
                     usePrev);
         } else {
+            // gt() and geq() build a NaN upper bound that is exclusive, so the common greater-than filters
+            // land here rather than short-circuiting: the trailing NaN block has to be located and excluded,
+            // which needs the upper bound searched as well as the lower.
             return binarySearchMinMax(source, selection, sortColumn,
                     filter.getLower(), filter.getUpper(),
                     filter.isLowerInclusive(), filter.isUpperInclusive(), usePrev);

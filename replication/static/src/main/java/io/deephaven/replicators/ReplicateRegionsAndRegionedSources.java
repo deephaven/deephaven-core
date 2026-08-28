@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,7 +53,15 @@ public class ReplicateRegionsAndRegionedSources {
         charToAllButBoolean(TASK, GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH);
         fixupBinSearchObject(charToObject(TASK, GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH));
 
-        charToAllButBoolean(TASK, GENERIC_COLUMN_BINARY_SEARCH_KERNEL_PATH);
+        final List<String> columnBinarySearchKernels =
+                charToAllButBoolean(TASK, GENERIC_COLUMN_BINARY_SEARCH_KERNEL_PATH);
+        for (final String path : columnBinarySearchKernels) {
+            if (path.contains("Double")) {
+                fixupUnboundedUpperRange(path, "Double");
+            } else if (path.contains("Float")) {
+                fixupUnboundedUpperRange(path, "Float");
+            }
+        }
         fixupBinSearchObject(charToObject(TASK, GENERIC_COLUMN_BINARY_SEARCH_KERNEL_PATH));
         charToAllButBooleanAndByte(TASK, GENERIC_REGION_CHAR_PATH);
         fixupChunkColumnRegionByte(charToByte(TASK, GENERIC_REGION_CHAR_PATH));
@@ -196,12 +205,72 @@ public class ReplicateRegionsAndRegionedSources {
         for (String file : files) {
             if (file.contains("Double")) {
                 replaceStatistics(file, "Double");
+                fixupUnboundedUpperRange(file, "Double");
             } else if (file.contains("Float")) {
                 replaceStatistics(file, "Float");
+                fixupUnboundedUpperRange(file, "Float");
             } else if (file.contains("Long")) {
                 replaceStatistics(file, "Long");
             }
         }
+    }
+
+    /**
+     * The range dispatch short-circuits to a lower-bound-only search when the filter's upper bound is the greatest
+     * value of the type and is inclusive, since every row at or above the lower bound then matches. That test is
+     * written against {@code MAX_<TYPE>}, which is correct for the integral types and char but not for the
+     * floating-point ones: {@code MAX_FLOAT} and {@code MAX_DOUBLE} are positive infinity, while Deephaven ordering
+     * sorts NaN <i>above</i> positive infinity. Taking the shortcut for an inclusive +Inf upper bound therefore returns
+     * the trailing NaN block as part of an exact match, which pushdown never re-filters.
+     *
+     * <p>
+     * The greatest value in Deephaven order for these types is NaN, so test for that instead. This both stops the
+     * shortcut being taken for an inclusive +Inf bound (which now falls through to a two-sided search that excludes
+     * NaN) and starts taking it for an inclusive NaN bound, where it is genuinely correct.
+     */
+    private static void fixupUnboundedUpperRange(final String path, final String type) throws IOException {
+        final File file = new File(path);
+        final String maxConstant = "MAX_" + type.toUpperCase();
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = globalReplacements(lines,
+                "(\\w+)\\.getUpper\\(\\) == " + maxConstant, type + ".isNaN($1.getUpper())");
+        lines = removeImport(lines, "\\s*import\\s+static\\s+io\\.deephaven\\.util\\.QueryConstants\\."
+                + maxConstant + "\\s*;");
+        lines = explainTwoSidedFloatingPointRange(lines);
+        FileUtils.writeLines(file, lines);
+    }
+
+    /**
+     * Annotates the two-sided fall-through of the range dispatch, which is where the floating-point types land for the
+     * greater-than filters that the other types short-circuit past. Only the generated floating-point files get this;
+     * for char and the integral types the comment would be meaningless.
+     */
+    private static List<String> explainTwoSidedFloatingPointRange(final List<String> lines) {
+        final List<String> newLines = new ArrayList<>(lines);
+        for (int ii = 0; ii < newLines.size() - 1; ++ii) {
+            if (!newLines.get(ii).trim().equals("} else {")) {
+                continue;
+            }
+            // Step over any comment the template already carries, so this sits directly above the code.
+            int statement = ii + 1;
+            while (statement < newLines.size() && newLines.get(statement).trim().startsWith("//")) {
+                ++statement;
+            }
+            // The dispatch's fall-through is the only "} else {" leading directly into a two-sided search.
+            if (statement >= newLines.size() || !newLines.get(statement).contains("binarySearchMinMax(")) {
+                continue;
+            }
+            final String body = newLines.get(statement);
+            final String indent = body.substring(0, body.length() - body.stripLeading().length());
+            newLines.addAll(statement, Arrays.asList(
+                    indent + "// gt() and geq() build a NaN upper bound that is exclusive, so the common"
+                            + " greater-than filters",
+                    indent + "// land here rather than short-circuiting: the trailing NaN block has to be located"
+                            + " and excluded,",
+                    indent + "// which needs the upper bound searched as well as the lower."));
+            return newLines;
+        }
+        throw new IllegalStateException("Could not find the range dispatch fall-through to annotate");
     }
 
     private static void replaceStatistics(final String f, final String statsReplacement) throws IOException {
