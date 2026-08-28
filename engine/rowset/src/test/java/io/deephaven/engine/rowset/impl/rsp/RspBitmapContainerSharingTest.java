@@ -83,6 +83,24 @@ public class RspBitmapContainerSharingTest {
     }
 
     /** The other direction: mutating the copy must leave the source alone. */
+    /**
+     * The same constructor also has to cope with a full block span too long to be held by the marker form. Beyond
+     * 0xFFFF blocks the span object is a boxed Long, which is no more a container than the marker is.
+     */
+    @Test
+    public void testSubrangeOfALongFullBlockSpan() {
+        final RspBitmap rb = RspBitmap.makeSingleRange(5, 5);
+        // Over 0xFFFF blocks, so the span cannot be held in the marker's length bits.
+        rb.addRangeUnsafeNoWriteCheck(BS, BS + (1L << 32) + (1L << 20) - 1);
+        rb.finishMutations();
+        assertTrue("the fixture holds a boxed full block span", rb.spans[1] instanceof Long);
+
+        final RspBitmap sub = new RspBitmap(rb, 1, rb.size() - 1);
+        sub.validate("subrange of a long full block span");
+        assertEquals("cardinality is carried over", (1L << 32) + (1L << 20), sub.getCardinality());
+        rb.validate("source after the subrange");
+    }
+
     @Test
     public void testMutatingTheCopyLeavesTheSourceAlone() {
         final RspBitmap r1 = withPackedArrayContainer();

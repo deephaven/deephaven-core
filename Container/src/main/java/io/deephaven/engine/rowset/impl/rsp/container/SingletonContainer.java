@@ -281,9 +281,9 @@ public final class SingletonContainer extends ImmutableContainer {
         private final short value;
         private boolean hasNext;
 
-        public ContainerShortBatchIter(final SingletonContainer sc) {
+        public ContainerShortBatchIter(final SingletonContainer sc, final int skip) {
             value = sc.value;
-            hasNext = true;
+            hasNext = skip < 1;
         }
 
         @Override
@@ -313,10 +313,12 @@ public final class SingletonContainer extends ImmutableContainer {
 
     @Override
     public ContainerShortBatchIterator getShortBatchIterator(final int skipFromStartCount) {
-        if (skipFromStartCount > 0) {
+        if (skipFromStartCount > 1) {
             throw new IllegalArgumentException("skipFromStartCount=" + skipFromStartCount);
         }
-        return new ContainerShortBatchIter(this);
+        // Skipping our one value leaves an exhausted iterator, which is what the other implementations answer for a
+        // skip equal to their cardinality.
+        return new ContainerShortBatchIter(this, skipFromStartCount);
     }
 
     public static class SearchRangeIter implements SearchRangeIterator {
@@ -324,8 +326,12 @@ public final class SingletonContainer extends ImmutableContainer {
         private boolean hasNext;
 
         public SearchRangeIter(final short v) {
+            this(v, 0);
+        }
+
+        public SearchRangeIter(final short v, final int skip) {
             intValue = ContainerUtil.toIntUnsigned(v);
-            hasNext = true;
+            hasNext = skip < 1;
         }
 
         @Override
@@ -363,10 +369,11 @@ public final class SingletonContainer extends ImmutableContainer {
 
     @Override
     public SearchRangeIterator getShortRangeIterator(final int skipFromStartCount) {
-        if (skipFromStartCount > 0) {
+        if (skipFromStartCount > 1) {
             throw new IllegalArgumentException("skipFromStartCount=" + skipFromStartCount);
         }
-        return new SearchRangeIter(value);
+        // As above: skipping our one value leaves nothing to iterate.
+        return new SearchRangeIter(value, skipFromStartCount);
     }
 
     private Container orImpl(final Container x) {

@@ -713,7 +713,19 @@ public abstract class SingleRange implements OrderedLongSet {
             return ixInsertRange(added.ixFirstKey(), added.ixLastKey());
         }
         final OrderedLongSet ix = added.ixCowRef();
-        return ix.ixInsertRange(rangeStart(), rangeEnd());
+        return insertOurRangeInto(ix);
+    }
+
+    /**
+     * Insert our own range into {@code ix}, a reference we own, releasing it if the insert answered with a different
+     * set.
+     */
+    private OrderedLongSet insertOurRangeInto(final OrderedLongSet ix) {
+        final OrderedLongSet ans = ix.ixInsertRange(rangeStart(), rangeEnd());
+        if (ans != ix) {
+            ix.ixRelease();
+        }
+        return ans;
     }
 
     @Override
@@ -729,7 +741,7 @@ public abstract class SingleRange implements OrderedLongSet {
         if (other instanceof SingleRange) {
             return ixInsertRange(ansFirst, ansLast);
         }
-        return other.ixShiftOnNew(shiftAmount).ixInsertRange(rangeStart(), rangeEnd());
+        return insertOurRangeInto(other.ixShiftOnNew(shiftAmount));
     }
 
     @Override
@@ -740,7 +752,8 @@ public abstract class SingleRange implements OrderedLongSet {
             return RowSequenceFactory.EMPTY;
         }
         final long s = rangeStart() + startPositionInclusive;
-        final long e = Math.min(s + length - 1, rangeEnd());
+        final long remaining = ixCardinality() - startPositionInclusive;
+        final long e = s + Math.min(length, remaining) - 1;
         return new SingleRangeRowSequence(s, e);
     }
 

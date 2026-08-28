@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
@@ -151,6 +152,74 @@ public class RowSetRefCountLeakTest {
         // A real shift copies, so the reference asked for is the one used; keep that path pinned.
         assertHoldsSteady("shifted insert", bitmap,
                 () -> SortedRanges.makeSingleRange(5, 7).ixInsertWithShift(11, bitmap));
+    }
+
+    /**
+     * Taking a subrange that covers the whole set hands back a reference to the set itself rather than a copy; if the
+     * result is then compacted onto a different implementation, that reference has to be given back.
+     */
+    @Test
+    public void testWholeSetSubrangeThatCompactsDoesNotRetainTheSource() {
+        // One span holding one contiguous range, so compacting turns it into a SingleRange.
+        final RspBitmap inner = RspBitmap.makeSingleRange(5, 9);
+        try (final WritableRowSetImpl rs = rowSetOf(inner)) {
+            assertHoldsSteady("whole-set key range subset", inner, () -> {
+                try (final RowSet sub = rs.subSetByKeyRange(rs.firstRowKey(), rs.lastRowKey())) {
+                    assertEquals("the subset is the whole set", rs.size(), sub.size());
+                }
+            });
+            assertHoldsSteady("whole-set position range subset", inner, () -> {
+                try (final RowSet sub = rs.subSetByPositionRange(0, rs.size())) {
+                    assertEquals("the subset is the whole set", rs.size(), sub.size());
+                }
+            });
+        }
+        // A bitmap that cannot compact keeps the reference it handed out, which is correct; pin that too.
+        final RspBitmap wide = manyBlockRsp(5);
+        try (final WritableRowSetImpl rs = rowSetOf(wide)) {
+            assertHoldsSteady("whole-set subset of a bitmap that cannot compact", wide, () -> {
+                try (final RowSet sub = rs.subSetByKeyRange(rs.firstRowKey(), rs.lastRowKey())) {
+                    assertEquals("the subset is the whole set", rs.size(), sub.size());
+                }
+            });
+        }
+    }
+
+    /**
+     * A single-range receiver builds its answer by inserting itself into a reference to the argument. Holding that
+     * reference is what makes the argument shared, so the insert copies and the reference goes unused.
+     *
+     * <p>
+     * The result is released each time, as the callers of these methods do: when the insert answers with the argument
+     * itself the reference legitimately transfers to the result, and a test that dropped it would look like a leak.
+     */
+    @Test
+    public void testInsertIntoASingleRangeReceiverDoesNotRetainTheArgument() {
+        // Above the receiver's range, so inserting it genuinely changes the argument and forces the copy.
+        SortedRanges above = SortedRanges.makeSingleRange(1000, 1100);
+        for (int i = 3; i < 12; ++i) {
+            above = above.addRange(i * BLOCK_SIZE, i * BLOCK_SIZE + 50);
+        }
+        final SortedRanges sortedRanges = above;
+        final RspBitmap bitmap = manyBlockRsp(1005);
+
+        assertHoldsSteady("insert of a bitmap", bitmap, () -> release(SingleRange.make(5, 7).ixInsert(bitmap)));
+        assertHoldsSteady("insert of sorted ranges", sortedRanges,
+                () -> release(SingleRange.make(5, 7).ixInsert(sortedRanges)));
+        assertHoldsSteady("unshifted insert with shift", bitmap,
+                () -> release(SingleRange.make(5, 7).ixInsertWithShift(0, bitmap)));
+        assertHoldsSteady("shifted insert with shift", bitmap,
+                () -> release(SingleRange.make(5, 7).ixInsertWithShift(11, bitmap)));
+
+        // An argument whose keys the receiver already covers takes no reference at all; pin that path too.
+        final RspBitmap covered = RspBitmap.makeSingleRange(6, 6);
+        assertHoldsSteady("insert of an argument we already cover", covered,
+                () -> release(SingleRange.make(5, 7).ixInsert(covered)));
+    }
+
+    /** Give back an owned reference, the way the callers of the ix* methods do. */
+    private static void release(final OrderedLongSet ols) {
+        ols.ixRelease();
     }
 
     // 3.4 -- logging stops after a couple hundred ranges, abandoning the iterator there.

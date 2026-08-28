@@ -569,6 +569,27 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         return RowSetUtils.equals(this, obj);
     }
 
+    /**
+     * Hashed on the number of keys, plus the first and last key when there are any.
+     * <p>
+     * {@link #equals(Object)} compares contents, so two equal rowsets agree on all three of those however they are
+     * backed, and hash alike as the contract requires. Rowsets that are not equal may still collide -- three summary
+     * values cannot tell every set of keys apart -- which keeps this cheap on a rowset of any size, at the price of
+     * being a coarse discriminator.
+     *
+     * @return A hash code consistent with {@link #equals(Object)}
+     */
+    @Override
+    public final int hashCode() {
+        int result = 17;
+        result = 31 * result + Long.hashCode(size());
+        if (!isEmpty()) {
+            result = 31 * result + Long.hashCode(firstRowKey());
+            result = 31 * result + Long.hashCode(lastRowKey());
+        }
+        return result;
+    }
+
     @Override
     public final void writeExternal(@NotNull final ObjectOutput out) throws IOException {
         ExternalizableRowSetUtils.writeExternalCompressedDeltas(out, this);

@@ -990,6 +990,13 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         long iPrevData = iData;
         do {
             final long targetPos = inputPositions.nextLong();
+            if (targetPos < 0 || targetPos >= cardinality) {
+                // No key at that position, which is what the other implementations answer as well. Walking on would
+                // run past the ranges we hold and read the array's unused tail, where the entries of a range that was
+                // removed are still sitting.
+                outputKeys.accept(RowSequence.NULL_ROW_KEY);
+                continue;
+            }
             while (iPos < targetPos) {
                 ++i;
                 iData = packedGet(i);
@@ -1161,9 +1168,18 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return iStart;
     }
 
+    /**
+     * Whether any of our ranges overlaps any range remaining in {@code rangeIter}.
+     * <p>
+     * <b>Takes ownership of {@code rangeIter} and closes it</b>, as {@link #subsetOf(RowSet.RangeIterator)} does. The
+     * answer is usually reached with ranges still unread, and an iterator over a reference-counted rowset holds a
+     * reference on it until closed; leaving it open marks that rowset shared for good, so every later mutation of it
+     * copies first.
+     *
+     * @param rangeIter The ranges to test against, consumed and closed by this call
+     * @return true if some range of ours overlaps some range of {@code rangeIter}
+     */
     public final boolean overlaps(final RowSet.RangeIterator rangeIter) {
-        // We take ownership of rangeIter, as subsetOf does: an answer is usually reached with ranges still unread,
-        // and closing the iterator is what returns the reference it holds on the rowset it walks.
         try {
             if (isEmpty()) {
                 return false;
@@ -1564,12 +1580,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 final long min = Math.min(s1, s2);
                 final long max = Math.max(e1, e2);
                 if (max == Long.MAX_VALUE) {
-                    // The merged range reaches the top of the key space, so neither side can hold anything further and
-                    // there is nowhere to advance to.
+                    // The merged range reaches the top of the key space, so there is nowhere to advance to. Whatever
+                    // either iterator still holds unread lies inside [min, MAX], so we are done: breaking here instead
+                    // would reach the leftover drains below, which would append those covered ranges after a range
+                    // ending at MAX and leave the result out of order with an overflowed cardinality.
                     if (!res.trySimpleAppend(min, max)) {
                         return null;
                     }
-                    break;
+                    return res;
                 }
                 final boolean it1Valid = it1.advance(max + 1);
                 final boolean it2Valid = it2.advance(max + 1);
@@ -1667,6 +1685,17 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return count;
     }
 
+    /**
+     * Whether every key of ours is also covered by the ranges remaining in {@code ritOther}.
+     * <p>
+     * <b>Takes ownership of {@code ritOther} and closes it</b>, as {@link #overlaps(RowSet.RangeIterator)} does. The
+     * answer is usually reached with ranges still unread, and an iterator over a reference-counted rowset holds a
+     * reference on it until closed; leaving it open marks that rowset shared for good, so every later mutation of it
+     * copies first.
+     *
+     * @param ritOther The ranges we must be covered by, consumed and closed by this call
+     * @return true if every key of ours lies in some range of {@code ritOther}
+     */
     public final boolean subsetOf(final RowSet.RangeIterator ritOther) {
         try (final RowSet.RangeIterator rit = getRangeIterator()) {
             while (rit.hasNext()) {
@@ -1864,7 +1893,20 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    // !isEmpty() && rit.hasNext() true on entry.
+    /**
+     * Append to {@code builder} the positions of the keys remaining in {@code rit}, stopping at {@code maxPosition}.
+     * <p>
+     * Unlike {@link #overlaps(RowSet.RangeIterator)} and {@link #subsetOf(RowSet.RangeIterator)}, this <b>does not take
+     * ownership of {@code rit}</b>: it can return with ranges unread, and the caller must close the iterator itself.
+     * <p>
+     * {@code !isEmpty() && rit.hasNext()} assumed on entry.
+     *
+     * @param rit The keys to invert, left open for the caller to close
+     * @param builder Receives the positions found
+     * @param maxPosition The last position to report; the walk stops once it is reached
+     * @return true if every key of {@code rit} that was examined was found; false if one was not present, in which case
+     *         {@code builder} holds an incomplete result
+     */
     public final boolean invertOnNew(
             final RowSet.RangeIterator rit,
             final OrderedLongSetBuilderSequential builder,
@@ -1965,7 +2007,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (isEmpty() || pos >= card || length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
-        if (pos + length >= card) {
+        if (length > card - pos) {
             length = card - pos;
         }
         return getRowSequenceByPositionWithStart(0, 0, pos, length);

@@ -1294,21 +1294,22 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 if (flen > 0) {
                     final long k = spanInfoToKey(spanInfo);
                     final long spanCard = flen * BLOCK_SIZE;
-                    final long sLastPlusOne = k + spanCard;
+                    final long sLast = k + spanCard - 1;
                     while (true) {
                         final long startPos = prevCap + it.currentRangeStart() - k;
                         if (startPos > maxPos) {
                             return;
                         }
-                        final long end = uMin(sLastPlusOne - 1, it.currentRangeEnd());
+                        final long end = uMin(sLast, it.currentRangeEnd());
                         final long endPos = prevCap + end - k;
                         if (endPos > maxPos) {
                             builder.accept(startPos, maxPos);
                             return;
                         }
                         builder.accept(startPos, endPos);
-                        if (it.currentRangeEnd() >= sLastPlusOne) {
-                            it.postpone(sLastPlusOne);
+                        if (uGreater(it.currentRangeEnd(), sLast)) {
+                            // Only reached when something lies past sLast, so sLast is below the last key here.
+                            it.postpone(sLast + 1);
                             startIndex = i + 1;
                             if (acc == null) {
                                 knownIdx = startIndex;
@@ -1320,7 +1321,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                             return;
                         }
                         it.next();
-                        if (it.currentRangeStart() >= sLastPlusOne) {
+                        if (uGreater(it.currentRangeStart(), sLast)) {
                             startIndex = i + 1;
                             if (acc == null) {
                                 knownIdx = startIndex;
@@ -1554,7 +1555,11 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             return OrderedLongSet.EMPTY;
         }
         // subSetByPositionRange tends to create small indices, it pays off to check for compacting the result.
-        return result.ixCompact();
+        final OrderedLongSet compacted = result.ixCompact();
+        if (compacted != result) {
+            result.ixRelease();
+        }
+        return compacted;
     }
 
     @Override
@@ -1568,7 +1573,11 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             return OrderedLongSet.EMPTY;
         }
         // subSetByKeyRange tends to create small indices, it pays off to check for compacting the result.
-        return result.ixCompact();
+        final OrderedLongSet compacted = result.ixCompact();
+        if (compacted != result) {
+            result.ixRelease();
+        }
+        return compacted;
     }
 
     // API assumption: added and removed are disjoint.
