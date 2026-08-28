@@ -100,23 +100,26 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
             }
             // Safe to search for these values directly: MatchFilter has already removed any NaN the filter does not
             // intend to match, so the search's NaN == NaN equality cannot disagree with the filter's own.
+            // PushdownResult.of copies its inputs, so the empty maybeMatch is ours to close.
             try (final RowSet matching =
-                    binarySearchMatch(columnSource, dataType, selection, sortColumn, values, usePrev)) {
+                    binarySearchMatch(columnSource, dataType, selection, sortColumn, values, usePrev);
+                    final RowSet maybeMatch = RowSetFactory.empty()) {
                 // Handle normal / inverted match filters:
                 if (matchFilter.getMatchOptions().inverted()) {
                     try (final RowSet pushdownMatches = selection.minus(matching)) {
-                        onComplete.accept(PushdownResult.of(selection, pushdownMatches, RowSetFactory.empty()));
+                        onComplete.accept(PushdownResult.of(selection, pushdownMatches, maybeMatch));
                     }
                 } else {
-                    onComplete.accept(PushdownResult.of(selection, matching, RowSetFactory.empty()));
+                    onComplete.accept(PushdownResult.of(selection, matching, maybeMatch));
                 }
                 return;
             }
         }
 
         if (rangeFilter != null) {
-            try (final RowSet matching = binarySearchRange(columnSource, selection, sortColumn, rangeFilter, usePrev)) {
-                onComplete.accept(PushdownResult.of(selection, matching, RowSetFactory.empty()));
+            try (final RowSet matching = binarySearchRange(columnSource, selection, sortColumn, rangeFilter, usePrev);
+                    final RowSet maybeMatch = RowSetFactory.empty()) {
+                onComplete.accept(PushdownResult.of(selection, matching, maybeMatch));
                 return;
             }
         }
