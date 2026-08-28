@@ -106,53 +106,51 @@ public class ObjectColumnBinarySearchKernel {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         final long lastPos = selection.size() - 1;
 
+        // region binarySearchMatchLoop
         if (order.isAscending()) {
             long firstPos = 0;
             for (int idx = 0; idx < copiedValues.length && firstPos <= lastPos; ++idx) {
                 final Object toFind = copiedValues[idx];
-                final long startResult =
+                final long lowerResult =
                         lowerBoundAscending(source, selection, firstPos, lastPos, toFind, true, usePrev);
-                if (startResult < 0) {
-                    // Advance firstPos since we didn't find the value but eliminated some positions.
-                    firstPos = -(startResult + 1);
-                    continue;
+                final long runStart = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);
+                final long upperResult =
+                        upperBoundAscending(source, selection, runStart, lastPos, toFind, true, usePrev);
+                final long runEnd = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);
+                // We've identified a run of potential matches, but we need to apply ObjectComparisons.eq
+                // to match chunk filtering semantics.
+                for (long pos = runStart; pos < runEnd; ++pos) {
+                    final long rowKey = selection.get(pos);
+                    final Object value = usePrev ? source.getPrev(rowKey) : source.get(rowKey);
+                    if (ObjectComparisons.eq(value, toFind)) {
+                        builder.appendKey(rowKey);
+                    }
                 }
-                // startResult is positive only when value at startResult == toFind; no extra check needed.
-                final long endResult =
-                        upperBoundAscending(source, selection, startResult, lastPos, toFind, true, usePrev);
-                if (endResult < 0) {
-                    throw new IllegalStateException(
-                            "upperBoundAscending returned negative result for value: " + toFind);
-                }
-                try (final RowSet subset = selection.subSetByPositionRange(startResult, endResult + 1)) {
-                    builder.appendRowSequence(subset);
-                }
-                firstPos = endResult + 1;
+                firstPos = runEnd;
             }
         } else {
             long firstPos = 0;
             for (int searchIndex = 0; searchIndex < copiedValues.length && firstPos <= lastPos; ++searchIndex) {
                 final Object toFind = copiedValues[searchIndex];
-                final long startResult =
+                final long lowerResult =
                         lowerBoundDescending(source, selection, firstPos, lastPos, toFind, true, usePrev);
-                if (startResult < 0) {
-                    // Advance firstPos since we didn't find the value but eliminated some positions.
-                    firstPos = -(startResult + 1);
-                    continue;
+                final long runStart = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);
+                final long upperResult =
+                        upperBoundDescending(source, selection, runStart, lastPos, toFind, true, usePrev);
+                final long runEnd = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);
+                // We've identified a run of potential matches, but we need to apply ObjectComparisons.eq
+                // to match chunk filtering semantics.
+                for (long pos = runStart; pos < runEnd; ++pos) {
+                    final long rowKey = selection.get(pos);
+                    final Object value = usePrev ? source.getPrev(rowKey) : source.get(rowKey);
+                    if (ObjectComparisons.eq(value, toFind)) {
+                        builder.appendKey(rowKey);
+                    }
                 }
-                // startResult is positive only when value at startResult == toFind; no extra check needed.
-                final long endResult =
-                        upperBoundDescending(source, selection, startResult, lastPos, toFind, true, usePrev);
-                if (endResult < 0) {
-                    throw new IllegalStateException(
-                            "upperBoundDescending returned negative result for value: " + toFind);
-                }
-                try (final RowSet subset = selection.subSetByPositionRange(startResult, endResult + 1)) {
-                    builder.appendRowSequence(subset);
-                }
-                firstPos = endResult + 1;
+                firstPos = runEnd;
             }
         }
+        // endregion binarySearchMatchLoop
 
         return builder.build();
     }

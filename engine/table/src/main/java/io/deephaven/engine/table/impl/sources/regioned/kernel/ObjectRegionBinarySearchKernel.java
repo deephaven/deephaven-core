@@ -59,37 +59,41 @@ public class ObjectRegionBinarySearchKernel {
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
+        // region binarySearchMatchLoop
         if (order.isAscending()) {
             for (int idx = 0; idx < copiedValues.length && firstKey <= lastKey; ++idx) {
                 final Object toFind = copiedValues[idx];
-                final long startResult = lowerBoundAscending(region, firstKey, lastKey, toFind, true);
-                if (startResult < 0) {
-                    // Advance firstKey since we didn't find the value but eliminated some rows.
-                    firstKey = insertionPoint(startResult);
-                    continue;
+                final long lowerResult = lowerBoundAscending(region, firstKey, lastKey, toFind, true);
+                final long runStart = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);
+                final long upperResult = upperBoundAscending(region, runStart, lastKey, toFind, true);
+                final long runEnd = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);
+                // We've identified a run of potential matches, but we need to apply ObjectComparisons.eq
+                // to match chunk filtering semantics.
+                for (long key = runStart; key < runEnd; ++key) {
+                    if (ObjectComparisons.eq(region.getObject(key), toFind)) {
+                        builder.appendKey(key);
+                    }
                 }
-                final long endResult = upperBoundAscending(region, startResult, lastKey, toFind, true);
-                if (endResult >= 0) {
-                    builder.appendRange(startResult, endResult);
-                    firstKey = endResult + 1;
-                }
+                firstKey = runEnd;
             }
         } else {
             for (int searchIndex = 0; searchIndex < copiedValues.length && firstKey <= lastKey; ++searchIndex) {
                 final Object toFind = copiedValues[searchIndex];
-                final long startResult = lowerBoundDescending(region, firstKey, lastKey, toFind, true);
-                if (startResult < 0) {
-                    // Advance firstKey since we didn't find the value but eliminated some rows.
-                    firstKey = insertionPoint(startResult);
-                    continue;
+                final long lowerResult = lowerBoundDescending(region, firstKey, lastKey, toFind, true);
+                final long runStart = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);
+                final long upperResult = upperBoundDescending(region, runStart, lastKey, toFind, true);
+                final long runEnd = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);
+                // We've identified a run of potential matches, but we need to apply ObjectComparisons.eq
+                // to match chunk filtering semantics.
+                for (long key = runStart; key < runEnd; ++key) {
+                    if (ObjectComparisons.eq(region.getObject(key), toFind)) {
+                        builder.appendKey(key);
+                    }
                 }
-                final long endResult = upperBoundDescending(region, startResult, lastKey, toFind, true);
-                if (endResult >= 0) {
-                    builder.appendRange(startResult, endResult);
-                    firstKey = endResult + 1;
-                }
+                firstKey = runEnd;
             }
         }
+        // endregion binarySearchMatchLoop
 
         return builder.build();
     }

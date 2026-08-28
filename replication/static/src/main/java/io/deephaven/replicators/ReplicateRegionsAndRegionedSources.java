@@ -281,8 +281,103 @@ public class ReplicateRegionsAndRegionedSources {
         FileUtils.writeLines(new File(f), lines);
     }
 
+    /**
+     * Object replacement for the match loop. The search navigates by {@code ObjectComparisons.compare} but a match is
+     * decided by {@code ObjectComparisons.eq}, and for a type whose natural ordering is inconsistent with equals --
+     * {@code BigDecimal} at differing scales, for one -- those disagree. So isolate the ordering-equal run, which is a
+     * superset of the matches, then accept within it by equality, which is the relation the chunk filter this must
+     * agree with uses.
+     */
+    private static final List<String> OBJECT_COLUMN_MATCH_LOOP = Arrays.asList(
+            "        if (order.isAscending()) {",
+            "            long firstPos = 0;",
+            "            for (int idx = 0; idx < copiedValues.length && firstPos <= lastPos; ++idx) {",
+            "                final Object toFind = copiedValues[idx];",
+            "                final long lowerResult =",
+            "                        lowerBoundAscending(source, selection, firstPos, lastPos, toFind, true, usePrev);",
+            "                final long runStart = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);",
+            "                final long upperResult =",
+            "                        upperBoundAscending(source, selection, runStart, lastPos, toFind, true, usePrev);",
+            "                final long runEnd = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);",
+            "                // We've identified a run of potential matches, but we need to apply ObjectComparisons.eq",
+            "                // to match chunk filtering semantics.",
+            "                for (long pos = runStart; pos < runEnd; ++pos) {",
+            "                    final long rowKey = selection.get(pos);",
+            "                    final Object value = usePrev ? source.getPrev(rowKey) : source.get(rowKey);",
+            "                    if (ObjectComparisons.eq(value, toFind)) {",
+            "                        builder.appendKey(rowKey);",
+            "                    }",
+            "                }",
+            "                firstPos = runEnd;",
+            "            }",
+            "        } else {",
+            "            long firstPos = 0;",
+            "            for (int searchIndex = 0; searchIndex < copiedValues.length && firstPos <= lastPos; ++searchIndex) {",
+            "                final Object toFind = copiedValues[searchIndex];",
+            "                final long lowerResult =",
+            "                        lowerBoundDescending(source, selection, firstPos, lastPos, toFind, true, usePrev);",
+            "                final long runStart = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);",
+            "                final long upperResult =",
+            "                        upperBoundDescending(source, selection, runStart, lastPos, toFind, true, usePrev);",
+            "                final long runEnd = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);",
+            "                // We've identified a run of potential matches, but we need to apply ObjectComparisons.eq",
+            "                // to match chunk filtering semantics.",
+            "                for (long pos = runStart; pos < runEnd; ++pos) {",
+            "                    final long rowKey = selection.get(pos);",
+            "                    final Object value = usePrev ? source.getPrev(rowKey) : source.get(rowKey);",
+            "                    if (ObjectComparisons.eq(value, toFind)) {",
+            "                        builder.appendKey(rowKey);",
+            "                    }",
+            "                }",
+            "                firstPos = runEnd;",
+            "            }",
+            "        }");
+
+    /**
+     * Object replacement for the match loop. The search navigates by {@code ObjectComparisons.compare} but a match is
+     * decided by {@code ObjectComparisons.eq}, and for a type whose natural ordering is inconsistent with equals --
+     * {@code BigDecimal} at differing scales, for one -- those disagree. So isolate the ordering-equal run, which is a
+     * superset of the matches, then accept within it by equality, which is the relation the chunk filter this must
+     * agree with uses.
+     */
+    private static final List<String> OBJECT_REGION_MATCH_LOOP = Arrays.asList(
+            "        if (order.isAscending()) {",
+            "            for (int idx = 0; idx < copiedValues.length && firstKey <= lastKey; ++idx) {",
+            "                final Object toFind = copiedValues[idx];",
+            "                final long lowerResult = lowerBoundAscending(region, firstKey, lastKey, toFind, true);",
+            "                final long runStart = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);",
+            "                final long upperResult = upperBoundAscending(region, runStart, lastKey, toFind, true);",
+            "                final long runEnd = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);",
+            "                // We've identified a run of potential matches, but we need to apply ObjectComparisons.eq",
+            "                // to match chunk filtering semantics.",
+            "                for (long key = runStart; key < runEnd; ++key) {",
+            "                    if (ObjectComparisons.eq(region.getObject(key), toFind)) {",
+            "                        builder.appendKey(key);",
+            "                    }",
+            "                }",
+            "                firstKey = runEnd;",
+            "            }",
+            "        } else {",
+            "            for (int searchIndex = 0; searchIndex < copiedValues.length && firstKey <= lastKey; ++searchIndex) {",
+            "                final Object toFind = copiedValues[searchIndex];",
+            "                final long lowerResult = lowerBoundDescending(region, firstKey, lastKey, toFind, true);",
+            "                final long runStart = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);",
+            "                final long upperResult = upperBoundDescending(region, runStart, lastKey, toFind, true);",
+            "                final long runEnd = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);",
+            "                // We've identified a run of potential matches, but we need to apply ObjectComparisons.eq",
+            "                // to match chunk filtering semantics.",
+            "                for (long key = runStart; key < runEnd; ++key) {",
+            "                    if (ObjectComparisons.eq(region.getObject(key), toFind)) {",
+            "                        builder.appendKey(key);",
+            "                    }",
+            "                }",
+            "                firstKey = runEnd;",
+            "            }",
+            "        }");
+
     private static void fixupBinSearchObject(String charToObject) throws IOException {
         final File file = new File(charToObject);
+        final boolean isColumnKernel = file.getName().contains("Column");
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = removeImport(lines, "import io\\.deephaven\\.util\\.type\\.ArrayTypeUtils;");
         lines = removeAnyImports(lines,
@@ -297,7 +392,9 @@ public class ReplicateRegionsAndRegionedSources {
                 "final Object[] copiedValues = Arrays.copyOf(searchValues, searchValues.length);",
                 "unboxed", "copiedValues");
         lines = addImport(lines, "import java.util.Arrays;");
-        if (file.getName().contains("Column")) {
+        lines = replaceRegion(lines, "binarySearchMatchLoop",
+                isColumnKernel ? OBJECT_COLUMN_MATCH_LOOP : OBJECT_REGION_MATCH_LOOP);
+        if (isColumnKernel) {
             lines = replaceRegion(lines, "binsearchRangeFilter", Arrays.asList(
                     "    /**",
                     "     * Performs a binary search on a sorted {@link ElementSource} using bounds from an"

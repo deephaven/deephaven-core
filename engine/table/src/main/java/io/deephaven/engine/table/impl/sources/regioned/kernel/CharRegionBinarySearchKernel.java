@@ -54,6 +54,7 @@ public class CharRegionBinarySearchKernel {
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
+        // region binarySearchMatchLoop
         if (order.isAscending()) {
             for (int idx = 0; idx < unboxed.length && firstKey <= lastKey; ++idx) {
                 final char toFind = unboxed[idx];
@@ -85,6 +86,7 @@ public class CharRegionBinarySearchKernel {
                 }
             }
         }
+        // endregion binarySearchMatchLoop
 
         return builder.build();
     }

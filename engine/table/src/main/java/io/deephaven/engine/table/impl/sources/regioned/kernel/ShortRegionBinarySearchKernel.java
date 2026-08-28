@@ -58,6 +58,7 @@ public class ShortRegionBinarySearchKernel {
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
+        // region binarySearchMatchLoop
         if (order.isAscending()) {
             for (int idx = 0; idx < unboxed.length && firstKey <= lastKey; ++idx) {
                 final short toFind = unboxed[idx];
@@ -89,6 +90,7 @@ public class ShortRegionBinarySearchKernel {
                 }
             }
         }
+        // endregion binarySearchMatchLoop
 
         return builder.build();
     }

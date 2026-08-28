@@ -14,6 +14,8 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
@@ -413,6 +415,30 @@ public class QueryTableWhereSpecialCasesTest {
      * exact match with nothing left for a residual pass to repair, so such a filter has to decline the search rather
      * than answer it with the rows the search happens to visit.
      */
+    /**
+     * A BigDecimal column carries values that are ordering-equal but not equal -- 1.0 and 1.00 differ in scale -- so a
+     * sort leaves them in one contiguous run, in row order. Matching is decided by equality, so a filter must select
+     * only the rows equal to its own value, and must do so whether or not the column is sorted.
+     */
+    @Test
+    public void testMatchOnSortedBigDecimalColumn() {
+        for (final String filter : new String[] {"X = 1.0", "X = 1.00", "X = 1", "X = 2.0", "X != 1.0"}) {
+            final Table unsorted = bigDecimals();
+            final Table expected = unsorted.where(filter).sort("X").coalesce();
+            assertTableEquals(expected, bigDecimals().sort("X").where(filter).coalesce());
+
+            final Table expectedDescending = unsorted.where(filter).sortDescending("X").coalesce();
+            assertTableEquals(expectedDescending, bigDecimals().sortDescending("X").where(filter).coalesce());
+        }
+    }
+
+    /** Ordering-equal values at several scales, plus one unrelated value. */
+    private static Table bigDecimals() {
+        return newTable(col("X",
+                new BigDecimal("1.0"), new BigDecimal("1.00"), new BigDecimal("1"),
+                new BigDecimal("1E+0"), new BigDecimal("2.0")));
+    }
+
     @Test
     public void testCaseInsensitiveMatchOnSortedColumn() {
         for (final boolean descending : new boolean[] {false, true}) {

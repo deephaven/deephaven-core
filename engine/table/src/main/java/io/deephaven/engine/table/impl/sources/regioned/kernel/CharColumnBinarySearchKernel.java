@@ -100,6 +100,7 @@ public class CharColumnBinarySearchKernel {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         final long lastPos = selection.size() - 1;
 
+        // region binarySearchMatchLoop
         if (order.isAscending()) {
             long firstPos = 0;
             for (int idx = 0; idx < unboxed.length && firstPos <= lastPos; ++idx) {
@@ -147,6 +148,7 @@ public class CharColumnBinarySearchKernel {
                 firstPos = endResult + 1;
             }
         }
+        // endregion binarySearchMatchLoop
 
         return builder.build();
     }
@@ -448,8 +450,8 @@ public class CharColumnBinarySearchKernel {
      * equals {@code max}. The returned value is the leftmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases: when {@code max} is absent from the range, when
      * {@code maxInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
-     * the insertion point, i.e. the leftmost position whose value falls below {@code max}, or {@code lastPos + 1} if
-     * all values in the range are &gt;= {@code max}.</li>
+     * the insertion point, i.e. the leftmost position whose value falls below {@code max}, or {@code lastPos + 1} if all
+     * values in the range are &gt;= {@code max}.</li>
      * </ul>
      *
      * @param source The element source to search.
