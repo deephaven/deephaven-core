@@ -305,6 +305,9 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                     ++skippedManifests;
                     continue;
                 }
+                // TODO: a null specsById is deprecated, but it is what makes spec() carry the write-time schema that
+                // ResolverFactory needs; table.specs() supplies the current one and breaks schema-evolved reads.
+                // Must be resolved before bumping Iceberg to 1.12.0.
                 try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io, null)) {
                     final PartitionSpec manifestPartitionSpec = manifestReader.spec();
                     if (pruningEnabled()) {
