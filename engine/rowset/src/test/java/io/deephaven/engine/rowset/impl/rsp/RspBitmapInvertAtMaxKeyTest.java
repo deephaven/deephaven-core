@@ -127,6 +127,57 @@ public class RspBitmapInvertAtMaxKeyTest {
         return out;
     }
 
+    /**
+     * Truncation reaches the container holding the keys, so it has to be exercised against each kind of container a
+     * span can hold -- a rowset backed by one container type says nothing about the others.
+     */
+    @Test(timeout = 30_000)
+    public void testInvertTruncatedForEverySpanKind() {
+        for (final long[][] shape : new long[][][] {
+                {{10, 10}, {20, 20}, {30, 30}}, // sparse keys: an array container
+                {{10, 11}}, // two keys
+                {{10, 10}}, // one key: a singleton span
+                {{10, 20}}, // one run inside a block
+                {{10, 12}, {20, 22}, {30, 32}}, // several runs
+        }) {
+            RspBitmap rb = RspBitmap.makeEmpty();
+            for (final long[] r : shape) {
+                rb = rb.addRange(r[0], r[1]);
+            }
+            rb.finishMutations();
+            final String span = rb.spans[0] == null ? "singleton" : rb.spans[0].getClass().getSimpleName();
+            try (final WritableRowSet rs = new WritableRowSetImpl(rb);
+                    final RowSet keys = rs.copy()) {
+                final long card = rs.size();
+                for (long maxPos = 0; maxPos < card; ++maxPos) {
+                    assertEquals(span + " span, maxPosition " + maxPos,
+                            List.of("0-" + maxPos), invertRanges(rs, keys, maxPos));
+                }
+                assertEquals(span + ", maxPosition past the end", List.of("0-" + (card - 1)),
+                        invertRanges(rs, keys, card + 10));
+            }
+        }
+    }
+
+    /** Enough scattered keys in one block that the span becomes a bitmap. */
+    @Test(timeout = 30_000)
+    public void testInvertTruncatedForABitmapSpan() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        for (int i = 0; i < 5000; ++i) {
+            rb = rb.add(2L * i);
+        }
+        rb.finishMutations();
+        assertEquals("the span is a bitmap", "BitmapContainer", rb.spans[0].getClass().getSimpleName());
+        try (final WritableRowSet rs = new WritableRowSetImpl(rb);
+                final RowSet keys = rs.copy()) {
+            for (final long maxPos : new long[] {0, 1, 7, 4998, 4999, 6000}) {
+                final long last = Math.min(maxPos, rs.size() - 1);
+                assertEquals("bitmap span, maxPosition " + maxPos, List.of("0-" + last),
+                        invertRanges(rs, keys, maxPos));
+            }
+        }
+    }
+
     /** maxPosition is inclusive, and still applies at the top of the key space. */
     @Test(timeout = 30_000)
     public void testInvertTruncatedByMaxPositionAtTheTop() {
