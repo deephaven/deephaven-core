@@ -42,7 +42,7 @@ jobs:
           lfs: true
 
       - name: Setup JDKs
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: |
@@ -141,7 +141,7 @@ jobs:
           merge-multiple: true
 
       - name: Setup JDKs
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: |
