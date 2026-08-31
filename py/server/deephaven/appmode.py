@@ -63,7 +63,7 @@ def get_app_state():
     """Get the current application state object.
 
     Raises:
-         DHError
+         DHError: If unable to get the application state.
     """
     try:
         return ApplicationState(j_app_state=_JApplicationContext.get())

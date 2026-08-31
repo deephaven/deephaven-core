@@ -352,7 +352,7 @@ class TableListenerHandle(JObjectWrapper):
                 will be logged in the Deephaven server log and will not be further processed by the server.
 
         Raises:
-            DHError
+            DHError: If unable to create a table listener.
         """
         if not t.is_refreshing:
             raise DHError(message="table must be a refreshing table.")
@@ -403,7 +403,7 @@ class TableListenerHandle(JObjectWrapper):
             do_replay (bool): whether to replay the initial snapshot of the table, default is False
 
         Raises:
-            DHError
+            DHError: If unable to listen to the table changes.
         """
         if self.started:
             raise RuntimeError("Attempting to start an already started listener..")
@@ -472,7 +472,7 @@ def listen(
         a TableListenerHandle
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     table_listener_handle = TableListenerHandle(
         t=t,
@@ -599,7 +599,7 @@ class MergedListenerHandle(JObjectWrapper):
                 will be logged in the Deephaven server log and will not be further processed by the server.
 
         Raises:
-            DHError
+            DHError: If unable to create a merged listener adapter.
         """
         if len(tables) < 2:
             raise DHError(
@@ -660,7 +660,7 @@ class MergedListenerHandle(JObjectWrapper):
             do_replay (bool): whether to replay the initial snapshots of the tables, default is False
 
         Raises:
-            DHError
+            DHError: If unable to listen to the table changes.
         """
         if self.started:
             raise RuntimeError(
@@ -753,7 +753,7 @@ def merged_listen(
         a MergedListenerHandle
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     merged_listener_handle = MergedListenerHandle(
         tables=tables,

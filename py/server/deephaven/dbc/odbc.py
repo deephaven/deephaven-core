@@ -39,7 +39,8 @@ def read_cursor(cursor: "turbodbc.cursor.Cursor") -> Table:
         a new Table
 
     Raises:
-        DHError, TypeError
+        DHError: If the operation fails.
+        TypeError: If expect got instead.
     """
     if turbodbc is None:
         raise DHError(

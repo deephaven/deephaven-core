@@ -107,7 +107,7 @@ def to_table(pa_table: pa.Table, cols: Optional[Sequence[str]] = None) -> Table:
         a new table
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     if cols:
         pa_table = pa_table.select(cols)
@@ -184,7 +184,7 @@ def read_feather(path: str) -> Table:
          a new table
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     try:
         return Table(j_table=_JArrowWrapperTools.readFeather(path))

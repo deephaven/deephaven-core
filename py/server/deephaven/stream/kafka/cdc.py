@@ -60,7 +60,7 @@ def consume(
         a Deephaven live table that will update based on the CDC messages consumed for the given topic
 
     Raises:
-        DHError
+        DHError: If unable to consume a CDC stream.
     """
     try:
         partitions = _j_partitions(partitions)
@@ -99,7 +99,7 @@ def consume_raw(
         a Deephaven live table for the raw CDC events
 
     Raises:
-        DHError
+        DHError: If unable to consume a raw CDC stream.
     """
     try:
         partitions = _j_partitions(partitions)
@@ -139,7 +139,7 @@ def cdc_long_spec(
         a CDCSpec
 
     Raises:
-        DHError
+        DHError: If unable to create a CDC spec in cdc_long_spec.
     """
     try:
         return CDCSpec(
@@ -172,7 +172,7 @@ def cdc_short_spec(server_name: str, db_name: str, table_name: str):
         a CDCSpec
 
     Raises:
-        DHError
+        DHError: If unable to create a CDC spec in cdc_short_spec.
     """
     try:
         return CDCSpec(j_spec=_JCdcTools.cdcShortSpec(server_name, db_name, table_name))
