@@ -12,6 +12,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.render;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rangesOf;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -23,15 +25,6 @@ import static org.junit.Assert.assertTrue;
 public class RspBitmapInsertWithShiftTest {
 
     private static final long BS = BLOCK_SIZE;
-
-    private static List<long[]> rangesOf(final RspBitmap rb) {
-        final List<long[]> out = new ArrayList<>();
-        rb.forEachLongRange((s, e) -> {
-            out.add(new long[] {s, e});
-            return true;
-        });
-        return out;
-    }
 
     /** Union of two ascending disjoint range lists, by interval arithmetic. Independent of the code under test. */
     private static List<long[]> unionRanges(final List<long[]> a, final List<long[]> b) {
@@ -57,14 +50,6 @@ public class RspBitmapInsertWithShiftTest {
             out.add(new long[] {r[0] + shift, r[1] + shift});
         }
         return out;
-    }
-
-    private static String render(final List<long[]> ranges) {
-        final StringBuilder sb = new StringBuilder();
-        for (final long[] r : ranges) {
-            sb.append(r[0]).append('-').append(r[1]).append(' ');
-        }
-        return sb.toString();
     }
 
     private static void checkInsertWithShift(final RspBitmap receiver, final SortedRanges sr, final long shift) {

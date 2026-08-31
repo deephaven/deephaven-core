@@ -15,6 +15,8 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.render;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rangesOf;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
 
@@ -26,23 +28,6 @@ import static org.junit.Assert.assertEquals;
 public class RspRangeBatchIteratorGapTest {
 
     private static final long BS = BLOCK_SIZE;
-
-    private static List<long[]> rangesOf(final RowSet rs) {
-        final List<long[]> out = new ArrayList<>();
-        rs.forEachRowKeyRange((s, e) -> {
-            out.add(new long[] {s, e});
-            return true;
-        });
-        return out;
-    }
-
-    private static String render(final List<long[]> ranges) {
-        final StringBuilder sb = new StringBuilder();
-        for (final long[] r : ranges) {
-            sb.append(r[0]).append('-').append(r[1]).append(' ');
-        }
-        return sb.toString();
-    }
 
     /**
      * Blocks 2 and 3 full, block 4 empty, blocks 7 and 8 full: two full block spans with a gap between them. Built as

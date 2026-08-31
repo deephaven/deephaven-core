@@ -13,6 +13,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.assertBackedBy;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -124,8 +125,4 @@ public class SubSetByPositionRangeBlockBoundaryTest {
         }
     }
 
-    private static void assertBackedBy(final String what, final WritableRowSet rs, final String expected) {
-        final String backing = ((WritableRowSetImpl) rs).getInnerSet().getClass().getSimpleName();
-        assertTrue(what + " is backed by " + backing, backing.contains(expected));
-    }
 }

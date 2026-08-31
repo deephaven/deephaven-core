@@ -8,6 +8,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.engine.rowset.impl.rsp.container.ContainerTestCommon.valuesOf;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -15,15 +16,6 @@ import static org.junit.Assert.assertEquals;
  * must treat both as a no-op rather than deriving indices from a wrapped endpoint.
  */
 public class TestContainerEmptyRangeOps {
-
-    private static List<Integer> valuesOf(final Container c) {
-        final List<Integer> out = new ArrayList<>();
-        final ShortIterator it = c.getShortIterator();
-        while (it.hasNext()) {
-            out.add(it.nextAsInt());
-        }
-        return out;
-    }
 
     /** inot has to guard the empty range the way not already does. */
     @Test

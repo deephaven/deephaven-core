@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.PrimitiveIterator;
 
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.assertBackedBy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -29,11 +30,6 @@ public class GetKeysForPositionsOutOfRangeTest {
         final PrimitiveIterator.OfLong it = java.util.Arrays.stream(positions).iterator();
         rs.getKeysForPositions(it, out::add);
         return out;
-    }
-
-    private static void assertBackedBy(final String what, final WritableRowSet rs, final String expected) {
-        final String backing = ((WritableRowSetImpl) rs).getInnerSet().getClass().getSimpleName();
-        assertTrue(what + " is backed by " + backing, backing.contains(expected));
     }
 
     @Test

@@ -13,6 +13,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rspOf;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
 
@@ -30,15 +31,6 @@ public class RspBitmapInvertAtMaxKeyTest {
     private static final long MAX = Long.MAX_VALUE;
     /** The first key of the last block: the key space is a whole number of blocks. */
     private static final long TOP_BLOCK = MAX - BLOCK_SIZE + 1;
-
-    private static WritableRowSet rspOf(final long[]... ranges) {
-        RspBitmap rb = RspBitmap.makeEmpty();
-        for (final long[] r : ranges) {
-            rb = rb.appendRangeUnsafe(r[0], r[1]);
-        }
-        rb.finishMutations();
-        return new WritableRowSetImpl(rb);
-    }
 
     private static List<String> invertRanges(final RowSet rs, final RowSet keys) {
         final List<String> out = new ArrayList<>();
