@@ -300,6 +300,11 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         // Apply this container's bounds to the requested bounds.
         startRowKeyInclusive = Math.max(startRowKeyInclusive, minKeyValue);
         endRowKeyInclusive = Math.min(endRowKeyInclusive, maxKeyValue);
+        if (endRowKeyInclusive < startRowKeyInclusive) {
+            // The interval selects nothing, either as asked for or once clamped to what we hold. Searching for its
+            // bounds below would give an end offset before the start one, and a negative slice length.
+            return RowSequenceFactory.EMPTY;
+        }
 
         int newStartOffset = OrderedChunkUtils.findInChunk(backingChunk, startRowKeyInclusive);
         newStartOffset -= newStartOffset % 2; // beginning of range

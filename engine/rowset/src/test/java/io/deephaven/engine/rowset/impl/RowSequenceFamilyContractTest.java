@@ -143,4 +143,34 @@ public class RowSequenceFamilyContractTest {
         }
     }
 
+
+    /** A key range whose end precedes its start selects nothing. */
+    @Test
+    public void testReversedKeyRangeIsEmpty() {
+        final long[][] shape = {{20, 30}, {50, 60}};
+        final List<SafeCloseableList> junk = new ArrayList<>();
+        try {
+            final List<RowSequence> seqs = sequencesFor(shape, junk);
+            for (int i = 0; i < seqs.size(); ++i) {
+                final RowSequence seq = seqs.get(i);
+                if (seq == null) {
+                    continue;
+                }
+                final String name = NAMES.get(i);
+                for (final long[] probe : new long[][] {{25, 22}, {61, 10}, {30, 20}, {51, 50}}) {
+                    try (final RowSequence sub = seq.getRowSequenceByKeyRange(probe[0], probe[1])) {
+                        final String where = name + " getRowSequenceByKeyRange(" + probe[0] + ", " + probe[1] + ")";
+                        assertEquals(where + " size", 0, sub.size());
+                        assertTrue(where + " isEmpty", sub.isEmpty());
+                        assertTrue(where + " no keys", sub.forEachRowKey(k -> {
+                            throw new AssertionError(where + " produced key " + k);
+                        }));
+                    }
+                }
+                seq.close();
+            }
+        } finally {
+            junk.forEach(SafeCloseableList::close);
+        }
+    }
 }
