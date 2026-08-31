@@ -3155,7 +3155,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     mergeToRightRange = true;
                     iEnd = i - 1;
                 } else {
-                    if (iValue <= packedEnd + 1) {
+                    if (iValue - packedEnd <= 1) {
                         if (iValue == packedEnd) {
                             --packedEnd;
                             --deltaCard;
