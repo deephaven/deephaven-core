@@ -14,6 +14,8 @@ import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -21,6 +23,12 @@ import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.exceptions.ValidationException;
+import org.apache.iceberg.expressions.Binder;
+import org.apache.iceberg.expressions.Expression;
+import org.apache.iceberg.expressions.ExpressionUtil;
+import org.apache.iceberg.expressions.Expressions;
+import org.apache.iceberg.expressions.ManifestEvaluator;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,6 +38,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +50,14 @@ import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
 
 @InternalUseOnly
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
+
+    private static final Logger log = LoggerFactory.getLogger(IcebergBaseLayout.class);
+
+    /**
+     * Whether {@link IcebergReadInstructions#pruningExpression() pruning expression} field references are matched
+     * case-sensitively. Hard-coded to Iceberg's scan default; may become configurable.
+     */
+    public static final boolean PRUNING_CASE_SENSITIVE = true;
 
     /**
      * The {@link IcebergTableAdapter} that will be used to access the table.
@@ -86,6 +103,18 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * creation.
      */
     private final SeekableChannelsProvider seekableChannelsProvider;
+
+    /**
+     * The {@link IcebergReadInstructions#pruningExpression() pruning expression}; {@link Expressions#alwaysTrue()} when
+     * not pruning.
+     */
+    private final Expression pruningExpression;
+
+    /**
+     * Memoized {@link ManifestEvaluator ManifestEvaluators} by {@link PartitionSpec} id, where {@code null} means
+     * "cannot prune this spec". Only accessed from the {@code synchronized} {@link #findKeys(Consumer)}.
+     */
+    private final Map<Integer, ManifestEvaluator> manifestEvaluators = new HashMap<>();
 
     /**
      * Create a new {@link IcebergTableLocationKey} for the given {@link ManifestFile}, {@link DataFile} and
@@ -147,6 +176,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);
+        this.pruningExpression = instructions.pruningExpression();
 
         final String uriScheme = tableAdapter.locationUri().getScheme();
         // Add the data instructions if provided as part of the IcebergReadInstructions, or else attempt to create
@@ -186,6 +216,15 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final ParquetInstructions parquetInstructions,
             @NotNull final SeekableChannelsProvider seekableChannelsProvider,
             @Nullable final Snapshot snapshot) {
+        this(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot, Expressions.alwaysTrue());
+    }
+
+    protected IcebergBaseLayout(
+            @NotNull final IcebergTableAdapter tableAdapter,
+            @NotNull final ParquetInstructions parquetInstructions,
+            @NotNull final SeekableChannelsProvider seekableChannelsProvider,
+            @Nullable final Snapshot snapshot,
+            @NotNull final Expression pruningExpression) {
         this.tableAdapter = Objects.requireNonNull(tableAdapter);
         {
             UUID uuid;
@@ -202,8 +241,14 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         this.parquetInstructions = Objects.requireNonNull(parquetInstructions);
         this.seekableChannelsProvider = Objects.requireNonNull(seekableChannelsProvider);
         this.snapshot = snapshot;
+        this.pruningExpression = Objects.requireNonNull(pruningExpression);
         // not used in the updated constructors' path
         this.tableDef = null;
+    }
+
+    private boolean pruningEnabled() {
+        // Expressions.alwaysTrue() is a singleton, so a reference comparison is sufficient.
+        return pruningExpression != Expressions.alwaysTrue();
     }
 
     protected abstract IcebergTableLocationKey keyFromDataFile(
@@ -239,16 +284,45 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             return;
         }
         final Table table = tableAdapter.icebergTable();
+        final boolean pruning = pruningEnabled();
+        int skippedManifests = 0;
+        int unprunedManifests = 0;
+        int acceptedDataFiles = 0;
         try {
             final FileIO io = table.io();
             final List<ManifestFile> manifestFiles = snapshot.allManifests(io);
+            // Deliberately unconditional and ahead of pruning: an unsupported manifest must be reported even if
+            // pruning would have skipped it.
             for (final ManifestFile manifestFile : manifestFiles) {
                 checkIsDataManifest(manifestFile);
             }
             for (final ManifestFile manifestFile : manifestFiles) {
+                final ManifestEvaluator manifestEvaluator = pruning ? manifestEvaluator(table, manifestFile) : null;
+                if (manifestEvaluator != null && !manifestEvaluator.eval(manifestFile)) {
+                    // The partition summaries prove this manifest holds no matching data files, so skip it unread
+                    ++skippedManifests;
+                    continue;
+                }
                 try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
                     final PartitionSpec manifestPartitionSpec = manifestReader.spec();
+                    if (pruning) {
+                        // A manifest embeds the schema that was current when it was written, and that is what
+                        // filterRows binds against; it may pre-date fields the expression references.
+                        if (canBind(manifestPartitionSpec.schema())) {
+                            manifestReader.filterRows(pruningExpression).caseSensitive(PRUNING_CASE_SENSITIVE);
+                        } else {
+                            ++unprunedManifests;
+                            log.warn().append(toString())
+                                    .append(": pruning expression ")
+                                    .append(ExpressionUtil.toSanitizedString(pruningExpression))
+                                    .append(" cannot be bound against the schema of manifest '")
+                                    .append(manifestFile.path())
+                                    .append("'; reading it in full")
+                                    .endl();
+                        }
+                    }
                     for (final DataFile dataFile : manifestReader) {
+                        ++acceptedDataFiles;
                         locationKeyObserver
                                 .accept(key(table, manifestPartitionSpec, manifestFile, manifestReader, dataFile));
                     }
@@ -258,6 +332,66 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             throw new TableDataException(
                     String.format("%s:%d - error finding Iceberg locations", tableAdapter, snapshot.snapshotId()), e);
         }
+        if (pruning) {
+            log.info().append(toString())
+                    .append(": pruning expression ")
+                    .append(ExpressionUtil.toSanitizedString(pruningExpression))
+                    .append(" skipped ").append(skippedManifests)
+                    .append(" manifest(s), could not be applied to ").append(unprunedManifests)
+                    .append(" manifest(s), and accepted ").append(acceptedDataFiles)
+                    .append(" data file(s)")
+                    .endl();
+        }
+    }
+
+    /**
+     * Whether {@link #pruningExpression} can be bound against {@code schema}.
+     */
+    private boolean canBind(@NotNull final Schema schema) {
+        try {
+            Binder.bind(schema.asStruct(), pruningExpression, PRUNING_CASE_SENSITIVE);
+            return true;
+        } catch (final ValidationException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Get the {@link ManifestEvaluator} for {@code manifestFile}'s {@link PartitionSpec}, or {@code null} if
+     * {@link #pruningExpression} cannot be projected onto that spec. Declining to prune is always correct, since
+     * pruning is only ever an optimization.
+     */
+    @Nullable
+    private ManifestEvaluator manifestEvaluator(
+            @NotNull final Table table,
+            @NotNull final ManifestFile manifestFile) {
+        final int specId = manifestFile.partitionSpecId();
+        if (manifestEvaluators.containsKey(specId)) {
+            return manifestEvaluators.get(specId);
+        }
+        ManifestEvaluator evaluator = null;
+        final PartitionSpec spec = table.specs().get(specId);
+        if (spec == null) {
+            log.warn().append(toString())
+                    .append(": partition spec id ").append(specId)
+                    .append(" from manifest '").append(manifestFile.path())
+                    .append("' is not present in the table metadata; not pruning manifests using this spec")
+                    .endl();
+        } else {
+            try {
+                evaluator = ManifestEvaluator.forRowFilter(pruningExpression, spec, PRUNING_CASE_SENSITIVE);
+            } catch (final ValidationException e) {
+                log.warn().append(toString())
+                        .append(": pruning expression ")
+                        .append(ExpressionUtil.toSanitizedString(pruningExpression))
+                        .append(" cannot be bound against partition spec id ").append(specId)
+                        .append("; not pruning manifests using this spec: ").append(e.getMessage())
+                        .endl();
+            }
+        }
+        // Note: a null value is memoized, so we warn at most once per spec per layout.
+        manifestEvaluators.put(specId, evaluator);
+        return evaluator;
     }
 
     /**

@@ -61,6 +61,7 @@ import org.apache.iceberg.ContentFile;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
+import org.apache.iceberg.Metrics;
 import org.apache.iceberg.MetadataTableType;
 import org.apache.iceberg.NullOrder;
 import org.apache.iceberg.PartitionSpec;
@@ -70,6 +71,7 @@ import org.apache.iceberg.SortOrder;
 import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.expressions.Binder;
 import org.apache.iceberg.expressions.Expression;
 import org.apache.iceberg.expressions.Expressions;
 import org.apache.iceberg.io.OutputFileFactory;
@@ -77,6 +79,7 @@ import org.apache.iceberg.mapping.MappedFields;
 import org.apache.iceberg.mapping.MappingUtil;
 import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.mapping.NameMappingParser;
+import org.apache.iceberg.types.Conversions;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
@@ -99,11 +102,13 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.booleanCol;
 import static io.deephaven.engine.util.TableTools.byteCol;
@@ -3474,4 +3479,536 @@ public abstract class SqliteCatalogBase {
     }
 
     /*--- End of tests for schema evolution ---*/
+
+    /*--- Tests for IcebergReadInstructions.pruningExpression ---*/
+
+    private static final TableDefinition PRUNING_PARTITIONED_DEFINITION = TableDefinition.of(
+            ColumnDefinition.ofInt("intCol"),
+            ColumnDefinition.ofDouble("doubleCol"),
+            ColumnDefinition.ofString("PartCol").withPartitioning());
+
+    private static Table pruningPart(final int offset) {
+        return TableTools.emptyTable(5)
+                .update("intCol = (int) (i + " + offset + ")",
+                        "doubleCol = (double) (i + " + offset + ")");
+    }
+
+    private static IcebergReadInstructions pruning(final Expression expression) {
+        return IcebergReadInstructions.builder().pruningExpression(expression).build();
+    }
+
+    /**
+     * Create {@code tableIdentifier} partitioned by {@code PartCol}, with one data file per partition: {@code apple}
+     * (intCol 0-4), {@code boy} (100-104), and {@code cat} (200-204).
+     */
+    private IcebergTableAdapter createPruningPartitionedTable(final TableIdentifier tableIdentifier) {
+        final IcebergTableAdapter tableAdapter =
+                catalogAdapter.createTable(tableIdentifier, PRUNING_PARTITIONED_DEFINITION);
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(PRUNING_PARTITIONED_DEFINITION)
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(pruningPart(0), pruningPart(100), pruningPart(200))
+                .addAllPartitionPaths(List.of("PartCol=apple", "PartCol=boy", "PartCol=cat"))
+                .build());
+        return tableAdapter;
+    }
+
+    /**
+     * Create {@code tableIdentifier} unpartitioned, with a single data file holding intCol 0-4.
+     */
+    private IcebergTableAdapter createPruningFlatTable(final TableIdentifier tableIdentifier) {
+        final Table source = pruningPart(0);
+        final IcebergTableAdapter tableAdapter =
+                catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(source)
+                .build());
+        return tableAdapter;
+    }
+
+    @Test
+    void pruningExpressionOnIdentityPartition() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.OnIdentityPartition");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+
+        // An identity-partition predicate prunes exactly, so no Deephaven filter is needed for a correct result
+        final Table fromIceberg = tableAdapter.table(pruning(Expressions.equal("PartCol", "boy")));
+        assertThat(fromIceberg.getDefinition()).isEqualTo(PRUNING_PARTITIONED_DEFINITION);
+        assertTableEquals(pruningPart(100).update("PartCol = `boy`"), fromIceberg);
+
+        // An OR over two partitions
+        final Table twoPartitions = tableAdapter.table(pruning(
+                Expressions.or(Expressions.equal("PartCol", "apple"), Expressions.equal("PartCol", "cat"))));
+        assertTableEquals(
+                TableTools.merge(
+                        pruningPart(0).update("PartCol = `apple`"),
+                        pruningPart(200).update("PartCol = `cat`")),
+                twoPartitions);
+    }
+
+    @Test
+    void pruningExpressionAlwaysTrueMatchesUnfiltered() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.AlwaysTrueMatchesUnfiltered");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+        assertTableEquals(
+                tableAdapter.table(),
+                tableAdapter.table(pruning(Expressions.alwaysTrue())));
+    }
+
+    @Test
+    void pruningExpressionAlwaysFalseYieldsEmptyTable() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.AlwaysFalseYieldsEmptyTable");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+        final Table fromIceberg = tableAdapter.table(pruning(Expressions.alwaysFalse()));
+        // The definition must survive even though nothing was discovered
+        assertThat(fromIceberg.getDefinition()).isEqualTo(PRUNING_PARTITIONED_DEFINITION);
+        assertThat(fromIceberg.isEmpty()).isTrue();
+    }
+
+    /**
+     * {@link IcebergTableWriter} records no column metrics, so Iceberg has no bounds with which to prune
+     * Deephaven-written data files and every file survives; tables written by engines that do record metrics prune
+     * here. If this test starts failing, the writer has gained metrics and the expectation needs revisiting.
+     */
+    @Test
+    void pruningExpressionOnNonPartitionColumnDoesNotPruneWithoutMetrics() {
+        final TableIdentifier tableIdentifier =
+                TableIdentifier.parse("PruningExpression.OnNonPartitionColumnDoesNotPruneWithoutMetrics");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+
+        final Table fromIceberg = tableAdapter.table(pruning(Expressions.equal("intCol", 100)));
+        assertThat(fromIceberg.size()).isEqualTo(15);
+        assertTableEquals(tableAdapter.table(), fromIceberg);
+
+        // Regardless, applying the equivalent Deephaven filter yields the correct answer
+        assertTableEquals(
+                tableAdapter.table().where("intCol == 100"),
+                fromIceberg.where("intCol == 100"));
+        assertThat(fromIceberg.where("intCol == 100").size()).isEqualTo(1);
+    }
+
+    /**
+     * The documented contract: pruning is not filtering. A data file that survives pruning is read in full, so the
+     * result is a superset of the matching rows, and an equivalent Deephaven filter is required for an exact result.
+     */
+    @Test
+    void pruningExpressionYieldsSupersetNotFilteredResult() {
+        final TableIdentifier tableIdentifier =
+                TableIdentifier.parse("PruningExpression.YieldsSupersetNotFilteredResult");
+        final IcebergTableAdapter tableAdapter = createPruningFlatTable(tableIdentifier);
+
+        // Exactly one of the five rows satisfies the expression, but the whole data file survives pruning
+        final Table fromIceberg = tableAdapter.table(pruning(Expressions.equal("intCol", 2)));
+        assertThat(fromIceberg.size()).isEqualTo(5);
+        assertThat(fromIceberg.where("intCol == 2").size()).isEqualTo(1);
+    }
+
+    @Test
+    void pruningExpressionThenDeephavenWhereMatchesUnprunedWhere() {
+        final TableIdentifier tableIdentifier =
+                TableIdentifier.parse("PruningExpression.ThenDeephavenWhereMatchesUnprunedWhere");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+        // Pruning must never change the answer once the equivalent Deephaven filter is applied
+        assertTableEquals(
+                tableAdapter.table().where("intCol >= 100"),
+                tableAdapter.table(pruning(Expressions.greaterThanOrEqual("intCol", 100)))
+                        .where("intCol >= 100"));
+    }
+
+    @Test
+    void pruningExpressionUnknownFieldFailsAtTableCall() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.UnknownFieldFailsAtTableCall");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+        try {
+            tableAdapter.table(pruning(Expressions.equal("NoSuchField", 1)));
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Invalid pruningExpression");
+            assertThat(e).hasRootCauseMessage("Cannot find field 'NoSuchField' in struct: "
+                    + "struct<1: intCol: optional int, 2: doubleCol: optional double, 3: PartCol: optional string>");
+        }
+    }
+
+    @Test
+    void pruningExpressionWithWrongLiteralTypeFailsAtTableCall() {
+        final TableIdentifier tableIdentifier =
+                TableIdentifier.parse("PruningExpression.WithWrongLiteralTypeFailsAtTableCall");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+        try {
+            // PartCol is a string; 42 cannot be converted
+            tableAdapter.table(pruning(Expressions.equal("PartCol", 42)));
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Invalid pruningExpression");
+        }
+    }
+
+    @Test
+    void pruningExpressionRejectsBoundExpression() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.RejectsBoundExpression");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+        final Expression bound = Binder.bind(
+                tableAdapter.currentSchema().asStruct(), Expressions.equal("PartCol", "boy"), true);
+        try {
+            tableAdapter.table(pruning(bound));
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Invalid pruningExpression");
+        }
+    }
+
+    /**
+     * The expression is resolved against the Iceberg schema, so it may reference fields that the Deephaven definition
+     * does not expose at all.
+     */
+    @Test
+    void pruningExpressionOnFieldAbsentFromDefinition() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.OnFieldAbsentFromDefinition");
+        createPruningPartitionedTable(tableIdentifier);
+
+        final Schema schema = catalogAdapter.catalog().loadTable(tableIdentifier).schema();
+        final TableDefinition withoutPc = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(tableIdentifier)
+                .resolver(UnboundResolver.builder()
+                        .definition(withoutPc)
+                        .putColumnInstructions("intCol", schemaField(schema.findField("intCol").fieldId()))
+                        .putColumnInstructions("doubleCol", schemaField(schema.findField("doubleCol").fieldId()))
+                        .build())
+                .build());
+
+        final Table fromIceberg = tableAdapter.table(pruning(Expressions.equal("PartCol", "boy")));
+        assertThat(fromIceberg.getDefinition()).isEqualTo(withoutPc);
+        assertTableEquals(pruningPart(100), fromIceberg);
+    }
+
+    /**
+     * The expression uses Iceberg field names, never the (possibly renamed) Deephaven column names.
+     */
+    @Test
+    void pruningExpressionWithColumnRename() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.WithColumnRename");
+        createPruningPartitionedTable(tableIdentifier);
+
+        final Schema schema = catalogAdapter.catalog().loadTable(tableIdentifier).schema();
+        final TableDefinition renamed = TableDefinition.of(
+                ColumnDefinition.ofInt("IC"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("SC").withPartitioning());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(tableIdentifier)
+                .resolver(UnboundResolver.builder()
+                        .definition(renamed)
+                        .putColumnInstructions("IC", schemaField(schema.findField("intCol").fieldId()))
+                        .putColumnInstructions("doubleCol", schemaField(schema.findField("doubleCol").fieldId()))
+                        .putColumnInstructions("SC", schemaField(schema.findField("PartCol").fieldId()))
+                        .build())
+                .build());
+
+        // The Iceberg name works
+        assertTableEquals(
+                pruningPart(100).update("SC = `boy`").renameColumns("IC = intCol"),
+                tableAdapter.table(pruning(Expressions.equal("PartCol", "boy"))));
+
+        // The Deephaven name does not
+        try {
+            tableAdapter.table(pruning(Expressions.equal("SC", "boy")));
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Invalid pruningExpression");
+        }
+    }
+
+    /**
+     * A manifest carries the schema that was current when it was written, so an expression referencing a newly added
+     * column cannot be bound against older manifests. Pruning must degrade to reading those manifests in full rather
+     * than failing the table.
+     */
+    @Test
+    void pruningExpressionOnColumnAddedAfterOlderManifests() {
+        final TableIdentifier tableIdentifier =
+                TableIdentifier.parse("PruningExpression.OnColumnAddedAfterOlderManifests");
+        final IcebergTableAdapter tableAdapter = createPruningFlatTable(tableIdentifier);
+
+        // Add a column, then write a second data file that has it
+        final org.apache.iceberg.Table icebergTable = catalogAdapter.catalog().loadTable(tableIdentifier);
+        icebergTable.updateSchema().addColumn("addedCol", Types.IntegerType.get()).commit();
+
+        final TableDefinition withAdded = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofInt("addedCol"));
+        final IcebergTableAdapter updatedAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final Table newData = pruningPart(100).update("addedCol = (int) 7");
+        {
+            final IcebergTableWriter tableWriter = updatedAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(withAdded)
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(newData)
+                    .build());
+        }
+
+        // addedCol does not exist in the first manifest's schema; that manifest must simply not be pruned
+        final Table fromIceberg = updatedAdapter.table(pruning(Expressions.equal("addedCol", 7)));
+        assertThat(fromIceberg.getDefinition()).isEqualTo(withAdded);
+        final Table expected = TableTools.merge(
+                pruningPart(0).update("addedCol = (int) null"),
+                newData);
+        assertTableEquals(expected, fromIceberg);
+    }
+
+    /**
+     * A table may have several live partition specs, and evaluators are therefore per-spec. Deephaven's own
+     * {@link IcebergTableWriter} cannot produce this shape — {@code IcebergUtils.verifyPartitioningColumns} rejects a
+     * write once the Iceberg spec no longer matches the Deephaven definition's partitioning columns — but tables
+     * written by other engines routinely have it, so this test builds it with the raw Iceberg API.
+     *
+     * <p>
+     * The setup re-registers an already-written Parquet file under a newly added partition spec, and gives that
+     * registration the per-column metrics that Deephaven's writer omits (see
+     * {@code pruningExpressionOnNonPartitionColumnDoesNotPruneWithoutMetrics}). That makes this the only test that
+     * exercises Iceberg's {@code InclusiveMetricsEvaluator} path.
+     */
+    @Test
+    void pruningExpressionAcrossPartitionSpecEvolution() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.AcrossPartitionSpecEvolution");
+        // All columns Normal, so the Deephaven definition is independent of the Iceberg partition spec and PartCol is
+        // physically present in every data file
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("PartCol"));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, definition);
+
+        final Table appleData = pruningPart(0).update("PartCol = `apple`");
+        // A distinct row count, so the "boy" data file can be identified unambiguously below
+        final Table boyData = pruningPart(100).head(3).update("PartCol = `boy`");
+        {
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(definition)
+                    .build());
+            // Separate appends so that each lands in its own data file
+            tableWriter.append(IcebergWriteInstructions.builder().addTables(appleData).build());
+            tableWriter.append(IcebergWriteInstructions.builder().addTables(boyData).build());
+        }
+
+        final org.apache.iceberg.Table icebergTable = catalogAdapter.catalog().loadTable(tableIdentifier);
+        assertThat(icebergTable.spec().isUnpartitioned()).isTrue();
+
+        // Locate the data file holding the "boy" rows, written under the original (unpartitioned) spec
+        final DataFile boyFile;
+        try (final Stream<DataFile> dataFiles =
+                IcebergTestUtils.allDataFiles(icebergTable, icebergTable.currentSnapshot())) {
+            final List<DataFile> all = dataFiles.collect(Collectors.toList());
+            assertThat(all).hasSize(2);
+            boyFile = all.stream()
+                    .filter(df -> df.recordCount() == boyData.size())
+                    .reduce((a, b) -> {
+                        throw new IllegalStateException("Expected exactly one candidate data file");
+                    })
+                    .orElseThrow();
+        }
+
+        // Evolve the Iceberg partition spec to identity(PartCol)
+        icebergTable.updateSpec().addField("PartCol").commit();
+        icebergTable.refresh();
+        final PartitionSpec partitionedSpec = icebergTable.spec();
+        assertThat(partitionedSpec.isPartitioned()).isTrue();
+        assertThat(partitionedSpec.specId()).isNotEqualTo(boyFile.specId());
+
+        // Re-register the same physical file under the new spec, with partition data and real column metrics. The
+        // metrics are what another engine's writer would have recorded.
+        final Schema schema = icebergTable.schema();
+        final int intColId = schema.findField("intCol").fieldId();
+        // PartCol field id is intentionally unused: no metrics are recorded for it (see below)
+        // Deliberately record bounds for intCol only, and none for PartCol. Each assertion below then isolates exactly
+        // one pruning mechanism: predicates on PartCol can only be served by the partition spec, and predicates on
+        // intCol only by these metrics.
+        final Metrics metrics = new Metrics(
+                boyFile.recordCount(),
+                null, // columnSizes
+                Map.of(intColId, boyFile.recordCount()), // valueCounts
+                Map.of(intColId, 0L), // nullValueCounts
+                null, // nanValueCounts
+                Map.of(intColId, Conversions.toByteBuffer(Types.IntegerType.get(), 100)),
+                Map.of(intColId, Conversions.toByteBuffer(Types.IntegerType.get(), 102)));
+        final DataFile boyFileRepartitioned = DataFiles.builder(partitionedSpec)
+                .withPath(boyFile.path().toString())
+                .withFormat(FileFormat.PARQUET)
+                .withRecordCount(boyFile.recordCount())
+                .withFileSizeInBytes(boyFile.fileSizeInBytes())
+                .withPartitionPath("PartCol=boy")
+                .withMetrics(metrics)
+                .build();
+        icebergTable.newRewrite()
+                .rewriteFiles(Set.of(boyFile), Set.of(boyFileRepartitioned))
+                .commit();
+
+        final IcebergTableAdapter evolvedAdapter = catalogAdapter.loadTable(tableIdentifier);
+        final Table allRows = TableTools.merge(appleData, boyData);
+        assertTableEquals(allRows, evolvedAdapter.table());
+
+        // The manifest under the partitioned spec is skipped outright by its partition summary; the manifest under the
+        // unpartitioned spec cannot be pruned on PartCol at all, so its data file is read in full.
+        assertTableEquals(
+                appleData,
+                evolvedAdapter.table(pruning(Expressions.equal("PartCol", "apple"))));
+
+        // The reverse direction: the unpartitioned manifest has no metrics, so its file survives even though none of
+        // its rows match. This is the superset contract, per-spec.
+        assertTableEquals(
+                allRows,
+                evolvedAdapter.table(pruning(Expressions.equal("PartCol", "boy"))));
+
+        // Metrics-based pruning on a non-partition column: intCol bounds are [100, 102] on the re-registered file, so
+        // it is pruned, while the metrics-less apple file is kept.
+        assertTableEquals(
+                appleData,
+                evolvedAdapter.table(pruning(Expressions.greaterThan("intCol", 1000))));
+
+        // ... and a predicate inside those bounds keeps it
+        assertTableEquals(
+                allRows,
+                evolvedAdapter.table(pruning(Expressions.equal("intCol", 102))));
+    }
+
+    @Test
+    void pruningExpressionWithSnapshotId() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.WithSnapshotId");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+        final long firstSnapshotId = tableAdapter.currentSnapshot().snapshotId();
+
+        // Append a fourth partition in a later snapshot
+        {
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(PRUNING_PARTITIONED_DEFINITION)
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(pruningPart(300))
+                    .addAllPartitionPaths(List.of("PartCol=dog"))
+                    .build());
+        }
+
+        final IcebergReadInstructions instructions = IcebergReadInstructions.builder()
+                .snapshotId(firstSnapshotId)
+                .pruningExpression(Expressions.notEqual("PartCol", "apple"))
+                .build();
+        assertTableEquals(
+                TableTools.merge(
+                        pruningPart(100).update("PartCol = `boy`"),
+                        pruningPart(200).update("PartCol = `cat`")),
+                tableAdapter.table(instructions));
+    }
+
+    @Test
+    void pruningExpressionWithManualRefreshUpdate() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.WithManualRefreshUpdate");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final IcebergTableImpl fromIcebergRefreshing =
+                (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
+                        .updateMode(IcebergUpdateMode.manualRefreshingMode())
+                        .pruningExpression(Expressions.equal("PartCol", "boy"))
+                        .build());
+        assertTableEquals(pruningPart(100).update("PartCol = `boy`"), fromIcebergRefreshing);
+
+        // Append one matching and one non-matching partition
+        {
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(PRUNING_PARTITIONED_DEFINITION)
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(pruningPart(300), pruningPart(400))
+                    .addAllPartitionPaths(List.of("PartCol=boy", "PartCol=dog"))
+                    .build());
+        }
+
+        fromIcebergRefreshing.update();
+        updateGraph.runWithinUnitTestCycle(fromIcebergRefreshing::refresh);
+
+        // The pruning expression must still be applied on refresh: PartCol=dog must not appear
+        assertTableEquals(
+                TableTools.merge(
+                        pruningPart(100).update("PartCol = `boy`"),
+                        pruningPart(300).update("PartCol = `boy`")),
+                fromIcebergRefreshing);
+    }
+
+    @Test
+    void pruningExpressionWithAutoRefreshingTable() throws InterruptedException {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.WithAutoRefreshingTable");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+
+        final IcebergTableImpl fromIcebergRefreshing =
+                (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
+                        .updateMode(IcebergUpdateMode.autoRefreshingMode(10))
+                        .pruningExpression(Expressions.equal("PartCol", "boy"))
+                        .build());
+        assertTableEquals(pruningPart(100).update("PartCol = `boy`"), fromIcebergRefreshing);
+
+        {
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(PRUNING_PARTITIONED_DEFINITION)
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(pruningPart(300), pruningPart(400))
+                    .addAllPartitionPaths(List.of("PartCol=boy", "PartCol=dog"))
+                    .build());
+        }
+
+        Thread.sleep(500);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(fromIcebergRefreshing::refresh);
+
+        assertTableEquals(
+                TableTools.merge(
+                        pruningPart(100).update("PartCol = `boy`"),
+                        pruningPart(300).update("PartCol = `boy`")),
+                fromIcebergRefreshing);
+    }
+
+    /**
+     * A pruned table can legitimately start with no locations at all; a later refresh must be able to add them.
+     */
+    @Test
+    void pruningExpressionEmptyThenRefreshAddsLocations() {
+        final TableIdentifier tableIdentifier =
+                TableIdentifier.parse("PruningExpression.EmptyThenRefreshAddsLocations");
+        final IcebergTableAdapter tableAdapter = createPruningPartitionedTable(tableIdentifier);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final IcebergTableImpl fromIcebergRefreshing =
+                (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
+                        .updateMode(IcebergUpdateMode.manualRefreshingMode())
+                        .pruningExpression(Expressions.equal("PartCol", "dog"))
+                        .build());
+        assertThat(fromIcebergRefreshing.isEmpty()).isTrue();
+        assertThat(fromIcebergRefreshing.getDefinition()).isEqualTo(PRUNING_PARTITIONED_DEFINITION);
+
+        {
+            final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                    .tableDefinition(PRUNING_PARTITIONED_DEFINITION)
+                    .build());
+            tableWriter.append(IcebergWriteInstructions.builder()
+                    .addTables(pruningPart(300))
+                    .addAllPartitionPaths(List.of("PartCol=dog"))
+                    .build());
+        }
+
+        fromIcebergRefreshing.update();
+        updateGraph.runWithinUnitTestCycle(fromIcebergRefreshing::refresh);
+
+        assertTableEquals(pruningPart(300).update("PartCol = `dog`"), fromIcebergRefreshing);
+    }
+
+    /*--- End of tests for IcebergReadInstructions.pruningExpression ---*/
 }

@@ -16,6 +16,7 @@ import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.data.IdentityPartitionConverters;
+import org.apache.iceberg.expressions.Expression;
 import org.apache.iceberg.transforms.Transform;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
@@ -46,8 +47,9 @@ final class IcebergPartitionedLayout extends IcebergBaseLayout {
             @NotNull ParquetInstructions parquetInstructions,
             @NotNull SeekableChannelsProvider seekableChannelsProvider,
             @Nullable Snapshot snapshot,
-            @NotNull Resolver resolver) {
-        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot);
+            @NotNull Resolver resolver,
+            @NotNull Expression pruningExpression) {
+        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot, pruningExpression);
         this.partitionFields = resolver.partitionFieldMap();
         // This sort of check should be redundant; the resolver should be doing all these checks itself. This is an
         // extra layer of safety though, co-located closer to the where the usage actually occurs.
