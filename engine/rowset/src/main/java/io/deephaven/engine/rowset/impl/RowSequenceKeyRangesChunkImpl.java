@@ -446,6 +446,11 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
             if (!lc.accept(v)) {
                 return false;
             }
+            if (v == endInclusive) {
+                // Checked here rather than by the loop bound, which would step past the last key of the key space and
+                // wrap to a negative value that still compares as inside the range.
+                break;
+            }
         }
         return true;
     }
