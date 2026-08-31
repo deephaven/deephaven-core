@@ -6,7 +6,6 @@ package io.deephaven.web.client.api;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsLiteral;
 import com.vertispan.tsdefs.annotations.TsName;
-import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.ReadonlyArray;
@@ -23,6 +22,7 @@ import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.FlattenRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SliceRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
@@ -32,9 +32,11 @@ import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
+import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.web.client.api.agg.*;
 import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.i18n.JsNumberFormat;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -478,7 +480,21 @@ public interface JsTableOperations extends ServerObject {
                 .setResultId(ticket)));
     }
 
-    @TsUnion
+    /**
+     * Specifies the type of natural join to perform, specifically how to handle duplicate and missing right hand table
+     * rows.
+     *
+     * <ul>
+     * <li>ERROR_ON_DUPLICATE - Throw an error if a duplicate right hand table row is found. This is the default
+     * behavior if not specified.</li>
+     * <li>FIRST_MATCH - Match the first right hand table row and ignore later duplicates.</li>
+     * <li>LAST_MATCH - Match the last right hand table row and ignore earlier duplicates.</li>
+     * <li>EXACTLY_ONE_MATCH - Match exactly one right hand table row; throw an error if there are zero or more than one
+     * matches.</li>
+     * </ul>
+     */
+    @TsName(name = "NaturalJoinType", namespace = "dh")
+    @TsUnion(anonymous = false)
     @JsType(namespace = JsPackage.GLOBAL, name = "String", isNative = true)
     interface NaturalJoinType {
         @TsLiteral
@@ -497,14 +513,23 @@ public interface JsTableOperations extends ServerObject {
         @TsUnionMember
         @JsOverlay
         String EXACTLY_ONE_MATCH = "EXACTLY_ONE_MATCH";
-
-
     }
 
+    /**
+     * Perform a natural-join with the {@code rightTable}.
+     *
+     * @param rightTable The right side table on the join.
+     * @param columnsToMatch The match pair conditions.
+     * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
+     *        match.
+     * @param joinType The type of join to perform
+     * @return the natural-joined table
+     */
     // TODO add an options type for these various flags?
     @JsMethod
     default JsPendingTable naturalJoin(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
-            @JsOptional @JsNullable ReadonlyArray<String> columnsToAdd, @JsOptional @JsNullable NaturalJoinType joinType) {
+            @JsOptional @JsNullable ReadonlyArray<String> columnsToAdd,
+            @JsOptional @JsNullable NaturalJoinType joinType) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         NaturalJoinTablesRequest.Builder join = NaturalJoinTablesRequest.newBuilder()
@@ -564,8 +589,8 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Performs a cross join (Cartesian product) of this table with the right table, filtered to matching rows. Each
-     * row in this table is paired with every matching row in the right table.
+     * Performs a cross join (Cartesian product) of this table with the right table, filtered to matching rows. Each row
+     * in this table is paired with every matching row in the right table.
      *
      * @param rightTable the table to join with
      * @param columnsToMatch the columns to match on, in "LeftCol=RightCol" format
@@ -595,8 +620,12 @@ public interface JsTableOperations extends ServerObject {
         return call(ticket, BatchTableRequest.Operation.newBuilder().setCrossJoin(request));
     }
 
+    /**
+     * The match condition rule for the final match column of as-of-join.
+     */
     @TsUnion(anonymous = false)
-    @JsType(namespace = JsPackage.GLOBAL, name = "String", isNative = true)
+    @TsName(name = "AsOfJoinRule", namespace = "dh")
+    @JsType(namespace = JsPackage.GLOBAL, name = "?", isNative = true)
     interface AsOfMatchRule {
         @TsLiteral
         @TsUnionMember
@@ -617,13 +646,12 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Performs an as-of join of this table with the right table, matching the closest row in the right table based
-     * on the last match column's ordering. Useful for joining time-series data where exact matches are not required.
-     *
+     * Performs an as-of join of this table with the right table, matching the closest row in the right table based on
+     * the last match column's ordering. Useful for joining time-series data where exact matches are not required.
      *
      * @param rightTable the table to join with
-     * @param columnsToMatch the columns to match on, in "LeftCol=RightCol" format; the last column determines the
-     *        as-of match direction
+     * @param columnsToMatch the columns to match on, in "LeftCol=RightCol" format; the last column determines the as-of
+     *        match direction
      * @param columnsToAdd the columns to add from the right table; if omitted, all non-match columns are added
      * @param asOfMatchRule the match rule for the as-of column
      * @return a new table with the joined columns
@@ -638,12 +666,14 @@ public interface JsTableOperations extends ServerObject {
         BatchTableRequest.Operation.Builder batch = BatchTableRequest.Operation.newBuilder();
         String inferredMatchRule = inferMatchRule(builder.getAsOfColumn());
         if (asOfMatchRule != null) {
-            if (inferredMatchRule != null && !asOfMatchRule.equals(inferredMatchRule)) {
-                throw new IllegalArgumentException("Formula " + builder.getAsOfColumn() + " doesn't match rule " + asOfMatchRule);
+            if (inferredMatchRule != null && !asOfMatchRule.toString().equals(inferredMatchRule)) {
+                throw new IllegalArgumentException(
+                        "Formula " + builder.getAsOfColumn() + " doesn't match rule " + asOfMatchRule);
             }
         } else {
             if (inferredMatchRule == null) {
-                throw new IllegalArgumentException("Cannot infer match rule for column " + builder.getAsOfColumn() + ", specify asOfMatchRule argument or clarify the formula");
+                throw new IllegalArgumentException("Cannot infer match rule for column " + builder.getAsOfColumn()
+                        + ", specify asOfMatchRule argument or clarify the formula");
             }
             asOfMatchRule = Js.cast(inferredMatchRule);
         }
@@ -677,27 +707,45 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
+     * Perform an as-of join with the {@code rightTable}.
      *
-     * @param table
-     * @param matches
-     * @param columnsToAdd
-     * @return
+     * @param rightTable The right side table on the join.
+     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn>=rightColumn"},
+     *        {@code "leftColumn>rightColumn"}, {@code "columnFoundInBoth"}).
+     * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
+     *        side as a result of the match.
+     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
-    default JsPendingTable aj(JsTableOperations table, ReadonlyArray<String> matches, @JsNullable @JsOptional ReadonlyArray<String> columnsToAdd) {
+    @JsMethod
+    default JsPendingTable aj(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
+            @JsNullable @JsOptional ReadonlyArray<String> columnsToAdd) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        AjRajTablesRequest.Builder builder = makeAjReq(table, matches, columnsToAdd, ticket);
+        AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
         return call(ticket, BatchTableRequest.Operation.newBuilder().setAj(builder));
     }
 
-    default JsPendingTable raj(JsTableOperations table, ReadonlyArray<String> matches, @JsNullable @JsOptional ReadonlyArray<String> columnsToAdd) {
+    /**
+     * Perform a reverse-as-of join with the {@code rightTable}.
+     *
+     * @param rightTable The right side table on the join.
+     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn<=rightColumn"},
+     *        {@code "leftColumn<rightColumn"}, {@code "columnFoundInBoth"}).
+     * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
+     *        side as a result of the match.
+     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
+     */
+    @JsMethod
+    default JsPendingTable raj(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
+            @JsNullable @JsOptional ReadonlyArray<String> columnsToAdd) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
-        AjRajTablesRequest.Builder builder = makeAjReq(table, matches, columnsToAdd, ticket);
+        AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
         return call(ticket, BatchTableRequest.Operation.newBuilder().setRaj(builder));
     }
 
-    private AjRajTablesRequest.Builder makeAjReq(JsTableOperations table, ReadonlyArray<String> matches, ReadonlyArray<String> columnsToAdd, Ticket ticket) {
+    private AjRajTablesRequest.Builder makeAjReq(JsTableOperations table, ReadonlyArray<String> matches,
+            ReadonlyArray<String> columnsToAdd, Ticket ticket) {
         AjRajTablesRequest.Builder builder = AjRajTablesRequest.newBuilder()
                 .setResultId(ticket)
                 .setLeftId(TableReference.newBuilder()
@@ -716,9 +764,98 @@ public interface JsTableOperations extends ServerObject {
         return builder;
     }
 
-    // TODO add args in a js-ish way
-    // @JsMethod
-    // JsPendingTable rangeJoin(JsTableOperations rightTable,
+    // @TsName(name = "RangeStartRule", namespace = "dh")
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    interface RangeStartRule {
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String LESS_THAN = "LESS_THAN";
+
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String LESS_THAN_OR_EQUAL = "LESS_THAN_OR_EQUAL";
+
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String LESS_THAN_OR_EQUAL_ALLOW_PRECEDING = "LESS_THAN_OR_EQUAL_ALLOW_PRECEDING";
+    }
+
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    interface RangeEndRule {
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String GREATER_THAN = "GREATER_THAN";
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String GREATER_THAN_OR_EQUAL = "GREATER_THAN_OR_EQUAL";
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING = "GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING";
+    }
+
+
+
+    @JsType(namespace = "dh")
+    @TsInterface
+    class RangeJoinMatch {
+        public Column.ColumnOrName leftStartColumn;
+        public RangeStartRule rangeStartRule;
+        public Column.ColumnOrName rightRangeColumn;
+        public RangeEndRule rangeEndRule;
+        public Column.ColumnOrName leftEndColumn;
+    }
+
+    @JsMethod
+    default JsPendingTable rangeJoin(JsTableOperations rightTable, ReadonlyArray<String> exactMatches,
+            RangeJoinMatch rangeMatch, ReadonlyArray<AggregationUnion> aggregations) {
+        Ticket ticket = getConnection().getTickets().newExportTicket();
+
+        RangeJoinTablesRequest.Builder request = RangeJoinTablesRequest.newBuilder()
+                .setResultId(ticket)
+                .setLeftId(TableReference.newBuilder()
+                        .setTicket(typedTicket().getTicket())
+                        .build())
+                .setRightId(TableReference.newBuilder()
+                        .setTicket(rightTable.typedTicket().getTicket())
+                        .build());
+
+        request.addAllExactMatchColumns(exactMatches.asList());
+        request.setLeftStartColumn(rangeMatch.leftStartColumn.columnName());
+
+        request.setRangeStartRule(switch (rangeMatch.rangeStartRule.toString()) {
+            case RangeStartRule.LESS_THAN -> RangeJoinTablesRequest.RangeStartRule.LESS_THAN;
+            case RangeStartRule.LESS_THAN_OR_EQUAL -> RangeJoinTablesRequest.RangeStartRule.LESS_THAN_OR_EQUAL;
+            case RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING ->
+                RangeJoinTablesRequest.RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING;
+            default -> throw new IllegalArgumentException("Unknown range start rule: " + rangeMatch.rangeStartRule);
+        });
+        request.setRightRangeColumn(rangeMatch.rightRangeColumn.columnName());
+        request.setRangeEndRule(switch (rangeMatch.rangeEndRule.toString()) {
+            case RangeEndRule.GREATER_THAN -> RangeJoinTablesRequest.RangeEndRule.GREATER_THAN;
+            case RangeEndRule.GREATER_THAN_OR_EQUAL -> RangeJoinTablesRequest.RangeEndRule.GREATER_THAN_OR_EQUAL;
+            case RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING ->
+                RangeJoinTablesRequest.RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING;
+            default -> throw new IllegalArgumentException("Unknown range end rule: " + rangeMatch.rangeEndRule);
+        });
+
+        request.setLeftEndColumn(rangeMatch.leftEndColumn.columnName());
+
+        for (int i = 0; i < aggregations.getLength(); i++) {
+            AggregationUnion aggUnion = aggregations.getAt(i);
+            io.deephaven.proto.backplane.grpc.Aggregation.Builder agg = aggUnion.makeAggregation();
+            request.addAggregations(agg);
+        }
+
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setRangeJoin(request));
+    }
 
     /**
      * Groups the table by the specified columns, accumulating the other columns into arrays. If no columns are
@@ -800,12 +937,605 @@ public interface JsTableOperations extends ServerObject {
         return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregate(aggBuilder));
     }
 
-    // TODO options
-    // @JsMethod
-    // default JsPendingTable updateBy() {}
+    @JsType(namespace = "dh.updateby")
+    class UpdateByControl {
+        // If redirections should be used for output sources instead of sparse array sources.
+        // If unset, defaults to server-provided defaults.
+        @JsNullable
+        public Boolean useRedirection;
+
+        // The maximum chunk capacity.
+        // If unset, defaults to server-provided defaults.
+        @JsNullable
+        public Double chunkCapacity;
+        // The maximum fractional memory overhead allowable for sparse redirections as a fraction (e.g. 1.1 is 10%
+        // overhead). Values less than zero disable overhead checking, and result in always using the sparse structure.
+        // A
+        // value of zero results in never using the sparse structure.
+        // If unset, defaults to server-provided defaults.
+        @JsNullable
+        Double maxStaticSparseMemoryOverhead;
+        // The initial hash table size.
+        // If unset, defaults to server-provided defaults.
+        @JsNullable
+        public Double initialHashTableSize;
+        // The maximum load factor for the hash table.
+        // If unset, defaults to server-provided defaults.
+        @JsNullable
+        public Double maximumLoadFactor;
+        // The target load factor for the hash table.
+        // If unset, defaults to server-provided defaults.
+        @JsNullable
+        public Double targetLoadFactor;
+
+        // The math context.
+        @JsNullable
+        public MathContext mathContext;
+    }
+    @JsType(namespace = "dh.updateby")
+    class MathContext {
+        public int precision;
+        public RoundingMode roundingMode;
+    }
+
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    interface RoundingMode {
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String UP = "UP";
+
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String DOWN = "DOWN";
+
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String CEILING = "CEILING";
+
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String FLOOR = "FLOOR";
+
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String HALF_UP = "HALF_UP";
+
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String HALF_DOWN = "HALF_DOWN";
+
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String HALF_EVEN = "HALF_EVEN";
+
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String UNNECESSARY = "UNNECESSARY";
+    }
+    @JsType(namespace = "dh.updateby")
+
+    class UpdateByOptions {
+        @JsNullable
+        public UpdateByControl control;
+
+        public ReadonlyArray<UpdateByOperation> operations;
+
+        @JsNullable
+        public ReadonlyArray<Column.ColumnOrName> groupByColumns;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByOperation {
+        public UpdateBySpecUnion spec;
+        public ReadonlyArray<JsTable.MatchPairUnion> matchPairs;
+    }
+
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    interface UpdateBySpecUnion {
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByCumulativeSum asCumulativeSum() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByCumulativeMin asCumulativeMin() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByCumulativeMax asCumulativeMax() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByCumulativeProduct asCumulativeProduct() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByFill asFill() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByEma asEma() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByRollingSum asRollingSum() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByRollingGroup asRollingGroup() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByRollingAvg asRollingAvg() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByRollingMin asRollingMin() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByRollingMax asRollingMax() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByRollingProduct asRollingProduct() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByDelta asDelta() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByEms asEms() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByEmMin asEmMin() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByEmMax asEmMax() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByEmStd asEmStd() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByRollingCount asRollingCount() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByRollingStd asRollingStd() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByRollingWAvg asRollingWAvg() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByRollingFormula asRollingFormula() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByRollingCountWhere asRollingCountWhere() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default UpdateByCumulativeCountWhere asCumulativeCountWhere() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsProperty
+        String getType();
+    }
+
+    @JsType(namespace = "dh.updateby")
+    class UpdateByCumulativeSum {
+        @TsLiteral
+        public final String type = "UpdateByCumulativeSum";
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByCumulativeMin {
+        @TsLiteral
+        public final String type = "UpdateByCumulativeMin";
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByCumulativeMax {
+        @TsLiteral
+        public final String type = "UpdateByCumulativeMax";
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByCumulativeProduct {
+        @TsLiteral
+        public final String type = "UpdateByCumulativeProduct";
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByFill {
+        @TsLiteral
+        public final String type = "UpdateByFill";
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByEma {
+        @TsLiteral
+        public final String type = "UpdateByEma";
+        public UpdateByEmOptions emOptions;
+        public UpdateByWindowScale windowScale;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByRollingSum {
+        @TsLiteral
+        public final String type = "UpdateByRollingSum";
+        public UpdateByWindowScale windowScale;
+        public UpdateByWindowScale forwardWindowScale;
+        public UpdateByWindowScale reverseWindowScale;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByRollingGroup {
+        @TsLiteral
+        public final String type = "UpdateByRollingGroup";
+        public UpdateByWindowScale forwardWindowScale;
+        public UpdateByWindowScale reverseWindowScale;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByRollingAvg {
+        @TsLiteral
+        public final String type = "UpdateByRollingAvg";
+        public UpdateByWindowScale forwardWindowScale;
+        public UpdateByWindowScale reverseWindowScale;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByRollingMin {
+        @TsLiteral
+        public final String type = "UpdateByRollingMin";
+        public UpdateByWindowScale forwardWindowScale;
+        public UpdateByWindowScale reverseWindowScale;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByRollingMax {
+        @TsLiteral
+        public final String type = "UpdateByRollingMax";
+        public UpdateByWindowScale forwardWindowScale;
+        public UpdateByWindowScale reverseWindowScale;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByRollingProduct {
+        @TsLiteral
+        public final String type = "UpdateByRollingProduct";
+        public UpdateByWindowScale forwardWindowScale;
+        public UpdateByWindowScale reverseWindowScale;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByDelta {
+        @TsLiteral
+        public final String type = "UpdateByDelta";
+
+        /**
+         * Describes how null/NaN should be handled:
+         * <ul>
+         * <li>NULL_DOMINATES - In the case of Current - null, the null dominates so Column[i] - null = null</li>
+         * <li>VALUE_DOMINATES - In the case of Current - null, the current value dominates so Column[i] - null =
+         * Column[i]</li>
+         * <li>ZERO_DOMINATES - In the case of Current - null, return zero so Column[i] - null = 0</li>
+         * </ul>
+         */
+        @JsNullable
+        public NullBehavior nullBehavior;
+    }
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    interface NullBehavior {
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String NULL_DOMINATES = "NULL_DOMINATES";
+
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String VALUE_DOMINATES = "VALUE_DOMINATES";
+
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String ZERO_DOMINATES = "ZERO_DOMINATES";
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByEms {
+        @TsLiteral
+        public final String type = "UpdateByEms";
+        @JsNullable
+        public UpdateByEmOptions emOptions;
+        public UpdateByWindowScale windowScale;
+
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByEmMin {
+        @TsLiteral
+        public final String type = "UpdateByEmMin";
+        @JsNullable
+        public UpdateByEmOptions emOptions;
+        public UpdateByWindowScale windowScale;
+
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByEmMax {
+        @TsLiteral
+        public final String type = "UpdateByEmMax";
+        @JsNullable
+        public UpdateByEmOptions emOptions;
+        public UpdateByWindowScale windowScale;
+
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByEmStd {
+        @TsLiteral
+        public final String type = "UpdateByEmStd";
+        @JsNullable
+        public UpdateByEmOptions emOptions;
+        public UpdateByWindowScale windowScale;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByRollingCount {
+        @TsLiteral
+        public final String type = "UpdateByRollingCount";
+        public UpdateByWindowScale forwardWindowScale;
+        public UpdateByWindowScale reverseWindowScale;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByRollingStd {
+        @TsLiteral
+        public final String type = "UpdateByRollingStd";
+        public UpdateByWindowScale forwardWindowScale;
+        public UpdateByWindowScale reverseWindowScale;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByRollingWAvg {
+        @TsLiteral
+        public final String type = "UpdateByRollingWAvg";
+        public UpdateByWindowScale forwardWindowScale;
+        public UpdateByWindowScale reverseWindowScale;
+        public Column.ColumnOrName weightColumn;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByRollingFormula {
+        @TsLiteral
+        public final String type = "UpdateByRollingFormula";
+        public UpdateByWindowScale forwardWindowScale;
+        public UpdateByWindowScale reverseWindowScale;
+
+        public String formula;
+
+        @Deprecated // should we even have this?
+        @JsNullable
+        public String paramToken;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByRollingCountWhere {
+        @TsLiteral
+        public final String type = "UpdateByRollingCountWhere";
+        public UpdateByWindowScale forwardWindowScale;
+        public UpdateByWindowScale reverseWindowScale;
+
+        public String resultColumn;
+        public ReadonlyArray<String> filters;// TODO
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByCumulativeCountWhere {
+        @TsLiteral
+        public final String type = "UpdateByCumulativeCountWhere";
+
+        public String resultColumn;
+        public ReadonlyArray<String> filters;// TODO
+    }
 
     /**
-     * Creates a new table with only the distinct values of the specified columns. If no columns are specified, all columns will be used.
+     * Directives for how to handle {@code null} and {@code NaN} values.
+     *
+     * <ul>
+     * <li>THROW - Throw an exception and abort processing when bad data is encountered.</li>
+     * <li>RESET - Reset the state for the bucket to {@code null} when invalid data is encountered.</li>
+     * <li>SKIP - Skip and do not process the invalid data without changing state.</li>
+     * <li>POISON - Allow the bad data to poison the result. This is only valid for use with NaN.</li>
+     * </ul>
+     */
+    @TsName(namespace = "dh.updateby", name = "BadDataBehavior")
+    @TsUnion(anonymous = false)
+    @JsType(name = "Object", namespace = JsPackage.GLOBAL, isNative = true)
+    interface BadDataBehavior {
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String THROW = "THROW";
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String RESET = "RESET";
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String SKIP = "SKIP";
+        @TsUnionMember
+        @TsLiteral
+        @JsOverlay
+        String POISON = "POISON";
+    }
+
+    /**
+     *
+     */
+    @JsType(namespace = "dh.updateby")
+    class UpdateByEmOptions {
+        public BadDataBehavior onNullValue;
+        public BadDataBehavior onNaNValue;
+        public BadDataBehavior onNullTime;
+        public BadDataBehavior onNegativeDeltaTime;
+        public BadDataBehavior onZeroDeltaTime;
+
+        public MathContext bigValueContext;
+    }
+
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    interface UpdateByWindowScale {
+        @TsUnionMember
+        @JsOverlay
+        default UpdateByWindowTicks asTicks() {
+            return Js.uncheckedCast(this);
+        }
+
+        @TsUnionMember
+        @JsOverlay
+        default UpdateByWindowTime asTime() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsProperty
+        String getType();
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByWindowTicks {
+        @TsLiteral
+        public final String type = "ticks";
+        public double ticks;
+    }
+    @JsType(namespace = "dh.updateby")
+    class UpdateByWindowTime {
+        @TsLiteral
+        public final String type = "time";
+        public Column.ColumnOrName column;
+        public WindowDurationUnion duration;
+    }
+
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    interface WindowDurationUnion {
+        @JsOverlay
+        @TsUnionMember
+        default double asNanosNumber() {
+            return Js.coerceToDouble(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default String asDurationString() {
+            return Js.uncheckedCast(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default LongWrapper asNanosLong() {
+            return Js.uncheckedCast(this);
+        }
+    }
+
+    @JsMethod
+    default JsPendingTable updateBy(UpdateByOptions options) {
+        Ticket ticket = getConnection().getTickets().newExportTicket();
+
+        UpdateByRequest.Builder builder = UpdateByRequest.newBuilder()
+                .setResultId(ticket)
+                .setSourceId(TableReference.newBuilder()
+                        .setTicket(typedTicket().getTicket())
+                        .build());
+
+        if (options.control != null) {
+            UpdateByRequest.UpdateByOptions.Builder controlBuilder = UpdateByRequest.UpdateByOptions.newBuilder();
+            if (options.control.useRedirection != null) {
+                controlBuilder.setUseRedirection(options.control.useRedirection);
+            }
+            if (options.control.chunkCapacity != null) {
+                controlBuilder.setChunkCapacity((int) (double) options.control.chunkCapacity);
+            }
+            if (options.control.maxStaticSparseMemoryOverhead != null) {
+                controlBuilder.setMaxStaticSparseMemoryOverhead(options.control.maxStaticSparseMemoryOverhead);
+            }
+            if (options.control.initialHashTableSize != null) {
+                controlBuilder.setInitialHashTableSize((int) (double) options.control.initialHashTableSize);
+            }
+            if (options.control.maximumLoadFactor != null) {
+                controlBuilder.setMaximumLoadFactor(options.control.maximumLoadFactor);
+            }
+            if (options.control.targetLoadFactor != null) {
+                controlBuilder.setTargetLoadFactor(options.control.targetLoadFactor);
+            }
+            if (options.control.mathContext != null) {
+                io.deephaven.proto.backplane.grpc.MathContext.Builder mcBuilder =
+                        io.deephaven.proto.backplane.grpc.MathContext.newBuilder()
+                                .setPrecision(options.control.mathContext.precision)
+                                .setRoundingMode(io.deephaven.proto.backplane.grpc.MathContext.RoundingMode
+                                        .valueOf(options.control.mathContext.roundingMode.toString()));
+                controlBuilder.setMathContext(mcBuilder);
+            }
+            builder.setOptions(controlBuilder);
+        }
+
+
+
+        if (options.groupByColumns != null) {
+            builder.addAllGroupByColumns(columnsToNameList(options.groupByColumns));
+        }
+
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setUpdateBy(builder));
+    }
+
+    /**
+     * Creates a new table with only the distinct values of the specified columns. If no columns are specified, all
+     * columns will be used.
+     * 
      * @param columnNames the column names to distinct on - if empty/null, all columns are used
      * @return a new table with only the distinct values of the specified columns
      */

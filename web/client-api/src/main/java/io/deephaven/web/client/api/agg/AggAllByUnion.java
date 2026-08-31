@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.agg;
 
+import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import io.deephaven.proto.backplane.grpc.AggSpec;
@@ -20,7 +21,8 @@ import jsinterop.base.Js;
  * {@link LastRowKey} are not supported.
  */
 @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
-@TsUnion
+@TsUnion(anonymous = false)
+@TsName(namespace = "dh.agg", name = "AggAllByUnion")
 public interface AggAllByUnion {
     @JsOverlay
     @TsUnionMember

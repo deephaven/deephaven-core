@@ -94,4 +94,40 @@ public interface JsResolvedTable extends JsTableOperations {
      */
     @JsMethod
     Promise<JsResolvedTable> copy();
+
+    // /**
+    // * Seek the row matching the data provided
+    // *
+    // * @param startingRow Row to start the seek from
+    // * @param column Column to seek for value on
+    // * @param valueType Type of value provided
+    // * @param seekValue Value to seek
+    // * @param insensitive Optional value to flag a search as case-insensitive. Defaults to {@code false}.
+    // * @param contains Optional value to have the seek value do a contains search instead of exact equality. Defaults
+    // to
+    // * {@code false}.
+    // * @param isBackwards Optional value to seek backwards through the table instead of forwards. Defaults to
+    // * {@code false}.
+    // * @return A promise that resolves to the row position of the value found.
+    // */
+    // //TODO options param
+    // @JsMethod
+    // Promise<Double> seekRow(
+    // TableData.RowPositionUnion startingRow,
+    // Column column,
+    // @TsTypeRef(ValueType.class) String valueType,
+    // Any seekValue,
+    // @JsOptional @JsNullable Boolean insensitive,
+    // @JsOptional @JsNullable Boolean contains,
+    // @JsOptional @JsNullable Boolean isBackwards);
+
+    // /**
+    // * A promise that will resolve to {@link JsColumnStatistics ColumnStatistics} for the column of this table.
+    // *
+    // * @param column the column to get statistics for
+    // * @return Promise of {@link JsColumnStatistics ColumnStatistics}
+    // */
+    // //TODO change return to a pending table, expose col stats ctor to help?
+    // @JsMethod
+    // Promise<JsColumnStatistics> getColumnStatistics(Column.ColumnOrName column);
 }

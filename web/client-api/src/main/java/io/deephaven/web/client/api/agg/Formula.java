@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.agg;
 
 import com.vertispan.tsdefs.annotations.TsLiteral;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
 /**
