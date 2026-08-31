@@ -6,6 +6,9 @@ package io.deephaven.web.client.api.updateby;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 
+/**
+ * Optional advice to give the server on how to manage the work of maintaining the updateBy operation.
+ */
 @JsType(namespace = "dh.updateby")
 public class UpdateByControl {
     /**
@@ -20,6 +23,7 @@ public class UpdateByControl {
      */
     @JsNullable
     public Double chunkCapacity;
+
     /**
      * The maximum fractional memory overhead allowable for sparse redirections as a fraction (e.g. 1.1 is 10%
      * overhead). Values less than zero disable overhead checking, and result in always using the sparse structure. A
@@ -27,16 +31,19 @@ public class UpdateByControl {
      */
     @JsNullable
     public Double maxStaticSparseMemoryOverhead;
+
     /**
      * The initial hash table size. If unset, defaults to server-provided defaults.
      */
     @JsNullable
     public Double initialHashTableSize;
+
     /**
      * The maximum load factor for the hash table. If unset, defaults to server-provided defaults.
      */
     @JsNullable
     public Double maximumLoadFactor;
+
     /**
      * The target load factor for the hash table. If unset, defaults to server-provided defaults.
      */

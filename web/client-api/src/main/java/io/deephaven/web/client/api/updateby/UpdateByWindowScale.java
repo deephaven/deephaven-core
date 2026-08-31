@@ -5,7 +5,6 @@ package io.deephaven.web.client.api.updateby;
 
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
-import io.deephaven.web.client.api.LongWrapper;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -29,4 +28,34 @@ public interface UpdateByWindowScale {
 
     @JsProperty
     String getType();
+
+    @JsOverlay
+    default io.deephaven.proto.backplane.grpc.UpdateByWindowScale.Builder toProto() {
+        io.deephaven.proto.backplane.grpc.UpdateByWindowScale.Builder b =
+                io.deephaven.proto.backplane.grpc.UpdateByWindowScale.newBuilder();
+        switch (getType()) {
+            case "ticks":
+                b.setTicks(io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTicks.newBuilder()
+                        .setTicks(asTicks().ticks));
+                break;
+            case "time":
+                UpdateByWindowTime time = asTime();
+                io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.Builder tb =
+                        io.deephaven.proto.backplane.grpc.UpdateByWindowScale.UpdateByWindowTime.newBuilder()
+                                .setColumn(time.column.columnName());
+                // duration can be a number (nanos), a string, or a LongWrapper
+                if (Js.typeof(time.duration).equals("number")) {
+                    tb.setNanos((long) time.duration.asNanosNumber());
+                } else if (Js.typeof(time.duration).equals("string")) {
+                    tb.setDurationString(time.duration.asDurationString());
+                } else {
+                    tb.setNanos(time.duration.asNanosLong().getWrapped());
+                }
+                b.setTime(tb);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported window scale type: " + getType());
+        }
+        return b;
+    }
 }

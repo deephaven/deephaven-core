@@ -37,7 +37,6 @@ import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.web.client.api.agg.*;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.updateby.*;
-import io.deephaven.web.client.api.i18n.JsNumberFormat;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -969,18 +968,19 @@ public interface JsTableOperations extends ServerObject {
                 controlBuilder.setTargetLoadFactor(options.control.targetLoadFactor);
             }
             if (options.control.mathContext != null) {
-                io.deephaven.proto.backplane.grpc.MathContext.Builder mcBuilder =
-                        io.deephaven.proto.backplane.grpc.MathContext.newBuilder()
-                                .setPrecision(options.control.mathContext.precision)
-                                .setRoundingMode(io.deephaven.proto.backplane.grpc.MathContext.RoundingMode
-                                        .valueOf(options.control.mathContext.roundingMode.toString()));
-                controlBuilder.setMathContext(mcBuilder);
+                controlBuilder.setMathContext(options.control.mathContext.toProto());
             }
             builder.setOptions(controlBuilder);
         }
 
-
-
+        for (int i = 0; i < options.operations.getLength(); i++) {
+            UpdateByOperation op = options.operations.getAt(i);
+            UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.Builder spec = op.spec.makeOperation();
+            builder.addOperations(UpdateByRequest.UpdateByOperation.newBuilder()
+                    .setColumn(UpdateByRequest.UpdateByOperation.UpdateByColumn.newBuilder()
+                            .setSpec(spec)
+                            .addAllMatchPairs(JsTable.MatchPairUnion.toStringArray(op.matchPairs))));
+        }
         if (options.groupByColumns != null) {
             builder.addAllGroupByColumns(columnsToNameList(options.groupByColumns));
         }
