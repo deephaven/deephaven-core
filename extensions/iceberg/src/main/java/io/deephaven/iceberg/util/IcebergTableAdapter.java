@@ -508,8 +508,8 @@ public final class IcebergTableAdapter {
 
     /**
      * Validate {@code pruningExpression} against the {@link Resolver#schema() resolver schema}, so that a malformed
-     * expression fails here rather than from inside location discovery — which, for a refreshing table, would surface
-     * as a {@link io.deephaven.engine.table.impl.locations.TableDataException} on a later refresh. The bound result is
+     * expression fails here rather than from inside location discovery, which for a refreshing table would surface as a
+     * {@link io.deephaven.engine.table.impl.locations.TableDataException} on a later refresh. The bound result is
      * discarded; each manifest must be evaluated against the schema it carries.
      */
     private void validatePruningExpression(@NotNull final Expression pruningExpression) {

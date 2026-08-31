@@ -105,14 +105,14 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     private final SeekableChannelsProvider seekableChannelsProvider;
 
     /**
-     * The {@link IcebergReadInstructions#pruningExpression() pruning expression}; {@link Expressions#alwaysTrue()} when
-     * not pruning.
+     * The {@link IcebergReadInstructions#pruningExpression() pruning expression}.
      */
+    @NotNull
     private final Expression pruningExpression;
 
     /**
      * Memoized {@link ManifestEvaluator ManifestEvaluators} by {@link PartitionSpec} id, where {@code null} means
-     * "cannot prune this spec". Only accessed from the {@code synchronized} {@link #findKeys(Consumer)}.
+     * "cannot prune this spec".
      */
     private final Map<Integer, ManifestEvaluator> manifestEvaluators = new HashMap<>();
 
@@ -176,6 +176,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
         this.snapshot = tableAdapter.getSnapshot(instructions);
         this.tableDef = tableAdapter.definition(instructions);
+        // Set to Expressions.alwaysTrue() if no pruning is requested.
         this.pruningExpression = instructions.pruningExpression();
 
         final String uriScheme = tableAdapter.locationUri().getScheme();
@@ -241,6 +242,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         this.parquetInstructions = Objects.requireNonNull(parquetInstructions);
         this.seekableChannelsProvider = Objects.requireNonNull(seekableChannelsProvider);
         this.snapshot = snapshot;
+        // Set to Expressions.alwaysTrue() if no pruning is requested.
         this.pruningExpression = Objects.requireNonNull(pruningExpression);
         // not used in the updated constructors' path
         this.tableDef = null;
@@ -284,7 +286,6 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             return;
         }
         final Table table = tableAdapter.icebergTable();
-        final boolean pruning = pruningEnabled();
         int skippedManifests = 0;
         int unprunedManifests = 0;
         int acceptedDataFiles = 0;
@@ -297,15 +298,16 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 checkIsDataManifest(manifestFile);
             }
             for (final ManifestFile manifestFile : manifestFiles) {
-                final ManifestEvaluator manifestEvaluator = pruning ? manifestEvaluator(table, manifestFile) : null;
+                final ManifestEvaluator manifestEvaluator =
+                        pruningEnabled() ? manifestEvaluator(table, manifestFile) : null;
                 if (manifestEvaluator != null && !manifestEvaluator.eval(manifestFile)) {
                     // The partition summaries prove this manifest holds no matching data files, so skip it unread
                     ++skippedManifests;
                     continue;
                 }
-                try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io)) {
+                try (final ManifestReader<DataFile> manifestReader = ManifestFiles.read(manifestFile, io, null)) {
                     final PartitionSpec manifestPartitionSpec = manifestReader.spec();
-                    if (pruning) {
+                    if (pruningEnabled()) {
                         // A manifest embeds the schema that was current when it was written, and that is what
                         // filterRows binds against; it may pre-date fields the expression references.
                         if (canBind(manifestPartitionSpec.schema())) {
@@ -332,7 +334,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             throw new TableDataException(
                     String.format("%s:%d - error finding Iceberg locations", tableAdapter, snapshot.snapshotId()), e);
         }
-        if (pruning) {
+        if (pruningEnabled()) {
             log.info().append(toString())
                     .append(": pruning expression ")
                     .append(ExpressionUtil.toSanitizedString(pruningExpression))

@@ -119,10 +119,6 @@ public abstract class IcebergReadInstructions {
      * This prunes, it does not filter: Iceberg prunes using partition values and data file statistics, so surviving
      * data files are read in full and the result is a superset of the matching rows. Apply an equivalent Deephaven
      * {@link io.deephaven.api.filter.Filter filter} to the result if you need exactly those rows.
-     *
-     * <p>
-     * Note that Iceberg {@link Expression Expressions} do not implement {@code equals}, so this attribute participates
-     * in {@link IcebergReadInstructions} equality by reference.
      */
     @Value.Default
     public Expression pruningExpression() {
