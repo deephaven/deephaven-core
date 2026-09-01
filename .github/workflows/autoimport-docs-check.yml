@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - "engine/table/src/main/java/io/deephaven/engine/table/lang/impl/QueryLibraryImportsDefaults.java"
+      - "engine/table/src/test/java/io/deephaven/engine/table/lang/impl/CheckAutoImportDocSync.java"
       - "docs/tools/autoimport/**"
 
 jobs:
@@ -38,7 +39,7 @@ jobs:
 
       - name: Set up Java
         if: ${{ github.event_name != 'pull_request' }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
