@@ -87,6 +87,40 @@ public class LongPushdownHandlerTest {
                 new LongRangeFilter("i", 3, 3, false, true), longStats(3, 4)));
     }
 
+    /**
+     * A null lower bound held <i>exclusively</i> -- {@code X > null} -- is the one range shape a null row does not
+     * satisfy, so the sentinel must not keep a row group alive on its own. {@code NULL_LONG} is {@code Long.MIN_VALUE},
+     * the bottom of the value domain, so a row group whose {@code min} is the sentinel has to be judged on whatever
+     * sits above it -- and one holding nothing else can be excluded outright.
+     */
+    @Test
+    public void exclusiveNullLowerBoundExcludesTheSentinel() {
+        // `X > null`, per LongRangeFilter.gt: (NULL_LONG, MAX_LONG].
+        final LongRangeFilter notNull = LongRangeFilter.gt("l", QueryConstants.NULL_LONG);
+
+        // Nothing here but the sentinel, which this filter does not match.
+        assertFalse(evaluate(notNull, longStats(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG)));
+
+        // Any ordinary value does match, whether or not the row group also reaches down to the sentinel.
+        assertTrue(evaluate(notNull, longStats(-5L, 5L)));
+        assertTrue(evaluate(notNull, longStats(QueryConstants.NULL_LONG, 5L)));
+
+        // `null < X < 5L`: the sentinel rows no longer count, so a row group holding nothing else is excluded...
+        assertFalse(evaluate(
+                new LongRangeFilter("l", QueryConstants.NULL_LONG, 5L, false, false),
+                longStats(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG)));
+
+        // ... which is exactly the row group that `X < 5L`, holding the same bound inclusively, has to keep.
+        assertTrue(evaluate(
+                new LongRangeFilter("l", QueryConstants.NULL_LONG, 5L, true, false),
+                longStats(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG)));
+
+        // A sentinel minimum with ordinary values above it overlaps either way.
+        assertTrue(evaluate(
+                new LongRangeFilter("l", QueryConstants.NULL_LONG, 5L, false, false),
+                longStats(QueryConstants.NULL_LONG, 10L)));
+    }
+
     @Test
     public void longMatchFilterScenarios() {
         final Statistics<?> stats = longStats(1_000L, 2_000L);
@@ -117,7 +151,7 @@ public class LongPushdownHandlerTest {
 
         // A null among the values no longer declines push-down. To Parquet the sentinel is an ordinary value,
         // so it is tested against min/max like any other; Parquet nulls are ruled out separately, by the
-        // null gate in StatisticsEvaluator.maybeMakeForFilter.
+        // null-aware check in StatisticsEvaluator.makeForFilter.
         assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "l",
                         QueryConstants.NULL_LONG, 123L),
@@ -166,7 +200,7 @@ public class LongPushdownHandlerTest {
 
     /**
      * Resolves the filter to an evaluator and applies it to one row group's statistics, as
-     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
      */
     private static boolean evaluate(final LongRangeFilter filter, final Statistics<?> stats) {
         return LongPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);

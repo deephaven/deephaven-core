@@ -87,6 +87,40 @@ public class IntPushdownHandlerTest {
                 new IntRangeFilter("i", 3, 3, false, true), intStats(3, 4)));
     }
 
+    /**
+     * A null lower bound held <i>exclusively</i> -- {@code X > null} -- is the one range shape a null row does not
+     * satisfy, so the sentinel must not keep a row group alive on its own. {@code NULL_INT} is
+     * {@code Integer.MIN_VALUE}, the bottom of the value domain, so a row group whose {@code min} is the sentinel has
+     * to be judged on whatever sits above it -- and one holding nothing else can be excluded outright.
+     */
+    @Test
+    public void exclusiveNullLowerBoundExcludesTheSentinel() {
+        // `X > null`, per IntRangeFilter.gt: (NULL_INT, MAX_INT].
+        final IntRangeFilter notNull = IntRangeFilter.gt("i", QueryConstants.NULL_INT);
+
+        // Nothing here but the sentinel, which this filter does not match.
+        assertFalse(evaluate(notNull, intStats(QueryConstants.NULL_INT, QueryConstants.NULL_INT)));
+
+        // Any ordinary value does match, whether or not the row group also reaches down to the sentinel.
+        assertTrue(evaluate(notNull, intStats(-5, 5)));
+        assertTrue(evaluate(notNull, intStats(QueryConstants.NULL_INT, 5)));
+
+        // `null < X < 5`: the sentinel rows no longer count, so a row group holding nothing else is excluded...
+        assertFalse(evaluate(
+                new IntRangeFilter("i", QueryConstants.NULL_INT, 5, false, false),
+                intStats(QueryConstants.NULL_INT, QueryConstants.NULL_INT)));
+
+        // ... which is exactly the row group that `X < 5`, holding the same bound inclusively, has to keep.
+        assertTrue(evaluate(
+                new IntRangeFilter("i", QueryConstants.NULL_INT, 5, true, false),
+                intStats(QueryConstants.NULL_INT, QueryConstants.NULL_INT)));
+
+        // A sentinel minimum with ordinary values above it overlaps either way.
+        assertTrue(evaluate(
+                new IntRangeFilter("i", QueryConstants.NULL_INT, 5, false, false),
+                intStats(QueryConstants.NULL_INT, 10)));
+    }
+
     @Test
     public void intMatchFilterScenarios() {
         final Statistics<?> stats = intStats(10, 30);
@@ -117,7 +151,7 @@ public class IntPushdownHandlerTest {
 
         // A null among the values no longer declines push-down. To Parquet the sentinel is an ordinary value,
         // so it is tested against min/max like any other; Parquet nulls are ruled out separately, by the
-        // null gate in StatisticsEvaluator.maybeMakeForFilter.
+        // null-aware check in StatisticsEvaluator.makeForFilter.
         assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "i",
                         QueryConstants.NULL_INT, 50),
@@ -199,7 +233,7 @@ public class IntPushdownHandlerTest {
 
     /**
      * Resolves the filter to an evaluator and applies it to one row group's statistics, as
-     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
      */
     private static boolean evaluate(final IntRangeFilter filter, final Statistics<?> stats) {
         return IntPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);

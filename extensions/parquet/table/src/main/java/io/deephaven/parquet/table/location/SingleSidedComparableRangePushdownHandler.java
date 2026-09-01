@@ -6,7 +6,7 @@ package io.deephaven.parquet.table.location;
 import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.compare.ObjectComparisons;
-import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,10 +18,9 @@ final class SingleSidedComparableRangePushdownHandler {
      */
     @Nullable
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
-        if (!(filter instanceof SingleSidedComparableRangeFilter)) {
+        if (!(filter instanceof final SingleSidedComparableRangeFilter rangeFilter)) {
             return null;
         }
-        final SingleSidedComparableRangeFilter rangeFilter = (SingleSidedComparableRangeFilter) filter;
         return MinMaxFromStatistics.canDecodeComparable(rangeFilter.getColumnType())
                 ? maybeCreateEvaluator(rangeFilter)
                 : null;
@@ -47,32 +46,42 @@ final class SingleSidedComparableRangePushdownHandler {
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }
         // `X < v` and `X <= v` accept a null row, since Deephaven orders null under every value; `X > v` cannot.
-        // These types have no sentinel encoding, so the null gate in maybeMakeForFilter settles that on its own.
+        // These types have no sentinel encoding, so the null-aware check in NullAwareEvaluator settles that on its own.
         final Class<?> dhColumnType = sscrf.getColumnType();
         if (dhColumnType == null) {
             throw new IllegalStateException("Filter not initialized with a column type: " + sscrf);
         }
+        if (isGreaterThan) {
+            return statistics -> {
+                final Comparable<?>[] minMax = decodeMinMax(statistics, dhColumnType);
+                // Some value can exceed the pivot only if the largest one does.
+                return minMax == null || (isInclusive
+                        ? ObjectComparisons.geq(minMax[1], pivot)
+                        : ObjectComparisons.gt(minMax[1], pivot));
+            };
+        }
         return statistics -> {
-            final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
-            final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
-            if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
-                    dhColumnType)) {
-                // Statistics could not be processed, so we assume that we overlap.
-                return true;
-            }
-            return maybeOverlapsImpl(
-                    mutableMin.getValue(), mutableMax.getValue(),
-                    pivot, isInclusive, isGreaterThan);
+            final Comparable<?>[] minMax = decodeMinMax(statistics, dhColumnType);
+            // ... and fall below it only if the smallest one does.
+            return minMax == null || (isInclusive
+                    ? ObjectComparisons.leq(minMax[0], pivot)
+                    : ObjectComparisons.lt(minMax[0], pivot));
         };
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects the range defined by the given pivot.
+     * Reads this row group's extremes as {@code {min, max}}, or returns {@code null} if the statistics cannot be used.
      */
-    private static boolean maybeOverlapsImpl(
-            final Comparable<?> min, final Comparable<?> max,
-            final Comparable<?> pivot, final boolean inclusive, final boolean isGreaterThan) {
-        return isGreaterThan ? (inclusive ? ObjectComparisons.geq(max, pivot) : ObjectComparisons.gt(max, pivot))
-                : (inclusive ? ObjectComparisons.leq(min, pivot) : ObjectComparisons.lt(min, pivot));
+    @Nullable
+    private static Comparable<?>[] decodeMinMax(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Class<?> dhColumnType) {
+        final Comparable<?>[] minMax = new Comparable<?>[2];
+        if (!MinMaxFromStatistics.getMinMaxForComparable(statistics,
+                v -> minMax[0] = v, v -> minMax[1] = v, dhColumnType)) {
+            // Statistics could not be processed.
+            return null;
+        }
+        return minMax;
     }
 }

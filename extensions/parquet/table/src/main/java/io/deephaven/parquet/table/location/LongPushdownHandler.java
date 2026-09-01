@@ -12,11 +12,10 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.ArrayTypeUtils;
-import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 
 /**
  * Applies a {@link LongRangeFilter} or a long-typed {@link MatchFilter} to one row group's {@code min}/{@code max}
@@ -37,11 +36,12 @@ import java.util.Arrays;
  * Of the two sources of a Deephaven null that {@link StatisticsEvaluator} describes, only the <b>stored sentinel</b> --
  * a value equal to {@code NULL_LONG} -- is this class's business. To Parquet it is an ordinary value, sitting inside
  * {@code min}/{@code max} like any other, so the tests here account for it: a match filter keeps the sentinel among its
- * values, and an unbounded-below range filter looks for it explicitly.
+ * values, and a range filter with a null lower bound admits it or not according to whether that bound is held
+ * inclusively -- {@code X > null} is the one shape that rules the sentinel out.
  * <p>
  * <b>These methods are not correct in isolation</b> for a filter that a null row satisfies -- {@code X == null},
  * {@code X != v}, {@code X < v}. Called directly they will exclude a row group whose Parquet nulls such a filter would
- * have matched; reach them through {@code StatisticsEvaluator.maybeMakeForFilter}, which gates on those rows.
+ * have matched; reach them through {@code StatisticsEvaluator.makeForFilter}, which accounts for those rows.
  */
 final class LongPushdownHandler {
 
@@ -52,11 +52,10 @@ final class LongPushdownHandler {
      */
     @Nullable
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
-        if (filter instanceof LongRangeFilter) {
-            return maybeCreateEvaluator((LongRangeFilter) filter);
+        if (filter instanceof final LongRangeFilter longRangeFilter) {
+            return maybeCreateEvaluator(longRangeFilter);
         }
-        if (filter instanceof MatchFilter) {
-            final MatchFilter matchFilter = (MatchFilter) filter;
+        if (filter instanceof final MatchFilter matchFilter) {
             final Class<?> columnType = matchFilter.getColumnType();
             if (columnType == long.class || columnType == Long.class) {
                 return maybeCreateEvaluator(matchFilter);
@@ -66,34 +65,21 @@ final class LongPushdownHandler {
     }
 
     /**
-     * Prepares the range filter for evaluation: whether the statistics range intersects the range it defines.
+     * Prepares the range filter for evaluation: whether the statistics range intersects the range it defines. Which
+     * shape of range it is settled here, once, rather than re-tested for every row group.
      */
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final LongRangeFilter longRangeFilter) {
         final long dhLower = longRangeFilter.getLower();
         final long dhUpper = longRangeFilter.getUpper();
-        final boolean unboundedBelow = dhLower == QueryConstants.NULL_LONG;
         final boolean lowerInclusive = longRangeFilter.isLowerInclusive();
         final boolean upperInclusive = longRangeFilter.isUpperInclusive();
+        // region null-lower-bound
+        // A null lower bound needs no reading of its own: the sentinel is MIN_VALUE, the domain's bottom.
+        // endregion null-lower-bound
         return statistics -> {
-            final MutableObject<Long> mutableMin = new MutableObject<>();
-            final MutableObject<Long> mutableMax = new MutableObject<>();
-            if (!MinMaxFromStatistics.getMinMaxForLongs(statistics, mutableMin::setValue, mutableMax::setValue)) {
-                // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
-                return true;
-            }
-            if (unboundedBelow) {
-                if (mutableMin.get() <= QueryConstants.NULL_LONG
-                        && QueryConstants.NULL_LONG <= mutableMax.get()) {
-                    // A stored value equal to the sentinel reads back as null and so matches too. Unlike a Parquet
-                    // null it is an ordinary value here, covered by min/max rather than by the null gate in
-                    // maybeMakeForFilter.
-                    return true;
-                }
-                // Filter is unbounded below; can only match if the upper bound is above this row group's minimum.
-                return upperInclusive ? mutableMin.get() <= dhUpper : mutableMin.get() < dhUpper;
-            }
-            return maybeOverlapsRangeImpl(
-                    mutableMin.get(), mutableMax.get(),
+            final long[] minMax = decodeMinMax(statistics);
+            return minMax == null || maybeOverlapsRangeImpl(
+                    minMax[0], minMax[1],
                     dhLower, lowerInclusive,
                     dhUpper, upperInclusive);
         };
@@ -102,6 +88,8 @@ final class LongPushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds.
      */
+    // Package-accessible, unlike the other replicas: Instant bounds are epoch nanoseconds, so InstantPushdownHandler
+    // reuses this arithmetic rather than duplicating it. See ReplicateParquetPushdownHandlers.
     static boolean maybeOverlapsRangeImpl(
             final long min, final long max,
             final long lower, final boolean lowerInclusive,
@@ -116,39 +104,35 @@ final class LongPushdownHandler {
     }
 
     /**
-     * Verifies that the statistics range intersects any point provided in the match filter.
+     * Verifies that the statistics range intersects any point provided in the match filter. Regular and inverted
+     * matches are entirely different walks, so which one applies is settled here rather than per row group.
      */
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final MatchFilter matchFilter) {
         final Object[] values = matchFilter.getValues();
         final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
             // No values to check against
-            return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : statistics -> false;
+            return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : StatisticsEvaluator.ALWAYS_NO_OVERLAP;
         }
         // Null deliberately stays among the values; see "Nulls" on this class.
         final long[] unboxedValues = ArrayTypeUtils.getUnboxedLongArray(values);
         if (invertMatch) {
-            // Arrays.sort is correct here (even though NULL need not sort where Deephaven likes it): we walk
-            // the *gaps* between adjacent values and test them against min/max with the same primitive comparisons,
-            // so the values must be in that order rather than Deephaven's.
-            Arrays.sort(unboxedValues);
+            return statistics -> {
+                final long[] minMax = decodeMinMax(statistics);
+                return minMax == null || maybeMatchesInverse(minMax[0], minMax[1], unboxedValues);
+            };
         }
         return statistics -> {
-            final MutableObject<Long> mutableMin = new MutableObject<>();
-            final MutableObject<Long> mutableMax = new MutableObject<>();
-            if (!MinMaxFromStatistics.getMinMaxForLongs(statistics, mutableMin::setValue, mutableMax::setValue)) {
-                // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
-                return true;
-            }
-            return invertMatch
-                    ? maybeMatchesInverse(mutableMin.get(), mutableMax.get(), unboxedValues)
-                    : maybeMatches(mutableMin.get(), mutableMax.get(), unboxedValues);
+            final long[] minMax = decodeMinMax(statistics);
+            return minMax == null || maybeMatches(minMax[0], minMax[1], unboxedValues);
         };
     }
 
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.
      */
+    // Package-accessible, unlike the other replicas: Instant bounds are epoch nanoseconds, so InstantPushdownHandler
+    // reuses this arithmetic rather than duplicating it. See ReplicateParquetPushdownHandlers.
     static boolean maybeMatches(
             final long min,
             final long max,
@@ -162,38 +146,36 @@ final class LongPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array. This
-     * is done by checking whether {@code [min, max]} overlaps with every open gap produced by excluding the given
-     * values. For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
-     *
-     * <pre>
-     * [..., v_0), (v_0, v_1), . . , (v_n-2, v_n-1), (v_n-1, ...]
-     * </pre>
-     * <p>
-     * Gaps between adjacent values are deliberately treated as non-empty. {@code X not in (5, 6)} against statistics
-     * {@code [5, 6]} reports "maybe" although no integer lies strictly between 5 and 6. Closing that would need
-     * per-type successor arithmetic -- and the floating-point equivalent, where the next representable value depends on
-     * the type -- for a purely performance win, in code whose failure mode is wrong results. Left as is; the tests
-     * record the tighter answer in their comments.
-     * 
-     * where {@code ...} represents the extreme ends of the range.
+     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array.
      */
+    // Package-accessible, unlike the other replicas: Instant bounds are epoch nanoseconds, so InstantPushdownHandler
+    // reuses this arithmetic rather than duplicating it. See ReplicateParquetPushdownHandlers.
     static boolean maybeMatchesInverse(
             final long min,
             final long max,
             @NotNull final long[] values) {
-        if (min < values[0]) {
+        // A row group can only be excluded if it holds a single distinct value, AND that value is one of the
+        // filter's values.
+        if (min != max) {
             return true;
         }
-        final int numValues = values.length;
-        for (int i = 0; i < numValues - 1; i++) {
-            if (maybeOverlapsRangeImpl(min, max, values[i], false, values[i + 1], false)) {
-                return true;
+        for (final long value : values) {
+            if (value == min) {
+                return false;
             }
         }
-        if (max > values[numValues - 1]) {
-            return true;
+        return true;
+    }
+
+    /**
+     * Reads this row group's extremes as {@code {min, max}}, or returns {@code null} if the statistics cannot be used.
+     */
+    @Nullable
+    private static long[] decodeMinMax(@NotNull final Statistics<?> statistics) {
+        final long[] minMax = new long[2];
+        if (!MinMaxFromStatistics.getMinMaxForLongs(statistics, v -> minMax[0] = v, v -> minMax[1] = v)) {
+            return null;
         }
-        return false;
+        return minMax;
     }
 }

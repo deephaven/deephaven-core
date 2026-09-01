@@ -68,7 +68,7 @@ public class ParquetPushdownUtilsTest {
         // A repeated column, whose count is over leaf values rather than rows, never reaches here: it is declined
         // upstream by ParquetTableLocation.isSupportedForPushdown.
 
-        // The min/max gate and the null-count gate are independent: statistics whose min/max were discarded can still
+        // The min/max check and the null-count check are independent: statistics whose min/max were discarded can still
         // carry a usable count, and usable min/max do not imply a usable count.
         assertTrue(ParquetPushdownUtils.areStatisticsUsable(noNullCount));
         assertFalse(ParquetPushdownUtils.isProvenFreeOfNulls(noNullCount));

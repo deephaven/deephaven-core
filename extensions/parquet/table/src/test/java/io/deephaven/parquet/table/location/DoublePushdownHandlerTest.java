@@ -133,7 +133,7 @@ public class DoublePushdownHandlerTest {
 
         // A null among the values no longer declines push-down. To Parquet the sentinel is an ordinary value,
         // so it is tested against min/max like any other; Parquet nulls are ruled out separately, by the
-        // null gate in StatisticsEvaluator.maybeMakeForFilter.
+        // null-aware check in StatisticsEvaluator.makeForFilter.
         assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "d",
                         QueryConstants.NULL_DOUBLE, 500.0),
@@ -144,9 +144,18 @@ public class DoublePushdownHandlerTest {
                 new MatchFilter(MatchOptions.REGULAR, "d", QueryConstants.NULL_DOUBLE),
                 doubleStats(QueryConstants.NULL_DOUBLE, 300.0)));
 
-        // NaN is different: conforming writers omit it from min/max, so it can never be ruled out.
-        assertTrue(evaluate(
+        // What NaN does here depends on nanMatch, not on NaN being invisible to min/max. MatchOptions.REGULAR means
+        // IEEE equality, under which `x == NaN` is false for every x -- so the NaN is inert and the other value
+        // decides: nothing in the statistics is 500.
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "d",
+                        Double.NaN, 500.0),
+                stats));
+
+        // With nanMatch set -- which is how an explicit value list is actually parsed -- a NaN row does match, and no
+        // statistics can prove the row group holds none, so it must be kept.
+        assertTrue(evaluate(
+                new MatchFilter(nanMatchOptions(false), "d",
                         Double.NaN, 500.0),
                 stats));
     }
@@ -251,6 +260,53 @@ public class DoublePushdownHandlerTest {
     }
 
     /**
+     * A null lower bound held <i>exclusively</i> -- {@code X > null} -- is the one range shape a null row does not
+     * satisfy. {@code NULL_DOUBLE} is {@code -Double.MAX_VALUE} rather than the bottom of the domain -- the infinities
+     * lie outside it -- so the sentinel sits inside the interval the filter spans numerically, and the handler keeps
+     * even a row group of nothing but sentinels: a conservative answer, not a wrong one. What the exclusive bound does
+     * settle is a range with nothing inside it at all.
+     */
+    @Test
+    public void exclusiveNullLowerBoundKeepsSentinelRowGroupsConservatively() {
+        // `null < X < -Infinity` matches nothing at all: only a null sorts below negative infinity, and holding the
+        // bound exclusively rules the null out.
+        assertFalse(evaluate(
+                new DoubleRangeFilter("x", QueryConstants.NULL_DOUBLE, Double.NEGATIVE_INFINITY, false, false),
+                doubleStats(Double.NEGATIVE_INFINITY, 10.0)));
+
+        // `X < -Infinity` -- the same range with the bound held inclusively -- matches exactly the null rows, and
+        // this row group's statistics span the sentinel.
+        assertTrue(evaluate(
+                new DoubleRangeFilter("x", QueryConstants.NULL_DOUBLE, Double.NEGATIVE_INFINITY, true, false),
+                doubleStats(Double.NEGATIVE_INFINITY, 10.0)));
+
+        // A row group of nothing but the sentinel matches no filter that holds the null bound exclusively, but the
+        // handler does not test for that shape and keeps the row group conservatively.
+        assertTrue(evaluate(
+                new DoubleRangeFilter("x", QueryConstants.NULL_DOUBLE, 5.0, false, true),
+                doubleStats(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE)));
+        assertTrue(evaluate(
+                DoubleRangeFilter.gt("x", QueryConstants.NULL_DOUBLE),
+                doubleStats(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE)));
+
+        // Held inclusively those same rows read back as null and match.
+        assertTrue(evaluate(
+                new DoubleRangeFilter("x", QueryConstants.NULL_DOUBLE, 5.0, true, true),
+                doubleStats(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE)));
+        assertTrue(evaluate(
+                DoubleRangeFilter.geq("x", QueryConstants.NULL_DOUBLE),
+                doubleStats(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE)));
+
+        // `null < X <= 5`: ordinary values below the upper bound overlap, negative infinity among them.
+        assertTrue(evaluate(
+                new DoubleRangeFilter("x", QueryConstants.NULL_DOUBLE, 5.0, false, true),
+                doubleStats(Double.NEGATIVE_INFINITY, 10.0)));
+        assertFalse(evaluate(
+                new DoubleRangeFilter("x", QueryConstants.NULL_DOUBLE, 5.0, false, true),
+                doubleStats(6.0, 10.0)));
+    }
+
+    /**
      * {@code X > v} is built as {@code (v, NaN)} with the upper bound <i>exclusive</i>. Under Deephaven's ordering NaN
      * is above every value, so "exclusive of NaN" means every value except NaN -- up to and including positive
      * infinity. Substituting the infinity for NaN therefore has to make that bound inclusive; leaving it exclusive
@@ -287,12 +343,16 @@ public class DoublePushdownHandlerTest {
     }
 
     /**
-     * A NaN upper bound stands for "unbounded above" only when it is <i>exclusive</i>, which is how the {@code lt},
-     * {@code leq}, {@code gt} and {@code geq} factories build it -- so every filter the query path produces keeps
-     * pruning, as the last two assertions re-check. Held <i>inclusively</i>, the bound matches the NaN rows themselves:
-     * {@code DoubleComparisons} places NaN equal to itself, so the chunk filter the engine installs admits them, while
-     * a conforming writer keeps NaN out of {@code min}/{@code max} and no statistics can prove a row group holds none.
-     * Reading an inclusive bound as unbounded above would exclude a row group whose NaN rows match.
+     * A NaN upper bound stands for "unbounded above" only when it is <i>exclusive</i>. Held <i>inclusively</i> it
+     * matches the NaN rows themselves: {@code DoubleComparisons} places NaN equal to itself, so the chunk filter the
+     * engine installs admits them, while a conforming writer keeps NaN out of {@code min}/{@code max} and no statistics
+     * can prove a row group holds none. Reading an inclusive bound as unbounded above would exclude a row group whose
+     * NaN rows match.
+     * <p>
+     * Of the factories, {@code gt} and {@code geq} are the ones that put NaN in the upper slot for an ordinary pivot,
+     * and they always make it exclusive -- so they keep pruning, as the last two assertions re-check. {@code lt} and
+     * {@code leq} put their own pivot there instead, so {@code leq("d", NaN)} does produce an inclusive NaN upper; it
+     * matches every row, so giving up its pruning costs nothing.
      */
     @Test
     public void doubleInclusiveNaNUpperBoundCannotExcludeNaNRows() {
@@ -307,6 +367,15 @@ public class DoublePushdownHandlerTest {
         // The degenerate `[NaN, NaN]`, which matches exactly the NaN rows.
         assertTrue(evaluate(new DoubleRangeFilter("d", Double.NaN, Double.NaN, true, true), stats));
 
+        // `leq` with a NaN pivot is the one factory call that presents an inclusive NaN upper bound -- the
+        // constructor orders the pair with DoubleComparisons, which puts NaN above the NULL sentinel. Asserted
+        // directly, because the evaluator would answer "maybe" either way and so cannot tell the two apart.
+        final DoubleRangeFilter leqNaN = DoubleRangeFilter.leq("d", Double.NaN);
+        assertTrue("leq(NaN) lands NaN in the upper slot", Double.isNaN(leqNaN.getUpper()));
+        assertTrue("leq(NaN) holds that bound inclusively", leqNaN.isUpperInclusive());
+        // It therefore matches every row, so keeping the row group is both required and free.
+        assertTrue(evaluate(leqNaN, stats));
+
         // Exclusive NaN uppers cannot match a NaN row, so they still prune: declining the inclusive case above costs
         // no pruning that was previously available.
         assertFalse(evaluate(DoubleRangeFilter.gt("d", 5.0), stats));
@@ -314,8 +383,59 @@ public class DoublePushdownHandlerTest {
     }
 
     /**
+     * Whether a NaN row satisfies a match filter comes from {@code nanMatch} and {@code inverted}, not from the shape
+     * of the filter. The old rule -- "every inverted match admits a NaN row" -- is false: {@code !isNaN(X)} reaches
+     * this handler as an inverted match whose only value is NaN, with {@code nanMatch} set, and no NaN row satisfies
+     * it.
+     */
+    @Test
+    public void nanAdmittanceFollowsNanMatchNotFilterShape() {
+        // A row group of {1.0, 2.0, NaN}: a conforming writer emits [1.0, 2.0], leaving the NaN invisible.
+        final Statistics<?> stats = doubleStats(1.0, 2.0);
+
+        // `X != 5.0` with IEEE equality: !(NaN == 5.0) holds, so a NaN row matches and the group must be kept.
+        assertTrue(evaluate(new MatchFilter(MatchOptions.INVERTED, "d", 5.0), stats));
+
+        // `isNaN(X)`: inverted=false, nanMatch=true, values={NaN}. A NaN row matches, so the group must be kept.
+        assertTrue(evaluate(new MatchFilter(nanMatchOptions(false), "d", Double.NaN), stats));
+
+        // `!isNaN(X)`: inverted=true, nanMatch=true, values={NaN}. No NaN row matches -- but every non-NaN row does,
+        // and usable statistics guarantee one exists, so "maybe" is still the only correct answer.
+        assertTrue(evaluate(new MatchFilter(nanMatchOptions(true), "d", Double.NaN), stats));
+    }
+
+    /**
+     * The two cases the old blanket "keep everything" answer gave up. Neither is reachable from a parsed comparison,
+     * but both are expressible, and in both the statistics settle the question outright.
+     */
+    @Test
+    public void nanValuesThatCannotMatchNoLongerCostPruning() {
+        final Statistics<?> stats = doubleStats(1.0, 2.0);
+
+        // `X == NaN` with IEEE equality matches no row whatsoever, NaN rows included.
+        assertFalse(evaluate(new MatchFilter(MatchOptions.REGULAR, "d", Double.NaN), stats));
+
+        // `X not in (5.0, NaN)` with nanMatch: a NaN row is excluded by the NaN in the values, so only the ordinary
+        // gap walk remains -- and [1.0, 2.0] lies wholly inside a gap, so the group survives.
+        assertTrue(evaluate(new MatchFilter(nanMatchOptions(true), "d", 5.0, Double.NaN), stats));
+
+        // Same filter against a row group holding nothing but the excluded value: now it can be pruned.
+        assertFalse(evaluate(new MatchFilter(nanMatchOptions(true), "d", 5.0, Double.NaN), doubleStats(5.0, 5.0)));
+
+        // A row group above every non-NaN value still holds matching rows -- 10.0 is not in (5.0, NaN). This is
+        // what makes dropping the NaN load-bearing: left among the values it sorts last, and the walk's closing
+        // `max > values[n-1]` becomes `max > NaN`, which is false -- silently pruning a row group that matches.
+        assertTrue(evaluate(new MatchFilter(nanMatchOptions(true), "d", 5.0, Double.NaN), doubleStats(10.0, 10.0)));
+    }
+
+    /** {@code MatchOptions} as {@code isNaN}/{@code !isNaN} build them: {@code nanMatch} set. */
+    private static MatchOptions nanMatchOptions(final boolean inverted) {
+        return MatchOptions.builder().nanMatch(true).inverted(inverted).build();
+    }
+
+    /**
      * Resolves the filter to an evaluator and applies it to one row group's statistics, as
-     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
      */
     private static boolean evaluate(final DoubleRangeFilter filter, final Statistics<?> stats) {
         return DoublePushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);

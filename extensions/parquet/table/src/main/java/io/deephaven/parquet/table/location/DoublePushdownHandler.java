@@ -7,14 +7,16 @@
 // @formatter:off
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.ArrayTypeUtils;
-import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 
 /**
  * Applies a {@link DoubleRangeFilter} or a double-typed {@link MatchFilter} to one row group's {@code min}/{@code max}
@@ -31,32 +33,28 @@ import org.jetbrains.annotations.Nullable;
  * <h2>NaN</h2>
  *
  * A conforming writer leaves NaN out of {@code min}/{@code max} entirely, so no statistics can prove a row group holds
- * none. Every NaN row satisfies an inverted match, which is why -- unlike the integral handlers -- there is no
- * {@code maybeMatchesInverse} here: an inverted match keeps every row group instead. A regular match with a NaN among
- * its values keeps every row group for the same reason, the statistics being unable to place it.
+ * none. Every filter is therefore asked first whether a NaN row could satisfy it; if so, the row group is kept.
  * <p>
- * A range filter whose upper bound is an <i>inclusive</i> NaN matches the NaN rows too, so it also keeps every row
- * group. That it matches is {@link io.deephaven.util.compare.DoubleComparisons} semantics -- the ordering the engine
- * itself filters and sorts by -- in which NaN sits above every value and compares equal to itself, so the chunk filter
- * built for the range admits those rows.
+ * For a match filter that follows from {@link MatchOptions#nanMatch()} and {@link MatchOptions#inverted()}, not from
+ * the shape of the filter: {@code !isNaN(X)} is an inverted match that no NaN row satisfies.
  * <p>
- * Keeping every row group in that case gives up no pruning that was available before, because nothing in the query path
- * produces such a bound. The {@code lt}, {@code leq}, {@code gt} and {@code geq} factories are the source of every
- * range filter a parsed query, a client, or the UI builds, and all four make a NaN upper bound <b>exclusive</b> --
- * deliberately, so that the results omit NaN. An exclusive NaN upper bound still reads as "unbounded above" here and
- * prunes exactly as it did before; only a filter built directly through a public constructor can present an inclusive
- * one.
+ * For a range filter it is the upper bound. An <i>inclusive</i> NaN upper matches the NaN rows, since
+ * {@link io.deephaven.util.compare.DoubleComparisons} places NaN above every value and equal to itself. Of the factories
+ * only {@code leq(col, NaN)} builds one, and it matches every row anyway; the exclusive NaN upper that {@code gt} and
+ * {@code geq} produce still reads as "unbounded above" and prunes as before.
  *
  * <h2>Nulls</h2>
  *
  * Of the two sources of a Deephaven null that {@link StatisticsEvaluator} describes, only the <b>stored sentinel</b> --
  * a value equal to {@code NULL_DOUBLE} -- is this class's business. To Parquet it is an ordinary value, sitting inside
  * {@code min}/{@code max} like any other, so the tests here account for it: a match filter keeps the sentinel among its
- * values, and an unbounded-below range filter looks for it explicitly.
+ * values, and a range filter whose lower bound is the sentinel looks for it explicitly when that bound is held
+ * inclusively. {@code X > null}, holding it exclusively, matches no null row, but the handler answers conservatively
+ * rather than test for the one row group shape that could exploit that -- nothing but sentinels.
  * <p>
  * <b>These methods are not correct in isolation</b> for a filter that a null row satisfies -- {@code X == null},
  * {@code X < v}. Called directly they will exclude a row group whose Parquet nulls such a filter would have matched;
- * reach them through {@code StatisticsEvaluator.maybeMakeForFilter}, which gates on those rows.
+ * reach them through {@code StatisticsEvaluator.makeForFilter}, which accounts for those rows.
  * <p>
  * Note that {@code NULL_DOUBLE} is not the bottom of the domain: the infinities lie outside it. A row group holding
  * negative infinity therefore brackets the sentinel, and {@code X == null} declines to exclude that row group. The
@@ -72,11 +70,10 @@ final class DoublePushdownHandler {
      */
     @Nullable
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
-        if (filter instanceof DoubleRangeFilter) {
-            return maybeCreateEvaluator((DoubleRangeFilter) filter);
+        if (filter instanceof final DoubleRangeFilter doubleRangeFilter) {
+            return maybeCreateEvaluator(doubleRangeFilter);
         }
-        if (filter instanceof MatchFilter) {
-            final MatchFilter matchFilter = (MatchFilter) filter;
+        if (filter instanceof final MatchFilter matchFilter) {
             final Class<?> columnType = matchFilter.getColumnType();
             if (columnType == double.class || columnType == Double.class) {
                 return maybeCreateEvaluator(matchFilter);
@@ -87,58 +84,53 @@ final class DoublePushdownHandler {
 
     /**
      * Prepares the range filter for evaluation: whether the statistics range intersects the range it defines. A filter
-     * that constrains nothing at either end resolves to {@link StatisticsEvaluator#ALWAYS_MAYBE} here, so the caller
-     * can skip the row groups rather than ask about each in turn.
+     * a NaN row could satisfy resolves to {@link StatisticsEvaluator#ALWAYS_MAYBE} here -- no statistics can rule such
+     * rows out -- so the caller can skip the row groups rather than ask about each in turn.
      */
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final DoubleRangeFilter doubleRangeFilter) {
         // DoubleRangeFilter's constructor orders the pair with DoubleComparisons, under which the null sentinel
         // is below every value and NaN above every one. So `lower` is the only end that can be NULL_DOUBLE, and
         // `upper` the only end that can be NaN.
-        final double dhLower = doubleRangeFilter.getLower();
-        final double dhUpper = doubleRangeFilter.getUpper();
+        final double lower = doubleRangeFilter.getLower();
         final boolean lowerInclusive = doubleRangeFilter.isLowerInclusive();
-        final boolean upperInclusive = doubleRangeFilter.isUpperInclusive();
-        if (Double.isNaN(dhUpper) && upperInclusive) {
-            // Only an *exclusive* NaN upper bound means "unbounded above". Held inclusively it matches the NaN rows
-            // themselves, since DoubleComparisons.leq(NaN, NaN) holds, and no statistics can prove a row group holds
-            // none of them. The lt/leq/gt/geq factories -- and so every range filter a parsed query, a client, or the
-            // UI produces -- always make the bound exclusive; the public constructors do not, so such a filter keeps
-            // every row group here rather than being read as unbounded above.
-            return StatisticsEvaluator.ALWAYS_MAYBE;
+        final double upper;
+        final boolean upperInclusive;
+        if (Double.isNaN(doubleRangeFilter.getUpper())) {
+            if (doubleRangeFilter.isUpperInclusive()) {
+                // An inclusive NaN upper matches the NaN rows, which no statistics can rule out.
+                return StatisticsEvaluator.ALWAYS_MAYBE;
+            }
+            // Every comparison against NaN is false, so NaN cannot feed the interval test. Statistics never contain
+            // NaN, so an inclusive MAX_DOUBLE upper is equivalent.
+            upper = QueryConstants.MAX_DOUBLE;
+            upperInclusive = true;
+        } else {
+            upper = doubleRangeFilter.getUpper();
+            upperInclusive = doubleRangeFilter.isUpperInclusive();
         }
-        final boolean filterUnboundedBelow = dhLower == QueryConstants.NULL_DOUBLE;
-        // Exclusive past the check above, so it rules out the NaN rows and constrains nothing else.
-        final boolean filterUnboundedAbove = Double.isNaN(dhUpper);
-        if (filterUnboundedBelow && filterUnboundedAbove) {
-            // The filter constrains nothing at either end.
-            return StatisticsEvaluator.ALWAYS_MAYBE;
+        if (lower != QueryConstants.NULL_DOUBLE) {
+            // Both bounds are ordinary values; the plain interval test decides. A -Inf lower counts the sentinel as
+            // an ordinary in-range value, but this filter matches no null row, so that can only over-keep -- which
+            // "maybe" allows.
+            return statistics -> {
+                final double[] minMax = decodeMinMax(statistics);
+                return minMax == null || maybeOverlapsRangeImpl(
+                        minMax[0], minMax[1],
+                        lower, lowerInclusive,
+                        upper, upperInclusive);
+            };
         }
         return statistics -> {
-            final MutableObject<Double> mutableMin = new MutableObject<>();
-            final MutableObject<Double> mutableMax = new MutableObject<>();
-            if (!MinMaxFromStatistics.getMinMaxForDoubles(statistics, mutableMin::setValue, mutableMax::setValue)) {
-                // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
-                return true;
-            }
-            if (filterUnboundedAbove) {
-                // Filter is unbounded above; can only match if the lower bound is below this row group's maximum.
-                return lowerInclusive ? mutableMax.get() >= dhLower : mutableMax.get() > dhLower;
-            }
-            if (filterUnboundedBelow) {
-                if (mutableMin.get() <= QueryConstants.NULL_DOUBLE
-                        && QueryConstants.NULL_DOUBLE <= mutableMax.get()) {
-                    // A stored value equal to the sentinel reads back as null and so matches too. Unlike a Parquet
-                    // null it is an ordinary value here, covered by min/max rather than by the null gate in
-                    // maybeMakeForFilter.
-                    return true;
-                }
-                // Filter is unbounded below; can only match if the upper bound is above this row group's minimum.
-                return upperInclusive ? mutableMin.get() <= dhUpper : mutableMin.get() < dhUpper;
-            }
-            return maybeOverlapsRangeImpl(
-                    mutableMin.get(), mutableMax.get(),
-                    dhLower, lowerInclusive,
-                    dhUpper, upperInclusive);
+            final double[] minMax = decodeMinMax(statistics);
+            // An inclusive null bound admits the sentinel wherever the stats span it -- the interval test misses it
+            // only when `upper` is -Inf. The interval test settles the ordinary values.
+            return minMax == null
+                    || (lowerInclusive
+                            && minMax[0] <= QueryConstants.NULL_DOUBLE && QueryConstants.NULL_DOUBLE <= minMax[1])
+                    || maybeOverlapsRangeImpl(
+                            minMax[0], minMax[1],
+                            QueryConstants.MIN_DOUBLE, true,
+                            upper, upperInclusive);
         };
     }
 
@@ -161,34 +153,46 @@ final class DoublePushdownHandler {
     }
 
     /**
-     * Prepares the match filter for evaluation against row group statistics: for a regular match, whether the
-     * statistics range intersects any of its values. An inverted match keeps every row group; see "NaN" on this class.
+     * Prepares the match filter for evaluation against row group statistics. A filter a NaN row could satisfy keeps
+     * every row group; otherwise the ordinary walk applies, a NaN among the values being inert there.
      */
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final MatchFilter matchFilter) {
-        if (matchFilter.getMatchOptions().inverted()) {
-            // Everything below is therefore the regular-match path only.
-            return StatisticsEvaluator.ALWAYS_MAYBE;
-        }
+        final MatchOptions matchOptions = matchFilter.getMatchOptions();
+        final boolean invertMatch = matchOptions.inverted();
         final Object[] values = matchFilter.getValues();
         if (values == null || values.length == 0) {
             // No values to check against
-            return statistics -> false;
+            return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : StatisticsEvaluator.ALWAYS_NO_OVERLAP;
         }
-        // Null deliberately stays among the values; see "Nulls" on this class.
+        // NULL_DOUBLE deliberately stays among the values; see "Nulls" on this class.
         final double[] unboxedValues = ArrayTypeUtils.getUnboxedDoubleArray(values);
+        int numNaN = 0;
         for (final double value : unboxedValues) {
             if (Double.isNaN(value)) {
-                return StatisticsEvaluator.ALWAYS_MAYBE;
+                numNaN++;
             }
         }
+        // A NaN row matches a value only if that value is NaN and nanMatch is true.
+        final boolean nanRowMatchesAValue = matchOptions.nanMatch() && numNaN > 0;
+        if (invertMatch ? !nanRowMatchesAValue : nanRowMatchesAValue) {
+            // A NaN row satisfies this filter, and no statistics can prove the row group holds none.
+            return StatisticsEvaluator.ALWAYS_MAYBE;
+        }
+        if (numNaN == unboxedValues.length) {
+            // Nothing but NaN in the value set, and NaN is already handled. The content of the row group
+            // doesn't even matter.
+            return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : StatisticsEvaluator.ALWAYS_NO_OVERLAP;
+        }
+        // Remaining NaN among the values are inert. Could remove them but no reason.
+        if (invertMatch) {
+            return statistics -> {
+                final double[] minMax = decodeMinMax(statistics);
+                return minMax == null || maybeMatchesInverse(minMax[0], minMax[1], unboxedValues);
+            };
+        }
         return statistics -> {
-            final MutableObject<Double> mutableMin = new MutableObject<>();
-            final MutableObject<Double> mutableMax = new MutableObject<>();
-            if (!MinMaxFromStatistics.getMinMaxForDoubles(statistics, mutableMin::setValue, mutableMax::setValue)) {
-                // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
-                return true;
-            }
-            return maybeMatches(mutableMin.get(), mutableMax.get(), unboxedValues);
+            final double[] minMax = decodeMinMax(statistics);
+            return minMax == null || maybeMatches(minMax[0], minMax[1], unboxedValues);
         };
     }
 
@@ -205,5 +209,37 @@ final class DoublePushdownHandler {
             }
         }
         return false;
+    }
+
+    /**
+     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array.
+     */
+    private static boolean maybeMatchesInverse(
+            final double min,
+            final double max,
+            @NotNull final double[] values) {
+        // A row group can only be excluded if it holds a single distinct value, AND that value is one of the
+        // filter's values.
+        if (min != max) {
+            return true;
+        }
+        for (final double value : values) {
+            if (value == min) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Reads this row group's extremes as {@code {min, max}}, or returns {@code null} if the statistics cannot be used.
+     */
+    @Nullable
+    private static double[] decodeMinMax(@NotNull final Statistics<?> statistics) {
+        final double[] minMax = new double[2];
+        if (!MinMaxFromStatistics.getMinMaxForDoubles(statistics, v -> minMax[0] = v, v -> minMax[1] = v)) {
+            return null;
+        }
+        return minMax;
     }
 }

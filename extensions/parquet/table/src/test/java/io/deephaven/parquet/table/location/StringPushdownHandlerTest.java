@@ -306,7 +306,7 @@ public class StringPushdownHandlerTest {
         final Statistics<?> stats = stringStats("ccc", "mmm");
 
         // A String has no sentinel encoding -- a Deephaven null String comes only from a Parquet null -- so the null
-        // is dropped from the values and the null gate in StatisticsEvaluator.maybeMakeForFilter answers for them.
+        // is dropped from the values and the null-aware check in StatisticsEvaluator.makeForFilter answers for them.
 
         // `X == null` excludes a row group that holds no nulls.
         assertFalse(evaluate(matchFilter(MatchOptions.REGULAR, new Object[] {null}), stats));

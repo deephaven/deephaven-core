@@ -148,7 +148,7 @@ public class SingleSidedComparableRangePushdownHandlerTest {
 
     /**
      * Resolves the filter to an evaluator and applies it to one row group's statistics, as
-     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
      */
     private static boolean evaluate(final SingleSidedComparableRangeFilter filter, final Statistics<?> stats) {
         return SingleSidedComparableRangePushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);

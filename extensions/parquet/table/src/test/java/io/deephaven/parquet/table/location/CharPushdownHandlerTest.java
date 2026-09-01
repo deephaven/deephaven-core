@@ -91,8 +91,8 @@ public class CharPushdownHandlerTest {
 
     /**
      * {@code X < v} accepts a null row, and Deephaven surfaces a null from two places. A Parquet null is answered by
-     * the null gate in {@code StatisticsEvaluator.maybeMakeForFilter}; a stored value equal to {@code NULL_CHAR} reads
-     * back as null and has to be found in min/max instead.
+     * the null-aware check in {@code StatisticsEvaluator.makeForFilter}; a stored value equal to {@code NULL_CHAR}
+     * reads back as null and has to be found in min/max instead.
      * <p>
      * char is the type where that second case bites. Its sentinel is {@code Character.MAX_VALUE}, the <i>top</i> of the
      * value domain, while Deephaven orders null at the <i>bottom</i> -- so a row group whose values run up to the
@@ -100,7 +100,7 @@ public class CharPushdownHandlerTest {
      * integral types are accidentally safe here, their sentinel being {@code MIN_VALUE}.
      */
     @Test
-    public void unboundedBelowRangeKeepsRowGroupsThatCanReadBackAsNull() {
+    public void inclusiveNullLowerBoundKeepsRowGroupsThatCanReadBackAsNull() {
         // `X < 'A'`, per RangeFilter.makeRangeFilter: [NULL_CHAR, 'A').
         final CharRangeFilter lessThanA = new CharRangeFilter("c", QueryConstants.NULL_CHAR, 'A', true, false);
 
@@ -111,8 +111,44 @@ public class CharPushdownHandlerTest {
         // No Parquet nulls and no sentinel among the values: nothing here can be below 'A'.
         assertFalse(evaluate(lessThanA, charStats('Z', 'z')));
 
-        // The Parquet-null half of the question is not this handler's: see
-        // PushdownHandlerNullStatisticsTest#nullGateKeepsRowGroupsThatMayHoldParquetNulls.
+        // The Parquet-null half of the question is not this handler's: the null-aware check in
+        // StatisticsEvaluator.makeForFilter owns it, end to end in
+        // ParquetTableFilterTest#nullRowsSurviveRangeFilterStatisticsPushdown.
+    }
+
+    /**
+     * A null lower bound held <i>exclusively</i> -- {@code X > null} -- is the one range shape a null row does not
+     * satisfy, so the sentinel must not keep a row group alive on its own. char is where that shows up from the top of
+     * the domain: {@code NULL_CHAR} is {@code Character.MAX_VALUE}, so a row group running up to the sentinel has a
+     * high {@code min} and the upper bound alone settles it.
+     */
+    @Test
+    public void exclusiveNullLowerBoundExcludesTheSentinel() {
+        // `X > null`, per CharRangeFilter.gt: (NULL_CHAR, MAX_CHAR].
+        final CharRangeFilter notNull = CharRangeFilter.gt("c", QueryConstants.NULL_CHAR);
+
+        // Nothing here but the sentinel, which this filter does not match.
+        assertFalse(evaluate(notNull, charStats(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR)));
+
+        // Any ordinary value does match, whether or not the row group also reaches the sentinel.
+        assertTrue(evaluate(notNull, charStats('A', 'Z')));
+        assertTrue(evaluate(notNull, charStats('A', QueryConstants.NULL_CHAR)));
+
+        // `null < X <= 'c'`: the sentinel rows no longer count, so a row group whose ordinary values all sit above
+        // 'c' can be excluded even though its statistics reach the sentinel...
+        assertFalse(evaluate(
+                new CharRangeFilter("c", QueryConstants.NULL_CHAR, 'c', false, true),
+                charStats('x', QueryConstants.NULL_CHAR)));
+
+        // ... which is exactly the row group that `X <= 'c'`, holding the same bound inclusively, has to keep.
+        assertTrue(evaluate(
+                new CharRangeFilter("c", QueryConstants.NULL_CHAR, 'c', true, true),
+                charStats('x', QueryConstants.NULL_CHAR)));
+
+        // Ordinary values below the upper bound overlap either way.
+        assertTrue(evaluate(
+                new CharRangeFilter("c", QueryConstants.NULL_CHAR, 'c', false, true),
+                charStats('a', QueryConstants.NULL_CHAR)));
     }
 
     @Test
@@ -147,7 +183,7 @@ public class CharPushdownHandlerTest {
 
         // A null among the values no longer declines push-down. To Parquet the sentinel is an ordinary value,
         // so it is tested against min/max like any other; Parquet nulls are ruled out separately, by the
-        // null gate in StatisticsEvaluator.maybeMakeForFilter.
+        // null-aware check in StatisticsEvaluator.makeForFilter.
         assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "c", QueryConstants.NULL_CHAR, 'X'), stats));
 
@@ -215,7 +251,7 @@ public class CharPushdownHandlerTest {
 
     /**
      * Resolves the filter to an evaluator and applies it to one row group's statistics, as
-     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
      */
     private static boolean evaluate(final CharRangeFilter filter, final Statistics<?> stats) {
         return CharPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);

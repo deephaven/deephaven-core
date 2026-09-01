@@ -87,6 +87,40 @@ public class BytePushdownHandlerTest {
                 new ByteRangeFilter("i", (byte) 3, (byte) 3, false, true), byteStats((byte) 3, (byte) 4)));
     }
 
+    /**
+     * A null lower bound held <i>exclusively</i> -- {@code X > null} -- is the one range shape a null row does not
+     * satisfy, so the sentinel must not keep a row group alive on its own. {@code NULL_BYTE} is {@code Byte.MIN_VALUE},
+     * the bottom of the value domain, so a row group whose {@code min} is the sentinel has to be judged on whatever
+     * sits above it -- and one holding nothing else can be excluded outright.
+     */
+    @Test
+    public void exclusiveNullLowerBoundExcludesTheSentinel() {
+        // `X > null`, per ByteRangeFilter.gt: (NULL_BYTE, MAX_BYTE].
+        final ByteRangeFilter notNull = ByteRangeFilter.gt("b", QueryConstants.NULL_BYTE);
+
+        // Nothing here but the sentinel, which this filter does not match.
+        assertFalse(evaluate(notNull, byteStats(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE)));
+
+        // Any ordinary value does match, whether or not the row group also reaches down to the sentinel.
+        assertTrue(evaluate(notNull, byteStats((byte) -5, (byte) 5)));
+        assertTrue(evaluate(notNull, byteStats(QueryConstants.NULL_BYTE, (byte) 5)));
+
+        // `null < X < (byte) 5`: the sentinel rows no longer count, so a row group holding nothing else is excluded...
+        assertFalse(evaluate(
+                new ByteRangeFilter("b", QueryConstants.NULL_BYTE, (byte) 5, false, false),
+                byteStats(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE)));
+
+        // ... which is exactly the row group that `X < (byte) 5`, holding the same bound inclusively, has to keep.
+        assertTrue(evaluate(
+                new ByteRangeFilter("b", QueryConstants.NULL_BYTE, (byte) 5, true, false),
+                byteStats(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE)));
+
+        // A sentinel minimum with ordinary values above it overlaps either way.
+        assertTrue(evaluate(
+                new ByteRangeFilter("b", QueryConstants.NULL_BYTE, (byte) 5, false, false),
+                byteStats(QueryConstants.NULL_BYTE, (byte) 10)));
+    }
+
     @Test
     public void byteMatchFilterScenarios() {
         final Statistics<?> stats = byteStats((byte) 10, (byte) 30);
@@ -119,7 +153,7 @@ public class BytePushdownHandlerTest {
 
         // A null among the values no longer declines push-down. To Parquet the sentinel is an ordinary value,
         // so it is tested against min/max like any other; Parquet nulls are ruled out separately, by the
-        // null gate in StatisticsEvaluator.maybeMakeForFilter.
+        // null-aware check in StatisticsEvaluator.makeForFilter.
         assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "b",
                         QueryConstants.NULL_BYTE, (byte) 50),
@@ -170,7 +204,7 @@ public class BytePushdownHandlerTest {
 
     /**
      * Resolves the filter to an evaluator and applies it to one row group's statistics, as
-     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
      */
     private static boolean evaluate(final ByteRangeFilter filter, final Statistics<?> stats) {
         return BytePushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);

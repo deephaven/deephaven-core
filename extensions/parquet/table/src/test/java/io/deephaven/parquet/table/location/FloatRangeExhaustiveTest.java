@@ -8,6 +8,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.select.FloatRangeFilter;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.QueryConstants;
 import org.apache.parquet.bytes.BytesUtils;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.schema.PrimitiveType;
@@ -37,8 +38,13 @@ public class FloatRangeExhaustiveTest {
             TableDefinition.of(ColumnDefinition.ofFloat("x"));
 
     private static final float[] INTERESTING = {
-            Float.NEGATIVE_INFINITY, -Float.MAX_VALUE / 2, -1.0f, -0.0f, 0.0f, 1.0f, 2.0f, 3.0f,
-            Float.MAX_VALUE / 2, Float.POSITIVE_INFINITY};
+            Float.NEGATIVE_INFINITY, QueryConstants.NULL_FLOAT, -Float.MAX_VALUE / 2, -1.0f, -0.0f, 0.0f, 1.0f, 2.0f,
+            3.0f, Float.MAX_VALUE / 2, Float.POSITIVE_INFINITY};
+
+    /** Filter bounds: every row group extreme, plus the NaN that {@code gt}/{@code geq}/{@code leq} put there. */
+    private static final float[] BOUNDS = {
+            Float.NEGATIVE_INFINITY, QueryConstants.NULL_FLOAT, -Float.MAX_VALUE / 2, -1.0f, -0.0f, 0.0f, 1.0f, 2.0f,
+            3.0f, Float.MAX_VALUE / 2, Float.POSITIVE_INFINITY, Float.NaN};
 
     private static Statistics<?> floatStats(final float min, final float max) {
         final PrimitiveType col = Types.required(FLOAT).named("x");
@@ -102,6 +108,52 @@ public class FloatRangeExhaustiveTest {
         org.junit.Assert.assertTrue("expected some exclusions, got " + excluded, excluded > 100);
     }
 
+    /**
+     * The same one-directional contract, but over directly-constructed filters rather than the four factories: every
+     * pair of bounds against every combination of inclusivity. That is what reaches the shapes no factory builds --
+     * above all {@code (NULL_FLOAT, v]}, a null lower bound held <i>exclusively</i>, which the factories only ever
+     * produce with a NaN upper bound.
+     */
+    @Test
+    public void handlerNeverExcludesARowGroupThatCanMatchForAnyBoundCombination() {
+        int excluded = 0;
+        for (final float min : INTERESTING) {
+            for (final float max : INTERESTING) {
+                if (min > max) {
+                    continue;
+                }
+                final Statistics<?> stats = floatStats(min, max);
+                final List<Float> present = valuesWithin(min, max);
+                for (final float lower : BOUNDS) {
+                    for (final float upper : BOUNDS) {
+                        for (final boolean lowerInclusive : new boolean[] {true, false}) {
+                            for (final boolean upperInclusive : new boolean[] {true, false}) {
+                                final FloatRangeFilter filter =
+                                        new FloatRangeFilter("x", lower, upper, lowerInclusive, upperInclusive);
+                                filter.init(TABLE_DEFINITION);
+                                if (evaluate(filter, stats)) {
+                                    continue;
+                                }
+                                excluded++;
+                                // The handler excluded the row group; the engine must agree that nothing here matches.
+                                final ChunkFilter chunkFilter = filter.chunkFilter().orElseThrow();
+                                for (final float value : present) {
+                                    if (matches(chunkFilter, value)) {
+                                        fail(String.format(
+                                                "handler excluded row group [%s, %s] for %s, but %s matches",
+                                                min, max, filter, value));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Guard against a vacuous pass: the handler must actually be excluding things.
+        org.junit.Assert.assertTrue("expected some exclusions, got " + excluded, excluded > 100);
+    }
+
     private static boolean matches(final ChunkFilter chunkFilter, final float value) {
         final io.deephaven.chunk.WritableFloatChunk<io.deephaven.chunk.attributes.Values> chunk =
                 io.deephaven.chunk.WritableFloatChunk.makeWritableChunk(1);
@@ -125,7 +177,7 @@ public class FloatRangeExhaustiveTest {
 
     /**
      * Resolves the filter to an evaluator and applies it to one row group's statistics, as
-     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
      */
     private static boolean evaluate(final FloatRangeFilter filter, final Statistics<?> stats) {
         return FloatPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);

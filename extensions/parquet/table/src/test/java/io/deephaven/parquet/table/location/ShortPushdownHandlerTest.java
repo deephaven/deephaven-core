@@ -87,6 +87,40 @@ public class ShortPushdownHandlerTest {
                 new ShortRangeFilter("i", (short) 3, (short) 3, false, true), shortStats((short) 3, (short) 4)));
     }
 
+    /**
+     * A null lower bound held <i>exclusively</i> -- {@code X > null} -- is the one range shape a null row does not
+     * satisfy, so the sentinel must not keep a row group alive on its own. {@code NULL_SHORT} is
+     * {@code Short.MIN_VALUE}, the bottom of the value domain, so a row group whose {@code min} is the sentinel has to
+     * be judged on whatever sits above it -- and one holding nothing else can be excluded outright.
+     */
+    @Test
+    public void exclusiveNullLowerBoundExcludesTheSentinel() {
+        // `X > null`, per ShortRangeFilter.gt: (NULL_SHORT, MAX_SHORT].
+        final ShortRangeFilter notNull = ShortRangeFilter.gt("s", QueryConstants.NULL_SHORT);
+
+        // Nothing here but the sentinel, which this filter does not match.
+        assertFalse(evaluate(notNull, shortStats(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT)));
+
+        // Any ordinary value does match, whether or not the row group also reaches down to the sentinel.
+        assertTrue(evaluate(notNull, shortStats((short) -5, (short) 5)));
+        assertTrue(evaluate(notNull, shortStats(QueryConstants.NULL_SHORT, (short) 5)));
+
+        // `null < X < (short) 5`: the sentinel rows no longer count, so a row group holding nothing else is excluded...
+        assertFalse(evaluate(
+                new ShortRangeFilter("s", QueryConstants.NULL_SHORT, (short) 5, false, false),
+                shortStats(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT)));
+
+        // ... which is exactly the row group that `X < (short) 5`, holding the same bound inclusively, has to keep.
+        assertTrue(evaluate(
+                new ShortRangeFilter("s", QueryConstants.NULL_SHORT, (short) 5, true, false),
+                shortStats(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT)));
+
+        // A sentinel minimum with ordinary values above it overlaps either way.
+        assertTrue(evaluate(
+                new ShortRangeFilter("s", QueryConstants.NULL_SHORT, (short) 5, false, false),
+                shortStats(QueryConstants.NULL_SHORT, (short) 10)));
+    }
+
     @Test
     public void shortMatchFilterScenarios() {
         final Statistics<?> stats = shortStats((short) 100, (short) 200);
@@ -117,7 +151,7 @@ public class ShortPushdownHandlerTest {
 
         // A null among the values no longer declines push-down. To Parquet the sentinel is an ordinary value,
         // so it is tested against min/max like any other; Parquet nulls are ruled out separately, by the
-        // null gate in StatisticsEvaluator.maybeMakeForFilter.
+        // null-aware check in StatisticsEvaluator.makeForFilter.
         assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "s",
                         QueryConstants.NULL_SHORT, (short) 42),
@@ -166,7 +200,7 @@ public class ShortPushdownHandlerTest {
 
     /**
      * Resolves the filter to an evaluator and applies it to one row group's statistics, as
-     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
      */
     private static boolean evaluate(final ShortRangeFilter filter, final Statistics<?> stats) {
         return ShortPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);

@@ -128,7 +128,7 @@ public class FloatPushdownHandlerTest {
 
         // A null among the values no longer declines push-down. To Parquet the sentinel is an ordinary value,
         // so it is tested against min/max like any other; Parquet nulls are ruled out separately, by the
-        // null gate in StatisticsEvaluator.maybeMakeForFilter.
+        // null-aware check in StatisticsEvaluator.makeForFilter.
         assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "f",
                         QueryConstants.NULL_FLOAT, 50f),
@@ -139,9 +139,18 @@ public class FloatPushdownHandlerTest {
                 new MatchFilter(MatchOptions.REGULAR, "f", QueryConstants.NULL_FLOAT),
                 floatStats(QueryConstants.NULL_FLOAT, 30f)));
 
-        // NaN is different: conforming writers omit it from min/max, so it can never be ruled out.
-        assertTrue(evaluate(
+        // What NaN does here depends on nanMatch, not on NaN being invisible to min/max. MatchOptions.REGULAR means
+        // IEEE equality, under which `x == NaN` is false for every x -- so the NaN is inert and the other value
+        // decides: nothing in the statistics is 50.
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "f",
+                        Float.NaN, 50f),
+                stats));
+
+        // With nanMatch set -- which is how an explicit value list is actually parsed -- a NaN row does match, and no
+        // statistics can prove the row group holds none, so it must be kept.
+        assertTrue(evaluate(
+                new MatchFilter(nanMatchOptions(false), "f",
                         Float.NaN, 50f),
                 stats));
 
@@ -251,6 +260,53 @@ public class FloatPushdownHandlerTest {
     }
 
     /**
+     * A null lower bound held <i>exclusively</i> -- {@code X > null} -- is the one range shape a null row does not
+     * satisfy. {@code NULL_FLOAT} is {@code -Float.MAX_VALUE} rather than the bottom of the domain -- the infinities
+     * lie outside it -- so the sentinel sits inside the interval the filter spans numerically, and the handler keeps
+     * even a row group of nothing but sentinels: a conservative answer, not a wrong one. What the exclusive bound does
+     * settle is a range with nothing inside it at all.
+     */
+    @Test
+    public void exclusiveNullLowerBoundKeepsSentinelRowGroupsConservatively() {
+        // `null < X < -Infinity` matches nothing at all: only a null sorts below negative infinity, and holding the
+        // bound exclusively rules the null out.
+        assertFalse(evaluate(
+                new FloatRangeFilter("x", QueryConstants.NULL_FLOAT, Float.NEGATIVE_INFINITY, false, false),
+                floatStats(Float.NEGATIVE_INFINITY, 10.0f)));
+
+        // `X < -Infinity` -- the same range with the bound held inclusively -- matches exactly the null rows, and
+        // this row group's statistics span the sentinel.
+        assertTrue(evaluate(
+                new FloatRangeFilter("x", QueryConstants.NULL_FLOAT, Float.NEGATIVE_INFINITY, true, false),
+                floatStats(Float.NEGATIVE_INFINITY, 10.0f)));
+
+        // A row group of nothing but the sentinel matches no filter that holds the null bound exclusively, but the
+        // handler does not test for that shape and keeps the row group conservatively.
+        assertTrue(evaluate(
+                new FloatRangeFilter("x", QueryConstants.NULL_FLOAT, 5.0f, false, true),
+                floatStats(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT)));
+        assertTrue(evaluate(
+                FloatRangeFilter.gt("x", QueryConstants.NULL_FLOAT),
+                floatStats(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT)));
+
+        // Held inclusively those same rows read back as null and match.
+        assertTrue(evaluate(
+                new FloatRangeFilter("x", QueryConstants.NULL_FLOAT, 5.0f, true, true),
+                floatStats(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT)));
+        assertTrue(evaluate(
+                FloatRangeFilter.geq("x", QueryConstants.NULL_FLOAT),
+                floatStats(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT)));
+
+        // `null < X <= 5`: ordinary values below the upper bound overlap, negative infinity among them.
+        assertTrue(evaluate(
+                new FloatRangeFilter("x", QueryConstants.NULL_FLOAT, 5.0f, false, true),
+                floatStats(Float.NEGATIVE_INFINITY, 10.0f)));
+        assertFalse(evaluate(
+                new FloatRangeFilter("x", QueryConstants.NULL_FLOAT, 5.0f, false, true),
+                floatStats(6.0f, 10.0f)));
+    }
+
+    /**
      * {@code X > v} is built as {@code (v, NaN)} with the upper bound <i>exclusive</i>. Under Deephaven's ordering NaN
      * is above every value, so "exclusive of NaN" means every value except NaN -- up to and including positive
      * infinity. Substituting the infinity for NaN therefore has to make that bound inclusive; leaving it exclusive
@@ -287,16 +343,16 @@ public class FloatPushdownHandlerTest {
     }
 
     /**
-     * Resolves the filter to an evaluator and applies it to one row group's statistics, as
-     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
-     */
-    /**
-     * A NaN upper bound stands for "unbounded above" only when it is <i>exclusive</i>, which is how the {@code lt},
-     * {@code leq}, {@code gt} and {@code geq} factories build it -- so every filter the query path produces keeps
-     * pruning, as the last two assertions re-check. Held <i>inclusively</i>, the bound matches the NaN rows themselves:
-     * {@code FloatComparisons} places NaN equal to itself, so the chunk filter the engine installs admits them, while a
-     * conforming writer keeps NaN out of {@code min}/{@code max} and no statistics can prove a row group holds none.
-     * Reading an inclusive bound as unbounded above would exclude a row group whose NaN rows match.
+     * A NaN upper bound stands for "unbounded above" only when it is <i>exclusive</i>. Held <i>inclusively</i> it
+     * matches the NaN rows themselves: {@code FloatComparisons} places NaN equal to itself, so the chunk filter the
+     * engine installs admits them, while a conforming writer keeps NaN out of {@code min}/{@code max} and no statistics
+     * can prove a row group holds none. Reading an inclusive bound as unbounded above would exclude a row group whose
+     * NaN rows match.
+     * <p>
+     * Of the factories, {@code gt} and {@code geq} are the ones that put NaN in the upper slot for an ordinary pivot,
+     * and they always make it exclusive -- so they keep pruning, as the last two assertions re-check. {@code lt} and
+     * {@code leq} put their own pivot there instead, so {@code leq("f", NaN)} does produce an inclusive NaN upper; it
+     * matches every row, so giving up its pruning costs nothing.
      */
     @Test
     public void floatInclusiveNaNUpperBoundCannotExcludeNaNRows() {
@@ -311,12 +367,76 @@ public class FloatPushdownHandlerTest {
         // The degenerate `[NaN, NaN]`, which matches exactly the NaN rows.
         assertTrue(evaluate(new FloatRangeFilter("f", Float.NaN, Float.NaN, true, true), stats));
 
+        // `leq` with a NaN pivot is the one factory call that presents an inclusive NaN upper bound -- the
+        // constructor orders the pair with FloatComparisons, which puts NaN above the NULL sentinel. Asserted
+        // directly, because the evaluator would answer "maybe" either way and so cannot tell the two apart.
+        final FloatRangeFilter leqNaN = FloatRangeFilter.leq("f", Float.NaN);
+        assertTrue("leq(NaN) lands NaN in the upper slot", Float.isNaN(leqNaN.getUpper()));
+        assertTrue("leq(NaN) holds that bound inclusively", leqNaN.isUpperInclusive());
+        // It therefore matches every row, so keeping the row group is both required and free.
+        assertTrue(evaluate(leqNaN, stats));
+
         // Exclusive NaN uppers cannot match a NaN row, so they still prune: declining the inclusive case above costs
         // no pruning that was previously available.
         assertFalse(evaluate(FloatRangeFilter.gt("f", 5.0f), stats));
         assertFalse(evaluate(FloatRangeFilter.geq("f", 5.0f), stats));
     }
 
+    /**
+     * Whether a NaN row satisfies a match filter comes from {@code nanMatch} and {@code inverted}, not from the shape
+     * of the filter. The old rule -- "every inverted match admits a NaN row" -- is false: {@code !isNaN(X)} reaches
+     * this handler as an inverted match whose only value is NaN, with {@code nanMatch} set, and no NaN row satisfies
+     * it.
+     */
+    @Test
+    public void nanAdmittanceFollowsNanMatchNotFilterShape() {
+        // A row group of {1.0f, 2.0f, NaN}: a conforming writer emits [1.0f, 2.0f], leaving the NaN invisible.
+        final Statistics<?> stats = floatStats(1.0f, 2.0f);
+
+        // `X != 5.0f` with IEEE equality: !(NaN == 5.0f) holds, so a NaN row matches and the group must be kept.
+        assertTrue(evaluate(new MatchFilter(MatchOptions.INVERTED, "f", 5.0f), stats));
+
+        // `isNaN(X)`: inverted=false, nanMatch=true, values={NaN}. A NaN row matches, so the group must be kept.
+        assertTrue(evaluate(new MatchFilter(nanMatchOptions(false), "f", Float.NaN), stats));
+
+        // `!isNaN(X)`: inverted=true, nanMatch=true, values={NaN}. No NaN row matches -- but every non-NaN row does,
+        // and usable statistics guarantee one exists, so "maybe" is still the only correct answer.
+        assertTrue(evaluate(new MatchFilter(nanMatchOptions(true), "f", Float.NaN), stats));
+    }
+
+    /**
+     * The two cases the old blanket "keep everything" answer gave up. Neither is reachable from a parsed comparison,
+     * but both are expressible, and in both the statistics settle the question outright.
+     */
+    @Test
+    public void nanValuesThatCannotMatchNoLongerCostPruning() {
+        final Statistics<?> stats = floatStats(1.0f, 2.0f);
+
+        // `X == NaN` with IEEE equality matches no row whatsoever, NaN rows included.
+        assertFalse(evaluate(new MatchFilter(MatchOptions.REGULAR, "f", Float.NaN), stats));
+
+        // `X not in (5.0f, NaN)` with nanMatch: a NaN row is excluded by the NaN in the values, so only the ordinary
+        // gap walk remains -- and [1.0f, 2.0f] lies wholly inside a gap, so the group survives.
+        assertTrue(evaluate(new MatchFilter(nanMatchOptions(true), "f", 5.0f, Float.NaN), stats));
+
+        // Same filter against a row group holding nothing but the excluded value: now it can be pruned.
+        assertFalse(evaluate(new MatchFilter(nanMatchOptions(true), "f", 5.0f, Float.NaN), floatStats(5.0f, 5.0f)));
+
+        // A row group above every non-NaN value still holds matching rows -- 10.0f is not in (5.0f, NaN). This is
+        // what makes dropping the NaN load-bearing: left among the values it sorts last, and the walk's closing
+        // `max > values[n-1]` becomes `max > NaN`, which is false -- silently pruning a row group that matches.
+        assertTrue(evaluate(new MatchFilter(nanMatchOptions(true), "f", 5.0f, Float.NaN), floatStats(10.0f, 10.0f)));
+    }
+
+    /** {@code MatchOptions} as {@code isNaN}/{@code !isNaN} build them: {@code nanMatch} set. */
+    private static MatchOptions nanMatchOptions(final boolean inverted) {
+        return MatchOptions.builder().nanMatch(true).inverted(inverted).build();
+    }
+
+    /**
+     * Resolves the filter to an evaluator and applies it to one row group's statistics, as
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
+     */
     private static boolean evaluate(final FloatRangeFilter filter, final Statistics<?> stats) {
         return FloatPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
     }

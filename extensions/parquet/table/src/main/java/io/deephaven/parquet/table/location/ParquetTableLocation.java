@@ -881,8 +881,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // above are repeated once per location, which on a table with many partitions is the dominant per-location
         // cost of metadata pushdown. Memoizing the evaluator on the RegionedPushdownFilterContext would build it once
         // for the whole filter.
-        final StatisticsEvaluator evaluator = StatisticsEvaluator.maybeMakeForFilter(filter, ctx);
-        if (evaluator == null) {
+        final StatisticsEvaluator evaluator = StatisticsEvaluator.makeForFilter(filter, ctx);
+        if (evaluator == StatisticsEvaluator.ALWAYS_MAYBE) {
             // Nothing about this filter can be bounded by statistics, so every row group would be kept.
             return result.copy();
         }

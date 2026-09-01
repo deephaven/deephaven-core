@@ -7,7 +7,7 @@ import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.util.compare.ObjectComparisons;
-import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +30,7 @@ import java.util.Arrays;
  * dropped from the filter's values here.
  * <p>
  * <b>These methods are not correct in isolation</b> for a filter that a null row satisfies; reach them through
- * {@code StatisticsEvaluator.maybeMakeForFilter}, which gates on those rows.
+ * {@code StatisticsEvaluator.makeForFilter}, which accounts for those rows.
  * <p>
  * A value that is not {@link Comparable} is a different matter and is declined outright, having no place in the
  * ordering at all.
@@ -46,14 +46,12 @@ final class ComparablePushdownHandler {
      */
     @Nullable
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
-        if (filter instanceof ComparableRangeFilter) {
-            final ComparableRangeFilter rangeFilter = (ComparableRangeFilter) filter;
+        if (filter instanceof final ComparableRangeFilter rangeFilter) {
             return MinMaxFromStatistics.canDecodeComparable(rangeFilter.getColumnType())
                     ? maybeCreateEvaluator(rangeFilter)
                     : null;
         }
-        if (filter instanceof MatchFilter) {
-            final MatchFilter matchFilter = (MatchFilter) filter;
+        if (filter instanceof final MatchFilter matchFilter) {
             return MinMaxFromStatistics.canDecodeComparable(matchFilter.getColumnType())
                     ? maybeCreateEvaluator(matchFilter)
                     : null;
@@ -84,18 +82,28 @@ final class ComparablePushdownHandler {
         final boolean lowerInclusive = comparableRangeFilter.isLowerInclusive();
         final boolean upperInclusive = comparableRangeFilter.isUpperInclusive();
         return statistics -> {
-            final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
-            final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
-            if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
-                    dhColumnType)) {
-                // Statistics could not be processed, so we assume that we overlap.
-                return true;
-            }
-            return maybeOverlapsRangeImpl(
-                    mutableMin.get(), mutableMax.get(),
+            final Comparable<?>[] minMax = decodeMinMax(statistics, dhColumnType);
+            return minMax == null || maybeOverlapsRangeImpl(
+                    minMax[0], minMax[1],
                     dhLower, lowerInclusive,
                     dhUpper, upperInclusive);
         };
+    }
+
+    /**
+     * Reads this row group's extremes as {@code {min, max}}, or returns {@code null} if the statistics cannot be used.
+     */
+    @Nullable
+    private static Comparable<?>[] decodeMinMax(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final Class<?> dhColumnType) {
+        final Comparable<?>[] minMax = new Comparable<?>[2];
+        if (!MinMaxFromStatistics.getMinMaxForComparable(statistics,
+                v -> minMax[0] = v, v -> minMax[1] = v, dhColumnType)) {
+            // Statistics could not be processed.
+            return null;
+        }
+        return minMax;
     }
 
     /**
@@ -117,21 +125,22 @@ final class ComparablePushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range intersects any point supplied in the filter.
+     * Verifies that the {@code [min, max]} range intersects any point supplied in the filter. Regular and inverted
+     * matches are entirely different walks, so which one applies is settled here rather than per row group.
      */
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final MatchFilter matchFilter) {
         final Object[] values = matchFilter.getValues();
         final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
             // No values to check against
-            return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : statistics -> false;
+            return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : StatisticsEvaluator.ALWAYS_NO_OVERLAP;
         }
-        // Nulls are dropped here; the null gate in StatisticsEvaluator answers for them.
+        // Nulls are dropped here; the null-aware check in NullAwareEvaluator answers for them.
         final Comparable<?>[] allValues = new Comparable[values.length];
         int numNonNull = 0;
         for (final Object value : values) {
-            if (value instanceof Comparable) {
-                allValues[numNonNull++] = (Comparable<?>) value;
+            if (value instanceof final Comparable<?> comparableValue) {
+                allValues[numNonNull++] = comparableValue;
             } else if (value != null) {
                 // Not Comparable, so it cannot be ordered against the statistics at all.
                 return StatisticsEvaluator.ALWAYS_MAYBE;
@@ -143,7 +152,7 @@ final class ComparablePushdownHandler {
             // at least one exists; `X == null` reaches here only for a row group with no Parquet nulls to match.
             return invertMatch
                     ? StatisticsEvaluator.ALWAYS_MAYBE
-                    : statistics -> false;
+                    : StatisticsEvaluator.ALWAYS_NO_OVERLAP;
         }
         final Comparable<?>[] comparableValues =
                 numNonNull == values.length ? allValues : Arrays.copyOf(allValues, numNonNull);
@@ -153,22 +162,14 @@ final class ComparablePushdownHandler {
             throw new IllegalStateException("Filter not initialized with a column type: " + matchFilter);
         }
         if (invertMatch) {
-            // Sorted once here; maybeMatchesInverse walks the gaps between adjacent values. Natural
-            // ordering matches the ObjectComparisons the gap walk uses, for the non-null values that
-            // are all that reach this point -- nulls were removed above.
-            Arrays.sort(comparableValues);
+            return statistics -> {
+                final Comparable<?>[] minMax = decodeMinMax(statistics, dhColumnType);
+                return minMax == null || maybeMatchesInverse(minMax[0], minMax[1], comparableValues);
+            };
         }
         return statistics -> {
-            final MutableObject<Comparable<?>> mutableMin = new MutableObject<>();
-            final MutableObject<Comparable<?>> mutableMax = new MutableObject<>();
-            if (!MinMaxFromStatistics.getMinMaxForComparable(statistics, mutableMin::setValue, mutableMax::setValue,
-                    dhColumnType)) {
-                // Statistics could not be processed, so we cannot determine overlaps. Assume that we overlap.
-                return true;
-            }
-            return invertMatch
-                    ? maybeMatchesInverse(mutableMin.get(), mutableMax.get(), comparableValues)
-                    : maybeMatches(mutableMin.get(), mutableMax.get(), comparableValues);
+            final Comparable<?>[] minMax = decodeMinMax(statistics, dhColumnType);
+            return minMax == null || maybeMatches(minMax[0], minMax[1], comparableValues);
         };
     }
 
@@ -176,7 +177,7 @@ final class ComparablePushdownHandler {
     /**
      * Verifies that the {@code [min, max]} range intersects any point supplied in {@code values}.
      */
-    static boolean maybeMatches(
+    private static boolean maybeMatches(
             @NotNull final Comparable<?> min,
             @NotNull final Comparable<?> max,
             @NotNull final Comparable<?>[] values) {
@@ -189,29 +190,22 @@ final class ComparablePushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array. This
-     * is done by checking whether {@code [min, max]} overlaps with every open gap produced by excluding the given
-     * values. For example, if the values are sorted as {@code v_0, v_1, ..., v_n-1}, then the gaps are:
-     *
-     * <pre>
-     * [..., v_0), (v_0, v_1), . . , (v_n-2, v_n-1), (v_n-1, ...]
-     * </pre>
-     * 
-     * where {@code ...} represents the extreme ends of the range.
+     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array.
      */
-    static boolean maybeMatchesInverse(
+    private static boolean maybeMatchesInverse(
             @NotNull final Comparable<?> min,
             @NotNull final Comparable<?> max,
             @NotNull final Comparable<?>[] values) {
-        if (ObjectComparisons.lt(min, values[0])) {
+        // A row group can only be excluded if it holds a single distinct value, AND that value is one of the
+        // filter's values.
+        if (!ObjectComparisons.eq(min, max)) {
             return true;
         }
-        final int numValues = values.length;
-        for (int i = 0; i < numValues - 1; i++) {
-            if (maybeOverlapsRangeImpl(min, max, values[i], false, values[i + 1], false)) {
-                return true;
+        for (final Comparable<?> value : values) {
+            if (ObjectComparisons.eq(value, min)) {
+                return false;
             }
         }
-        return ObjectComparisons.gt(max, values[values.length - 1]);
+        return true;
     }
 }

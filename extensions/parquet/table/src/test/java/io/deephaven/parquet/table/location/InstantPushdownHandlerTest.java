@@ -67,7 +67,7 @@ public class InstantPushdownHandlerTest {
      * A Deephaven null {@link Instant} is the {@code NULL_LONG} sentinel. Deephaven's own writer turns that into a
      * Parquet null, but a writer that is not Deephaven may store the value outright -- Deephaven then reads the row
      * back as null while Parquet counts no nulls at all. So the sentinel has to be looked for in {@code min}/{@code
-     * max} and cannot be answered by the null gate in {@code StatisticsEvaluator.maybeMakeForFilter} alone.
+     * max} and cannot be answered by the null-aware check in {@code StatisticsEvaluator.makeForFilter} alone.
      * <p>
      * {@code ParquetTableFilterTest#testForExtremes} pins the same story for the other primitive types, against a real
      * pyarrow-written file; timestamps are covered here because no such fixture exists for them.
@@ -83,6 +83,36 @@ public class InstantPushdownHandlerTest {
         // Proven free of Parquet nulls, but the statistics reach the sentinel, so a stored value may read back as
         // null. This is the half the proof cannot answer.
         assertTrue(evaluator.maybeOverlaps(instantStatsNanos(QueryConstants.NULL_LONG, 50L)));
+    }
+
+    /**
+     * A null lower bound held <i>exclusively</i> -- {@code X > null} -- is the one range shape a null row does not
+     * satisfy, so the sentinel must not keep a row group alive on its own. Instant's null is {@code NULL_LONG} in the
+     * underlying epoch nanoseconds, the bottom of the value domain, so a row group holding nothing but the sentinel can
+     * be excluded outright.
+     */
+    @Test
+    public void exclusiveNullLowerBoundExcludesTheSentinel() {
+        // `null < X < 50 ns`: nothing here but the sentinel, which this filter does not match.
+        assertFalse(evaluate(
+                new InstantRangeFilter("t", QueryConstants.NULL_LONG, 50L, false, false),
+                instantStatsNanos(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG)));
+
+        // `X < 50 ns` -- the same range with the bound held inclusively -- matches the null rows, so the same row
+        // group has to be kept.
+        assertTrue(evaluate(
+                new InstantRangeFilter("t", QueryConstants.NULL_LONG, 50L, true, false),
+                instantStatsNanos(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG)));
+
+        // A sentinel minimum with ordinary timestamps above it overlaps either way.
+        assertTrue(evaluate(
+                new InstantRangeFilter("t", QueryConstants.NULL_LONG, 50L, false, false),
+                instantStatsNanos(QueryConstants.NULL_LONG, 10L)));
+
+        // ... but not once those timestamps are all above the upper bound.
+        assertFalse(evaluate(
+                new InstantRangeFilter("t", QueryConstants.NULL_LONG, 50L, false, false),
+                instantStatsNanos(60L, 100L)));
     }
 
     @Test
@@ -232,7 +262,7 @@ public class InstantPushdownHandlerTest {
 
     /**
      * Resolves the filter to an evaluator and applies it to one row group's statistics, as
-     * {@code StatisticsEvaluator.maybeMakeForFilter} does per location.
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
      */
     private static boolean evaluate(final InstantRangeFilter filter, final Statistics<?> stats) {
         return InstantPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);

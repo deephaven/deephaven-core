@@ -48,7 +48,7 @@ import java.util.Comparator;
  * <b>Nulls.</b> Of the two sources of a Deephaven null that {@link StatisticsEvaluator} describes, neither is this
  * class's business: a String has no sentinel encoding, so a Deephaven null comes solely from a Parquet null, and a null
  * is simply dropped from a match filter's values here. <b>These evaluators are not correct in isolation</b> for a
- * filter that a null row satisfies; reach them through {@code StatisticsEvaluator.maybeMakeForFilter}, which gates on
+ * filter that a null row satisfies; reach them through {@code StatisticsEvaluator.makeForFilter}, which accounts for
  * those rows. Null <i>bounds</i> on a range filter are a separate question, and are declined.
  * <p>
  * <b>Usage.</b> Call {@link #maybeCreateEvaluator} once per filter, then {@link StatisticsEvaluator#maybeOverlaps} once
@@ -92,19 +92,16 @@ final class StringPushdownHandler {
      */
     @Nullable
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
-        if (filter instanceof MatchFilter) {
-            final MatchFilter matchFilter = (MatchFilter) filter;
+        if (filter instanceof final MatchFilter matchFilter) {
             if (matchFilter.getColumnType() != String.class || matchFilter.getMatchOptions().caseInsensitive()) {
                 return null;
             }
             return createMatchEvaluator(matchFilter);
         }
-        if (filter instanceof ComparableRangeFilter) {
-            final ComparableRangeFilter rangeFilter = (ComparableRangeFilter) filter;
+        if (filter instanceof final ComparableRangeFilter rangeFilter) {
             return rangeFilter.getColumnType() == String.class ? createRangeEvaluator(rangeFilter) : null;
         }
-        if (filter instanceof SingleSidedComparableRangeFilter) {
-            final SingleSidedComparableRangeFilter rangeFilter = (SingleSidedComparableRangeFilter) filter;
+        if (filter instanceof final SingleSidedComparableRangeFilter rangeFilter) {
             return rangeFilter.getColumnType() == String.class ? createSingleSidedEvaluator(rangeFilter) : null;
         }
         return null;
@@ -121,14 +118,14 @@ final class StringPushdownHandler {
         final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
             // No values to check against
-            return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : statistics -> false;
+            return invertMatch ? StatisticsEvaluator.ALWAYS_MAYBE : StatisticsEvaluator.ALWAYS_NO_OVERLAP;
         }
-        // Nulls are dropped here; the null gate in StatisticsEvaluator answers for them.
+        // Nulls are dropped here; the null-aware check in NullAwareEvaluator answers for them.
         final byte[][] allEncoded = new byte[values.length][];
         int numNonNull = 0;
         for (final Object value : values) {
-            if (value instanceof String) {
-                final byte[] encodedValue = utf8((String) value);
+            if (value instanceof final String stringValue) {
+                final byte[] encodedValue = utf8(stringValue);
                 if (encodedValue == null) {
                     // No faithful UTF-8 encoding, so its bytes are those of some other string; see utf8.
                     return StatisticsEvaluator.ALWAYS_MAYBE;
@@ -145,7 +142,7 @@ final class StringPushdownHandler {
             // at least one exists; `X == null` reaches here only for a row group with no Parquet nulls to match.
             return invertMatch
                     ? StatisticsEvaluator.ALWAYS_MAYBE
-                    : statistics -> false;
+                    : StatisticsEvaluator.ALWAYS_NO_OVERLAP;
         }
         final byte[][] encoded =
                 numNonNull == values.length ? allEncoded : Arrays.copyOf(allEncoded, numNonNull);
@@ -164,9 +161,6 @@ final class StringPushdownHandler {
                 return false;
             };
         }
-        // Sorted once here; maybeMatchesInverse walks the gaps between adjacent values, with the same
-        // byte comparator it uses. Non-Strings were rejected above and nulls were removed.
-        Arrays.sort(encoded, BYTES);
         return statistics -> {
             final byte[][] minMax = minMaxBytes(statistics);
             return minMax == null || maybeMatchesInverse(minMax[0], minMax[1], encoded);
@@ -176,18 +170,18 @@ final class StringPushdownHandler {
     private static StatisticsEvaluator createRangeEvaluator(@NotNull final ComparableRangeFilter rangeFilter) {
         final Comparable<?> lower = rangeFilter.getLower();
         final Comparable<?> upper = rangeFilter.getUpper();
-        if (!(lower instanceof String) || !(upper instanceof String)) {
+        if (!(lower instanceof final String lowerString) || !(upper instanceof final String upperString)) {
             // Not reachable from a parsed comparison: RangeFilter always supplies both bounds. Nor is it clear what
             // a null bound should mean -- Deephaven orders null below every value, so a null lower reads as
             // "unbounded below" while a null upper reads as an empty range, and no filter expresses either. Declined
             // rather than guessed.
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }
-        if (!comparesIdenticallyInBothOrders((String) lower) || !comparesIdenticallyInBothOrders((String) upper)) {
+        if (!comparesIdenticallyInBothOrders(lowerString) || !comparesIdenticallyInBothOrders(upperString)) {
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }
-        final byte[] lowerBytes = utf8((String) lower);
-        final byte[] upperBytes = utf8((String) upper);
+        final byte[] lowerBytes = utf8(lowerString);
+        final byte[] upperBytes = utf8(upperString);
         if (lowerBytes == null || upperBytes == null) {
             // A bound with no faithful UTF-8 encoding cannot be compared in the byte domain; see utf8.
             return StatisticsEvaluator.ALWAYS_MAYBE;
@@ -208,36 +202,42 @@ final class StringPushdownHandler {
                     "exclusive: " + rangeFilter);
         }
         final Comparable<?> pivot = rangeFilter.getPivot();
-        if (!(pivot instanceof String)) {
+        if (!(pivot instanceof final String pivotString)) {
             // Not reachable from a parsed comparison, and null is not orderable against itself here: Deephaven
             // orders null below every value, so `X < null` is empty and `X > null` is everything, and no parsed
             // filter expresses either. Declined rather than guessed.
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }
         // `X < v` and `X <= v` accept a null row, since Deephaven orders null under every value; `X > v` cannot.
-        // A String has no sentinel encoding, so the null gate in maybeMakeForFilter settles that on its own.
-        if (!comparesIdenticallyInBothOrders((String) pivot)) {
+        // A String has no sentinel encoding, so the null-aware check in NullAwareEvaluator settles that on its own.
+        if (!comparesIdenticallyInBothOrders(pivotString)) {
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }
-        final byte[] pivotBytes = utf8((String) pivot);
+        final byte[] pivotBytes = utf8(pivotString);
         if (pivotBytes == null) {
             // A pivot with no faithful UTF-8 encoding cannot be compared in the byte domain; see utf8.
             return StatisticsEvaluator.ALWAYS_MAYBE;
         }
         final boolean inclusive = rangeFilter.isLowerInclusive();
-        final boolean isGreaterThan = rangeFilter.isGreaterThan();
+        if (rangeFilter.isGreaterThan()) {
+            // Some value can exceed the pivot only if the largest one does.
+            return statistics -> {
+                final byte[][] minMax = minMaxBytes(statistics);
+                if (minMax == null) {
+                    // Statistics could not be processed, so we assume that we overlap.
+                    return true;
+                }
+                final int cmp = BYTES.compare(minMax[1], pivotBytes);
+                return inclusive ? cmp >= 0 : cmp > 0;
+            };
+        }
+        // ... and fall below it only if the smallest one does.
         return statistics -> {
             final byte[][] minMax = minMaxBytes(statistics);
             if (minMax == null) {
                 // Statistics could not be processed, so we assume that we overlap.
                 return true;
             }
-            if (isGreaterThan) {
-                // Some value can exceed the pivot only if the largest one does.
-                final int cmp = BYTES.compare(minMax[1], pivotBytes);
-                return inclusive ? cmp >= 0 : cmp > 0;
-            }
-            // ... and fall below it only if the smallest one does.
             final int cmp = BYTES.compare(minMax[0], pivotBytes);
             return inclusive ? cmp <= 0 : cmp < 0;
         };
@@ -297,22 +297,23 @@ final class StringPushdownHandler {
     }
 
     /**
-     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array, by
-     * checking whether it overlaps any of the open gaps left by excluding them. {@code values} must be sorted.
+     * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array.
      */
     private static boolean maybeMatchesInverse(
             @NotNull final byte[] min,
             @NotNull final byte[] max,
             @NotNull final byte[][] values) {
-        if (BYTES.compare(min, values[0]) < 0) {
+        // A row group can only be excluded if it holds a single distinct value, AND that value is one of the
+        // filter's values.
+        if (BYTES.compare(min, max) != 0) {
             return true;
         }
-        for (int i = 0; i < values.length - 1; i++) {
-            if (overlapsRange(min, max, values[i], false, values[i + 1], false)) {
-                return true;
+        for (final byte[] value : values) {
+            if (BYTES.compare(value, min) == 0) {
+                return false;
             }
         }
-        return BYTES.compare(max, values[values.length - 1]) > 0;
+        return true;
     }
 
     /**

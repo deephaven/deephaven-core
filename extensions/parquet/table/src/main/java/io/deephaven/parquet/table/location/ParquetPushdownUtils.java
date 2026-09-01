@@ -30,11 +30,11 @@ final class ParquetPushdownUtils {
      * Parquet {@code min}/{@code max} statistics summarize non-null values only, so a caller that must account for
      * nulls cannot learn anything about them from {@link #areStatisticsUsable(Statistics) usable} min/max values alone;
      * it has to consult the null count instead. This is deliberately kept separate from
-     * {@link #areStatisticsUsable(Statistics)}: {@code null_count} is an optional field, and folding it into that gate
+     * {@link #areStatisticsUsable(Statistics)}: {@code null_count} is an optional field, and folding it into that check
      * would disable min/max pushdown entirely for writers that omit it.
      * <p>
      * Note that {@code null_count} is more trustworthy than {@code min}/{@code max}, not less. It is not subject to the
-     * corrupt-statistics / sort-order gate that discards old writers' min/max values, because a count carries no
+     * corrupt-statistics / sort-order check that discards old writers' min/max values, because a count carries no
      * ordering. The test below is also written in the safe direction: an absent count reads as
      * {@link Statistics#isNumNullsSet()} {@code == false} rather than as a count of zero, so it can never be mistaken
      * for a proof that there are no nulls.

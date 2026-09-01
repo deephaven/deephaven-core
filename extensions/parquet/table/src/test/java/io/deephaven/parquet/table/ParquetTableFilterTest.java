@@ -1268,7 +1268,7 @@ public final class ParquetTableFilterTest {
      * <p>
      * Unlike the inverted match above, this was already correct before the null guard, for a reason that has since gone
      * away: each range handler declined outright when either bound was the null sentinel. They no longer decline -- a
-     * sentinel lower bound now reads as "the filter is unbounded below" and the interval test runs -- so the guard in
+     * sentinel lower bound is now rewritten to the bottom of the domain and the interval test runs -- so the guard in
      * {@code pushdownRowGroupMetadata} is the only thing keeping the null row. This test pins the behaviour at the
      * level a user observes it, independent of which layer is responsible for it.
      */

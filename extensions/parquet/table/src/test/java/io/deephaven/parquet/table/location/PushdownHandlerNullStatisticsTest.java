@@ -41,20 +41,20 @@ import static org.junit.Assert.assertTrue;
  * {@code ParquetTableLocation.pushdownRowGroupMetadata}, which consults the filter's null behaviour and keeps the row
  * group unless {@link ParquetPushdownUtils#isProvenFreeOfNulls} proves there are none.
  * <p>
- * Parquet nulls are not a handler's business at all -- the gate in {@code StatisticsEvaluator.maybeMakeForFilter} owns
- * them, and handlers take no flag about them. Deephaven has a second null source that the gate says nothing about: for
- * the primitive types a null is a sentinel <i>value</i>, so a stored value equal to the sentinel reads back as null and
- * has to be found in {@code min}/{@code max} like any other value. That half is the handlers'.
+ * Parquet nulls are not a handler's business at all -- {@link NullAwareEvaluator} owns them, and handlers take no flag
+ * about them. Deephaven has a second null source that it says nothing about: for the primitive types a null is a
+ * sentinel <i>value</i>, so a stored value equal to the sentinel reads back as null and has to be found in
+ * {@code min}/{@code max} like any other value. That half is the handlers'.
  * <p>
  * Without this, a well-meaning change that taught a handler to read {@code numNulls} would look like an improvement and
- * would quietly double-count the gate above it.
+ * would quietly double-count the check above it.
  * <p>
- * The gate itself is inlined into {@code StatisticsEvaluator.maybeMakeForFilter} and has no seam to unit-test, so it is
- * covered end to end instead: {@code ParquetTableFilterTest}'s {@code nullRowsSurviveInvertedMatchStatisticsPushdown},
- * {@code nullRowsSurviveRangeFilterStatisticsPushdown}, {@code nullExcludingFiltersOverNullableColumn} and
- * {@code isNullPrunesRowGroupsProvenFreeOfNulls} all fail if it stops working. Every statistics object in this folder's
- * suites was built with {@code withNumNulls(0L)} before this test existed, which is exactly the gap the null-handling
- * defect lived in.
+ * The null-aware check is a class of its own, so {@link #nullAwareEvaluatorKeepsRowGroupsThatMayHoldNulls} pins it
+ * directly; the end-to-end behaviour it produces is covered by {@code ParquetTableFilterTest}'s
+ * {@code nullRowsSurviveInvertedMatchStatisticsPushdown}, {@code nullRowsSurviveRangeFilterStatisticsPushdown},
+ * {@code nullExcludingFiltersOverNullableColumn} and {@code isNullPrunesRowGroupsProvenFreeOfNulls}. Every statistics
+ * object in this folder's suites was built with {@code withNumNulls(0L)} before this test existed, which is exactly the
+ * gap the null-handling defect lived in.
  */
 @Category(OutOfBandTest.class)
 public class PushdownHandlerNullStatisticsTest {
@@ -182,8 +182,46 @@ public class PushdownHandlerNullStatisticsTest {
     }
 
     /**
-     * Applies {@code evaluator} to one row group, deriving whether the group is free of nulls from the statistics as
-     * {@link ParquetTableLocation} does for a flat column.
+     * The null-aware wrapper around a handler, exercised on its own. A handler that has already said "no" is the only
+     * interesting case: the wrapper must override it for a row group whose nulls the filter would have matched, and
+     * must leave it alone once the statistics prove there are none to lose.
+     * <p>
+     * Only {@code numNulls == 0} is such a proof. A positive count plainly is not, and an <i>absent</i> count must not
+     * be read as zero -- that mistake would re-open the defect this whole suite exists to pin, since the field is
+     * optional and plenty of writers omit it.
+     */
+    @Test
+    public void nullAwareEvaluatorKeepsRowGroupsThatMayHoldNulls() {
+        final StatisticsEvaluator nullAware = new NullAwareEvaluator(StatisticsEvaluator.ALWAYS_NO_OVERLAP);
+
+        assertFalse("numNulls=0 proves there is nothing to lose, so the handler's verdict stands",
+                nullAware.maybeOverlaps(intStats(1, 10, 0L)));
+        assertTrue("a null row may be there and may match, so the row group stays",
+                nullAware.maybeOverlaps(intStats(1, 10, 1L)));
+        assertTrue("and again for a larger count",
+                nullAware.maybeOverlaps(intStats(1, 10, 1_000L)));
+        assertTrue("an absent count proves nothing and must never be read as zero",
+                nullAware.maybeOverlaps(intStats(1, 10, null)));
+    }
+
+    /**
+     * The wrapper can only ever be <i>more</i> permissive than the handler inside it: it turns "no" into "maybe" for a
+     * row group that may hold nulls, and never turns a "maybe" into a "no".
+     */
+    @Test
+    public void nullAwareEvaluatorNeverExcludesWhatTheHandlerKept() {
+        final StatisticsEvaluator nullAware = new NullAwareEvaluator(StatisticsEvaluator.ALWAYS_MAYBE);
+        for (final Long numNulls : NULL_COUNTS) {
+            assertTrue("null-aware ALWAYS_MAYBE with numNulls=" + numNulls,
+                    nullAware.maybeOverlaps(intStats(1, 10, numNulls)));
+        }
+    }
+
+    /**
+     * Applies {@code evaluator} to one row group's statistics and nothing more. The centralized null-aware check is
+     * deliberately left out: these tests exist to pin what a handler decides <i>on its own</i>, from {@code min}/
+     * {@code max} alone, so they must not route through {@code StatisticsEvaluator.makeForFilter}. What
+     * {@link NullAwareEvaluator} then adds on top is covered end to end by {@code ParquetTableFilterTest}.
      */
     private static boolean apply(final StatisticsEvaluator evaluator, final Statistics<?> stats) {
         return evaluator.maybeOverlaps(stats);
@@ -193,7 +231,7 @@ public class PushdownHandlerNullStatisticsTest {
     /**
      * Deephaven's <i>other</i> null source stays with the handlers, because it is an ordinary value to Parquet. For the
      * primitive types a stored value equal to the sentinel reads back as null, so it has to be found in
-     * {@code min}/{@code max} -- the gate above says nothing about it.
+     * {@code min}/{@code max} -- {@link NullAwareEvaluator} says nothing about it.
      */
     @Test
     public void storedNullSentinelIsTheHandlersToFind() {
@@ -209,8 +247,8 @@ public class PushdownHandlerNullStatisticsTest {
 
     /**
      * A String has no sentinel encoding -- a Deephaven null String comes only from a Parquet null -- so there is
-     * nothing for the handler to find in {@code min}/{@code max} and {@code X == null} excludes outright once the gate
-     * has let it through.
+     * nothing for the handler to find in {@code min}/{@code max} and {@code X == null} excludes outright once
+     * {@link NullAwareEvaluator} has let it through.
      */
     @Test
     public void stringHandlerHasNoSentinelToFind() {
