@@ -166,6 +166,22 @@ they register **`TableUpdateListener`s** on upstream tables and receive `TableUp
   `plugin/dagger`.
 - **DI**: the server and clients are wired with Dagger; look for `@Module`/`@Component` and the
   `*-dagger` subprojects when tracing how components are assembled.
+- **`cpp-client/`** holds the C++ client: `dhcore` (client-side data model + Barrage ticking state
+  machine, no Arrow/gRPC dependency) and `dhclient` (the user-facing API, over Arrow Flight + gRPC).
+  It is also the substrate for two other clients — `R/rdeephaven` binds `dhclient` through Rcpp and
+  `py/client-ticking` binds `dhcore` through Cython — so changing a public header there can break
+  them without breaking the C++ build.
+- **`R/`** holds the R client (`rdeephaven`): R6 classes over an Rcpp module over the C++ client.
+
+**Before working in `cpp-client/` or `R/`, read the corresponding design doc** — each is written for
+this purpose and will save you a lot of exploration:
+
+- `cpp-client/DESIGN.md` — architecture, code layout, the ticking pipeline, conventions, per-file
+  summaries. (`cpp-client/README.md` indexes the rest; `cpp-client/BUILDING.md` is the build guide.)
+- `R/DESIGN.md` — the R/Rcpp/C++ layering, the Arrow data path, conventions, per-file summaries.
+  (`R/README.md` indexes the rest; `R/rdeephaven/BUILDING.md` is the build guide.)
+
+Both use stable `## ` section anchors, so `grep -n '^## ' <file>` gives you a map to read selectively.
 
 ### Other major areas
 

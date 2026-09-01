@@ -105,9 +105,15 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final boolean ixForEachLong(final LongAbortableConsumer lc) {
-        for (long v = rangeStart(); v <= rangeEnd(); ++v) {
+        final long end = rangeEnd();
+        for (long v = rangeStart(); v <= end; ++v) {
             if (!lc.accept(v)) {
                 return false;
+            }
+            if (v == end) {
+                // Stepping past the end would wrap when it is the last key of the key space, and the wrapped value
+                // compares as still inside the range.
+                break;
             }
         }
         return true;
@@ -369,10 +375,17 @@ public abstract class SingleRange implements OrderedLongSet {
         private final long end;
         private long curr;
 
+        /**
+         * Whether the walk has yet to produce anything. Held as a flag rather than by parking {@code curr} one past the
+         * end: that would wrap for a range ending at the last key of the key space, leaving the position below the
+         * range's start and nothing to iterate.
+         */
+        private boolean beforeFirst = true;
+
         public ReverseIter(final long rangeStart, final long rangeEnd) {
             start = rangeStart;
             end = rangeEnd;
-            curr = rangeEnd + 1;
+            curr = rangeEnd;
         }
 
         @Override
@@ -380,7 +393,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
         @Override
         public boolean hasNext() {
-            return start < curr;
+            return beforeFirst ? start <= end : start < curr;
         }
 
         @Override
@@ -390,16 +403,23 @@ public abstract class SingleRange implements OrderedLongSet {
 
         @Override
         public long nextLong() {
-            return --curr;
+            if (beforeFirst) {
+                beforeFirst = false;
+            } else {
+                --curr;
+            }
+            return curr;
         }
 
         @Override
         public boolean advance(long v) {
             if (v < start) {
                 curr = start;
+                beforeFirst = false;
                 return false;
             }
-            curr = Math.min(v, Math.min(curr, end)); // it might not have been started yet.
+            curr = Math.min(v, curr);
+            beforeFirst = false;
             return true;
         }
 
@@ -693,7 +713,19 @@ public abstract class SingleRange implements OrderedLongSet {
             return ixInsertRange(added.ixFirstKey(), added.ixLastKey());
         }
         final OrderedLongSet ix = added.ixCowRef();
-        return ix.ixInsertRange(rangeStart(), rangeEnd());
+        return insertOurRangeInto(ix);
+    }
+
+    /**
+     * Insert our own range into {@code ix}, a reference we own, releasing it if the insert answered with a different
+     * set.
+     */
+    private OrderedLongSet insertOurRangeInto(final OrderedLongSet ix) {
+        final OrderedLongSet ans = ix.ixInsertRange(rangeStart(), rangeEnd());
+        if (ans != ix) {
+            ix.ixRelease();
+        }
+        return ans;
     }
 
     @Override
@@ -709,16 +741,19 @@ public abstract class SingleRange implements OrderedLongSet {
         if (other instanceof SingleRange) {
             return ixInsertRange(ansFirst, ansLast);
         }
-        return other.ixShiftOnNew(shiftAmount).ixInsertRange(rangeStart(), rangeEnd());
+        return insertOurRangeInto(other.ixShiftOnNew(shiftAmount));
     }
 
     @Override
     public final RowSequence ixGetRowSequenceByPosition(final long startPositionInclusive, final long length) {
-        if (startPositionInclusive >= ixCardinality() || length == 0) {
+        // A length of zero or less asks for nothing. Falling through with a negative one would build a row sequence
+        // whose end lies before its start, reporting a negative size rather than an empty one.
+        if (startPositionInclusive >= ixCardinality() || length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
         final long s = rangeStart() + startPositionInclusive;
-        final long e = Math.min(s + length - 1, rangeEnd());
+        final long remaining = ixCardinality() - startPositionInclusive;
+        final long e = s + Math.min(length, remaining) - 1;
         return new SingleRangeRowSequence(s, e);
     }
 
@@ -752,31 +787,34 @@ public abstract class SingleRange implements OrderedLongSet {
     @Override
     public final OrderedLongSet ixInvertOnNew(final OrderedLongSet keys, final long maximumPosition) {
         final BuilderSequential b = new OrderedLongSetBuilderSequential();
-        final RowSet.RangeIterator it = keys.ixRangeIterator();
         final String exStr = "invert for non-existing key:";
-        while (it.hasNext()) {
-            it.next();
-            final long start = it.currentRangeStart();
-            final long end = it.currentRangeEnd();
-            final long startPos = start - rangeStart();
-            if (startPos < 0) {
-                throw new IllegalArgumentException(exStr + start);
-            }
-            if (startPos > maximumPosition) {
-                break;
-            }
-            long endPos = startPos;
-            if (start != end) {
-                endPos = end - rangeStart();
-                if (endPos < 0) {
-                    throw new IllegalArgumentException(exStr + end);
+        // The walk stops as soon as maximumPosition is reached, leaving the iterator holding a reference to keys;
+        // closing it is what gives that reference back.
+        try (final RowSet.RangeIterator it = keys.ixRangeIterator()) {
+            while (it.hasNext()) {
+                it.next();
+                final long start = it.currentRangeStart();
+                final long end = it.currentRangeEnd();
+                final long startPos = start - rangeStart();
+                if (startPos < 0) {
+                    throw new IllegalArgumentException(exStr + start);
                 }
+                if (startPos > maximumPosition) {
+                    break;
+                }
+                long endPos = startPos;
+                if (start != end) {
+                    endPos = end - rangeStart();
+                    if (endPos < 0) {
+                        throw new IllegalArgumentException(exStr + end);
+                    }
+                }
+                if (endPos > maximumPosition) {
+                    b.appendRange(startPos, maximumPosition);
+                    break;
+                }
+                b.appendRange(startPos, endPos);
             }
-            if (endPos > maximumPosition) {
-                b.appendRange(startPos, maximumPosition);
-                break;
-            }
-            b.appendRange(startPos, endPos);
         }
         return b.getOrderedLongSet();
     }

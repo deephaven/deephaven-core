@@ -905,6 +905,9 @@ public class ArrayContainer extends Container {
     @Override
     public Container inot(final int firstOfRange, final int exclusiveEndOfRange) {
         // TODO: may need to convert to a RunContainer
+        if (exclusiveEndOfRange <= firstOfRange) {
+            return this;
+        }
         // determine the span of array indices to be affected
         int startIndex = ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) firstOfRange);
         if (startIndex < 0) {

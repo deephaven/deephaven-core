@@ -108,7 +108,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
     public Container andRange(final int rangeBegin, final int rangeEnd) {
         final int begin = begin();
         final int end = end();
-        if (rangeEnd <= begin || end <= rangeBegin) {
+        if (rangeEnd <= rangeBegin || rangeEnd <= begin || end <= rangeBegin) {
             return Container.empty();
         }
         final boolean minBeginIsThem = rangeBegin <= begin;
@@ -316,8 +316,15 @@ public final class SingleRangeContainer extends ImmutableContainer {
     }
 
     private static final class ReverseIter extends IterBase implements ShortAdvanceIterator {
+        /**
+         * One past the container's last value, where {@code curr} starts. While {@code curr} still holds it the
+         * iterator has not stepped onto a value yet, and {@code curr} names no member.
+         */
+        private final int beforeStart;
+
         public ReverseIter(final SingleRangeContainer s) {
             super(s.end(), s.begin());
+            beforeStart = s.end();
         }
 
         @Override
@@ -328,6 +335,11 @@ public final class SingleRangeContainer extends ImmutableContainer {
         @Override
         public boolean advance(final int v) {
             if (v >= curr) {
+                if (curr == beforeStart) {
+                    // Not stepped yet, so we are sitting past the last value; advancing to a key at or above the
+                    // container means landing on that value rather than reporting the position past it.
+                    --curr;
+                }
                 return true;
             }
             if (v < last) {
@@ -486,6 +498,10 @@ public final class SingleRangeContainer extends ImmutableContainer {
 
     @Override
     public Container not(final int negBegin, final int negEnd) {
+        if (negEnd <= negBegin) {
+            // Nothing to flip, as the other implementations also answer.
+            return cowRef();
+        }
         final int begin = begin();
         final int end = end();
         // Completely to the left?
@@ -567,6 +583,10 @@ public final class SingleRangeContainer extends ImmutableContainer {
 
     @Override
     public Container remove(final int rangeFirst, final int rangeEnd) {
+        if (rangeEnd <= rangeFirst) {
+            // Nothing to remove.
+            return this;
+        }
         final int rangeLast = rangeEnd - 1;
         final int first = first();
         final int last = last();
