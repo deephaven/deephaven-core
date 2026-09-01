@@ -18,7 +18,7 @@ jobs:
       # Unfortunately, the official actions/download-artifact action is very limited in scope.
       # Can't use it yet in this context, https://github.com/actions/download-artifact/issues/60
       - name: Download artifact
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
