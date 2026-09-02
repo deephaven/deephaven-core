@@ -32,6 +32,14 @@ public abstract class JsPluginManifestEntry {
     public static JsPluginManifestEntry of(
             @JsonProperty(value = NAME, required = true) String name,
             @JsonProperty(value = VERSION, required = true) String version,
+            @JsonProperty(value = MAIN, required = true) String main) {
+        return JsPluginManifestEntry.of(name, version, main, null);
+    }
+
+    @JsonCreator
+    public static JsPluginManifestEntry of(
+            @JsonProperty(value = NAME, required = true) String name,
+            @JsonProperty(value = VERSION, required = true) String version,
             @JsonProperty(value = MAIN, required = true) String main,
             @JsonProperty(value = LOADER) Object loader) {
         final Builder builder = builder()
