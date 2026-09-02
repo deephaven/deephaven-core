@@ -63,6 +63,10 @@ let
   podmanDockerHostHook = ''
     if [[ -z "''${DOCKER_HOST:-}" ]] && command -v podman >/dev/null 2>&1; then
       _podman_sock="$(podman info --format '{{.Host.RemoteSocket.Path}}' 2>/dev/null || true)"
+      # Depending on podman version/rootless-vs-rootful setup, this value
+      # may already carry a "unix://" scheme prefix or may be a bare
+      # filesystem path -- normalize to a bare path before testing/using it.
+      _podman_sock="''${_podman_sock#unix://}"
       if [[ -n "$_podman_sock" && -S "$_podman_sock" ]]; then
         export DOCKER_HOST="unix://$_podman_sock"
         export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE="$_podman_sock"
