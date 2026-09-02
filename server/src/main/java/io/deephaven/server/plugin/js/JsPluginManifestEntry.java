@@ -28,7 +28,6 @@ public abstract class JsPluginManifestEntry {
         return ImmutableJsPluginManifestEntry.builder();
     }
 
-    @JsonCreator
     public static JsPluginManifestEntry of(
             @JsonProperty(value = NAME, required = true) String name,
             @JsonProperty(value = VERSION, required = true) String version,
