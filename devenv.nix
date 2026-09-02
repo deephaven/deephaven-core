@@ -1,11 +1,5 @@
 # Reproducible development environment for deephaven-core, via devenv.sh
-# (https://devenv.sh) instead of a hand-rolled Nix flake -- see this repo's
-# git history for an earlier flake.nix-based attempt and why it was set
-# aside (nested rootless-Podman-in-Podman for Docker-API access turned out
-# to be genuinely unreliable inside a sandboxed container; devenv.sh
-# doesn't help with that either, so this version simply assumes your host
-# already has a working Docker or Podman install for anything that needs
-# one -- see the "Docker-API access" note near the bottom).
+# (https://devenv.sh).
 #
 # This is deliberately narrow: it provisions the tools a human needs on
 # PATH to run `./gradlew`, work on the web client, or build the C++/Python
@@ -32,8 +26,7 @@
 # `./gradlew`'s cache with it, and isolates toolchain resolution to just
 # the JDK this file provides -- see nix/gradle-wrapper.nix for all of
 # that. devenv has no built-in equivalent for either (confirmed against
-# its current source/docs before writing this), so it's carried over
-# unchanged from the flake.nix-based attempt.
+# its current source/docs).
 { pkgs, ... }:
 let
   # Gradle 9.7.1 (this repo's wrapper version, see
@@ -46,6 +39,37 @@ let
     inherit pkgs;
     wrapperPropertiesFile = ./gradle/wrapper/gradle-wrapper.properties;
   };
+
+  # Auto-detects a rootless Podman API socket so Docker-API-consuming
+  # Gradle tasks (Testcontainers, the bmuschko gradle-docker-plugin) work
+  # without a per-machine DOCKER_HOST hardcoded anywhere -- the socket's
+  # path is $XDG_RUNTIME_DIR/podman/podman.sock, i.e. it embeds your UID
+  # (e.g. /run/user/1001/podman/podman.sock), so a value that works on one
+  # contributor's machine won't work on another's.
+  #
+  # `podman info`'s `.Host.RemoteSocket.Path` is Podman's own reported
+  # socket location -- confirmed directly against podman-info(1)'s
+  # documented output -- already accounting for XDG_RUNTIME_DIR/whatever
+  # the podman.socket systemd unit is actually configured with, so
+  # querying it beats guessing the path by hand. This only ever *reads*
+  # that value; it never starts or configures the socket/service itself --
+  # it assumes you already have `podman.socket` (or Docker) running
+  # normally, and just wires the resulting env vars up for you.
+  #
+  # Only kicks in when DOCKER_HOST isn't already set (never overrides an
+  # explicit choice) and the reported path is an actual live socket, not
+  # just Podman's unconditionally-computed default (e.g. if podman.socket
+  # is installed but not currently running).
+  podmanDockerHostHook = ''
+    if [[ -z "''${DOCKER_HOST:-}" ]] && command -v podman >/dev/null 2>&1; then
+      _podman_sock="$(podman info --format '{{.Host.RemoteSocket.Path}}' 2>/dev/null || true)"
+      if [[ -n "$_podman_sock" && -S "$_podman_sock" ]]; then
+        export DOCKER_HOST="unix://$_podman_sock"
+        export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE="$_podman_sock"
+      fi
+      unset _podman_sock
+    fi
+  '';
 in
 {
   languages.java = {
@@ -101,18 +125,14 @@ in
   enterShell = gradleWrapper.isolatedHomeHook + gradleWrapper.warmupHook + ''
     echo "deephaven-core dev shell (bootstrap JDK $(java -version 2>&1 | head -1))"
     echo "Run: ./gradlew server-jetty-app:run"
-  '';
+  '' + podmanDockerHostHook;
 
   # Docker-API access (Testcontainers-based `testOutOfBand` tests in
   # extensions/kafka, extensions/iceberg/s3, etc.; the bmuschko
   # gradle-docker-plugin's :docker-* subprojects) needs a real Docker or
   # Podman install already running on your host -- this file doesn't
-  # provision one. devenv's own containers.* option builds OCI images from
-  # this environment; it isn't a Docker-API-compatible daemon/socket, so it
-  # doesn't help here. (A previous flake.nix-based attempt tried to get a
-  # rootless Podman-in-Podman Docker API working from inside Nix itself --
-  # see this repo's git history -- and hit real, unresolved
-  # kernel-namespace limits when nested inside a sandboxed container. On a
-  # plain host, that whole problem doesn't apply: just install Docker or
-  # Podman normally.)
+  # provision one, it only wires up DOCKER_HOST for whatever's already
+  # there (see podmanDockerHostHook above). devenv's own containers.*
+  # option builds OCI images from this environment; it isn't a
+  # Docker-API-compatible daemon/socket, so it wouldn't help here anyway.
 }
