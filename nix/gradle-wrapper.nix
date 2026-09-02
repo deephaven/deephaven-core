@@ -135,7 +135,16 @@ let
     shopt -s nullglob
     # Always share these two -- the large, expensive-to-rebuild ones --
     # even on a from-scratch $_gradle_real_home that doesn't have them yet.
+    # The mkdir here matters: on a genuinely fresh $_gradle_real_home (no
+    # prior Gradle run ever), $_gradle_real_home/$_d doesn't exist yet, and
+    # symlinking to it anyway would leave a *dangling* symlink -- `mkdir -p`
+    # refuses to create anything through a dangling symlink component
+    # (confirmed empirically), which broke warmupHook's later
+    # `mkdir -p .../wrapper/dists/...` with a confusing "No such file or
+    # directory" from the `ln -sfn` after it. Creating the real target
+    # directory first guarantees the symlink is always valid.
     for _d in caches wrapper; do
+      mkdir -p "$_gradle_real_home/$_d"
       ln -sfn "$_gradle_real_home/$_d" "$_gradle_isolated_home/$_d"
     done
     # Mirror whatever else already exists (daemon, jdks, ...), except
