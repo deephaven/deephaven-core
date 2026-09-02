@@ -108,10 +108,7 @@ public abstract class JsPlugin extends PluginBase {
      *
      * @return the loader configuration
      */
-    @Default
-    public Optional<Object> loader() {
-        return Optional.empty();
-    }
+    public abstract Optional<Object> loader();
 
     @Override
     public final <T, V extends Plugin.Visitor<T>> T walk(V visitor) {
