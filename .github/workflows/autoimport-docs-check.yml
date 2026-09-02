@@ -38,14 +38,12 @@ jobs:
           echo "  5. Run ./docs/format && ./docs/updateSnapshots"
 
       - name: Set up Java
-        if: ${{ github.event_name != 'pull_request' }}
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Run sync check (scheduled/manual only)
-        if: ${{ github.event_name != 'pull_request' }}
+      - name: Run sync check
         run: ./gradlew :engine-table:checkAutoImportSync
 
       - name: Notify on drift
