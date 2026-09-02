@@ -60,3 +60,8 @@ node_modules
 
 # Personal workflows (fork-specific)
 .devin/workflows/sync-fork.md
+
+# devenv.sh local state (see devenv.nix)
+.devenv/
+.direnv/
+devenv.local.nix
