@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
+/**
+ * The {@code Payload*} regions are overridden for {@code byte}, which needs no byte-order decoding.
+ */
 public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Values>> {
     private static final String DEBUG_NAME = "DoubleChunkReader";
 
@@ -96,6 +99,7 @@ public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Value
             final WritableDoubleChunk<Values> chunk,
             final int offset) throws IOException {
         final int numElements = nodeInfo.numElements;
+        // region PayloadDhNulls
         // Read the payload in bounded windows into a reused buffer and decode each value from its little-endian bytes
         // via LittleEndianCodec (VarHandle on the JVM, GWT-safe arithmetic in the web client's super-source).
         final byte[] buffer = new byte[Math.min(numElements, BULK_READ_ELEMENTS) * Double.BYTES];
@@ -107,6 +111,7 @@ public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Value
             }
             ei += n;
         }
+        // endregion PayloadDhNulls
     }
 
     private static void useValidityBuffer(
@@ -118,6 +123,7 @@ public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Value
         final int numElements = nodeInfo.numElements;
         final int numValidityWords = (numElements + 63) / 64;
 
+        // region PayloadValidityBuffer
         // The payload carries a value slot for every element, including nulls; read it in bounded windows into a
         // reused buffer and decode each value, then overwrite the invalid positions with the null value.
         final byte[] buffer = new byte[Math.min(numElements, BULK_READ_ELEMENTS) * Double.BYTES];
@@ -129,6 +135,7 @@ public class DoubleChunkReader extends BaseChunkReader<WritableDoubleChunk<Value
             }
             ei += n;
         }
+        // endregion PayloadValidityBuffer
 
         int ei = 0;
         for (int vi = 0; vi < numValidityWords; ++vi) {

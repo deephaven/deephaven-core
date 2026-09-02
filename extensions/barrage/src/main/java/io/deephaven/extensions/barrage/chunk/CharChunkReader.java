@@ -18,8 +18,14 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
+/**
+ * The {@code Payload*} regions are overridden for {@code byte}, which needs no byte-order decoding.
+ */
 public class CharChunkReader extends BaseChunkReader<WritableCharChunk<Values>> {
     private static final String DEBUG_NAME = "CharChunkReader";
+
+    // Number of elements decoded per bounded bulk-read window (see BaseChunkReader#BULK_READ_BUFFER_BYTES).
+    private static final int BULK_READ_ELEMENTS = Math.max(1, BULK_READ_BUFFER_BYTES / Character.BYTES);
 
     public static <WIRE_CHUNK_TYPE extends WritableChunk<Values>, T extends ChunkReader<WIRE_CHUNK_TYPE>> ChunkReader<WritableCharChunk<Values>> transformFrom(
             final T wireReader,
@@ -88,9 +94,20 @@ public class CharChunkReader extends BaseChunkReader<WritableCharChunk<Values>> 
             final ChunkWriter.FieldNodeInfo nodeInfo,
             final WritableCharChunk<Values> chunk,
             final int offset) throws IOException {
-        for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-            chunk.set(offset + ii, is.readChar());
+        final int numElements = nodeInfo.numElements;
+        // region PayloadDhNulls
+        // Read the payload in bounded windows into a reused buffer and decode each value from its little-endian bytes
+        // via LittleEndianCodec (VarHandle on the JVM, GWT-safe arithmetic in the web client's super-source).
+        final byte[] buffer = new byte[Math.min(numElements, BULK_READ_ELEMENTS) * Character.BYTES];
+        for (int ei = 0; ei < numElements;) {
+            final int n = Math.min(BULK_READ_ELEMENTS, numElements - ei);
+            is.readFully(buffer, 0, n * Character.BYTES);
+            for (int jj = 0; jj < n; ++jj) {
+                chunk.set(offset + ei + jj, LittleEndianCodec.getChar(buffer, jj * Character.BYTES));
+            }
+            ei += n;
         }
+        // endregion PayloadDhNulls
     }
 
     private static void useValidityBuffer(
@@ -102,35 +119,39 @@ public class CharChunkReader extends BaseChunkReader<WritableCharChunk<Values>> 
         final int numElements = nodeInfo.numElements;
         final int numValidityWords = (numElements + 63) / 64;
 
-        int ei = 0;
-        int pendingSkips = 0;
+        // region PayloadValidityBuffer
+        // The payload carries a value slot for every element, including nulls; read it in bounded windows into a
+        // reused buffer and decode each value, then overwrite the invalid positions with the null value.
+        final byte[] buffer = new byte[Math.min(numElements, BULK_READ_ELEMENTS) * Character.BYTES];
+        for (int ei = 0; ei < numElements;) {
+            final int n = Math.min(BULK_READ_ELEMENTS, numElements - ei);
+            is.readFully(buffer, 0, n * Character.BYTES);
+            for (int jj = 0; jj < n; ++jj) {
+                chunk.set(offset + ei + jj, LittleEndianCodec.getChar(buffer, jj * Character.BYTES));
+            }
+            ei += n;
+        }
+        // endregion PayloadValidityBuffer
 
+        int ei = 0;
         for (int vi = 0; vi < numValidityWords; ++vi) {
             int bitsLeftInThisWord = Math.min(64, numElements - vi * 64);
             long validityWord = isValid.get(vi);
             do {
                 if ((validityWord & 1) == 1) {
-                    if (pendingSkips > 0) {
-                        is.skipBytes(pendingSkips * Character.BYTES);
-                        chunk.fillWithNullValue(offset + ei, pendingSkips);
-                        ei += pendingSkips;
-                        pendingSkips = 0;
-                    }
-                    chunk.set(offset + ei++, is.readChar());
-                    validityWord >>= 1;
-                    bitsLeftInThisWord--;
+                    // Skip the run of valid slots (already decoded) to the next null.
+                    final int valids = Math.min(Long.numberOfTrailingZeros(~validityWord), bitsLeftInThisWord);
+                    ei += valids;
+                    validityWord >>= valids;
+                    bitsLeftInThisWord -= valids;
                 } else {
-                    final int skips = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);
-                    pendingSkips += skips;
-                    validityWord >>= skips;
-                    bitsLeftInThisWord -= skips;
+                    final int nulls = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);
+                    chunk.fillWithNullValue(offset + ei, nulls);
+                    ei += nulls;
+                    validityWord >>= nulls;
+                    bitsLeftInThisWord -= nulls;
                 }
             } while (bitsLeftInThisWord > 0);
-        }
-
-        if (pendingSkips > 0) {
-            is.skipBytes(pendingSkips * Character.BYTES);
-            chunk.fillWithNullValue(offset + ei, pendingSkips);
         }
     }
 }
