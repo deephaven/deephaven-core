@@ -296,7 +296,9 @@ public class ConstructSnapshot {
         }
 
         private void maybeClearUpdateGraph() {
-            if (concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0) {
+            // Note that we must retain the update graph while we hold a lock acquired on behalf of a nested snapshot,
+            // since we need it in order to release the lock.
+            if (concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0 && !acquiredLock) {
                 this.updateGraph = null;
             }
         }
@@ -401,6 +403,7 @@ public class ConstructSnapshot {
             if (acquiredLock && concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0) {
                 updateGraph.sharedLock().unlock();
                 acquiredLock = false;
+                maybeClearUpdateGraph();
             }
         }
     }
@@ -1111,6 +1114,28 @@ public class ConstructSnapshot {
             return LogicalClock.NULL_CLOCK_VALUE;
         }
 
+        try {
+            return callDataSnapshotFunctionRefreshing(logPrefix, control, function, state, updateGraph, overallStart);
+        } finally {
+            // Release the update graph lock if a nested locked snapshot acquired it on this thread's behalf and no
+            // enclosing snapshot remains in progress. This is a no-op on all successful paths, but ensures that we do
+            // not leak the lock when an exception propagates out of a concurrent attempt.
+            state.maybeReleaseLock();
+        }
+    }
+
+    /**
+     * Implementation of {@link #callDataSnapshotFunction(LogOutputAppendable, SnapshotControl, SnapshotFunction)} for
+     * refreshing data. Must be invoked with {@code state} being the current thread's {@link StateImpl}, and the caller
+     * is responsible for invoking {@link StateImpl#maybeReleaseLock()} when this method returns or throws.
+     */
+    private static long callDataSnapshotFunctionRefreshing(
+            @NotNull final LogOutputAppendable logPrefix,
+            @NotNull final SnapshotControl control,
+            @NotNull final SnapshotFunction function,
+            @NotNull final StateImpl state,
+            @NotNull final UpdateGraph updateGraph,
+            final long overallStart) {
         final boolean onUpdateThread = updateGraph.currentThreadProcessesUpdates();
         final boolean alreadyLocked = StateImpl.locked(updateGraph);
 
@@ -1204,6 +1229,17 @@ public class ConstructSnapshot {
                     }
                     break;
                 }
+            }
+            if (state.acquiredLock) {
+                // A nested locked snapshot acquired the update graph lock during this attempt, and it remains held
+                // until the outermost snapshot on this thread completes. We must not make another concurrent
+                // attempt (or sleep) while holding the lock, so fall back to a locked snapshot immediately.
+                if (log.isDebugEnabled()) {
+                    log.debug().append(logPrefix)
+                            .append(" Nested snapshot acquired update graph lock, proceeding to locked snapshot")
+                            .endl();
+                }
+                break;
             }
             if (attemptDurationMillis > MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS) {
                 if (log.isDebugEnabled()) {
