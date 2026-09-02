@@ -18,9 +18,9 @@ import java.time.Instant;
  * One filter, resolved against a column type, ready to be applied to a row group's statistics.
  * <p>
  * A filter is evaluated once per row group, but most of the work of applying one -- unboxing its values into a
- * primitive array, sorting them, encoding them, deciding whether the column type is even supported -- depends only on
- * the filter and not on the row group. Handlers do that work in their {@code maybeCreateEvaluator} and return an
- * instance of this, so it is not repeated for every row group in a file.
+ * primitive array, encoding them, deciding whether the column type is even supported -- depends only on the filter and
+ * not on the row group. Handlers do that work in their {@code maybeCreateEvaluator} and return an instance of this, so
+ * it is not repeated for every row group in a file.
  *
  * <h2>The two sources of a Deephaven null</h2>
  *

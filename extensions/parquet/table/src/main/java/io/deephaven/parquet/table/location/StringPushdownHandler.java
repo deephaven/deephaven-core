@@ -7,7 +7,6 @@ import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.statistics.Statistics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -52,9 +51,8 @@ import java.util.Comparator;
  * those rows. Null <i>bounds</i> on a range filter are a separate question, and are declined.
  * <p>
  * <b>Usage.</b> Call {@link #maybeCreateEvaluator} once per filter, then {@link StatisticsEvaluator#maybeOverlaps} once
- * per row group. Everything that depends only on the filter -- encoding the values, sorting them, and testing the
- * bounds for order divergence -- happens in {@code maybeCreateEvaluator}, so none of it is repeated for every row
- * group.
+ * per row group. Everything that depends only on the filter -- encoding the values and testing the bounds for order
+ * divergence -- happens in {@code maybeCreateEvaluator}, so none of it is repeated for every row group.
  */
 final class StringPushdownHandler {
 
@@ -285,15 +283,14 @@ final class StringPushdownHandler {
      */
     @Nullable
     private static byte[][] minMaxBytes(@NotNull final Statistics<?> statistics) {
-        final MutableObject<byte[]> min = new MutableObject<>();
-        final MutableObject<byte[]> max = new MutableObject<>();
-        if (!MinMaxFromStatistics.getMinMaxForStrings(statistics, min::setValue, max::setValue)) {
+        final byte[][] minMax = new byte[2][];
+        if (!MinMaxFromStatistics.getMinMaxForStrings(statistics, v -> minMax[0] = v, v -> minMax[1] = v)) {
             return null;
         }
-        if (min.getValue() == null || max.getValue() == null) {
-            return null;
-        }
-        return new byte[][] {min.getValue(), max.getValue()};
+        // These extremes are references rather than primitives, so unlike the sibling handlers' decoders they can
+        // come back null: getMinBytes()/getMaxBytes() do that when no extreme was recorded. The pushdown path gates
+        // on areStatisticsUsable and so never gets here that way; this only spares a direct caller an NPE.
+        return minMax[0] == null || minMax[1] == null ? null : minMax;
     }
 
     /**

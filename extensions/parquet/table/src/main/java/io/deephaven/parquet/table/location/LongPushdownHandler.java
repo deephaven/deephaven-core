@@ -24,12 +24,13 @@ import org.jetbrains.annotations.Nullable;
  * <h2>Usage</h2>
  *
  * Call {@link #maybeCreateEvaluator} once per filter and apply the evaluator it returns to each row group in turn.
- * Everything that depends only on the filter -- unboxing a match filter's values, sorting them for the inverted walk,
- * reading a range filter's bounds -- happens in that single call rather than once per row group.
+ * Everything that depends only on the filter -- unboxing a match filter's values, reading a range filter's bounds --
+ * happens in that single call rather than once per row group.
  * <p>
  * The interval arithmetic lives in {@link #maybeOverlapsRangeImpl}. {@link #maybeMatches} reuses it by testing each of
- * the filter's values as the closed range {@code [v, v]}, and {@link #maybeMatchesInverse} by testing the gaps between
- * adjacent values.
+ * the filter's values as the closed range {@code [v, v]}. {@link #maybeMatchesInverse} cannot use it at all: since
+ * {@code min}/{@code max} bound only the endpoints and say nothing about which values lie between them, the one case
+ * it can exclude is a row group holding a single distinct value that the filter names.
  *
  * <h2>Nulls</h2>
  *
