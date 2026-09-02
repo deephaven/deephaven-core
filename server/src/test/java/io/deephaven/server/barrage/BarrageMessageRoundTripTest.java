@@ -1869,6 +1869,121 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         nugget.validate("satisfied full subscription");
     }
 
+    // ---- Growing full subscription tests ----
+
+    /**
+     * The server grows a large full subscription's initial snapshot over several rounds; every growth message
+     * re-declares the entire consistent key space as {@code added} while only {@code rowsIncluded} is incremental. A
+     * client that consumes those messages across more than one of its own update graph cycles must publish none of
+     * them: after the first cycle the table already contains the whole key space, so a second update would claim rows
+     * as added that are already present. That is an invalid update in general, and it trips the
+     * {@link Table#APPEND_ONLY_TABLE_ATTRIBUTE} invariant that
+     * {@link io.deephaven.engine.table.impl.BaseTable#notifyListeners} checks whether or not a listener is attached.
+     * <p>
+     * The source is then ticked so that the deltas following the growth are validated against the contents the
+     * replicated table was left holding.
+     */
+    public void testGrowingFullSubscriptionAppendOnly() {
+        // The server ships at most MIN_SNAPSHOT_CELL_COUNT cells per growth round, so a single-column table needs more
+        // rows than that for the subscription to be grown across multiple messages.
+        final int size = (int) (BarrageUtil.MIN_SNAPSHOT_CELL_COUNT * 3);
+        final int[] values = new int[size];
+        for (int ii = 0; ii < size; ++ii) {
+            values[ii] = ii;
+        }
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(size).toTracking(), TableTools.intCol("intCol", values));
+        sourceTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(null, allCols, "growing-append-only");
+
+        // let the server produce every growth message for the initial snapshot
+        flushProducerTable();
+        assertTrue("expected a growing snapshot, but the server sent " + client.pendingMessageCount() + " message(s)",
+                client.pendingMessageCount() > 1);
+
+        // deliver them one at a time, running an update graph cycle in between as a live client would
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        while (client.pendingMessageCount() > 0) {
+            client.flushEventsToReplicatedTable(1);
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        }
+
+        // a null server viewport is how the server acknowledges that the full subscription is satisfied
+        assertNull(client.barrageTable.getServerViewport());
+        nugget.validate("growing append-only full subscription");
+
+        // Tick the source now that the subscription is satisfied. The replicated table's update validator was attached
+        // by the validate() above, taking the grown contents as its initial state, so these deltas must line up with
+        // what the growth left behind.
+        for (int step = 0; step < 3; ++step) {
+            final int firstRow = size + step * 10;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final int[] newValues = new int[10];
+                for (int ii = 0; ii < newValues.length; ++ii) {
+                    newValues[ii] = firstRow + ii;
+                }
+                final RowSet added = RowSetFactory.fromRange(firstRow, firstRow + newValues.length - 1);
+                TstUtils.addToTable(sourceTable, added, TableTools.intCol("intCol", newValues));
+                sourceTable.notifyListeners(new TableUpdateImpl(added, RowSetFactory.empty(), RowSetFactory.empty(),
+                        RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+            });
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("post-growth step " + step);
+        }
+    }
+
+    /**
+     * An incomplete full subscription publishes no updates for the rows it is being given, so a listener attached
+     * before the server acknowledges the subscription would silently never hear about them. Attaching one must fail
+     * instead.
+     */
+    public void testListenToIncompleteFullSubscription() {
+        final int size = (int) (BarrageUtil.MIN_SNAPSHOT_CELL_COUNT * 3);
+        final int[] values = new int[size];
+        for (int ii = 0; ii < size; ++ii) {
+            values[ii] = ii;
+        }
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(size).toTracking(), TableTools.intCol("intCol", values));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(null, allCols, "incomplete-listen");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // Deliver only the first of the growth messages, leaving the subscription unsatisfied.
+        flushProducerTable();
+        assertTrue(client.pendingMessageCount() > 1);
+        client.flushEventsToReplicatedTable(1);
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        assertNotNull(client.barrageTable.getServerViewport());
+
+        try {
+            client.barrageTable.addUpdateListener(new FailureListener("Listener on incomplete table"));
+            TestCase.fail("expected an IllegalStateException listening to an incomplete table");
+        } catch (final IllegalStateException expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("incomplete table"));
+        }
+
+        // Once the subscription is satisfied the table may be listened to as usual.
+        while (client.pendingMessageCount() > 0) {
+            client.flushEventsToReplicatedTable(1);
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        }
+        assertNull(client.barrageTable.getServerViewport());
+        nugget.validate("satisfied full subscription");
+    }
+
     public static class DummyObserver implements StreamObserver<BarrageMessageWriter.MessageView> {
         volatile boolean completed = false;
         volatile Throwable failure = null;
