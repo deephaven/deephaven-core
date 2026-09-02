@@ -13,15 +13,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.Arrays;
 
 /**
  * Applies an {@link InstantRangeFilter} or an Instant-typed {@link MatchFilter} to one row group's {@code min}/{@code
  * max} statistics, answering whether that row group could hold a matching row.
  * <p>
  * Values are compared as epoch nanoseconds, delegating the interval arithmetic to {@link LongPushdownHandler}.
- * {@link #maybeCreateEvaluator} resolves a match filter once -- converting its values, and sorting them for the
- * inverted walk -- and returns an evaluator to apply to each row group in turn.
+ * {@link #maybeCreateEvaluator} resolves a match filter once -- converting its values to nanoseconds -- and returns an
+ * evaluator to apply to each row group in turn.
  *
  * <h2>Nulls</h2>
  *
@@ -114,8 +113,6 @@ final class InstantPushdownHandler {
             instantNanos[i] = DateTimeUtils.epochNanos((Instant) value);
         }
         if (invertMatch) {
-            // The gap walk requires sorted values; sorted once here rather than per row group.
-            Arrays.sort(instantNanos);
             return statistics -> {
                 final long[] minMax = decodeMinMaxNanos(statistics);
                 return minMax == null || LongPushdownHandler.maybeMatchesInverse(minMax[0], minMax[1], instantNanos);
