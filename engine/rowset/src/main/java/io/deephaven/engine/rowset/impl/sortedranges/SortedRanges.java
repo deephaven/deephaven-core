@@ -913,7 +913,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
             final long packedValue = sar.pack(v);
             if (packedValue < 0) {
+                // Below every key we hold: exhausted, which hasNext() reads from nextRangeIdx as well as the range.
                 rangeCurr = rangeStart = sar.unpackedGet(0);
+                nextRangeIdx = -1;
                 close();
                 return false;
             }
