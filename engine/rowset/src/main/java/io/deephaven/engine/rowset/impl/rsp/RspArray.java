@@ -2371,7 +2371,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         final MutableLong prevCardMu = useAcc ? null : new MutableLong(0);
         while (inputPositions.hasNext()) {
             final long pos = inputPositions.nextLong();
-            if (pos < 0 || (cardinality != -1 && pos >= cardinality)) {
+            if (pos < 0) {
+                // No key at a negative position; positions ascend, so later ones may still be in range.
+                outputKeys.accept(-1);
+                continue;
+            }
+            if (cardinality != -1 && pos >= cardinality) {
                 outputKeys.accept(-1);
                 while (inputPositions.hasNext()) {
                     inputPositions.nextLong();
