@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -20,6 +21,7 @@ import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * A reference held on a rowset and never given back leaves it permanently shared, so every later mutation copies it,
@@ -110,6 +112,58 @@ public class RowSetRefCountLeakTest {
             clock.completeUpdateCycle();
             rowSet.sizePrev();
         });
+    }
+
+    // A row sequence iterator is built from a temporary row sequence that holds its own reference.
+
+    @Test
+    public void testRowSequenceIteratorHoldsSteady() {
+        for (final OrderedLongSet inner : new OrderedLongSet[] {manyBlockRsp(5), manyRangeSortedRanges(0)}) {
+            final String name = inner.getClass().getSimpleName();
+            try (final WritableRowSetImpl rowSet = rowSetOf(inner)) {
+                assertHoldsSteady(name + " iterator opened and closed", inner, () -> {
+                    try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+                        assertTrue(it.hasMore());
+                    }
+                });
+                assertHoldsSteady(name + " iterator drained and closed", inner, () -> {
+                    long total = 0;
+                    try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+                        while (it.hasMore()) {
+                            total += it.getNextRowSequenceWithLength(7).size();
+                        }
+                    }
+                    assertEquals(rowSet.size(), total);
+                });
+            }
+        }
+    }
+
+    // A shift that would carry a key below zero is rejected before any span is walked; the source must be left exactly
+    // as it was, including its reference count.
+
+    @Test
+    public void testShiftBelowZeroDoesNotRetainTheSource() {
+        final RspBitmap inner = manyBlockRsp(5);
+        try (final WritableRowSetImpl rowSet = rowSetOf(inner)) {
+            assertHoldsSteady("shift in place below zero", inner, () -> {
+                try {
+                    rowSet.shiftInPlace(-7);
+                    fail("expected the shift to be rejected");
+                } catch (IllegalArgumentException expected) {
+                    // The source must be left as it was.
+                }
+            });
+            assertHoldsSteady("shift on new below zero", inner, () -> {
+                try {
+                    rowSet.shift(-7).close();
+                    fail("expected the shift to be rejected");
+                } catch (IllegalArgumentException expected) {
+                    // The source must be left as it was.
+                }
+            });
+            assertEquals(5, rowSet.firstRowKey());
+        }
     }
 
     // 3.2 -- comparing rowsets walks both with iterators that are abandoned at the first difference.

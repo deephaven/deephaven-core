@@ -59,6 +59,9 @@ public abstract class SingleRange implements OrderedLongSet {
     }
 
     public static SingleRange make(final long start, final long end) {
+        if (end < start) {
+            throw new IllegalArgumentException("start=" + start + " > end=" + end);
+        }
         final long delta = end - start;
         if (delta == 0) {
             final int unsignedIntStart = lowBitsAsUnsignedInt(start);
@@ -230,7 +233,8 @@ public abstract class SingleRange implements OrderedLongSet {
     }
 
     @Override
-    public final OrderedLongSet ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
+    public final OrderedLongSet ixSubindexByPosOnNew(final long startPosIn, final long endPosExclusive) {
+        final long startPos = Math.max(startPosIn, 0); // positions below zero hold no keys.
         final long endPos = endPosExclusive - 1; // make inclusive.
         if (endPos < startPos || endPos < 0) {
             return OrderedLongSet.EMPTY;
@@ -565,7 +569,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixRemoveRange(final long startKey, final long endKey) {
-        if (endKey < rangeStart() || startKey > rangeEnd()) {
+        if (endKey < startKey || endKey < rangeStart() || startKey > rangeEnd()) {
             return this;
         }
         if (startKey <= rangeStart() && rangeEnd() <= endKey) {
@@ -606,7 +610,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixRetainRange(final long start, final long end) {
-        if (rangeEnd() < start) {
+        if (end < start || rangeEnd() < start) {
             return OrderedLongSet.EMPTY;
         }
         if (end < rangeStart()) {
@@ -695,7 +699,15 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixShiftOnNew(final long shiftAmount) {
-        return make(rangeStart() + shiftAmount, rangeEnd() + shiftAmount);
+        final long start = rangeStart() + shiftAmount;
+        final long end = rangeEnd() + shiftAmount;
+        // Row keys are non-negative; a shift may neither push the start below zero nor carry the end past
+        // Long.MAX_VALUE (where it wraps negative).
+        if (shiftAmount < 0 ? start < 0 : end < 0) {
+            throw new IllegalArgumentException(
+                    "shiftAmount=" + shiftAmount + " when first=" + rangeStart() + ", last=" + rangeEnd());
+        }
+        return make(start, end);
     }
 
     @Override
@@ -745,7 +757,12 @@ public abstract class SingleRange implements OrderedLongSet {
     }
 
     @Override
-    public final RowSequence ixGetRowSequenceByPosition(final long startPositionInclusive, final long length) {
+    public final RowSequence ixGetRowSequenceByPosition(final long startPositionInclusiveIn, final long lengthIn) {
+        if (lengthIn <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        final long startPositionInclusive = Math.max(startPositionInclusiveIn, 0);
+        final long length = startPositionInclusiveIn < 0 ? startPositionInclusiveIn + lengthIn : lengthIn;
         // A length of zero or less asks for nothing. Falling through with a negative one would build a row sequence
         // whose end lies before its start, reporting a negative size rather than an empty one.
         if (startPositionInclusive >= ixCardinality() || length <= 0) {
@@ -795,20 +812,18 @@ public abstract class SingleRange implements OrderedLongSet {
                 it.next();
                 final long start = it.currentRangeStart();
                 final long end = it.currentRangeEnd();
-                final long startPos = start - rangeStart();
-                if (startPos < 0) {
+                // Every key must be present, on either side of our range; only then does the position limit apply.
+                if (start < rangeStart() || start > rangeEnd()) {
                     throw new IllegalArgumentException(exStr + start);
                 }
+                if (end > rangeEnd()) {
+                    throw new IllegalArgumentException(exStr + end);
+                }
+                final long startPos = start - rangeStart();
                 if (startPos > maximumPosition) {
                     break;
                 }
-                long endPos = startPos;
-                if (start != end) {
-                    endPos = end - rangeStart();
-                    if (endPos < 0) {
-                        throw new IllegalArgumentException(exStr + end);
-                    }
-                }
+                final long endPos = end - rangeStart();
                 if (endPos > maximumPosition) {
                     b.appendRange(startPos, maximumPosition);
                     break;

@@ -913,7 +913,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
             final long packedValue = sar.pack(v);
             if (packedValue < 0) {
+                // Below every key we hold: exhausted, which hasNext() reads from nextRangeIdx as well as the range.
                 rangeCurr = rangeStart = sar.unpackedGet(0);
+                nextRangeIdx = -1;
                 close();
                 return false;
             }
@@ -1127,7 +1129,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     public final SortedRanges subRangesByKey(final long start, final long end) {
-        if (isEmpty() || end < first() || last() < start) {
+        if (end < start || isEmpty() || end < first() || last() < start) {
             return null;
         }
         final long packedStart = Math.max(pack(start), 0);
@@ -2002,7 +2004,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    public final RowSequence getRowSequenceByPosition(final long pos, long length) {
+    public final RowSequence getRowSequenceByPosition(final long posIn, long length) {
+        if (length <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        final long pos = Math.max(posIn, 0);
+        if (posIn < 0) {
+            length += posIn;
+        }
         final long card = getCardinality();
         if (isEmpty() || pos >= card || length <= 0) {
             return RowSequenceFactory.EMPTY;
@@ -2240,8 +2249,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (isEmpty()) {
             return RowSequenceFactory.EMPTY_ITERATOR;
         }
-        return new SortedRangesRowSequence.Iterator(
-                new SortedRangesRowSequence(this));
+        // The temporary SortedRangesRowSequence holds its own reference to us, and the Iterator constructor acquires
+        // another one; close the temporary or its reference is leaked.
+        try (final SortedRangesRowSequence rs = new SortedRangesRowSequence(this)) {
+            return new SortedRangesRowSequence.Iterator(rs);
+        }
     }
 
     public final long getAverageRunLengthEstimate() {

@@ -6,7 +6,9 @@ package io.deephaven.engine.rowset.impl.rsp;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
@@ -31,5 +33,59 @@ public class RspArrayCompactionTest {
         for (int i = rb.size; i < rb.spans.length; ++i) {
             assertNull("spans[" + i + "]", rb.spans[i]);
         }
+    }
+
+    /** One lone key per block, so every key is its own span. */
+    private static RspBitmap singletonSpans(final int count) {
+        final RspBitmap rb = RspBitmap.makeEmpty();
+        for (int i = 0; i < count; ++i) {
+            rb.addUnsafeNoWriteCheck((long) i * BLOCK_SIZE + 7);
+        }
+        rb.finishMutations();
+        return rb;
+    }
+
+    @Test
+    public void testOscillatingAroundAPowerOfTwoSpansDoesNotReallocate() {
+        // Below the doubling threshold growth exactly doubles the arrays, so a shrink that fires at half would undo
+        // it on the very next remove, and the next insert would double again.
+        for (final int spans : new int[] {256, 512, 1024}) {
+            final RspBitmap rb = singletonSpans(spans);
+            final long lastKey = (long) spans * BLOCK_SIZE + 7;
+            rb.addUnsafeNoWriteCheck(lastKey);
+            rb.finishMutations();
+            final long[] grown = rb.spanInfos;
+            assertTrue(spans + " spans grew", grown.length > spans);
+            for (int i = 0; i < 4; ++i) {
+                rb.removeUnsafeNoWriteCheck(lastKey);
+                rb.finishMutations();
+                assertEquals(spans, rb.size);
+                assertSame(spans + " spans, remove " + i, grown, rb.spanInfos);
+                rb.addUnsafeNoWriteCheck(lastKey);
+                rb.finishMutations();
+                assertEquals(spans + 1, rb.size);
+                assertSame(spans + " spans, insert " + i, grown, rb.spanInfos);
+            }
+        }
+    }
+
+    @Test
+    public void testShrinksOnceAQuarterFull() {
+        final int spans = 1024;
+        final RspBitmap rb = singletonSpans(spans + 1); // arrays of 2048
+        final long[] grown = rb.spanInfos;
+        assertEquals(2 * spans, grown.length);
+        for (int i = spans; i > spans / 2; --i) {
+            rb.removeUnsafeNoWriteCheck((long) i * BLOCK_SIZE + 7);
+        }
+        rb.finishMutations();
+        assertEquals(spans / 2 + 1, rb.size);
+        assertSame("just above a quarter full keeps the arrays", grown, rb.spanInfos);
+        rb.removeUnsafeNoWriteCheck((long) (spans / 2) * BLOCK_SIZE + 7);
+        rb.finishMutations();
+        assertEquals(spans / 2, rb.size);
+        assertNotSame("a quarter full shrinks the arrays", grown, rb.spanInfos);
+        assertEquals(spans, rb.spanInfos.length);
+        rb.validate();
     }
 }

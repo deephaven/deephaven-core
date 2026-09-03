@@ -1677,12 +1677,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         System.arraycopy(spans, src, spans, dst, n);
     }
 
+    /**
+     * Shrink the span arrays to half their length once no more than a quarter of them is in use. Shrinking at half
+     * would meet the doubling growth policy head on: a set oscillating around a power of two spans would then
+     * reallocate on every insert and again on every remove.
+     */
     private void checkCompact() {
-        final int thresholdSize;
-        if (size < 2 * INITIAL_CAPACITY || size > (thresholdSize = spans.length / 2)) {
+        if (size < 2 * INITIAL_CAPACITY || size > spans.length / 4) {
             return;
         }
-        realloc(thresholdSize);
+        realloc(spans.length / 2);
     }
 
     /**
@@ -1696,8 +1700,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      */
     private void collapseRange(final int idst, final int isrc) {
         int newSize = size - (isrc - idst);
-        int thresholdSize = 0;
-        if (newSize > 2 * INITIAL_CAPACITY && newSize < (thresholdSize = spans.length / 2)) {
+        // Same shrink rule as checkCompact, applied while copying so the survivors move only once.
+        if (newSize >= 2 * INITIAL_CAPACITY && newSize <= spans.length / 4) {
+            final int thresholdSize = spans.length / 2;
             final Object[] newSpans = new Object[thresholdSize];
             System.arraycopy(spans, 0, newSpans, 0, idst);
             System.arraycopy(spans, isrc, newSpans, idst, size - isrc);
@@ -2366,7 +2371,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         final MutableLong prevCardMu = useAcc ? null : new MutableLong(0);
         while (inputPositions.hasNext()) {
             final long pos = inputPositions.nextLong();
-            if (pos < 0 || (cardinality != -1 && pos >= cardinality)) {
+            if (pos < 0) {
+                // No key at a negative position; positions ascend, so later ones may still be in range.
+                outputKeys.accept(-1);
+                continue;
+            }
+            if (cardinality != -1 && pos >= cardinality) {
                 outputKeys.accept(-1);
                 while (inputPositions.hasNext()) {
                     inputPositions.nextLong();
@@ -3266,12 +3276,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 continue;
             }
             if (idxPairsCount + 2 > idxPairs.length) {
-                final int[] newArr;
-                if (idxPairs.length + 3 < 1024) {
-                    newArr = new int[2 * idxPairs.length + 3];
-                } else {
-                    newArr = new int[idxPairs.length + 1024];
-                }
+                // Every span of other still to be visited contributes at most one pair, so that many more pairs is
+                // all this loop can ever need; doubling within that bound keeps the copying linear overall without
+                // holding on to a per-thread buffer larger than the union could fill.
+                final int bound = idxPairsCount + 2 * (other.size - otherIdx);
+                final int[] newArr = new int[Math.min(bound, Math.max(2 * idxPairs.length, idxPairs.length + 1024))];
                 wd.setIntArray(newArr);
                 System.arraycopy(idxPairs, 0, newArr, 0, idxPairsCount);
                 idxPairs = newArr;
@@ -4904,11 +4913,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return true;
     }
 
-    public RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
-        if (startPositionInclusive < 0) {
-            throw new IllegalArgumentException(
-                    ("startPositionInclusive=" + startPositionInclusive + " should be >=0."));
+    public RowSequence getRowSequenceByPosition(final long startPositionInclusiveIn, final long lengthIn) {
+        if (lengthIn <= 0) {
+            return RowSequenceFactory.EMPTY;
         }
+        final long startPositionInclusive = Math.max(startPositionInclusiveIn, 0);
+        final long length = startPositionInclusiveIn < 0 ? startPositionInclusiveIn + lengthIn : lengthIn;
         if (length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
@@ -4986,9 +4996,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     // endIdx and endOffsetIn are inclusive.
     RowSequence getRowSequenceByKeyRangeConstrainedToIndexAndOffsetRange(
-            final long startValue, final long endValue,
+            final long startValueIn, final long endValue,
             final int startIdx, final long startOffsetIn, final long cardBeforeStartIdx,
             final int endIdx, final long endOffsetIn) {
+        final long startValue = Math.max(startValueIn, 0);
         final long startKey = highBits(startValue);
         int startKeyIdx = getSpanIndex(startIdx, startKey);
         if (startKeyIdx < 0) {

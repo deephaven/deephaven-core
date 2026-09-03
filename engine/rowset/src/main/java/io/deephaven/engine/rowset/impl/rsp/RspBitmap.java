@@ -1200,8 +1200,19 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     public RspBitmap applyOffsetImpl(
             final long offset, final Supplier<RspBitmap> onZeroOffset, final Supplier<RspBitmap> onAlignedOffset) {
-        if (offset == 0) {
+        if (offset == 0 || isEmpty()) {
             return onZeroOffset.get();
+        }
+        if (offset < 0) {
+            final long first = firstValue();
+            if (first + offset < 0) {
+                throw new IllegalArgumentException("offset=" + offset + " when first=" + first);
+            }
+        } else {
+            final long last = lastValue();
+            if (last + offset < 0) {
+                throw new IllegalArgumentException("offset=" + offset + " when last=" + last);
+            }
         }
         if ((offset & BLOCK_LAST) == 0) {
             final RspBitmap ans = onAlignedOffset.get();
@@ -1210,13 +1221,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             return ans;
         }
         final RspBitmap rb = new RspBitmap();
-        final RspRangeIterator it = getRangeIterator();
-        int i = 0;
-        while (it.hasNext()) {
-            it.next();
-            final long s = it.start();
-            final long e = it.end();
-            i = rb.addRangeUnsafeNoWriteCheck(i, s + offset, e + offset);
+        try (final RspRangeIterator it = getRangeIterator()) {
+            int i = 0;
+            while (it.hasNext()) {
+                it.next();
+                final long s = it.start();
+                final long e = it.end();
+                i = rb.addRangeUnsafeNoWriteCheck(i, s + offset, e + offset);
+            }
         }
         rb.finishMutations();
         return rb;
@@ -1519,6 +1531,11 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             final long pos = ixFind(keys.ixFirstKey());
             if (pos < 0) {
                 throw new IllegalArgumentException("invert for non-existing key:" + keys.ixFirstKey());
+            }
+            // The range is wholly present exactly when its last key sits the range's length past its first.
+            final long lastPos = ixFind(keys.ixLastKey());
+            if (lastPos != pos + keys.ixCardinality() - 1) {
+                throw new IllegalArgumentException("invert for non-existing key:" + keys.ixLastKey());
             }
             if (pos > maximumPosition) {
                 return OrderedLongSet.EMPTY;

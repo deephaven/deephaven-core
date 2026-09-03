@@ -130,7 +130,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insertRange(final long startKey, final long endKey) {
         preMutationHook();
-        assign(innerSet.ixInsertRange(startKey, endKey));
+        if (endKey >= startKey) {
+            assign(innerSet.ixInsertRange(startKey, endKey));
+        }
         postMutationHook();
     }
 
@@ -167,7 +169,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void removeRange(final long start, final long end) {
         preMutationHook();
-        assign(innerSet.ixRemoveRange(start, end));
+        if (end >= start && end >= 0) {
+            assign(innerSet.ixRemoveRange(Math.max(start, 0), end));
+        }
         postMutationHook();
     }
 
@@ -227,8 +231,12 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final void retainRange(final long startRowKey, final long endRowKey) {
+        if (endRowKey < startRowKey || endRowKey < 0) {
+            clear();
+            return;
+        }
         preMutationHook();
-        assign(innerSet.ixRetainRange(startRowKey, endRowKey));
+        assign(innerSet.ixRetainRange(Math.max(startRowKey, 0), endRowKey));
         postMutationHook();
     }
 
@@ -304,12 +312,24 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
+        if (length <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        if (startPositionInclusive < 0) {
+            if (startPositionInclusive + length <= 0) {
+                return RowSequenceFactory.EMPTY;
+            }
+            return innerSet.ixGetRowSequenceByPosition(0, startPositionInclusive + length);
+        }
         return innerSet.ixGetRowSequenceByPosition(startPositionInclusive, length);
     }
 
     @Override
     public final RowSequence getRowSequenceByKeyRange(final long startRowKeyInclusive, final long endRowKeyInclusive) {
-        return innerSet.ixGetRowSequenceByKeyRange(startRowKeyInclusive, endRowKeyInclusive);
+        if (endRowKeyInclusive < startRowKeyInclusive || endRowKeyInclusive < 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        return innerSet.ixGetRowSequenceByKeyRange(Math.max(startRowKeyInclusive, 0), endRowKeyInclusive);
     }
 
     @Override
@@ -335,7 +355,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final boolean overlapsRange(final long start, final long end) {
-        return innerSet.ixOverlapsRange(start, end);
+        if (end < start || end < 0) {
+            return false;
+        }
+        return innerSet.ixOverlapsRange(Math.max(start, 0), end);
     }
 
     @Override
@@ -403,12 +426,20 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final WritableRowSet subSetByPositionRange(final long startPos, final long endPos) {
-        return new WritableRowSetImpl(innerSet.ixSubindexByPosOnNew(startPos, endPos));
+        // Positions below zero hold no keys, and an exclusive end at or before the start asks for none at all.
+        final long start = Math.max(startPos, 0);
+        if (endPos <= start) {
+            return RowSetFactory.empty();
+        }
+        return new WritableRowSetImpl(innerSet.ixSubindexByPosOnNew(start, endPos));
     }
 
     @Override
     public final WritableRowSet subSetByKeyRange(final long startKey, final long endKey) {
-        return new WritableRowSetImpl(innerSet.ixSubindexByKeyOnNew(startKey, endKey));
+        if (endKey < startKey || endKey < 0) {
+            return RowSetFactory.empty();
+        }
+        return new WritableRowSetImpl(innerSet.ixSubindexByKeyOnNew(Math.max(startKey, 0), endKey));
     }
 
     @Override
@@ -425,7 +456,11 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
             return RowSetFactory.empty();
         }
         if (positions.isContiguous()) {
-            return subSetByPositionRange(positions.firstRowKey(), positions.lastRowKey() + 1);
+            // The exclusive end of a position range that runs to Long.MAX_VALUE cannot be represented; every position
+            // is below Long.MAX_VALUE anyway, so the saturated end asks for the same positions.
+            final long lastPosition = positions.lastRowKey();
+            return subSetByPositionRange(positions.firstRowKey(),
+                    lastPosition == Long.MAX_VALUE ? Long.MAX_VALUE : lastPosition + 1);
         }
         final MutableLong currentOffset = new MutableLong();
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -439,8 +474,15 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
                 if (!iter.hasMore()) {
                     return false;
                 }
-                iter.getNextRowSequenceWithLength(end + 1 - currentOffset.get())
+                // A range running to Long.MAX_VALUE has no representable exclusive end; it asks for the rest, and
+                // nothing can follow it.
+                final long lengthMinusOne = end - currentOffset.get();
+                iter.getNextRowSequenceWithLength(
+                        lengthMinusOne == Long.MAX_VALUE ? Long.MAX_VALUE : lengthMinusOne + 1)
                         .forAllRowKeyRanges(builder::appendRange);
+                if (end == Long.MAX_VALUE) {
+                    return false;
+                }
                 currentOffset.set(end + 1);
                 return iter.hasMore();
             });
@@ -502,6 +544,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final long find(final long key) {
+        if (key < 0) {
+            return -1;
+        }
         return innerSet.ixFind(key);
     }
 
@@ -533,6 +578,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final boolean containsRange(final long start, final long end) {
+        if (start < 0) {
+            return false;
+        }
         return innerSet.ixContainsRange(start, end);
     }
 
