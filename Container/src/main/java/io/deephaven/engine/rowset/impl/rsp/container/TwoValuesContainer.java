@@ -774,32 +774,27 @@ public final class TwoValuesContainer extends ImmutableContainer {
 
     @Override
     public void selectRanges(final RangeConsumer outValues, final RangeIterator inPositions) {
-        if (!inPositions.hasNext()) {
-            return;
-        }
         final int iv1 = v1AsInt();
         final int iv2 = v2AsInt();
-        inPositions.next();
-        int pStart = inPositions.start();
-        int pEnd = inPositions.end();
-        if (pStart == 0) {
-            if (pEnd == 1) {
-                outValues.accept(iv1, iv1 + 1);
-                return;
+        // Every position range the iterator offers, not just the first: a caller may split the two positions we hold
+        // across separate ranges, and stopping after one silently drops a value.
+        while (inPositions.hasNext()) {
+            inPositions.next();
+            final int pStart = inPositions.start();
+            final int pEnd = inPositions.end();
+            if (pStart < 0 || pEnd > 2 || pEnd <= pStart) {
+                throw new IllegalArgumentException("pStart=" + pStart + ", pEnd=" + pEnd +
+                        ", iv1=" + iv1 + ", iv2=" + iv2);
             }
-            if (pEnd == 2) {
+            if (pStart == 0) {
                 outValues.accept(iv1, iv1 + 1);
+                if (pEnd == 2) {
+                    outValues.accept(iv2, iv2 + 1);
+                }
+            } else {
                 outValues.accept(iv2, iv2 + 1);
-                return;
-            }
-        } else if (pStart == 1) {
-            if (pEnd == 2) {
-                outValues.accept(iv2, iv2 + 1);
-                return;
             }
         }
-        throw new IllegalArgumentException("pStart=" + pStart + ", pEnd=" + pEnd +
-                ", iv1=" + iv1 + ", iv2=" + iv2);
     }
 
     @Override

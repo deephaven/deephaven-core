@@ -31,6 +31,9 @@ _JUpdateAncestorViz = jpy.get_type(
 )
 _JString = jpy.get_type("java.lang.String")
 _JFile = jpy.get_type("java.io.File")
+_JBarragePerformanceLog = jpy.get_type(
+    "io.deephaven.extensions.barrage.BarragePerformanceLog"
+)
 
 
 def process_info_log() -> Table:
@@ -186,6 +189,44 @@ def update_performance_ancestors_log() -> Table:
         return Table(j_table=_JTableLoggers.updatePerformanceAncestorsLog())
     except Exception as e:
         raise DHError(e, "failed to obtain the update performance log table.") from e
+
+
+def barrage_subscription_performance_log() -> Table:
+    """Returns a table with Deephaven Barrage subscription performance data. Barrage is Deephaven's IPC table
+    transport; these statistics are recorded for ticking subscriptions.
+
+    Returns:
+        a Table
+
+    Raises:
+        DHError
+    """
+    try:
+        return Table(
+            j_table=_JBarragePerformanceLog.getInstance().getSubscriptionTable()
+        )
+    except Exception as e:
+        raise DHError(
+            e, "failed to obtain the barrage subscription performance log table."
+        ) from e
+
+
+def barrage_snapshot_performance_log() -> Table:
+    """Returns a table with Deephaven Barrage snapshot performance data. Barrage is Deephaven's IPC table
+    transport; these statistics are recorded for one-off requests such as an Arrow Flight `DoGet`.
+
+    Returns:
+        a Table
+
+    Raises:
+        DHError
+    """
+    try:
+        return Table(j_table=_JBarragePerformanceLog.getInstance().getSnapshotTable())
+    except Exception as e:
+        raise DHError(
+            e, "failed to obtain the barrage snapshot performance log table."
+        ) from e
 
 
 def metrics_reset_counters() -> None:

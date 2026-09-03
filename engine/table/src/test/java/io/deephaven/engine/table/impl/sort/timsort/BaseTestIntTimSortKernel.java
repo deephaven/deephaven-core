@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.tuple.generated.IntLongLongTuple;
 import io.deephaven.tuple.generated.IntLongTuple;
 import io.deephaven.engine.table.impl.sort.findruns.IntFindRunsKernel;
@@ -35,13 +36,13 @@ import java.util.stream.Collectors;
 public abstract class BaseTestIntTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
     public static Comparator<IntLongTuple> getJavaComparator() {
-        return Comparator.comparing(IntLongTuple::getFirstElement);
+        return Comparator.comparing(IntLongTuple::getFirstElement, IntComparisons::compare);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
     public static Comparator<IntLongLongTuple> getJavaMultiComparator() {
-        return Comparator.comparing(IntLongLongTuple::getFirstElement).thenComparing(IntLongLongTuple::getSecondElement);
+        return Comparator.comparing(IntLongLongTuple::getFirstElement, IntComparisons::compare).thenComparing(IntLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
@@ -181,7 +182,7 @@ public abstract class BaseTestIntTimSortKernel extends TestTimSortKernel {
 
         public void run() {
             // region mergesort
-            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Integer.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
+            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> IntComparisons.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
         }
     }
@@ -515,7 +516,7 @@ public abstract class BaseTestIntTimSortKernel extends TestTimSortKernel {
 
     // region comparison functions
     private static int doComparison(int lhs, int rhs) {
-        return Integer.compare(lhs, rhs);
+        return IntComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

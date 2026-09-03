@@ -223,6 +223,19 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForJoins", true);
 
     /**
+     * If the Configuration property "QueryTable.useIndirectSortKernels" is set to true (default), then sorts of Object
+     * columns and sorts of multiple columns use generated indirect timsort kernels that compare each column in turn
+     * while permuting only a parallel chunk of positions (the permuted row keys are assembled in a single linear pass
+     * at the end). The single-column kernels are pregenerated; every multi-column shape — any mix of column types, sort
+     * directions, and per-column comparators — is compiled on demand and cached, so multi-column sorts never fall back
+     * to sorting one column at a time. Single-column sorts of primitive types always use the existing direct kernels,
+     * which are faster for them. If false, sorting always uses the existing one-column-at-a-time kernels with run
+     * finding in between.
+     */
+    public static boolean USE_INDIRECT_SORT_KERNELS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useIndirectSortKernels", true);
+
+    /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
      * may be spread out across many blocks depending on the input RowSet). However, the select() can become slower
      * because it must look things up in a row redirection.
@@ -314,6 +327,22 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     public static long MINIMUM_PARALLEL_SELECT_ROWS =
             Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSelectRows", 1L << 22);
+
+    /**
+     * Whether the engine may parallelize sorts at all; when false every sort is processed entirely on the calling
+     * thread, regardless of {@link #MINIMUM_PARALLEL_SORT_ROWS}.
+     */
+    public static boolean PARALLEL_SORT =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.parallelSort", true);
+
+    /**
+     * The minimum number of rows in a sort for which the engine may parallelize work: filling the values chunks that
+     * feed the sort kernels, sorting segments of the positions with pairwise merges, and gathering the permuted row
+     * keys. Below this, dividing the work into segments costs more than the work itself, so sorts of fewer rows — and
+     * all sorts when the value is zero or negative — are processed entirely on the calling thread.
+     */
+    public static long MINIMUM_PARALLEL_SORT_ROWS =
+            Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSortRows", 1L << 20);
 
     /**
      * For unit tests, we do want to force the column parallel select and update at times.

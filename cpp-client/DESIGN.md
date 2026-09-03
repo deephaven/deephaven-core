@@ -4,12 +4,12 @@ Orientation document for engineers and coding agents who need to change code in
 `cpp-client/deephaven/`. It describes *how the client works* and *where things live*, so you can go
 straight to the right file instead of discovering the layout by grepping.
 
-Companion docs:
+Companion docs (`cpp-client/README.md` is the index of all of them):
 
-- `cpp-client/README.md` — build/install instructions (Linux); `cpp-client/README-windows.md` (Windows).
+- `cpp-client/BUILDING.md` — build/install instructions (Linux); `cpp-client/README-windows.md` (Windows).
 - `cpp-client/doc/*.rst` + `cpp-client/doc/Doxyfile` — user-facing API reference (Sphinx/Doxygen),
   published at <https://docs.deephaven.io/core/client-api/cpp/>.
-- `R/README.md` — design/implementation of the R client, which is built on top of the libraries
+- `R/DESIGN.md` — design/implementation of the R client, which is built on top of the libraries
   described here (see §11 for what it consumes and what that means for you).
 - Repo root `AGENTS.md` — the Java engine/server side of the system.
 
@@ -18,8 +18,12 @@ binding over `dhclient`, and `py/client-ticking` is a Cython binding over `dhcor
 the libraries built here, so a change to a public header can break them even though nothing in
 `cpp-client/` fails to compile. §11 lists exactly what each one depends on.
 
-**How to use this file:** the section headings below are stable anchors. `grep -n '^## ' cpp-client/deephaven/README.md`
+**How to use this file:** the section headings below are stable anchors. `grep -n '^## ' cpp-client/DESIGN.md`
 to get the map, then read only the sections you need.
+
+**Note on paths:** this file lives in `cpp-client/`, but the code it describes lives one level down in
+`cpp-client/deephaven/`. Paths below are relative to `cpp-client/deephaven/` unless they are written
+out from the repository root (e.g. `proto/…`, `R/…`, `py/…`).
 
 ---
 
@@ -47,6 +51,16 @@ to get the map, then read only the sections you need.
 ## 1. Directory map
 
 ```
+cpp-client/
+  README.md               short "what is this" brief + index of the docs under cpp-client/
+  BUILDING.md             build/install instructions (Linux)
+  README-windows.md       build instructions (Windows)
+  DESIGN.md               this file
+  build-dependencies.sh   builds/installs the dependent libraries into $DHCPP; writes env.sh
+  build.gradle            Docker-based CI: build the client, run the tests against a server
+  doc/                    Sphinx + Doxygen sources for the published API reference
+  deephaven/              ← all of the source; everything below is relative to here
+
 cpp-client/deephaven/
   CMakeLists.txt          top-level: builds dhcore, dhclient, tests, examples; install/export rules
   cmake/deephavenConfig.cmake   installed CMake package config (find_package(deephaven))
@@ -87,7 +101,7 @@ installed; `private` is `PRIVATE` and never installed. Header include paths alwa
 
 Dependencies are built once by `cpp-client/build-dependencies.sh` into a prefix directory (the
 convention is `$DHCPP`), which also writes an `env.sh` you must `source` (it sets `CMAKE_PREFIX_PATH`,
-`LD_LIBRARY_PATH`, `NCPUS`). Full instructions: `cpp-client/README.md`.
+`LD_LIBRARY_PATH`, `NCPUS`). Full instructions: `cpp-client/BUILDING.md`.
 
 ```bash
 source $DHCPP/env.sh
@@ -97,6 +111,10 @@ cmake -S . -B build \
   -DCMAKE_INSTALL_PREFIX=${DHCPP} -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_SHARED_LIBS=ON
 VERBOSE=1 cmake --build build --target install -- -j$NCPUS
 ```
+
+Once the tree is configured, an incremental rebuild is just
+`cmake --build build -- -j$NCPUS` (add `--target install` to reinstall, or
+`--target dhclient dhclient_tests` to skip the examples).
 
 Useful CMake options: `-DDHCORE_ONLY=ON` (skip dhclient/tests/examples — fast loop when only
 touching the core), `-DSANITIZE_ADDRESS=ON`.
@@ -182,7 +200,7 @@ Key design decisions:
 | `client.h` (~1900 lines) | `Client`, `TableHandleManager`, `TableHandle`, `Aggregate`/`AggregateCombo`, `SortPair`, `SortDirection`, free `Agg*` helpers |
 | `client_options.h` | `ClientOptions` (auth, TLS, session type, gRPC options, extra headers) + header-name constants |
 | `flight.h` | `FlightWrapper` — raw Arrow Flight access (`GetFlightStreamReader`, `AddHeaders`, `FlightClient`) |
-| `update_by.h` | `UpdateByOperation` + ~35 factory functions (`CumSum`, `Ema*`, `Rolling*`, …), `MathContext`, `BadDataBehavior`, `DeltaControl`, `OperationControl` |
+| `update_by.h` | `UpdateByOperation` + 34 factory functions — note these are lowerCamelCase (`cumSum`, `forwardFill`, `emaTick`, `rollingSumTime`, …), unlike the rest of the public API — plus `MathContext`, `BadDataBehavior`, `DeltaControl`, `OperationControl` |
 | `utility/table_maker.h` | `TableMaker` — build a small table locally and DoPut it to the server |
 | `utility/arrow_util.h` | `ArrowUtil` type/schema conversions, `OkOrThrow`, `ValueOrThrow` |
 | `utility/misc_types.h` | `DurationSpecifier`, `TimePointSpecifier` (variants), `OnCloseCb`/`OnCloseCbId` |
@@ -202,12 +220,13 @@ std::cout << t.Stream(true) << '\n';       // pretty-print (ostream adaptor)
 `RunScript`, `CreateFlightWrapper`.
 
 `TableHandle` has the derived operations: `Select`/`View`/`Update`/`UpdateView`/`LazyUpdate`/
-`DropColumns`, `Where`/`WhereIn`, `Sort`, `Head`/`Tail`, aggregations (`By` with `AggregateCombo`,
-plus `SumBy`, `AvgBy`, `LastBy`, `CountBy`, `PercentileBy`, `HeadBy`/`TailBy`, …), joins
-(`NaturalJoin`, `ExactJoin`, `CrossJoin`, `Aj`, `Raj`, `LeftOuterJoin`), `Merge`, `Ungroup`,
-`SelectDistinct`, `UpdateBy`, `AddTable`/`RemoveTable` (input tables), `BindToVariable`, and the
+`DropColumns`, `Where`/`WhereIn`, `Sort`, `Head`/`Tail`; the aggregations `By` (with or without an
+`AggregateCombo`), `MinBy`, `MaxBy`, `SumBy`, `AbsSumBy`, `VarBy`, `StdBy`, `AvgBy`, `WAvgBy`,
+`FirstBy`, `LastBy`, `MedianBy`, `PercentileBy`, `CountBy`, `HeadBy`, `TailBy`; the joins
+`NaturalJoin`, `ExactJoin`, `CrossJoin`, `Aj`, `Raj`, `LeftOuterJoin`; `Merge`, `Ungroup`,
+`SelectDistinct`, `UpdateBy`, `AddTable`/`RemoveTable` (input tables), `BindToVariable`; and the
 data-access methods `ToArrowTable`, `ToClientTable`, `GetFlightStreamReader`, `Subscribe`/`Unsubscribe`,
-`Schema`, `NumRows`, `IsStatic`, `Stream`/`ToString`.
+`Schema`, `NumRows`, `IsStatic`, `GetTicketAsString`, `Stream`/`ToString`.
 
 **Variadic string overloads.** Nearly every method taking `std::vector<std::string>` has a
 variadic sibling built on `internal::ConvertToString`, which accepts any mix of `const char*`,
@@ -349,7 +368,7 @@ Implementations:
 | Class | Header | Backing store | Used for |
 |-------|--------|---------------|----------|
 | `GenericArrayColumnSource<T>` | `column/array_column_source.h` | growable owned array | mutable local columns |
-| `NumericBufferColumnSource<T>` / `GenericBufferColumnSource<T>` | `column/buffer_column_source.h` | borrowed pointer (no ownership) | zero-copy views (Cython) |
+| `NumericBufferColumnSource<T>` (numeric types only) | `column/buffer_column_source.h` | borrowed pointer (no ownership) | zero-copy views (Cython) |
 | `ContainerColumnSource<T>` | `column/container_column_source.h` | `shared_ptr<ContainerBase>[]` | list-typed columns |
 | `NumericImmerColumnSource<T>` / `GenericImmerColumnSource<T>` | `private/.../immerutil/immer_column_source.h` | `immer::flex_vector` | ticking snapshots |
 | `GenericArrowColumnSource<Style,…>` | `private/.../client/arrowutil/arrow_column_source.h` | `std::vector<shared_ptr<arrow::Array>>` | incoming Flight/Barrage data (dhclient only) |
@@ -565,7 +584,9 @@ Other consumers of `dhcore` you can break:
   `dhcore/include/public/deephaven/dhcore/utility/cython_support.h` exists purely for it:
   `CythonSupport::Create{Boolean,String,DateTime,LocalDate,LocalTime}ColumnSource` from raw
   pointer/validity buffers, `SlicesToColumnSource`, `ContainerToColumnSource`, `ColumnSourceToString`.
-  **Changing any of those signatures requires a matching change in `_core.pxd`.**
+  **Changing any of those signatures requires a matching change in `_core.pxd`.** Note it
+  instantiates `NumericBufferColumnSource<T>` directly rather than using the `*BufferColumnSource`
+  type aliases in that header.
 - **`R/rdeephaven`** is an [Rcpp](https://github.com/RcppCore/Rcpp) binding over the **`dhclient`
   public C++ API** — not over the C ABI above. `R/rdeephaven/src/client.cpp` wraps
   `Client`, `TableHandleManager`, `TableHandle`, `ClientOptions`, `Aggregate`, `UpdateByOperation`,
@@ -585,13 +606,16 @@ Other consumers of `dhcore` you can break:
     `R/rdeephaven/inst/tests/testthat/test_encoding.R` is its regression test.
   - The R client does **not** use ticking: nothing in it calls `Subscribe`/`Unsubscribe`, so the
     `dhcore` ticking machinery is exercised there only indirectly.
-  - See `R/README.md` for the full picture.
+  - See `R/DESIGN.md` for the full picture.
 
 ---
 
 ## 12. Conventions, style, gotchas
 
-Formatting/naming (`.clang-format`: Google style, indent 2; `.clang-tidy` naming rules):
+Formatting/naming (`.clang-format`: Google style, indent 2; `.clang-tidy` naming rules).
+**Neither is run by the build**: no Gradle or CMake task invokes clang-format or clang-tidy, and
+the Spotless `cpp` block in `cpp-client/build.gradle` only enforces the copyright header. Treat
+them as the house style you apply yourself; `-Wall -Werror` is the only automated gate.
 
 | Kind | Convention |
 |------|------------|
@@ -631,8 +655,24 @@ Gotchas:
 - The `on_close` callbacks run *before* teardown, so they may still issue RPCs.
 - `TableHandleManager::InputTable(initial_table, keys)` creates the input table *and* immediately
   `AddTable`s the initial contents.
-- `Aggregate::Count`, `aggCount`, `aggMax`, `aggMin`, `aggSum`, `aggCombo` are the surviving
-  lowercase legacy spellings; the rest are `CamelCase`.
+- `Aggregate::Count` is the odd one out among the aggregations: it takes a single `std::string`
+  column name, not a `std::vector<std::string>`, and has no multi-column form. `AggCount` is
+  declared variadic like its siblings but forwards to that single-string `Count`, so passing more
+  than one argument fails to compile.
+- Naming exceptions to the `CamelCase` function rule in §12: all 34 `update_by.h` factory functions
+  are lowerCamelCase (`cumSum`, `emaTick`, `rollingSumTime`, …), and in `dhcore`
+  `separatedList` / `demangle` (`utility/utility.h`) are lower-case. The free aggregation helpers in
+  `client.h` are all `Agg*` CamelCase, but `AggWavg` wraps `Aggregate::WAvg` — helper and static
+  method capitalize "WAvg" differently. `AggCount`/`AggMax`/`AggMin`/`AggSum`/`AggCombo` were
+  spelled `aggCount`/`aggMax`/`aggMin`/`aggSum`/`aggCombo` until recently, so out-of-tree callers
+  written against an older release may fail to compile.
+- **A green build does not mean the variadic overloads work.** Most of the `client.h` convenience
+  overloads are templates, so a body that does not compile is only diagnosed when something
+  instantiates it — and nothing in `tests/` or `examples/` instantiates most of them. Two are known
+  to be broken today: `TableHandle::UpdateBy(Args&&...)` forwards to a one-argument
+  `UpdateBy(std::vector<std::string>)` that does not exist, and
+  `TableHandle::PercentileBy(double, Args&&...)` ends in `std::forward<Args...>(args...)`, which is
+  malformed for a parameter pack. If you add or edit a variadic overload, write a test that calls it.
 - Commented-out declarations mark unimplemented features (`InputTable(schema,…)`, `RangeJoin`).
 
 ---
@@ -671,8 +711,10 @@ framing. Compare against the Java writer (`extensions/barrage`) and the parallel
 `FlightCallOptions` sites that intentionally skip `authorization` / `envoy-prefix`
 (`FlightWrapper::AddHeaders`, `TableHandleImpl::Schema`, `SubscribeState::InvokeHelper`).
 
-**Regenerate proto stubs**: run `proto/proto-backplane-grpc/src/main/proto/build-cpp-protos.sh`
-(see the tail of `cpp-client/README.md`); the build otherwise generates them into the build tree.
+**Regenerate proto stubs**: nothing to do by hand — since
+[#6136](https://github.com/deephaven/deephaven-core/pull/6136) the stubs are not checked in, and
+`dhclient/CMakeLists.txt` regenerates them into the build tree on every build (§2). Adding a new
+`.proto` file means adding it to that file's `PROTO_FILES` list.
 
 ---
 

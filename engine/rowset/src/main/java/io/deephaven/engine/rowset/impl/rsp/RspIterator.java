@@ -153,22 +153,37 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
             sit = new SingleSpanIterator() {
                 long curr = k + skipCount;
                 final long end = k + flen * RspArray.BLOCK_SIZE - 1;
+                // Set once the span's last key has been handed out. Stepping past it would be indistinguishable from
+                // wrapping when that key is the last of the key space, and the position would compare as still inside.
+                boolean done = curr > end;
 
                 @Override
                 public boolean hasNext() {
-                    return curr <= end;
+                    return !done;
+                }
+
+                /** Move off the key just produced, or mark the span finished if that was its last. */
+                private void step() {
+                    if (curr == end) {
+                        done = true;
+                    } else {
+                        ++curr;
+                    }
                 }
 
                 @Override
                 public long nextLong() {
-                    return curr++;
+                    final long v = curr;
+                    step();
+                    return v;
                 }
 
                 @Override
                 public boolean forEachLong(final LongAbortableConsumer lc) {
-                    while (curr <= end) {
-                        final boolean wantMore = lc.accept(curr++);
-                        if (!wantMore) {
+                    while (!done) {
+                        final long v = curr;
+                        step();
+                        if (!lc.accept(v)) {
                             return false;
                         }
                     }
@@ -179,9 +194,9 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                 public int copyTo(final WritableLongChunk<? super OrderedRowKeys> chunk, final int offset,
                         final int max) {
                     int c = 0;
-                    final long last = Math.min(curr + max - 1, end);
-                    while (curr <= last) {
-                        chunk.set(offset + c++, curr++);
+                    while (!done && c < max) {
+                        chunk.set(offset + c++, curr);
+                        step();
                     }
                     return c;
                 }

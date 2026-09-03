@@ -1175,8 +1175,9 @@ public abstract class Container {
      *         cardinality - 1]. If not present, (-(insertion point) - 1) similar to Array.binarySearch.
      *         <p>
      *         For values of x that {@link io.deephaven.engine.rowset.impl.rsp.container.Container#contains} returns
-     *         true, this method returns the same value as
-     *         {@link io.deephaven.engine.rowset.impl.rsp.container.Container#rank}.
+     *         true, this method returns one less than
+     *         {@link io.deephaven.engine.rowset.impl.rsp.container.Container#rank}: rank counts the values less than
+     *         or equal to x, while this is the zero-based position of x itself.
      */
     public abstract int find(short x);
 

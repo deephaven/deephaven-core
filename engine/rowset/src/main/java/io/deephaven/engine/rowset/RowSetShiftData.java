@@ -325,14 +325,18 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @return the key in post-shift space
      */
     public long apply(final long keyToShift) {
-        for (int shiftIdx = 0; shiftIdx < size(); shiftIdx++) {
-            if (getBeginRange(shiftIdx) > keyToShift) {
-                // no shift applies so we are already in post-shift space
-                return keyToShift;
-            }
-            if (getEndRange(shiftIdx) >= keyToShift) {
-                // this shift applies, add the delta to get post-shift
-                return keyToShift + getShiftDelta(shiftIdx);
+        // Shift ranges are ordered and do not overlap (see validate()), so at most one contains keyToShift and it can
+        // be found by bisection; a key in a gap between ranges, or outside them all, is already in post-shift space.
+        int lo = 0;
+        int hi = size() - 1;
+        while (lo <= hi) {
+            final int mid = (lo + hi) >>> 1;
+            if (getEndRange(mid) < keyToShift) {
+                lo = mid + 1;
+            } else if (getBeginRange(mid) > keyToShift) {
+                hi = mid - 1;
+            } else {
+                return keyToShift + getShiftDelta(mid);
             }
         }
         return keyToShift;
@@ -402,11 +406,40 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @return {@code rowSet}
      */
     public WritableRowSet unapply(final WritableRowSet rowSet, final long offset) {
-        // NB: This is an unapply callback, and beginRange, endRange, and shiftDelta have been adjusted so that this is
-        // a reversed shift,
-        // hence we use the applyShift helper.
-        unapply((beginRange, endRange, shiftDelta) -> applyShift(rowSet, beginRange + offset, endRange + offset,
-                shiftDelta));
+        // Accumulate what moves and put it back in two set operations, rather than one subset/remove/shift/insert per
+        // shift range: each of those touches the whole rowset, so doing them one at a time costs the number of shifts
+        // times the rowset's length. The windows are ordered and disjoint in both keyspaces (see validate()), so the
+        // builders below are appended to in ascending order, and memmove-safe ordering does not matter once the whole
+        // remove set and insert set are known up front.
+        final RowSetBuilderSequential toRemove = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential toInsert = RowSetFactory.builderSequential();
+        try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
+            final int size = size();
+            for (int idx = 0; idx < size; ++idx) {
+                final long shiftDelta = getShiftDelta(idx);
+                // The window sits in post-shift keyspace, plus the caller's offset; what it holds moves back by the
+                // delta, which the offset does not touch.
+                final long beginRange = getBeginRange(idx) + shiftDelta + offset;
+                final long endRange = getEndRange(idx) + shiftDelta + offset;
+
+                if (!rsIt.advance(beginRange)) {
+                    break;
+                }
+                if (endRange < rsIt.peekNextKey()) {
+                    continue;
+                }
+
+                toRemove.appendRange(beginRange, endRange);
+                rsIt.getNextRowSequenceThrough(endRange)
+                        .forAllRowKeyRanges((s, e) -> toInsert.appendRange(s - shiftDelta, e - shiftDelta));
+            }
+        }
+
+        try (final RowSet remove = toRemove.build();
+                final RowSet insert = toInsert.build()) {
+            rowSet.remove(remove);
+            rowSet.insert(insert);
+        }
         return rowSet;
     }
 
