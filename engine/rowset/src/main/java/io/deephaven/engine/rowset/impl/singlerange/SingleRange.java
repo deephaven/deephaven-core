@@ -812,20 +812,18 @@ public abstract class SingleRange implements OrderedLongSet {
                 it.next();
                 final long start = it.currentRangeStart();
                 final long end = it.currentRangeEnd();
-                final long startPos = start - rangeStart();
-                if (startPos < 0) {
+                // Every key must be present, on either side of our range; only then does the position limit apply.
+                if (start < rangeStart() || start > rangeEnd()) {
                     throw new IllegalArgumentException(exStr + start);
                 }
+                if (end > rangeEnd()) {
+                    throw new IllegalArgumentException(exStr + end);
+                }
+                final long startPos = start - rangeStart();
                 if (startPos > maximumPosition) {
                     break;
                 }
-                long endPos = startPos;
-                if (start != end) {
-                    endPos = end - rangeStart();
-                    if (endPos < 0) {
-                        throw new IllegalArgumentException(exStr + end);
-                    }
-                }
+                final long endPos = end - rangeStart();
                 if (endPos > maximumPosition) {
                     b.appendRange(startPos, maximumPosition);
                     break;

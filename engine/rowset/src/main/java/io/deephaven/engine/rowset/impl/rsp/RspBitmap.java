@@ -1532,6 +1532,11 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             if (pos < 0) {
                 throw new IllegalArgumentException("invert for non-existing key:" + keys.ixFirstKey());
             }
+            // The range is wholly present exactly when its last key sits the range's length past its first.
+            final long lastPos = ixFind(keys.ixLastKey());
+            if (lastPos != pos + keys.ixCardinality() - 1) {
+                throw new IllegalArgumentException("invert for non-existing key:" + keys.ixLastKey());
+            }
             if (pos > maximumPosition) {
                 return OrderedLongSet.EMPTY;
             }
