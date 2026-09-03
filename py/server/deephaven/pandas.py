@@ -50,7 +50,7 @@ def _column_to_series(
         a pandas Series
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     try:
         j_array = _JColumnVectors.of(table.j_table, col_def.name).copyToArray()

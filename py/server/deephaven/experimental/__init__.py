@@ -30,7 +30,7 @@ def time_window(table: Table, ts_col: str, window: int, bool_col: str) -> Table:
         a new Table
 
     Raises:
-        DHError
+        DHError: If unable to create a time window table.
     """
     try:
         with auto_locking_ctx(table):

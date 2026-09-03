@@ -70,7 +70,7 @@ def make_user_exec_ctx(
         a ExecutionContext
 
     Raises:
-        DHError
+        DHError: If creating the execution context fails.
     """
     freeze_vars = to_sequence(freeze_vars)
 

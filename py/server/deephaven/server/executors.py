@@ -45,7 +45,7 @@ def submit_task(executor_name: str, task: Callable[[], None]) -> None:
         task (Callable[[], None]): the function to run on the named executor
 
     Raises:
-         KeyError if the executor name
+         KeyError: If no executor exists with that name.
     """
     _executors[executor_name](task)
 
@@ -59,7 +59,7 @@ def _register_named_java_executor(executor_name: str, java_executor: jpy.JType) 
         java_executor (jpy.JType): a Java Consumer<Runnable> instance
 
     Raises:
-        DHError
+        DHError: If an executor with that name is already registered.
     """
     if executor_name in executor_names():
         raise DHError(f"Executor with name {executor_name} already registered")

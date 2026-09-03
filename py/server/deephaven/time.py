@@ -164,7 +164,8 @@ def dh_now(system: bool = False, resolution: Literal["ns", "ms"] = "ns") -> Inst
         Instant
 
     Raises:
-        DHError, TypeError
+        DHError: If getting the current time fails.
+        TypeError: If the time resolution is not supported.
     """
     try:
         if resolution == "ns":
@@ -202,7 +203,7 @@ def dh_today(tz: Optional[TimeZone] = None) -> str:
         Date string
 
     Raises:
-        DHError
+        DHError: If getting today's date fails.
     """
     try:
         if tz is None:
@@ -224,7 +225,7 @@ def dh_time_zone() -> TimeZone:
         TimeZone
 
     Raises:
-        DHError
+        DHError: If getting the default time zone fails.
     """
     try:
         return _JDateTimeUtils.timeZone()
@@ -249,7 +250,7 @@ def time_zone_alias_add(alias: str, tz: str) -> None:
         None
 
     Raises:
-        DHError
+        DHError: If adding the time zone alias fails.
     """
     try:
         return _JDateTimeUtils.timeZoneAliasAdd(alias, tz)
@@ -267,7 +268,7 @@ def time_zone_alias_rm(alias: str) -> bool:
         True if the alias was present; False if the alias was not present.
 
     Raises:
-        DHError
+        DHError: If removing the time zone alias fails.
     """
     try:
         return _JDateTimeUtils.timeZoneAliasRm(alias)
@@ -360,7 +361,8 @@ def to_j_time_zone(tz: Optional[TimeZoneLike]) -> Optional[TimeZone]:
         TimeZone
 
     Raises:
-        DHError, TypeError
+        DHError: If converting to a Java time value fails.
+        TypeError: If the value cannot be converted to a TimeZone.
     """
     try:
         if tz is None or pandas.isnull(tz):  # type: ignore[arg-type]
@@ -402,7 +404,8 @@ def to_j_local_date(dt: Optional[LocalDateLike]) -> Optional[LocalDate]:
         LocalDate
 
     Raises:
-        DHError, TypeError
+        DHError: If converting to a Java time value fails.
+        TypeError: If the value cannot be converted to a LocalDate.
     """
 
     try:
@@ -447,7 +450,8 @@ def to_j_local_time(dt: Optional[LocalTimeLike]) -> Optional[LocalTime]:
         LocalTime
 
     Raises:
-        DHError, TypeError
+        DHError: If converting to a Java time value fails.
+        TypeError: If the value cannot be converted to a LocalTime.
     """
 
     try:
@@ -503,7 +507,7 @@ def to_j_instant(dt: Optional[InstantLike]) -> Optional[Instant]:
         Instant, TypeError
 
     Raises:
-        DHError
+        DHError: If converting to a Java time value fails.
     """
     try:
         if dt is None or pandas.isnull(dt):
@@ -554,7 +558,8 @@ def to_j_zdt(dt: Optional[ZonedDateTimeLike]) -> Optional[ZonedDateTime]:
         ZonedDateTime
 
     Raises:
-        DHError, TypeError
+        DHError: If converting to a Java time value fails.
+        TypeError: If the value cannot be converted to a ZonedDateTime.
     """
     try:
         if dt is None or pandas.isnull(dt):
@@ -615,7 +620,8 @@ def to_j_duration(dt: Optional[DurationLike]) -> Optional[Duration]:
         Duration
 
     Raises:
-        DHError, TypeError
+        DHError: If converting to a Java time value fails.
+        TypeError: If the value cannot be converted to a Duration.
     """
     try:
         if dt is None or pandas.isnull(dt):
@@ -669,7 +675,9 @@ def to_j_period(dt: Optional[PeriodLike]) -> Optional[Period]:
         Period
 
     Raises:
-        DHError, TypeError, ValueError
+        DHError: If converting to a Java time value fails.
+        TypeError: If the value cannot be converted to a Period.
+        ValueError: If the period is not days or weeks.
     """
     try:
         if dt is None or pandas.isnull(dt):
@@ -751,7 +759,8 @@ def to_date(dt: Union[None, LocalDate, ZonedDateTime]) -> Optional[datetime.date
         datetime.date
 
     Raises:
-        DHError, TypeError
+        DHError: If converting to a Python time value fails.
+        TypeError: If the value cannot be converted to datetime.date.
     """
     try:
         if dt is None:
@@ -788,7 +797,8 @@ def to_time(dt: Union[None, LocalTime, ZonedDateTime]) -> Optional[datetime.time
         datetime.time
 
     Raises:
-        DHError, TypeError
+        DHError: If converting to a Python time value fails.
+        TypeError: If the value cannot be converted to datetime.time.
     """
     try:
         if dt is None:
@@ -825,7 +835,8 @@ def to_datetime(dt: Union[None, Instant, ZonedDateTime]) -> Optional[datetime.da
         datetime.datetime
 
     Raises:
-        DHError, TypeError
+        DHError: If converting to a Python time value fails.
+        TypeError: If the value cannot be converted to datetime.datetime.
     """
     try:
         if dt is None:
@@ -862,7 +873,8 @@ def to_pd_timestamp(
         pandas.Timestamp
 
     Raises:
-        DHError, TypeError
+        DHError: If converting to a Python time value fails.
+        TypeError: If the value cannot be converted to pandas.Timestamp.
     """
     try:
         if dt is None:
@@ -894,7 +906,8 @@ def to_np_datetime64(
         numpy.datetime64
 
     Raises:
-        DHError, TypeError
+        DHError: If converting to a Python time value fails.
+        TypeError: If the value cannot be converted to datetime.datetime.
     """
     try:
         if dt is None:
@@ -928,7 +941,9 @@ def to_timedelta(dt: Union[None, Duration]) -> Optional[datetime.timedelta]:
         datetime.timedelta
 
     Raises:
-        DHError, TypeError, ValueError
+        DHError: If converting to a Python time value fails.
+        TypeError: If the value cannot be converted to datetime.timedelta.
+        ValueError: If the period is not days or weeks.
     """
     try:
         if dt is None:
@@ -972,7 +987,9 @@ def to_pd_timedelta(dt: Union[None, Duration]) -> Optional[pandas.Timedelta]:
         pandas.Timedelta
 
     Raises:
-        DHError, TypeError, ValueError
+        DHError: If converting to a Python time value fails.
+        TypeError: If the value cannot be converted to pandas.Timedelta.
+        ValueError: If the period is not days or weeks.
     """
     try:
         if dt is None:
@@ -1019,7 +1036,9 @@ def to_np_timedelta64(dt: Union[None, Duration, Period]) -> Optional[numpy.timed
         numpy.timedelta64
 
     Raises:
-        DHError, TypeError, ValueError
+        DHError: If converting to a Python time value fails.
+        TypeError: If the value cannot be converted to numpy.timedelta64.
+        ValueError: If the period is not days, months, or years.
     """
     try:
         if dt is None:
@@ -1085,7 +1104,7 @@ def simple_date_format(pattern: str) -> jpy.JType:
         JObject
 
     Raises:
-        DHError
+        DHError: If creating the date format fails.
     """
     try:
         # Returning a Java object directly to avoid Python/Java boundary crossings in query strings

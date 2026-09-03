@@ -308,7 +308,7 @@ def _j_array_to_sequence(j_array: jpy.JType) -> Sequence[Any]:
         Sequence[Any]: a sequence of wrapped objects or an empty tuple if the input is None
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     if j_array is None:
         return ()
@@ -332,7 +332,7 @@ def _j_array_to_numpy_array(
         np.ndarray: The numpy array or None if the Java array is None
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
 
     if dtype.is_primitive:
@@ -379,7 +379,7 @@ def dh_null_to_nan(np_array: np.ndarray, type_promotion: bool = False) -> np.nda
         np.ndarray: The numpy array with Deephaven nulls converted to np.nan.
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     if not isinstance(np_array, np.ndarray):
         raise DHError(message="The given np_array argument is not a numpy array.")
@@ -419,7 +419,7 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
         a pandas Series
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     if conv_null and dtype == dtypes.bool_:
         j_array = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)
@@ -462,7 +462,7 @@ def j_table_definition(
         a Deephaven TableDefinition object or None if the input is None
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     warn(
         "j_table_definition is deprecated for removal next release, prefer TableDefinition",
