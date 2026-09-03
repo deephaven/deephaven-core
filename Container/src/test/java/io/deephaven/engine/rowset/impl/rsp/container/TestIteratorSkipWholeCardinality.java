@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Asking an iterator to skip exactly as many values as the container holds leaves nothing to iterate. That is a request
@@ -45,6 +46,49 @@ public class TestIteratorSkipWholeCardinality {
             final SearchRangeIterator it = c.getShortRangeIterator(1);
             assertFalse(name + ": exhausted", it.hasNext());
         }
+    }
+
+    /**
+     * The same with several values, and with each fixture's implementation asserted. A single-value fixture is not
+     * enough: the factory answers a one-value range with a singleton, so the single-range implementation would go
+     * untested.
+     */
+    @Test
+    public void testSkippingEveryValueOfAMultiValueContainer() {
+        final int card = 11;
+        for (final Container c : multiValueContainers(10, 21)) {
+            final String name = c.getClass().getSimpleName();
+            assertEquals(name + ": holds " + card + " values", card, c.getCardinality());
+
+            final SearchRangeIterator ranges = c.getShortRangeIterator(card);
+            assertFalse(name + ": range iterator exhausted", ranges.hasNext());
+
+            final ContainerShortBatchIterator batch = c.getShortBatchIterator(card);
+            assertFalse(name + ": batch iterator exhausted", batch.hasNext());
+
+            // And a partial skip still yields the rest.
+            final SearchRangeIterator partial = c.getShortRangeIterator(card - 1);
+            assertTrue(name + ": partial skip has a value", partial.hasNext());
+            partial.next();
+            assertEquals(name + ": partial skip lands on the last value", 20, partial.start());
+        }
+    }
+
+    /** One fixture per implementation able to hold a contiguous run, each asserted to be the class we mean. */
+    private static Container[] multiValueContainers(final int begin, final int endExclusive) {
+        final ArrayContainer array = new ArrayContainer(endExclusive - begin);
+        for (int v = begin; v < endExclusive; ++v) {
+            array.iset((short) v);
+        }
+        final Container singleRange = new SingleRangeContainer(begin, endExclusive);
+        assertEquals("the fixture is a single range container", "SingleRangeContainer",
+                singleRange.getClass().getSimpleName());
+        return new Container[] {
+                singleRange,
+                array,
+                new BitmapContainer().iadd(begin, endExclusive),
+                new RunContainer(begin, endExclusive),
+        };
     }
 
     /** Skipping nothing still yields the value. */

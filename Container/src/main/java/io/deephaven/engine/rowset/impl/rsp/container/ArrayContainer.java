@@ -1566,6 +1566,10 @@ public class ArrayContainer extends Container {
             int iend = inValues.end();
             for (int key = istart; key < iend; ++key) {
                 if (startSearch > maxPos) {
+                    if (ostart != -1) {
+                        // Positions accumulated but not yet handed over; the maxPos checks below flush the same way.
+                        outPositions.accept(ostart, oend + 1);
+                    }
                     return true;
                 }
                 int pos = ContainerUtil.unsignedBinarySearch(content, startSearch, cardinality,

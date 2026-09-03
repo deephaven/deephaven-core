@@ -1115,6 +1115,9 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public Container inot(final int firstOfRange, final int lastOfRange) {
+        if (lastOfRange <= firstOfRange) {
+            return this;
+        }
         final BitmapContainer ans = deepCopyIfShared();
         return ans.inotImpl(firstOfRange, lastOfRange);
     }
@@ -1360,6 +1363,9 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public Container not(final int firstOfRange, final int lastOfRange) {
+        if (lastOfRange <= firstOfRange) {
+            return cowRef();
+        }
         final BitmapContainer answer = deepCopy();
         return answer.inot(firstOfRange, lastOfRange);
     }

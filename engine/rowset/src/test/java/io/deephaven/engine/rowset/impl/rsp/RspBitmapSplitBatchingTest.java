@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.TreeSet;
 
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.render;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rangesOf;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
 
@@ -24,24 +26,6 @@ import static org.junit.Assert.assertEquals;
 public class RspBitmapSplitBatchingTest {
 
     private static final long BS = BLOCK_SIZE;
-
-    private static List<long[]> rangesOf(final RspBitmap rb) {
-        final List<long[]> out = new ArrayList<>();
-        rb.forEachLongRange((s, e) -> {
-            out.add(new long[] {s, e});
-            return true;
-        });
-        return out;
-    }
-
-    private static List<long[]> rangesOf(final RowSet rs) {
-        final List<long[]> out = new ArrayList<>();
-        rs.forEachRowKeyRange((s, e) -> {
-            out.add(new long[] {s, e});
-            return true;
-        });
-        return out;
-    }
 
     /**
      * {@code from} minus {@code remove}, by interval arithmetic on the ranges themselves. Deliberately not built from
@@ -73,14 +57,6 @@ public class RspBitmapSplitBatchingTest {
             }
         }
         return out;
-    }
-
-    private static String render(final List<long[]> ranges) {
-        final StringBuilder sb = new StringBuilder();
-        for (final long[] r : ranges) {
-            sb.append(r[0]).append('-').append(r[1]).append(' ');
-        }
-        return sb.toString();
     }
 
     private static void assertRangesAre(final List<long[]> expected, final RspBitmap actual) {

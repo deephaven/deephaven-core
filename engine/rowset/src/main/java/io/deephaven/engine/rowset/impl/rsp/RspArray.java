@@ -856,7 +856,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (flenLastSpan > 0) {
                 lastSpanIsFull = true;
                 deltaLast = endOffset + 1;
-                if (deltaLast > BLOCK_SIZE) {
+                if (deltaLast > BLOCK_SIZE && modBlockSize(deltaLast) > 0) {
+                    // If we have more than one block, we need two spans in the destination. We have more than one block
+                    // if the deltaLast is greater than the size of a single container *and* doesn't exactly hit a
+                    // block boundary.
                     ++sz;
                 }
             }

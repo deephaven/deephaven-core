@@ -413,7 +413,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
         public SearchRangeIter(final SingleRangeContainer sr, final int skip) {
             start = sr.first() + skip;
             end = sr.last() + 1;
-            hasNext = true;
+            hasNext = start < end;
         }
 
         @Override

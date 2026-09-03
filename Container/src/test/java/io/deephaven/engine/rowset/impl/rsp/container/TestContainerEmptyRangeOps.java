@@ -8,6 +8,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.engine.rowset.impl.rsp.container.ContainerTestCommon.valuesOf;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -15,15 +16,6 @@ import static org.junit.Assert.assertEquals;
  * must treat both as a no-op rather than deriving indices from a wrapped endpoint.
  */
 public class TestContainerEmptyRangeOps {
-
-    private static List<Integer> valuesOf(final Container c) {
-        final List<Integer> out = new ArrayList<>();
-        final ShortIterator it = c.getShortIterator();
-        while (it.hasNext()) {
-            out.add(it.nextAsInt());
-        }
-        return out;
-    }
 
     /** inot has to guard the empty range the way not already does. */
     @Test
@@ -73,6 +65,48 @@ public class TestContainerEmptyRangeOps {
         final Container offset = Container.singleRange(100, 200).remove(150, 150);
         offset.validate();
         assertEquals("remove(150, 150) keeps everything", 100, offset.getCardinality());
+    }
+
+    /**
+     * Negating a backwards or empty range changes nothing, on every implementation. A range whose end precedes its
+     * start describes no values at all, so there is nothing to flip.
+     */
+    @Test
+    public void testEveryImplementationNegatesADegenerateRangeAsANoOp() {
+        for (final int[] range : new int[][] {{0, 0}, {2, 2}, {65535, 65535}, {10, 5}, {65535, 0}}) {
+            for (final Container c : degenerateFixtures()) {
+                final String name = c.getClass().getSimpleName() + " (" + range[0] + ", " + range[1] + ")";
+                final List<Integer> before = valuesOf(c);
+
+                final Container notted = c.not(range[0], range[1]);
+                notted.validate();
+                assertEquals(name + " not", before, valuesOf(notted));
+                assertEquals(name + " not leaves us alone", before, valuesOf(c));
+
+                // On the fixture itself, so the implementation named above is the one exercised. Safe for these
+                // ranges: a no-op must not mutate, and the assertions below would catch it if it did.
+                final Container inotted = c.inot(range[0], range[1]);
+                inotted.validate();
+                assertEquals(name + " inot", before, valuesOf(inotted));
+            }
+        }
+    }
+
+    /** One fixture per container implementation, all holding the same three values. */
+    private static Container[] degenerateFixtures() {
+        final ArrayContainer array = new ArrayContainer(3);
+        array.iset((short) 10);
+        array.iset((short) 20);
+        array.iset((short) 30);
+        return new Container[] {
+                array,
+                new BitmapContainer().iset((short) 10).iset((short) 20).iset((short) 30),
+                new RunContainer(10, 11).iset((short) 20).iset((short) 30),
+                Container.twoValues((short) 10, (short) 20),
+                Container.singleton((short) 10),
+                Container.singleRange(10, 21),
+                Container.empty(),
+        };
     }
 
     /** The other implementations already treat these as no-ops; keep every one in agreement. */
