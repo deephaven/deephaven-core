@@ -38,18 +38,22 @@ high_volume = market_data.where("Volume > 1000000")
 recent_trades = market_data.tail(10)
 ```
 
-When new data arrives in `market_data`, Deephaven computes `with_metrics`, `high_volume`, and `recent_trades` simultaneously on different cores.
+When new data arrives in `market_data`, Deephaven updates `with_metrics`, `high_volume`, and `recent_trades` simultaneously on different cores.
 
 Deephaven tracks which tables depend on which through an internal structure called the [update graph](../dag.md). Independent tables (those that don't depend on each other) run in parallel automatically.
 
 ### Within a single table
 
-Deephaven also parallelizes calculations within a single table. When you run `source.update("Total = Price * Quantity")`, Deephaven:
+Deephaven also parallelizes calculations within a single table in two ways:
+
+**Across rows**: When you run `source.update("Total = Price * Quantity")`, Deephaven:
 
 1. Divides the rows into groups.
 2. Assigns each group to a different CPU core.
 3. Each core calculates `Total` for its rows independently.
 4. Combines results into the final `Total` column.
+
+**Across columns**: When you compute multiple columns in the same operation, Deephaven can calculate independent columns simultaneously. For example, in `source.update(["A = X * 2", "B = Y + 1"])`, columns `A` and `B` can be computed on different cores at the same time because neither depends on the other.
 
 **What gets parallelized**:
 
@@ -59,11 +63,11 @@ Deephaven also parallelizes calculations within a single table. When you run `so
 **What does NOT get parallelized**:
 
 - [`view`](../../reference/table-operations/select/view.md) and [`update_view`](../../reference/table-operations/select/update-view.md) — these are lazily evaluated when cells are accessed, not computed upfront.
-- Operations marked with `with_serial` (you control this).
+- Operations marked with [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) (you control this).
 - Operations waiting for dependencies (automatic in the update graph).
 
 > [!CAUTION]
-> In Python builds that use the GIL (global interpreter lock), parallelizing filters and selectables can negatively impact query performance. To prevent performance regressions, even stateless filters and selectables that use Python objects are not parallelized unless the Python build is free-threaded.
+> **Python GIL limitation**: Most Python builds use the GIL (global interpreter lock), which prevents true parallel execution of Python code. Deephaven only parallelizes Python-backed filters and selectables on free-threaded Python builds. On standard Python builds, these operations run sequentially even when stateless.
 
 ## Controlling parallelization
 
@@ -71,7 +75,7 @@ Most queries work correctly with automatic parallelization. However, some code r
 
 Deephaven provides two mechanisms:
 
-- **Serialization**: Process rows one at a time, in order, using `with_serial`. Use this when a single operation needs sequential execution.
+- **Serialization**: Process rows one at a time, in order, using [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial). Use this when a single operation needs sequential execution.
 - **Barriers**: Ensure one operation completes before another starts. Use this when operation A must finish before operation B begins.
 
 For detailed information and examples, see [Controlling concurrency](#controlling-concurrency) below.
@@ -82,16 +86,17 @@ Queries execute in two phases, and parallelization works differently in each.
 
 ### Initialization
 
-When you first create a table operation (like `.where` or `.update`), Deephaven computes the initial result using all existing data. During initialization, Deephaven divides the rows among CPU cores so each core processes a portion simultaneously.
+When you first create a table operation (like [`where`](../../reference/table-operations/filter/where.md) or [`update`](../../reference/table-operations/select/update.md)), Deephaven computes the initial result using all existing data. During initialization, Deephaven divides the rows among CPU cores so each core processes a portion simultaneously.
 
 For live (refreshing) tables, Deephaven also registers the table in the [update graph](../dag.md) so it can receive future updates.
 
 ### Updates
 
-After initialization, live tables update whenever their source data changes. During updates, Deephaven parallelizes in two ways:
+After initialization, live tables update whenever their source data changes. During updates, Deephaven parallelizes in three ways:
 
-1. **Within each operation**: Deephaven divides rows among cores, just like during initialization.
-2. **Across operations**: Deephaven computes independent tables in the update graph simultaneously on different cores.
+1. **Across rows**: Deephaven divides rows among cores, just like during initialization.
+2. **Across columns**: Independent columns in the same operation compute simultaneously.
+3. **Across tables**: Independent tables in the update graph update simultaneously on different cores.
 
 ## Thread pools
 
@@ -99,7 +104,7 @@ Deephaven uses two separate groups of worker threads (called "thread pools") to 
 
 ### Operation Initialization Thread Pool
 
-This pool processes queries when they are first created. When you call `.update`, `.where`, or similar operations, this pool divides the existing data among its threads to compute the initial result.
+This pool processes queries when they are first created. When you call [`update`](../../reference/table-operations/select/update.md), [`where`](../../reference/table-operations/filter/where.md), or similar operations, this pool divides the existing data among its threads to compute the initial result.
 
 **Configuration**: `OperationInitializationThreadPool.threads`
 
