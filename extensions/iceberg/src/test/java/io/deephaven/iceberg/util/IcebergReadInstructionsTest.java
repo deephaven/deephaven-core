@@ -32,6 +32,11 @@ class IcebergReadInstructionsTest {
         }
     }
 
+    /**
+     * {@link IcebergReadInstructions#DEFAULT} and a bare builder both return the {@code alwaysTrue()} <i>singleton</i>
+     * ({@code isSameAs}, not {@code isEqualTo}). Pins the {@code @Value.Default} decision over
+     * {@code Optional<Expression>}, and the singleton identity that lets "is pruning on?" be a reference compare.
+     */
     @Test
     void pruningExpressionDefaultsToAlwaysTrue() {
         assertThat(IcebergReadInstructions.DEFAULT.pruningExpression()).isSameAs(Expressions.alwaysTrue());
@@ -39,6 +44,11 @@ class IcebergReadInstructionsTest {
                 .isSameAs(Expressions.alwaysTrue());
     }
 
+    /**
+     * Builder round-trip asserting {@code isSameAs}: the {@link Expression} is stored as given, not copied or
+     * normalized. Cheap, but Immutables could plausibly interpose on an interface-typed attribute, so it is worth
+     * stating.
+     */
     @Test
     void pruningExpression() {
         final Expression expression = Expressions.equal("Foo", "bar");
@@ -48,6 +58,11 @@ class IcebergReadInstructionsTest {
         assertThat(instructions.pruningExpression()).isSameAs(expression);
     }
 
+    /**
+     * The wither sets the new value <i>and</i> carries over unrelated attributes ({@code updateMode},
+     * {@code ignoreResolvingErrors}). This is the shape of bug that silently drops fields, so asserting the carry-over
+     * matters more than asserting the set.
+     */
     @Test
     void withPruningExpression() {
         final Expression expression = Expressions.greaterThan("Foo", 42);

@@ -3530,6 +3530,13 @@ public abstract class SqliteCatalogBase {
         return tableAdapter;
     }
 
+    // <editor-fold desc="Semantics">
+
+    /**
+     * Identity-partition predicate prunes exactly; asserts the definition survives and the rows are exactly one
+     * partition, then an {@code OR} over two. The happy path, and the only case where pruning alone yields an exact
+     * answer.
+     */
     @Test
     void pruningExpressionOnIdentityPartition() {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.OnIdentityPartition");
@@ -3550,6 +3557,10 @@ public abstract class SqliteCatalogBase {
                 twoPartitions);
     }
 
+    /**
+     * Pruning with {@code alwaysTrue()} equals not pruning at all. Pins the neutral-element property the default relies
+     * on.
+     */
     @Test
     void pruningExpressionAlwaysTrueMatchesUnfiltered() {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.AlwaysTrueMatchesUnfiltered");
@@ -3559,6 +3570,10 @@ public abstract class SqliteCatalogBase {
                 tableAdapter.table(pruning(Expressions.alwaysTrue())));
     }
 
+    /**
+     * Everything pruned gives an empty table whose <i>definition still survives</i>. Guards the zero-location path,
+     * where schema inference could plausibly collapse.
+     */
     @Test
     void pruningExpressionAlwaysFalseYieldsEmptyTable() {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.AlwaysFalseYieldsEmptyTable");
@@ -3607,6 +3622,10 @@ public abstract class SqliteCatalogBase {
         assertThat(fromIceberg.where("intCol == 2").size()).isEqualTo(1);
     }
 
+    /**
+     * Pruned-then-filtered equals unpruned-then-filtered. The invariant that matters most: pruning may change
+     * <i>work</i>, never <i>answers</i>.
+     */
     @Test
     void pruningExpressionThenDeephavenWhereMatchesUnprunedWhere() {
         final TableIdentifier tableIdentifier =
@@ -3619,6 +3638,16 @@ public abstract class SqliteCatalogBase {
                         .where("intCol >= 100"));
     }
 
+    // </editor-fold>
+
+    // <editor-fold desc="Validation">
+
+    /**
+     * Unknown field throws {@code IllegalArgumentException("Invalid pruningExpression")} at {@code table()}, with the
+     * full Iceberg struct in the root cause. Pins both eager validation and the message quality. A name differing only
+     * in case is rejected the same way, which pins {@code IcebergBaseLayout.PRUNING_CASE_SENSITIVE} — flipping it would
+     * quietly turn a wrong-case name from an error into a successful prune.
+     */
     @Test
     void pruningExpressionUnknownFieldFailsAtTableCall() {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.UnknownFieldFailsAtTableCall");
@@ -3631,8 +3660,20 @@ public abstract class SqliteCatalogBase {
             assertThat(e).hasRootCauseMessage("Cannot find field 'NoSuchField' in struct: "
                     + "struct<1: intCol: optional int, 2: doubleCol: optional double, 3: PartCol: optional string>");
         }
+
+        // Field names are case-sensitive, so "partcol" is as unresolvable as a name that does not exist
+        try {
+            tableAdapter.table(pruning(Expressions.equal("partcol", "boy")));
+            failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("Invalid pruningExpression");
+        }
     }
 
+    /**
+     * Int literal against a string column, same rejection. Covers {@link Binder}'s type-conversion branch, distinct
+     * from name lookup.
+     */
     @Test
     void pruningExpressionWithWrongLiteralTypeFailsAtTableCall() {
         final TableIdentifier tableIdentifier =
@@ -3647,6 +3688,10 @@ public abstract class SqliteCatalogBase {
         }
     }
 
+    /**
+     * A pre-bound expression is rejected. Pins why no {@code @Value.Check} was added: the eager validation already
+     * catches this via {@link IllegalStateException}.
+     */
     @Test
     void pruningExpressionRejectsBoundExpression() {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.RejectsBoundExpression");
@@ -3660,6 +3705,10 @@ public abstract class SqliteCatalogBase {
             assertThat(e).hasMessageContaining("Invalid pruningExpression");
         }
     }
+
+    // </editor-fold>
+
+    // <editor-fold desc="Name resolution">
 
     /**
      * The expression is resolved against the Iceberg schema, so it may reference fields that the Deephaven definition
@@ -3724,6 +3773,10 @@ public abstract class SqliteCatalogBase {
             assertThat(e).hasMessageContaining("Invalid pruningExpression");
         }
     }
+
+    // </editor-fold>
+
+    // <editor-fold desc="Schema / spec evolution">
 
     /**
      * A manifest carries the schema that was current when it was written, so an expression referencing a newly added
@@ -3879,6 +3932,14 @@ public abstract class SqliteCatalogBase {
                 evolvedAdapter.table(pruning(Expressions.equal("intCol", 102))));
     }
 
+    // </editor-fold>
+
+    // <editor-fold desc="Instruction interaction and refresh">
+
+    /**
+     * Pruning and {@code snapshotId} together: a later-appended partition is excluded by the snapshot, {@code apple} by
+     * the expression. Confirms the two compose independently.
+     */
     @Test
     void pruningExpressionWithSnapshotId() {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.WithSnapshotId");
@@ -3907,6 +3968,10 @@ public abstract class SqliteCatalogBase {
                 tableAdapter.table(instructions));
     }
 
+    /**
+     * After a manual refresh, a newly appended matching partition appears and a non-matching one does not. Refresh
+     * recomputes locations, so this is where a "prune once at construction" bug surfaces.
+     */
     @Test
     void pruningExpressionWithManualRefreshUpdate() {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.WithManualRefreshUpdate");
@@ -3942,6 +4007,10 @@ public abstract class SqliteCatalogBase {
                 fromIcebergRefreshing);
     }
 
+    /**
+     * Same assertion as {@link #pruningExpressionWithManualRefreshUpdate()} under auto-refresh mode, exercising the
+     * timer-driven path.
+     */
     @Test
     void pruningExpressionWithAutoRefreshingTable() throws InterruptedException {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("PruningExpression.WithAutoRefreshingTable");
@@ -4009,6 +4078,8 @@ public abstract class SqliteCatalogBase {
 
         assertTableEquals(pruningPart(300).update("PartCol = `dog`"), fromIcebergRefreshing);
     }
+
+    // </editor-fold>
 
     /*--- End of tests for IcebergReadInstructions.pruningExpression ---*/
 }
