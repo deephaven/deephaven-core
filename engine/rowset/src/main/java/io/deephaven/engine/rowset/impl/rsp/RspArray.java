@@ -3944,6 +3944,34 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
+     * The last index at or after {@code fromIdx} whose span key is at or below {@code key}; {@code fromIdx} itself when
+     * the span there already lies past {@code key}; {@code size} when {@code fromIdx} is past the end. Gallops from
+     * {@code fromIdx}, so the cost grows with the distance moved rather than with the array: walking two arrays in step
+     * costs O(1) per step where they interleave densely and O(log) per stretch skipped where one side is sparse.
+     */
+    int lastSpanIndexNotAbove(final int fromIdx, final long key) {
+        if (fromIdx >= size) {
+            return size;
+        }
+        if (uGreater(getKey(fromIdx), key)) {
+            return fromIdx;
+        }
+        if (fromIdx + 1 >= size || uGreater(getKey(fromIdx + 1), key)) {
+            return fromIdx; // The common dense case: the very next span is the one, so no search is needed.
+        }
+        int lo = fromIdx; // getKey(lo) <= key from here on.
+        int step = 1;
+        while (lo + step < size && uLessOrEqual(getKey(lo + step), key)) {
+            lo += step;
+            step <<= 1;
+        }
+        final int hi = Math.min(lo + step, size); // exclusive: past the end, or a key above ours.
+        final int i = unsignedBinarySearch(this::getKey, lo, hi, key);
+        // Not found means -i - 1 is the insertion point, and the last key at or below ours sits just before it.
+        return i >= 0 ? i : -i - 2;
+    }
+
+    /**
      * Intersects this RspArray with the argument, leaving the result on this RspArray. The argument won't be modified.
      *
      * @param other an RspArray.
@@ -4023,6 +4051,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     break;
                 }
             }
+            // Jump past other's spans that end before our next span begins. With far fewer spans than other, this is
+            // what keeps the pass proportional to us rather than to other.
+            if (startPos < size) {
+                andIdx = other.lastSpanIndexNotAbove(andIdx + 1, getKey(startPos)) - 1;
+            }
         }
         final int maxWaste = 7;
         size = buf.size;
@@ -4052,6 +4085,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (startPos >= size) {
                 break;
             }
+            // As in the first pass: our spans before startPos are settled, so other's spans that end before our next
+            // one begins have nothing left to do.
+            otherIdx = other.lastSpanIndexNotAbove(otherIdx + 1, getKey(startPos)) - 1;
         }
         collectRemovedIndicesIfAny(madeNullSpansMu);
     }
