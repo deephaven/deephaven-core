@@ -526,14 +526,16 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * @param start the start position for the range provided.
      * @param startLowBits the low bits of the start of the range to add. 0 <= start < BLOCK_SIZE
      * @param endLowBits the low bits of the end (inclusive) of the range to add. 0 <= end < BLOCK_SIZE
+     * @param madeNullSpansMu when not null, spans absorbed by a full block span are marked for removal and recorded
+     *        here instead of being compacted out immediately; the caller then compacts once for the whole batch
      * @return the index of the span where the interval was added.
      */
     private int singleBlockAddRange(final int startPos, final long startHighBits, final long start,
-            final int startLowBits, final int endLowBits) {
+            final int startLowBits, final int endLowBits, final MutableObject<SortedRanges> madeNullSpansMu) {
         final int endExclusive = endLowBits + 1;
         final int i = getSpanIndex(startPos, start);
         if (endExclusive - startLowBits == BLOCK_SIZE) {
-            return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
+            return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, madeNullSpansMu);
         }
         if (i < 0) {
             final int j = -i - 1;
@@ -561,14 +563,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 result = new RunContainer(keyLowAsInt, keyLowAsInt + 1, startLowBits, endExclusive);
             } else if (keyLowAsInt + 1 == startLowBits) {
                 if (endExclusive - keyLowAsInt == BLOCK_SIZE) {
-                    return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
+                    return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, madeNullSpansMu);
                 }
                 result = Container.singleRange(keyLowAsInt, endExclusive);
             } else if (endLowBits + 1 < keyLowAsInt) {
                 result = new RunContainer(startLowBits, endExclusive, keyLowAsInt, keyLowAsInt + 1);
             } else if (endLowBits + 1 == keyLowAsInt) {
                 if (keyLowAsInt + 1 - startLowBits == BLOCK_SIZE) {
-                    return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
+                    return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, madeNullSpansMu);
                 }
                 result = Container.singleRange(startLowBits, keyLowAsInt + 1);
             } else { // start <= key <= end
@@ -580,7 +582,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             result = container.iadd(startLowBits, endExclusive);
             if (result.isAllOnes()) {
                 view.close();
-                return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
+                return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, madeNullSpansMu);
             }
         }
         try (SpanView ensureViewIsClosedIfNotNull = view) {
@@ -704,6 +706,20 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     }
 
     public int addRangeUnsafeNoWriteCheck(final int fromIdx, final long start, final long end) {
+        return addRangeUnsafeNoWriteCheck(fromIdx, start, end, null);
+    }
+
+    /**
+     * Add a range, searching for its place from {@code fromIdx}. A range that covers whole blocks may merge with, or
+     * absorb, spans we already hold; with {@code madeNullSpansMu} null the absorbed spans are compacted out at once,
+     * which shifts every later span, so a caller adding many ranges passes a tracker and compacts once at the end via
+     * {@link #collectRemovedIndicesIfAny}. Marked spans only ever sit before the index returned, so later searches that
+     * start from it never see them.
+     *
+     * @return the index of the span holding the range's last key, from where the next (higher) range's search can start
+     */
+    private int addRangeUnsafeNoWriteCheck(final int fromIdx, final long start, final long end,
+            final MutableObject<SortedRanges> madeNullSpansMu) {
         if (start > end) {
             throw new IllegalArgumentException("bad range start=" + start + " > end=" + end + ".");
         }
@@ -718,42 +734,50 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         final int sLow = lowBitsAsInt(start);
         final int eLow = lowBitsAsInt(end);
         if (sHigh == eHigh) {
-            return singleBlockAddRange(fromIdx, sHigh, start, sLow, eLow);
+            return singleBlockAddRange(fromIdx, sHigh, start, sLow, eLow, madeNullSpansMu);
         }
-        int i = singleBlockAddRange(fromIdx, sHigh, start, sLow, BLOCK_LAST);
+        int i = singleBlockAddRange(fromIdx, sHigh, start, sLow, BLOCK_LAST, madeNullSpansMu);
         final long sHighNext = RspArray.nextKey(sHigh);
         final int idxForFull = getSetOrInsertIdx(i, sHighNext);
         if (sHighNext == eHigh) {
             if (eLow == BLOCK_LAST) {
-                i = setOrInsertFullBlockSpanAtIndex(idxForFull, sHighNext, 1, null);
+                i = setOrInsertFullBlockSpanAtIndex(idxForFull, sHighNext, 1, madeNullSpansMu);
             } else {
-                i = singleBlockAddRange(i, sHighNext, sHighNext, 0, eLow);
+                i = singleBlockAddRange(i, sHighNext, sHighNext, 0, eLow, madeNullSpansMu);
             }
             return i;
         }
         if (eLow < BLOCK_LAST) {
             final int j = setOrInsertFullBlockSpanAtIndex(
-                    idxForFull, sHighNext, RspArray.distanceInBlocks(sHighNext, eHigh), null);
-            return singleBlockAddRange(j, eHigh, eHigh, 0, eLow);
+                    idxForFull, sHighNext, RspArray.distanceInBlocks(sHighNext, eHigh), madeNullSpansMu);
+            return singleBlockAddRange(j, eHigh, eHigh, 0, eLow, madeNullSpansMu);
         }
         return setOrInsertFullBlockSpanAtIndex(
-                idxForFull, sHighNext, RspArray.distanceInBlocks(sHighNext, eHigh) + 1, null);
+                idxForFull, sHighNext, RspArray.distanceInBlocks(sHighNext, eHigh) + 1, madeNullSpansMu);
 
     }
 
     public void addRangesUnsafeNoWriteCheck(final RowSet.RangeIterator rit) {
+        addShiftedRangesUnsafeNoWriteCheck(0, rit);
+    }
+
+    /**
+     * Add every range of {@code rit}, shifted by {@code shiftAmount}, compacting out the spans absorbed by full block
+     * spans once at the end rather than once per range. Closes {@code rit}.
+     */
+    private void addShiftedRangesUnsafeNoWriteCheck(final long shiftAmount, final RowSet.RangeIterator rit) {
+        final MutableObject<SortedRanges> madeNullSpansMu = getWorkSortedRangesMutableObject(workDataPerThread.get());
         try {
             int i = 0;
             while (rit.hasNext()) {
                 rit.next();
-                i = addRangeUnsafeNoWriteCheck(i, rit.currentRangeStart(), rit.currentRangeEnd());
-                if (i == -1) {
-                    return;
-                }
+                i = addRangeUnsafeNoWriteCheck(i, rit.currentRangeStart() + shiftAmount,
+                        rit.currentRangeEnd() + shiftAmount, madeNullSpansMu);
             }
         } finally {
             rit.close();
         }
+        collectRemovedIndicesIfAny(madeNullSpansMu);
     }
 
     public boolean contains(final long val) {
@@ -2076,15 +2100,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         // Same reasoning as the unshifted insert: without this, every range starting a block we lack shifts the tail of
         // our spans array on its own, which is quadratic when both sides are large.
         ans.makeRoomForPartiallyCoveredBlocks(shiftAmount, sr);
-        int i = 0;
-        try (final RowSet.RangeIterator rit = sr.getRangeIterator()) {
-            while (rit.hasNext()) {
-                rit.next();
-                final long start = rit.currentRangeStart() + shiftAmount;
-                final long end = rit.currentRangeEnd() + shiftAmount;
-                i = ans.addRangeUnsafeNoWriteCheck(i, start, end);
-            }
-        }
+        ans.addShiftedRangesUnsafeNoWriteCheck(shiftAmount, sr.getRangeIterator());
         ans.finishMutations();
         return ans;
     }
