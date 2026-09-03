@@ -153,9 +153,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         final WorkData wd = workDataPerThread.get();
         final MutableObject<SortedRanges> sortedRangesMu = getWorkSortedRangesMutableObject(wd);
         final PendingSpanInserts pending = wd.getPendingSpanInserts();
-        // Key of the last full block span left pending, or -1. Two full block spans for adjacent blocks have to be a
-        // single span, and a pending one is not in the array yet for fullBlockSpanNeedsNoMerge to notice.
-        long pendingFullBlockKey = -1;
+        // The full block span most recently produced by a block filling up, which later blocks may extend or fall
+        // inside; a merge can absorb a full block span to its right, so it may reach blocks the chunk has not gotten
+        // to.
+        long lastFullKey = -1; // key of its first block
+        long lastFullLastKey = -1; // key of its last block: lastFullKey + (lastFullFlen - 1) * BLOCK_SIZE
+        long lastFullFlen = 0; // how many blocks it covers; 0 while there is no such span
+        int lastFullIdx = -1; // its index in our arrays, or -1 when it is still a pending insert
+        boolean lastFullPending = false; // true when it is the last pending insert rather than in our arrays
         int spanIndex = 0;
         try (SpanView ourView = wd.borrowSpanView()) {
             for (int vi = 0; vi < length; vi += lengthFromThisSpan) {
@@ -163,6 +168,11 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 final long highBits = highBits(value);
                 lengthFromThisSpan = countContiguousHighBitsMatches(
                         values, vi + offset + 1, length - vi - 1, highBits) + 1;
+                if (lastFullFlen > 0 && lastFullKey <= highBits && highBits <= lastFullLastKey) {
+                    // Inside the span the last merge produced. The slots it absorbed are marked for removal and sit
+                    // before spanIndex, where searches no longer look, so this is decided here rather than by search.
+                    continue;
+                }
                 final int spanIndexRaw = getSpanIndex(spanIndex, highBits);
                 Container container = null;
                 boolean existing = false;
@@ -182,32 +192,78 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 final Container result = createOrUpdateContainerForValues(
                         values, vi + offset, lengthFromThisSpan, existing, spanIndex, container);
                 if (result != null && result.isAllOnes()) {
-                    final boolean adjacentToPendingFullBlockSpan =
-                            pendingFullBlockKey != -1 && highBits - pendingFullBlockKey == BLOCK_SIZE;
-                    if (!adjacentToPendingFullBlockSpan && existing
-                            && fullBlockSpanNeedsNoMerge(spanIndex - 1, spanIndex + 1, highBits, 1)) {
-                        // Nothing moves, so whatever is pending stays valid.
-                        setFullBlockSpan(spanIndex, highBits, 1);
-                    } else if (!adjacentToPendingFullBlockSpan && !existing
-                            && fullBlockSpanNeedsNoMerge(spanIndex - 1, spanIndex, highBits, 1)) {
-                        pending.pushFullBlockSpan(spanIndex, highBits, 1);
-                        pendingFullBlockKey = highBits;
-                    } else {
-                        // This one has to merge with, or absorb, spans of ours; that is what
-                        // setOrInsertFullBlockSpanAtIndex is for, and it needs our arrays settled first.
-                        final int idxForFull;
-                        if (pending.size() == 0) {
-                            idxForFull = spanIndexRaw;
+                    // The block is full. Merge it with the full block spans touching it: the one the previous merge
+                    // produced (in the array or still pending), else the array span to its left; and the array span to
+                    // its right. A slot that folds into another is marked for removal and compacted out along with the
+                    // pending inserts at the end, so nothing moves here and every pending position stays valid.
+                    final int rightIdx = existing ? spanIndex + 1 : spanIndex;
+                    long rightFlen = 0;
+                    if (rightIdx < size && spanInfos[rightIdx] != -1 && getKey(rightIdx) - highBits == BLOCK_SIZE) {
+                        rightFlen = getFullBlockSpanLen(spanInfos[rightIdx], spans[rightIdx]);
+                    }
+                    final long addedFlen = 1 + rightFlen;
+                    int consumedThrough = -1;
+                    if (lastFullFlen > 0 && highBits - lastFullLastKey == BLOCK_SIZE) {
+                        lastFullFlen += addedFlen;
+                        if (lastFullPending) {
+                            pending.setLastFullBlockSpan(lastFullKey, lastFullFlen);
                         } else {
-                            // Our spans move here, so the position we searched out above no longer holds. Anything
-                            // already marked for removal has to go at the same time, since those marks are recorded by
-                            // index too.
-                            applyPendingSpanEdits(pending, sortedRangesMu);
-                            sortedRangesMu.setValue(wd.getMadeNullSortedRanges());
-                            pendingFullBlockKey = -1;
-                            idxForFull = getSpanIndex(0, highBits);
+                            setFullBlockSpan(lastFullIdx, lastFullKey, lastFullFlen);
                         }
-                        spanIndex = setOrInsertFullBlockSpanAtIndex(idxForFull, highBits, 1, sortedRangesMu);
+                        if (existing) {
+                            markIndexAsRemoved(sortedRangesMu, spanIndex);
+                            consumedThrough = spanIndex;
+                        }
+                    } else {
+                        final int leftIdx = spanIndex - 1;
+                        long leftFlen = 0;
+                        if (leftIdx >= 0 && spanInfos[leftIdx] != -1) {
+                            leftFlen = getFullBlockSpanLen(spanInfos[leftIdx], spans[leftIdx]);
+                            if (leftFlen > 0 && highBits
+                                    - getKeyForLastBlockInFullSpan(getKey(leftIdx), leftFlen) != BLOCK_SIZE) {
+                                leftFlen = 0;
+                            }
+                        }
+                        if (leftFlen > 0) {
+                            lastFullKey = getKey(leftIdx);
+                            lastFullFlen = leftFlen + addedFlen;
+                            lastFullIdx = leftIdx;
+                            lastFullPending = false;
+                            setFullBlockSpan(leftIdx, lastFullKey, lastFullFlen);
+                            if (existing) {
+                                markIndexAsRemoved(sortedRangesMu, spanIndex);
+                                consumedThrough = spanIndex;
+                            }
+                        } else if (existing) {
+                            lastFullKey = highBits;
+                            lastFullFlen = addedFlen;
+                            lastFullIdx = spanIndex;
+                            lastFullPending = false;
+                            setFullBlockSpan(spanIndex, highBits, addedFlen);
+                        } else if (rightFlen > 0) {
+                            // Start the right neighbour's slot at our block instead; our insertion point is just before
+                            // it, so the keys stay ordered and nothing is consumed.
+                            lastFullKey = highBits;
+                            lastFullFlen = addedFlen;
+                            lastFullIdx = rightIdx;
+                            lastFullPending = false;
+                            setFullBlockSpan(rightIdx, highBits, addedFlen);
+                            rightFlen = 0;
+                        } else {
+                            lastFullKey = highBits;
+                            lastFullFlen = 1;
+                            lastFullIdx = -1;
+                            lastFullPending = true;
+                            pending.pushFullBlockSpan(spanIndex, highBits, 1);
+                        }
+                    }
+                    if (rightFlen > 0) {
+                        markIndexAsRemoved(sortedRangesMu, rightIdx);
+                        consumedThrough = rightIdx;
+                    }
+                    lastFullLastKey = getKeyForLastBlockInFullSpan(lastFullKey, lastFullFlen);
+                    if (consumedThrough >= 0) {
+                        spanIndex = consumedThrough + 1;
                     }
                 } else if (!existing) {
                     if (result == null) {

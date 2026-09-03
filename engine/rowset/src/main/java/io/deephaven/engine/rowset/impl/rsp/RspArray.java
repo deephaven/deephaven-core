@@ -2820,7 +2820,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return spanStartKey + additionalBlocksAfterFirst * BLOCK_SIZE;
     }
 
-    private static long getKeyForLastBlockInFullSpan(final long spanKey, final long flen) {
+    static long getKeyForLastBlockInFullSpan(final long spanKey, final long flen) {
         return spanKey + (flen - 1) * BLOCK_SIZE;
     }
 
@@ -3883,6 +3883,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             positions[size] = position;
             setFullBlockSpanRaw(size, spanInfos, spans, key, flen);
             ++size;
+        }
+
+        /** Replace the last queued span, which must be a full block span, with one of the given extent. */
+        void setLastFullBlockSpan(final long key, final long flen) {
+            setFullBlockSpanRaw(size - 1, spanInfos, spans, key, flen);
         }
     }
 
