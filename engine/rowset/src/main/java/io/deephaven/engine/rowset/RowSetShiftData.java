@@ -1116,9 +1116,10 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                             + shiftData.getEndRange(currentRangeIndex) + "]->"
                             + shiftData.getShiftDelta(currentRangeIndex));
                 }
-            } else if (!reinitializeReverseIterator) {
-                // we are in the midst of a sequence of reversed polarity things, so we should be less than the previous
-                // shift
+            } else if (!reinitializeReverseIterator && rangeToReverseStart <= currentRangeIndex) {
+                // We are in the midst of a sequence of reversed polarity things, so we should be less than the previous
+                // shift. That only holds against a range of this run: when the run's earlier ranges held no keys and
+                // were never stored, the previous stored range belongs to the run before, on the other side of us.
                 if (beginRange >= shiftData.getEndRange(currentRangeIndex)) {
                     throw new IllegalArgumentException("new range [" + beginRange + "," + endRange
                             + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex)
