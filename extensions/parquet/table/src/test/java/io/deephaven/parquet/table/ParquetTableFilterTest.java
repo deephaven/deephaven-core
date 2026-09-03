@@ -1488,12 +1488,56 @@ public final class ParquetTableFilterTest {
      * pq.write_table(table, "example.parquet")
      * </pre>
      */
+    @Test
+    public void testFilteringNaN() {
+        // Read the reference parquet file with NaN values generated using PyArrow.
+        final String path = ParquetTableFilterTest.class.getResource("/ReferenceFloatingPointNan.parquet").getFile();
+
+        {
+            // Pyarrow's parquet writing code does not write NaN values to statistics
+            final Statistics<?> floatStats = getColumnStatistics(new File(path), "Floats");
+            assertTrue(floatStats.hasNonNullValue());
+            assertEquals(-4.56f, floatStats.genericGetMin());
+            assertEquals(1.23f, floatStats.genericGetMax());
+            final Statistics<?> doubleStats = getColumnStatistics(new File(path), "Doubles");
+            assertTrue(doubleStats.hasNonNullValue());
+            assertEquals(-4.56, doubleStats.genericGetMin());
+            assertEquals(1.23, doubleStats.genericGetMax());
+        }
+
+        testFilteringNanImpl(ParquetTools.readTable(path));
+
+        // Write a new parquet file with NaN values using DH and test the filtering.
+        final String dest = Path.of(rootFile.getPath(), "filteringNan.parquet").toString();
+        final Table source = newTable(
+                floatCol("Floats", 1.23f, Float.NaN, -4.56f),
+                doubleCol("Doubles", 1.23, Double.NaN, -4.56));
+        writeTable(source, dest);
+
+        {
+            // Deephaven's parquet writing code writes NaN values to statistics, which are then corrected by Parquet
+            // reading code.
+            // TODO (DH-10771): Fix this so DH does not write NaN values to statistics.
+            final Statistics<?> floatStats = getColumnStatistics(new File(dest), "Floats");
+            assertFalse(floatStats.hasNonNullValue());
+            final Statistics<?> doubleStats = getColumnStatistics(new File(dest), "Doubles");
+            assertFalse(doubleStats.hasNonNullValue());
+        }
+
+        testFilteringNanImpl(readTable(dest));
+    }
+
     /**
-     * Sorted region pushdown answers match filters with a binary search whose equality treats NaN as equal to itself,
-     * while {@code ==} and {@code !=} follow IEEE 754, where NaN equals nothing at all. The region emits its result as
-     * an exact match with nothing left for a residual pass to repair, so those filters have to decline the search
-     * rather than answer it. Every file here is written sorted and tagged, so the filters reach the per-region sorted
-     * action rather than the table-level one; the oracle is the same query with sorted pushdown switched off.
+     * A sorted region answers a match filter with a binary search whose equality holds NaN equal to itself, while
+     * {@code ==} and {@code !=} follow IEEE 754, where NaN equals nothing at all. A NaN among the search values of such
+     * a filter can therefore never match a row, so {@link MatchFilter} drops it, and a filter left with no values is
+     * answered as the empty set -- or, inverted, the whole selection -- without a search. An {@code in} filter opts
+     * into NaN matching itself, which is what the search already does, so it keeps its NaN and is answered by the
+     * search.
+     *
+     * <p>
+     * Every file here is written sorted and tagged, so the filters reach the per-region sorted action rather than the
+     * table-level one; the oracle is the same query with sorted pushdown switched off.
      */
     @Test
     public void sortedFlatPartitionsNaNTest() {
@@ -1541,45 +1585,6 @@ public final class ParquetTableFilterTest {
             QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = originalSetting;
         }
         assertTableEquals(expected, ParquetTools.readTable(destPath).where(filters).coalesce());
-    }
-
-    @Test
-    public void testFilteringNaN() {
-        // Read the reference parquet file with NaN values generated using PyArrow.
-        final String path = ParquetTableFilterTest.class.getResource("/ReferenceFloatingPointNan.parquet").getFile();
-
-        {
-            // Pyarrow's parquet writing code does not write NaN values to statistics
-            final Statistics<?> floatStats = getColumnStatistics(new File(path), "Floats");
-            assertTrue(floatStats.hasNonNullValue());
-            assertEquals(-4.56f, floatStats.genericGetMin());
-            assertEquals(1.23f, floatStats.genericGetMax());
-            final Statistics<?> doubleStats = getColumnStatistics(new File(path), "Doubles");
-            assertTrue(doubleStats.hasNonNullValue());
-            assertEquals(-4.56, doubleStats.genericGetMin());
-            assertEquals(1.23, doubleStats.genericGetMax());
-        }
-
-        testFilteringNanImpl(ParquetTools.readTable(path));
-
-        // Write a new parquet file with NaN values using DH and test the filtering.
-        final String dest = Path.of(rootFile.getPath(), "filteringNan.parquet").toString();
-        final Table source = newTable(
-                floatCol("Floats", 1.23f, Float.NaN, -4.56f),
-                doubleCol("Doubles", 1.23, Double.NaN, -4.56));
-        writeTable(source, dest);
-
-        {
-            // Deephaven's parquet writing code writes NaN values to statistics, which are then corrected by Parquet
-            // reading code.
-            // TODO (DH-10771): Fix this so DH does not write NaN values to statistics.
-            final Statistics<?> floatStats = getColumnStatistics(new File(dest), "Floats");
-            assertFalse(floatStats.hasNonNullValue());
-            final Statistics<?> doubleStats = getColumnStatistics(new File(dest), "Doubles");
-            assertFalse(doubleStats.hasNonNullValue());
-        }
-
-        testFilteringNanImpl(readTable(dest));
     }
 
     @Test

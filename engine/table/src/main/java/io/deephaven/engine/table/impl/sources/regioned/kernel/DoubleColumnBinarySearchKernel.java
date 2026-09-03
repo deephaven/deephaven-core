@@ -102,7 +102,6 @@ public class DoubleColumnBinarySearchKernel {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         final long lastPos = selection.size() - 1;
 
-        // region binarySearchMatchLoop
         if (order.isAscending()) {
             long firstPos = 0;
             for (int idx = 0; idx < unboxed.length && firstPos <= lastPos; ++idx) {
@@ -150,7 +149,6 @@ public class DoubleColumnBinarySearchKernel {
                 firstPos = endResult + 1;
             }
         }
-        // endregion binarySearchMatchLoop
 
         return builder.build();
     }

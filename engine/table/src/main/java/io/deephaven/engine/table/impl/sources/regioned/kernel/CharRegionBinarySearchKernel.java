@@ -54,7 +54,6 @@ public class CharRegionBinarySearchKernel {
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
-        // region binarySearchMatchLoop
         if (order.isAscending()) {
             for (int idx = 0; idx < unboxed.length && firstKey <= lastKey; ++idx) {
                 final char toFind = unboxed[idx];
@@ -86,7 +85,6 @@ public class CharRegionBinarySearchKernel {
                 }
             }
         }
-        // endregion binarySearchMatchLoop
 
         return builder.build();
     }
@@ -257,7 +255,7 @@ public class CharRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static long lowerBoundAscending(
+    static long lowerBoundAscending(
             @NotNull final ColumnRegionChar<?> region,
             final long firstKey,
             final long lastKey,
@@ -306,7 +304,7 @@ public class CharRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value exceeds {@code max}.
      */
-    private static long upperBoundAscending(
+    static long upperBoundAscending(
             @NotNull final ColumnRegionChar<?> region,
             final long firstKey,
             final long lastKey,
@@ -357,7 +355,7 @@ public class CharRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static long lowerBoundDescending(
+    static long lowerBoundDescending(
             @NotNull final ColumnRegionChar<?> region,
             final long firstKey,
             final long lastKey,
@@ -406,7 +404,7 @@ public class CharRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value falls below {@code min}.
      */
-    private static long upperBoundDescending(
+    static long upperBoundDescending(
             @NotNull final ColumnRegionChar<?> region,
             final long firstKey,
             final long lastKey,

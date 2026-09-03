@@ -136,6 +136,12 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
      * double, this returns NaN == NaN -> true. Therefore NaN should be included in the search values IFF it is desired
      * to match NaN values (i.e. MatchOptions.nanMatch() is true). MatchFilter creation already handles this and will
      * remove any user-provided NaN from the search values when nanMatch is false.
+     *
+     * <p>
+     * A non-primitive type takes the ordering-consistent-with-equals fast path only when
+     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} shows that compareTo() operations can bound
+     * the search values exactly. Otherwise, will use {@link ComparableColumnBinarySearchKernel} which further tests for
+     * equality before declaring a match.
      */
     public static RowSet binarySearchMatch(
             @NotNull final ColumnSource<?> source,
@@ -169,7 +175,13 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
             return DoubleColumnBinarySearchKernel.binarySearchMatch(source, selection, sortColumn, searchValues,
                     usePrev);
         }
-        return ObjectColumnBinarySearchKernel.binarySearchMatch(source, selection, sortColumn, searchValues, usePrev);
+        // We can take the fast path if the comparison of the column is consistent with equality.
+        if (BinarySearchKernelHelper.compareConsistentWithEquality(dataType)) {
+            return ObjectColumnBinarySearchKernel.binarySearchMatch(source, selection, sortColumn, searchValues,
+                    usePrev);
+        }
+        return ComparableColumnBinarySearchKernel.binarySearchMatch(source, selection, sortColumn, searchValues,
+                usePrev);
     }
 
     /**

@@ -410,19 +410,16 @@ public class QueryTableWhereSpecialCasesTest {
     }
 
     /**
-     * Sorted-column pushdown answers a match filter with a binary search that navigates by {@code compareTo}, which is
-     * case significant, so it cannot reach the rows a case-insensitive filter matches. Its result is emitted as an
-     * exact match with nothing left for a residual pass to repair, so such a filter has to decline the search rather
-     * than answer it with the rows the search happens to visit.
-     */
-    /**
      * A BigDecimal column carries values that are ordering-equal but not equal -- 1.0 and 1.00 differ in scale -- so a
      * sort leaves them in one contiguous run, in row order. Matching is decided by equality, so a filter must select
      * only the rows equal to its own value, and must do so whether or not the column is sorted.
      */
     @Test
     public void testMatchOnSortedBigDecimalColumn() {
-        for (final String filter : new String[] {"X = 1.0", "X = 1.00", "X = 1", "X = 2.0", "X != 1.0"}) {
+        for (final String filter : new String[] {"X = 1.0", "X = 1.00", "X = 1", "X = 2.0", "X != 1.0",
+                // Several values from the one ordering-equal run, so the run has to answer for all of them.
+                "X in 1.0, 1.00", "X not in 1.0, 1.00", "X in 1.000, 1.0", "X in 1.0, 1.000",
+                "X in 1.00, 1, 1.000", "X in 1.0, 1.00, 2.0", "X in 1.000, 2.0", "X in 1.0, 1.0"}) {
             final Table unsorted = bigDecimals();
             final Table expected = unsorted.where(filter).sort("X").coalesce();
             assertTableEquals(expected, bigDecimals().sort("X").where(filter).coalesce());
@@ -439,6 +436,12 @@ public class QueryTableWhereSpecialCasesTest {
                 new BigDecimal("1E+0"), new BigDecimal("2.0")));
     }
 
+    /**
+     * Sorted-column pushdown answers a match filter with a binary search that navigates by {@code compareTo}, which is
+     * case significant, so it cannot reach the rows a case-insensitive filter matches. Its result is emitted as an
+     * exact match with nothing left for a residual pass to repair, so such a filter has to decline the search rather
+     * than answer it with the rows the search happens to visit.
+     */
     @Test
     public void testCaseInsensitiveMatchOnSortedColumn() {
         for (final boolean descending : new boolean[] {false, true}) {

@@ -13,7 +13,9 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.*;
+import io.deephaven.engine.table.impl.sources.regioned.kernel.ComparableRegionBinarySearchKernel;
 import io.deephaven.engine.table.impl.sources.regioned.kernel.ObjectRegionBinarySearchKernel;
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
@@ -184,12 +186,21 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
 
         if (ctx.matchFilter() != null) {
             final MatchFilter matchFilter = ctx.matchFilter();
-            try (final RowSet matches = ObjectRegionBinarySearchKernel.binarySearchMatch(
+            // We can take the fast path if the comparison of the column is consistent with equality.
+            final boolean consistentEquality =
+                    BinarySearchKernelHelper.compareConsistentWithEquality(matchFilter.getColumnType());
+            try (final RowSet matches = consistentEquality ? ObjectRegionBinarySearchKernel.binarySearchMatch(
                     this,
                     selection.firstRowKey(),
                     selection.lastRowKey(),
                     firstSortedColumn,
-                    matchFilter.getValues())) {
+                    matchFilter.getValues())
+                    : ComparableRegionBinarySearchKernel.binarySearchMatch(
+                            this,
+                            selection.firstRowKey(),
+                            selection.lastRowKey(),
+                            firstSortedColumn,
+                            matchFilter.getValues())) {
                 // Handle normal / inverted match filters:
                 return PushdownResult.of(selection, matchFilter.getMatchOptions().inverted()
                         ? selection.minus(matches)

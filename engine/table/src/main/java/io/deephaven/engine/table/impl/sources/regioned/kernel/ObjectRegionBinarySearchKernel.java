@@ -59,41 +59,37 @@ public class ObjectRegionBinarySearchKernel {
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
-        // region binarySearchMatchLoop
         if (order.isAscending()) {
             for (int idx = 0; idx < copiedValues.length && firstKey <= lastKey; ++idx) {
                 final Object toFind = copiedValues[idx];
-                final long lowerResult = lowerBoundAscending(region, firstKey, lastKey, toFind, true);
-                final long runStart = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);
-                final long upperResult = upperBoundAscending(region, runStart, lastKey, toFind, true);
-                final long runEnd = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);
-                // We've identified a run of potential matches, but we need to apply ObjectComparisons.eq
-                // to match chunk filtering semantics.
-                for (long key = runStart; key < runEnd; ++key) {
-                    if (ObjectComparisons.eq(region.getObject(key), toFind)) {
-                        builder.appendKey(key);
-                    }
+                final long startResult = lowerBoundAscending(region, firstKey, lastKey, toFind, true);
+                if (startResult < 0) {
+                    // Advance firstKey since we didn't find the value but eliminated some rows.
+                    firstKey = insertionPoint(startResult);
+                    continue;
                 }
-                firstKey = runEnd;
+                final long endResult = upperBoundAscending(region, startResult, lastKey, toFind, true);
+                if (endResult >= 0) {
+                    builder.appendRange(startResult, endResult);
+                    firstKey = endResult + 1;
+                }
             }
         } else {
             for (int searchIndex = 0; searchIndex < copiedValues.length && firstKey <= lastKey; ++searchIndex) {
                 final Object toFind = copiedValues[searchIndex];
-                final long lowerResult = lowerBoundDescending(region, firstKey, lastKey, toFind, true);
-                final long runStart = lowerResult >= 0 ? lowerResult : insertionPoint(lowerResult);
-                final long upperResult = upperBoundDescending(region, runStart, lastKey, toFind, true);
-                final long runEnd = upperResult >= 0 ? upperResult + 1 : insertionPoint(upperResult);
-                // We've identified a run of potential matches, but we need to apply ObjectComparisons.eq
-                // to match chunk filtering semantics.
-                for (long key = runStart; key < runEnd; ++key) {
-                    if (ObjectComparisons.eq(region.getObject(key), toFind)) {
-                        builder.appendKey(key);
-                    }
+                final long startResult = lowerBoundDescending(region, firstKey, lastKey, toFind, true);
+                if (startResult < 0) {
+                    // Advance firstKey since we didn't find the value but eliminated some rows.
+                    firstKey = insertionPoint(startResult);
+                    continue;
                 }
-                firstKey = runEnd;
+                final long endResult = upperBoundDescending(region, startResult, lastKey, toFind, true);
+                if (endResult >= 0) {
+                    builder.appendRange(startResult, endResult);
+                    firstKey = endResult + 1;
+                }
             }
         }
-        // endregion binarySearchMatchLoop
 
         return builder.build();
     }
@@ -264,7 +260,7 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static long lowerBoundAscending(
+    static long lowerBoundAscending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
@@ -313,7 +309,7 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value exceeds {@code max}.
      */
-    private static long upperBoundAscending(
+    static long upperBoundAscending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
@@ -364,7 +360,7 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static long lowerBoundDescending(
+    static long lowerBoundDescending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
@@ -413,7 +409,7 @@ public class ObjectRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value falls below {@code min}.
      */
-    private static long upperBoundDescending(
+    static long upperBoundDescending(
             @NotNull final ColumnRegionObject<?, ?> region,
             final long firstKey,
             final long lastKey,
