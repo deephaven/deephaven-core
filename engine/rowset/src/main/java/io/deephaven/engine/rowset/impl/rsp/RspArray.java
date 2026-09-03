@@ -3266,12 +3266,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 continue;
             }
             if (idxPairsCount + 2 > idxPairs.length) {
-                final int[] newArr;
-                if (idxPairs.length + 3 < 1024) {
-                    newArr = new int[2 * idxPairs.length + 3];
-                } else {
-                    newArr = new int[idxPairs.length + 1024];
-                }
+                // Every span of other still to be visited contributes at most one pair, so that many more pairs is
+                // all this loop can ever need; doubling within that bound keeps the copying linear overall without
+                // holding on to a per-thread buffer larger than the union could fill.
+                final int bound = idxPairsCount + 2 * (other.size - otherIdx);
+                final int[] newArr = new int[Math.min(bound, Math.max(2 * idxPairs.length, idxPairs.length + 1024))];
                 wd.setIntArray(newArr);
                 System.arraycopy(idxPairs, 0, newArr, 0, idxPairsCount);
                 idxPairs = newArr;
