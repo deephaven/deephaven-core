@@ -695,7 +695,15 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixShiftOnNew(final long shiftAmount) {
-        return make(rangeStart() + shiftAmount, rangeEnd() + shiftAmount);
+        final long start = rangeStart() + shiftAmount;
+        final long end = rangeEnd() + shiftAmount;
+        // Row keys are non-negative; a shift may neither push the start below zero nor carry the end past
+        // Long.MAX_VALUE (where it wraps negative).
+        if (shiftAmount < 0 ? start < 0 : end < 0) {
+            throw new IllegalArgumentException(
+                    "shiftAmount=" + shiftAmount + " when first=" + rangeStart() + ", last=" + rangeEnd());
+        }
+        return make(start, end);
     }
 
     @Override

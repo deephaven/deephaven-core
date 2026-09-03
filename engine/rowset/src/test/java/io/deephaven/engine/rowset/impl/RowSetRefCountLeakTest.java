@@ -51,20 +51,6 @@ public class RowSetRefCountLeakTest {
         return rsp;
     }
 
-    /**
-     * Like {@link #manyBlockRsp}, but the first span is a lone key rather than a range; shifting a lone key below zero
-     * is rejected, while a range is not checked.
-     */
-    private static RspBitmap manyBlockRspStartingWithSingleton(final long firstKey) {
-        RspBitmap rsp = RspBitmap.makeEmpty();
-        rsp = rsp.add(firstKey);
-        for (int i = 2; i < 10; ++i) {
-            rsp = rsp.addRange(i * BLOCK_SIZE, i * BLOCK_SIZE + 5);
-        }
-        rsp.finishMutationsAndOptimize();
-        return rsp;
-    }
-
     private static SortedRanges manyRangeSortedRanges(final long gapStart) {
         SortedRanges sr = SortedRanges.makeSingleRange(0, 100);
         for (int i = 3; i < 12; ++i) {
@@ -153,12 +139,12 @@ public class RowSetRefCountLeakTest {
         }
     }
 
-    // A shift that is not a whole number of blocks walks the source with a range iterator, and a shift that pushes
-    // a key below zero throws part way through that walk.
+    // A shift that would carry a key below zero is rejected before any span is walked; the source must be left exactly
+    // as it was, including its reference count.
 
     @Test
     public void testShiftBelowZeroDoesNotRetainTheSource() {
-        final RspBitmap inner = manyBlockRspStartingWithSingleton(5);
+        final RspBitmap inner = manyBlockRsp(5);
         try (final WritableRowSetImpl rowSet = rowSetOf(inner)) {
             assertHoldsSteady("shift in place below zero", inner, () -> {
                 try {

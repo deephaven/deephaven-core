@@ -1200,8 +1200,19 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     public RspBitmap applyOffsetImpl(
             final long offset, final Supplier<RspBitmap> onZeroOffset, final Supplier<RspBitmap> onAlignedOffset) {
-        if (offset == 0) {
+        if (offset == 0 || isEmpty()) {
             return onZeroOffset.get();
+        }
+        if (offset < 0) {
+            final long first = firstValue();
+            if (first + offset < 0) {
+                throw new IllegalArgumentException("offset=" + offset + " when first=" + first);
+            }
+        } else {
+            final long last = lastValue();
+            if (last + offset < 0) {
+                throw new IllegalArgumentException("offset=" + offset + " when last=" + last);
+            }
         }
         if ((offset & BLOCK_LAST) == 0) {
             final RspBitmap ans = onAlignedOffset.get();
