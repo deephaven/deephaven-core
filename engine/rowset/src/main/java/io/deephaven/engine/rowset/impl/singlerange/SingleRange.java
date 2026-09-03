@@ -233,7 +233,8 @@ public abstract class SingleRange implements OrderedLongSet {
     }
 
     @Override
-    public final OrderedLongSet ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
+    public final OrderedLongSet ixSubindexByPosOnNew(final long startPosIn, final long endPosExclusive) {
+        final long startPos = Math.max(startPosIn, 0); // positions below zero hold no keys.
         final long endPos = endPosExclusive - 1; // make inclusive.
         if (endPos < startPos || endPos < 0) {
             return OrderedLongSet.EMPTY;
@@ -756,7 +757,12 @@ public abstract class SingleRange implements OrderedLongSet {
     }
 
     @Override
-    public final RowSequence ixGetRowSequenceByPosition(final long startPositionInclusive, final long length) {
+    public final RowSequence ixGetRowSequenceByPosition(final long startPositionInclusiveIn, final long lengthIn) {
+        if (lengthIn <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        final long startPositionInclusive = Math.max(startPositionInclusiveIn, 0);
+        final long length = startPositionInclusiveIn < 0 ? startPositionInclusiveIn + lengthIn : lengthIn;
         // A length of zero or less asks for nothing. Falling through with a negative one would build a row sequence
         // whose end lies before its start, reporting a negative size rather than an empty one.
         if (startPositionInclusive >= ixCardinality() || length <= 0) {

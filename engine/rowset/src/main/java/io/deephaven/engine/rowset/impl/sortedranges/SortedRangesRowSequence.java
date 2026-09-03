@@ -87,7 +87,14 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     }
 
     @Override
-    public RowSequence getRowSequenceByPosition(final long pos, long length) {
+    public RowSequence getRowSequenceByPosition(final long posIn, long length) {
+        if (length <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        final long pos = Math.max(posIn, 0);
+        if (posIn < 0) {
+            length += posIn;
+        }
         if (length <= 0 || pos >= size) {
             return RowSequenceFactory.EMPTY;
         }

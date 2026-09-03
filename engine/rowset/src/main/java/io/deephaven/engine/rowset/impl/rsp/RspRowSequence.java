@@ -141,6 +141,16 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
 
     @Override
     public RowSequence getRowSequenceByPosition(long startPositionInclusive, long length) {
+        if (length <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        if (startPositionInclusive < 0) {
+            length += startPositionInclusive;
+            startPositionInclusive = 0;
+            if (length <= 0) {
+                return RowSequenceFactory.EMPTY;
+            }
+        }
         final long absoluteStart = startPositionInclusive + absoluteStartPos();
         if (absoluteStart > absoluteEndPos()) {
             return RowSequenceFactory.EMPTY;

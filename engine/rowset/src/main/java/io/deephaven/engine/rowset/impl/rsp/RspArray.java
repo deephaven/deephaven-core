@@ -4908,11 +4908,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return true;
     }
 
-    public RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
-        if (startPositionInclusive < 0) {
-            throw new IllegalArgumentException(
-                    ("startPositionInclusive=" + startPositionInclusive + " should be >=0."));
+    public RowSequence getRowSequenceByPosition(final long startPositionInclusiveIn, final long lengthIn) {
+        if (lengthIn <= 0) {
+            return RowSequenceFactory.EMPTY;
         }
+        final long startPositionInclusive = Math.max(startPositionInclusiveIn, 0);
+        final long length = startPositionInclusiveIn < 0 ? startPositionInclusiveIn + lengthIn : lengthIn;
         if (length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
