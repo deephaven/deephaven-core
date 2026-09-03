@@ -376,16 +376,33 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
             final int size = size();
             for (int idx = 0; idx < size; ++idx) {
-                final long beginRange = getBeginRange(idx);
-                final long endRange = getEndRange(idx);
                 final long shiftDelta = getShiftDelta(idx);
+                // A window may reach past either end of the key space: a shift is valid as long as no key would
+                // actually land there, so that part of the window is empty and only the rest is a range of keys.
+                final long preShiftBegin = getBeginRange(idx);
+                final long preShiftEnd = getEndRange(idx);
+                long beginRange = preShiftBegin + shiftDelta;
+                long endRange = preShiftEnd + shiftDelta;
+                if (shiftDelta > 0) {
+                    if (beginRange < preShiftBegin) {
+                        continue; // the whole window lies past Long.MAX_VALUE
+                    }
+                    if (endRange < preShiftEnd) {
+                        endRange = Long.MAX_VALUE;
+                    }
+                } else {
+                    if (endRange < 0) {
+                        continue; // the whole window lies below zero
+                    }
+                    beginRange = Math.max(beginRange, 0);
+                }
 
-                if (!rsIt.advance(beginRange + shiftDelta)) {
+                if (!rsIt.advance(beginRange)) {
                     break;
                 }
 
-                toRemove.appendRange(beginRange + shiftDelta, endRange + shiftDelta);
-                rsIt.getNextRowSequenceThrough(endRange + shiftDelta)
+                toRemove.appendRange(beginRange, endRange);
+                rsIt.getNextRowSequenceThrough(endRange)
                         .forAllRowKeyRanges((s, e) -> toInsert.appendRange(s - shiftDelta, e - shiftDelta));
             }
         }
@@ -418,9 +435,30 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             for (int idx = 0; idx < size; ++idx) {
                 final long shiftDelta = getShiftDelta(idx);
                 // The window sits in post-shift keyspace, plus the caller's offset; what it holds moves back by the
-                // delta, which the offset does not touch.
-                final long beginRange = getBeginRange(idx) + shiftDelta + offset;
-                final long endRange = getEndRange(idx) + shiftDelta + offset;
+                // delta, which the offset does not touch. A window may reach past either end of the key space, where
+                // there are no keys.
+                final long shift = shiftDelta + offset;
+                if (((shiftDelta ^ shift) & (offset ^ shift)) < 0) {
+                    // The combined shift itself overflowed: the window lies wholly outside the key space.
+                    continue;
+                }
+                final long preShiftBegin = getBeginRange(idx);
+                final long preShiftEnd = getEndRange(idx);
+                long beginRange = preShiftBegin + shift;
+                long endRange = preShiftEnd + shift;
+                if (shift > 0) {
+                    if (beginRange < preShiftBegin) {
+                        continue; // the whole window lies past Long.MAX_VALUE
+                    }
+                    if (endRange < preShiftEnd) {
+                        endRange = Long.MAX_VALUE;
+                    }
+                } else {
+                    if (endRange < 0) {
+                        continue; // the whole window lies below zero
+                    }
+                    beginRange = Math.max(beginRange, 0);
+                }
 
                 if (!rsIt.advance(beginRange)) {
                     break;

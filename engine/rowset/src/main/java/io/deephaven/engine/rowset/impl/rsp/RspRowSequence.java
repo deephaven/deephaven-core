@@ -495,7 +495,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
             }
             final int savedStartIdx = currStartIdx;
             final long savedStartOffset = currStartOffset;
-            final boolean found = arr.findOrNext(currStartIdx, rsEndIdx + 1, toKey,
+            final boolean found = arr.findOrNext(currStartIdx, rsEndIdx + 1, Math.max(toKey, 0),
                     (final int index, final long offset) -> {
                         currStartIdx = index;
                         currStartOffset = offset;

@@ -4990,9 +4990,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     // endIdx and endOffsetIn are inclusive.
     RowSequence getRowSequenceByKeyRangeConstrainedToIndexAndOffsetRange(
-            final long startValue, final long endValue,
+            final long startValueIn, final long endValue,
             final int startIdx, final long startOffsetIn, final long cardBeforeStartIdx,
             final int endIdx, final long endOffsetIn) {
+        final long startValue = Math.max(startValueIn, 0);
         final long startKey = highBits(startValue);
         int startKeyIdx = getSpanIndex(startIdx, startKey);
         if (startKeyIdx < 0) {
