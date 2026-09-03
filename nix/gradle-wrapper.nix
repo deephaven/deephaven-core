@@ -13,8 +13,9 @@
 # Returns:
 #   distExtracted     -- derivation: the unpacked Gradle distribution
 #   warmupHook        -- shellHook fragment: pre-seeds ./gradlew's cache
-#   isolatedHomeHook  -- shellHook fragment: isolates GRADLE_USER_HOME and
-#                        disables toolchain auto-detect/auto-download
+#   isolatedHomeHook  -- shellHook fragment: isolates GRADLE_USER_HOME,
+#                        disables toolchain auto-detect/auto-download, and
+#                        sets a memory-aware org.gradle.workers.max
 #   extraBuildInputs  -- packages the two hooks above need on PATH (bc)
 { pkgs, wrapperPropertiesFile }:
 let
@@ -157,6 +158,42 @@ let
       fi
     done
     shopt -u nullglob
+
+    # Memory-aware org.gradle.workers.max, same reasoning
+    # .github/scripts/gradle-properties.sh applies in CI: Gradle's own
+    # default worker count is CPU-core-based and ignores how much RAM
+    # workers actually need, which can OOM a machine with many cores but
+    # modest memory (see https://github.com/gradle/gradle/issues/14431).
+    # Reserve daemon overhead (1GiB, gradle.properties) and other
+    # system/process headroom (2GiB), then divide what's left by an assumed
+    # worst-case per-worker heap (6GiB -- engine/table/build.gradle's
+    # largest heap setting; keep in sync if that ever changes). Best-effort
+    # and platform-portable (Linux via /proc/meminfo, macOS via `sysctl
+    # hw.memsize`): if total memory can't be determined, skip setting
+    # workers.max entirely and let Gradle's own default apply, rather than
+    # fail shell entry over it.
+    _gradle_daemon_bytes=1073741824
+    _gradle_other_bytes=2147483648
+    _gradle_per_worker_bytes=6442450944
+    _gradle_total_bytes=""
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+      _gradle_total_bytes="$(sysctl -n hw.memsize 2>/dev/null || true)"
+    elif [[ -r /proc/meminfo ]]; then
+      while read -r _meminfo_key _meminfo_value _meminfo_unit; do
+        if [[ "$_meminfo_key" == "MemTotal:" ]]; then
+          _gradle_total_bytes=$(( _meminfo_value * 1024 ))
+          break
+        fi
+      done < /proc/meminfo
+    fi
+    _gradle_workers_max=""
+    if [[ "$_gradle_total_bytes" =~ ^[0-9]+$ ]]; then
+      _gradle_workers_max=$(( (_gradle_total_bytes - _gradle_daemon_bytes - _gradle_other_bytes) / _gradle_per_worker_bytes ))
+      if (( _gradle_workers_max < 1 )); then
+        _gradle_workers_max=1
+      fi
+    fi
+
     {
       echo "org.gradle.java.installations.auto-detect=false"
       # Only whatever JDK(s) this shell provides are available as a
@@ -165,9 +202,15 @@ let
       # fail with "no matching toolchain found" here rather than
       # downloading one.
       echo "org.gradle.java.installations.auto-download=false"
+      if [[ -n "$_gradle_workers_max" ]]; then
+        echo "org.gradle.workers.max=$_gradle_workers_max"
+      fi
     } > "$_gradle_isolated_home/gradle.properties"
     export GRADLE_USER_HOME="$_gradle_isolated_home"
     unset _gradle_real_home _gradle_isolated_home _entry _name _d
+    unset _gradle_daemon_bytes _gradle_other_bytes _gradle_per_worker_bytes
+    unset _gradle_total_bytes _gradle_workers_max
+    unset _meminfo_key _meminfo_value _meminfo_unit
   '';
 in
 {

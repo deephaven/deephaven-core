@@ -39,7 +39,15 @@ repo, built on [devenv.sh](https://devenv.sh).
     repo's nightly CI matrix, `-PtestRuntimeVersion=17/25`) will fail with
     "no matching toolchain found" in this shell** — pass
     `-Porg.gradle.java.installations.auto-download=true` to override
-    locally if you need to reproduce that.
+    locally if you need to reproduce that. That same isolated
+    `gradle.properties` also sets a memory-aware `org.gradle.workers.max`
+    — same reasoning `.github/scripts/gradle-properties.sh` applies in CI
+    (Gradle's own default worker count is CPU-core-based and ignores how
+    much RAM workers actually need, which can OOM a machine with many
+    cores but modest memory) — computed from total system memory at shell
+    entry, portable across Linux (`/proc/meminfo`) and macOS (`sysctl
+    hw.memsize`), and best-effort: if memory can't be determined, it's left
+    unset and Gradle's own default applies.
   - `DOCKER_HOST` auto-detection: on shell entry, if `DOCKER_HOST` isn't
     already set and `podman` is on `PATH`, queries
     `podman info --format '{{.Host.RemoteSocket.Path}}'` (Podman's own
