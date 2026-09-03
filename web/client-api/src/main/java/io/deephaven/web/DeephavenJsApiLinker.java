@@ -7,9 +7,9 @@ import com.google.gwt.core.ext.LinkerContext;
 import com.google.gwt.core.ext.TreeLogger;
 import com.google.gwt.core.ext.UnableToCompleteException;
 import com.google.gwt.core.ext.linker.*;
+import com.google.gwt.core.linker.SymbolMapsLinker;
 import com.google.gwt.dev.About;
 import com.google.gwt.dev.util.DefaultTextOutput;
-import com.google.gwt.util.tools.Utility;
 
 import java.io.IOException;
 import java.util.Set;
@@ -57,10 +57,19 @@ public class DeephavenJsApiLinker extends AbstractLinker {
 
         StringBuffer buffer = readFileToStringBuffer(getSelectionScriptTemplate(), logger);
         replaceAll(buffer, "__GWT_VERSION__", About.getGwtVersionNum());
+        String prefix = buffer.substring(0, buffer.indexOf("__JAVASCRIPT_RESULT__"));
         replaceAll(buffer, "__JAVASCRIPT_RESULT__", javaScript[0]);
         replaceAll(buffer, "__MODULE_NAME__", context.getModuleName());
 
+        SymbolMapsLinker.ScriptFragmentEditsArtifact editsArtifact =
+                new SymbolMapsLinker.ScriptFragmentEditsArtifact(result.getStrongName(), 0);
+        editsArtifact.prefixLines(prefix);
+        toReturn.add(editsArtifact);
+
         out.print(buffer.toString());
+
+        String sourceMapURL = result.getStrongName() + "_sourceMap0.json";
+        out.print("\n//# sourceMappingURL=" + sourceMapURL);
 
         toReturn.add(emitString(logger, out.toString(), "dh-core.js"));
 
@@ -71,7 +80,7 @@ public class DeephavenJsApiLinker extends AbstractLinker {
             TreeLogger logger) throws UnableToCompleteException {
         StringBuffer buffer;
         try {
-            buffer = new StringBuffer(Utility.getFileFromClassPath(filename));
+            buffer = new StringBuffer(LinkerUtils.readClasspathFileAsString(filename));
         } catch (IOException e) {
             logger.log(TreeLogger.ERROR, "Unable to read file: " + filename, e);
             throw new UnableToCompleteException();

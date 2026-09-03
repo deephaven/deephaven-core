@@ -100,6 +100,11 @@ def gwtOutput = tasks.register('gwtOutput', Sync) {
         include 'dhapi/**'
         eachFile { it.path = 'jsapi/' + it.path.substring('dhapi/'.length()) }
     }
+    from(tasks.getByName('gwtCompile').outputs.files) {
+        // from the extras dir, copy sourcemaps to output
+        include 'extra/dhapi/symbolMaps/*.json'
+        eachFile { it.path = 'jsapi/' + it.path.substring('extra/dhapi/symbolMaps/'.length()) }
+    }
     into jsOutput
 }
 

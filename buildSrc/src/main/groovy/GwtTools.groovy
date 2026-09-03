@@ -64,7 +64,6 @@ class GwtTools {
     static void applyModuleSettings(Project p, GwtCompileTask gwtc, String mod, String description) {
         gwtc.onlyIf WebTools.&shouldRun
         boolean gwtDev = p.findProperty('gwtDev') == 'true'
-        String extras = new File(p.buildDir, "gwt/dhapi/extra").absolutePath
 
         GwtExtension gwt = p.extensions.findByType(GwtExtension)
 
@@ -82,20 +81,13 @@ class GwtTools {
                             '-setProperty', 'gwt.logging.logLevel=FINE',
                             '-setProperty', 'jre.logging.logLevel=ALL',
                     ]
-                    saveSource = true
-                    extra = extras
                     logLevel = 'INFO'
-                    draftCompile = true
                 }
             }
         }
 
         if (p.configurations.findByName('gwt') != null) {
             (gwtc.src as ConfigurableFileCollection).from(p.configurations.findByName('gwt'))
-        }
-
-        gwtDev && gwtc.doFirst {
-            gwtc.logger.quiet('Running in gwt dev mode; saving source to {}/dh/src', extras)
         }
     }
 
