@@ -442,7 +442,11 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
             return RowSetFactory.empty();
         }
         if (positions.isContiguous()) {
-            return subSetByPositionRange(positions.firstRowKey(), positions.lastRowKey() + 1);
+            // The exclusive end of a position range that runs to Long.MAX_VALUE cannot be represented; every position
+            // is below Long.MAX_VALUE anyway, so the saturated end asks for the same positions.
+            final long lastPosition = positions.lastRowKey();
+            return subSetByPositionRange(positions.firstRowKey(),
+                    lastPosition == Long.MAX_VALUE ? Long.MAX_VALUE : lastPosition + 1);
         }
         final MutableLong currentOffset = new MutableLong();
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -456,8 +460,15 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
                 if (!iter.hasMore()) {
                     return false;
                 }
-                iter.getNextRowSequenceWithLength(end + 1 - currentOffset.get())
+                // A range running to Long.MAX_VALUE has no representable exclusive end; it asks for the rest, and
+                // nothing can follow it.
+                final long lengthMinusOne = end - currentOffset.get();
+                iter.getNextRowSequenceWithLength(
+                        lengthMinusOne == Long.MAX_VALUE ? Long.MAX_VALUE : lengthMinusOne + 1)
                         .forAllRowKeyRanges(builder::appendRange);
+                if (end == Long.MAX_VALUE) {
+                    return false;
+                }
                 currentOffset.set(end + 1);
                 return iter.hasMore();
             });
