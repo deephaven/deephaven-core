@@ -9,7 +9,7 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
 
 /**
- * String enum values for {@code dh.calendar.DayOfWeek}.
+ * String enum values for {@link DayOfWeek dh.calendar.DayOfWeek}.
  *
  * Instances are represented as strings like {@link #MONDAY}. Use {@link #values()} to get the list of all supported
  * values.
