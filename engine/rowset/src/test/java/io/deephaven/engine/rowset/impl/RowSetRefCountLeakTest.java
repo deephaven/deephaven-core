@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -110,6 +111,31 @@ public class RowSetRefCountLeakTest {
             clock.completeUpdateCycle();
             rowSet.sizePrev();
         });
+    }
+
+    // A row sequence iterator is built from a temporary row sequence that holds its own reference.
+
+    @Test
+    public void testRowSequenceIteratorHoldsSteady() {
+        for (final OrderedLongSet inner : new OrderedLongSet[] {manyBlockRsp(5), manyRangeSortedRanges(0)}) {
+            final String name = inner.getClass().getSimpleName();
+            try (final WritableRowSetImpl rowSet = rowSetOf(inner)) {
+                assertHoldsSteady(name + " iterator opened and closed", inner, () -> {
+                    try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+                        assertTrue(it.hasMore());
+                    }
+                });
+                assertHoldsSteady(name + " iterator drained and closed", inner, () -> {
+                    long total = 0;
+                    try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+                        while (it.hasMore()) {
+                            total += it.getNextRowSequenceWithLength(7).size();
+                        }
+                    }
+                    assertEquals(rowSet.size(), total);
+                });
+            }
+        }
     }
 
     // 3.2 -- comparing rowsets walks both with iterators that are abandoned at the first difference.

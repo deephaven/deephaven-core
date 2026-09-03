@@ -2240,8 +2240,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (isEmpty()) {
             return RowSequenceFactory.EMPTY_ITERATOR;
         }
-        return new SortedRangesRowSequence.Iterator(
-                new SortedRangesRowSequence(this));
+        // The temporary SortedRangesRowSequence holds its own reference to us, and the Iterator constructor acquires
+        // another one; close the temporary or its reference is leaked.
+        try (final SortedRangesRowSequence rs = new SortedRangesRowSequence(this)) {
+            return new SortedRangesRowSequence.Iterator(rs);
+        }
     }
 
     public final long getAverageRunLengthEstimate() {
