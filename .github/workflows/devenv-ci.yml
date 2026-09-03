@@ -96,8 +96,8 @@ jobs:
           test "$(grep -c 'Disabled' toolchains.txt)" -eq 2
           test "$(grep -c '| Location:' toolchains.txt)" -eq 1
 
-      - name: Build a representative module
-        run: devenv shell ./gradlew --scan :engine-table:compileJava
+      - name: ./gradlew quick
+        run: devenv shell ./gradlew --scan quick
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@v7
