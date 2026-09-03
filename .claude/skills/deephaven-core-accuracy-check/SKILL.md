@@ -51,8 +51,7 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
      - If no source exists, mark as "⚠️ Needs SME input" and suggest a reviewer from the SME matrix.
    - Flag any outdated or incorrect information.
 
-4. **Style guide proofreading:** Apply the `deephaven-writing-style` skill for the full style guide — proper noun capitalization, code formatting conventions, backticks, prose quality (active voice, jargon, audience calibration). That skill is the single source of truth; don't maintain a separate proper-noun or formatting list here. In addition, specific to review:
-   - Prefer em dashes over hyphens/en dashes for parenthetical statements, with spaces: `word — word`.
+4. **Style guide proofreading:** Apply the `deephaven-writing-style` skill for the full style guide — tone, quotes, links, page structure, proper noun capitalization, code formatting conventions, backticks, prose quality (active voice, jargon, audience calibration). That skill is the single source of truth; don't maintain a separate proper-noun, formatting, or punctuation list here.
 
 5. **Internal link review:**
    - Identify methods, classes, or concepts mentioned without links.

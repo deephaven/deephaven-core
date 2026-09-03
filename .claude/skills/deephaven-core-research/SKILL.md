@@ -114,16 +114,16 @@ For feature traces, follow data/control through all layers:
 1. **Entry point** — gRPC service (`server/`), UI action (`web/`), or Python/Groovy API (`py/`)
 2. **Service layer** — `*ServiceGrpcImpl.java` in `server/src/main/java/io/deephaven/server/**/` (nested, e.g. `table/ops/TableServiceGrpcImpl.java`, `table/inputtables/InputTableServiceGrpcImpl.java`)
 3. **Domain logic** — Core classes in `engine/table/` or `extensions/`
-4. **Data access** — `ColumnSource`, `RowSet` in `engine/api/`
+4. **Data access** — `ColumnSource` in `engine/api/`, `RowSet` in `engine/rowset/`
 
 **Example trace (client executes a table operation via gRPC):**
 ```
 User calls table.where("Price > 100") in py/client/pydeephaven
   → Client sends gRPC request to server
-  → server/src/.../table/ops/TableServiceGrpcImpl receives request
+  → server/src/.../table/ops/TableServiceGrpcImpl receives request, returns an ExportedTableCreationResponse (ticket) — no row data yet
   → engine/table/impl/QueryTable.where() evaluates WhereFilter against ColumnSource data
   → If the source or filters are refreshing, a WhereListener is created and the result table is registered with UpdateGraph for live updates; a fully static where() has no listener
-  → Barrage streams result back to client
+  → Client fetches row data separately via an Arrow Flight DoGet against the ticket (e.g. session.flight_service.do_get_table); Barrage applies only when subscribing to live/ticking updates, not this static fetch
 ```
 
 **Iterate until you can explain:**
@@ -218,7 +218,7 @@ Report comprehensively:
 
 ### engine/api/ — Table interfaces and contracts
 - **Entry points**: `engine/api/src/main/java/io/deephaven/engine/table/`
-- **Key classes**: `Table`, `TableDefinition`, `ColumnSource`, `RowSet`, `TableUpdateListener`, `TableUpdate`
+- **Key classes**: `Table`, `TableDefinition`, `ColumnSource`, `TableUpdateListener`, `TableUpdate` (see `engine/rowset/` below for `RowSet`)
 
 ### engine/table/ — Table implementations
 - **Entry points**: `engine/table/src/main/java/io/deephaven/engine/table/impl/`

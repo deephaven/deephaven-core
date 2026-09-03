@@ -3,21 +3,30 @@ name: deephaven-writing-style
 description: Deephaven's documentation style guide for deephaven-core — proper noun capitalization, Python/Groovy code formatting conventions, backtick usage, code example tags, and prose quality standards (active voice, clarity, jargon/audience calibration). Applies to deephaven-core (Community) documentation specifically. Use this whenever drafting, writing, editing, or reviewing any deephaven-core documentation, tutorial, how-to guide, README, or API reference — not just when explicitly asked about "style." Also consult this alongside deephaven-core-accuracy-check when reviewing existing docs.
 ---
 
-# Deephaven Documentation Style Guide (Community/Core)
+# Deephaven documentation style guide (Community/Core)
 
 These standards apply to deephaven-core documentation.
 
-## Prose Quality
+## Prose quality
 
 - **Prefer present, active voice.** Avoid future-tense "will". Flag passive constructions and suggest an active rewrite unless the actor is genuinely unknown or irrelevant (e.g., "the file is created" only when who/what creates it doesn't matter to the reader).
 - **Define jargon and internal terms on first use.** Terms like "ticking," "blink table," "live table," or internal service/component names should be defined in plain language or linked to a reference page the first time they appear in a doc — don't assume the reader already knows them.
 - **Calibrate to the audience.** External-facing docs (deephaven.io, public tutorials) should avoid unexplained internal-only vocabulary (internal service names, internal abbreviations, implementation details that don't matter to the reader). Internal/contributor-facing docs can assume more shared context, but still define anything genuinely obscure.
 - **Avoid egregious jargon and hedging.** Prefer concrete, direct sentences over vague qualifiers ("may potentially," "in some cases could") unless the uncertainty is real and worth flagging.
-- **Sentence case in headings** — not Title Case.
+- **Tone.** Tutorials and how-tos can be conversational, first-person narrative while remaining professional. Reference material is dry and formal — third-person narrative without contractions.
+- **Sentence case in headings** — not Title Case. Don't include links in headers.
+- **Straight quotes only.** Use `"` and `'`, never smart/curly quotes (`"` `"` `'` `'`).
+- **Em dashes** for parenthetical statements, not hyphens or en dashes. Surround with a single space on either side: `word — word`, not `word—word`.
+- **Link wording.** Always describe what you're linking to; never use "here" or "click here" as link text (e.g., "see the [Input table guide](link)," not "see [here](link)").
 - **One idea per paragraph.** Long paragraphs mixing multiple claims are harder to verify and harder to read; split them.
 - **Bullet points get periods** when they're complete sentences; incomplete phrases don't need them.
 
-## Deephaven Proper Nouns
+## Page structure
+
+- Every page (except landing pages, overviews, or blog articles) should include a "Related documentation" section at the end.
+- When a method is referenced in narrative text, link it to the appropriate reference page if one exists.
+
+## Deephaven proper nouns
 
 Capitalize:
 
@@ -30,7 +39,7 @@ Capitalize:
 - ScriptSession
 - Barrage
 
-## Code Formatting
+## Code formatting
 
 **Python (PEP 8):**
 
@@ -72,10 +81,10 @@ Capitalize:
 
 Enclose: method names (`naturalJoin`), classes (`SystemTableLogger`), variables (`t`), file paths (`/tmp/etcd.snap`).
 
-## Code Example Tags
+## Code example tags
 
 - `syntax` — Show syntax without executing
-- `should-fail` — Code that should execute but fail with an error
+- `should-fail` — Reserved for a block that shouldn't run because it's broken; currently behaves identically to `skip-test` (not executed), so don't describe it as verifying a failure. Use sparingly.
 - `order=table1,table2` — Specify output table order
 - `order=null` — No output to display
 - `order=:log` — Show log/print output
