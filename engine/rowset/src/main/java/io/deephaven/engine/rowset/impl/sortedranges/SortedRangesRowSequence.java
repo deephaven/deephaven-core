@@ -226,7 +226,9 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
 
     @Override
     public long getAverageRunLengthEstimate() {
-        return size / (endIdx - startIdx + 1);
+        // A slice can touch more array entries than it holds keys (two keys across three entries), and the estimate is
+        // at least one by contract.
+        return Math.max(1, size / (endIdx - startIdx + 1));
     }
 
     @Override
