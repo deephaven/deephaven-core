@@ -616,6 +616,90 @@ public class QueryTableWhereSpecialCasesTest {
                 val -> (val <= 0 || val == NULL_DOUBLE) && !Double.isNaN(val));
     }
 
+    /**
+     * Deephaven ordering sorts NaN above positive infinity, so an inclusive {@code +Inf} upper bound is not an
+     * unbounded one: the trailing NaN block has to be located and excluded, which the sorted range pushdown can only do
+     * by searching the upper bound as well as the lower. An inclusive NaN upper bound is the unbounded case, and there
+     * the upper-bound search can be skipped. Neither shape is produced by {@code geq()}, whose NaN upper bound is
+     * exclusive, so both are built directly.
+     */
+    @Test
+    public void testRangeInclusiveInfiniteAndNaNUpperBounds() {
+        final Table source = getStaticTable();
+
+        // An inclusive +Inf upper bound admits +Inf and excludes NaN.
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new DoubleRangeFilter("doubleCol", 0.0, Double.POSITIVE_INFINITY, true, true),
+                val -> val >= 0.0 && !Double.isNaN(val));
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new FloatRangeFilter("floatCol", 0.0f, Float.POSITIVE_INFINITY, true, true),
+                val -> val >= 0.0f && !Float.isNaN(val));
+
+        // An inclusive NaN upper bound is unbounded above, so NaN is admitted along with +Inf.
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new DoubleRangeFilter("doubleCol", 0.0, Double.NaN, true, true),
+                val -> val >= 0.0 || Double.isNaN(val));
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new FloatRangeFilter("floatCol", 0.0f, Float.NaN, true, true),
+                val -> val >= 0.0f || Float.isNaN(val));
+
+        // An exclusive NaN upper bound is what geq() builds, and must exclude NaN.
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                DoubleRangeFilter.geq("doubleCol", 0.0),
+                val -> val >= 0.0 && !Double.isNaN(val));
+        validateFloatFilter(
+                source,
+                "floatCol",
+                FloatRangeFilter.geq("floatCol", 0.0f),
+                val -> val >= 0.0f && !Float.isNaN(val));
+    }
+
+    /**
+     * Under IEEE 754 every ordered comparison against NaN is false, NaN itself included, so a NaN bound matches no row.
+     * Deephaven ordering instead sorts NaN above every other value, which would have {@code <= NaN} admit everything
+     * and {@code >= NaN} admit only NaN; the range operators deliberately do not use that ordering for a NaN bound.
+     * Such a bound normally arrives by accident, through a query scope variable, rather than written out.
+     */
+    @Test
+    public void testNaNRangeBoundsMatchNothing() {
+        final Table source = getStaticTable();
+
+        for (final String op : new String[] {"<", "<=", ">", ">="}) {
+            validateDoubleFilter(
+                    source,
+                    "doubleCol",
+                    RawString.of("doubleCol " + op + " NaN"),
+                    val -> false);
+            validateFloatFilter(
+                    source,
+                    "floatCol",
+                    RawString.of("floatCol " + op + " NaN"),
+                    val -> false);
+        }
+
+        // Equality follows the same rules: nothing equals NaN, and everything differs from it, NaN included.
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol == NaN"),
+                val -> false);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol != NaN"),
+                val -> true);
+    }
+
     @Test
     public void testZeroEquality() {
         final Table source = getStaticTable();

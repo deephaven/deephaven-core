@@ -59,8 +59,11 @@ public class BinarySearchKernelHelper {
      * superset, and the matches have to be picked out of it by equality.
      *
      * <p>
-     * Answering {@code false} is always safe, so a type is listed only where the guarantee is documented. An enum
-     * qualifies because its ordering is by ordinal and its equality is identity.
+     * Only this stronger both-ways guarantee is checked, and only where documented, since {@link java.math.BigDecimal}
+     * is a common counterexample. A {@code false} answer still assumes the weaker
+     * {@code eq(a, b) implies compare(a, b) == 0}, which {@link Comparable} recommends and without which a type is
+     * unusable in any sorted context. An enum qualifies because its ordering is by ordinal and its equality is
+     * identity.
      *
      * @param dataType the column's data type
      * @return {@code true} if a search by ordering alone decides a match for this type

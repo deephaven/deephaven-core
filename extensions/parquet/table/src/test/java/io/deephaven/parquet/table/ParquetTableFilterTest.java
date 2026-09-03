@@ -1544,17 +1544,12 @@ public final class ParquetTableFilterTest {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_sortedFlatPartitionsNaN").toString();
         final int tableSize = 100_000;
 
-        // Deephaven ordering puts nulls first and NaN last, so a sorted file carries both at its edges.
+        // Deephaven ordering puts nulls first, then +Inf, then NaN, so a sorted file carries all three at its edges.
         final Table sorted = TableTools.emptyTable(tableSize)
-                .update("sorted_double = ii % 997 == 0 ? NULL_DOUBLE : (ii % 991 == 0 ? Double.NaN : (double) ii)")
+                .update("sorted_double = ii % 997 == 0 ? NULL_DOUBLE : (ii % 991 == 0 ? Double.NaN"
+                        + " : (ii % 983 == 0 ? Double.POSITIVE_INFINITY : (double) ii))")
                 .sort("sorted_double");
-
-        final Table[] partitions = splitTable(sorted, 7, false);
-        for (int ii = 0; ii < partitions.length; ii++) {
-            partitions[ii] = SortedColumnsAttribute.withOrderForColumn(
-                    partitions[ii], "sorted_double", SortingOrder.Ascending);
-        }
-        writeTables(destPath, partitions, EMPTY);
+        writeSortedPartitions(destPath, sorted, "sorted_double");
 
         // IEEE 754: nothing equals NaN, and NaN differs from itself.
         verifyAgainstDisabledSortedPushdown(destPath, "sorted_double == NaN");
@@ -1585,6 +1580,71 @@ public final class ParquetTableFilterTest {
             QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = originalSetting;
         }
         assertTableEquals(expected, ParquetTools.readTable(destPath).where(filters).coalesce());
+    }
+
+    /**
+     * Asserts that the table at {@code destPath} answers {@code filter} identically with sorted-column pushdown enabled
+     * and disabled.
+     */
+    private static void verifyAgainstDisabledSortedPushdown(final String destPath, final WhereFilter filter) {
+        final Table expected;
+        final boolean originalSetting = QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION;
+        QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = true;
+        try {
+            expected = ParquetTools.readTable(destPath).where(filter.copy()).coalesce();
+        } finally {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = originalSetting;
+        }
+        assertTableEquals(expected, ParquetTools.readTable(destPath).where(filter.copy()).coalesce());
+    }
+
+    /** Splits {@code sorted} into flat partitions, tags each as sorted by {@code columnName}, and writes them. */
+    private void writeSortedPartitions(
+            final String destPath, final Table sorted, final String columnName) {
+        final Table[] partitions = splitTable(sorted, 7, false);
+        for (int ii = 0; ii < partitions.length; ii++) {
+            partitions[ii] = SortedColumnsAttribute.withOrderForColumn(
+                    partitions[ii], columnName, SortingOrder.Ascending);
+        }
+        writeTables(destPath, partitions, EMPTY);
+    }
+
+    /**
+     * Deephaven ordering sorts NaN above positive infinity, so a sorted region's range search cannot treat an inclusive
+     * {@code +Inf} upper bound as unbounded -- it has to locate and exclude the trailing NaN block. An inclusive NaN
+     * upper bound is the genuinely unbounded case, where the upper-bound search can be skipped. Neither shape is
+     * produced by {@code geq()}, whose NaN upper bound is exclusive, so both are built directly. The oracle is the same
+     * filter with sorted pushdown switched off.
+     */
+    @Test
+    public void sortedFlatPartitionsInfiniteBoundsTest() {
+        final int tableSize = 100_000;
+
+        final String doublePath =
+                Path.of(rootFile.getPath(), "ParquetTest_sortedFlatPartitionsInfiniteBoundsDouble").toString();
+        writeSortedPartitions(doublePath, TableTools.emptyTable(tableSize)
+                .update("sorted_double = ii % 997 == 0 ? NULL_DOUBLE : (ii % 991 == 0 ? Double.NaN"
+                        + " : (ii % 983 == 0 ? Double.POSITIVE_INFINITY : (double) ii))")
+                .sort("sorted_double"), "sorted_double");
+
+        verifyAgainstDisabledSortedPushdown(doublePath,
+                new DoubleRangeFilter("sorted_double", 500.0, Double.POSITIVE_INFINITY, true, true));
+        verifyAgainstDisabledSortedPushdown(doublePath,
+                new DoubleRangeFilter("sorted_double", 500.0, Double.NaN, true, true));
+        verifyAgainstDisabledSortedPushdown(doublePath, DoubleRangeFilter.geq("sorted_double", 500.0));
+
+        final String floatPath =
+                Path.of(rootFile.getPath(), "ParquetTest_sortedFlatPartitionsInfiniteBoundsFloat").toString();
+        writeSortedPartitions(floatPath, TableTools.emptyTable(tableSize)
+                .update("sorted_float = ii % 997 == 0 ? NULL_FLOAT : (ii % 991 == 0 ? Float.NaN"
+                        + " : (ii % 983 == 0 ? Float.POSITIVE_INFINITY : (float) ii))")
+                .sort("sorted_float"), "sorted_float");
+
+        verifyAgainstDisabledSortedPushdown(floatPath,
+                new FloatRangeFilter("sorted_float", 500.0f, Float.POSITIVE_INFINITY, true, true));
+        verifyAgainstDisabledSortedPushdown(floatPath,
+                new FloatRangeFilter("sorted_float", 500.0f, Float.NaN, true, true));
+        verifyAgainstDisabledSortedPushdown(floatPath, FloatRangeFilter.geq("sorted_float", 500.0f));
     }
 
     @Test

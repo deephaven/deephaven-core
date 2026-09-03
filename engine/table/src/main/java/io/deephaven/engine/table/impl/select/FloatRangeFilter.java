@@ -70,6 +70,12 @@ public class FloatRangeFilter extends AbstractRangeFilter {
     }
 
     static WhereFilter makeFloatRangeFilter(String columnName, Condition condition, float value) {
+        if (Float.isNaN(value)) {
+            // Under IEEE 754 every ordered comparison against NaN is false, NaN itself included, so no row matches.
+            // Deephaven ordering would instead sort NaN above every other value, which is not what these operators
+            // ask for.
+            return WhereNoneFilter.INSTANCE;
+        }
         switch (condition) {
             case LESS_THAN:
                 return lt(columnName, value);
