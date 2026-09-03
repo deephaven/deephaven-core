@@ -20,12 +20,13 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
    - **For EVERY code snippet**, search the source code FIRST. Never write or "correct" an example from memory.
      - Engine/server code: `engine/`, `server/`, `extensions/`
      - Python API: `py/server/deephaven/`, `py/client/pydeephaven/`
-     - Groovy/Python scripting integration: `Integrations/src/main/java/io/deephaven/integrations/{python,groovy}/`
+     - Python scripting integration: `Integrations/src/main/java/io/deephaven/integrations/python/`
+     - Groovy scripting integration: `engine/table/src/main/java/io/deephaven/engine/util/GroovyDeephavenSession.java`, `server/src/main/java/io/deephaven/server/console/groovy/`
    - Search the source to verify method signatures, parameters, and return types — don't infer them from the doc's own prose.
    - Check that code examples use correct, current syntax and API calls.
    - Verify that described behavior matches the actual implementation, not just what sounds plausible.
    - **For service/component names**, search `server/src/main/java/io/deephaven/server/` for the exact `*ServiceGrpcImpl` class name — don't guess between similarly named alternatives.
-   - For configuration properties, search `Configuration/src/main/java/io/deephaven/configuration/` and `props/*.prop` files for actual property names — never invent one.
+   - For configuration properties, search `Configuration/src/main/java/io/deephaven/configuration/` and `props/**/src/main/resources/*.prop` (e.g. `props/configs/src/main/resources/dh-defaults.prop`, `props/test-configs/src/main/resources/dh-tests.prop`) for actual property names — never invent one.
    - For gRPC/proto examples, verify against `proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/`.
    - If you cannot find the source to verify a snippet, flag it: "⚠️ Could not verify: [snippet]"
 
@@ -41,7 +42,7 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
    - **Formula compilation:** Only direct column references bypass compilation. Don't say "simple formulas are pre-compiled" — complexity doesn't determine compilation path.
    - **Listener attachment conditions:** `WhereListener` can exist for static sources with refreshing filter dependencies, not just refreshing parent tables.
    - **Incremental evaluation claims:** Filters can trigger broader re-evaluation (refilter path), not just changed rows. Avoid overstating "only changed rows."
-   - **Update-cycle framing:** Avoid "instant" or claims of no micro-batching — the update cycle is effectively micro-batching. Correct framing: work proportional to what changed, not the size of the data.
+   - **Update-cycle framing:** Avoid "instant" or claims of no micro-batching — the update cycle is effectively micro-batching. Avoid a blanket "work proportional to what changed" too: that holds for simple incremental paths, but operations like refilter can force broader or full-table re-evaluation. Frame it per-operation instead of with one universal claim.
    - **Repo scope:** Flag any feature described as available in deephaven-core if it's actually Enterprise-only (Persistent Query lifecycle, Controller/Worker/Dispatcher model, kv store/etcd config) — those live in deephaven-ent, not here.
 
    - **For sizing recommendations, performance numbers, or "typical ranges":**
