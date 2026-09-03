@@ -130,8 +130,19 @@ let
   # duplicated or re-downloaded, only the settings file differs, and only
   # for the duration of this shell.
   isolatedHomeHook = ''
-    _gradle_real_home="''${GRADLE_USER_HOME:-$HOME/.gradle}"
     _gradle_isolated_home="''${XDG_CACHE_HOME:-$HOME/.cache}/deephaven-core-nix-gradle-home"
+    _gradle_real_home="''${GRADLE_USER_HOME:-$HOME/.gradle}"
+    # If GRADLE_USER_HOME is already our own isolated home -- e.g. a nested
+    # `devenv shell`, or this hook re-running in a shell that inherited an
+    # earlier invocation's environment -- treat it as unset rather than
+    # using it as the "real" home to mirror. Otherwise _gradle_real_home
+    # and _gradle_isolated_home are the same directory, and the `ln -sfn`
+    # below creates a symlink pointing at itself (confirmed empirically:
+    # "Too many levels of symbolic links" on every subsequent mkdir/ln
+    # through it).
+    if [[ "$_gradle_real_home" == "$_gradle_isolated_home" ]]; then
+      _gradle_real_home="$HOME/.gradle"
+    fi
     mkdir -p "$_gradle_real_home" "$_gradle_isolated_home"
     shopt -s nullglob
     # Always share these two -- the large, expensive-to-rebuild ones --
