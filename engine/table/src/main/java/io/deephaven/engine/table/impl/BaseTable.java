@@ -42,7 +42,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,13 +75,22 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     private static final Logger log = LoggerFactory.getLogger(BaseTable.class);
 
+    /**
+     * Maximum timeout accepted by {@link #awaitUpdate(long)}; longer timeouts are clamped to this value in order to
+     * avoid overflowing the deadline arithmetic used by the underlying lock and condition.
+     */
+    private static final long MAXIMUM_TIMEOUT_NANOS = TimeUnit.DAYS.toNanos(365);
+
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<BaseTable, Condition> CONDITION_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Condition.class, "updateGraphCondition");
 
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<BaseTable, Collection> PARENTS_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Collection.class, "parents");
     private static final Collection<Object> EMPTY_PARENTS = Collections.emptyList();
 
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<BaseTable, Object> CHILD_LISTENER_REFERENCES_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(
                     BaseTable.class, Object.class, "childListenerReferences");
@@ -575,16 +583,55 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public void awaitUpdate() throws InterruptedException {
-        updateGraph.exclusiveLock().doLocked(ensureCondition()::await);
+        final long startLastNotificationStep = lastNotificationStep;
+        if (isFailed) {
+            // A failed table will never deliver another notification; there's nothing to wait for.
+            return;
+        }
+        updateGraph.exclusiveLock().doLockedInterruptibly(() -> {
+            final Condition condition = ensureCondition();
+            while (!isFailed && startLastNotificationStep == lastNotificationStep) {
+                condition.await();
+            }
+        });
     }
 
     @Override
-    public boolean awaitUpdate(long timeout) throws InterruptedException {
-        final MutableBoolean result = new MutableBoolean(false);
-        updateGraph.exclusiveLock().doLocked(
-                () -> result.setValue(ensureCondition().await(timeout, TimeUnit.MILLISECONDS)));
+    public boolean awaitUpdate(final long timeoutMillis) throws InterruptedException {
+        final long startNanos = System.nanoTime();
+        final long startLastNotificationStep = lastNotificationStep;
+        if (isFailed) {
+            // A failed table will never deliver another notification; there's nothing to wait for. Report that this
+            // call did not time out, since the terminal notification either has been or will be delivered.
+            return true;
+        }
 
-        return result.booleanValue();
+        // Clamp the timeout, so that the deadline arithmetic used by tryLock and awaitNanos cannot overflow. No need
+        // to validate non-positive timeouts: if remainingNanos <= 0, tryLock is guaranteed to not wait at all.
+        long remainingNanos = Math.min(TimeUnit.MILLISECONDS.toNanos(timeoutMillis), MAXIMUM_TIMEOUT_NANOS);
+        if (!updateGraph.exclusiveLock().tryLock(remainingNanos, TimeUnit.NANOSECONDS)) {
+            // Usually, callers will already be holding the exclusive lock when they invoke this method. If they are
+            // not, and cannot acquire it within the timeout, we've timed out unless a notification was delivered while
+            // we were waiting for the lock.
+            return isFailed || startLastNotificationStep != lastNotificationStep;
+        }
+        try {
+            // Charge the time spent acquiring the exclusive lock against the caller's timeout.
+            remainingNanos -= System.nanoTime() - startNanos;
+            final Condition condition = ensureCondition();
+            while (!isFailed && startLastNotificationStep == lastNotificationStep) {
+                if (remainingNanos <= 0) {
+                    return false;
+                }
+                // Note that awaiting must reacquire the exclusive lock before returning, and so the deadline may be
+                // exceeded if this thread has to wait for the lock. awaitNanos returns the remaining time, which is
+                // an estimate that accounts for spurious wakeups as well as signals.
+                remainingNanos = condition.awaitNanos(remainingNanos);
+            }
+            return true;
+        } finally {
+            updateGraph.exclusiveLock().unlock();
+        }
     }
 
     private Condition ensureCondition() {
@@ -870,60 +917,64 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             updateToSend = update;
         }
 
-        if (updateToSend.empty()) {
+        try {
+            if (updateToSend.empty()) {
+                return;
+            }
+
+            Assert.neqNull(updateToSend.added(), "added");
+            Assert.neqNull(updateToSend.removed(), "removed");
+            Assert.neqNull(updateToSend.modified(), "modified");
+            Assert.neqNull(updateToSend.shifted(), "shifted");
+
+            if (isFlat()) {
+                Assert.assertion(getRowSet().isFlat(), "getRowSet().isFlat()", getRowSet(), "getRowSet()");
+            }
+            if (isAppendOnly() || isAddOnly()) {
+                Assert.assertion(updateToSend.removed().isEmpty(), "updateToSend.removed.empty()");
+                Assert.assertion(updateToSend.modified().isEmpty(), "updateToSend.modified.empty()");
+                Assert.assertion(updateToSend.shifted().empty(), "updateToSend.shifted.empty()");
+            }
+            if (isAppendOnly()) {
+                Assert.assertion(
+                        getRowSet().sizePrev() == 0
+                                || getRowSet().lastRowKeyPrev() < updateToSend.added().firstRowKey(),
+                        "getRowSet().lastRowKeyPrev() < updateToSend.added().firstRowKey()");
+            }
+            if (isBlink()) {
+                Assert.eq(updateToSend.added().size(), "added size", getRowSet().size(), "current table size");
+                Assert.eq(updateToSend.removed().size(), "removed size", getRowSet().sizePrev(),
+                        "previous table size");
+                Assert.assertion(updateToSend.modified().isEmpty(), "updateToSend.modified.isEmpty()");
+                Assert.assertion(updateToSend.shifted().empty(), "updateToSend.shifted.empty()");
+            }
+
+            // First validate that each rowSet is in a sane state.
+            if (VALIDATE_UPDATE_INDICES) {
+                updateToSend.added().validate();
+                updateToSend.removed().validate();
+                updateToSend.modified().validate();
+                updateToSend.shifted().validate();
+            }
+
+            if (VALIDATE_UPDATE_OVERLAPS) {
+                validateUpdateOverlaps(updateToSend);
+            }
+
+            // notify children
+            synchronized (this) {
+                lastNotificationStep = currentStep;
+                // Signal only after lastNotificationStep has been updated, so that threads awaiting an update are
+                // guaranteed to observe the new step when they wake up.
+                maybeSignal();
+
+                final NotificationQueue notificationQueue = getNotificationQueue();
+                forEachChildListenerReference((listenerRef, listener) -> notificationQueue
+                        .addNotification(listener.getNotification(updateToSend)));
+            }
+        } finally {
             updateToSend.release();
-            return;
         }
-
-        maybeSignal();
-
-        Assert.neqNull(updateToSend.added(), "added");
-        Assert.neqNull(updateToSend.removed(), "removed");
-        Assert.neqNull(updateToSend.modified(), "modified");
-        Assert.neqNull(updateToSend.shifted(), "shifted");
-
-        if (isFlat()) {
-            Assert.assertion(getRowSet().isFlat(), "getRowSet().isFlat()", getRowSet(), "getRowSet()");
-        }
-        if (isAppendOnly() || isAddOnly()) {
-            Assert.assertion(updateToSend.removed().isEmpty(), "updateToSend.removed.empty()");
-            Assert.assertion(updateToSend.modified().isEmpty(), "updateToSend.modified.empty()");
-            Assert.assertion(updateToSend.shifted().empty(), "updateToSend.shifted.empty()");
-        }
-        if (isAppendOnly()) {
-            Assert.assertion(
-                    getRowSet().sizePrev() == 0 || getRowSet().lastRowKeyPrev() < updateToSend.added().firstRowKey(),
-                    "getRowSet().lastRowKeyPrev() < updateToSend.added().firstRowKey()");
-        }
-        if (isBlink()) {
-            Assert.eq(updateToSend.added().size(), "added size", getRowSet().size(), "current table size");
-            Assert.eq(updateToSend.removed().size(), "removed size", getRowSet().sizePrev(), "previous table size");
-            Assert.assertion(updateToSend.modified().isEmpty(), "updateToSend.modified.isEmpty()");
-            Assert.assertion(updateToSend.shifted().empty(), "updateToSend.shifted.empty()");
-        }
-
-        // First validate that each rowSet is in a sane state.
-        if (VALIDATE_UPDATE_INDICES) {
-            updateToSend.added().validate();
-            updateToSend.removed().validate();
-            updateToSend.modified().validate();
-            updateToSend.shifted().validate();
-        }
-
-        if (VALIDATE_UPDATE_OVERLAPS) {
-            validateUpdateOverlaps(updateToSend);
-        }
-
-        // notify children
-        synchronized (this) {
-            lastNotificationStep = currentStep;
-
-            final NotificationQueue notificationQueue = getNotificationQueue();
-            forEachChildListenerReference((listenerRef, listener) -> notificationQueue
-                    .addNotification(listener.getNotification(updateToSend)));
-        }
-
-        updateToSend.release();
     }
 
     private void validateUpdateOverlaps(final TableUpdate update) {
@@ -1030,11 +1081,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 "updateGraph.clock().currentStep()");
 
         isFailed = true;
-        maybeSignal();
 
         synchronized (this) {
             lastNotificationStep = currentStep;
-
+            maybeSignal();
             final NotificationQueue notificationQueue = getNotificationQueue();
 
             forEachChildListenerReference((listenerRef, listener) -> notificationQueue
@@ -1079,7 +1129,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      * Simplest appropriate legacy ShiftObliviousInstrumentedListener implementation for BaseTable and descendants. It's
      * expected that most use-cases will require overriding onUpdate() - the default implementation simply passes rowSet
      * updates through to the dependent's listeners.
-     *
+     * <p>
      * It is preferred to use {@link ListenerImpl} over {@link ShiftObliviousListenerImpl}
      */
     public static class ShiftObliviousListenerImpl extends ShiftObliviousInstrumentedListener {
@@ -1391,7 +1441,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
         final Map<String, String> sourceDescriptions = new HashMap<>(oldDescriptions);
 
-        if (selectColumns != null && selectColumns.length != 0) {
+        if (selectColumns != null) {
             for (final SelectColumn sc : selectColumns) {
                 sourceDescriptions.remove(sc.getName());
             }
