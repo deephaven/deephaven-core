@@ -59,6 +59,9 @@ public abstract class SingleRange implements OrderedLongSet {
     }
 
     public static SingleRange make(final long start, final long end) {
+        if (end < start) {
+            throw new IllegalArgumentException("start=" + start + " > end=" + end);
+        }
         final long delta = end - start;
         if (delta == 0) {
             final int unsignedIntStart = lowBitsAsUnsignedInt(start);
@@ -565,7 +568,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixRemoveRange(final long startKey, final long endKey) {
-        if (endKey < rangeStart() || startKey > rangeEnd()) {
+        if (endKey < startKey || endKey < rangeStart() || startKey > rangeEnd()) {
             return this;
         }
         if (startKey <= rangeStart() && rangeEnd() <= endKey) {
@@ -606,7 +609,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixRetainRange(final long start, final long end) {
-        if (rangeEnd() < start) {
+        if (end < start || rangeEnd() < start) {
             return OrderedLongSet.EMPTY;
         }
         if (end < rangeStart()) {

@@ -1127,7 +1127,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     public final SortedRanges subRangesByKey(final long start, final long end) {
-        if (isEmpty() || end < first() || last() < start) {
+        if (end < start || isEmpty() || end < first() || last() < start) {
             return null;
         }
         final long packedStart = Math.max(pack(start), 0);

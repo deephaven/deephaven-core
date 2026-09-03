@@ -196,6 +196,11 @@ public class TrackingWritableRowSetImplPrevTest {
                 org.junit.Assert.fail("expected UnsupportedOperationException from retainRange");
             } catch (UnsupportedOperationException expected) {
             }
+            try {
+                prev.insertRange(range[0], range[1]);
+                org.junit.Assert.fail("expected UnsupportedOperationException from insertRange");
+            } catch (UnsupportedOperationException expected) {
+            }
         }
         ix.close();
     }
