@@ -157,6 +157,35 @@ public class RowSetTestCommon {
         return out;
     }
 
+    /**
+     * The intersection of two ascending, non-overlapping range lists, by a two-pointer walk over the ranges. An oracle
+     * independent of the rowset code, and one whose cost is in ranges rather than keys, so wide ranges are cheap.
+     */
+    public static List<long[]> intersectRanges(final List<long[]> a, final List<long[]> b) {
+        final List<long[]> out = new ArrayList<>();
+        int i = 0;
+        int j = 0;
+        while (i < a.size() && j < b.size()) {
+            final long[] ra = a.get(i);
+            final long[] rb = b.get(j);
+            final long start = Math.max(ra[0], rb[0]);
+            final long end = Math.min(ra[1], rb[1]);
+            if (start <= end) {
+                out.add(new long[] {start, end});
+            }
+            // Advance whichever range ends first; on a tie both are spent.
+            if (ra[1] < rb[1]) {
+                ++i;
+            } else if (rb[1] < ra[1]) {
+                ++j;
+            } else {
+                ++i;
+                ++j;
+            }
+        }
+        return out;
+    }
+
     public static List<Long> keysOf(final RowSet rs) {
         final List<Long> out = new ArrayList<>();
         rs.forAllRowKeys(out::add);
