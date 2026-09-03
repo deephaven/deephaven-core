@@ -21,6 +21,7 @@ import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * A reference held on a rowset and never given back leaves it permanently shared, so every later mutation copies it,
@@ -47,6 +48,20 @@ public class RowSetRefCountLeakTest {
             rsp.addRangeUnsafeNoWriteCheck(i * BLOCK_SIZE, i * BLOCK_SIZE + 5);
         }
         rsp.finishMutations();
+        return rsp;
+    }
+
+    /**
+     * Like {@link #manyBlockRsp}, but the first span is a lone key rather than a range; shifting a lone key below zero
+     * is rejected, while a range is not checked.
+     */
+    private static RspBitmap manyBlockRspStartingWithSingleton(final long firstKey) {
+        RspBitmap rsp = RspBitmap.makeEmpty();
+        rsp = rsp.add(firstKey);
+        for (int i = 2; i < 10; ++i) {
+            rsp = rsp.addRange(i * BLOCK_SIZE, i * BLOCK_SIZE + 5);
+        }
+        rsp.finishMutationsAndOptimize();
         return rsp;
     }
 
@@ -135,6 +150,33 @@ public class RowSetRefCountLeakTest {
                     assertEquals(rowSet.size(), total);
                 });
             }
+        }
+    }
+
+    // A shift that is not a whole number of blocks walks the source with a range iterator, and a shift that pushes
+    // a key below zero throws part way through that walk.
+
+    @Test
+    public void testShiftBelowZeroDoesNotRetainTheSource() {
+        final RspBitmap inner = manyBlockRspStartingWithSingleton(5);
+        try (final WritableRowSetImpl rowSet = rowSetOf(inner)) {
+            assertHoldsSteady("shift in place below zero", inner, () -> {
+                try {
+                    rowSet.shiftInPlace(-7);
+                    fail("expected the shift to be rejected");
+                } catch (IllegalArgumentException expected) {
+                    // The source must be left as it was.
+                }
+            });
+            assertHoldsSteady("shift on new below zero", inner, () -> {
+                try {
+                    rowSet.shift(-7).close();
+                    fail("expected the shift to be rejected");
+                } catch (IllegalArgumentException expected) {
+                    // The source must be left as it was.
+                }
+            });
+            assertEquals(5, rowSet.firstRowKey());
         }
     }
 

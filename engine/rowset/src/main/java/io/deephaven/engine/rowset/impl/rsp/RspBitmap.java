@@ -1210,13 +1210,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             return ans;
         }
         final RspBitmap rb = new RspBitmap();
-        final RspRangeIterator it = getRangeIterator();
-        int i = 0;
-        while (it.hasNext()) {
-            it.next();
-            final long s = it.start();
-            final long e = it.end();
-            i = rb.addRangeUnsafeNoWriteCheck(i, s + offset, e + offset);
+        try (final RspRangeIterator it = getRangeIterator()) {
+            int i = 0;
+            while (it.hasNext()) {
+                it.next();
+                final long s = it.start();
+                final long e = it.end();
+                i = rb.addRangeUnsafeNoWriteCheck(i, s + offset, e + offset);
+            }
         }
         rb.finishMutations();
         return rb;
