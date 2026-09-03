@@ -1677,12 +1677,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         System.arraycopy(spans, src, spans, dst, n);
     }
 
+    /**
+     * Shrink the span arrays to half their length once no more than a quarter of them is in use. Shrinking at half
+     * would meet the doubling growth policy head on: a set oscillating around a power of two spans would then
+     * reallocate on every insert and again on every remove.
+     */
     private void checkCompact() {
-        final int thresholdSize;
-        if (size < 2 * INITIAL_CAPACITY || size > (thresholdSize = spans.length / 2)) {
+        if (size < 2 * INITIAL_CAPACITY || size > spans.length / 4) {
             return;
         }
-        realloc(thresholdSize);
+        realloc(spans.length / 2);
     }
 
     /**
@@ -1696,8 +1700,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      */
     private void collapseRange(final int idst, final int isrc) {
         int newSize = size - (isrc - idst);
-        int thresholdSize = 0;
-        if (newSize > 2 * INITIAL_CAPACITY && newSize < (thresholdSize = spans.length / 2)) {
+        // Same shrink rule as checkCompact, applied while copying so the survivors move only once.
+        if (newSize >= 2 * INITIAL_CAPACITY && newSize <= spans.length / 4) {
+            final int thresholdSize = spans.length / 2;
             final Object[] newSpans = new Object[thresholdSize];
             System.arraycopy(spans, 0, newSpans, 0, idst);
             System.arraycopy(spans, isrc, newSpans, idst, size - isrc);
