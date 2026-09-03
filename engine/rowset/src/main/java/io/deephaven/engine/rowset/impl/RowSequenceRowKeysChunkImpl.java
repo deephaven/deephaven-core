@@ -236,7 +236,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
 
     private int findLowerBoundOfKey(final long key, final int offset) {
         int off = OrderedChunkUtils.findInChunk(backingChunk, key, offset, backingChunk.size());
-        while (off > 0 && backingChunk.get(off - 1) == key) {
+        while (off > offset && backingChunk.get(off - 1) == key) {
             --off;
         }
         return off;
