@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.sort;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
@@ -100,26 +99,23 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
             }
             // Safe to search for these values directly: MatchFilter has already removed any NaN the filter does not
             // intend to match, so the search's NaN == NaN equality cannot disagree with the filter's own.
-            // PushdownResult.of copies its inputs, so the empty maybeMatch is ours to close.
             try (final RowSet matching =
-                    binarySearchMatch(columnSource, dataType, selection, sortColumn, values, usePrev);
-                    final RowSet maybeMatch = RowSetFactory.empty()) {
+                    binarySearchMatch(columnSource, dataType, selection, sortColumn, values, usePrev)) {
                 // Handle normal / inverted match filters:
                 if (matchFilter.getMatchOptions().inverted()) {
                     try (final RowSet pushdownMatches = selection.minus(matching)) {
-                        onComplete.accept(PushdownResult.of(selection, pushdownMatches, maybeMatch));
+                        onComplete.accept(PushdownResult.exactMatch(selection, pushdownMatches));
                     }
                 } else {
-                    onComplete.accept(PushdownResult.of(selection, matching, maybeMatch));
+                    onComplete.accept(PushdownResult.exactMatch(selection, matching));
                 }
                 return;
             }
         }
 
         if (rangeFilter != null) {
-            try (final RowSet matching = binarySearchRange(columnSource, selection, sortColumn, rangeFilter, usePrev);
-                    final RowSet maybeMatch = RowSetFactory.empty()) {
-                onComplete.accept(PushdownResult.of(selection, matching, maybeMatch));
+            try (final RowSet matching = binarySearchRange(columnSource, selection, sortColumn, rangeFilter, usePrev)) {
+                onComplete.accept(PushdownResult.exactMatch(selection, matching));
                 return;
             }
         }

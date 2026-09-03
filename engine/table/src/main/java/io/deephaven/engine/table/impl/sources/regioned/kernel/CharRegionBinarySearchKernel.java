@@ -10,6 +10,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.select.CharRangeFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.sort.timsort.CharTimsortDescendingKernel;
 import io.deephaven.engine.table.impl.sort.timsort.CharTimsortKernel;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionChar;
@@ -18,8 +20,69 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.insertionPoint;
+import static io.deephaven.util.QueryConstants.MAX_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
 public class CharRegionBinarySearchKernel {
+    // region binsearchRangeFilter
+    /**
+     * Performs a binary search on a sorted column region using bounds from a {@link CharRangeFilter}, returning the row
+     * keys that satisfy the filter.
+     *
+     * @param region The column region to search.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} representing the sorting order.
+     * @param filter The range filter supplying lower/upper bounds and their inclusive flags.
+     * @return A {@link RowSet} containing the row keys satisfying the filter.
+     */
+    public static RowSet binsearchRangeFilter(
+            @NotNull final ColumnRegionChar<?> region,
+            final long firstKey,
+            final long lastKey,
+            @NotNull final SortColumn sortColumn,
+            @NotNull final CharRangeFilter filter) {
+        if (filter.getLower() == NULL_CHAR && filter.isLowerInclusive()) {
+            return binarySearchMax(region, firstKey, lastKey, sortColumn, filter.getUpper(),
+                    filter.isUpperInclusive());
+        } else if (filter.getUpper() == MAX_CHAR && filter.isUpperInclusive()) {
+            return binarySearchMin(region, firstKey, lastKey, sortColumn, filter.getLower(),
+                    filter.isLowerInclusive());
+        } else {
+            return binarySearchMinMax(region, firstKey, lastKey, sortColumn,
+                    filter.getLower(), filter.getUpper(),
+                    filter.isLowerInclusive(), filter.isUpperInclusive());
+        }
+    }
+    // endregion binsearchRangeFilter
+
+    // region binsearchMatchFilter
+    /**
+     * Performs a binary search on a sorted column region for the values of a {@link MatchFilter}, returning the row
+     * keys that hold one of them. The filter's {@link io.deephaven.engine.table.MatchOptions#inverted() inverted} flag
+     * is not applied here; the caller must invert the result itself.
+     *
+     * @param region The column region to search.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} representing the sorting order.
+     * @param filter The match filter supplying the values to find.
+     * @return A {@link RowSet} containing the row keys holding one of the filter's values.
+     */
+    public static RowSet binsearchMatchFilter(
+            @NotNull final ColumnRegionChar<?> region,
+            final long firstKey,
+            final long lastKey,
+            @NotNull final SortColumn sortColumn,
+            @NotNull final MatchFilter filter) {
+        if (filter.getValues().length == 0) {
+            // Nothing to search for, so nothing matches, and the data need not be touched at all.
+            return RowSetFactory.empty();
+        }
+        return binarySearchMatch(region, firstKey, lastKey, sortColumn, filter.getValues());
+    }
+    // endregion binsearchMatchFilter
+
     /**
      * Performs a binary search on a given column region to find the positions (row keys) of specified keys. The method
      * returns the RowSet containing the matched row keys.

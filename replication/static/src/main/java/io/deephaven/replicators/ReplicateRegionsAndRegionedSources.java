@@ -50,18 +50,10 @@ public class ReplicateRegionsAndRegionedSources {
         fixupParquetColumnRegions(charToAllButBooleanAndByte(TASK, PARQUET_REGION_CHAR_PATH));
         fixupChunkColumnRegionByte(charToByte(TASK, PARQUET_REGION_CHAR_PATH));
 
-        charToAllButBoolean(TASK, GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH);
+        fixupFloatingPointUpperRange(charToAllButBoolean(TASK, GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH));
         fixupBinSearchObject(charToObject(TASK, GENERIC_REGION_BINARY_SEARCH_KERNEL_PATH));
 
-        final List<String> columnBinarySearchKernels =
-                charToAllButBoolean(TASK, GENERIC_COLUMN_BINARY_SEARCH_KERNEL_PATH);
-        for (final String path : columnBinarySearchKernels) {
-            if (path.contains("Double")) {
-                fixupUnboundedUpperRange(path, "Double");
-            } else if (path.contains("Float")) {
-                fixupUnboundedUpperRange(path, "Float");
-            }
-        }
+        fixupFloatingPointUpperRange(charToAllButBoolean(TASK, GENERIC_COLUMN_BINARY_SEARCH_KERNEL_PATH));
         fixupBinSearchObject(charToObject(TASK, GENERIC_COLUMN_BINARY_SEARCH_KERNEL_PATH));
         charToAllButBooleanAndByte(TASK, GENERIC_REGION_CHAR_PATH);
         fixupChunkColumnRegionByte(charToByte(TASK, GENERIC_REGION_CHAR_PATH));
@@ -205,12 +197,24 @@ public class ReplicateRegionsAndRegionedSources {
         for (String file : files) {
             if (file.contains("Double")) {
                 replaceStatistics(file, "Double");
-                fixupUnboundedUpperRange(file, "Double");
             } else if (file.contains("Float")) {
                 replaceStatistics(file, "Float");
-                fixupUnboundedUpperRange(file, "Float");
             } else if (file.contains("Long")) {
                 replaceStatistics(file, "Long");
+            }
+        }
+    }
+
+    /**
+     * Apply {@link #fixupUnboundedUpperRange} to the floating-point members of a replicated binary search kernel
+     * family. The range dispatch that needs it lives in both the region and the column kernels.
+     */
+    private static void fixupFloatingPointUpperRange(final List<String> paths) throws IOException {
+        for (final String path : paths) {
+            if (path.contains("Double")) {
+                fixupUnboundedUpperRange(path, "Double");
+            } else if (path.contains("Float")) {
+                fixupUnboundedUpperRange(path, "Float");
             }
         }
     }
@@ -295,12 +299,7 @@ public class ReplicateRegionsAndRegionedSources {
                 "source\\.getPrevObject\\(", "source.getPrev(",
                 "final Object\\[\\] unboxed = ArrayTypeUtils.getUnboxedObjectArray\\(searchValues\\);",
                 "final Object[] copiedValues = Arrays.copyOf(searchValues, searchValues.length);",
-                "unboxed", "copiedValues",
-                "startValue != toFind", "!ObjectComparisons.eq(startValue, toFind)",
-                "lowValue == min", "ObjectComparisons.eq(lowValue, min)",
-                "highValue == max", "ObjectComparisons.eq(highValue, max)",
-                "lowValue == max", "ObjectComparisons.eq(lowValue, max)",
-                "highValue == min", "ObjectComparisons.eq(highValue, min)");
+                "unboxed", "copiedValues");
         lines = addImport(lines, "import java.util.Arrays;");
         if (file.getName().contains("Column")) {
             lines = replaceRegion(lines, "binsearchRangeFilter", Arrays.asList(
@@ -339,6 +338,84 @@ public class ReplicateRegionsAndRegionedSources {
                     "        return binarySearchMinMax(source, selection, sortColumn,",
                     "                rangeFilter.getLower(), rangeFilter.getUpper(),",
                     "                rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive(), usePrev);",
+                    "    }"));
+            lines = addImport(lines,
+                    "import io.deephaven.engine.table.impl.select.AbstractRangeFilter;",
+                    "import io.deephaven.engine.table.impl.select.ComparableRangeFilter;",
+                    "import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;");
+        } else {
+            lines = replaceRegion(lines, "binsearchRangeFilter", Arrays.asList(
+                    "    /**",
+                    "     * Performs a binary search on a sorted column region using bounds from an"
+                            + " {@link AbstractRangeFilter} (either",
+                    "     * {@link SingleSidedComparableRangeFilter} or {@link ComparableRangeFilter}), returning the"
+                            + " row keys that satisfy the",
+                    "     * filter.",
+                    "     *",
+                    "     * @param region The column region to search.",
+                    "     * @param firstKey The first key in the column region to consider for the search.",
+                    "     * @param lastKey The last key in the column region to consider for the search.",
+                    "     * @param sortColumn A {@link SortColumn} representing the sorting order.",
+                    "     * @param filter The range filter supplying bounds and their inclusive flags.",
+                    "     * @return A {@link RowSet} containing the row keys satisfying the filter.",
+                    "     */",
+                    "    public static RowSet binsearchRangeFilter(",
+                    "            @NotNull final ColumnRegionObject<?, ?> region,",
+                    "            final long firstKey,",
+                    "            final long lastKey,",
+                    "            @NotNull final SortColumn sortColumn,",
+                    "            @NotNull final AbstractRangeFilter filter) {",
+                    "        if (filter instanceof SingleSidedComparableRangeFilter) {",
+                    "            final SingleSidedComparableRangeFilter rangeFilter = (SingleSidedComparableRangeFilter) filter;",
+                    "            if (rangeFilter.isGreaterThan()) {",
+                    "                return binarySearchMin(region, firstKey, lastKey, sortColumn,",
+                    "                        rangeFilter.getPivot(), rangeFilter.isLowerInclusive());",
+                    "            } else {",
+                    "                return binarySearchMax(region, firstKey, lastKey, sortColumn,",
+                    "                        rangeFilter.getPivot(), rangeFilter.isUpperInclusive());",
+                    "            }",
+                    "        }",
+                    "        final ComparableRangeFilter rangeFilter = (ComparableRangeFilter) filter;",
+                    "        return binarySearchMinMax(region, firstKey, lastKey, sortColumn,",
+                    "                rangeFilter.getLower(), rangeFilter.getUpper(),",
+                    "                rangeFilter.isLowerInclusive(), rangeFilter.isUpperInclusive());",
+                    "    }"));
+            lines = replaceRegion(lines, "binsearchMatchFilter", Arrays.asList(
+                    "    /**",
+                    "     * Performs a binary search on a sorted column region for the values of a"
+                            + " {@link MatchFilter}, returning the row",
+                    "     * keys that hold one of them. The filter's"
+                            + " {@link io.deephaven.engine.table.MatchOptions#inverted() inverted} flag",
+                    "     * is not applied here; the caller must invert the result itself.",
+                    "     *",
+                    "     * <p>",
+                    "     * Ordering alone decides a match only for a type whose comparison is consistent with"
+                            + " equality. For any other type",
+                    "     * the ordered search returns a superset, and"
+                            + " {@link ComparableRegionBinarySearchKernel} picks the matches out of",
+                    "     * it by equality.",
+                    "     *",
+                    "     * @param region The column region to search.",
+                    "     * @param firstKey The first key in the column region to consider for the search.",
+                    "     * @param lastKey The last key in the column region to consider for the search.",
+                    "     * @param sortColumn A {@link SortColumn} representing the sorting order.",
+                    "     * @param filter The match filter supplying the values to find.",
+                    "     * @return A {@link RowSet} containing the row keys holding one of the filter's values.",
+                    "     */",
+                    "    public static RowSet binsearchMatchFilter(",
+                    "            @NotNull final ColumnRegionObject<?, ?> region,",
+                    "            final long firstKey,",
+                    "            final long lastKey,",
+                    "            @NotNull final SortColumn sortColumn,",
+                    "            @NotNull final MatchFilter filter) {",
+                    "        if (filter.getValues().length == 0) {",
+                    "            // Nothing to search for, so nothing matches, and the data need not be touched at all.",
+                    "            return RowSetFactory.empty();",
+                    "        }",
+                    "        return BinarySearchKernelHelper.compareConsistentWithEquality(filter.getColumnType())",
+                    "                ? binarySearchMatch(region, firstKey, lastKey, sortColumn, filter.getValues())",
+                    "                : ComparableRegionBinarySearchKernel.binarySearchMatch(region, firstKey, lastKey, sortColumn,",
+                    "                        filter.getValues());",
                     "    }"));
             lines = addImport(lines,
                     "import io.deephaven.engine.table.impl.select.AbstractRangeFilter;",

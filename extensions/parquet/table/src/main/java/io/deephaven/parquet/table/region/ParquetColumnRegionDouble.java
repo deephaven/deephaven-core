@@ -10,18 +10,16 @@ package io.deephaven.parquet.table.region;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
-import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionDouble;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPushdownAction;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPushdownFilterContext;
+import io.deephaven.engine.table.impl.sources.regioned.SortedRegionPushdownHelper;
 import io.deephaven.engine.table.impl.sources.regioned.kernel.DoubleRegionBinarySearchKernel;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.chunk.attributes.Any;
@@ -29,8 +27,6 @@ import io.deephaven.engine.page.ChunkPage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 /**
  * {@link ColumnRegionDouble} implementation for regions that support fetching primitive doubles from
@@ -82,26 +78,14 @@ public final class ParquetColumnRegionDouble<ATTR extends Any> extends ParquetCo
             return PushdownResult.UNSUPPORTED_ACTION_COST;
         }
 
-        final RegionedPushdownFilterContext ctx = (RegionedPushdownFilterContext) filterContext;
-        final TableLocation tableLocation = getColumnLocation().map(ColumnLocation::getTableLocation).orElse(null);
-
-        // Only range and match filters can benefit from sorted column data.
-        if (tableLocation == null || (ctx.rangeFilter() == null && ctx.matchFilter() == null)) {
+        final SortColumn sortColumn = SortedRegionPushdownHelper.searchableSortColumn(
+                filter,
+                (RegionedPushdownFilterContext) filterContext,
+                getColumnLocation().map(ColumnLocation::getTableLocation).orElse(null));
+        if (sortColumn == null) {
             return PushdownResult.UNSUPPORTED_ACTION_COST;
         }
-        final SortColumn firstSortedColumn = tableLocation.getSortedColumns().isEmpty()
-                ? null
-                : tableLocation.getSortedColumns().get(0);
-
-        if (firstSortedColumn != null) {
-            // Need to handle column renames.
-            final String col = filter.getColumns().get(0);
-            final String renamedCol = ctx.filterColumnToManagerColumnName().getOrDefault(col, col);
-            if (firstSortedColumn.column().name().equals(renamedCol)) {
-                return action.filterCost();
-            }
-        }
-        return PushdownResult.UNSUPPORTED_ACTION_COST;
+        return action.filterCost();
     }
 
     @Override
@@ -113,95 +97,43 @@ public final class ParquetColumnRegionDouble<ATTR extends Any> extends ParquetCo
             final boolean usePrev,
             final PushdownFilterContext filterContext,
             final RegionedPushdownAction.ActionContext actionContext) {
+        if (selection.isEmpty()) {
+            // Nothing can match an empty selection.
+            return PushdownResult.noneMatch(selection);
+        }
+
         // Current implementation only supports sorted region actions.
         if (!action.equals(SORTED_REGION_ACTION)) {
             return input.copy();
         }
 
         final RegionedPushdownFilterContext ctx = (RegionedPushdownFilterContext) filterContext;
-
-        final TableLocation tableLocation = getColumnLocation().map(ColumnLocation::getTableLocation).orElse(null);
-
-        // Only range and match filters can benefit from sorted column data.
-        if (tableLocation == null || (ctx.rangeFilter() == null && ctx.matchFilter() == null)) {
+        final SortColumn sortColumn = SortedRegionPushdownHelper.searchableSortColumn(
+                filter,
+                ctx,
+                getColumnLocation().map(ColumnLocation::getTableLocation).orElse(null));
+        if (sortColumn == null) {
             return input.copy();
         }
-        final SortColumn firstSortedColumn = tableLocation.getSortedColumns().isEmpty()
-                ? null
-                : tableLocation.getSortedColumns().get(0);
-        if (firstSortedColumn == null) {
-            return input.copy();
-        }
-
-        // Need to handle column renames.
-        final String col = filter.getColumns().get(0);
-        final String renamedCol = ctx.filterColumnToManagerColumnName().getOrDefault(col, col);
-        if (!firstSortedColumn.column().name().equals(renamedCol)) {
-            return input.copy();
-        }
+        final long firstKey = selection.firstRowKey();
+        final long lastKey = selection.lastRowKey();
 
         if (ctx.matchFilter() != null) {
-            final MatchFilter matchFilter = ctx.matchFilter();
-            if (matchFilter.getValues().length == 0) {
-                // Nothing to search for, so the answer is known without touching the data.
-                return matchFilter.getMatchOptions().inverted()
-                        ? PushdownResult.allMatch(selection)
-                        : PushdownResult.noneMatch(selection);
-            }
-            try (final RowSet matches = DoubleRegionBinarySearchKernel.binarySearchMatch(
-                    this,
-                    selection.firstRowKey(),
-                    selection.lastRowKey(),
-                    firstSortedColumn,
-                    matchFilter.getValues())) {
-                // Handle normal / inverted match filters:
-                return PushdownResult.of(selection, matchFilter.getMatchOptions().inverted()
-                        ? selection.minus(matches)
-                        : matches.intersect(selection), RowSetFactory.empty());
+            try (final RowSet matches = DoubleRegionBinarySearchKernel.binsearchMatchFilter(
+                    this, firstKey, lastKey, sortColumn, ctx.matchFilter());
+                    // Handle normal / inverted match filters:
+                    final RowSet pushdownMatches = ctx.matchFilter().getMatchOptions().inverted()
+                            ? selection.minus(matches)
+                            : matches.intersect(selection)) {
+                return PushdownResult.exactMatch(selection, pushdownMatches);
             }
         }
 
-        if (ctx.rangeFilter() != null && ctx.rangeFilter() instanceof DoubleRangeFilter) {
-            final DoubleRangeFilter rangeFilter = (DoubleRangeFilter) ctx.rangeFilter();
-            final RowSet matches;
-            if (rangeFilter.getLower() == NULL_DOUBLE && rangeFilter.isLowerInclusive()) {
-                // Only need to find the upper bound, as the lower bound includes all values.
-                matches = DoubleRegionBinarySearchKernel.binarySearchMax(
-                        this,
-                        selection.firstRowKey(),
-                        selection.lastRowKey(),
-                        firstSortedColumn,
-                        rangeFilter.getUpper(),
-                        rangeFilter.isUpperInclusive());
-            } else if (Double.isNaN(rangeFilter.getUpper()) && rangeFilter.isUpperInclusive()) {
-                // Only need to find the lower bound, as the upper bound includes all values.
-                matches = DoubleRegionBinarySearchKernel.binarySearchMin(
-                        this,
-                        selection.firstRowKey(),
-                        selection.lastRowKey(),
-                        firstSortedColumn,
-                        rangeFilter.getLower(),
-                        rangeFilter.isLowerInclusive());
-            } else {
-                // Find the lower and upper bounds.
-                // gt() and geq() build a NaN upper bound that is exclusive, so the common greater-than filters
-                // land here rather than short-circuiting: the trailing NaN block has to be located and excluded,
-                // which needs the upper bound searched as well as the lower.
-                matches = DoubleRegionBinarySearchKernel.binarySearchMinMax(
-                        this,
-                        selection.firstRowKey(),
-                        selection.lastRowKey(),
-                        firstSortedColumn,
-                        rangeFilter.getLower(),
-                        rangeFilter.getUpper(),
-                        rangeFilter.isLowerInclusive(),
-                        rangeFilter.isUpperInclusive());
-            }
-            try (final RowSet ignored = matches) {
-                return PushdownResult.of(
-                        selection,
-                        matches.intersect(selection),
-                        RowSetFactory.empty());
+        if (ctx.rangeFilter() instanceof DoubleRangeFilter) {
+            try (final RowSet matches = DoubleRegionBinarySearchKernel.binsearchRangeFilter(
+                    this, firstKey, lastKey, sortColumn, (DoubleRangeFilter) ctx.rangeFilter());
+                    final RowSet pushdownMatches = matches.intersect(selection)) {
+                return PushdownResult.exactMatch(selection, pushdownMatches);
             }
         }
         return input.copy();
