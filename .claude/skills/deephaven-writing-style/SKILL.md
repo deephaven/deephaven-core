@@ -15,11 +15,11 @@ These standards apply to deephaven-core documentation.
 - **Avoid egregious jargon and hedging.** Prefer concrete, direct sentences over vague qualifiers ("may potentially," "in some cases could") unless the uncertainty is real and worth flagging.
 - **Tone.** Tutorials and how-tos can be conversational, first-person narrative while remaining professional. Reference material is dry and formal — third-person narrative without contractions.
 - **Sentence case in headings** — not Title Case. Don't include links in headers.
-- **Straight quotes only.** Use `"` and `'`, never smart/curly quotes (`"` `"` `'` `'`).
+- **Straight quotes only.** Use `"` and `'`, never smart/curly quotes (`“` `”` `‘` `’`).
 - **Em dashes** for parenthetical statements, not hyphens or en dashes. Surround with a single space on either side: `word — word`, not `word—word`.
 - **Link wording.** Always describe what you're linking to; never use "here" or "click here" as link text (e.g., "see the [Input table guide](link)," not "see [here](link)").
 - **One idea per paragraph.** Long paragraphs mixing multiple claims are harder to verify and harder to read; split them.
-- **Bullet points get periods** when they're complete sentences; incomplete phrases don't need them.
+- **Bullet points get periods** when they're complete sentences; incomplete phrases don't need them. Exception: don't add periods to bullets in the "Related documentation" section.
 
 ## Page structure
 

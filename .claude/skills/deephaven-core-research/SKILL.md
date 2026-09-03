@@ -123,7 +123,7 @@ User calls table.where("Price > 100") in py/client/pydeephaven
   → server/src/.../table/ops/TableServiceGrpcImpl receives request, returns an ExportedTableCreationResponse (ticket) — no row data yet
   → engine/table/impl/QueryTable.where() evaluates WhereFilter against ColumnSource data
   → If the source or filters are refreshing, a WhereListener is created and the result table is registered with UpdateGraph for live updates; a fully static where() has no listener
-  → Client fetches row data separately via an Arrow Flight DoGet against the ticket (e.g. session.flight_service.do_get_table); Barrage applies only when subscribing to live/ticking updates, not this static fetch
+  → Client fetches row data separately via an Arrow Flight DoGet against the ticket (e.g. session.flight_service.do_get_table); this pydeephaven path is a plain Flight fetch, not Barrage — the web client's createSubscription, by contrast, does use Barrage even for a one-time atomic snapshot of a static table
 ```
 
 **Iterate until you can explain:**
@@ -327,5 +327,5 @@ proto/proto-backplane-grpc/*.proto → generated Java → server/src/.../server/
 
 **Table update flow:**
 ```
-Source change → PeriodicUpdateGraph's timer starts the next cycle (or, for an EventDrivenUpdateGraph, an explicit UpdateGraph.requestRefresh call triggers one) → Notification cycle → TableUpdateListener.onUpdate → Downstream tables → Barrage → Client
+PeriodicUpdateGraph's refresh thread runs cycles continuously on its own timer (or, for an EventDrivenUpdateGraph, an explicit UpdateGraph.requestRefresh call triggers one) → Any source changes pending by that cycle are processed → Notification cycle → TableUpdateListener.onUpdate → Downstream tables → Barrage (if a subscription is active) → Client
 ```
