@@ -1,0 +1,99 @@
+name: Devenv CI
+
+# Exercises the devenv.sh dev environment (devenv.nix et al. -- see
+# devenv-README.md) the same way a contributor would: install Nix, enter the
+# shell, and confirm the toolchain pins / Gradle-wrapper vendoring / JDK
+# toolchain isolation it promises actually hold. Only runs when devenv's own
+# inputs change, since it's independent of the rest of the build.
+
+on:
+  pull_request:
+    branches: [ 'main', 'rc/v*' ]
+    paths:
+      - 'devenv.nix'
+      - 'devenv.yaml'
+      - 'devenv.lock'
+      - '.envrc'
+      - '.devenv.flake.nix'
+      - 'nix/**'
+      - 'gradle/wrapper/gradle-wrapper.properties'
+      - '.github/workflows/devenv-ci.yml'
+  push:
+    branches: [ 'main', 'check/**', 'release/v*' ]
+    paths:
+      - 'devenv.nix'
+      - 'devenv.yaml'
+      - 'devenv.lock'
+      - '.envrc'
+      - '.devenv.flake.nix'
+      - 'nix/**'
+      - 'gradle/wrapper/gradle-wrapper.properties'
+      - '.github/workflows/devenv-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  devenv-shell:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v16
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@v9
+
+      - name: Install devenv
+        run: nix profile add nixpkgs#devenv
+
+      - name: Cache Gradle caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/notifications
+          key: devenv-gradle-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            devenv-gradle-
+
+      - name: Print toolchain versions
+        shell: devenv shell bash -- -e {0}
+        run: |
+          echo "== java ==";       java -version
+          echo "== JAVA_HOME ==";  echo "$JAVA_HOME"
+          echo "== node ==";       node --version
+          echo "== python3 ==";    python3 --version
+          echo "== gcc ==";        gcc --version
+          echo "== cmake ==";      cmake --version
+          echo "== pkg-config ==="; pkg-config --version
+
+      # gradle-wrapper.properties' distribution is vendored into the Nix
+      # store and pre-seeded into $GRADLE_USER_HOME/wrapper/dists by
+      # nix/gradle-wrapper.nix -- this must succeed with zero network access.
+      - name: gradlew --version (offline, vendored wrapper distribution)
+        run: devenv shell ./gradlew --version --offline
+
+      # Toolchain resolution is isolated to just the Nix-provided JDK
+      # (auto-detect/auto-download both disabled) -- assert both the
+      # settings and that exactly one JDK is visible.
+      - name: javaToolchains isolation check
+        run: |
+          devenv shell ./gradlew javaToolchains --offline | tee toolchains.txt
+          test "$(grep -c 'Disabled' toolchains.txt)" -eq 2
+          test "$(grep -c '| Location:' toolchains.txt)" -eq 1
+
+      - name: Build a representative module
+        run: devenv shell ./gradlew --scan :engine-table:compileJava
+
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: devenv-ci-jvm-err
+          path: '**/*_pid*.log'
+          if-no-files-found: ignore
