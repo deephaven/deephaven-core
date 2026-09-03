@@ -32,6 +32,8 @@ Capitalize:
 
 - Deephaven Community
 - Core+ (if referenced)
+- Enterprise (if referenced)
+- Persistent Query (if referenced)
 - UpdateGraph
 - TableUpdateListener
 - RowSet
