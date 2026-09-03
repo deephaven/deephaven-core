@@ -767,10 +767,10 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     /**
      * Add a range, searching for its place from {@code fromIdx}. A range that covers whole blocks may merge with, or
-     * absorb, spans we already hold; with {@code madeNullSpansMu} null the absorbed spans are compacted out at once,
-     * which shifts every later span, so a caller adding many ranges passes a tracker and compacts once at the end via
-     * {@link #collectRemovedIndicesIfAny}. Marked spans only ever sit before the index returned, so later searches that
-     * start from it never see them.
+     * absorb, spans we already hold; with {@code madeNullSpansMu} null the absorbed spans are compacted out inline,
+     * shifting every later span. A caller adding many ranges should provide a non-null {@code madeNullSpansMu} and
+     * compact once at the end via {@link #collectRemovedIndicesIfAny}. Marked spans only ever sit before the index
+     * returned, so later searches that start from it never see them.
      *
      * @return the index of the span holding the range's last key, from where the next (higher) range's search can start
      */
