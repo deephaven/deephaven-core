@@ -104,7 +104,3 @@ Enclose: method names (`naturalJoin`), classes (`SystemTableLogger`), variables 
 ## Blog posts
 
 When writing blog posts, follow the template at `docs/python/templates/_blog-template.md`.
-
-## Documentation review workflow
-
-When reviewing or editing documentation files in `docs/`, run the accuracy-check workflow (`.devin/workflows/accuracy-check.md`) to verify technical accuracy, style compliance, and link completeness. This is especially important for conceptual guides that describe engine behavior, update semantics, or API usage patterns.
