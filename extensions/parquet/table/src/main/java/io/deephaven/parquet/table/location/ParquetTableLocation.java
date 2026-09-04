@@ -662,8 +662,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
 
         if (action == ROW_GROUP_METADATA) {
-            return pushdownRowGroupMetadata(selection, filterCtx.filterForMetadataFiltering(), actionCtx.columnIndices,
-                    input);
+            return pushdownRowGroupMetadata(selection, filterCtx, actionCtx, input);
         }
         if (action == IN_MEMORY_DATA_INDEX) {
             final BasicDataIndex dataIndex =
@@ -724,6 +723,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final Type parquetType = parquetSchema.getType(columnNameInSchema);
         if (!parquetType.isPrimitive()) {
             // Cannot push down filters on group types
+            return false;
+        }
+        if (parquetType.isRepetition(Type.Repetition.REPEATED)) {
+            // A repeated column's statistics describe leaf values rather than rows -- one row spans many of them, and
+            // num_nulls counts leaf nulls, not null rows. Neither can be read as a statement about rows, so decline
+            // rather than interpret them. Deephaven never writes such a column (arrays and vectors are written as
+            // nested LIST groups, which the path check above rejects), but other writers do.
             return false;
         }
         if (parquetType.asPrimitiveType().columnOrder() != ColumnOrder.typeDefined()) {
@@ -855,76 +861,44 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @NotNull
     private PushdownResult pushdownRowGroupMetadata(
             final RowSet selection,
-            final WhereFilter filter,
-            final List<Integer> columnIndices,
+            final RegionedPushdownFilterContext ctx,
+            final ActionContext actionCtx,
             final PushdownResult result) {
+        final WhereFilter filter = ctx.filterForMetadataFiltering();
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
         final MutableLong maybeCount = new MutableLong(0);
 
         // Only one column in these filters
-        final Integer columnIndex = columnIndices.get(0);
+        final Integer columnIndex = actionCtx.columnIndices.get(0);
+
+        // Resolve the filter against the column type once, not once per row group. Everything that depends only on
+        // the filter -- unboxing its values into a primitive array, encoding them, deciding whether the type is
+        // supported at all -- happens here, and the loop below is left with just the statistics.
+        //
+        // TODO (DH-19666): Hoist this to the filter context. The evaluator is a pure function of (filter, ctx), and
+        // both are per-filter rather than per-location -- ctx is created once in AbstractFilterExecution and shared
+        // across locations -- so nothing here depends on this location. As written the unboxing and encoding above
+        // are repeated once per location, which for a large match filter over many partitions is a real cost:
+        // encoding 10,000 string values measures around 370us, so 1,000 locations spend a third of a second of CPU
+        // rebuilding identical evaluators. Memoizing the evaluator on the RegionedPushdownFilterContext would build
+        // it once for the whole filter.
+        final StatisticsEvaluator evaluator = StatisticsEvaluator.makeForFilter(filter, ctx);
+        if (evaluator == StatisticsEvaluator.ALWAYS_MAYBE) {
+            // Nothing about this filter can be bounded by statistics, so every row group would be kept.
+            return result.copy();
+        }
+
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
             final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
-            final boolean maybeOverlaps;
             // TODO (DH-19666) Right now, the pushdown logic only returns maybeMatch for row group. For the future, we
             // can return "match" for scenarios like filter of {X == 3}, and statistics of {min=3, max=3, num_nulls=0}.
             // Similarly, if filter is {X == null}, and statistics is {hasNonNullValue=false, num_nulls=<row-group
             // size>}, we can return "match" for the row group.
-            if (!ParquetPushdownUtils.areStatisticsUsable(statistics)) {
-                // We assume it overlaps if we cannot use the statistics.
-                maybeOverlaps = true;
-            } else if (filter instanceof ByteRangeFilter) {
-                maybeOverlaps = BytePushdownHandler.maybeOverlaps((ByteRangeFilter) filter, statistics);
-            } else if (filter instanceof CharRangeFilter) {
-                maybeOverlaps = CharPushdownHandler.maybeOverlaps((CharRangeFilter) filter, statistics);
-            } else if (filter instanceof ShortRangeFilter) {
-                maybeOverlaps = ShortPushdownHandler.maybeOverlaps((ShortRangeFilter) filter, statistics);
-            } else if (filter instanceof IntRangeFilter) {
-                maybeOverlaps = IntPushdownHandler.maybeOverlaps((IntRangeFilter) filter, statistics);
-            } else if (filter instanceof InstantRangeFilter) {
-                maybeOverlaps = InstantPushdownHandler.maybeOverlaps((InstantRangeFilter) filter, statistics);
-            } else if (filter instanceof LongRangeFilter) {
-                maybeOverlaps = LongPushdownHandler.maybeOverlaps((LongRangeFilter) filter, statistics);
-            } else if (filter instanceof FloatRangeFilter) {
-                maybeOverlaps = FloatPushdownHandler.maybeOverlaps((FloatRangeFilter) filter, statistics);
-            } else if (filter instanceof DoubleRangeFilter) {
-                maybeOverlaps = DoublePushdownHandler.maybeOverlaps((DoubleRangeFilter) filter, statistics);
-            } else if (filter instanceof ComparableRangeFilter) {
-                maybeOverlaps = ComparablePushdownHandler.maybeOverlaps((ComparableRangeFilter) filter, statistics);
-            } else if (filter instanceof SingleSidedComparableRangeFilter) {
-                maybeOverlaps = SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                        (SingleSidedComparableRangeFilter) filter, statistics);
-            } else if (filter instanceof MatchFilter) {
-                final MatchFilter matchFilter = (MatchFilter) filter;
-                final Class<?> dhColumnType = matchFilter.getColumnType();
-                if (dhColumnType == null) {
-                    throw new IllegalStateException("Filter not initialized with a column type: " + filter);
-                } else if (dhColumnType == byte.class || dhColumnType == Byte.class) {
-                    maybeOverlaps = BytePushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == char.class || dhColumnType == Character.class) {
-                    maybeOverlaps = CharPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == short.class || dhColumnType == Short.class) {
-                    maybeOverlaps = ShortPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == int.class || dhColumnType == Integer.class) {
-                    maybeOverlaps = IntPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == long.class || dhColumnType == Long.class) {
-                    maybeOverlaps = LongPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == float.class || dhColumnType == Float.class) {
-                    maybeOverlaps = FloatPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == double.class || dhColumnType == Double.class) {
-                    maybeOverlaps = DoublePushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == String.class && matchFilter.getMatchOptions().caseInsensitive()) {
-                    maybeOverlaps = CaseInsensitiveStringMatchPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else if (dhColumnType == Instant.class) {
-                    maybeOverlaps = InstantPushdownHandler.maybeOverlaps(matchFilter, statistics);
-                } else {
-                    maybeOverlaps = ComparablePushdownHandler.maybeOverlaps(matchFilter, statistics);
-                }
-            } else {
-                // Unsupported filter type for push down, so assume it overlaps.
-                maybeOverlaps = true;
-            }
+            //
+            // Statistics this code cannot use keep the row group; the evaluator applies that check itself, so there is
+            // nothing to screen for here. See UsabilityEvaluator.
+            final boolean maybeOverlaps = evaluator.maybeOverlaps(statistics);
             if (maybeOverlaps) {
                 maybeBuilder.appendRowSequence(rs);
                 maybeCount.add(rs.size());

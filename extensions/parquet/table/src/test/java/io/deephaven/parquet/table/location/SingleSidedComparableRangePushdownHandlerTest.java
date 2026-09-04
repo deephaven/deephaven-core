@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.location;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.qst.type.Type;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.parquet.bytes.BytesUtils;
@@ -26,17 +27,6 @@ import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class SingleSidedComparableRangePushdownHandlerTest {
-
-    private static Statistics<?> stringStats(final String minInc, final String maxInc) {
-        final PrimitiveType col = Types.required(BINARY)
-                .as(LogicalTypeAnnotation.stringType())
-                .named("strCol");
-        return Statistics.getBuilderForReading(col)
-                .withMin(minInc.getBytes(StandardCharsets.UTF_8))
-                .withMax(maxInc.getBytes(StandardCharsets.UTF_8))
-                .withNumNulls(0L)
-                .build();
-    }
 
     private static Statistics<?> dateStats(final LocalDate minInc, final LocalDate maxInc) {
         final PrimitiveType col = Types.required(INT32)
@@ -62,10 +52,27 @@ public class SingleSidedComparableRangePushdownHandlerTest {
                 .build();
     }
 
+    /**
+     * Well-formed statistics that this handler cannot decode for a {@code LocalDate} column: the Parquet column is
+     * {@code INT32} annotated as a plain signed int rather than a date, so
+     * {@code MinMaxFromStatistics.getMinMaxForLocalDates} declines them. It carries the name of the {@code LocalDate}
+     * column so a filter over that column resolves against it.
+     */
+    private static Statistics<?> undecodableDateStats() {
+        final PrimitiveType col = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(32, /* signed */ true))
+                .named("dateCol");
+        return Statistics.getBuilderForReading(col)
+                .withMin(BytesUtils.intToBytes(0))
+                .withMax(BytesUtils.intToBytes(10))
+                .withNumNulls(0L)
+                .build();
+    }
+
     private static final TableDefinition TABLE_DEF = TableDefinition.of(
-            ColumnDefinition.ofString("strCol"),
             ColumnDefinition.of("dateCol", Type.find(LocalDate.class)),
-            ColumnDefinition.of("ldtCol", Type.find(LocalDateTime.class)));
+            ColumnDefinition.of("ldtCol", Type.find(LocalDateTime.class)),
+            ColumnDefinition.ofString("strCol"));
 
     private static SingleSidedComparableRangeFilter ssFilter(
             final String column,
@@ -78,30 +85,7 @@ public class SingleSidedComparableRangePushdownHandlerTest {
         return sscrf;
     }
 
-    @Test
-    public void stringGreaterThanScenarios() {
-        final Statistics<?> stats = stringStats("alpha", "omega");
-
-        // inside
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "beta", true, true), stats));
-
-        // at max, inclusive
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "omega", true, true), stats));
-
-        // at max, exclusive
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "omega", false, true), stats));
-
-        // above max, inclusive
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "zzzz", true, true), stats));
-
-        // below min
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "aardvark", true, true), stats));
-    }
+    // String columns are served by StringPushdownHandler; see StringPushdownHandlerTest.
 
     @Test
     public void dateGreaterThanScenarios() {
@@ -109,11 +93,11 @@ public class SingleSidedComparableRangePushdownHandlerTest {
                 LocalDate.of(2020, 1, 1),
                 LocalDate.of(2020, 12, 31));
 
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 ssFilter("dateCol", LocalDate.of(2020, 6, 15), true, true), stats));
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 ssFilter("dateCol", LocalDate.of(2020, 12, 31), false, true), stats));
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 ssFilter("dateCol", LocalDate.of(2021, 1, 1), true, true), stats));
     }
 
@@ -123,26 +107,42 @@ public class SingleSidedComparableRangePushdownHandlerTest {
                 LocalDateTime.of(2022, 1, 1, 0, 0),
                 LocalDateTime.of(2022, 1, 1, 12, 0));
 
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 6, 0), true, true), stats));
-        assertFalse(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 12, 0), false, true), stats));
     }
 
     @Test
     public void nullPivotDisablesPushdown() {
-        final Statistics<?> stats = stringStats("a", "b");
+        final Statistics<?> stats = dateStats(LocalDate.of(2020, 1, 1), LocalDate.of(2020, 12, 31));
 
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", null, true, true), stats));
+        assertTrue(evaluate(
+                ssFilter("dateCol", null, true, true), stats));
     }
 
+    /**
+     * {@code X < v} matches null rows, because Deephaven orders null below every value. That used to be reason enough
+     * to decline it here; the null guard in {@code pushdownRowGroupMetadata} now accounts for those rows centrally, so
+     * the comparison is evaluated.
+     */
     @Test
-    public void lessThanFiltersSkipPushdown() {
-        final Statistics<?> stats = stringStats("m", "z");
+    public void lessThanFiltersAreEvaluated() {
+        final Statistics<?> stats = dateStats(LocalDate.of(2020, 6, 1), LocalDate.of(2020, 12, 31));
 
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
-                ssFilter("strCol", "q", true, false), stats));
+        // Nothing in this row group precedes 2020-01-01.
+        assertFalse(evaluate(
+                ssFilter("dateCol", LocalDate.of(2020, 1, 1), true, false), stats));
+
+        // But plenty precedes 2020-09-01.
+        assertTrue(evaluate(
+                ssFilter("dateCol", LocalDate.of(2020, 9, 1), true, false), stats));
+
+        // Boundary at the minimum itself.
+        assertTrue(evaluate(
+                ssFilter("dateCol", LocalDate.of(2020, 6, 1), true, false), stats));
+        assertFalse(evaluate(
+                ssFilter("dateCol", LocalDate.of(2020, 6, 1), false, false), stats));
     }
 
     @Test
@@ -151,12 +151,55 @@ public class SingleSidedComparableRangePushdownHandlerTest {
                 LocalDateTime.of(2022, 1, 1, 0, 0),
                 LocalDateTime.of(2022, 1, 1, 12, 0));
 
-        // always return true for greater than filters
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        // Nothing in this row group precedes its own minimum, so both of these exclude it. Both assertions were
+        // previously assertTrue, pinning the blanket decline that less-than filters used to receive.
+        assertFalse(evaluate(
                 ssFilter("ldtCol", LocalDateTime.of(2021, 12, 31, 23, 59), true, false), stats));
-
-        // always return true for less than filters
-        assertTrue(SingleSidedComparableRangePushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 0, 0), false, false), stats));
+
+        // Inclusive of the minimum, and above it, there is something to find.
+        assertTrue(evaluate(
+                ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 0, 0), true, false), stats));
+        assertTrue(evaluate(
+                ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 6, 0), true, false), stats));
     }
+
+    /**
+     * The {@code WhereFilter} entry point, which the scenarios above bypass by calling the typed overload directly. A
+     * single-sided comparison over a column type {@link MinMaxFromStatistics#canDecodeComparable} can decode is
+     * claimed; a String column is declined with {@code null}, since {@link StringPushdownHandler} -- offered the filter
+     * first -- compares those byte-ordered statistics as bytes.
+     */
+    @Test
+    public void entryPointServesDecodableColumnTypesOnly() {
+        final WhereFilter dateComparison = ssFilter("dateCol", LocalDate.of(2020, 6, 1), true, true);
+        assertNotNull(SingleSidedComparableRangePushdownHandler.maybeCreateEvaluator(dateComparison));
+
+        final WhereFilter dateTimeComparison = ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 6, 0), true, false);
+        assertNotNull(SingleSidedComparableRangePushdownHandler.maybeCreateEvaluator(dateTimeComparison));
+
+        final WhereFilter stringComparison = ssFilter("strCol", "mmm", true, true);
+        assertNull(SingleSidedComparableRangePushdownHandler.maybeCreateEvaluator(stringComparison));
+    }
+
+    /**
+     * Statistics this handler cannot decode are no evidence about the row group, so it is kept in either direction.
+     */
+    @Test
+    public void undecodableStatisticsKeepTheRowGroup() {
+        final Statistics<?> undecodable = undecodableDateStats();
+
+        assertTrue(evaluate(ssFilter("dateCol", LocalDate.of(2020, 6, 1), true, true), undecodable));
+        assertTrue(evaluate(ssFilter("dateCol", LocalDate.of(2020, 6, 1), true, false), undecodable));
+    }
+
+    /**
+     * Resolves the filter to an evaluator and applies it to one row group's statistics, as
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
+     */
+    private static boolean evaluate(final SingleSidedComparableRangeFilter filter, final Statistics<?> stats) {
+        return SingleSidedComparableRangePushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
+    }
+
 }
