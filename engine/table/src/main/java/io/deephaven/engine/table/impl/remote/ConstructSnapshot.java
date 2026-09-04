@@ -403,7 +403,7 @@ public class ConstructSnapshot {
             if (acquiredLock && concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0) {
                 updateGraph.sharedLock().unlock();
                 acquiredLock = false;
-                maybeClearUpdateGraph();
+                updateGraph = null;
             }
         }
     }
