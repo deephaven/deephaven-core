@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -21,10 +22,10 @@ class BarrageSnapshotPerformanceStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofString("TableId"),
             ColumnDefinition.ofString("TableKey"),
             ColumnDefinition.ofTime("RequestTime"),
-            ColumnDefinition.ofDouble("QueueMillis"),
-            ColumnDefinition.ofDouble("SnapshotMillis"),
-            ColumnDefinition.ofDouble("WriteMillis"),
-            ColumnDefinition.ofDouble("WriteMegabits"));
+            ColumnDefinition.ofLong("QueueNanos"),
+            ColumnDefinition.ofLong("SnapshotNanos"),
+            ColumnDefinition.ofLong("WriteNanos"),
+            ColumnDefinition.ofLong("WriteBytes"));
     private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
 
     public static TableDefinition definition() {
@@ -49,18 +50,18 @@ class BarrageSnapshotPerformanceStreamPublisher implements StreamPublisher {
     public synchronized void add(
             String tableId,
             String tableKey,
-            long requestNanos,
-            double queueMillis,
-            double snapshotMillis,
-            double writeMillis,
-            double writeMegabits) {
+            long requestTimeEpochNanos,
+            long queueNanos,
+            long snapshotNanos,
+            long writeNanos,
+            long writeBytes) {
         chunks[0].<String>asWritableObjectChunk().add(tableId);
         chunks[1].<String>asWritableObjectChunk().add(tableKey);
-        chunks[2].asWritableLongChunk().add(requestNanos);
-        chunks[3].asWritableDoubleChunk().add(queueMillis);
-        chunks[4].asWritableDoubleChunk().add(snapshotMillis);
-        chunks[5].asWritableDoubleChunk().add(writeMillis);
-        chunks[6].asWritableDoubleChunk().add(writeMegabits);
+        chunks[2].asWritableLongChunk().add(requestTimeEpochNanos);
+        chunks[3].asWritableLongChunk().add(queueNanos);
+        chunks[4].asWritableLongChunk().add(snapshotNanos);
+        chunks[5].asWritableLongChunk().add(writeNanos);
+        chunks[6].asWritableLongChunk().add(writeBytes);
         if (chunks[0].size() == CHUNK_SIZE) {
             flushInternal();
         }
@@ -84,5 +85,11 @@ class BarrageSnapshotPerformanceStreamPublisher implements StreamPublisher {
     }
 
     @Override
-    public void shutdown() {}
+    public void shutdown() {
+        // Publish anything still pending. A flush that has data replaces the chunk array, so the chunks closed
+        // below are the fresh ones it allocated in their place.
+        flush();
+        SafeCloseableArray.close(chunks);
+        chunks = null;
+    }
 }

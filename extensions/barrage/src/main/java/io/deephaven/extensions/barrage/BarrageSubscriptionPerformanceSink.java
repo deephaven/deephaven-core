@@ -16,10 +16,7 @@ import java.io.IOException;
  * One entry is logged per (subscription, statistic) pair per flush cycle, where the cycle length is
  * {@link BarragePerformanceLog#CYCLE_DURATION_MILLIS}. Values are accumulated in a histogram between flushes, so each
  * entry summarizes many events.
- * <p>
- * Histogram values are recorded in nanoseconds for every currently supported {@code statType}. The in-memory table
- * scales them to milliseconds to match its percentile column names.
- *
+ * 
  * @implNote implementations need not be thread safe; all calls to a given instance are serialized.
  */
 public interface BarrageSubscriptionPerformanceSink {
@@ -39,7 +36,7 @@ public interface BarrageSubscriptionPerformanceSink {
      *
      * @param tableId the identity of the subscribed table
      * @param tableKey the barrage performance key of the subscribed table
-     * @param statType which statistic this entry describes, for example {@code "WriteMillis"}
+     * @param statType which statistic this entry describes
      * @param timestampEpochNanos the time at which this cycle was flushed, as nanoseconds since the epoch
      * @param hist the values recorded during this cycle
      */

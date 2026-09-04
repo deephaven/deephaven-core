@@ -64,12 +64,12 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
                 statType,
                 timestampEpochNanos,
                 hist.getTotalCount(),
-                hist.getValueAtPercentile(50) / 1e6,
-                hist.getValueAtPercentile(75) / 1e6,
-                hist.getValueAtPercentile(90) / 1e6,
-                hist.getValueAtPercentile(95) / 1e6,
-                hist.getValueAtPercentile(99) / 1e6,
-                hist.getMaxValue() / 1e6);
+                hist.getValueAtPercentile(50),
+                hist.getValueAtPercentile(75),
+                hist.getValueAtPercentile(90),
+                hist.getValueAtPercentile(95),
+                hist.getValueAtPercentile(99),
+                hist.getMaxValue());
 
         if (encounteredError) {
             return;

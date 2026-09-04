@@ -57,10 +57,10 @@ class BarrageSnapshotPerformanceLoggerImpl implements BarrageSnapshotPerformance
                 helper.tableId,
                 helper.tableKey,
                 requestTimeEpochNanos,
-                helper.queueNanos / 1e6,
-                helper.snapshotNanos / 1e6,
-                writeNanos / 1e6,
-                (8 * bytesWritten) / 1e6);
+                helper.queueNanos,
+                helper.snapshotNanos,
+                writeNanos,
+                bytesWritten);
 
         if (encounteredError) {
             return;
