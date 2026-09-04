@@ -124,7 +124,7 @@ Deephaven tables come in two flavors:
 - **Static tables**: Data that doesn't change. Loaded from files, created with [`empty_table`](../reference/table-operations/create/emptyTable.md) or [`new_table`](../reference/table-operations/create/newTable.md), or snapshots of live data.
 - **Refreshing (live) tables**: Data that updates continuously. Created with [`time_table`](../reference/table-operations/create/timeTable.md), connected to streams, or other real-time sources.
 
-```python ticking-table order=static_table,live_table
+```python ticking-table order=null
 from deephaven import empty_table, time_table
 
 # Static: this table will always have 10 rows with values 0-9
@@ -136,7 +136,7 @@ live_table = time_table("PT1S")  # See time_table reference for duration syntax
 
 **The key insight:** Transformations on live tables produce live results. If you filter a live table, the filtered result updates automatically. When you need to freeze the data at a point in time, use [`snapshot`](../reference/table-operations/snapshot/snapshot.md) to capture a static copy.
 
-```python ticking-table order=live_source,recent_only
+```python ticking-table order=null
 from deephaven import time_table
 
 live_source = time_table("PT1S").update("Value = randomInt(0, 100)")
@@ -300,7 +300,7 @@ derived = source.view(["X", "Doubled = X * 2", "Tripled = X * 3"])
 
 Build complex analytics by chaining simple operations. Each step produces a table you can inspect, reuse, or build on:
 
-```python ticking-table order=raw,cleaned,enriched,summary
+```python ticking-table order=null
 from deephaven import time_table, agg
 
 # Start with raw data
@@ -355,7 +355,7 @@ No need for separate batch and streaming codebases.
 
 Split data by key and process each partition efficiently:
 
-```python ticking-table order=trades
+```python ticking-table order=null
 from deephaven import time_table
 from deephaven import updateby as uby
 from deephaven.execution_context import get_exec_ctx
