@@ -15,6 +15,8 @@ This isn't a deep technical dive — for that, see [Deephaven's design](./deepha
 
 ![How Deephaven works: Tables are recipes, not data copies — updates flow automatically](../assets/conceptual/mental-model/mental-model-overview-static.png)
 
+_For technical details, see [Deephaven's design](./deephaven-design.md). For hands-on learning, see the [Crash course](../getting-started/crash-course/overview.md)._
+
 ## Tables are recipes, not data
 
 In traditional programming, a data structure is a container holding your data. When you filter or transform it, you get a new container with different data inside.
