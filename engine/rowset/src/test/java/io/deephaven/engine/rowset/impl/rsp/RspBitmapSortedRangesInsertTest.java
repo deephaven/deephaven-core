@@ -3,19 +3,23 @@
 //
 package io.deephaven.engine.rowset.impl.rsp;
 
+import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.TreeSet;
 
+import io.deephaven.engine.rowset.impl.RowSetTestCommon;
+
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.render;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.shiftRanges;
 import static io.deephaven.engine.rowset.impl.RowSetTestCommon.sortedRangesImplOf;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.unionRanges;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * Inserting a {@link SortedRanges} into an {@link RspBitmap} first makes room, in one pass, for the blocks it only
@@ -27,26 +31,23 @@ public class RspBitmapSortedRangesInsertTest {
 
     private static final long BS = BLOCK_SIZE;
 
+    private static List<long[]> rangesOf(final SortedRanges sr) {
+        final List<long[]> out = new ArrayList<>();
+        sr.forEachLongRange((s, e) -> {
+            out.add(new long[] {s, e});
+            return true;
+        });
+        return out;
+    }
+
     private static void checkInsert(final RspBitmap receiver, final SortedRanges sr) {
-        final TreeSet<Long> expected = new TreeSet<>();
-        receiver.forEachLong(v -> {
-            expected.add(v);
-            return true;
-        });
-        sr.forEachLong(v -> {
-            expected.add(v);
-            return true;
-        });
+        // Compared as ranges: the fixtures hold whole blocks, far too many keys to enumerate.
+        final String expected = render(unionRanges(RowSetTestCommon.rangesOf(receiver), rangesOf(sr)));
         final RspBitmap w = receiver.writeCheck();
         w.insertOrderedLongSetUnsafeNoWriteCheck(sr);
         w.finishMutations();
         w.validate("after insert");
-        final List<Long> got = new ArrayList<>();
-        w.forEachLong(v -> {
-            got.add(v);
-            return true;
-        });
-        assertEquals(new ArrayList<>(expected), got);
+        assertEquals(expected, render(RowSetTestCommon.rangesOf(w)));
     }
 
     private static RspBitmap containersAtEvenBlocks(final int blocks) {
@@ -238,6 +239,86 @@ public class RspBitmapSortedRangesInsertTest {
                 continue;
             }
             checkInsert(rb, sr);
+        }
+    }
+
+    /** A container in every one of the first {@code blocks} blocks. */
+    private static RspBitmap containersAtEveryBlock(final int blocks) {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        for (int i = 0; i < blocks; ++i) {
+            rb = rb.appendRangeUnsafe(i * BS + 100, i * BS + 140);
+        }
+        rb.finishMutations();
+        return rb;
+    }
+
+    /**
+     * Ranges covering blocks 3j and 3j+1 completely, each absorbing two spans of ours; block 3j+2 is left alone so the
+     * ranges do not coalesce. The spans absorbed are only compacted out once, after every range is in.
+     */
+    @Test
+    public void testRangesAbsorbingTwoOfOurSpansEach() {
+        final RspBitmap receiver = containersAtEveryBlock(40);
+        SortedRanges sr = SortedRanges.makeSingleRange(0, 2 * BS - 1);
+        for (int j = 1; j < 12; ++j) {
+            sr = sr.addRange(3L * j * BS, (3L * j + 2) * BS - 1);
+        }
+        checkInsert(receiver, sr);
+    }
+
+    /** Ranges filling the one block between two full block spans of ours, so three spans become one. */
+    @Test
+    public void testRangesBridgingOurFullBlockSpans() {
+        RspBitmap receiver = RspBitmap.makeEmpty();
+        for (int i = 0; i < 40; ++i) {
+            if (i % 3 == 1) {
+                receiver = receiver.appendRangeUnsafe(i * BS + 100, i * BS + 140); // the block to be filled
+            } else {
+                receiver = receiver.appendRangeUnsafe(i * BS, (i + 1) * BS - 1); // full block span
+            }
+        }
+        receiver.finishMutations();
+        SortedRanges sr = SortedRanges.makeSingleRange(BS, 2 * BS - 1);
+        for (int j = 1; j < 13; ++j) {
+            sr = sr.addRange((3L * j + 1) * BS, (3L * j + 2) * BS - 1);
+        }
+        checkInsert(receiver, sr);
+    }
+
+    /** Partial blocks on either side of a run of whole blocks that absorb spans of ours, several times over. */
+    @Test
+    public void testRangesWithPartialEndsAroundAbsorbedBlocks() {
+        final RspBitmap receiver = containersAtEveryBlock(60);
+        SortedRanges sr = SortedRanges.makeSingleRange(BS - 10, 4 * BS + 10);
+        for (int j = 1; j < 10; ++j) {
+            final long base = 6L * j * BS;
+            sr = sr.addRange(base + BS - 10, base + 4 * BS + 10);
+        }
+        checkInsert(receiver, sr);
+    }
+
+    /** The shifted insert takes the same batched path; the shift is not a whole number of blocks. */
+    @Test
+    public void testShiftedRangesAbsorbingOurSpans() {
+        final RspBitmap receiver = containersAtEveryBlock(40);
+        SortedRanges sr = SortedRanges.makeSingleRange(0, 2 * BS - 1);
+        for (int j = 1; j < 12; ++j) {
+            sr = sr.addRange(3L * j * BS, (3L * j + 2) * BS - 1);
+        }
+        for (final long shift : new long[] {0, BS, 100, BS + 100}) {
+            final String expected =
+                    render(unionRanges(RowSetTestCommon.rangesOf(receiver), shiftRanges(rangesOf(sr), shift)));
+            final RspBitmap w = receiver.deepCopy();
+            final OrderedLongSet result = w.ixInsertWithShift(shift, sr);
+            final List<long[]> got = new ArrayList<>();
+            result.ixForEachLongRange((s, e) -> {
+                got.add(new long[] {s, e});
+                return true;
+            });
+            assertEquals("shift " + shift, expected, render(got));
+            if (result instanceof RspBitmap) {
+                ((RspBitmap) result).validate("shift " + shift);
+            }
         }
     }
 }

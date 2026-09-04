@@ -4132,7 +4132,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (toIntersect instanceof SortedRanges) {
             return retain(toIntersect);
         }
-        return ixToRspOnNew().ixRetainNoWriteCheck(toIntersect);
+        return intersectOnNew(toIntersect);
     }
 
     @Override

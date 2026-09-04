@@ -2820,7 +2820,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return spanStartKey + additionalBlocksAfterFirst * BLOCK_SIZE;
     }
 
-    private static long getKeyForLastBlockInFullSpan(final long spanKey, final long flen) {
+    static long getKeyForLastBlockInFullSpan(final long spanKey, final long flen) {
         return spanKey + (flen - 1) * BLOCK_SIZE;
     }
 
@@ -3884,6 +3884,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             setFullBlockSpanRaw(size, spanInfos, spans, key, flen);
             ++size;
         }
+
+        /** Replace the last queued span, which must be a full block span, with one of the given extent. */
+        void setLastFullBlockSpan(final long key, final long flen) {
+            setFullBlockSpanRaw(size - 1, spanInfos, spans, key, flen);
+        }
     }
 
     protected static class ArraysBuf {
@@ -3941,6 +3946,34 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             setFullBlockSpanRaw(size, spanInfos, spans, key, flen);
             ++size;
         }
+    }
+
+    /**
+     * The last index at or after {@code fromIdx} whose span key is at or below {@code key}; {@code fromIdx} itself when
+     * the span there already lies past {@code key}; {@code size} when {@code fromIdx} is past the end. Gallops from
+     * {@code fromIdx}, so the cost grows with the distance moved rather than with the array: walking two arrays in step
+     * costs O(1) per step where they interleave densely and O(log) per stretch skipped where one side is sparse.
+     */
+    int lastSpanIndexNotAbove(final int fromIdx, final long key) {
+        if (fromIdx >= size) {
+            return size;
+        }
+        if (uGreater(getKey(fromIdx), key)) {
+            return fromIdx;
+        }
+        if (fromIdx + 1 >= size || uGreater(getKey(fromIdx + 1), key)) {
+            return fromIdx; // The common dense case: the very next span is the one, so no search is needed.
+        }
+        int lo = fromIdx; // getKey(lo) <= key from here on.
+        int step = 1;
+        while (lo + step < size && uLessOrEqual(getKey(lo + step), key)) {
+            lo += step;
+            step <<= 1;
+        }
+        final int hi = Math.min(lo + step, size); // exclusive: past the end, or a key above ours.
+        final int i = unsignedBinarySearch(this::getKey, lo, hi, key);
+        // Not found means -i - 1 is the insertion point, and the last key at or below ours sits just before it.
+        return i >= 0 ? i : -i - 2;
     }
 
     /**
@@ -4023,6 +4056,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     break;
                 }
             }
+            // Jump past other's spans that end before our next span begins. With far fewer spans than other, this is
+            // what keeps the pass proportional to us rather than to other.
+            if (startPos < size) {
+                andIdx = other.lastSpanIndexNotAbove(andIdx + 1, getKey(startPos)) - 1;
+            }
         }
         final int maxWaste = 7;
         size = buf.size;
@@ -4052,6 +4090,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (startPos >= size) {
                 break;
             }
+            // As in the first pass: our spans before startPos are settled, so other's spans that end before our next
+            // one begins have nothing left to do.
+            otherIdx = other.lastSpanIndexNotAbove(otherIdx + 1, getKey(startPos)) - 1;
         }
         collectRemovedIndicesIfAny(madeNullSpansMu);
     }

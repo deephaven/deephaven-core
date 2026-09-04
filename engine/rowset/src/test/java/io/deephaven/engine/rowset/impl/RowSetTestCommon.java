@@ -106,6 +106,86 @@ public class RowSetTestCommon {
         return render(rangesOf(rs));
     }
 
+    /**
+     * The union of two ascending, non-overlapping range lists, coalescing ranges that overlap or touch. An oracle
+     * independent of the rowset code, and one whose cost is in ranges rather than keys, so wide ranges are cheap.
+     */
+    public static List<long[]> unionRanges(final List<long[]> a, final List<long[]> b) {
+        final List<long[]> out = new ArrayList<>();
+        int i = 0;
+        int j = 0;
+        long[] current = null;
+        while (i < a.size() || j < b.size()) {
+            final long[] next;
+            if (j >= b.size() || (i < a.size() && a.get(i)[0] <= b.get(j)[0])) {
+                next = a.get(i++);
+            } else {
+                next = b.get(j++);
+            }
+            // Touching or overlapping. Written as a subtraction on the start, which is never negative, because the
+            // end may be Long.MAX_VALUE and adding one to it would wrap.
+            if (current != null && next[0] - 1 <= current[1]) {
+                current[1] = Math.max(current[1], next[1]);
+            } else {
+                current = new long[] {next[0], next[1]};
+                out.add(current);
+            }
+        }
+        return out;
+    }
+
+    /** Every range moved by {@code shift}. */
+    public static List<long[]> shiftRanges(final List<long[]> ranges, final long shift) {
+        final List<long[]> out = new ArrayList<>(ranges.size());
+        for (final long[] r : ranges) {
+            out.add(new long[] {r[0] + shift, r[1] + shift});
+        }
+        return out;
+    }
+
+    /** Ascending keys as ranges, runs of consecutive keys coalesced. */
+    public static List<long[]> rangesOfSortedKeys(final long... keys) {
+        final List<long[]> out = new ArrayList<>();
+        for (final long k : keys) {
+            // As in unionRanges: k - 1 rather than end + 1, since the end may be Long.MAX_VALUE.
+            if (!out.isEmpty() && k - 1 <= out.get(out.size() - 1)[1]) {
+                out.get(out.size() - 1)[1] = Math.max(out.get(out.size() - 1)[1], k);
+            } else {
+                out.add(new long[] {k, k});
+            }
+        }
+        return out;
+    }
+
+    /**
+     * The intersection of two ascending, non-overlapping range lists, by a two-pointer walk over the ranges. An oracle
+     * independent of the rowset code, and one whose cost is in ranges rather than keys, so wide ranges are cheap.
+     */
+    public static List<long[]> intersectRanges(final List<long[]> a, final List<long[]> b) {
+        final List<long[]> out = new ArrayList<>();
+        int i = 0;
+        int j = 0;
+        while (i < a.size() && j < b.size()) {
+            final long[] ra = a.get(i);
+            final long[] rb = b.get(j);
+            final long start = Math.max(ra[0], rb[0]);
+            final long end = Math.min(ra[1], rb[1]);
+            if (start <= end) {
+                out.add(new long[] {start, end});
+            }
+            // Advance whichever range ends first; on a tie both are spent.
+            if (ra[1] < rb[1]) {
+                ++i;
+            } else if (rb[1] < ra[1]) {
+                ++j;
+            } else {
+                ++i;
+                ++j;
+            }
+        }
+        return out;
+    }
+
     public static List<Long> keysOf(final RowSet rs) {
         final List<Long> out = new ArrayList<>();
         rs.forAllRowKeys(out::add);

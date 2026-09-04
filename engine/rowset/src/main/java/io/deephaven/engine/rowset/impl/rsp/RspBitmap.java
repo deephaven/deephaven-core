@@ -153,9 +153,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         final WorkData wd = workDataPerThread.get();
         final MutableObject<SortedRanges> sortedRangesMu = getWorkSortedRangesMutableObject(wd);
         final PendingSpanInserts pending = wd.getPendingSpanInserts();
-        // Key of the last full block span left pending, or -1. Two full block spans for adjacent blocks have to be a
-        // single span, and a pending one is not in the array yet for fullBlockSpanNeedsNoMerge to notice.
-        long pendingFullBlockKey = -1;
+        // The full block span most recently produced by a block filling up, which later blocks may extend or fall
+        // inside; a merge can absorb a full block span to its right, so it may reach blocks the chunk has not gotten
+        // to.
+        long lastFullKey = -1; // key of its first block
+        long lastFullLastKey = -1; // key of its last block: lastFullKey + (lastFullFlen - 1) * BLOCK_SIZE
+        long lastFullFlen = 0; // how many blocks it covers; 0 while there is no such span
+        int lastFullIdx = -1; // its index in our arrays, or -1 when it is still a pending insert
+        boolean lastFullPending = false; // true when it is the last pending insert rather than in our arrays
         int spanIndex = 0;
         try (SpanView ourView = wd.borrowSpanView()) {
             for (int vi = 0; vi < length; vi += lengthFromThisSpan) {
@@ -163,6 +168,11 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 final long highBits = highBits(value);
                 lengthFromThisSpan = countContiguousHighBitsMatches(
                         values, vi + offset + 1, length - vi - 1, highBits) + 1;
+                if (lastFullFlen > 0 && lastFullKey <= highBits && highBits <= lastFullLastKey) {
+                    // Inside the span the last merge produced. The slots it absorbed are marked for removal and sit
+                    // before spanIndex, where searches no longer look, so this is decided here rather than by search.
+                    continue;
+                }
                 final int spanIndexRaw = getSpanIndex(spanIndex, highBits);
                 Container container = null;
                 boolean existing = false;
@@ -182,32 +192,78 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 final Container result = createOrUpdateContainerForValues(
                         values, vi + offset, lengthFromThisSpan, existing, spanIndex, container);
                 if (result != null && result.isAllOnes()) {
-                    final boolean adjacentToPendingFullBlockSpan =
-                            pendingFullBlockKey != -1 && highBits - pendingFullBlockKey == BLOCK_SIZE;
-                    if (!adjacentToPendingFullBlockSpan && existing
-                            && fullBlockSpanNeedsNoMerge(spanIndex - 1, spanIndex + 1, highBits, 1)) {
-                        // Nothing moves, so whatever is pending stays valid.
-                        setFullBlockSpan(spanIndex, highBits, 1);
-                    } else if (!adjacentToPendingFullBlockSpan && !existing
-                            && fullBlockSpanNeedsNoMerge(spanIndex - 1, spanIndex, highBits, 1)) {
-                        pending.pushFullBlockSpan(spanIndex, highBits, 1);
-                        pendingFullBlockKey = highBits;
-                    } else {
-                        // This one has to merge with, or absorb, spans of ours; that is what
-                        // setOrInsertFullBlockSpanAtIndex is for, and it needs our arrays settled first.
-                        final int idxForFull;
-                        if (pending.size() == 0) {
-                            idxForFull = spanIndexRaw;
+                    // The block is full. Merge it with the full block spans touching it: the one the previous merge
+                    // produced (in the array or still pending), else the array span to its left; and the array span to
+                    // its right. A slot that folds into another is marked for removal and compacted out along with the
+                    // pending inserts at the end, so nothing moves here and every pending position stays valid.
+                    final int rightIdx = existing ? spanIndex + 1 : spanIndex;
+                    long rightFlen = 0;
+                    if (rightIdx < size && spanInfos[rightIdx] != -1 && getKey(rightIdx) - highBits == BLOCK_SIZE) {
+                        rightFlen = getFullBlockSpanLen(spanInfos[rightIdx], spans[rightIdx]);
+                    }
+                    final long addedFlen = 1 + rightFlen;
+                    int consumedThrough = -1;
+                    if (lastFullFlen > 0 && highBits - lastFullLastKey == BLOCK_SIZE) {
+                        lastFullFlen += addedFlen;
+                        if (lastFullPending) {
+                            pending.setLastFullBlockSpan(lastFullKey, lastFullFlen);
                         } else {
-                            // Our spans move here, so the position we searched out above no longer holds. Anything
-                            // already marked for removal has to go at the same time, since those marks are recorded by
-                            // index too.
-                            applyPendingSpanEdits(pending, sortedRangesMu);
-                            sortedRangesMu.setValue(wd.getMadeNullSortedRanges());
-                            pendingFullBlockKey = -1;
-                            idxForFull = getSpanIndex(0, highBits);
+                            setFullBlockSpan(lastFullIdx, lastFullKey, lastFullFlen);
                         }
-                        spanIndex = setOrInsertFullBlockSpanAtIndex(idxForFull, highBits, 1, sortedRangesMu);
+                        if (existing) {
+                            markIndexAsRemoved(sortedRangesMu, spanIndex);
+                            consumedThrough = spanIndex;
+                        }
+                    } else {
+                        final int leftIdx = spanIndex - 1;
+                        long leftFlen = 0;
+                        if (leftIdx >= 0 && spanInfos[leftIdx] != -1) {
+                            leftFlen = getFullBlockSpanLen(spanInfos[leftIdx], spans[leftIdx]);
+                            if (leftFlen > 0 && highBits
+                                    - getKeyForLastBlockInFullSpan(getKey(leftIdx), leftFlen) != BLOCK_SIZE) {
+                                leftFlen = 0;
+                            }
+                        }
+                        if (leftFlen > 0) {
+                            lastFullKey = getKey(leftIdx);
+                            lastFullFlen = leftFlen + addedFlen;
+                            lastFullIdx = leftIdx;
+                            lastFullPending = false;
+                            setFullBlockSpan(leftIdx, lastFullKey, lastFullFlen);
+                            if (existing) {
+                                markIndexAsRemoved(sortedRangesMu, spanIndex);
+                                consumedThrough = spanIndex;
+                            }
+                        } else if (existing) {
+                            lastFullKey = highBits;
+                            lastFullFlen = addedFlen;
+                            lastFullIdx = spanIndex;
+                            lastFullPending = false;
+                            setFullBlockSpan(spanIndex, highBits, addedFlen);
+                        } else if (rightFlen > 0) {
+                            // Start the right neighbour's slot at our block instead; our insertion point is just before
+                            // it, so the keys stay ordered and nothing is consumed.
+                            lastFullKey = highBits;
+                            lastFullFlen = addedFlen;
+                            lastFullIdx = rightIdx;
+                            lastFullPending = false;
+                            setFullBlockSpan(rightIdx, highBits, addedFlen);
+                            rightFlen = 0;
+                        } else {
+                            lastFullKey = highBits;
+                            lastFullFlen = 1;
+                            lastFullIdx = -1;
+                            lastFullPending = true;
+                            pending.pushFullBlockSpan(spanIndex, highBits, 1);
+                        }
+                    }
+                    if (rightFlen > 0) {
+                        markIndexAsRemoved(sortedRangesMu, rightIdx);
+                        consumedThrough = rightIdx;
+                    }
+                    lastFullLastKey = getKeyForLastBlockInFullSpan(lastFullKey, lastFullFlen);
+                    if (consumedThrough >= 0) {
+                        spanIndex = consumedThrough + 1;
                     }
                 } else if (!existing) {
                     if (result == null) {
@@ -526,14 +582,16 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * @param start the start position for the range provided.
      * @param startLowBits the low bits of the start of the range to add. 0 <= start < BLOCK_SIZE
      * @param endLowBits the low bits of the end (inclusive) of the range to add. 0 <= end < BLOCK_SIZE
+     * @param madeNullSpansMu when not null, spans absorbed by a full block span are marked for removal and recorded
+     *        here instead of being compacted out immediately; the caller then compacts once for the whole batch
      * @return the index of the span where the interval was added.
      */
     private int singleBlockAddRange(final int startPos, final long startHighBits, final long start,
-            final int startLowBits, final int endLowBits) {
+            final int startLowBits, final int endLowBits, final MutableObject<SortedRanges> madeNullSpansMu) {
         final int endExclusive = endLowBits + 1;
         final int i = getSpanIndex(startPos, start);
         if (endExclusive - startLowBits == BLOCK_SIZE) {
-            return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
+            return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, madeNullSpansMu);
         }
         if (i < 0) {
             final int j = -i - 1;
@@ -561,14 +619,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 result = new RunContainer(keyLowAsInt, keyLowAsInt + 1, startLowBits, endExclusive);
             } else if (keyLowAsInt + 1 == startLowBits) {
                 if (endExclusive - keyLowAsInt == BLOCK_SIZE) {
-                    return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
+                    return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, madeNullSpansMu);
                 }
                 result = Container.singleRange(keyLowAsInt, endExclusive);
             } else if (endLowBits + 1 < keyLowAsInt) {
                 result = new RunContainer(startLowBits, endExclusive, keyLowAsInt, keyLowAsInt + 1);
             } else if (endLowBits + 1 == keyLowAsInt) {
                 if (keyLowAsInt + 1 - startLowBits == BLOCK_SIZE) {
-                    return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
+                    return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, madeNullSpansMu);
                 }
                 result = Container.singleRange(startLowBits, keyLowAsInt + 1);
             } else { // start <= key <= end
@@ -580,7 +638,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             result = container.iadd(startLowBits, endExclusive);
             if (result.isAllOnes()) {
                 view.close();
-                return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, null);
+                return setOrInsertFullBlockSpanAtIndex(i, startHighBits, 1, madeNullSpansMu);
             }
         }
         try (SpanView ensureViewIsClosedIfNotNull = view) {
@@ -704,6 +762,20 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     }
 
     public int addRangeUnsafeNoWriteCheck(final int fromIdx, final long start, final long end) {
+        return addRangeUnsafeNoWriteCheck(fromIdx, start, end, null);
+    }
+
+    /**
+     * Add a range, searching for its place from {@code fromIdx}. A range that covers whole blocks may merge with, or
+     * absorb, spans we already hold; with {@code madeNullSpansMu} null the absorbed spans are compacted out inline,
+     * shifting every later span. A caller adding many ranges should provide a non-null {@code madeNullSpansMu} and
+     * compact once at the end via {@link #collectRemovedIndicesIfAny}. Marked spans only ever sit before the index
+     * returned, so later searches that start from it never see them.
+     *
+     * @return the index of the span holding the range's last key, from where the next (higher) range's search can start
+     */
+    private int addRangeUnsafeNoWriteCheck(final int fromIdx, final long start, final long end,
+            final MutableObject<SortedRanges> madeNullSpansMu) {
         if (start > end) {
             throw new IllegalArgumentException("bad range start=" + start + " > end=" + end + ".");
         }
@@ -718,42 +790,50 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         final int sLow = lowBitsAsInt(start);
         final int eLow = lowBitsAsInt(end);
         if (sHigh == eHigh) {
-            return singleBlockAddRange(fromIdx, sHigh, start, sLow, eLow);
+            return singleBlockAddRange(fromIdx, sHigh, start, sLow, eLow, madeNullSpansMu);
         }
-        int i = singleBlockAddRange(fromIdx, sHigh, start, sLow, BLOCK_LAST);
+        int i = singleBlockAddRange(fromIdx, sHigh, start, sLow, BLOCK_LAST, madeNullSpansMu);
         final long sHighNext = RspArray.nextKey(sHigh);
         final int idxForFull = getSetOrInsertIdx(i, sHighNext);
         if (sHighNext == eHigh) {
             if (eLow == BLOCK_LAST) {
-                i = setOrInsertFullBlockSpanAtIndex(idxForFull, sHighNext, 1, null);
+                i = setOrInsertFullBlockSpanAtIndex(idxForFull, sHighNext, 1, madeNullSpansMu);
             } else {
-                i = singleBlockAddRange(i, sHighNext, sHighNext, 0, eLow);
+                i = singleBlockAddRange(i, sHighNext, sHighNext, 0, eLow, madeNullSpansMu);
             }
             return i;
         }
         if (eLow < BLOCK_LAST) {
             final int j = setOrInsertFullBlockSpanAtIndex(
-                    idxForFull, sHighNext, RspArray.distanceInBlocks(sHighNext, eHigh), null);
-            return singleBlockAddRange(j, eHigh, eHigh, 0, eLow);
+                    idxForFull, sHighNext, RspArray.distanceInBlocks(sHighNext, eHigh), madeNullSpansMu);
+            return singleBlockAddRange(j, eHigh, eHigh, 0, eLow, madeNullSpansMu);
         }
         return setOrInsertFullBlockSpanAtIndex(
-                idxForFull, sHighNext, RspArray.distanceInBlocks(sHighNext, eHigh) + 1, null);
+                idxForFull, sHighNext, RspArray.distanceInBlocks(sHighNext, eHigh) + 1, madeNullSpansMu);
 
     }
 
     public void addRangesUnsafeNoWriteCheck(final RowSet.RangeIterator rit) {
+        addShiftedRangesUnsafeNoWriteCheck(0, rit);
+    }
+
+    /**
+     * Add every range of {@code rit}, shifted by {@code shiftAmount}, compacting out the spans absorbed by full block
+     * spans once at the end rather than once per range. Closes {@code rit}.
+     */
+    private void addShiftedRangesUnsafeNoWriteCheck(final long shiftAmount, final RowSet.RangeIterator rit) {
+        final MutableObject<SortedRanges> madeNullSpansMu = getWorkSortedRangesMutableObject(workDataPerThread.get());
         try {
             int i = 0;
             while (rit.hasNext()) {
                 rit.next();
-                i = addRangeUnsafeNoWriteCheck(i, rit.currentRangeStart(), rit.currentRangeEnd());
-                if (i == -1) {
-                    return;
-                }
+                i = addRangeUnsafeNoWriteCheck(i, rit.currentRangeStart() + shiftAmount,
+                        rit.currentRangeEnd() + shiftAmount, madeNullSpansMu);
             }
         } finally {
             rit.close();
         }
+        collectRemovedIndicesIfAny(madeNullSpansMu);
     }
 
     public boolean contains(final long val) {
@@ -2076,15 +2156,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         // Same reasoning as the unshifted insert: without this, every range starting a block we lack shifts the tail of
         // our spans array on its own, which is quadratic when both sides are large.
         ans.makeRoomForPartiallyCoveredBlocks(shiftAmount, sr);
-        int i = 0;
-        try (final RowSet.RangeIterator rit = sr.getRangeIterator()) {
-            while (rit.hasNext()) {
-                rit.next();
-                final long start = rit.currentRangeStart() + shiftAmount;
-                final long end = rit.currentRangeEnd() + shiftAmount;
-                i = ans.addRangeUnsafeNoWriteCheck(i, start, end);
-            }
-        }
+        ans.addShiftedRangesUnsafeNoWriteCheck(shiftAmount, sr.getRangeIterator());
         ans.finishMutations();
         return ans;
     }
