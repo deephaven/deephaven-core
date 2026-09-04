@@ -10,14 +10,13 @@ Barrage is the name of Deephaven's IPC table transport. This guide explains what
 You can access these tables as follows:
 
 ```python order=null
-import jpy
+from deephaven.perfmon import (
+    barrage_subscription_performance_log,
+    barrage_snapshot_performance_log,
+)
 
-bpl = jpy.get_type(
-    "io.deephaven.extensions.barrage.BarragePerformanceLog"
-).getInstance()
-
-subs = bpl.getSubscriptionTable()
-snaps = bpl.getSnapshotTable()
+subs = barrage_subscription_performance_log()
+snaps = barrage_snapshot_performance_log()
 ```
 
 This is what the subscriptions table looks like when there are live subscriptions:

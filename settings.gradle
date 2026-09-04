@@ -146,6 +146,9 @@ include(':codegen')
 
 include(':cpp-client')
 
+include(':csharp-client')
+project(':csharp-client').projectDir = file('csharp/client')
+
 include(':R')
 
 include(':replication-util')
@@ -497,11 +500,6 @@ include ':web-client-api:types'
 project(':web-client-api:types').projectDir = file('web/client-api/types')
 
 
-buildCache {
-    local {
-        removeUnusedEntriesAfterDays = 4
-    }
-}
 
 develocity {
     buildScan {

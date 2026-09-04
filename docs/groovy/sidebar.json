@@ -865,6 +865,10 @@
                     "path": "how-to-guides/performance/formula-threads.md"
                   },
                   {
+                    "label": "Track processing time",
+                    "path": "how-to-guides/performance/track-processing-time.md"
+                  },
+                  {
                     "label": "Barrage metrics",
                     "path": "how-to-guides/performance/barrage-performance.md"
                   },

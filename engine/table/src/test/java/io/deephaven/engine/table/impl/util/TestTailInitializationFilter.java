@@ -243,39 +243,39 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         // now let's break some data in interesting ways to force out-of-order conditions
         final long[] baddata = Arrays.copyOf(data, data.length);
         baddata[0] = data[99] + 1;
-        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[0]
+        outOfOrderTest(baddata, "Found inconsistently sorted rows, " + baddata[0]
                 + " at row key 0 is greater than " + baddata[99] + " at row key 99");
         baddata[0] = data[0];
 
         baddata[75] = data[99] + 1;
-        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[75]
+        outOfOrderTest(baddata, "Found inconsistently sorted rows, " + baddata[75]
                 + " at row key 75 is greater than " + baddata[99] + " at row key 99");
         baddata[75] = data[75];
 
         baddata[88] = data[99] + 1;
-        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[88]
+        outOfOrderTest(baddata, "Found inconsistently sorted rows, " + baddata[88]
                 + " at row key 88 is greater than " + baddata[99] + " at row key 99");
         baddata[88] = data[87];
 
         baddata[50] = data[0] - 1;
-        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[50]
+        outOfOrderTest(baddata, "Found inconsistently sorted rows, " + baddata[50]
                 + " at row key 50 is less than " + baddata[0] + " at row key 0");
         baddata[50] = data[0];
 
         baddata[88] = data[75] - 1;
-        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[88]
+        outOfOrderTest(baddata, "Found inconsistently sorted rows, " + baddata[88]
                 + " at row key 88 is less than " + baddata[75] + " at row key 75");
         baddata[88] = data[88];
 
         baddata[82] = data[88] + 1;
-        outOfOrderTest(builder, baddata, "Found inconsistently sorted rows, " + baddata[82]
+        outOfOrderTest(baddata, "Found inconsistently sorted rows, " + baddata[82]
                 + " at row key 82 is greater than " + baddata[88] + " at row key 88");
         baddata[82] = data[82];
     }
 
-    private static void outOfOrderTest(RowSetBuilderSequential builder, long[] baddata, final String expected)
+    private static void outOfOrderTest(long[] baddata, final String expected)
             throws IOException {
-        final QueryTable badinput = TstUtils.testRefreshingTable(builder.build().toTracking(),
+        final QueryTable badinput = TstUtils.testRefreshingTable(RowSetFactory.flat(baddata.length).toTracking(),
                 ColumnHolder.getInstantColumnHolder("Timestamp", false, baddata));
         final IllegalArgumentException iae = assertThrows(IllegalArgumentException.class,
                 () -> TailInitializationFilter.mostRecent(badinput.assertAddOnly(), "Timestamp", "PT00:10:00"));

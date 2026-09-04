@@ -984,6 +984,10 @@
                     "path": "how-to-guides/performance/formula-threads.md"
                   },
                   {
+                    "label": "Track processing time",
+                    "path": "how-to-guides/performance/track-processing-time.md"
+                  },
+                  {
                     "label": "Python-Java boundary",
                     "path": "conceptual/python-java-boundary.md"
                   },
@@ -1034,6 +1038,10 @@
                       {
                         "label": "Source setup",
                         "path": "how-to-guides/debugging/source-setup.md"
+                      },
+                      {
+                        "label": "Embedded server setup",
+                        "path": "how-to-guides/debugging/embedded-setup.md"
                       },
                       {
                         "label": "Common problems",

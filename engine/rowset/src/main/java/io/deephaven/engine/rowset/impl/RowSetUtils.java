@@ -81,16 +81,20 @@ public class RowSetUtils {
     }
 
     static boolean equalsDeepImpl(final RowSet index, final RowSet other) {
-        final RowSet.RangeIterator it1 = other.rangeIterator();
-        final RowSet.RangeIterator it2 = index.rangeIterator();
-        while (it1.hasNext() && it2.hasNext()) {
-            it1.next();
-            it2.next();
-            if (it1.currentRangeStart() != it2.currentRangeStart() || it1.currentRangeEnd() != it2.currentRangeEnd()) {
-                return false;
+        // An iterator run to exhaustion gives back the reference it holds on its rowset by itself; one abandoned at
+        // the first difference below has to be closed for that to happen.
+        try (final RowSet.RangeIterator it1 = other.rangeIterator();
+                final RowSet.RangeIterator it2 = index.rangeIterator()) {
+            while (it1.hasNext() && it2.hasNext()) {
+                it1.next();
+                it2.next();
+                if (it1.currentRangeStart() != it2.currentRangeStart()
+                        || it1.currentRangeEnd() != it2.currentRangeEnd()) {
+                    return false;
+                }
             }
+            return !(it1.hasNext() || it2.hasNext());
         }
-        return !(it1.hasNext() || it2.hasNext());
     }
 
     static boolean equals(final RowSet index, final Object other) {
@@ -132,7 +136,9 @@ public class RowSetUtils {
             return j;
         }
         while (true) {
-            final long mid = (i + j) / 2;
+            // Note i + (j - i) / 2 rather than (i + j) / 2: the sum overflows when both values are >= 2^62,
+            // which legal row keys can be.
+            final long mid = i + (j - i) / 2;
             final int c = comp.directionToTargetFrom(mid);
             if (c < 0) {
                 if (j == mid || j - i <= 1) {
@@ -166,24 +172,25 @@ public class RowSetUtils {
         final MutableBoolean hasPending = new MutableBoolean();
         final MutableLong pendingStart = new MutableLong(RowSequence.NULL_ROW_KEY);
         final MutableLong pendingEnd = new MutableLong(RowSequence.NULL_ROW_KEY);
-        final RowSequence.Iterator sourceProbe = sourceRowSet.getRowSequenceIterator();
         final MutableLong sourceOffset = new MutableLong();
-        destRowSet.forAllRowKeyRanges((start, end) -> {
-            final long sourceStart = sourceOffset.get() + sourceProbe.advanceAndGetPositionDistance(start);
-            final long sourceEnd = sourceStart + sourceProbe.advanceAndGetPositionDistance(end);
-            if (!hasPending.booleanValue()) {
-                pendingStart.set(sourceStart);
-                pendingEnd.set(sourceEnd);
-                hasPending.setValue(true);
-            } else if (pendingEnd.get() + 1 == sourceStart) {
-                pendingEnd.set(sourceEnd);
-            } else {
-                lrc.accept(pendingStart.get(), pendingEnd.get());
-                pendingStart.set(sourceStart);
-                pendingEnd.set(sourceEnd);
-            }
-            sourceOffset.set(sourceEnd);
-        });
+        try (final RowSequence.Iterator sourceProbe = sourceRowSet.getRowSequenceIterator()) {
+            destRowSet.forAllRowKeyRanges((start, end) -> {
+                final long sourceStart = sourceOffset.get() + sourceProbe.advanceAndGetPositionDistance(start);
+                final long sourceEnd = sourceStart + sourceProbe.advanceAndGetPositionDistance(end);
+                if (!hasPending.booleanValue()) {
+                    pendingStart.set(sourceStart);
+                    pendingEnd.set(sourceEnd);
+                    hasPending.setValue(true);
+                } else if (pendingEnd.get() + 1 == sourceStart) {
+                    pendingEnd.set(sourceEnd);
+                } else {
+                    lrc.accept(pendingStart.get(), pendingEnd.get());
+                    pendingStart.set(sourceStart);
+                    pendingEnd.set(sourceEnd);
+                }
+                sourceOffset.set(sourceEnd);
+            });
+        }
         if (hasPending.booleanValue()) {
             lrc.accept(pendingStart.get(), pendingEnd.get());
         }

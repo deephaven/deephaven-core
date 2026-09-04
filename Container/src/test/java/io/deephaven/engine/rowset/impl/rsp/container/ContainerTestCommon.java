@@ -3,6 +3,7 @@ package io.deephaven.engine.rowset.impl.rsp.container;
 import org.junit.Assert;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.function.*;
@@ -15,6 +16,58 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 class ContainerTestCommon {
+
+    /** Every value the container holds, in order. */
+    static List<Integer> valuesOf(final Container c) {
+        final List<Integer> out = new ArrayList<>();
+        final ShortIterator it = c.getShortIterator();
+        while (it.hasNext()) {
+            out.add(it.nextAsInt());
+        }
+        return out;
+    }
+
+    /** The cardinality counted by walking, independent of whatever the container recorded. */
+    static int cardinalityByIteration(final Container c) {
+        int n = 0;
+        final ShortIterator it = c.getShortIterator();
+        while (it.hasNext()) {
+            it.nextAsInt();
+            ++n;
+        }
+        return n;
+    }
+
+    /**
+     * One fixture per implementation able to hold {@code values}, so a case can be run against all of them. Built
+     * directly rather than through the factory, which answers a one-value range with a singleton and would leave the
+     * implementation under test unexercised.
+     */
+    static Container[] containersHolding(final int... values) {
+        final ArrayContainer array = new ArrayContainer(Math.max(1, values.length));
+        final BitmapContainer bitmap = new BitmapContainer();
+        Container run = new RunContainer();
+        for (final int v : values) {
+            array.iset((short) v);
+            bitmap.iset((short) v);
+            run = run.iset((short) v);
+        }
+        return new Container[] {array, bitmap, run};
+    }
+
+    /** As {@link #containersHolding(int...)}, for the contiguous run {@code [begin, endExclusive)}. */
+    static Container[] containersHoldingRange(final int begin, final int endExclusive) {
+        final ArrayContainer array = new ArrayContainer(endExclusive - begin);
+        for (int v = begin; v < endExclusive; ++v) {
+            array.iset((short) v);
+        }
+        return new Container[] {
+                array,
+                new BitmapContainer().iadd(begin, endExclusive),
+                new RunContainer(begin, endExclusive),
+                new SingleRangeContainer(begin, endExclusive),
+        };
+    }
     static Container populate(String msg, int[] vs, Container container, String name, ArrayList<Integer> ranges) {
         ranges = getRanges(vs, ranges);
         final Iterator<Integer> it = ranges.iterator();

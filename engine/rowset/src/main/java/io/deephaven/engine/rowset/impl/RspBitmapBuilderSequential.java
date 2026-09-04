@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSequence;
@@ -25,6 +26,48 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     protected RspBitmap rb;
     protected long maxKeyHint = -1;
 
+    private boolean built;
+
+    /**
+     * Builders are single use: a second build fails instead. Only the build methods check this; appends stay unchecked
+     * to keep the hot path free of conditionals, so the effect of appending after a build is undefined rather than
+     * detected.
+     */
+    protected final void checkAndMarkBuilt() {
+        if (built) {
+            throw new IllegalStateException("Builder was already used to build a result; builders are single use");
+        }
+        built = true;
+    }
+
+    /**
+     * The block that {@link #sizedBlockCardinality} and {@link #sizedBlockRangeCount} describe, or -1 when nothing is
+     * known ahead of time. A subclass that can see what a block will receive before its container is filled should
+     * publish it here, so the container can be created at its final size and in the representation that fits it best;
+     * containers are otherwise grown one range at a time, which reallocates their backing storage on every append. See
+     * {@link Container#emptySizedFor(int, int)}.
+     *
+     * <p>
+     * These are only sizing hints. Stale or inaccurate values cost memory or reallocation, never correctness, and the
+     * block key is checked before they are used.
+     */
+    private long sizedBlockKey = -1;
+    private int sizedBlockCardinality;
+    private int sizedBlockRangeCount;
+
+    /**
+     * Declare what {@code blockKey} will receive in total, for use when its container is created.
+     */
+    protected final void setSizedBlock(final long blockKey, final int cardinality, final int rangeCount) {
+        sizedBlockKey = blockKey;
+        sizedBlockCardinality = cardinality;
+        sizedBlockRangeCount = rangeCount;
+    }
+
+    protected final void clearSizedBlock() {
+        sizedBlockKey = -1;
+    }
+
     public RspBitmapBuilderSequential() {
         this(false);
     }
@@ -40,6 +83,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
 
     @Override
     public OrderedLongSet getOrderedLongSet() {
+        checkAndMarkBuilt();
         if (pendingStart != -1) {
             flushPendingRange();
         }
@@ -97,7 +141,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     }
 
     @Override
-    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
+    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix) {
         if (ix.ixIsEmpty()) {
             return;
         }
@@ -114,11 +158,11 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         if (pendingContainerKey != -1) {
             flushPendingContainer();
         }
-        if (rb.isEmpty()) {
-            rb.ixInsert(ix);
-            return;
-        }
-        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix, acquire);
+        // Every path that creates rb appends to it immediately, so rb is never empty here. That matters
+        // because appendShiftedUnsafeNoWriteCheck reads rb's last span (lastValue(), spanInfos[size - 1]),
+        // which is not valid on an empty bitmap.
+        Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
+        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix);
     }
 
     @Override
@@ -199,8 +243,8 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             final long pendingContainerBlockKey = highBits(pendingContainerKey);
             if (pendingContainerKey != -1 && pendingContainerBlockKey == highStart) { // short path.
                 if (pendingContainer == null) {
-                    pendingContainer =
-                            containerForLowValueAndRange(lowBitsAsInt(pendingContainerKey), lowStart, lowEnd);
+                    pendingContainer = newContainerForLowValueAndRange(
+                            highStart, lowBitsAsInt(pendingContainerKey), lowStart, lowEnd);
                     pendingContainerKey = highBits(pendingContainerKey);
                 } else {
                     pendingContainer = pendingContainer.iappend(lowStart, lowEnd + 1);
@@ -209,8 +253,13 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             }
             if (pendingContainerKey != -1) {
                 if (check && pendingContainerKey > highStart) {
+                    // When pendingContainer is null the pending span is a singleton and pendingContainerKey is
+                    // its full value; otherwise pendingContainerKey holds the high bits only.
+                    final long pendingLast = (pendingContainer == null)
+                            ? pendingContainerKey
+                            : (highBits(pendingContainerKey) | pendingContainer.last());
                     throw new IllegalStateException(outOfOrderKeyErrorMsg +
-                            "last=" + end + " while appending value=" + pendingContainer.last());
+                            "last=" + pendingLast + " while appending value=" + start);
                 }
                 flushPendingContainer();
             }
@@ -224,7 +273,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                 pendingContainer = null;
             } else {
                 pendingContainerKey = highStart;
-                pendingContainer = Container.rangeOfOnes(lowStart, lowEnd + 1);
+                pendingContainer = newContainerForRange(highStart, lowStart, lowEnd);
             }
             return;
         }
@@ -319,8 +368,40 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
 
         if (endingContainerKey != -1) {
             pendingContainerKey = endingContainerKey;
-            pendingContainer = Container.rangeOfOnes(0, endingContainerEnd + 1);
+            pendingContainer = newContainerForRange(endingContainerKey, 0, endingContainerEnd);
         }
+    }
+
+    /**
+     * Create the container that will accumulate {@code blockKey}, initially holding {@code [lowStart, lowEnd]}.
+     *
+     * <p>
+     * When the block's final cardinality is known and exceeds this first range, the container is created at that size
+     * so that the appends to follow do not have to grow it. Otherwise this range is all the block gets, and the compact
+     * single-range representation is both smaller and free to build.
+     */
+    private Container newContainerForRange(final long blockKey, final int lowStart, final int lowEnd) {
+        // Pre-size only when more is coming for this block than this first range; otherwise this range is all it gets,
+        // and the compact single-range representation is both smaller and free to build.
+        if (blockKey == sizedBlockKey && sizedBlockCardinality > lowEnd - lowStart + 1) {
+            return Container.emptySizedFor(sizedBlockCardinality, sizedBlockRangeCount)
+                    .iappend(lowStart, lowEnd + 1);
+        }
+        return Container.rangeOfOnes(lowStart, lowEnd + 1);
+    }
+
+    /**
+     * As {@link #newContainerForRange}, for the case where a single value was already pending for {@code blockKey} and
+     * is now joined by {@code [lowStart, lowEnd]}.
+     */
+    private Container newContainerForLowValueAndRange(
+            final long blockKey, final int lowValue, final int lowStart, final int lowEnd) {
+        if (blockKey == sizedBlockKey && sizedBlockCardinality > 1 + lowEnd - lowStart + 1) {
+            return Container.emptySizedFor(sizedBlockCardinality, sizedBlockRangeCount)
+                    .iappend(lowValue, lowValue + 1)
+                    .iappend(lowStart, lowEnd + 1);
+        }
+        return containerForLowValueAndRange(lowValue, lowStart, lowEnd);
     }
 
     private void ensureRb() {

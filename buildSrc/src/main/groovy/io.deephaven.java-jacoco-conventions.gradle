@@ -9,7 +9,7 @@ jacoco {
 
 jacocoTestReport {
     sourceSets sourceSets.main
-    executionData = fileTree(buildDir).include("/jacoco/*.exec")
+    executionData = fileTree(layout.buildDirectory).include("/jacoco/*.exec")
     reports {
     	csv.required = true
 	xml.required = true

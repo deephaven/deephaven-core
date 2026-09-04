@@ -18,6 +18,13 @@ import java.util.PrimitiveIterator;
  */
 public interface RowSetBuilderRandom {
 
+    /**
+     * Build the {@link WritableRowSet} from the accumulated row keys. Builders are single use: at most one build call
+     * is permitted, and subsequent calls throw {@link IllegalStateException}. The effect of providing further row keys
+     * after building is undefined.
+     *
+     * @return The built RowSet
+     */
     WritableRowSet build();
 
     void addKey(long rowKey);
@@ -64,11 +71,14 @@ public interface RowSetBuilderRandom {
 
     class Helper {
         private static void add(final RowSetBuilderRandom builder, final RowSet rowSet) {
-            final RowSet.RangeIterator it = rowSet.rangeIterator();
-            while (it.hasNext()) {
-                final long start = it.next();
-                final long end = it.currentRangeEnd();
-                builder.addRange(start, end);
+            // Closed explicitly: a walk that reaches the end releases the reference it holds on rowSet by itself, but
+            // a builder that rejects a range stops the walk short.
+            try (final RowSet.RangeIterator it = rowSet.rangeIterator()) {
+                while (it.hasNext()) {
+                    final long start = it.next();
+                    final long end = it.currentRangeEnd();
+                    builder.addRange(start, end);
+                }
             }
         }
     }

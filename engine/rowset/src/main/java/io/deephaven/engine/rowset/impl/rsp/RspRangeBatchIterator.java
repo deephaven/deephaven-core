@@ -73,6 +73,9 @@ public class RspRangeBatchIterator implements SafeCloseable {
         if (riView != null) {
             riView.close();
         }
+        // Release the span cursor's reference on the array; on full consumption setFinished() already did
+        // (release() is idempotent), but a partially consumed iterator would otherwise leak it.
+        release();
     }
 
     public boolean hasNext() {
@@ -129,7 +132,8 @@ public class RspRangeBatchIterator implements SafeCloseable {
      * @return The count of ranges written (which matches 2 times the number of elements written).
      */
     public int fillRangeChunk(final WritableLongChunk<OrderedRowKeyRanges> chunk, final int chunkOffset) {
-        final int chunkMaxCount = chunk.capacity();
+        // Range boundaries are written in pairs, so round the available slot count down to an even value.
+        final int chunkMaxCount = (chunk.capacity() - chunkOffset) & ~1;
         int chunkDelta = 0;
         // first, flush any leftovers in buf from previous calls.
         long keyForPrevRangeEndAtSpanBoundary = -1;
@@ -226,8 +230,12 @@ public class RspRangeBatchIterator implements SafeCloseable {
                     return chunkDelta / 2;
                 }
                 p.next();
-                // This span can't be a full block span: it would have been merged with the previous one.
-                // Therefore at this point we know p.span() is an RB Container.
+                if (getFullBlockSpanLen(p.spanInfo(), p.span()) > 0) {
+                    // Adjacent full block spans are merged into one, but ones separated by an empty block are not, so
+                    // the span after a full block span can be another. Go back and emit it as a span in its own right;
+                    // reading it as a container would fail, since its span object is the full block span marker.
+                    continue;
+                }
                 s = p.span();
             }
             spanInfo = p.spanInfo();

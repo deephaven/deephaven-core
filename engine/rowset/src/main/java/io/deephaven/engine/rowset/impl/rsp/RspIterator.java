@@ -20,8 +20,6 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
     private interface SingleSpanIterator {
         boolean forEachLong(LongAbortableConsumer lc);
 
-        int copyTo(long[] vs, int offset, int maxCount);
-
         int copyTo(WritableLongChunk<? super OrderedRowKeys> chunk, int offset, int maxCount);
 
         long nextLong();
@@ -84,21 +82,6 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
         return true;
     }
 
-    public int copyTo(final long[] vs, final int offset, final int max) {
-        int c = 0;
-        while (hasNext) {
-            if (!sit.hasNext()) {
-                nextSingleSpanIterator(0);
-            }
-            c += sit.copyTo(vs, offset + c, max - c);
-            hasNext = sit.hasNext() || p.hasNext();
-            if (c >= max) {
-                break;
-            }
-        }
-        return c;
-    }
-
     public int copyTo(final WritableLongChunk<? super OrderedRowKeys> chunk, final int offset, final int max) {
         int c = 0;
         while (hasNext) {
@@ -151,16 +134,6 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                 }
 
                 @Override
-                public int copyTo(final long[] vs, final int offset, final int max) {
-                    if (max <= 0 || v == -1) {
-                        return 0;
-                    }
-                    vs[offset] = v;
-                    v = -1;
-                    return 1;
-                }
-
-                @Override
                 public int copyTo(final WritableLongChunk<? super OrderedRowKeys> chunk, final int offset,
                         final int max) {
                     if (max <= 0 || v == -1) {
@@ -180,22 +153,37 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
             sit = new SingleSpanIterator() {
                 long curr = k + skipCount;
                 final long end = k + flen * RspArray.BLOCK_SIZE - 1;
+                // Set once the span's last key has been handed out. Stepping past it would be indistinguishable from
+                // wrapping when that key is the last of the key space, and the position would compare as still inside.
+                boolean done = curr > end;
 
                 @Override
                 public boolean hasNext() {
-                    return curr <= end;
+                    return !done;
+                }
+
+                /** Move off the key just produced, or mark the span finished if that was its last. */
+                private void step() {
+                    if (curr == end) {
+                        done = true;
+                    } else {
+                        ++curr;
+                    }
                 }
 
                 @Override
                 public long nextLong() {
-                    return curr++;
+                    final long v = curr;
+                    step();
+                    return v;
                 }
 
                 @Override
                 public boolean forEachLong(final LongAbortableConsumer lc) {
-                    while (curr <= end) {
-                        final boolean wantMore = lc.accept(curr++);
-                        if (!wantMore) {
+                    while (!done) {
+                        final long v = curr;
+                        step();
+                        if (!lc.accept(v)) {
                             return false;
                         }
                     }
@@ -203,22 +191,12 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                 }
 
                 @Override
-                public int copyTo(final long vs[], final int offset, final int max) {
-                    int c = 0;
-                    final long last = Math.min(curr + max - 1, end);
-                    while (curr <= last) {
-                        vs[offset + c++] = curr++;
-                    }
-                    return c;
-                }
-
-                @Override
                 public int copyTo(final WritableLongChunk<? super OrderedRowKeys> chunk, final int offset,
                         final int max) {
                     int c = 0;
-                    final long last = Math.min(curr + max - 1, end);
-                    while (curr <= last) {
-                        chunk.set(offset + c++, curr++);
+                    while (!done && c < max) {
+                        chunk.set(offset + c++, curr);
+                        step();
                     }
                     return c;
                 }
@@ -266,23 +244,6 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                     }
                 }
                 return cit.forEach((final short v) -> lc.accept(longValue(v)));
-            }
-
-            @Override
-            public int copyTo(final long[] vs, final int offset, final int max) {
-                int c = 0;
-                while (c < max && bi < count) {
-                    vs[offset + c++] = longValue(buf[bi++]);
-                }
-                if (c < max && cit.hasNext()) {
-                    final int[] ac = {c};
-                    cit.forEach((short v) -> {
-                        vs[offset + ac[0]++] = longValue(v);
-                        return ac[0] < max;
-                    });
-                    return ac[0];
-                }
-                return c;
             }
 
             @Override

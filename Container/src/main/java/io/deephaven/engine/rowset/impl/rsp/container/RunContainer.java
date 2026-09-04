@@ -9,7 +9,6 @@ package io.deephaven.engine.rowset.impl.rsp.container;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import java.util.function.Supplier;
 
 import static io.deephaven.engine.rowset.impl.rsp.container.ContainerUtil.lowbits;
 import static io.deephaven.engine.rowset.impl.rsp.container.ContainerUtil.toIntUnsigned;
@@ -326,20 +325,35 @@ public final class RunContainer extends Container {
         return new RunContainer(valueslength, nbrruns, cardinality);
     }
 
+
+    /**
+     * The container to return when an operation turned out to change nothing: {@code this} for an in-place operation, or
+     * a new reference for a copy-on-write one.
+     */
+    private RunContainer unchangedResult(final boolean inPlace) {
+        return inPlace ? this : cowRef();
+    }
+
+    /**
+     * The container an operation may mutate: {@code this} unless it is shared, for an in-place operation, or a private
+     * copy for a copy-on-write one.
+     */
+    private RunContainer mutableTarget(final boolean inPlace) {
+        return inPlace ? deepcopyIfShared() : deepCopy();
+    }
     @Override
     public Container iadd(final int begin, final int end) {
-        return iaddImpl(begin, end, () -> this, this::deepcopyIfShared);
+        return iaddImpl(begin, end, true);
     }
 
     @Override
     public Container add(final int begin, final int end) {
-        return iaddImpl(begin, end, this::cowRef, this::deepCopy);
+        return iaddImpl(begin, end, false);
     }
 
-    private Container iaddImpl(
-            final int begin, final int end, final Supplier<RunContainer> self, final Supplier<RunContainer> copy) {
+    private Container iaddImpl(final int begin, final int end, final boolean inPlace) {
         if (end == begin) {
-            return self.get();
+            return unchangedResult(inPlace);
         }
         if (begin > end || end > MAX_RANGE) {
             throw new IllegalArgumentException("Invalid range [" + begin + "," + end + ")");
@@ -349,12 +363,12 @@ public final class RunContainer extends Container {
         final int index = unsignedInterleavedBinarySearch(valueslength, 0, nbrruns, k);
         if (begin == end - 1) {
             if (index >= 0) {
-                return self.get();
+                return unchangedResult(inPlace);
             }
-            return isetImpl(k, index, null, self, copy);
+            return isetImpl(k, index, null, inPlace);
         }
 
-        final RunContainer ans = copy.get();
+        final RunContainer ans = mutableTarget(inPlace);
         return ans.iaddUnsafe(begin, end, index < 0 ? ~index : index);
     }
 
@@ -368,7 +382,7 @@ public final class RunContainer extends Container {
         if (index >= 0) {
             return this;// already there
         }
-        return isetImpl(k, index, null, () -> this, this::deepcopyIfShared);
+        return isetImpl(k, index, null, true);
     }
 
     @Override
@@ -381,7 +395,7 @@ public final class RunContainer extends Container {
         if (index >= 0) {
             return cowRef();// already there
         }
-        return isetImpl(k, index, null, this::cowRef, this::deepCopy);
+        return isetImpl(k, index, null, false);
     }
 
     @Override
@@ -392,7 +406,7 @@ public final class RunContainer extends Container {
             positionHint.value = index;
             return this;
         }
-        return isetImpl(k, index, positionHint, () -> this, this::deepcopyIfShared);
+        return isetImpl(k, index, positionHint, true);
     }
 
     @Override
@@ -403,14 +417,13 @@ public final class RunContainer extends Container {
             positionHint.value = index;
             return cowRef();
         }
-        return isetImpl(k, index, positionHint, this::cowRef, this::deepCopy);
+        return isetImpl(k, index, positionHint, false);
     }
 
     private Container isetImpl(final short k,
             int index,
             final PositionHint positionHint,
-            final Supplier<RunContainer> self,
-            final Supplier<RunContainer> copy) {
+            final boolean inPlace) {
         index = -index - 2;// points to preceding value, possibly -1
         final int kAsInt = toIntUnsigned(k);
         if (index >= 0) {// possible match
@@ -419,7 +432,7 @@ public final class RunContainer extends Container {
             int le = getLengthAsInt(index);
             if (offset <= le) {
                 setIfNotNull(positionHint, index);
-                return self.get();
+                return unchangedResult(inPlace);
             }
             if (offset == le + 1) {
                 // we may need to fuse
@@ -432,7 +445,7 @@ public final class RunContainer extends Container {
                             resetIfNotNull(positionHint);
                             return makeSingleRangeContainer(valueAtIndex, newEndInclusive + 1);
                         }
-                        final RunContainer ans = copy.get();
+                        final RunContainer ans = mutableTarget(inPlace);
                         final int newLen = newEndInclusive - valueAtIndex;
                         ans.setLength(index, (short) newLen);
                         ans.cardinality += newLen - le;
@@ -441,7 +454,7 @@ public final class RunContainer extends Container {
                         return ans;
                     }
                 }
-                final RunContainer ans = copy.get();
+                final RunContainer ans = mutableTarget(inPlace);
                 ans.incrementLength(index);
                 setIfNotNull(positionHint, index);
                 return ans;
@@ -450,7 +463,7 @@ public final class RunContainer extends Container {
                 // we may need to fuse
                 if (getValueAsInt(index + 1) == kAsInt + 1) {
                     // indeed fusion is needed
-                    final RunContainer ans = copy.get();
+                    final RunContainer ans = mutableTarget(inPlace);
                     ans.setValue(index + 1, k);
                     ans.incrementLength(index + 1);
                     setIfNotNull(positionHint, index + 1);
@@ -462,7 +475,7 @@ public final class RunContainer extends Container {
             // we may need to extend the first run
             if (nbrruns > 0) {
                 if (getValueAsInt(0) == kAsInt + 1) {
-                    final RunContainer ans = copy.get();
+                    final RunContainer ans = mutableTarget(inPlace);
                     ans.incrementLength(0);
                     ans.decrementValue(0);
                     setIfNotNull(positionHint, 0);
@@ -477,7 +490,7 @@ public final class RunContainer extends Container {
             }
             return toBitmapContainer().iset(k);
         }
-        final RunContainer ans = copy.get();
+        final RunContainer ans = mutableTarget(inPlace);
         ans.makeRoomAtIndex(index + 1);
         ans.setValue(index + 1, k);
         ans.setLength(index + 1, (short) 0);
@@ -2144,10 +2157,9 @@ public final class RunContainer extends Container {
         int k = 0;
         for (; (k < nbrruns) && (getValueAsInt(k) < rangeStart); ++k) {
             ans.valueslength[2 * k] = valueslength[2 * k];
-            final short len = valueslength[2 * k + 1];
-            ans.valueslength[2 * k + 1] = len;
+            ans.valueslength[2 * k + 1] = valueslength[2 * k + 1];
             ++ans.nbrruns;
-            ans.cardinality += len + 1;
+            ans.cardinality += getLengthAsInt(k) + 1;
         }
         ans.smartAppendForXor((short) rangeStart, (short) (rangeEnd - rangeStart - 1));
         for (; k < nbrruns; ++k) {
@@ -3021,6 +3033,11 @@ public final class RunContainer extends Container {
 
     @Override
     public int nextValue(final short fromValue) {
+        if (nbrruns == 0) {
+            // Nothing at or above the bound. Without this the search below lands before the first run and we would
+            // ask for a first value that does not exist.
+            return -1;
+        }
         int index = unsignedInterleavedBinarySearch(valueslength, 0, nbrruns, fromValue);
         int effectiveIndex = index >= 0 ? index : -index - 2;
         if (effectiveIndex == -1) {

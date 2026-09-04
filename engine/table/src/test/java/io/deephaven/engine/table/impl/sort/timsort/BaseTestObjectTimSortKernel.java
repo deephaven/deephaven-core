@@ -19,6 +19,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.tuple.generated.ObjectLongLongTuple;
 import io.deephaven.tuple.generated.ObjectLongTuple;
 import io.deephaven.engine.table.impl.sort.findruns.ObjectFindRunsKernel;
@@ -38,15 +39,13 @@ import java.util.stream.Collectors;
 public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
     public static Comparator<ObjectLongTuple> getJavaComparator() {
-        // noinspection unchecked
-        return Comparator.comparing(x -> (Comparable)x.getFirstElement());
+        return Comparator.comparing(ObjectLongTuple::getFirstElement, ObjectComparisons::compare);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
     public static Comparator<ObjectLongLongTuple> getJavaMultiComparator() {
-        // noinspection unchecked
-        return Comparator.comparing(x -> (Comparable)((ObjectLongLongTuple)x).getFirstElement()).thenComparing(x -> ((ObjectLongLongTuple)x).getSecondElement());
+        return Comparator.comparing(ObjectLongLongTuple::getFirstElement, ObjectComparisons::compare).thenComparing(ObjectLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
@@ -181,8 +180,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
 
         public void run() {
             // region mergesort
-            // noinspection unchecked
-            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Objects.compare((Comparable)arrayValues[(int)pos1], (Comparable)arrayValues[(int)pos2], Comparator.naturalOrder()));
+            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> ObjectComparisons.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
         }
     }
