@@ -31,7 +31,7 @@ filtered = source.where("X > 2")
 doubled = source.update("Y = X * 2")
 ```
 
-`source` is a live table — it ticks once per second, adding a new row each cycle. `filtered` immediately reflects whichever rows currently satisfy `X > 2`, and it maintains a _dependency_ on `source`: as each new row arrives, `filtered` and `doubled` automatically recompute and reflect the change, without you rerunning any code.
+`source` is a live table — it adds one row for each one-second period that elapses, so it grows by roughly a row per second (a slow or delayed update cycle can add several rows at once). `filtered` immediately reflects whichever rows currently satisfy `X > 2`, and it maintains a _dependency_ on `source`: as new rows arrive, `filtered` and `doubled` automatically recompute and reflect the change, without you rerunning any code.
 
 **Why this matters:**
 
