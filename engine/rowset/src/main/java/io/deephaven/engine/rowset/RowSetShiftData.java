@@ -144,9 +144,11 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                     getBeginRange(idx), "getBeginRange(idx)");
 
             // Check no overlap in new key space.
-            final long newPrevEnd = getEndRange(idx - 1) + getShiftDelta(idx - 1);
-            final long newCurrBegin = getBeginRange(idx) + getShiftDelta(idx);
-            Assert.lt(newPrevEnd, "newPrevEnd", newCurrBegin, "newCurrBeing");
+            final int postShiftOrder = comparePostShiftBeginToEnd(
+                    getBeginRange(idx - 1), getEndRange(idx - 1), getShiftDelta(idx - 1),
+                    getBeginRange(idx), getEndRange(idx), getShiftDelta(idx));
+            Assert.assertion(postShiftOrder == NO_ORDER || postShiftOrder > 0,
+                    "post-shift window of idx begins after the post-shift window of idx - 1 ends");
 
             // Verify if shift delta changes that it is considered a different run.
             final int prevShiftSign = getShiftDelta(idx - 1) < 0 ? -1 : 1;
@@ -268,9 +270,73 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             }
             for (int jdx = start; jdx != end + dir; jdx += dir) {
                 final long delta = getShiftDelta(jdx);
-                shiftCallback.shift(getBeginRange(jdx) + delta, getEndRange(jdx) + delta, -delta);
+                final long beginRange = postShiftBegin(getBeginRange(jdx), delta);
+                final long endRange = postShiftEnd(getEndRange(jdx), delta);
+                if (beginRange == NO_WINDOW || endRange == NO_WINDOW) {
+                    continue;
+                }
+                shiftCallback.shift(beginRange, endRange, -delta);
             }
         }
+    }
+
+    /**
+     * Returned by {@link #postShiftBegin} and {@link #postShiftEnd} when the whole window lies outside the key space.
+     */
+    private static final long NO_WINDOW = -1;
+
+    /**
+     * The first key of a shift window in post-shift keyspace. A window may reach past either end of the key space: the
+     * shift is valid as long as no key actually lands there, so the part outside is empty and only the rest is a range
+     * of keys. Below zero the window is clamped to zero; past {@link Long#MAX_VALUE} there is no window at all.
+     */
+    private static long postShiftBegin(final long preShiftBegin, final long shiftDelta) {
+        final long beginRange = preShiftBegin + shiftDelta;
+        if (shiftDelta > 0) {
+            return beginRange < preShiftBegin ? NO_WINDOW : beginRange;
+        }
+        return Math.max(beginRange, 0);
+    }
+
+    /**
+     * The last key of a shift window in post-shift keyspace, the counterpart of {@link #postShiftBegin}: past
+     * {@link Long#MAX_VALUE} the window is clamped to it; below zero there is no window at all.
+     */
+    private static long postShiftEnd(final long preShiftEnd, final long shiftDelta) {
+        final long endRange = preShiftEnd + shiftDelta;
+        if (shiftDelta > 0) {
+            return endRange < preShiftEnd ? Long.MAX_VALUE : endRange;
+        }
+        return endRange < 0 ? NO_WINDOW : endRange;
+    }
+
+    /**
+     * Returned by {@link #comparePostShiftBeginToEnd} when either window lies wholly outside the key space.
+     */
+    private static final int NO_ORDER = Integer.MIN_VALUE;
+
+    /**
+     * Compares where the post-shift window of the second range begins with where the post-shift window of the first
+     * range ends: negative when it begins before that end, zero when at it, positive when after it. This is the
+     * comparison of {@code begin + delta} with {@code end + delta} that the ordering checks on shift data make, made
+     * safe against the one way it can wrap: pre-shift bounds are non-negative, so only a positive delta can carry a
+     * bound past {@link Long#MAX_VALUE}. A window whose begin wraps lies wholly past the top of the key space; it holds
+     * no keys and is ordered against nothing, and the result is then {@link #NO_ORDER}. A window whose end alone wraps
+     * ends at {@link Long#MAX_VALUE}. Windows below zero cannot wrap and keep their arithmetic order, so shifts that
+     * would carry keys below zero are checked against each other like any others.
+     */
+    private static int comparePostShiftBeginToEnd(
+            final long firstBegin, final long firstEnd, final long firstDelta,
+            final long secondBegin, final long secondEnd, final long secondDelta) {
+        if (wrapsPastMax(firstBegin, firstDelta) || wrapsPastMax(secondBegin, secondDelta)) {
+            return NO_ORDER;
+        }
+        final long firstPostShiftEnd = wrapsPastMax(firstEnd, firstDelta) ? Long.MAX_VALUE : firstEnd + firstDelta;
+        return Long.compare(secondBegin + secondDelta, firstPostShiftEnd);
+    }
+
+    private static boolean wrapsPastMax(final long preShiftBound, final long shiftDelta) {
+        return shiftDelta > 0 && preShiftBound + shiftDelta < preShiftBound;
     }
 
     /**
@@ -377,28 +443,17 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             final int size = size();
             for (int idx = 0; idx < size; ++idx) {
                 final long shiftDelta = getShiftDelta(idx);
-                // A window may reach past either end of the key space: a shift is valid as long as no key would
-                // actually land there, so that part of the window is empty and only the rest is a range of keys.
-                final long preShiftBegin = getBeginRange(idx);
-                final long preShiftEnd = getEndRange(idx);
-                long beginRange = preShiftBegin + shiftDelta;
-                long endRange = preShiftEnd + shiftDelta;
-                if (shiftDelta > 0) {
-                    if (beginRange < preShiftBegin) {
-                        continue; // the whole window lies past Long.MAX_VALUE
-                    }
-                    if (endRange < preShiftEnd) {
-                        endRange = Long.MAX_VALUE;
-                    }
-                } else {
-                    if (endRange < 0) {
-                        continue; // the whole window lies below zero
-                    }
-                    beginRange = Math.max(beginRange, 0);
+                final long beginRange = postShiftBegin(getBeginRange(idx), shiftDelta);
+                final long endRange = postShiftEnd(getEndRange(idx), shiftDelta);
+                if (beginRange == NO_WINDOW || endRange == NO_WINDOW) {
+                    continue;
                 }
 
                 if (!rsIt.advance(beginRange)) {
                     break;
+                }
+                if (endRange < rsIt.peekNextKey()) {
+                    continue;
                 }
 
                 toRemove.appendRange(beginRange, endRange);
@@ -442,22 +497,10 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                     // The combined shift itself overflowed: the window lies wholly outside the key space.
                     continue;
                 }
-                final long preShiftBegin = getBeginRange(idx);
-                final long preShiftEnd = getEndRange(idx);
-                long beginRange = preShiftBegin + shift;
-                long endRange = preShiftEnd + shift;
-                if (shift > 0) {
-                    if (beginRange < preShiftBegin) {
-                        continue; // the whole window lies past Long.MAX_VALUE
-                    }
-                    if (endRange < preShiftEnd) {
-                        endRange = Long.MAX_VALUE;
-                    }
-                } else {
-                    if (endRange < 0) {
-                        continue; // the whole window lies below zero
-                    }
-                    beginRange = Math.max(beginRange, 0);
+                final long beginRange = postShiftBegin(getBeginRange(idx), shift);
+                final long endRange = postShiftEnd(getEndRange(idx), shift);
+                if (beginRange == NO_WINDOW || endRange == NO_WINDOW) {
+                    continue;
                 }
 
                 if (!rsIt.advance(beginRange)) {
@@ -492,11 +535,16 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      */
     public static boolean unapplyShift(@NotNull final WritableRowSet rowSet, final long beginRange, final long endRange,
             final long shiftDelta) {
-        try (final WritableRowSet toShift = rowSet.subSetByKeyRange(beginRange + shiftDelta, endRange + shiftDelta)) {
+        final long postShiftBegin = postShiftBegin(beginRange, shiftDelta);
+        final long postShiftEnd = postShiftEnd(endRange, shiftDelta);
+        if (postShiftBegin == NO_WINDOW || postShiftEnd == NO_WINDOW) {
+            return false;
+        }
+        try (final WritableRowSet toShift = rowSet.subSetByKeyRange(postShiftBegin, postShiftEnd)) {
             if (toShift.isEmpty()) {
                 return false;
             }
-            rowSet.removeRange(beginRange + shiftDelta, endRange + shiftDelta);
+            rowSet.removeRange(postShiftBegin, postShiftEnd);
             toShift.shiftInPlace(-shiftDelta);
             rowSet.insert(toShift);
             return true;
@@ -760,7 +808,10 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                         + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(prevIdx) + ","
                         + shiftData.getEndRange(prevIdx) + "]->" + shiftData.getShiftDelta(prevIdx));
             }
-            if (beginRange + shiftDelta <= shiftData.getEndRange(prevIdx) + shiftData.getShiftDelta(prevIdx)) {
+            final int postShiftOrder = comparePostShiftBeginToEnd(
+                    shiftData.getBeginRange(prevIdx), shiftData.getEndRange(prevIdx), shiftData.getShiftDelta(prevIdx),
+                    beginRange, endRange, shiftDelta);
+            if (postShiftOrder != NO_ORDER && postShiftOrder <= 0) {
                 throw new IllegalArgumentException("new resulting range [" + beginRange + "," + endRange
                         + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(prevIdx) + ","
                         + shiftData.getEndRange(prevIdx) + "]->" + shiftData.getShiftDelta(prevIdx));
@@ -1126,8 +1177,10 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                             + shiftData.getEndRange(currentRangeIndex) + "]->"
                             + shiftData.getShiftDelta(currentRangeIndex));
                 }
-                if (beginRange + shiftDelta <= shiftData.getEndRange(currentRangeIndex)
-                        + shiftData.getShiftDelta(currentRangeIndex)) {
+                final int postShiftOrder = comparePostShiftBeginToEnd(
+                        shiftData.getBeginRange(currentRangeIndex), shiftData.getEndRange(currentRangeIndex),
+                        shiftData.getShiftDelta(currentRangeIndex), beginRange, endRange, shiftDelta);
+                if (postShiftOrder != NO_ORDER && postShiftOrder <= 0) {
                     throw new IllegalArgumentException("new resulting range [" + beginRange + "," + endRange
                             + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex)
                             + ","
@@ -1145,8 +1198,10 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                             + shiftData.getEndRange(currentRangeIndex) + "]->"
                             + shiftData.getShiftDelta(currentRangeIndex));
                 }
-                if (beginRange + shiftDelta >= shiftData.getEndRange(currentRangeIndex)
-                        + shiftData.getShiftDelta(currentRangeIndex)) {
+                final int postShiftOrder = comparePostShiftBeginToEnd(
+                        shiftData.getBeginRange(currentRangeIndex), shiftData.getEndRange(currentRangeIndex),
+                        shiftData.getShiftDelta(currentRangeIndex), beginRange, endRange, shiftDelta);
+                if (postShiftOrder != NO_ORDER && postShiftOrder >= 0) {
                     throw new IllegalArgumentException("new resulting range [" + beginRange + "," + endRange
                             + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex)
                             + ","
@@ -1248,15 +1303,18 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         try (final RowSequence.Iterator rsIt = postShiftRowSet.getRowSequenceIterator()) {
             final int size = size();
             for (int idx = 0; idx < size; ++idx) {
-                final long beginRange = getBeginRange(idx);
-                final long endRange = getEndRange(idx);
                 final long shiftDelta = getShiftDelta(idx);
+                final long beginRange = postShiftBegin(getBeginRange(idx), shiftDelta);
+                final long endRange = postShiftEnd(getEndRange(idx), shiftDelta);
+                if (beginRange == NO_WINDOW || endRange == NO_WINDOW) {
+                    continue;
+                }
 
-                if (!rsIt.advance(beginRange + shiftDelta)) {
+                if (!rsIt.advance(beginRange)) {
                     break;
                 }
 
-                rsIt.getNextRowSequenceThrough(endRange + shiftDelta).forAllRowKeyRanges((s, e) -> {
+                rsIt.getNextRowSequenceThrough(endRange).forAllRowKeyRanges((s, e) -> {
                     preShiftBuilder.appendRange(s - shiftDelta, e - shiftDelta);
                     postShiftBuilder.appendRange(s, e);
                 });
