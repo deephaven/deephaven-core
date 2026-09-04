@@ -1340,6 +1340,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         @Override
         public boolean advance(final long key) {
+            if (key < 0) {
+                // Keys are non-negative, so nothing lies at or below a negative key. getSpanIndex compares block keys
+                // as unsigned values and would otherwise take the high bits of a negative key for the largest block.
+                si = 0;
+                return false;
+            }
             final int i = ra.getSpanIndex(0, si, highBits(key));
             return advanceSecondHalf(i);
         }
