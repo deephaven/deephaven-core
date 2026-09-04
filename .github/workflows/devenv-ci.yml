@@ -55,6 +55,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # Several Docker-based Gradle tasks that ./gradlew quick reaches (e.g.
+      # proto-backplane-grpc's generateProtobuf, proto/proto-backplane-grpc/build.gradle)
+      # hardcode platform = 'linux/amd64' regardless of host arch -- on the arm64
+      # runners in this matrix, running/building that image needs binfmt_misc
+      # emulation registered on the host first. This has no effect on the amd64
+      # legs (an amd64 image on an amd64 host needs no emulation).
+      - name: Set up QEMU (emulation for linux/amd64 Docker tasks on arm64 runners)
+        uses: docker/setup-qemu-action@v4
+
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v22
 
