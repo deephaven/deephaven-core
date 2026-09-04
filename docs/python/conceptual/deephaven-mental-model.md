@@ -358,7 +358,6 @@ Split data by key and process each partition efficiently:
 ```python ticking-table order=null
 from deephaven import time_table
 from deephaven import updateby as uby
-from deephaven.execution_context import get_exec_ctx
 
 trades = time_table("PT0.1S").update(
     [
@@ -370,19 +369,15 @@ trades = time_table("PT0.1S").update(
 # Partition by symbol
 by_symbol = trades.partition_by("Symbol")
 
-# Capture execution context - required for live partitioned tables
-# since new constituents may arrive on update threads
-ctx = get_exec_ctx()
-
 
 def transform_func(t):
-    with ctx:
-        return t.update_by(
-            ops=uby.rolling_avg_tick(cols=["AvgPrice = Price"], rev_ticks=10)
-        )
+    return t.update_by(
+        ops=uby.rolling_avg_tick(cols=["AvgPrice = Price"], rev_ticks=10)
+    )
 
 
-# Apply operations to each partition
+# transform() captures the calling execution context and reopens it for every
+# constituent, including ones added later on update-graph threads
 transformed = by_symbol.transform(transform_func)
 ```
 

@@ -302,8 +302,6 @@ Split data by key and process each partition efficiently:
 
 ```groovy ticking-table order=null
 import io.deephaven.api.updateby.UpdateByOperation
-import io.deephaven.engine.context.ExecutionContext
-import io.deephaven.util.SafeCloseable
 
 trades = timeTable("PT0.1S").update(
     "Symbol = (ii % 3 == 0) ? `AAPL` : ((ii % 3 == 1) ? `GOOG` : `MSFT`)",
@@ -313,17 +311,12 @@ trades = timeTable("PT0.1S").update(
 // Partition by symbol
 bySymbol = trades.partitionBy("Symbol")
 
-// Capture execution context - required for live partitioned tables
-// since new constituents may arrive on update threads
-defaultCtx = ExecutionContext.getContext()
-
 transformFunc = { t ->
-    try (SafeCloseable ignored = defaultCtx.open()) {
-        return t.updateBy(UpdateByOperation.RollingAvg(10, "AvgPrice = Price"))
-    }
+    return t.updateBy(UpdateByOperation.RollingAvg(10, "AvgPrice = Price"))
 }
 
-// Apply operations to each partition
+// transform() captures the calling execution context and reopens it for every
+// constituent, including ones added later on update-graph threads
 transformed = bySymbol.transform(transformFunc)
 ```
 
