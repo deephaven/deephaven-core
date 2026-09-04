@@ -20,6 +20,8 @@ import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.PrimitiveIterator;
 import java.util.function.IntToLongFunction;
 import java.util.function.LongConsumer;
@@ -375,7 +377,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     protected void setSharedContainerMaybePackedRaw(
             final int i, final RspArray src, final int srcIdx, final long srcSpanInfo, final Object srcContainer) {
         if (srcContainer instanceof short[]) {
-            spanInfos[i] = (src.spanInfos[srcIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK);
+            spanInfos[i] = markPackedContainerShared(src.spanInfos, srcIdx);
             spans[i] = srcContainer;
             return;
         }
@@ -405,22 +407,45 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     private static final long SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK =
             ~SPANINFO_ARRAYCONTAINER_SHARED_BITMASK & (long) BLOCK_LAST;
 
+    private static final VarHandle SPAN_INFOS_ELEMENT = MethodHandles.arrayElementVarHandle(long[].class);
+
+    /**
+     * Mark the packed ArrayContainer at {@code idx} of {@code spanInfos} as shared, returning the resulting word.
+     *
+     * <p>
+     * A packed container's shared flag lives in its owner's spanInfos word, so a set that shares the container writes
+     * into its source. Per {@link io.deephaven.engine.rowset.impl.RefCountedCow}, the source may be under mutation by
+     * its single owner at the same time; the reader's own result is discarded once the clock shows it stale, but a
+     * stale word written back over the owner's concurrent update of the same span would corrupt the owner's set for
+     * good. The flag is therefore set with an atomic or rather than a read-modify-write.
+     */
+    private static long markPackedContainerShared(final long[] spanInfos, final int idx) {
+        final long spanInfo = spanInfos[idx];
+        if ((spanInfo & SPANINFO_ARRAYCONTAINER_SHARED_BITMASK) != 0) {
+            return spanInfo;
+        }
+        final long previous =
+                (long) SPAN_INFOS_ELEMENT.getAndBitwiseOr(spanInfos, idx, SPANINFO_ARRAYCONTAINER_SHARED_BITMASK);
+        return previous | SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+    }
+
     // shiftAmount is a multiple of BLOCK_SIZE.
     protected void copyKeyAndSpanMaybeSharing(
             final long shiftAmount,
             final RspArray src, final int srcIdx,
             final long[] dstSpanInfos, final Object[] dstSpans, final int dstIdx,
             final boolean tryShare) {
-        Object span = src.spans[srcIdx];
+        final Object span = src.spans[srcIdx];
+        long spanInfo = src.spanInfos[srcIdx];
         if (tryShare && src.shareContainers()) {
             if (span instanceof short[]) {
-                src.spanInfos[srcIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+                spanInfo = markPackedContainerShared(src.spanInfos, srcIdx);
             } else if (span instanceof Container) {
                 final Container c = (Container) span;
                 c.setCopyOnWrite();
             }
         }
-        dstSpanInfos[dstIdx] = src.spanInfos[srcIdx] + shiftAmount;
+        dstSpanInfos[dstIdx] = spanInfo + shiftAmount;
         dstSpans[dstIdx] = span;
     }
 
@@ -517,7 +542,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         @Override
         protected void onCopyOnWrite() {
-            arr.spanInfos[arrIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+            markPackedContainerShared(arr.spanInfos, arrIdx);
         }
 
         public void reset() {
@@ -751,8 +776,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 // A packed ArrayContainer's shared flag lives in its owner's spanInfo word, so unlike a Container --
                 // whose flag travels with the object -- marking only this copy would leave the source believing it
                 // still owns the short[] exclusively, free to edit it in place underneath us.
-                spanInfos[i] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
-                src.spanInfos[isrc] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+                spanInfos[i] = markPackedContainerShared(src.spanInfos, isrc);
                 continue;
             }
             // span instanceof Container
