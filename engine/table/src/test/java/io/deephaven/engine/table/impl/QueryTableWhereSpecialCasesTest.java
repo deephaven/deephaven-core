@@ -1638,6 +1638,18 @@ public class QueryTableWhereSpecialCasesTest {
                 "doubleCol",
                 RawString.of("doubleCol in NaN"),
                 val -> Double.isNaN(val));
+
+        // A non-ColumnName expression cannot use the MatchFilter fast path; it is compiled as a formula instead.
+        validateFloatFilter(
+                source,
+                "floatCol",
+                Filter.isNaN(RawString.of("floatCol + 0.0f")),
+                val -> Float.isNaN(val));
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                Filter.isNaN(RawString.of("doubleCol + 0.0")),
+                val -> Double.isNaN(val));
     }
 
     @Test
@@ -1655,6 +1667,18 @@ public class QueryTableWhereSpecialCasesTest {
                 source,
                 "doubleCol",
                 Filter.isNotNaN(ColumnName.of("doubleCol")),
+                val -> !Double.isNaN(val));
+
+        // A non-ColumnName expression cannot use the MatchFilter fast path; it is compiled as a formula instead.
+        validateFloatFilter(
+                source,
+                "floatCol",
+                Filter.isNotNaN(RawString.of("floatCol + 0.0f")),
+                val -> !Float.isNaN(val));
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                Filter.isNotNaN(RawString.of("doubleCol + 0.0")),
                 val -> !Double.isNaN(val));
     }
 
