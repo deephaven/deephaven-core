@@ -419,7 +419,7 @@ Deephaven provides two approaches for building custom user interfaces:
 
 ## gRPC APIs for polyglot interoperability
 
-Deephaven's core API is implemented using polyglot technologies that allow for compatible client (or server!) implementations in almost any language. It is composed of several complementary modules, but its Arrow Flight service and Table service are foremost. These offer high-performance data transport — specifically organized to include real-time and updating data — and a table manipulation API that mirrors the Deephaven engine's internal compute paradigm. You can read more about our API itself [here](./deephaven-core-api.md).
+Deephaven's core API is implemented using polyglot technologies that allow for compatible client (or server!) implementations in almost any language. It is composed of several complementary modules, but its Arrow Flight service and Table service are foremost. These offer high-performance data transport — specifically organized to include real-time and updating data — and a table manipulation API that mirrors the Deephaven engine's internal compute paradigm. Read more in [Deephaven's core API](./deephaven-core-api.md).
 
 ## Distributing DAGs and global consistency
 

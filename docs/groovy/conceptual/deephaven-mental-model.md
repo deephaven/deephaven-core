@@ -199,7 +199,7 @@ Deephaven runs as a server. Multiple clients can connect simultaneously:
 - **JavaScript client**: For web applications
 - **Java/C++ clients**: For high-performance integrations
 
-Clients that subscribe to the same table see consistent, live updates. Tables can be shared between sessions using shared tickets.
+Clients that subscribe to the same table see consistent, live updates. Tables can be shared between sessions using [shared tickets](./what-is-barrage.md#shared-tickets).
 
 ## Common patterns
 
