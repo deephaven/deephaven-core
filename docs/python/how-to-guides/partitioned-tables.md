@@ -259,7 +259,7 @@ trades_updated = pt_trades_updated.merge()
 ```
 
 > [!NOTE]
-> When using a Partitioned Table proxy, you must call `target` to obtain the underlying partitioned table.
+> When using a Partitioned Table proxy, you must access the `target` attribute to obtain the underlying partitioned table.
 
 #### Should I use transform or proxy?
 
@@ -329,9 +329,9 @@ result_via_proxy = pt_joined.merge()
 ```
 
 > [!CAUTION]
-> `PartitionedTable` transforms and proxies produce different results than on a single-table join (e.g., `natural_join`), `where_in`, or `where_not_in` when the filter or join keys span partitions. You must ensure that your data's keys map to appropriate partitions to enable correct answers.
+> `PartitionedTable` transforms and proxies produce different results than on a single-table join (e.g., [`natural_join`](../reference/table-operations/join/natural-join.md)), [`where_in`](../reference/table-operations/filter/where-in.md), or [`where_not_in`](../reference/table-operations/filter/where-not-in.md) when the filter or join keys span partitions. You must ensure that your data's keys map to appropriate partitions to enable correct answers.
 >
-> When the second argument `sanityCheckJoins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition, but it does not validate that a key exists in the same partition in both the left and right table.
+> When the second argument `sanity_check_joins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition, but it does not validate that a key exists in the same partition in both the left and right table.
 
 ## Why use partitioned tables?
 
@@ -357,7 +357,7 @@ Partitioned tables can improve performance in a couple of different ways.
 #### Parallelization
 
 > [!CAUTION]
-> Python's [Global Interpreter Lock (GIL)](https://docs.python.org/3/glossary.html#term-global-interpreter-lock) prevents threads from running concurrently. To maximize parallelization, users should be careful not to invoke Python code unnecessarily in partitioned tables.
+> Python's [Global Interpreter Lock (GIL)](https://docs.python.org/3/glossary.html#term-global-interpreter-lock) prevents threads from running Python code concurrently, unless the Python build is free-threaded. To maximize parallelization, users should be careful not to invoke Python code unnecessarily in partitioned tables.
 
 Partitioned tables can also improve query performance by parallelizing things that standard tables cannot. Take, for example, an as-of join between two tables. If the tables are partitioned by the exact match columns, then the join operation is done in parallel.
 
