@@ -6,9 +6,9 @@ sidebar_label: Parallelization
 Parallelization is running multiple calculations at the same time on different CPU cores instead of one after another. Deephaven automatically parallelizes table operations like [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) to make queries faster. This guide explains how parallelization works and when you need to control it.
 
 > [!IMPORTANT]
-> **Breaking change in Deephaven 41+**: Queries now run in parallel by default. Code that modifies shared variables or depends on row order will produce incorrect results.
+> **Breaking change in Deephaven 41+**: Queries now run in parallel by default. Code that modifies shared variables or depends on rows being processed in a specific order will produce incorrect results.
 >
-> **Quick check**: Does your code use global variables, depend on row order, or modify external state? If yes, the [crash course guide](../../getting-started/crash-course/parallelization.md) shows how to fix it.
+> **Quick check**: Does your code use global variables, depend on rows being processed in a specific order, or modify external state? If yes, the [crash course guide](../../getting-started/crash-course/parallelization.md) shows how to fix it.
 
 ## How Deephaven parallelizes queries
 
@@ -71,9 +71,7 @@ Deephaven also parallelizes calculations within a single table in two ways:
 
 ## Controlling parallelization
 
-Most queries work correctly with automatic parallelization. However, some code requires sequential processing — for example, code that uses a counter or modifies shared state.
-
-Deephaven provides two mechanisms:
+Most queries work correctly with automatic parallelization. However, some code requires sequential processing — for example, code that uses a counter or modifies shared state. Deephaven provides two mechanisms for this:
 
 - **Serialization**: Process rows one at a time, in order, using [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial). Use this when a single operation needs sequential execution.
 - **Barriers**: Ensure one operation completes before another starts. Use this when operation A must finish before operation B begins.
@@ -88,11 +86,9 @@ Queries execute in two phases, and parallelization works differently in each.
 
 When you first create a table operation (like [`where`](../../reference/table-operations/filter/where.md) or [`update`](../../reference/table-operations/select/update.md)), Deephaven computes the initial result using all existing data. During initialization, Deephaven divides the rows among CPU cores so each core processes a portion simultaneously.
 
-For live (refreshing) tables, Deephaven also registers the table in the [update graph](../dag.md) so it can receive future updates.
-
 ### Updates
 
-After initialization, live tables update whenever their source data changes. During updates, Deephaven parallelizes in three ways:
+For live (refreshing) tables, Deephaven registers the table in the [update graph](../dag.md) during initialization so it can receive future updates. After initialization, live tables update whenever their source data changes. During updates, Deephaven parallelizes in three ways:
 
 1. **Across rows**: Deephaven divides rows among cores, just like during initialization.
 2. **Across columns**: Independent columns in the same operation compute simultaneously.
@@ -180,7 +176,7 @@ result4 = source4.update("Squared = sqrt(X)")
 >
 > **Deephaven 41 and later**: Assumes all formulas can run in parallel by default.
 >
-> If your formula uses global state or depends on row order, you **must** mark it with `with_serial` or it will produce incorrect results.
+> If your formula uses global state or depends on rows being processed in a specific order, you **must** mark it with `with_serial` or it will produce incorrect results.
 
 You can change the default behavior using configuration properties:
 
@@ -583,7 +579,7 @@ Specifically, Deephaven may relax ordering constraints for filters on partitioni
 Deephaven automatically parallelizes queries across all available CPU cores. Most code works correctly without changes.
 
 - Deephaven assumes all formulas can run in parallel by default.
-- Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) when your code has side effects, depends on row order, or calls functions that aren't safe to run from multiple threads.
+- Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) when your code has side effects, depends on rows being processed in a specific order, or calls functions that aren't safe to run from multiple threads.
 - Use **barriers** when one operation must complete before another starts.
 - Both thread pools use all CPU cores by default.
 

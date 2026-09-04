@@ -154,7 +154,7 @@ def check_value(x) -> bool:
 
 source = empty_table(100).update("X = i")
 
-# Use .with_serial because the filter has side effects
+# Use with_serial because the filter has side effects
 f = Filter.from_("(boolean)check_value(X)").with_serial()
 result = source.where(f)
 ```

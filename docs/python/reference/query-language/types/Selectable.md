@@ -22,7 +22,7 @@ These methods control how Deephaven executes the column calculation. By default,
 
 ### `with_serial`
 
-Forces the column calculation to execute sequentially on a single core, processing rows one at a time in order. Use this when the formula has side effects or depends on row order.
+Forces the column calculation to execute sequentially on a single core, processing rows one at a time in order. Use this when the formula has side effects or depends on row order. With default settings, sources larger than about 4.2 million rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `with_serial` to protect calculations that can't tolerate that. The example below uses 10 rows for clarity — well below that threshold, so it demonstrates correctness rather than an observable speedup difference.
 
 ```python order=result
 from deephaven.table import Selectable
@@ -82,10 +82,10 @@ If you're unsure whether your formula is safe for parallel execution, ask: "Woul
 
 ## Related documentation
 
-- [Parallelization](../../../conceptual/query-engine/parallelization.md) - Full guide on controlling parallel execution
-- [Filter](./Filter.md) - Similar concurrency controls for filter operations
-- [`select`](../../table-operations/select/select.md) - Uses Selectable objects
-- [`update`](../../table-operations/select/update.md) - Uses Selectable objects
+- [Parallelization](../../../conceptual/query-engine/parallelization.md) — Full guide on controlling parallel execution
+- [Filter](./Filter.md) — Similar concurrency controls for filter operations
+- [`select`](../../table-operations/select/select.md) — Uses Selectable objects
+- [`update`](../../table-operations/select/update.md) — Uses Selectable objects
 - [Barrier Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier)
 - [ConcurrencyControl Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl)
 - [Selectable Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable)

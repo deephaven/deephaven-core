@@ -21,7 +21,7 @@ myFilter = Filter.from("X > 5")[0]
 
 ### Combining filters with boolean logic
 
-Use `Filter.or` and `Filter.and` to combine multiple filters. These accept collections of filters created with `Filter.from`.
+Use `Filter.or` and `Filter.and` to combine multiple filters. These accept any `Filter` instances — as varargs or as a collection — such as filters created with `Filter.from`.
 
 ```groovy syntax
 import io.deephaven.api.filter.Filter
@@ -39,7 +39,7 @@ These methods control how Deephaven evaluates the filter. By default, Deephaven 
 
 ### `withSerial`
 
-Forces the filter to evaluate sequentially on a single core, processing rows one at a time in order. Use this when the filter has side effects or depends on row order. On a source with more than 131,072 rows, the filter would otherwise be evaluated in parallel; use `withSerial` to protect larger inputs.
+Forces the filter to evaluate sequentially on a single core, processing rows one at a time in order. Use this when the filter has side effects or depends on row order. With default settings, sources larger than about 131,072 rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `withSerial` to protect filters that can't tolerate that.
 
 ```groovy order=source,result
 import io.deephaven.api.filter.Filter
@@ -72,6 +72,21 @@ A barrier is a synchronization object you create and share between filters. In G
 
 For examples and detailed usage, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
+## Filter functions
+
+The [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) interface provides static factory methods for common conditions. These return `Filter` objects that you can combine with `Filter.and`/`Filter.or` or modify with concurrency methods.
+
+| Function                                                                                                            | Description                          |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| [`Filter.from(condition)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html)                    | Create from condition string(s)      |
+| [`Filter.isNull(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNull(io.deephaven.api.expression.Expression)) | True if the expression is null       |
+| [`Filter.isNotNull(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNotNull(io.deephaven.api.expression.Expression)) | True if the expression is not null   |
+| [`Filter.not(filter)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#not(F))                 | Logical NOT                          |
+| [`Filter.isNaN(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNaN(io.deephaven.api.expression.Expression)) | True if the expression is NaN        |
+| [`Filter.isNotNaN(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNotNaN(io.deephaven.api.expression.Expression)) | True if the expression is not NaN    |
+| [`Filter.isTrue(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isTrue(io.deephaven.api.expression.Expression)) | True if the boolean expression is true |
+| [`Filter.isFalse(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isFalse(io.deephaven.api.expression.Expression)) | True if the boolean expression is false |
+
 ## When to use Filter objects
 
 ### Do you need a Filter object at all?
@@ -95,9 +110,9 @@ You need a `Filter` object in two situations:
 
 ## Related documentation
 
-- [Parallelization](../../../conceptual/query-engine/parallelization.md) - Full guide on controlling parallel execution
-- [Selectable](./Selectable.md) - Similar concurrency controls for column calculations
-- [`where`](../../table-operations/filter/where.md) - Uses Filter objects
+- [Parallelization](../../../conceptual/query-engine/parallelization.md) — Full guide on controlling parallel execution
+- [Selectable](./Selectable.md) — Similar concurrency controls for column calculations
+- [`where`](../../table-operations/filter/where.md) — Uses Filter objects
 - [Barrier Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html#withDeclaredBarriers(java.lang.Object...))
 - [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)
 - [Filter Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html)

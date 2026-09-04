@@ -40,16 +40,15 @@ Forces the column calculation to execute sequentially on a single core, processi
 
 ```groovy order=result
 import io.deephaven.api.Selectable
-import java.util.concurrent.atomic.AtomicInteger
 
-counter = new AtomicInteger(0)
+counter = [0] as int[]
 
-col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
+col = Selectable.parse("ID = counter[0]++").withSerial()
 result = emptyTable(10).update([col])
 ```
 
 > [!IMPORTANT]
-> Concurrency control methods (`withSerial`, `withDeclaredBarriers`, `withRespectedBarriers`) only work with [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md). While [`view`](../../table-operations/select/view.md) and [`updateView`](../../table-operations/select/update-view.md) accept `Selectable` objects, they compute values on-demand and cannot enforce processing order. [`lazyUpdate`](../../table-operations/select/lazy-update.md) also accepts `Selectable` objects, but it cannot enforce processing order.
+> [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md) accept `Selectable` objects, but they compute values on-demand and cannot guarantee processing order. The three concurrency control methods behave differently there: `withRespectedBarriers` throws an error on `view`/`updateView` ("view and updateView cannot respect barriers"), and `withSerial` throws an error on `view`/`updateView` under the default configuration ("A stateful column cannot safely be used in a view or updateView"). `withDeclaredBarriers` on `view`/`updateView`, and all three methods on `lazyUpdate`, are silently unenforced rather than rejected. Use [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) instead when you need serial evaluation or barriers.
 
 ### `withDeclaredBarriers` and `withRespectedBarriers`
 
@@ -89,10 +88,10 @@ If you're unsure whether your formula is safe for parallel execution, ask: "Woul
 
 ## Related documentation
 
-- [Parallelization](../../../conceptual/query-engine/parallelization.md) - Full guide on controlling parallel execution
-- [Filter](./Filter.md) - Similar concurrency controls for filter operations
-- [`select`](../../table-operations/select/select.md) - Uses Selectable objects
-- [`update`](../../table-operations/select/update.md) - Uses Selectable objects
+- [Parallelization](../../../conceptual/query-engine/parallelization.md) — Full guide on controlling parallel execution
+- [Filter](./Filter.md) — Similar concurrency controls for filter operations
+- [`select`](../../table-operations/select/select.md) — Uses Selectable objects
+- [`update`](../../table-operations/select/update.md) — Uses Selectable objects
 - [Barrier Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html#withDeclaredBarriers(java.lang.Object...))
 - [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)
 - [Selectable Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html)

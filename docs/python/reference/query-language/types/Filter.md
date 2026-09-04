@@ -2,7 +2,7 @@
 title: Filter
 ---
 
-A [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to control how Deephaven evaluates filter conditions — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
+A [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to compose conditions programmatically (combining filters with boolean logic) or to control how Deephaven evaluates them — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
 
 ## Creating a Filter
 
@@ -10,7 +10,7 @@ There are two ways to create a `Filter` object: from a condition string, or by c
 
 ### From a condition string
 
-Use `Filter.from_()` when you have a filter condition as a string. This is the most direct approach.
+Use [`Filter.from_`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.Filter.from_) when you have a filter condition as a string. This is the most direct approach.
 
 ```python syntax
 from deephaven.filters import Filter
@@ -37,7 +37,7 @@ These methods control how Deephaven evaluates the filter. By default, Deephaven 
 
 ### `with_serial`
 
-Forces the filter to evaluate sequentially on a single core, processing rows one at a time in order. Use this when the filter has side effects or depends on row order. On a source with more than 131,072 rows, the filter would otherwise be evaluated in parallel; use `with_serial` to protect larger inputs.
+Forces the filter to evaluate sequentially on a single core, processing rows one at a time in order. Use this when the filter has side effects or depends on row order. With default settings, sources larger than about 131,072 rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `with_serial` to protect filters that can't tolerate that.
 
 ```python order=source,result
 from deephaven.filters import Filter
@@ -54,7 +54,7 @@ def check_value(x) -> bool:
 
 source = empty_table(100).update("X = i")
 
-# Use .with_serial because the filter has side effects
+# Use with_serial because the filter has side effects
 my_filter = Filter.from_("(boolean)check_value(X)").with_serial()
 result = source.where(my_filter)
 ```
@@ -68,8 +68,8 @@ These two methods work together to enforce execution order between filters. One 
 
 A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier) is a synchronization object you create and share between filters:
 
-- `with_declared_barriers(barrier)` — This filter **goes first**. All rows are evaluated by this filter before any respecting filter's rows are evaluated.
-- `with_respected_barriers(barrier)` — This filter **waits**. Its rows are not evaluated until all declaring filters have finished.
+- `with_declared_barriers(barriers)` — This filter **goes first**. This filter evaluates all of its rows before any respecting filter evaluates its own.
+- `with_respected_barriers(barriers)` — This filter **waits**. This filter does not evaluate its rows until all declaring filters finish.
 
 For examples and detailed usage, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
@@ -77,18 +77,18 @@ For examples and detailed usage, see [Barriers](../../../conceptual/query-engine
 
 The `deephaven.filters` module provides functions for creating filters. These return `Filter` objects that you can use with `where` or modify with concurrency methods.
 
-| Function                                       | Description                                       |
-| ---------------------------------------------- | ------------------------------------------------- |
-| `Filter.from_(condition)`                      | Create from condition string                      |
-| `is_null(col)`                                 | True if column value is null                      |
-| `is_not_null(col)`                             | True if column value is not null                  |
-| `not_(filter)`                                 | Logical NOT                                       |
-| `and_(filters)`                                | Logical AND of multiple filters                   |
-| `or_(filters)`                                 | Logical OR of multiple filters                    |
-| `in_(col, values)`                             | True if column value is in the given values       |
-| `pattern(mode, col, regex, invert_pattern)`    | Regex pattern match                               |
-| `eq`, `ne`, `lt`, `le`, `gt`, `ge`             | Comparison filters (e.g., `eq(left, right)`)      |
-| `incremental_release(initial_rows, increment)` | Progressively release rows from an add-only table |
+| Function                                                                                                                                                 | Description                                       |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| [`Filter.from_(condition)`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.Filter.from_)                                | Create from condition string                      |
+| [`is_null(col)`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.is_null)                                                | True if column value is null                      |
+| [`is_not_null(col)`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.is_not_null)                                        | True if column value is not null                  |
+| [`not_(filter)`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.not_)                                                   | Logical NOT                                       |
+| [`and_(filters)`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.and_)                                                  | Logical AND of multiple filters                   |
+| [`or_(filters)`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.or_)                                                    | Logical OR of multiple filters                    |
+| [`in_(col, values)`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.in_)                                                | True if column value is in the given values       |
+| [`pattern(mode, col, regex, invert_pattern)`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.pattern)                   | Regex pattern match                               |
+| [`eq`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.eq), [`ne`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.ne), [`lt`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.lt), [`le`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.le), [`gt`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.gt), [`ge`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.ge) | Comparison filters (e.g., `eq(left, right)`)      |
+| [`incremental_release(initial_rows, increment)`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.incremental_release)   | Progressively release rows from an add-only table |
 
 ## When to use Filter objects
 
@@ -113,9 +113,9 @@ You need a `Filter` object in two situations:
 
 ## Related documentation
 
-- [Parallelization](../../../conceptual/query-engine/parallelization.md) - Full guide on controlling parallel execution
-- [Selectable](./Selectable.md) - Similar concurrency controls for column calculations
-- [`where`](../../table-operations/filter/where.md) - Uses Filter objects
+- [Parallelization](../../../conceptual/query-engine/parallelization.md) — Full guide on controlling parallel execution
+- [Selectable](./Selectable.md) — Similar concurrency controls for column calculations
+- [`where`](../../table-operations/filter/where.md) — Uses Filter objects
 - [Barrier Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier)
 - [ConcurrencyControl Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl)
 - [Filter Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html)
