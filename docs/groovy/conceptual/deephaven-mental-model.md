@@ -123,8 +123,8 @@ liveTable = timeTable("PT1S")  // See timeTable reference for duration syntax
 
 ```groovy ticking-table order=null
 liveSource = timeTable("PT1S").update("Value = randomInt(0, 100)")
-recentOnly = liveSource.where("Value > 50")
-// recentOnly continuously updates as new rows arrive and are filtered
+highValue = liveSource.where("Value > 50")
+// highValue continuously updates as new rows arrive and are filtered
 ```
 
 You don't need to poll for changes or re-run queries — the engine handles propagation automatically.
@@ -160,7 +160,7 @@ myTable = emptyTable(5).update("X = i * 10")
 xValues = ColumnVectors.of(myTable, "X").copyToArray()
 ```
 
-For live tables, consider using `snapshot()` to get a static copy at a specific moment in time.
+For live tables, consider using [`snapshot`](../reference/table-operations/snapshot/snapshot.md) to get a static copy at a specific moment in time.
 
 ### Performance tips
 

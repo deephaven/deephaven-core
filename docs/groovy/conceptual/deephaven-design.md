@@ -176,7 +176,7 @@ renamed = source.view("A", "C = B")  // Shares A's ColumnSource
 
 <Svg src='../assets/conceptual/table-structure.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 
-_Filtering_ ([`where`](../how-to-guides/filters.md) operations) creates a new `RowSet` that is a subset of an existing `RowSet`; _sorting_ creates a new flat `RowSet` for the result and applies a `RowRedirection` to the parent's `ColumnSource`s to reflect the new order.
+_Filtering_ ([`where`](../how-to-guides/filters.md) operations) creates a new `RowSet` that is a subset of an existing `RowSet`; _sorting_ creates a new `RowSet` for the result — flat for static or blink sources, or a pre-allocated range for other refreshing sources so later updates can be inserted without constant rekeying — and applies a `RowRedirection` to the parent's `ColumnSource`s to reflect the new order.
 
 A table may share its `RowSet` with any other table in its update graph that contains the same row keys. A single parent table is responsible for maintaining the `RowSet` on behalf of itself and any descendants that inherited its `RowSet`. Table operations that inherit `RowSets` include column projection and derivation operations like [`select`](../reference/table-operations/select/select.md) and [`view`](../reference/table-operations/select/view.md), as well as some join operations with respect to the left input table; e.g., [`natural join`](../reference/table-operations/join/natural-join.md), [`exact join`](../reference/table-operations/join/exact-join.md), and [`as-of join`](../reference/table-operations/join/aj.md).
 

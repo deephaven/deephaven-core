@@ -1,1 +1,0 @@
-{"file":"conceptual/deephaven-mental-model.md","objects":{"liveSource":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"Value","type":"int"}],"rows":[]}},"recentOnly":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"Value","type":"int"}],"rows":[]}}}}

@@ -140,8 +140,8 @@ live_table = time_table("PT1S")  # See time_table reference for duration syntax
 from deephaven import time_table
 
 live_source = time_table("PT1S").update("Value = randomInt(0, 100)")
-recent_only = live_source.where("Value > 50")
-# recent_only continuously updates as new rows arrive and are filtered
+high_value = live_source.where("Value > 50")
+# high_value continuously updates as new rows arrive and are filtered
 ```
 
 You don't need to poll for changes or re-run queries — the engine handles propagation automatically.
