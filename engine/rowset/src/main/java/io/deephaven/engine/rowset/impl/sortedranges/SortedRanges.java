@@ -281,7 +281,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     private long findPacked(final long packedValue) {
         int i = 0;
-        int pos = 0;
+        long pos = 0;
         long iData = packedGet(0);
         long iValue = iData;
         while (true) {
@@ -2258,7 +2258,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     public final long getAverageRunLengthEstimate() {
         if (isEmpty()) {
-            return 0;
+            return 1;
         }
         final int count = count();
         int n = Math.min(9, count);
@@ -4246,6 +4246,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             SortedRanges ans = deepCopy();
             ans = ans.removeRange(other.ixFirstKey(), other.ixLastKey());
             if (ans != null) {
+                if (ans.isEmpty()) {
+                    return OrderedLongSet.EMPTY;
+                }
                 return ans;
             }
         } else {

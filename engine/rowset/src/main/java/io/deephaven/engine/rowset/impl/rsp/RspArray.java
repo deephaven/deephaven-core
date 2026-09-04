@@ -20,6 +20,8 @@ import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.PrimitiveIterator;
 import java.util.function.IntToLongFunction;
 import java.util.function.LongConsumer;
@@ -375,7 +377,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     protected void setSharedContainerMaybePackedRaw(
             final int i, final RspArray src, final int srcIdx, final long srcSpanInfo, final Object srcContainer) {
         if (srcContainer instanceof short[]) {
-            spanInfos[i] = (src.spanInfos[srcIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK);
+            spanInfos[i] = markPackedContainerShared(src.spanInfos, srcIdx);
             spans[i] = srcContainer;
             return;
         }
@@ -405,22 +407,45 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     private static final long SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK =
             ~SPANINFO_ARRAYCONTAINER_SHARED_BITMASK & (long) BLOCK_LAST;
 
+    private static final VarHandle SPAN_INFOS_ELEMENT = MethodHandles.arrayElementVarHandle(long[].class);
+
+    /**
+     * Mark the packed ArrayContainer at {@code idx} of {@code spanInfos} as shared, returning the resulting word.
+     *
+     * <p>
+     * A packed container's shared flag lives in its owner's spanInfos word, so a set that shares the container writes
+     * into its source. Per {@link io.deephaven.engine.rowset.impl.RefCountedCow}, the source may be under mutation by
+     * its single owner at the same time; the reader's own result is discarded once the clock shows it stale, but a
+     * stale word written back over the owner's concurrent update of the same span would corrupt the owner's set for
+     * good. The flag is therefore set with an atomic or rather than a read-modify-write.
+     */
+    private static long markPackedContainerShared(final long[] spanInfos, final int idx) {
+        final long spanInfo = spanInfos[idx];
+        if ((spanInfo & SPANINFO_ARRAYCONTAINER_SHARED_BITMASK) != 0) {
+            return spanInfo;
+        }
+        final long previous =
+                (long) SPAN_INFOS_ELEMENT.getAndBitwiseOr(spanInfos, idx, SPANINFO_ARRAYCONTAINER_SHARED_BITMASK);
+        return previous | SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+    }
+
     // shiftAmount is a multiple of BLOCK_SIZE.
     protected void copyKeyAndSpanMaybeSharing(
             final long shiftAmount,
             final RspArray src, final int srcIdx,
             final long[] dstSpanInfos, final Object[] dstSpans, final int dstIdx,
             final boolean tryShare) {
-        Object span = src.spans[srcIdx];
+        final Object span = src.spans[srcIdx];
+        long spanInfo = src.spanInfos[srcIdx];
         if (tryShare && src.shareContainers()) {
             if (span instanceof short[]) {
-                src.spanInfos[srcIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+                spanInfo = markPackedContainerShared(src.spanInfos, srcIdx);
             } else if (span instanceof Container) {
                 final Container c = (Container) span;
                 c.setCopyOnWrite();
             }
         }
-        dstSpanInfos[dstIdx] = src.spanInfos[srcIdx] + shiftAmount;
+        dstSpanInfos[dstIdx] = spanInfo + shiftAmount;
         dstSpans[dstIdx] = span;
     }
 
@@ -517,7 +542,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         @Override
         protected void onCopyOnWrite() {
-            arr.spanInfos[arrIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+            markPackedContainerShared(arr.spanInfos, arrIdx);
         }
 
         public void reset() {
@@ -751,8 +776,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 // A packed ArrayContainer's shared flag lives in its owner's spanInfo word, so unlike a Container --
                 // whose flag travels with the object -- marking only this copy would leave the source believing it
                 // still owns the short[] exclusively, free to edit it in place underneath us.
-                spanInfos[i] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
-                src.spanInfos[isrc] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+                spanInfos[i] = markPackedContainerShared(src.spanInfos, isrc);
                 continue;
             }
             // span instanceof Container
@@ -1340,6 +1364,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         @Override
         public boolean advance(final long key) {
+            if (key < 0) {
+                // Keys are non-negative, so nothing lies at or below a negative key. getSpanIndex compares block keys
+                // as unsigned values and would otherwise take the high bits of a negative key for the largest block.
+                si = 0;
+                return false;
+            }
             final int i = ra.getSpanIndex(0, si, highBits(key));
             return advanceSecondHalf(i);
         }
@@ -2362,8 +2392,28 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return get(rankIndex, pos - prevCard);
     }
 
+    /**
+     * A {@link RankCursor} bound to one span of an array, for callers that query ranks or values within a span
+     * repeatedly and in ascending order. Callers hold a span's container only through a borrowed {@link SpanView}, so
+     * they present the span index and container on every use; the cursor starts over whenever either changes and
+     * otherwise carries its position across calls.
+     */
+    static final class SpanRankCursor {
+        private final RankCursor cursor = new RankCursor();
+        private int spanIdx = -1;
+
+        RankCursor forSpan(final int idx, final Container c) {
+            if (idx != spanIdx || c != cursor.container()) {
+                cursor.reset(c);
+                spanIdx = idx;
+            }
+            return cursor;
+        }
+    }
+
     public void getKeysForPositions(final PrimitiveIterator.OfLong inputPositions, final LongConsumer outputKeys) {
         int fromIndex = 0;
+        final SpanRankCursor rankCursor = new SpanRankCursor();
         final long cardinality = isCardinalityCached() ? getCardinality() : -1;
         // An allocated but stale acc (between unsafe mutations and finishMutations*()) cannot be used for ranks;
         // take the same scanning path as get(long) does in that state.
@@ -2400,12 +2450,21 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 }
                 prevCardinality = prevCardMu.get();
             }
-            final long key = get(fromIndex, pos - prevCardinality);
+            final long key = get(fromIndex, pos - prevCardinality, rankCursor);
             outputKeys.accept(key);
         }
     }
 
     long get(final int idx, final long offset) {
+        return get(idx, offset, null);
+    }
+
+    /**
+     * The value at {@code offset} within the span at {@code idx}. When {@code rankCursor} is not null it is used to
+     * rank within the span's container, so consecutive calls for ascending offsets in one span do not each count from
+     * the start of the container.
+     */
+    long get(final int idx, final long offset, final SpanRankCursor rankCursor) {
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, idx)) {
             if (view.isSingletonSpan()) {
                 if (offset != 0) {
@@ -2423,7 +2482,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (sv != offset) {
                 throw new IllegalArgumentException("Invalid offset=" + offset + " for rowSet=" + idx);
             }
-            final short lowBits = view.getContainer().select(sv);
+            final Container c = view.getContainer();
+            final short lowBits = rankCursor == null ? c.select(sv) : rankCursor.forSpan(idx, c).select(sv);
             return paste(highBits, lowBits);
         }
     }
@@ -2475,6 +2535,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     // returns false if val is to the left of the first value in the span at startIdx;
     // otherwise calls setResult on out with the appropriate position for val or the first position after it.
     boolean findOrNext(final int startIdx, final int endIdxExclusive, final long val, final FindOutput out) {
+        return findOrNext(startIdx, endIdxExclusive, val, out, null);
+    }
+
+    /**
+     * As {@link #findOrNext(int, int, long, FindOutput)}; when {@code rankCursor} is not null it ranks {@code val}
+     * within its span's container, so consecutive searches for ascending values in one span do not each count from the
+     * start of the container.
+     */
+    boolean findOrNext(final int startIdx, final int endIdxExclusive, final long val, final FindOutput out,
+            final SpanRankCursor rankCursor) {
         final int ki = getSpanIndex(startIdx, endIdxExclusive, highBits(val));
         if (ki < 0) {
             final int i = ~ki;
@@ -2506,7 +2576,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 return true;
             }
             final Container c = view.getContainer();
-            final int cf = c.find(lowBits(val));
+            final int cf = rankCursor == null ? c.find(lowBits(val)) : rankCursor.forSpan(ki, c).find(lowBits(val));
             if (cf >= 0) {
                 out.setResult(ki, cf);
                 return true;
@@ -2530,6 +2600,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     // returns false if val is to the left of the first value in the span at startIdx;
     // otherwise calls setResult on out with the appropriate position for val or the last position before it.
     boolean findOrPrev(final int startIdx, final int endIdxExclusive, final long val, final FindOutput out) {
+        return findOrPrev(startIdx, endIdxExclusive, val, out, null);
+    }
+
+    /**
+     * As {@link #findOrPrev(int, int, long, FindOutput)}, ranking {@code val} through {@code rankCursor} when it is not
+     * null; see {@link #findOrNext(int, int, long, FindOutput, SpanRankCursor)}.
+     */
+    boolean findOrPrev(final int startIdx, final int endIdxExclusive, final long val, final FindOutput out,
+            final SpanRankCursor rankCursor) {
         final int ki = getSpanIndex(startIdx, endIdxExclusive, highBits(val));
         if (ki < 0) {
             final int i = ~ki;
@@ -2558,7 +2637,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 out.setResult(ki, val - k);
                 return true;
             }
-            final int cf = view.getContainer().find(lowBits(val));
+            final Container c = view.getContainer();
+            final int cf = rankCursor == null ? c.find(lowBits(val)) : rankCursor.forSpan(ki, c).find(lowBits(val));
             if (cf >= 0) {
                 out.setResult(ki, cf);
                 return true;
@@ -4350,6 +4430,64 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return true;
     }
 
+    /**
+     * As {@link #forEachLongRangeInSpanWithOffsetAndMaxCardinality(int, long, long, LongRangeAbortableConsumer)},
+     * locating {@code offset} within the span's container through {@code rankCursor}, so consecutive calls for
+     * ascending offsets in one span do not each count from the start of the container.
+     */
+    boolean forEachLongRangeInSpanWithOffsetAndMaxCardinality(
+            final int i, final long offset, final long maxCardinality,
+            final LongRangeAbortableConsumer larc, final SpanRankCursor rankCursor) {
+        if (maxCardinality <= 0) {
+            return true;
+        }
+        try (SpanView view = workDataPerThread.get().borrowSpanView(this, i)) {
+            if (view.isSingletonSpan()) {
+                if (offset != 0) {
+                    throw new IllegalArgumentException("offset=" + offset + " and single key span.");
+                }
+                final long v = view.getSingletonSpanValue();
+                return larc.accept(v, v);
+            }
+            final long flen = view.getFullBlockSpanLen();
+            final long key = view.getKey();
+            if (flen > 0) {
+                final long start = key + offset;
+                long end = key + flen * BLOCK_SIZE - 1;
+                final long d = end - start + 1;
+                if (d > maxCardinality) {
+                    end = start + maxCardinality - 1;
+                }
+                return larc.accept(start, end);
+            }
+            long remaining = maxCardinality;
+            final int bufSz = 10;
+            final short[] buf = new short[bufSz];
+            final Container c = view.getContainer();
+            final SearchRangeIterator ri = c.getShortRangeIterator((int) offset, rankCursor.forSpan(i, c));
+            while (ri.hasNext()) {
+                final int nRanges = ri.next(buf, 0, bufSz / 2);
+                for (int j = 0; j < 2 * nRanges; j += 2) {
+                    final long start = key | unsignedShortToLong(buf[j]);
+                    long end = key | unsignedShortToLong(buf[j + 1]);
+                    long delta = end - start + 1;
+                    if (delta > remaining) {
+                        delta = remaining;
+                        end = start + remaining - 1;
+                    }
+                    if (!larc.accept(start, end)) {
+                        return false;
+                    }
+                    remaining -= delta;
+                    if (remaining <= 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     boolean forEachLongRangeInSpanWithOffset(final int i, final long offset,
             final LongRangeAbortableConsumer larc) {
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, i)) {
@@ -4370,6 +4508,45 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final short[] buf = new short[bufSz];
             final Container c = view.getContainer();
             final SearchRangeIterator ri = c.getShortRangeIterator((int) offset);
+            while (ri.hasNext()) {
+                final int nRanges = ri.next(buf, 0, bufSz / 2);
+                for (int j = 0; j < 2 * nRanges; j += 2) {
+                    final long start = key | unsignedShortToLong(buf[j]);
+                    final long end = key | unsignedShortToLong(buf[j + 1]);
+                    if (!larc.accept(start, end)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+    }
+
+    /**
+     * As {@link #forEachLongRangeInSpanWithOffset(int, long, LongRangeAbortableConsumer)}, locating {@code offset}
+     * through {@code rankCursor}; see
+     * {@link #forEachLongRangeInSpanWithOffsetAndMaxCardinality(int, long, long, LongRangeAbortableConsumer, SpanRankCursor)}.
+     */
+    boolean forEachLongRangeInSpanWithOffset(final int i, final long offset,
+            final LongRangeAbortableConsumer larc, final SpanRankCursor rankCursor) {
+        try (SpanView view = workDataPerThread.get().borrowSpanView(this, i)) {
+            if (view.isSingletonSpan()) {
+                if (offset != 0) {
+                    throw new IllegalArgumentException("offset=" + offset + " and single key span.");
+                }
+                final long v = view.getSingletonSpanValue();
+                return larc.accept(v, v);
+            }
+            final long flen = view.getFullBlockSpanLen();
+            final long key = view.getKey();
+            if (flen > 0) {
+                final long oneAfterLast = key + flen * BLOCK_SIZE;
+                return larc.accept(key + offset, oneAfterLast - 1);
+            }
+            final int bufSz = 10;
+            final short[] buf = new short[bufSz];
+            final Container c = view.getContainer();
+            final SearchRangeIterator ri = c.getShortRangeIterator((int) offset, rankCursor.forSpan(i, c));
             while (ri.hasNext()) {
                 final int nRanges = ri.next(buf, 0, bufSz / 2);
                 for (int j = 0; j < 2 * nRanges; j += 2) {
