@@ -32,6 +32,8 @@ Capitalize:
 
 - Deephaven Community
 - Core+ (if referenced)
+- Enterprise (if referenced)
+- Persistent Query (if referenced)
 - UpdateGraph
 - TableUpdateListener
 - RowSet
@@ -62,20 +64,22 @@ Capitalize:
 - Whitespace for readability: `"A = 4"` not `"A=4"`
 - Null: prose = "will not include null values"; parameter descriptions = `NULL`; code = language-appropriate null.
 
-**Method names in prose:** No parentheses in prose, only in code.
+**Method names in prose:** No leading dot and no parentheses in prose, only in code.
 
-- Correct prose: "Use `.with_serial` when your formula has side effects"
+- Correct prose: "Use `with_serial` when your formula has side effects"
 - Correct code: `col.with_serial()`
-- Incorrect prose: "Use `.with_serial()` when your formula has side effects"
+- Incorrect prose: "Use `.with_serial` when your formula has side effects" or "Use `with_serial()` when your formula has side effects"
 
 **Python vs Groovy:**
 
 | Python                     | Groovy                   |
 | -------------------------- | ------------------------ |
-| `.with_serial`             | `.withSerial`            |
-| `.with_declared_barriers`  | `.withDeclaredBarriers`  |
-| `.with_respected_barriers` | `.withRespectedBarriers` |
+| `with_serial`               | `withSerial`             |
+| `with_declared_barriers`    | `withDeclaredBarriers`   |
+| `with_respected_barriers`   | `withRespectedBarriers`  |
 | `Filter.from_`             | `Filter.from`            |
+
+In a small number of cases, method names may differ from the snake_case/camelCase translation, so it is worth double-checking that method names are valid when translating between Python and Groovy.
 
 ## Backticks
 

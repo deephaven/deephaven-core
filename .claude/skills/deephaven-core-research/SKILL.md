@@ -8,7 +8,7 @@ Perform deep research on the Core codebase to develop SME-level understanding.
 
 ## 1. Clarify and plan
 
-Ask the user what they want to research. Classify the goal and plan your approach:
+If the research goal isn't already clear from the request, ask what the user wants to research. Classify the goal and plan your approach:
 
 | Research type | Focus areas | Depth target |
 |--------------|-------------|--------------|
@@ -120,7 +120,7 @@ For feature traces, follow data/control through all layers:
 ```
 User calls table.where("Price > 100") in py/client/pydeephaven
   → Client sends gRPC request to server
-  → server/src/.../table/ops/TableServiceGrpcImpl receives request, returns an ExportedTableCreationResponse (ticket) — no row data yet
+  → server/src/.../table/ops/TableServiceGrpcImpl receives request, returns an ExportedTableCreationResponse (a result_id TableReference plus success/error/schema/staticness/size metadata, not itself a ticket) — no row data yet
   → engine/table/impl/QueryTable.where() evaluates WhereFilter against ColumnSource data
   → If the source or filters are refreshing, a WhereListener is created and the result table is registered with UpdateGraph for live updates; a fully static where() has no listener
   → Client fetches row data separately via an Arrow Flight DoGet against the ticket (e.g. session.flight_service.do_get_table); this pydeephaven path is a plain Flight fetch, not Barrage — the web client's createSubscription, by contrast, does use Barrage even for a one-time atomic snapshot of a static table
