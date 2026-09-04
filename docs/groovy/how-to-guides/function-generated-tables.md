@@ -13,9 +13,10 @@ The basic syntax for [`create`](../reference/table-operations/create/create.md) 
 ```groovy syntax
 create(tableGenerator, sourceTables...)
 create(tableGenerator, refreshIntervalMs)
+create(spec)
 ```
 
-The workflow for this method is to first define a function that returns a table, then pass it to `create`, which will re-run the with that function at pre-defined intervals based on either one or more source tables or a refresh interval.
+The workflow for this method is to first define a function that returns a table, then pass it to `create`, which will re-run that function at pre-defined intervals based on either one or more source tables or a refresh interval. The third form accepts a `FunctionGeneratedTableSpec`, which unlocks additional options described in [Control the result with `FunctionGeneratedTableSpec`](#control-the-result-with-functiongeneratedtablespec).
 
 If one or more source tables are used, the function will be re-run any time any of the tables tick. If a refresh interval is used, the function is re-run once per interval in milliseconds. You must only use one or the other as the trigger.
 
@@ -87,9 +88,61 @@ resultTick = FunctionGeneratedTableFactory.create(tableGenerator, timeTable1)
 
 <!--TODO: Change this example to match the Python one? Or can it be simplified in the same way?-->
 
+## Control the result with `FunctionGeneratedTableSpec`
+
+The two-argument [`create`](../reference/table-operations/create/create.md) methods above cover the common cases. For finer control, build a `FunctionGeneratedTableSpec` and pass it to `create`. The spec exposes every option in one place — how the table is generated, what triggers a refresh, and how the result is shaped.
+
+```groovy syntax
+import io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory
+import io.deephaven.engine.table.impl.util.FunctionGeneratedTableSpec
+import java.time.Duration
+
+spec = FunctionGeneratedTableSpec.builder()
+    .tableSupplier(tableGenerator)   // the function that produces the table
+    .addDependencies(sourceTable)    // refresh when sourceTable ticks...
+    // .refreshInterval(Duration.ofSeconds(2))  // ...or on a wall-clock interval instead
+    .copyData(true)                  // copy the generated data (the default)
+    .blinkTable(false)               // present the result as a blink table (the default is false)
+    .build()
+
+result = FunctionGeneratedTableFactory.create(spec)
+```
+
+### Choose a table supplier
+
+Provide exactly one of two suppliers:
+
+- `tableSupplier` — a `Supplier<Table>` that produces a new table on every invocation.
+- `retainingLastTableSupplier` — a `Supplier<Optional<Table>>` that may return an empty `Optional` to decline producing a new table. When it declines, the previous result is retained for the next cycle (or cleared, for a blink table).
+
+### Choose a refresh trigger
+
+Provide at most one trigger:
+
+- `addDependencies` (or `addAllDependencies`) — re-run the supplier whenever any of the listed tables tick.
+- `refreshInterval` — re-run the supplier on a wall-clock [`Duration`](https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html). The interval must be at least one millisecond.
+
+If you provide neither, the supplier runs exactly once at construction and the result is static.
+
+### Copy data or delegate to the generated table
+
+By default (`copyData(true)`), so the generated rows are copied into the result's own contiguous columns. Each refresh replaces the result entirely — all previous rows are removed, and all new rows are added.
+
+With `copyData(false)`, the result delegates directly to the generated table's column sources instead of copying, which avoids the copy and adopts the generated table's row set. Because the result holds the generated column sources across cycles, a refreshing generated table must expose immutable column sources; a generated table that changes values in place would corrupt the result's previous values and is rejected. A static table produced fresh on each refresh — for example, via [`snapshot`](../reference/table-operations/snapshot/snapshot.md) — always satisfies this requirement.
+
+### Present the result as a blink table
+
+Set `blinkTable(true)` to present the result as a [blink table](../conceptual/table-types.md#specialization-3-blink), so downstream operations see only the rows generated during the current cycle. A blink table requires a refresh trigger. On a cycle where a `retainingLastTableSupplier` declines to produce a table, the blink result is cleared.
+
+### Specify the table definition
+
+When you supply a `tableDefinition`, it is authoritative: it defines the result's columns and their order, and every table the supplier produces must be [mutually compatible](/core/javadoc/io/deephaven/engine/table/TableDefinition.html#checkMutualCompatibility(io.deephaven.engine.table.TableDefinition)) with it. A definition is required when a `retainingLastTableSupplier` produces no table at construction time, since the columns must be known before the first table exists.
+
 ## Related documentation
 
 - [`create`](../reference/table-operations/create/create.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`timeTable`](../reference/table-operations/create/timeTable.md)
+- [Table types](../conceptual/table-types.md)
 - [Execution Context](../conceptual/execution-context.md)
+- [Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/FunctionGeneratedTableFactory.html)

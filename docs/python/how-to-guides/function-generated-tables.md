@@ -126,10 +126,53 @@ denver_weather = function_generated_table(
 
 [Function-generated tables](../reference/table-operations/create/function_generated_table.md) require an [execution context](../conceptual/execution-context.md) to run in. If you don't specify an execution context, the method will use the systemic [execution context](../conceptual/execution-context.md). The example above does not specify an execution context, so the systemic execution context is used.
 
+## Additional options
+
+Beyond the trigger, [`function_generated_table`](../reference/table-operations/create/function_generated_table.md) accepts several optional parameters that control how the result is produced and shaped.
+
+### Retain the previous result
+
+The `table_generator` function can return `None` to decline producing a new table on a given cycle. When it does, the previous cycle's result is retained instead of being regenerated. This is useful when new data is not always available. When the first invocation returns `None`, supply a `table_definition` so the result's columns are known before the first table exists.
+
+```python order=null
+from deephaven import function_generated_table, time_table, new_table
+from deephaven.column import int_col
+import deephaven.dtypes as dht
+
+tt = time_table("PT1S")
+
+
+def make_table():
+    # Only produce a table once the trigger has rows; otherwise retain the previous result.
+    if tt.size == 0:
+        return None
+    return new_table([int_col("Count", [tt.size])])
+
+
+result = function_generated_table(
+    table_generator=make_table,
+    source_tables=tt,
+    table_definition={"Count": dht.int32},
+)
+```
+
+### Copy data or delegate to the generated table
+
+By default (`copy_data=True`), so the generated rows are copied into the result's own columns, and each refresh replaces the result entirely. With `copy_data=False`, the result delegates directly to the generated table's column sources instead of copying, which avoids the copy and adopts the generated table's row set. Because the result holds the generated column sources across cycles, a refreshing generated table must expose immutable column sources; a static table produced fresh on each refresh — for example, via [`snapshot`](../reference/table-operations/snapshot/snapshot.md) — always satisfies this requirement.
+
+### Present the result as a blink table
+
+Set `blink_table=True` to present the result as a [blink table](../conceptual/table-types.md#specialization-3-blink), so downstream operations see only the rows generated during the current cycle. A blink table requires a refresh trigger. On a cycle where the `table_generator` returns `None`, the blink result is cleared.
+
+### Specify the table definition
+
+When you supply a `table_definition`, it is authoritative: it defines the result's columns and their order, and every table the `table_generator` produces must be compatible with it. A definition is required when the first invocation returns `None`, since the columns must be known before the first table exists.
+
 ## Related documentation
 
 - [Install Python packages](./install-and-use-python-packages.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`function_generated_table`](../reference/table-operations/create/function_generated_table.md)
 - [`time_table`](../reference/table-operations/create/timeTable.md)
+- [Table types](../conceptual/table-types.md)
 - [Execution Context](../conceptual/execution-context.md)

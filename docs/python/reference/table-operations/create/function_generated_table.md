@@ -18,7 +18,10 @@ function_generated_table(
   refresh_interval_ms: int = None,
   exec_ctx: ExecutionContext = None,
   args: Tuple = None,
-  kwargs: Dict = None
+  kwargs: Dict = None,
+  copy_data: bool = True,
+  blink_table: bool = False,
+  table_definition: TableDefinitionLike = None,
 ) -> Table
 ```
 
@@ -27,7 +30,7 @@ function_generated_table(
 <ParamTable>
 <Param name="table_generator" type="Callable[[], Table]">
 
-The table generator function. This function must return a table.
+The table generator function. This function must return a table, or `None` to decline producing a new table, in which case the previous cycle's result is retained (or, for a blink table, cleared). If the first invocation returns `None`, `table_definition` must be provided so that the result's columns are known.
 
 </Param>
 <Param name="source_tables" type="Union[Table, List[Table]]" optional>
@@ -57,6 +60,21 @@ A Tuple of positional arguments to pass to `table_generator`. Defaults to `()`.
 <Param name="kwargs" type="Dict" optional>
 
 Dictionary of keyword arguments to pass to `table_generator`. Defaults to `{}`.
+
+</Param>
+<Param name="copy_data" type="bool" optional>
+
+When `True` (the default), the generated data is copied into the result. When `False`, the result delegates directly to the generated table's column sources, avoiding the copy and adopting the generated table's row set. In that case, a refreshing generated table must expose immutable column sources; a generated table that changes values in place is rejected. A static table produced fresh on each refresh — for example, via [`snapshot`](../snapshot/snapshot.md) — always satisfies this requirement.
+
+</Param>
+<Param name="blink_table" type="bool" optional>
+
+When `True`, the result is presented as a [blink table](../../../conceptual/table-types.md#specialization-3-blink), retaining only the rows generated during the current cycle. Requires a refresh trigger (`refresh_interval_ms` or `source_tables`). Defaults to `False`.
+
+</Param>
+<Param name="table_definition" type="TableDefinitionLike" optional>
+
+When provided, it is authoritative: it defines the result's columns and their order, and every table the `table_generator` produces must be compatible with it. Defaults to `None`, in which case the generated table's definition is used.
 
 </Param>
 </ParamTable>
