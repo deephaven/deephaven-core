@@ -6,6 +6,8 @@ package io.deephaven.extensions.barrage;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.stream.StreamConsumer;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -15,8 +17,11 @@ import java.util.List;
 /**
  * A {@link StreamConsumer} that retains the chunks handed to it so that a test may assert on the values a
  * {@link io.deephaven.stream.StreamPublisher} produced, without involving an update graph.
+ * <p>
+ * {@link StreamConsumer#accept accept} transfers chunk ownership to the consumer, so a test must {@link #close} this
+ * once it is done asserting in order to release the retained batches back to the chunk pool.
  */
-final class RecordingStreamConsumer implements StreamConsumer {
+final class RecordingStreamConsumer implements StreamConsumer, SafeCloseable {
 
     private final List<WritableChunk<Values>[]> batches = new ArrayList<>();
     private Throwable failure;
@@ -64,5 +69,11 @@ final class RecordingStreamConsumer implements StreamConsumer {
 
     String stringAt(final int column, final int row) {
         return onlyBatch()[column].<String>asWritableObjectChunk().get(row);
+    }
+
+    @Override
+    public void close() {
+        batches.forEach(SafeCloseableArray::close);
+        batches.clear();
     }
 }

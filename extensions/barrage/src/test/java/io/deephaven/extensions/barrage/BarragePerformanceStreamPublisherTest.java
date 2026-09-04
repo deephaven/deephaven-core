@@ -51,90 +51,105 @@ public class BarragePerformanceStreamPublisherTest {
     public void subscriptionPublisherWritesValuesVerbatim() {
         final BarrageSubscriptionPerformanceStreamPublisher publisher =
                 new BarrageSubscriptionPerformanceStreamPublisher();
-        final RecordingStreamConsumer consumer = new RecordingStreamConsumer();
-        publisher.register(consumer);
+        try (final RecordingStreamConsumer consumer = new RecordingStreamConsumer()) {
+            publisher.register(consumer);
 
-        publisher.add("id", "key", BarrageSubscriptionPerformanceLogger.StatType.WRITE_NANOS,
-                1234567890123L, 7L, 11L, 22L, 33L, 44L, 55L, 66L);
-        publisher.flush();
+            publisher.add("id", "key", BarrageSubscriptionPerformanceLogger.StatType.WRITE_NANOS,
+                    1234567890123L, 7L, 11L, 22L, 33L, 44L, 55L, 66L);
+            publisher.flush();
 
-        assertThat(consumer.stringAt(0, 0)).isEqualTo("id");
-        assertThat(consumer.stringAt(1, 0)).isEqualTo("key");
-        assertThat(consumer.stringAt(2, 0)).isEqualTo("WriteNanos");
-        assertThat(consumer.longAt(3, 0)).isEqualTo(1234567890123L);
-        assertThat(consumer.longAt(4, 0)).isEqualTo(7L);
-        assertThat(consumer.longAt(5, 0)).isEqualTo(11L);
-        assertThat(consumer.longAt(6, 0)).isEqualTo(22L);
-        assertThat(consumer.longAt(7, 0)).isEqualTo(33L);
-        assertThat(consumer.longAt(8, 0)).isEqualTo(44L);
-        assertThat(consumer.longAt(9, 0)).isEqualTo(55L);
-        assertThat(consumer.longAt(10, 0)).isEqualTo(66L);
+            assertThat(consumer.stringAt(0, 0)).isEqualTo("id");
+            assertThat(consumer.stringAt(1, 0)).isEqualTo("key");
+            assertThat(consumer.stringAt(2, 0)).isEqualTo("WriteNanos");
+            assertThat(consumer.longAt(3, 0)).isEqualTo(1234567890123L);
+            assertThat(consumer.longAt(4, 0)).isEqualTo(7L);
+            assertThat(consumer.longAt(5, 0)).isEqualTo(11L);
+            assertThat(consumer.longAt(6, 0)).isEqualTo(22L);
+            assertThat(consumer.longAt(7, 0)).isEqualTo(33L);
+            assertThat(consumer.longAt(8, 0)).isEqualTo(44L);
+            assertThat(consumer.longAt(9, 0)).isEqualTo(55L);
+            assertThat(consumer.longAt(10, 0)).isEqualTo(66L);
+        } finally {
+            publisher.shutdown();
+        }
     }
 
     @Test
     public void snapshotPublisherWritesValuesVerbatim() {
         final BarrageSnapshotPerformanceStreamPublisher publisher = new BarrageSnapshotPerformanceStreamPublisher();
-        final RecordingStreamConsumer consumer = new RecordingStreamConsumer();
-        publisher.register(consumer);
+        try (final RecordingStreamConsumer consumer = new RecordingStreamConsumer()) {
+            publisher.register(consumer);
 
-        publisher.add("id", "key", 1234567890123L, 100L, 200L, 300L, 4096L);
-        publisher.flush();
+            publisher.add("id", "key", 1234567890123L, 100L, 200L, 300L, 4096L);
+            publisher.flush();
 
-        assertThat(consumer.stringAt(0, 0)).isEqualTo("id");
-        assertThat(consumer.stringAt(1, 0)).isEqualTo("key");
-        assertThat(consumer.longAt(2, 0)).isEqualTo(1234567890123L);
-        assertThat(consumer.longAt(3, 0)).isEqualTo(100L);
-        assertThat(consumer.longAt(4, 0)).isEqualTo(200L);
-        assertThat(consumer.longAt(5, 0)).isEqualTo(300L);
-        assertThat(consumer.longAt(6, 0)).isEqualTo(4096L);
+            assertThat(consumer.stringAt(0, 0)).isEqualTo("id");
+            assertThat(consumer.stringAt(1, 0)).isEqualTo("key");
+            assertThat(consumer.longAt(2, 0)).isEqualTo(1234567890123L);
+            assertThat(consumer.longAt(3, 0)).isEqualTo(100L);
+            assertThat(consumer.longAt(4, 0)).isEqualTo(200L);
+            assertThat(consumer.longAt(5, 0)).isEqualTo(300L);
+            assertThat(consumer.longAt(6, 0)).isEqualTo(4096L);
+        } finally {
+            publisher.shutdown();
+        }
     }
 
     @Test
     public void emptyFlushPublishesNothing() {
         final BarrageSubscriptionPerformanceStreamPublisher publisher =
                 new BarrageSubscriptionPerformanceStreamPublisher();
-        final RecordingStreamConsumer consumer = new RecordingStreamConsumer();
-        publisher.register(consumer);
+        try (final RecordingStreamConsumer consumer = new RecordingStreamConsumer()) {
+            publisher.register(consumer);
 
-        publisher.flush();
+            publisher.flush();
 
-        assertThat(consumer.batchCount()).isZero();
+            assertThat(consumer.batchCount()).isZero();
+        } finally {
+            publisher.shutdown();
+        }
     }
 
     @Test
     public void shutdownDiscardsPendingRowsAndIgnoresFurtherTraffic() {
         final BarrageSubscriptionPerformanceStreamPublisher publisher =
                 new BarrageSubscriptionPerformanceStreamPublisher();
-        final RecordingStreamConsumer consumer = new RecordingStreamConsumer();
-        publisher.register(consumer);
+        try (final RecordingStreamConsumer consumer = new RecordingStreamConsumer()) {
+            publisher.register(consumer);
 
-        publisher.add("id", "key", BarrageSubscriptionPerformanceLogger.StatType.WRITE_NANOS,
-                1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L);
-        publisher.shutdown();
+            publisher.add("id", "key", BarrageSubscriptionPerformanceLogger.StatType.WRITE_NANOS,
+                    1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L);
+            publisher.shutdown();
 
-        // Shutdown means the blink table is gone, so a pending row is released rather than delivered.
-        assertThat(consumer.batchCount()).isZero();
+            // Shutdown means the blink table is gone, so a pending row is released rather than delivered.
+            assertThat(consumer.batchCount()).isZero();
 
-        // Once shut down, the publisher ignores further traffic instead of failing; the impls keep calling add()
-        // after the blink table has been destroyed, and shutdown() itself may be invoked more than once.
-        publisher.add("id", "key", BarrageSubscriptionPerformanceLogger.StatType.WRITE_NANOS,
-                2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L);
-        publisher.flush();
-        publisher.shutdown();
-        assertThat(consumer.batchCount()).isZero();
+            // Once shut down, the publisher ignores further traffic instead of failing; the impls keep calling add()
+            // after the blink table has been destroyed, and shutdown() itself may be invoked more than once.
+            publisher.add("id", "key", BarrageSubscriptionPerformanceLogger.StatType.WRITE_NANOS,
+                    2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L);
+            publisher.flush();
+            publisher.shutdown();
+            assertThat(consumer.batchCount()).isZero();
+        } finally {
+            publisher.shutdown();
+        }
     }
 
     @Test
     public void shutdownWithNothingPendingPublishesNothing() {
         final BarrageSnapshotPerformanceStreamPublisher publisher = new BarrageSnapshotPerformanceStreamPublisher();
-        final RecordingStreamConsumer consumer = new RecordingStreamConsumer();
-        publisher.register(consumer);
+        try (final RecordingStreamConsumer consumer = new RecordingStreamConsumer()) {
+            publisher.register(consumer);
 
-        publisher.shutdown();
+            publisher.shutdown();
 
-        assertThat(consumer.batchCount()).isZero();
-        publisher.add("id", "key", 1L, 1L, 1L, 1L, 1L);
-        publisher.flush();
-        assertThat(consumer.batchCount()).isZero();
+            assertThat(consumer.batchCount()).isZero();
+            publisher.add("id", "key", 1L, 1L, 1L, 1L, 1L);
+            publisher.flush();
+            assertThat(consumer.batchCount()).isZero();
+        } finally {
+            publisher.shutdown();
+        }
     }
 }
