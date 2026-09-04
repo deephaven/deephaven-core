@@ -24,7 +24,6 @@ class BarrageSnapshotPerformanceLoggerImpl implements BarrageSnapshotPerformance
     private final BarrageSnapshotPerformanceSink sink;
     private final BarrageSnapshotPerformanceStreamPublisher publisher;
     // Keep, may eventually want to manage / close
-    @SuppressWarnings("FieldCanBeLocal")
     private final StreamToBlinkTableAdapter adapter;
     private final Table blink;
 
@@ -79,5 +78,12 @@ class BarrageSnapshotPerformanceLoggerImpl implements BarrageSnapshotPerformance
 
     public Table blinkTable() {
         return blink;
+    }
+
+    /**
+     * @return the adapter feeding {@link #blinkTable()}; exposed so tests can drive an update cycle directly
+     */
+    StreamToBlinkTableAdapter adapter() {
+        return adapter;
     }
 }

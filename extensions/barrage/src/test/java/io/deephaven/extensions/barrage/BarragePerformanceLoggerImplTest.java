@@ -3,24 +3,37 @@
 //
 package io.deephaven.extensions.barrage;
 
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarragePerformanceLog.SnapshotMetricsHelper;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger.StatType;
+import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.time.DateTimeUtils;
 import org.HdrHistogram.Histogram;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.deephaven.engine.util.TableTools.instantCol;
+import static io.deephaven.engine.util.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.stringCol;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifies that the logger implementations hand raw, unscaled values to the integrator sinks, and that the in-memory
- * blink tables they own carry the matching raw-unit schema.
+ * blink tables they own receive the same raw values as {@code long} columns.
  * <p>
  * The values are deliberately chosen to be far from any millisecond or megabit boundary, so a reintroduced
  * {@code / 1e6} or {@code * 8} would truncate to a visibly different number rather than coincidentally agreeing.
+ * <p>
+ * The test's liveness scope releases each blink table on teardown, which closes the adapter and shuts down the
+ * publisher; strict chunk-pool tracking in the base class then verifies that the publisher released its chunks.
  */
 public class BarragePerformanceLoggerImplTest extends RefreshingTableTestCase {
 
@@ -90,15 +103,30 @@ public class BarragePerformanceLoggerImplTest extends RefreshingTableTestCase {
         }
     }
 
+    /**
+     * Run one update cycle so that rows the publisher has flushed reach the blink table.
+     */
+    private static void runUpdateCycle(final StreamToBlinkTableAdapter adapter) {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(adapter::run);
+    }
+
+    /**
+     * Three microseconds and change, and a value near ten microseconds; scaling either to millis would round it to
+     * zero.
+     */
+    private static Histogram sampleHistogram() {
+        final Histogram hist = new Histogram(3);
+        hist.recordValue(3_123L);
+        hist.recordValue(9_876L);
+        return hist;
+    }
+
     public void testSubscriptionSinkReceivesRawNanos() {
         final RecordingSubscriptionSink sink = new RecordingSubscriptionSink();
         final BarrageSubscriptionPerformanceLoggerImpl impl = new BarrageSubscriptionPerformanceLoggerImpl(sink);
 
-        // Three microseconds and change; scaling to millis would round this to zero.
-        final Histogram hist = new Histogram(3);
-        hist.recordValue(3_123L);
-        hist.recordValue(9_876L);
-
+        final Histogram hist = sampleHistogram();
         final Instant now = DateTimeUtils.epochNanosToInstant(1_700_000_000_123_456_789L);
         impl.log(TABLE_ID, TABLE_KEY, StatType.WRITE_NANOS, now, hist);
 
@@ -116,25 +144,50 @@ public class BarragePerformanceLoggerImplTest extends RefreshingTableTestCase {
         assertThat(entry.max).isGreaterThan(9_000L);
     }
 
-    public void testSubscriptionBlinkTableUsesRawLongUnits() {
+    public void testSubscriptionBlinkTableReceivesRawNanos() {
         final BarrageSubscriptionPerformanceLoggerImpl impl =
                 new BarrageSubscriptionPerformanceLoggerImpl(BarrageSubscriptionPerformanceSink.Noop.INSTANCE);
-        assertThat(impl.blinkTable().getDefinition())
-                .isEqualTo(BarrageSubscriptionPerformanceStreamPublisher.definition());
+
+        final Histogram hist = sampleHistogram();
+        final Instant now = DateTimeUtils.epochNanosToInstant(1_700_000_000_123_456_789L);
+        impl.log(TABLE_ID, TABLE_KEY, StatType.WRITE_NANOS, now, hist);
+
+        // The row reaches the blink table on the next update cycle.
+        runUpdateCycle(impl.adapter());
+
+        final Table expected = TableTools.newTable(
+                stringCol("TableId", TABLE_ID),
+                stringCol("TableKey", TABLE_KEY),
+                stringCol("StatType", "WriteNanos"),
+                instantCol("Time", now),
+                longCol("Count", 2L),
+                longCol("Pct50", hist.getValueAtPercentile(50)),
+                longCol("Pct75", hist.getValueAtPercentile(75)),
+                longCol("Pct90", hist.getValueAtPercentile(90)),
+                longCol("Pct95", hist.getValueAtPercentile(95)),
+                longCol("Pct99", hist.getValueAtPercentile(99)),
+                longCol("Max", hist.getMaxValue()));
+        TstUtils.assertTableEquals(expected, impl.blinkTable());
     }
 
     public void testSubscriptionSinkFailureIsIsolated() {
+        final AtomicInteger calls = new AtomicInteger();
         final BarrageSubscriptionPerformanceLoggerImpl impl =
                 new BarrageSubscriptionPerformanceLoggerImpl((tableId, tableKey, statType, timestamp, hist) -> {
+                    calls.incrementAndGet();
                     throw new IllegalStateException("boom");
                 });
 
-        final Histogram hist = new Histogram(3);
-        hist.recordValue(1L);
+        final Histogram hist = sampleHistogram();
 
         // A defective sink must not be able to disrupt the caller; the first failure disables further attempts.
         impl.log(TABLE_ID, TABLE_KEY, StatType.WRITE_NANOS, Instant.EPOCH, hist);
         impl.log(TABLE_ID, TABLE_KEY, StatType.WRITE_NANOS, Instant.EPOCH, hist);
+        assertThat(calls.get()).isEqualTo(1);
+
+        // The blink table is unaffected by the sink's failure.
+        runUpdateCycle(impl.adapter());
+        assertThat(impl.blinkTable().size()).isEqualTo(2L);
     }
 
     public void testSnapshotSinkReceivesRawNanosAndBytes() {
@@ -161,10 +214,52 @@ public class BarragePerformanceLoggerImplTest extends RefreshingTableTestCase {
         assertThat(entry.bytesWritten).isEqualTo(4_096L);
     }
 
-    public void testSnapshotBlinkTableUsesRawLongUnits() {
+    public void testSnapshotBlinkTableReceivesRawNanosAndBytes() {
         final BarrageSnapshotPerformanceLoggerImpl impl =
                 new BarrageSnapshotPerformanceLoggerImpl(BarrageSnapshotPerformanceSink.Noop.INSTANCE);
-        assertThat(impl.blinkTable().getDefinition())
-                .isEqualTo(BarrageSnapshotPerformanceStreamPublisher.definition());
+
+        final SnapshotMetricsHelper helper = new SnapshotMetricsHelper();
+        helper.tableId = TABLE_ID;
+        helper.tableKey = TABLE_KEY;
+        helper.queueNanos = 4_321L;
+        helper.snapshotNanos = 87_654L;
+
+        impl.log(helper, 12_345L, 4_096L);
+
+        // The row reaches the blink table on the next update cycle.
+        runUpdateCycle(impl.adapter());
+
+        final Table expected = TableTools.newTable(
+                stringCol("TableId", TABLE_ID),
+                stringCol("TableKey", TABLE_KEY),
+                instantCol("RequestTime", helper.requestTm),
+                longCol("QueueNanos", 4_321L),
+                longCol("SnapshotNanos", 87_654L),
+                longCol("WriteNanos", 12_345L),
+                longCol("WriteBytes", 4_096L));
+        TstUtils.assertTableEquals(expected, impl.blinkTable());
+    }
+
+    public void testSnapshotSinkFailureIsIsolated() {
+        final AtomicInteger calls = new AtomicInteger();
+        final BarrageSnapshotPerformanceLoggerImpl impl = new BarrageSnapshotPerformanceLoggerImpl(
+                (tableId, tableKey, requestTime, queueNanos, snapshotNanos, writeNanos, bytesWritten) -> {
+                    calls.incrementAndGet();
+                    throw new IllegalStateException("boom");
+                });
+
+        final SnapshotMetricsHelper helper = new SnapshotMetricsHelper();
+        helper.tableId = TABLE_ID;
+        helper.tableKey = TABLE_KEY;
+
+        // This runs on the request-serving thread, so a defective sink must not be able to disrupt request
+        // completion; the first failure disables further attempts.
+        impl.log(helper, 1L, 1L);
+        impl.log(helper, 1L, 1L);
+        assertThat(calls.get()).isEqualTo(1);
+
+        // The blink table is unaffected by the sink's failure.
+        runUpdateCycle(impl.adapter());
+        assertThat(impl.blinkTable().size()).isEqualTo(2L);
     }
 }

@@ -100,4 +100,41 @@ public class BarragePerformanceStreamPublisherTest {
 
         assertThat(consumer.batchCount()).isZero();
     }
+
+    @Test
+    public void shutdownDiscardsPendingRowsAndIgnoresFurtherTraffic() {
+        final BarrageSubscriptionPerformanceStreamPublisher publisher =
+                new BarrageSubscriptionPerformanceStreamPublisher();
+        final RecordingStreamConsumer consumer = new RecordingStreamConsumer();
+        publisher.register(consumer);
+
+        publisher.add("id", "key", BarrageSubscriptionPerformanceLogger.StatType.WRITE_NANOS,
+                1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L);
+        publisher.shutdown();
+
+        // Shutdown means the blink table is gone, so a pending row is released rather than delivered.
+        assertThat(consumer.batchCount()).isZero();
+
+        // Once shut down, the publisher ignores further traffic instead of failing; the impls keep calling add()
+        // after the blink table has been destroyed, and shutdown() itself may be invoked more than once.
+        publisher.add("id", "key", BarrageSubscriptionPerformanceLogger.StatType.WRITE_NANOS,
+                2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L);
+        publisher.flush();
+        publisher.shutdown();
+        assertThat(consumer.batchCount()).isZero();
+    }
+
+    @Test
+    public void shutdownWithNothingPendingPublishesNothing() {
+        final BarrageSnapshotPerformanceStreamPublisher publisher = new BarrageSnapshotPerformanceStreamPublisher();
+        final RecordingStreamConsumer consumer = new RecordingStreamConsumer();
+        publisher.register(consumer);
+
+        publisher.shutdown();
+
+        assertThat(consumer.batchCount()).isZero();
+        publisher.add("id", "key", 1L, 1L, 1L, 1L, 1L);
+        publisher.flush();
+        assertThat(consumer.batchCount()).isZero();
+    }
 }

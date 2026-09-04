@@ -25,7 +25,6 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
     private final BarrageSubscriptionPerformanceSink sink;
     private final BarrageSubscriptionPerformanceStreamPublisher publisher;
     // Keep, may eventually want to manage / close
-    @SuppressWarnings("FieldCanBeLocal")
     private final StreamToBlinkTableAdapter adapter;
     private final Table blink;
 
@@ -87,5 +86,12 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
 
     public Table blinkTable() {
         return blink;
+    }
+
+    /**
+     * @return the adapter feeding {@link #blinkTable()}; exposed so tests can drive an update cycle directly
+     */
+    StreamToBlinkTableAdapter adapter() {
+        return adapter;
     }
 }

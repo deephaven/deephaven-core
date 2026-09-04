@@ -63,6 +63,10 @@ class BarrageSubscriptionPerformanceStreamPublisher implements StreamPublisher {
             long p95,
             long p99,
             long max) {
+        if (chunks == null) {
+            // Shut down: the blink table is gone, so there is nothing to publish to.
+            return;
+        }
         chunks[0].<String>asWritableObjectChunk().add(tableId);
         chunks[1].<String>asWritableObjectChunk().add(tableKey);
         chunks[2].<String>asWritableObjectChunk().add(statType);
@@ -81,7 +85,7 @@ class BarrageSubscriptionPerformanceStreamPublisher implements StreamPublisher {
 
     @Override
     public synchronized void flush() {
-        if (chunks[0].size() == 0) {
+        if (chunks == null || chunks[0].size() == 0) {
             return;
         }
         flushInternal();
@@ -97,10 +101,11 @@ class BarrageSubscriptionPerformanceStreamPublisher implements StreamPublisher {
     }
 
     @Override
-    public void shutdown() {
-        // Publish anything still pending. A flush that has data replaces the chunk array, so the chunks closed
-        // below are the fresh ones it allocated in their place.
-        flush();
+    public synchronized void shutdown() {
+        if (chunks == null) {
+            return;
+        }
+        // The blink table is being destroyed; any pending rows will never be delivered.
         SafeCloseableArray.close(chunks);
         chunks = null;
     }
