@@ -1,3 +1,4 @@
+import com.bmuschko.gradle.docker.tasks.AbstractDockerRemoteApiTask
 import com.bmuschko.gradle.docker.tasks.container.DockerCopyFileFromContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerLogsContainer
@@ -8,6 +9,7 @@ import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerInspectImage
 import com.bmuschko.gradle.docker.tasks.image.DockerPullImage
 import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+import com.bmuschko.gradle.docker.tasks.image.DockerTagImage
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 import com.github.dockerjava.api.command.InspectImageResponse
 import com.github.dockerjava.api.exception.DockerException
@@ -66,6 +68,24 @@ class Docker {
         }
         // the imageIdFile didn't exist, so we definitely need to build
         return false
+    }
+
+    /**
+     * True if the given image reference already exists in the local Docker image store. Used to
+     * skip re-pulling/re-tagging registry base images that are already present, entirely offline
+     * (this only ever inspects local state -- it never talks to a registry).
+     *
+     * @param t any docker-remote-api task, used only to reach a DockerClient
+     * @param image the image reference (name:tag, name@digest, or ID) to look for locally
+     * @return true if the image is present in the local image store
+     */
+    static boolean imageExistsLocally(AbstractDockerRemoteApiTask t, String image) {
+        try {
+            t.getDockerClient().inspectImageCmd(image).exec()
+            return true
+        } catch (DockerException e) {
+            return false
+        }
     }
 
     /**
@@ -643,7 +663,7 @@ class Docker {
         return makeImage;
     }
 
-    static TaskProvider<? extends DockerBuildImage> registryRegister(Project project) {
+    static TaskProvider<? extends Task> registryRegister(Project project) {
 
         String imageName = project.property('deephaven.registry.imageName')
         String imageId = project.property('deephaven.registry.imageId')
@@ -733,11 +753,6 @@ class Docker {
             }
         }
 
-        def dockerfile = project.tasks.register('dockerfile', Dockerfile) { dockerfile ->
-            dockerfile.description = "Internal task: creates a dockerfile, to be (built) tagged as '${localImageName(project.projectDir.name)}'."
-            dockerfile.from(imageId)
-        }
-
         project.tasks.register('createCraneTagScript', Sync) {
             it.description = "Release task: Creates a crane tag script for '${imageName}'"
             it.from("${project.rootDir}/buildSrc/src/crane/retag.sh")
@@ -748,19 +763,48 @@ class Docker {
             ])
         }
 
-        // Note: even though this is a "build" task, it's really a pull-if-absent + tag task.
-        registerDockerImage(project, 'tagLocalBuild') { DockerBuildImage build ->
-            def dockerFileTask = dockerfile.get()
-
-            build.group = 'Docker Registry'
-            build.description = "Creates '${localImageName(project.projectDir.name)}'."
-            build.inputs.files dockerFileTask.outputs.files
-            build.dockerFile.set dockerFileTask.outputs.files.singleFile
-            build.images.add(localImageName(project.projectDir.name))
+        // Pulls imageId in preparation for tagLocalBuild, below. Deliberately a real pull rather
+        // than a "FROM imageId" DockerBuildImage (which is what this used to be): building (even
+        // a trivial, instruction-less build) routes through BuildKit's image exporter, which has
+        // a long-standing bug mis-resolving the platform of a just-built non-native-platform image
+        // when exporting/tagging it into the local store (moby/buildkit#3891, partially addressed
+        // by #3983) -- observed here as generateProtobufMakeImage failing with "no match for
+        // platform in manifest ...: not found" on arm64 CI runners pulling this (amd64-only) image.
+        // A plain pull never touches that exporter code path.
+        def pullLocalBuild = project.tasks.register('pullLocalBuild', DockerPullImage) { pull ->
+            pull.group = 'Docker Registry'
+            pull.description = "Internal task: pulls '${imageId}', for use by tagLocalBuild."
             if (platform != null) {
-                build.platform.set platform
+                pull.platform.set platform
+            }
+            pull.image.set imageId
+            // imageId is a fixed digest pin (bumped by hand via bumpImage, above) -- if it's
+            // already present locally there's nothing new to fetch.
+            pull.onlyIf { !imageExistsLocally(pull, imageId) }
+        }
+
+        // Note: even though this looks like a "build" task, it's really a pull-if-absent + tag
+        // task -- see pullLocalBuild, above, for why it's not a DockerBuildImage.
+        String localImage = localImageName(project.projectDir.name)
+        def tagLocalBuild = project.tasks.register('tagLocalBuild', DockerTagImage) { tag ->
+            tag.group = 'Docker Registry'
+            tag.description = "Creates '${localImage}'."
+            tag.dependsOn(pullLocalBuild)
+            tag.targetImageId(imageId)
+            tag.repository.set("deephaven/${project.projectDir.name}".toString())
+            tag.tag.set(LOCAL_BUILD_TAG)
+            tag.outputs.upToDateWhen { imageExistsLocally(tag, localImage) }
+        }
+
+        def removeLocalBuild = project.tasks.register('tagLocalBuildClean', DockerRemoveImage) { removeImage ->
+            removeImage.targetImageId(localImage)
+            removeImage.onError { t ->
+                // ignore, the image might not exist
             }
         }
+        project.tasks.findByName('clean').dependsOn removeLocalBuild
+
+        return tagLocalBuild
     }
 
     static String registryProject(String name) {
