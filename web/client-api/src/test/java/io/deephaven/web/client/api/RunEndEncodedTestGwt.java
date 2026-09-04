@@ -118,7 +118,7 @@ public class RunEndEncodedTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     delayTestFinish(7000);
                     DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
-                    options.columns = table.getColumns();
+                    options.columns = Js.cast(table.getColumns());
                     TableSubscription sub = table.createSubscription(options);
                     return assertUpdateReceived(sub, data -> validateReeValues(table, data), 5000)
                             .then(ignore -> Promise.resolve(table));
@@ -132,7 +132,7 @@ public class RunEndEncodedTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     delayTestFinish(7000);
                     DataOptions.SnapshotOptions opts = new DataOptions.SnapshotOptions();
-                    opts.columns = table.getColumns();
+                    opts.columns = Js.cast(table.getColumns());
                     opts.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 5));
                     return table.createSnapshot(opts).then(data -> {
                         validateReeValues(table, data);
@@ -183,7 +183,7 @@ public class RunEndEncodedTestGwt extends AbstractAsyncGwtTestCase {
                     delayTestFinish(7000);
                     assertEquals("java.lang.String", table.findColumn("RepStr").getType());
                     DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
-                    options.columns = table.getColumns();
+                    options.columns = Js.cast(table.getColumns());
                     TableSubscription sub = table.createSubscription(options);
                     return assertUpdateReceived(sub, data -> {
                         JsArray<? extends TableData.Row> rows = data.getRows();

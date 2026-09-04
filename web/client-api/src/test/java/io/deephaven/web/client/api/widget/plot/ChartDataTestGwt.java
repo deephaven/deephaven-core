@@ -328,7 +328,7 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
      */
     private SubscriptionValidator subscriptionValidator(JsTable table, JsArray<Column> subscriptionColumns) {
         DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
-        options.columns = subscriptionColumns;
+        options.columns = Js.cast(subscriptionColumns);
         TableSubscription subscription = table.createSubscription(options);
 
         return new SubscriptionValidator() {
@@ -357,7 +357,7 @@ public class ChartDataTestGwt extends AbstractAsyncGwtTestCase {
                                 // Now that this update has happened, we make a new subscription to get a single
                                 // snapshot of the table
                                 DataOptions.SubscriptionOptions options1 = new DataOptions.SubscriptionOptions();
-                                options1.columns = subscriptionColumns;
+                                options1.columns = Js.cast(subscriptionColumns);
                                 TableSubscription checkSub = table.createSubscription(options1);
                                 checkSub.addEventListenerOneShot(TableSubscription.EVENT_UPDATED, e2 -> {
                                     try {
