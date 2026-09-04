@@ -9,6 +9,9 @@ An in-depth look at what we’ve done, why we’ve done it, and why you should c
 
 </div>
 
+> [!NOTE]
+> New to Deephaven? Start with [How Deephaven works: A mental model](./deephaven-mental-model.md) for an approachable introduction before diving into this technical deep-dive.
+
 We built Deephaven to be an incredible tool for working with tabular data — full stop. To us, tables are dynamic, powerful constructs, but we certainly care about static, batch ones too. In this piece, we explore some of the underlying technical and architectural decisions that, taken together, deliver Deephaven's value proposition.
 
 This guide assumes familiarity with distributed systems, JVM architecture, and modern data platforms. For hands-on tutorials, see our [how-to guides](../intro.md#how-to-guides).
@@ -22,11 +25,31 @@ Deephaven's architecture is built on several key innovations:
 - **Python-first UI framework**: `deephaven.ui` enables building reactive web applications entirely in Python, with live table integration and no front-end engineering required.
 - **Unified batch and streaming**: Batch and real-time data coexist behind a single, consistent API — no separate systems or complex coordination required.
 
+## The live data stack
+
+Deephaven is a full-stack data system that unifies live and historical data in a single, composable environment. Unlike traditional architectures that force trade-offs between batch and streaming, Deephaven delivers both through a unified platform built on three integrated layers:
+
+| Layer               | Components                                              | What it provides                                                         |
+| ------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Engine**          | UpdateGraph, ColumnSources, RowSets, Chunk architecture | Incremental computation, columnar storage, zero-copy operations          |
+| **APIs**            | gRPC/Barrage, Python/Java/JS clients, Arrow Flight      | Cross-language access, network-transparent DAGs, real-time subscriptions |
+| **UI/Applications** | `deephaven.ui`, web-client-ui, Jupyter widgets          | Live dashboards, reactive components, real-time visualization            |
+
+At the core of this stack are **Live Dataframes** — Deephaven's unique abstraction that allows data to update continuously and flow naturally through code, dashboards, and applications. When a source table changes, updates propagate through the entire stack:
+
+1. **Engine**: The UpdateGraph detects changes and propagates them through the DAG
+2. **APIs**: Barrage protocol streams incremental updates to connected clients
+3. **UI**: Components automatically refresh to reflect the latest data
+
+This architecture means the same table can simultaneously serve a Python script, a Java application, a web dashboard, and a remote client — each receiving consistent snapshots and incremental deltas without any additional code. (Remote clients receive updates via their own subscription stream, so different clients may see updates at slightly different times.)
+
+**Why this matters**: Traditional systems require separate pipelines for batch and streaming, with different APIs, different mental models, and complex coordination. Deephaven's live data stack eliminates this complexity. Whether you're analyzing historical Parquet files or streaming Kafka data, you use the same code, the same operations, and the same UI — and everything stays in sync.
+
 ## How Deephaven compares
 
 | Capability             | Traditional Approach                    | Deephaven                            |
 | ---------------------- | --------------------------------------- | ------------------------------------ |
-| **Batch + Real-time**  | Separate systems (e.g., Spark + Flink)  | Unified table API for both           |
+| **Batch + Real-time**  | Separate systems for each               | Unified table API for both           |
 | **Update model**       | Recompute full datasets                 | Incremental (only changed rows)      |
 | **Memory efficiency**  | Copy-on-write, data duplication         | Shared `RowSets` and `ColumnSources` |
 | **Query consistency**  | Manual coordination required            | Automatic via DAG and logical clock  |
@@ -136,7 +159,7 @@ Deephaven tables are implemented using data structures that lend themselves to e
 
 A `ColumnSource` represents a column of (possibly dynamically updating) data that may be shared by multiple tables.
 
-A `RowSet` selects elements of that `ColumnSource` and might represent all the data in the `ColumnSource` or just some subset of it. A _redirecting_ `RowSet` is a `RowSet` that is derived from another `RowSet` and which remaps its keys. It can be used, for example, to reorder the rows in a table effectively.
+A `RowSet` selects elements of that `ColumnSource` and might represent all the data in the `ColumnSource` or just some subset of it. A `RowRedirection` is a separate mapping structure that remaps row keys from one key space to another; it's applied to a `ColumnSource` (not the `RowSet` itself) so a table can present its parent's column data under a different key space — for example, to make a table appear reordered without copying the underlying column data.
 
 **Example of sharing**:
 
@@ -155,7 +178,7 @@ renamed = source.view(["A", "C = B"])  # Shares A's ColumnSource
 
 <Svg src='../assets/conceptual/table-structure.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 
-_Filtering_ ([`where`](../how-to-guides/use-filters.md) operations) creates a new [`RowSet`](#tables-designed-for-sharing-and-updating) that is a subset of an existing `RowSet`; _sorting_ creates a redirecting `RowSet`.
+_Filtering_ ([`where`](../how-to-guides/use-filters.md) operations) creates a new [`RowSet`](#tables-designed-for-sharing-and-updating) that is a subset of an existing `RowSet`; _sorting_ creates a new `RowSet` for the result — flat for static or blink sources, or a pre-allocated range for other refreshing sources so later updates can be inserted without constant rekeying — and applies a `RowRedirection` to the parent's `ColumnSource`s to reflect the new order.
 
 A table may share its `RowSet` with any other table in its update graph that contains the same row keys. A single parent table is responsible for maintaining the `RowSet` on behalf of itself and any descendants that inherited its `RowSet`. Table operations that inherit `RowSets` include column projection and derivation operations like [`select`](../reference/table-operations/select/select.md) and [`view`](../reference/table-operations/select/view.md), as well as some join operations with respect to the left input table; e.g., [`natural join`](../reference/table-operations/join/natural-join.md), [`exact join`](../reference/table-operations/join/exact-join.md), and [`as-of join`](../reference/table-operations/join/aj.md).
 
@@ -166,6 +189,73 @@ By itself, this sharing capability represents an important optimization that avo
 **Performance impact**: Shared `ColumnSource`s can reduce memory footprint by 50-90% for queries with multiple filtered or joined views of the same source data. For example, five different `where` filters on a 10-column table share all 10 `ColumnSource`s, storing only five different `RowSet`s instead of duplicating 50 columns.
 
 Furthermore, the possible sparsity of the `RowSet`'s row key space allows for greatly reduced data movement within the `RowSet` itself and the `ColumnSource`s it addresses. This is essential for the performance of Deephaven’s incremental sort operation, as well as in many cases when source tables publish changes that are more complex than simple append-only growth; e.g., multiple independently-growing partitions, or tabular representations of key-value store state.
+
+## How operations work
+
+Understanding how table operations execute helps explain why Deephaven is so efficient. This section traces through two common operations to show how `RowSet` and `ColumnSource` sharing work in practice.
+
+### What happens when you call `where`
+
+The [`where`](../reference/table-operations/filter/where.md) operation filters rows based on a condition. Here's what happens internally:
+
+1. **Expression parsing**: The filter condition (e.g., `"Price > 100"`) is parsed and converted into a `WhereFilter` object that can evaluate the condition efficiently.
+
+2. **Snapshot**: The operation captures a consistent snapshot of the parent table's current `RowSet`. For refreshing tables, this ensures the filter sees a stable view of the data.
+
+3. **Evaluation**: The `WhereFilter` evaluates the condition against the parent's `ColumnSource` data, processing rows in [chunks](#chunk-oriented-architecture) for efficiency. Only row keys that satisfy the condition are collected.
+
+4. **Result table creation**: A new table is created with:
+   - A new `RowSet` containing only the matching row keys (a subset of the parent's `RowSet`)
+   - **Shared** `ColumnSource`s — the result table points to the same column data as the parent, with no copying
+
+5. **Listener attachment**: If the parent table is [refreshing](./table-types.md), or if the filter depends on refreshing data, a listener is attached so the filtered table updates automatically. On each update cycle, the listener typically re-evaluates only the changed rows, though some filter conditions may trigger broader re-evaluation.
+
+**Why this is efficient**: The result table doesn't copy any column data. It simply maintains a smaller `RowSet` that selects which rows from the shared `ColumnSource`s are visible. Multiple `where` filters on the same parent all share the same underlying data.
+
+### What happens when you call `update`
+
+The [`update`](../reference/table-operations/select/update.md) operation adds or replaces columns with computed values. Here's the execution flow:
+
+1. **Formula parsing**: The formula (e.g., `"Total = Price * Quantity"`) is parsed using [JavaParser](https://javaparser.org/). Direct column references (e.g., `"X"` or `"Y = X"`) bypass formula compilation entirely; all other formulas are analyzed and compiled into executable code.
+
+2. **Column source creation**: For computed formulas, a new `ColumnSource` is created. This source computes values on-demand or caches them, depending on the operation variant ([`update`](../reference/table-operations/select/update.md) vs [`update_view`](../reference/table-operations/select/update-view.md)). Direct column references (aliases like `"Y = X"`) reuse the existing `ColumnSource` without creating a new one.
+
+3. **Formula evaluation**: For `update`, the formula is evaluated for each row in the `RowSet`, with results stored in the new `ColumnSource`. Data is processed in [chunks](#chunk-oriented-architecture) for efficiency.
+
+4. **Result table creation**: A new table is created with:
+   - **Shared** `RowSet` — the result has exactly the same rows as the parent
+   - **Shared** `ColumnSource`s for pass-through columns
+   - **New** `ColumnSource`(s) for the computed columns
+
+5. **Listener attachment**: For refreshing tables, a listener ensures derived columns are recomputed when source columns change.
+
+**Why this is efficient**: Only the new computed columns require storage. All other columns are shared with the parent, and the `RowSet` is inherited directly.
+
+### Operation pattern summary
+
+Most Deephaven table operations follow this pattern:
+
+| Operation Type                           | `RowSet`      | `ColumnSource`s          |
+| ---------------------------------------- | ------------- | ------------------------ |
+| **Filtering** (`where`)                  | New (subset)  | Shared                   |
+| **Column derivation** (`update`, `view`) | Shared        | Mixed (shared + new)     |
+| **Sorting** (`sort`)                     | New (flat)    | Shared (via redirection) |
+| **Joining** (`natural_join`, etc.)       | New or shared | Mixed                    |
+| **Aggregation** (`agg_by`, etc.)         | New           | New                      |
+
+This sharing model, combined with [incremental updates](./table-update-model.md) through the [DAG](./dag.md), enables Deephaven to handle complex queries on large, rapidly-changing datasets efficiently.
+
+### How operations stay live
+
+The listener attachment in step 5 of each operation is what makes Deephaven tables "live." When a parent table updates:
+
+1. The parent's `notifyListeners` method enqueues update notifications for all child listeners.
+2. Each listener receives a `TableUpdate` describing which rows were added, removed, modified, or shifted, along with information about which columns changed.
+3. The listener processes the update and propagates its own update downstream. Most operations process only the changed rows, though some (like certain filters) may need to re-examine additional rows.
+
+This continues through the entire DAG. A single source change cascades through filters, joins, and aggregations — with most operations processing only the delta, not the full dataset. The engine processes this DAG within a single update cycle. The default cycle targets 1000ms intervals (including both processing and idle time), though individual cycles may take longer if the workload requires it. The results then flow asynchronously through the [API layer](#the-live-data-stack) via Barrage to connected clients and UI components.
+
+This is the technical foundation of [Live Dataframes](#the-live-data-stack): a table is static (if its source never changes) or live (if connected to streaming data), and most downstream operations preserve that behavior. (Some operations, like [`snapshot`](../reference/table-operations/snapshot/snapshot.md), intentionally produce static results from live sources.)
 
 ## Mechanical sympathy
 
@@ -183,7 +273,6 @@ Deephaven’s approach to mechanical sympathy can be summarized with a few key o
 - **JIT compilation**: Modern JVMs deliver excellent performance when properly utilized. We help by:
   - Avoiding virtual method invocations in inner loops.
   - Operating on dense memory regions to enable vectorization.
-  - Leveraging Vector API support (Java 19+ preview feature) for explicit SIMD operations.
 - **Garbage collection**: Can cause serious performance degradation through CPU consumption and unpredictable pauses. Deephaven uses preallocation and object pooling to reduce young generation pressure. Inner loops reuse objects instead of allocating temporaries.
 - **Concurrency**: Can be counterproductive if poorly designed. Resource contention, false sharing, and thrashing can make concurrent code slower than single-threaded equivalents. Deephaven avoids shared state and provides tools for natural parallelization along partition boundaries.
 
@@ -195,7 +284,7 @@ The Deephaven query engine moves data around using a data structure called a _Ch
 
 By working with chunks of data rather than single cells, we allow the engine to amortize data movement costs at every applicable level of the stack. For example, `ColumnSources` are _ChunkSources_, allowing bulk `getChunk` and `fillChunk` data transfers. These data transfers may in turn be implemented by wrapping or copying arrays, by reading the appropriate region of a file, or by evaluating a formula once for each result element.
 
-**Performance impact**: Processing data in chunks of thousands of elements instead of one at a time reduces method call overhead by orders of magnitude and enables SIMD vectorization, delivering 4-8x throughput for arithmetic operations on modern CPUs.
+**Performance impact**: Processing data in chunks — sized per operation, typically in the thousands of elements — instead of one at a time reduces method call overhead by orders of magnitude and lets the JIT compiler vectorize the resulting tight loops.
 
 By structuring our engine operations as chunk-oriented kernels, we allow the JVM’s JIT compiler to vectorize computations where possible.
 
@@ -269,11 +358,11 @@ Deephaven table operations often support complex, user-defined expressions for c
 
 Deephaven uses [JavaParser](https://javaparser.org/) to turn user-specified [expressions](../how-to-guides/query-string-overview.md) into three implementation categories:
 
-1. **Simple pre-compiled Java class instances**: For common operations, avoiding compilation overhead.
-2. **New Java classes**: Dynamically compiled, loaded, and instantiated for complex expressions.
+1. **Direct column references**: An expression that is just an existing column name, or an alias for one (e.g., `"Y = X"`), bypasses compilation entirely and reuses the existing `ColumnSource`.
+2. **New Java classes**: Dynamically compiled, loaded, and instantiated for any other expression, no matter how simple it looks.
 3. **Numba-compiled machine code**: [Numba](https://numba.pydata.org/) JIT compilation for Python expressions.
 
-Given these options, simple expressions can be explicitly optimized and avoid any compilation overhead. Complex expressions, on the other hand, allow for a wide degree of latitude in method calls, conditionality, and positional column access.
+Given these options, direct column references avoid compilation entirely. Every other formula is parsed and compiled into executable code — the complexity of the expression changes how much work that compiled code does, not whether compilation happens.
 
 **Example of formula evaluation**:
 
@@ -283,10 +372,13 @@ from deephaven import empty_table
 # Create a source table
 source = empty_table(10).update(["Value = ii * 10", "A = ii * 2", "B = ii * 3"])
 
-# Simple formula - pre-compiled optimization
+# Direct reference - no compilation, reuses A's existing ColumnSource
+result = source.update("A2 = A")
+
+# Simple-looking formula - still compiled into a new class
 result = source.update("DoubleValue = Value * 2")
 
-# Complex formula - dynamic compilation
+# Complex formula - also compiled, just does more work at runtime
 threshold = 50
 result = source.update("Computed = Math.sqrt(A * A + B * B) > " + str(threshold))
 ```
@@ -327,11 +419,11 @@ Deephaven provides two approaches for building custom user interfaces:
 
 ## gRPC APIs for polyglot interoperability
 
-Deephaven's core API is implemented using polyglot technologies that allow for compatible client (or server!) implementations in almost any language. It is composed of several complementary modules, but its Arrow Flight service and Table service are foremost. These offer high-performance data transport — specifically organized to include real-time and updating data — and a table manipulation API that mirrors the Deephaven engine's internal compute paradigm. You can read more about our API itself [here](./deephaven-core-api.md).
+Deephaven's core API is implemented using polyglot technologies that allow for compatible client (or server!) implementations in almost any language. It is composed of several complementary modules, but its Arrow Flight service and Table service are foremost. These offer high-performance data transport — specifically organized to include real-time and updating data — and a table manipulation API that mirrors the Deephaven engine's internal compute paradigm. Read more in [Deephaven's core API](./deephaven-core-api.md).
 
 ## Distributing DAGs and global consistency
 
-At Deephaven, we believe that our approach to propagating static and updating tabular data will revolutionize distributed data systems development. It represents a powerful new model.
+At Deephaven, we believe that our approach to propagating static and updating tabular data will revolutionize distributed data systems development.
 
 As touched upon briefly earlier in this piece, the Deephaven query engine propagates updates concurrently via a [DAG](./dag.md), relying on a logical clock to mark phase and step changes for internal consistency. While this sort of coordination is suitable within a single process, the overhead increases exponentially when extending such a DAG across multiple processes.
 
@@ -349,6 +441,7 @@ Deephaven Community Core is specifically designed, delivered, and packaged to be
 
 ### Conceptual guides
 
+- [How Deephaven works: A mental model](./deephaven-mental-model.md)
 - [Directed acyclic graph (DAG)](./dag.md)
 - [Table update model](./table-update-model.md)
 - [Core API design](./deephaven-core-api.md)
