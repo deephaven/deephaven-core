@@ -270,7 +270,12 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
     }
 
     @Override
-    public RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
+    public RowSequence getRowSequenceByPosition(final long startPositionInclusiveIn, final long lengthIn) {
+        if (lengthIn <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        final long startPositionInclusive = Math.max(startPositionInclusiveIn, 0);
+        final long length = startPositionInclusiveIn < 0 ? startPositionInclusiveIn + lengthIn : lengthIn;
         if (length <= 0) {
             return RowSequenceFactory.EMPTY;
         }

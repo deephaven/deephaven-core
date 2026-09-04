@@ -81,4 +81,21 @@ public class GetKeysForPositionsOutOfRangeTest {
             assertEquals(List.of(), keysAt(rs));
         }
     }
+
+    @Test
+    public void testANegativePositionBeforeValidOnes() {
+        // Positions ascend, so a position beyond the cardinality means every later one is too; a negative position
+        // says nothing about the ones after it.
+        final long none = RowSequence.NULL_ROW_KEY;
+        try (final WritableRowSet single = new WritableRowSetImpl(SingleRange.make(10, 20));
+                final WritableRowSet sorted =
+                        new WritableRowSetImpl(SortedRanges.makeSingleRange(10, 20).addRange(30, 40));
+                final WritableRowSet rsp = new WritableRowSetImpl(RspBitmap.makeSingleRange(10, 20).addRange(30, 40))) {
+            for (final WritableRowSet rs : new WritableRowSet[] {single, sorted, rsp}) {
+                final String name = ((WritableRowSetImpl) rs).getInnerSet().getClass().getSimpleName();
+                assertEquals(name, List.of(none, 11L, 12L), keysAt(rs, -1, 1, 2));
+                assertEquals(name + " two negatives", List.of(none, none, 10L), keysAt(rs, -5, -1, 0));
+            }
+        }
+    }
 }
