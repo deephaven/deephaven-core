@@ -357,7 +357,7 @@ Partitioned tables can improve performance in a couple of different ways.
 #### Parallelization
 
 > [!CAUTION]
-> In Python builds that use the [Global Interpreter Lock (GIL)](https://docs.python.org/3/glossary.html#term-global-interpreter-lock), threads cannot run Python code concurrently, unless the Python build is free-threaded. To maximize parallelization, users should be careful not to invoke Python code unnecessarily in partitioned tables.
+> Python's [Global Interpreter Lock (GIL)](https://docs.python.org/3/glossary.html#term-global-interpreter-lock) prevents threads from running Python code concurrently, unless the Python build is free-threaded. To maximize parallelization, users should be careful not to invoke Python code unnecessarily in partitioned tables.
 
 Partitioned tables can also improve query performance by parallelizing things that standard tables cannot. Take, for example, an as-of join between two tables. If the tables are partitioned by the exact match columns, then the join operation is done in parallel.
 

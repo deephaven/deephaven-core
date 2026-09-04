@@ -44,7 +44,7 @@ print(partitioned_table.constituent_column)
 
 ## `constituent_tables`
 
-The `constituent_tables` method returns a `PartitionedTable`'s current constituent tables as a list of `Table` objects.
+The `constituent_tables` property returns a `PartitionedTable`'s current constituent tables as a list of `Table` objects.
 
 ```python syntax
 PartitionedTable.constituent_tables -> List[Table]
@@ -75,10 +75,10 @@ print(partitioned_table.constituent_table_columns)
 
 ## `constituent_table_definition`
 
-The `constituent_table_definition` method returns the table definition shared by all constituent tables of a `PartitionedTable`.
+The `constituent_table_definition` property returns a table definition that is either shared by, or mutually compatible with, all constituent tables of a `PartitionedTable`.
 
 > [!NOTE]
-> All constituent tables in a `PartitionedTable` have the same table definition.
+> Mutual compatibility means the returned definition's columns match each constituent's columns by name, data type, and component type — it does not guarantee identical storage or derivation details.
 
 ```python syntax
 PartitionedTable.constituent_table_definition -> TableDefinition
@@ -120,7 +120,7 @@ print(partitioned_table.key_columns)
 
 ## `table`
 
-The `table` method returns the underlying `Table` of a `PartitionedTable`, whose rows contain the constituent tables and key values.
+The `table` property returns the underlying `Table` of a `PartitionedTable`, whose rows contain the constituent tables and key values.
 
 ```python syntax
 PartitionedTable.table -> Table
