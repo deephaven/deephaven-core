@@ -92,9 +92,12 @@ public class SnapshotIncrementalListener extends MergedListener {
             final RowSet baseAdded = expander.getAdded().copy();
             final RowSet baseModified = expander.getModified().copy();
             final RowSet baseRemoved = expander.getRemoved().copy();
-            final RowSet rowsToCopy = baseAdded.union(baseModified);
 
-            doRowCopy(rowsToCopy);
+            // baseAdded, baseModified, and baseRemoved are given away to notifyListeners below; rowsToCopy exists
+            // only to drive the copy.
+            try (final RowSet rowsToCopy = baseAdded.union(baseModified)) {
+                doRowCopy(rowsToCopy);
+            }
 
             resultTable.getRowSet().writableCast().update(baseAdded, baseRemoved);
             resultTable.notifyListeners(baseAdded, baseRemoved, baseModified);

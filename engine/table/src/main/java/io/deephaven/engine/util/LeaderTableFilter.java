@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.select.MultiSourceFunctionalColumn;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -483,10 +484,11 @@ public class LeaderTableFilter {
                     if (!processPendingResult.keysToRefilter.contains(key)) {
                         // if we did not refilter this key; then we should add the currently matched values,
                         // otherwise we ignore them because they have already been superseded
-                        final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build();
-                        state.matchedRows.insert(newlyMatchedRows);
-                        newlyMatchedRows.remove(followerResultRowSets[tt]);
-                        addedBuilder.addRowSet(newlyMatchedRows);
+                        try (final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build()) {
+                            state.matchedRows.insert(newlyMatchedRows);
+                            newlyMatchedRows.remove(followerResultRowSets[tt]);
+                            addedBuilder.addRowSet(newlyMatchedRows);
+                        }
                     }
                     state.currentIdBuilder = null;
                 }
@@ -507,6 +509,9 @@ public class LeaderTableFilter {
                     update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                     update.shifted = RowSetShiftData.EMPTY;
                     followerResults[tt].notifyListeners(update);
+                } else {
+                    // There is nothing to notify, so no update takes ownership of these.
+                    SafeCloseable.closeAll(added, removed);
                 }
             }
 
