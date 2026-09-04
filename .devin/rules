@@ -4,6 +4,8 @@ These standards apply to deephaven-core documentation.
 
 ## Documentation categories
 
+**Tutorial:** A learning resource that guides a reader step-by-step to a specific outcome. All users will achieve the same outcome. Tutorials are lessons.
+
 **How-to guide:** A follow-along resource that guides a reader step-by-step. These usually show new users how to solve a specific problem. Similar to a recipe, when following along with a how-to guide, all users will learn the same information, but they can use their own ingredients, so outcomes may differ. Advice or general recommendations on how to use a feature/method may be offered.
 
 **Concept guide:** A resource to study. It is intended to broaden understanding of higher concepts and to explain how or why with contextual explanations. Overview pages may be considered concept guides.
@@ -18,7 +20,7 @@ These standards apply to deephaven-core documentation.
 - **Avoid egregious jargon and hedging.** Prefer concrete, direct sentences over vague qualifiers ("may potentially," "in some cases could") unless the uncertainty is real and worth flagging.
 - **Tone.** Tutorials and how-tos can be conversational, first-person narrative while remaining professional. Reference material is dry and formal — third-person narrative without contractions.
 - **Sentence case in headings** — not Title Case. Don't include links in headers.
-- **Straight quotes only.** Use `"` and `'`, never smart/curly quotes (`"` `"` `'` `'`).
+- **Straight quotes only.** Use `"` and `'`, never smart/curly quotes (`“` `”` `‘` `’`).
 - **Em dashes** for parenthetical statements, not hyphens or en dashes. Surround with a single space on either side: `word — word`, not `word—word`.
 - **Link wording.** Always describe what you're linking to; never use "here" or "click here" as link text (e.g., "see the [Input table guide](link)," not "see [here](link)").
 - **One idea per paragraph.** Long paragraphs mixing multiple claims are harder to verify and harder to read; split them.
@@ -98,3 +100,7 @@ Enclose: method names (`naturalJoin`), classes (`SystemTableLogger`), variables 
 - `skip-test` — Skip snapshot testing
 - `test-set=name` — Group code blocks as sequential test
 - `ticking-table` — Mark as containing ticking tables; also use `order=null` unless the example intentionally tests named, log, or failing output
+
+## Blog posts
+
+When writing blog posts, follow the template at `docs/python/templates/_blog-template.md`.

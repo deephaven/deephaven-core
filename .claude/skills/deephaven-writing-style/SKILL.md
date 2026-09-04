@@ -9,6 +9,8 @@ These standards apply to deephaven-core documentation.
 
 ## Documentation categories
 
+**Tutorial:** A learning resource that guides a reader step-by-step to a specific outcome. All users will achieve the same outcome. Tutorials are lessons.
+
 **How-to guide:** A follow-along resource that guides a reader step-by-step. These usually show new users how to solve a specific problem. Similar to a recipe, when following along with a how-to guide, all users will learn the same information, but they can use their own ingredients, so outcomes may differ. Advice or general recommendations on how to use a feature/method may be offered.
 
 **Concept guide:** A resource to study. It is intended to broaden understanding of higher concepts and to explain how or why with contextual explanations. Overview pages may be considered concept guides.
