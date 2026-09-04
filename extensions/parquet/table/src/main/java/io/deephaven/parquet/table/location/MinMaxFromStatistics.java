@@ -368,9 +368,14 @@ final class MinMaxFromStatistics {
     /**
      * Whether {@link #getMinMaxForComparable} can decode statistics for {@code columnType}. Knowable from the type
      * alone, so a handler can decline at evaluator-creation time rather than failing once per row group.
+     * <p>
+     * {@link String} is absent by design rather than for want of a decoder: {@link #getMinMaxForStrings} reads those
+     * statistics perfectly well, but only as bytes. Parquet orders them by unsigned bytes while the Comparable path
+     * would compare the decoded values with {@link String#compareTo} (UTF-16), a different order, so String columns are
+     * routed to {@link StringPushdownHandler} ahead of the Comparable handlers instead; see
+     * {@link StatisticsEvaluator#HANDLERS}.
      */
     static boolean canDecodeComparable(final Class<?> columnType) {
-        // Strings are deliberately excluded; see the note in getMinMaxForComparable.
         return columnType == Instant.class
                 || columnType == LocalDateTime.class
                 || columnType == LocalDate.class
@@ -382,12 +387,7 @@ final class MinMaxFromStatistics {
             @NotNull final Consumer<Comparable<?>> minSetter,
             @NotNull final Consumer<Comparable<?>> maxSetter,
             final Class<?> columnType) {
-        if (columnType == String.class) {
-            // Strings are deliberately not served here. Parquet orders BINARY statistics by unsigned bytes, and the
-            // Comparable handlers would compare the decoded values with String.compareTo (UTF-16), which is a
-            // different order. String columns go through StringPushdownHandler, which compares bytes.
-            return false;
-        } else if (columnType == Instant.class) {
+        if (columnType == Instant.class) {
             return getMinMaxForInstants(statistics, minSetter::accept, maxSetter::accept);
         } else if (columnType == LocalDateTime.class) {
             return getMinMaxForLocalDateTimes(statistics, minSetter::accept, maxSetter::accept);
@@ -401,7 +401,8 @@ final class MinMaxFromStatistics {
         // could prune where today it does not. BigDecimal and BigInteger are the other candidates.
         //
         // Note that adding a type here requires adding it to canDecodeComparable above as well, or the new support
-        // will never be reached -- the handlers decline undecodable types at evaluator-creation time.
+        // will never be reached -- the handlers decline undecodable types at evaluator-creation time. String is the
+        // one type deliberately left out of both; see canDecodeComparable.
         return false;
     }
 

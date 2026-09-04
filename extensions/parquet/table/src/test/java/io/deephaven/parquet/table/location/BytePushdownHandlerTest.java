@@ -195,8 +195,9 @@ public class BytePushdownHandlerTest {
                 new MatchFilter(MatchOptions.INVERTED, "b", QueryConstants.NULL_BYTE),
                 byteStats((byte) 5, (byte) 6)));
 
-        // Inverse match of {5, 6} against statistics [5, 6] should return false but currently returns true since
-        // the implementation assumes the range (5, 6) overlaps with the statistics range [5, 6].
+        // Inverse match of {5, 6} against statistics [5, 6] could return false -- for an integral type those two
+        // excluded values cover the whole interval -- but the handler excludes only a single-valued row group, so
+        // this stays a "maybe".
         assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "i", 5, 6),
                 byteStats((byte) 5, (byte) 6)));

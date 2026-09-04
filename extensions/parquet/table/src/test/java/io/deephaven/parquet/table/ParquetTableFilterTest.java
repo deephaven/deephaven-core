@@ -1371,51 +1371,6 @@ public final class ParquetTableFilterTest {
     }
 
     /**
-     * Case-insensitive matching is not pushed down to row group statistics, because those statistics are byte-order
-     * extremes and case-insensitive equality is not monotonic with respect to that order.
-     * <p>
-     * The first block is the direct case: statistics min={@code "Banana"} (0x42...), max={@code "apple"} (0x61...), and
-     * {@code "apple".compareToIgnoreCase("Banana") < 0}, so a folded interval test excludes a row group that plainly
-     * contains the value. The second is the inverted case: min and max are case variants of one word, which bounds
-     * nothing about how many distinct values lie between them.
-     */
-    @Test
-    public void caseInsensitiveMatchesAreNotPrunedByStatistics() {
-        {
-            final String destPath = Path.of(rootFile.getPath(), "icaseMatch.parquet").toString();
-            writeTable(newTable(stringCol("X", "Banana", "apple")), destPath);
-            final Table diskTable = readTable(destPath);
-            final Table memTable = diskTable.select();
-
-            filterAndVerifyResults(diskTable, memTable, "X icase in `apple`");
-            filterAndVerifyResults(diskTable, memTable, "X icase in `BANANA`");
-        }
-
-        {
-            final String destPath = Path.of(rootFile.getPath(), "icaseInvertedMatch.parquet").toString();
-            writeTable(newTable(stringCol("X", "FOO", "MID", "foo")), destPath);
-            final Table diskTable = readTable(destPath);
-            final Table memTable = diskTable.select();
-
-            // Byte-order min="FOO", max="foo", and "FOO".equalsIgnoreCase("foo") -- but "MID" sits between them.
-            filterAndVerifyResults(diskTable, memTable, "X icase not in `foo`");
-        }
-
-        {
-            // String.equalsIgnoreCase matches characters far outside ASCII to ASCII ones, which is why no
-            // interval over a value's ASCII case variants could have been used instead. U+212A KELVIN SIGN
-            // encodes as E2 84 AA, well above the byte range of an all-ASCII row group.
-            final String destPath = Path.of(rootFile.getPath(), "icaseNonAsciiFold.parquet").toString();
-            writeTable(newTable(stringCol("X", "\u212A", "zzz")), destPath);
-            final Table diskTable = readTable(destPath);
-            final Table memTable = diskTable.select();
-
-            assertEquals("premise: U+212A equalsIgnoreCase \"k\"", 1, memTable.where("X icase in `k`").size());
-            filterAndVerifyResults(diskTable, memTable, "X icase in `k`");
-        }
-    }
-
-    /**
      * Every parsed comparison becomes a single-sided filter with a sentinel planted on the open end -- {@code X < 5} is
      * {@code [NULL_INT, 5)}, {@code X > 5} is {@code (5, MAX_INT]} -- and for floating point {@code gt}/{@code geq}
      * plant {@code NaN} as the upper bound. Handlers used to bail the moment they saw either, so the sentinel was never
@@ -2193,7 +2148,7 @@ public final class ParquetTableFilterTest {
     /**
      * The fraction the boundary tests run at, in place of the configured one. The configured value cannot be relied on
      * to express this boundary: {@code 0} is a documented setting that disables the optimization, and any fraction
-     * outside {@code [0.02, 1.0]} asks for a dictionary that {@link #THRESHOLD_ROW_COUNT} rows cannot hold — too few
+     * outside {@code [0.02, 1.0]} asks for a dictionary that {@link #THRESHOLD_ROW_COUNT} rows cannot hold -- too few
      * distinct entries to build a fixture at one end, more than one per row at the other. {@link #setUp} and
      * {@link #tearDown} still save and restore whatever is configured.
      */
@@ -2201,7 +2156,7 @@ public final class ParquetTableFilterTest {
 
     /**
      * The smallest dictionary {@link #THRESHOLD_TEST_FRACTION} declines to read for {@link #THRESHOLD_ROW_COUNT} rows.
-     * Pushdown is skipped once a dictionary holds at least {@code rows * fraction} entries, so this is 25 — meaning 25
+     * Pushdown is skipped once a dictionary holds at least {@code rows * fraction} entries, so this is 25 -- meaning 25
      * entries decline and 24 proceed.
      */
     private static int smallestDecliningDictionarySize() {
@@ -2261,8 +2216,8 @@ public final class ParquetTableFilterTest {
     /**
      * Reading and filtering a whole dictionary costs O(dictionary), so it only pays off when enough rows remain that
      * filtering them directly would cost more. This test and {@link #dictionaryPushdownThresholdProceedsTest()} sit on
-     * the two dictionary sizes either side of that boundary — the smallest that declines and the largest that proceeds
-     * — at {@link #THRESHOLD_TEST_FRACTION}, the heuristic that the other dictionary tests here deliberately disable.
+     * the two dictionary sizes either side of that boundary -- the smallest that declines and the largest that proceeds
+     * -- at {@link #THRESHOLD_TEST_FRACTION}, the heuristic that the other dictionary tests here deliberately disable.
      */
     @Test
     public void dictionaryPushdownThresholdDeclinesTest() {

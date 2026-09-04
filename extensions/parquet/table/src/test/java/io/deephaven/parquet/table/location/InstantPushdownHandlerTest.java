@@ -124,7 +124,7 @@ public class InstantPushdownHandlerTest {
         // wholly inside
         assertTrue(evaluate(
                 new InstantRangeFilter("t",
-                        1_000_000L, 2_000_000L, true, true), // 1–2 ms
+                        1_000_000L, 2_000_000L, true, true), // 1-2 ms
                 stats));
 
         // matches lower edge inclusive vs exclusive
@@ -145,7 +145,7 @@ public class InstantPushdownHandlerTest {
         assertFalse(evaluate(
                 new InstantRangeFilter("t",
                         60_000_000L, 70_000_000L, true, true),
-                stats)); // 60–70 ms
+                stats)); // 60-70 ms
 
         // constructor reversal still overlaps
         assertTrue(evaluate(

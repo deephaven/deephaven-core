@@ -64,13 +64,11 @@ public class ParquetPushdownUtilsTest {
         assertFalse(noNullCount.isNumNullsSet());
         assertEquals(-1L, noNullCount.getNumNulls());
         assertFalse(ParquetPushdownUtils.isProvenFreeOfNulls(noNullCount));
+        // The min/max check and the null-count check are independent: these same statistics have min/max worth
+        // reading even though their null count is absent.
+        assertTrue(ParquetPushdownUtils.areStatisticsUsable(noNullCount));
 
         // A repeated column, whose count is over leaf values rather than rows, never reaches here: it is declined
         // upstream by ParquetTableLocation.isSupportedForPushdown.
-
-        // The min/max check and the null-count check are independent: statistics whose min/max were discarded can still
-        // carry a usable count, and usable min/max do not imply a usable count.
-        assertTrue(ParquetPushdownUtils.areStatisticsUsable(noNullCount));
-        assertFalse(ParquetPushdownUtils.isProvenFreeOfNulls(noNullCount));
     }
 }

@@ -68,33 +68,15 @@ final class StringPushdownHandler {
      * Creates an evaluator for {@code filter} against row group statistics, or returns {@code null} if this handler
      * does not serve it.
      * <p>
-     * <b>Case-insensitive matches are never served, by design.</b> These statistics are extremes under byte order, and
-     * case-insensitive equality is not monotonic with respect to it, so {@code [min, max]} containment says nothing
-     * about whether a case variant of a filter value is present. The natural repair -- widening each value into the
-     * interval spanned by its case variants -- does not work either, because {@link String#equalsIgnoreCase} matches
-     * characters far outside ASCII to ASCII ones:
-     * <ul>
-     * <li>U+212A KELVIN SIGN ({@code E2 84 AA}) equals {@code "k"}</li>
-     * <li>U+017F LATIN SMALL LETTER LONG S ({@code C5 BF}) equals {@code "s"}</li>
-     * <li>U+0130 and U+0131 ({@code C4 B0}, {@code C4 B1}) equal {@code "i"}</li>
-     * </ul>
-     * A row group whose entire byte range sits above the ASCII range can therefore still contain a match for a purely
-     * ASCII filter value, and an ASCII-only interval would wrongly exclude it. A sound interval would have to span the
-     * full case-equivalence class of every character, which is wide enough to rarely exclude anything.
-     * <p>
-     * The inverted form is worse: excluding a row group requires proving it holds a single distinct value, and
-     * statistics that are permitted to be <i>truncated</i> bounds cannot establish that.
-     * <p>
-     * These filters are not lost, only resolved elsewhere -- the dictionary path applies the real chunk filter to a row
-     * group's dictionary, which handles case-insensitivity exactly.
+     * Serving is decided by the filter's type and its column type, and by nothing else. A String filter these
+     * statistics cannot bound is claimed all the same and answered with {@link StatisticsEvaluator#ALWAYS_MAYBE}:
+     * {@code null} would send it on to handlers that serve no String column either, arriving at the same answer by way
+     * of every remaining probe.
      */
     @Nullable
     static StatisticsEvaluator maybeCreateEvaluator(@NotNull final WhereFilter filter) {
         if (filter instanceof final MatchFilter matchFilter) {
-            if (matchFilter.getColumnType() != String.class || matchFilter.getMatchOptions().caseInsensitive()) {
-                return null;
-            }
-            return createMatchEvaluator(matchFilter);
+            return matchFilter.getColumnType() == String.class ? createMatchEvaluator(matchFilter) : null;
         }
         if (filter instanceof final ComparableRangeFilter rangeFilter) {
             return rangeFilter.getColumnType() == String.class ? createRangeEvaluator(rangeFilter) : null;
@@ -110,8 +92,36 @@ final class StringPushdownHandler {
      * value whose UTF-8 encoding falls outside the byte-order interval will not be present in the row group. That
      * conclusion needs each filter value to encode faithfully to UTF-8 -- a separate requirement, since two strings
      * sharing an encoding would break it; see {@link #utf8}.
+     * <p>
+     * Both of the filter's {@link io.deephaven.engine.table.MatchOptions} are read here. {@code inverted()} picks
+     * between two evaluators, since either direction can be answered.
+     * <p>
+     * <b>{@code caseInsensitive()} can be answered in neither direction, by design.</b> These statistics are extremes
+     * under byte order, and case-insensitive equality is not monotonic with respect to it, so {@code [min, max]}
+     * containment says nothing about whether a case variant of a filter value is present. The natural repair --
+     * widening each value into the interval spanned by its case variants -- does not work either, because
+     * {@link String#equalsIgnoreCase} matches characters far outside ASCII to ASCII ones:
+     * <ul>
+     * <li>U+212A KELVIN SIGN ({@code E2 84 AA}) equals {@code "k"}</li>
+     * <li>U+017F LATIN SMALL LETTER LONG S ({@code C5 BF}) equals {@code "s"}</li>
+     * <li>U+0130 and U+0131 ({@code C4 B0}, {@code C4 B1}) equal {@code "i"}</li>
+     * </ul>
+     * A row group whose entire byte range sits above the ASCII range can therefore still contain a match for a purely
+     * ASCII filter value, and an ASCII-only interval would wrongly exclude it. A sound interval would have to span the
+     * full case-equivalence class of every character, which is wide enough to rarely exclude anything.
+     * <p>
+     * The inverted form is sound but not worth serving: the only row group it could prune is one holding a single
+     * distinct value the filter names -- {@code min == max}, see {@link #maybeMatchesInverse} -- where folding that
+     * lone value would be exact, case insensitivity and all.
+     * <p>
+     * These filters are not lost, only resolved elsewhere -- the dictionary path applies the real chunk filter to a row
+     * group's dictionary, which handles case-insensitivity exactly.
      */
     private static StatisticsEvaluator createMatchEvaluator(@NotNull final MatchFilter matchFilter) {
+        if (matchFilter.getMatchOptions().caseInsensitive()) {
+            // Not bounded in either direction; see above.
+            return StatisticsEvaluator.ALWAYS_MAYBE;
+        }
         final Object[] values = matchFilter.getValues();
         final boolean invertMatch = matchFilter.getMatchOptions().inverted();
         if (values == null || values.length == 0) {
@@ -295,6 +305,11 @@ final class StringPushdownHandler {
 
     /**
      * Verifies that the {@code [min, max]} range includes any value that is not in the given {@code values} array.
+     * <p>
+     * {@code min == max} carries the whole test, and it holds up under <i>truncated</i> bounds: a truncated minimum is
+     * byte-wise no greater than the true minimum and a truncated maximum no less than the true maximum, so equality
+     * between the two forces every value in the row group to be that one value. Truncation widens the interval, and
+     * cannot collapse one that was not already a point.
      */
     private static boolean maybeMatchesInverse(
             @NotNull final byte[] min,

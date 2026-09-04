@@ -27,20 +27,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 @Category(OutOfBandTest.class)
 public class StringPushdownHandlerTest {
 
     /** U+FF41 FULLWIDTH LATIN SMALL LETTER A -- UTF-8 {@code EF BD 81}, UTF-16 {@code FF41}. */
-    private static final String FULLWIDTH_A = "ａ";
+    private static final String FULLWIDTH_A = "\uFF41";
     /** U+1F600 GRINNING FACE -- UTF-8 {@code F0 9F 98 80}, UTF-16 surrogate pair {@code D83D DE00}. */
-    private static final String EMOJI = "😀";
+    private static final String EMOJI = "\uD83D\uDE00";
     /** A lone high surrogate: not a Unicode scalar value, so it has no UTF-8 encoding at all. */
     private static final String LONE_SURROGATE = "\uD800";
 
-    private static final TableDefinition TABLE_DEFINITION =
-            TableDefinition.of(ColumnDefinition.ofString("strCol"));
+    private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
+            ColumnDefinition.ofString("strCol"),
+            ColumnDefinition.ofInt("intCol"));
 
     private static Statistics<?> stringStats(final String minInc, final String maxInc) {
         return stringStatsFromBytes(
@@ -120,16 +122,31 @@ public class StringPushdownHandlerTest {
     }
 
     /**
-     * Filters this handler does not serve must return {@code null} from {@code prepare} so the dispatcher falls
-     * through. Case-insensitive matches are never pushed down at all -- see
-     * {@link StringPushdownHandler#maybeCreateEvaluator}.
+     * A filter over some other column type is not this handler's, and returning {@code null} lets the dispatcher offer
+     * it to the handler that does serve it.
      */
     @Test
     public void prepareDeclinesFiltersItDoesNotServe() {
+        final MatchFilter otherColumn = new MatchFilter(MatchOptions.REGULAR, "intCol", 42);
+        otherColumn.init(TABLE_DEFINITION);
+        assertNull(StringPushdownHandler.maybeCreateEvaluator(otherColumn));
+    }
+
+    /**
+     * A case-insensitive match, by contrast, is this handler's filter and simply cannot be bounded by these statistics.
+     * It is claimed and answered {@code ALWAYS_MAYBE} rather than declined: no later handler serves a String column, so
+     * declining would reach the same answer by way of every remaining probe, and the answer's identity is what lets the
+     * caller skip the row groups outright. See {@link StringPushdownHandler#maybeCreateEvaluator}.
+     */
+    @Test
+    public void caseInsensitiveMatchesAreClaimedButNeverPrune() {
         final MatchFilter icase =
                 new MatchFilter(MatchOptions.builder().caseInsensitive(true).build(), "strCol", "abc");
         icase.init(TABLE_DEFINITION);
-        assertNull(StringPushdownHandler.maybeCreateEvaluator(icase));
+        assertSame(StatisticsEvaluator.ALWAYS_MAYBE, StringPushdownHandler.maybeCreateEvaluator(icase));
+
+        // And the same through the dispatcher, which must not walk on to another handler.
+        assertSame(StatisticsEvaluator.ALWAYS_MAYBE, StatisticsEvaluator.resolveHandler(icase));
     }
 
     /**
@@ -165,17 +182,18 @@ public class StringPushdownHandlerTest {
      */
     @Test
     public void truncatedBoundsRemainBounds() {
-        final String trueMin = "日本語"; // CJK, UTF-8 E6 97 A5 | E6 9C AC | E8 AA 9E
-        final byte[] truncatedMin = Arrays.copyOf(trueMin.getBytes(StandardCharsets.UTF_8), 4);
+        final String trueMin = "\u65E5\u672C\u8A9E"; // CJK, UTF-8 E6 97 A5 | E6 9C AC | E8 AA 9E
+        // Truncated after four bytes: one whole character, then the lead byte of the next left dangling.
+        final byte[] truncatedMin = {(byte) 0xE6, (byte) 0x97, (byte) 0xA5, (byte) 0xE6};
 
         // Premise: the truncation is a byte-order bound, but decoding it breaks that property.
         assertTrue(Arrays.compareUnsigned(truncatedMin, trueMin.getBytes(StandardCharsets.UTF_8)) <= 0);
         final String decoded = new String(truncatedMin, StandardCharsets.UTF_8);
-        assertTrue("decodes with a replacement character", decoded.indexOf('�') >= 0);
+        assertTrue("decodes with a replacement character", decoded.indexOf('\uFFFD') >= 0);
         assertTrue("and then sorts above the true minimum", decoded.compareTo(trueMin) > 0);
 
         final Statistics<?> stats =
-                stringStatsFromBytes(truncatedMin, "￿".getBytes(StandardCharsets.UTF_8));
+                stringStatsFromBytes(truncatedMin, "\uFFFF".getBytes(StandardCharsets.UTF_8));
         assertTrue("a row group whose truncated lower bound came from the value must not exclude it",
                 evaluate(matchFilter(MatchOptions.REGULAR, trueMin), stats));
     }
@@ -260,15 +278,15 @@ public class StringPushdownHandlerTest {
         final Statistics<?> stats = stringStats("ccc", "mmm");
 
         // A supplementary-plane bound: byte order would say the range is entirely above the statistics, but Java order
-        // places the emoji below "ａ" and the handler cannot reason about the data's own characters.
-        assertTrue(evaluate(rangeFilter(EMOJI, "￿", true, true), stats));
+        // places the emoji below U+FF41 and the handler cannot reason about the data's own characters.
+        assertTrue(evaluate(rangeFilter(EMOJI, "\uFFFF", true, true), stats));
 
         // A bound in U+E000..U+FFFF is the other half of the same divergence.
         assertTrue(evaluate(rangeFilter("nnn", FULLWIDTH_A, true, true), stats));
 
         // CJK is below U+E000, so it stays eligible.
         assertFalse(evaluate(
-                rangeFilter("日", "本", true, true), stats));
+                rangeFilter("\u65E5", "\u672C", true, true), stats));
     }
 
     @Test

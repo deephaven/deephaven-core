@@ -639,8 +639,10 @@ public class MinMaxFromStatisticsTest {
         final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
                 .as(LogicalTypeAnnotation.stringType())
                 .named("strBinary");
-        // A truncated lower bound: a valid byte-order bound that is not valid UTF-8, so decoding it would be lossy.
-        final byte[] truncatedMin = java.util.Arrays.copyOf("日本語".getBytes(StandardCharsets.UTF_8), 4);
+        // A truncated lower bound: one complete character (U+65E5, UTF-8 E6 97 A5) followed by the lead byte of the
+        // next, as a writer truncating at byte granularity would leave it. Still a valid byte-order bound, but not
+        // valid UTF-8 -- decoding it turns the dangling byte into U+FFFD, which is what this must not do.
+        final byte[] truncatedMin = {(byte) 0xE6, (byte) 0x97, (byte) 0xA5, (byte) 0xE6};
         final byte[] rawMax = "zzz".getBytes(StandardCharsets.UTF_8);
         final Statistics<?> stats = buildStats(colType, truncatedMin, rawMax, 0L);
 

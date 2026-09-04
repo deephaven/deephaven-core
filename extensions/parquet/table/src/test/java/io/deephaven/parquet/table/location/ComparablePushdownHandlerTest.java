@@ -77,9 +77,6 @@ public class ComparablePushdownHandlerTest {
         return filter;
     }
 
-    // String columns are served by StringPushdownHandler, which compares parquet's byte-ordered
-    // statistics in the byte domain; its coverage lives in StringPushdownHandlerTest.
-
     @Test
     public void localDateFilterScenarios() {
         {
@@ -161,7 +158,7 @@ public class ComparablePushdownHandlerTest {
                             LocalDateTime.of(2021, 12, 31, 23, 59)),
                     stats));
 
-            // single‑point stats excluded
+            // single-point stats excluded
             assertFalse(evaluate(
                     makeMatchFilter(MatchOptions.INVERTED, "localDateTimeCol",
                             LocalDateTime.of(2022, 1, 1, 0, 0)),

@@ -29,8 +29,8 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * The interval arithmetic lives in {@link #maybeOverlapsRangeImpl}. {@link #maybeMatches} reuses it by testing each of
  * the filter's values as the closed range {@code [v, v]}. {@link #maybeMatchesInverse} cannot use it at all: since
- * {@code min}/{@code max} bound only the endpoints and say nothing about which values lie between them, the one case
- * it can exclude is a row group holding a single distinct value that the filter names.
+ * {@code min}/{@code max} bound only the endpoints and say nothing about which values lie between them, the one case it
+ * can exclude is a row group holding a single distinct value that the filter names.
  *
  * <h2>Nulls</h2>
  *

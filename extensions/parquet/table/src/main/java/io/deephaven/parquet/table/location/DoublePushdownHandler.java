@@ -136,8 +136,12 @@ final class DoublePushdownHandler {
 
     /**
      * Verifies that the {@code [min, max]} range intersects the range defined by the given lower and upper bounds. This
-     * method assumes that the caller would filter NaN values. Also, this method is lenient towards -0.0 / 0.0
-     * comparisons, when compared to {@link Double#compare}
+     * method assumes that the caller would filter NaN values.
+     * <p>
+     * The comparisons below are the raw operators, which hold {@code -0.0} and {@code 0.0} to be equal. That is
+     * <i>not</i> {@link Double#compare}, which separates them, but it is
+     * {@link io.deephaven.util.compare.DoubleComparisons}, whose {@code compare} makes them equal deliberately -- so
+     * this agrees with how the engine orders the values it will go on to filter.
      */
     private static boolean maybeOverlapsRangeImpl(
             final double min, final double max,
