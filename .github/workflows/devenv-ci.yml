@@ -47,7 +47,8 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
-          - os: macos-14 # Apple Silicon (arm64)
+          - os: macos-15 # Apple Silicon (arm64)
+          - os: macos-26 # Apple Silicon (arm64)
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
