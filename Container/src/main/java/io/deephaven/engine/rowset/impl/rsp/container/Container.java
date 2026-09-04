@@ -666,6 +666,20 @@ public abstract class Container {
     public abstract SearchRangeIterator getShortRangeIterator(int skipFromStartCount);
 
     /**
+     * As {@link #getShortRangeIterator(int)}, locating the starting position through {@code cursor}, a
+     * {@link RankCursor} on this container. Container kinds for which the cursor saves work (see
+     * {@link RankCursor#benefits}) resume from the cursor's position instead of counting from the start of the
+     * container; the others ignore the cursor.
+     *
+     * @param skipFromStartCount number of elements to skip from the start of the container.
+     * @param cursor a cursor on this container
+     * @return iterator
+     */
+    public SearchRangeIterator getShortRangeIterator(final int skipFromStartCount, final RankCursor cursor) {
+        return getShortRangeIterator(skipFromStartCount);
+    }
+
+    /**
      * Add all shorts in [begin,end) using an unsigned interpretation. May generate a new container.
      *
      * @param begin start of range (inclusive)

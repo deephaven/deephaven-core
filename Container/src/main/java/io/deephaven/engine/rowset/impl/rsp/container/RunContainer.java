@@ -1375,6 +1375,12 @@ public final class RunContainer extends Container {
         return new RunContainerRangeIterator(this, initialSeek);
     }
 
+    @Override
+    public SearchRangeIterator getShortRangeIterator(final int initialSeek, final RankCursor cursor) {
+        final int run = cursor.runForRank(this, initialSeek);
+        return new RunContainerRangeIterator(this, run, initialSeek - cursor.cardBefore());
+    }
+
     /**
      * Gets the value of the first element of the run at the index.
      *
