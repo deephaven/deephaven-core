@@ -281,7 +281,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     private long findPacked(final long packedValue) {
         int i = 0;
-        int pos = 0;
+        long pos = 0;
         long iData = packedGet(0);
         long iValue = iData;
         while (true) {
