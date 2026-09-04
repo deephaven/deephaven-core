@@ -23,13 +23,13 @@ In traditional programming, a data structure is a container holding your data. W
 
 **Deephaven tables work differently.** A table is more like a _recipe_ — a description of how to compute results from source data. When you call [`where`](../reference/table-operations/filter/where.md) or [`update`](../reference/table-operations/select/update.md), you're not creating a copy with filtered data. You're creating a new recipe that says "take this input and apply this transformation."
 
-```groovy order=source,filtered,doubled
-source = emptyTable(5).update("X = i")
+```groovy order=null
+source = timeTable("PT1S").update("X = ii")
 filtered = source.where("X > 2")
 doubled = source.update("Y = X * 2")
 ```
 
-Here, `filtered` contains rows where X > 2 (rows 3 and 4), computed immediately when you call `where`. But `filtered` also maintains a _dependency_ on `source` — if `source` changes (because it's connected to live data), `filtered` automatically recomputes and reflects those changes.
+`source` is a live table — it ticks once per second, adding a new row each cycle. `filtered` immediately reflects whichever rows currently satisfy `X > 2`, and it maintains a _dependency_ on `source`: as each new row arrives, `filtered` and `doubled` automatically recompute and reflect the change, without you rerunning any code.
 
 **Why this matters:**
 
