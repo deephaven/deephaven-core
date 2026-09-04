@@ -78,12 +78,44 @@ in
 {
   languages.java = {
     enable = true;
-    jdk.package = bootstrapJdk; # also sets JAVA_HOME
+    jdk.package = bootstrapJdk; # also sets JAVA_HOME (overridden below on
+    # Darwin -- see env.JAVA_HOME)
     # Not using languages.java.gradle -- we run the repo's own ./gradlew,
     # and a second Nix-provided `gradle` binary on PATH bound to the same
     # JDK would just be a confusing, unused alternative sitting alongside
     # it.
   };
+
+  # devenv's languages.java module sets JAVA_HOME to bootstrapJdk.home
+  # unconditionally (cachix/devenv's languages/java.nix). On Linux that IS
+  # the real JDK home (temurin-bin's Linux layout is flat), matching what a
+  # running JVM reports as its own `java.home` system property. On Darwin,
+  # though, nixpkgs' temurin-bin output is a symlink farm: the real JDK
+  # content lives nested at
+  # $out/Library/Java/JavaVirtualMachines/<name>-<major>.jdk/Contents/Home,
+  # and $out itself (== .home == what devenv sets JAVA_HOME to) is just
+  # top-level symlinks into that directory (confirmed against
+  # pkgs/development/compilers/temurin-bin/jdk-darwin-base.nix). A JVM
+  # launched through those symlinks reports its own `java.home` as the
+  # *resolved* nested path, not $out -- so Gradle's toolchain detection
+  # sees two different Location strings for the exact same JDK ("Detected
+  # by: environment variable 'JAVA_HOME'" at $out, "Detected by: Current
+  # JVM" at the nested Contents/Home) and lists it twice.
+  #
+  # nixpkgs' Darwin JDK builder already computes that nested bundle
+  # directory itself and exposes it via a `bundle` passthru (added by
+  # nixpkgs#375212, "treewide: standardize JDKs on darwin") -- appending
+  # Contents/Home to that gives the exact canonical path a running JVM
+  # will report, without us hand-guessing the vendor/version-specific
+  # "<name>-<major>.jdk" bundle name. Only present on Darwin (the Linux
+  # builder has no `bundle` attribute at all), so its presence is what to
+  # branch on. mkForce is needed because languages.java already sets this
+  # option (a plain conflicting assignment would otherwise error).
+  env.JAVA_HOME = pkgs.lib.mkForce (
+    if bootstrapJdk ? bundle
+    then "${bootstrapJdk.bundle}/Contents/Home"
+    else bootstrapJdk.home
+  );
 
   languages.javascript = {
     enable = true;
