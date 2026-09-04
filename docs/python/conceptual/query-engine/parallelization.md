@@ -134,7 +134,7 @@ This section explains when and how to override automatic parallelization for cod
 
 **Key concepts**:
 
-- **[`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable)**: An object representing a column expression, used in `select` or `update` operations.
+- **[`Selectable`](../../reference/query-language/types/Selectable.md)**: An object representing a column expression, used in `select` or `update` operations.
 - **Serial execution**: Forces rows to be processed one at a time, in order, using `with_serial`.
 - **[`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier)**: Ensures one operation completes before another starts.
 
@@ -170,6 +170,9 @@ source4 = empty_table(10).update("X = i * 2.0")
 result4 = source4.update("Squared = sqrt(X)")
 ```
 
+> [!NOTE]
+> These examples use small tables for clarity. Deephaven only splits a `select`/`update` computation across cores once a table crosses `QueryTable.minimumParallelSelectRows` (about 4.2 million rows by default), and `where` has its own, much smaller per-segment threshold (`QueryTable.parallelWhereRowsPerSegment`, about 65,536 rows by default). Below those thresholds, Deephaven evaluates the formula on a single core regardless of whether it's marked stateless — these examples illustrate the correctness contract, not actual observed parallel speedup.
+
 > [!WARNING]
 > **Breaking change in Deephaven 41+**
 >
@@ -183,6 +186,8 @@ You can change the default behavior using configuration properties:
 
 - For [`select`](../../reference/table-operations/select/select.md) and [`update`](../../reference/table-operations/select/update.md): set `QueryTable.statelessSelectByDefault`.
 - For filters: set `QueryTable.statelessFiltersByDefault`.
+
+See [Query table configuration](../query-table-configuration.md) for details on these and other engine configuration properties.
 
 ### Serialization
 
@@ -198,7 +203,7 @@ Serialization processes rows one at a time, in order, on a single thread. Use it
 > [!NOTE]
 > Most queries don't need serial execution. Use `with_serial` only when parallelization causes incorrect results.
 
-The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface provides the [`with_serial`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
+The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface provides the [`with_serial`](../../reference/table-operations/select/update.md#serial-execution) method for [`Filter`](../../reference/query-language/types/Filter.md) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](../../reference/query-language/types/Selectable.md) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
 
 > [!IMPORTANT]
 > `with_serial` cannot be used with [`view`](../../reference/table-operations/select/view.md) or [`update_view`](../../reference/table-operations/select/update-view.md). These operations compute values on-demand (when cells are accessed), so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need serial execution.
@@ -304,7 +309,7 @@ result = (
 )
 ```
 
-When a [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) is serial:
+When a [`Filter`](../../reference/query-language/types/Filter.md) is serial:
 
 - Every input row is evaluated in order.
 - Filter cannot be reordered with respect to other Filters.

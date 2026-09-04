@@ -204,21 +204,10 @@ counter = [0] as int[]
 
 getAndIncrement = { counter[0]++ }
 
-t = emptyTable(5_000_000).update("A = getAndIncrement()", "B = getAndIncrement()")
-```
-
-Without serialization, parallel execution causes race conditions where multiple threads read and update `counter` simultaneously. This doesn't throw an error — it silently produces wrong values:
-
-```groovy skip-test
-// Use a one-element int[] so parallel access can corrupt it
-counter = [0] as int[]
-
-getAndIncrement = { counter[0]++ }
-
 bad_result = emptyTable(5_000_000).update("A = getAndIncrement()", "B = getAndIncrement()")
 ```
 
-Parallel execution causes inconsistent values because multiple threads increment `counter` concurrently. You may see results like:
+Without serialization, parallel execution causes race conditions where multiple threads read and update `counter` simultaneously. This doesn't throw an error — it silently produces wrong values. You may see results like:
 
 | A | B |
 | - | - |
@@ -303,8 +292,8 @@ These solve different problems:
 
 When shared state is involved, you often need both:
 
-- `withSerial` to protect row-level access to the shared state
-- Barriers to ensure one column is completely done before the other starts
+- `withSerial` to protect row-level access to the shared state.
+- Barriers to ensure one column is completely done before the other starts.
 
 #### How barriers work
 
@@ -377,9 +366,9 @@ t = emptyTable(10).update([colA, colB, colC, colD])
 
 Execution order:
 
-- A and B run in parallel (they don't depend on each other)
-- D starts after A finishes (doesn't wait for B)
-- C starts after both A and B finish
+- A and B run in parallel (they don't depend on each other).
+- D starts after A finishes (doesn't wait for B).
+- C starts after both A and B finish.
 
 #### Barriers for Filters
 

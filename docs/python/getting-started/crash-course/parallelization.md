@@ -45,13 +45,13 @@ Within a single table, Deephaven splits the data into chunks and processes the c
 ```python test-set=parallel order=large_table
 from deephaven import empty_table
 
-# Calculate values for 5 million rows
-large_table = empty_table(5_000_000).update(
+# Calculate values for 20 million rows
+large_table = empty_table(20_000_000).update(
     ["Price = i * 0.01", "Quantity = i % 1000", "Total = Price * Quantity"]
 )
 ```
 
-With 5 million rows and 4 cores, Deephaven assigns roughly 1,250,000 rows to each core. All four cores compute their rows simultaneously, so the work completes about 4 times faster than if a single core processed all rows sequentially.
+With 20 million rows and 4 cores, Deephaven divides the work into four chunks of roughly 5 million rows each. All four cores compute their chunks simultaneously, so the work completes about 4 times faster than if a single core processed all rows sequentially. (Deephaven only splits a computation across cores once a table is large enough — at least a few million rows — so small tables are always processed on a single core.)
 
 ## When it works
 
@@ -191,3 +191,5 @@ result = empty_table(100).update(col)
 - Use `with_serial` to force sequential execution when your formula needs it.
 
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically — no extra code required.
+
+For more depth — including barriers and other concurrency-control tools — see [query parallelization](../../conceptual/query-engine/parallelization.md).

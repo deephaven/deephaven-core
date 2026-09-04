@@ -9,7 +9,7 @@ Modern computers have multiple processors (called "cores") that can work simulta
 
 ## How parallelization works
 
-Deephaven distributes work across cores in two ways:
+Deephaven distributes work across cores in a few ways, most visibly:
 
 1. **Across tables**: When your query creates multiple tables, Deephaven computes them at the same time on different cores.
 2. **Across rows**: When computing values for a single table, Deephaven divides the rows among cores so each core handles a portion.
@@ -41,15 +41,15 @@ When new data arrives in `trades`, Deephaven updates `highValue`, `bySymbol`, an
 When computing values within a single table, Deephaven divides the rows among available cores:
 
 ```groovy test-set=parallel order=largeTable
-// Calculate values for 5 million rows
-largeTable = emptyTable(5_000_000).update(
+// Calculate values for 20 million rows
+largeTable = emptyTable(20_000_000).update(
     "Price = i * 0.01",
     "Quantity = i % 1000",
     "Total = Price * Quantity"
 )
 ```
 
-With 5 million rows and 4 cores, Deephaven assigns roughly 1,250,000 rows to each core. All four cores compute their rows simultaneously, so the work completes about 4 times faster than if a single core processed all rows sequentially.
+With 20 million rows and 4 cores, Deephaven divides the work into four chunks of roughly 5 million rows each. All four cores compute their chunks simultaneously, so the work completes about 4 times faster than if a single core processed all rows sequentially. (Deephaven only splits a computation across cores once a table is large enough — at least a few million rows — so small tables are always processed on a single core.)
 
 ## When it works
 
@@ -134,7 +134,7 @@ The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with para
 
 The [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) method tells Deephaven to process this formula on a single core, one row at a time, in order:
 
-```groovy
+```groovy order=result
 import io.deephaven.api.Selectable
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -157,3 +157,5 @@ result = emptyTable(100).update([col])
 - Use `withSerial` to force sequential execution when your formula needs it.
 
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically — no extra code required.
+
+For more depth — including barriers and other concurrency-control tools — see [query parallelization](../../conceptual/query-engine/parallelization.md).
