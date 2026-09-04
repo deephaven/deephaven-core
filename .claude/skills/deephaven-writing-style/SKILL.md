@@ -79,6 +79,8 @@ Capitalize:
 | `with_respected_barriers`   | `withRespectedBarriers`  |
 | `Filter.from_`             | `Filter.from`            |
 
+In a small number of cases, method names may differ from the snake_case/camelCase translation, so it is worth double-checking that method names are valid when translating between Python and Groovy.
+
 ## Backticks
 
 Enclose: method names (`naturalJoin`), classes (`SystemTableLogger`), variables (`t`), file paths (`/tmp/etcd.snap`).
