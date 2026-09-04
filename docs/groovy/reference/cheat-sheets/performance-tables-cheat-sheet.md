@@ -84,26 +84,26 @@ Subscription statistics are presented in percentiles bucketed over a time period
 
 Here are the various metrics that are recorded by the deephaven-core server:
 
-| Stat Type             | Sender / Receiver | Description                                                                         |
-| --------------------- | ----------------- | ----------------------------------------------------------------------------------- |
-| EnqueueMillis         | Sender            | The time it took to record changes that occurred during a single update graph cycle |
-| AggregateMillis       | Sender            | The time it took to aggregate multiple updates within the same interval             |
-| PropagateMillis       | Sender            | The time it took to deliver an aggregated message to all subscribers                |
-| SnapshotMillis        | Sender            | The time it took to snapshot data for a new or changed subscription                 |
-| UpdateJobMillis       | Sender            | The time it took to run one full cycle of the off-thread propagation logic          |
-| WriteMillis           | Sender            | The time it took to write the update to a single subscriber                         |
-| WriteMegabits         | Sender            | The payload size of the update in megabits                                          |
-| DeserializationMillis | Receiver          | The time it took to read and deserialize the update from the wire                   |
-| ProcessUpdateMillis   | Receiver          | The time it took to apply a single update during the update graph cycle             |
-| RefreshMillis         | Receiver          | The time it took to apply all queued updates during a single udpate graph cycle     |
+| Stat Type            | Sender / Receiver | Description                                                                         |
+| -------------------- | ----------------- | ----------------------------------------------------------------------------------- |
+| EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle |
+| AggregateNanos       | Sender            | The time it took to aggregate multiple updates within the same interval             |
+| PropagateNanos       | Sender            | The time it took to deliver an aggregated message to all subscribers                |
+| SnapshotNanos        | Sender            | The time it took to snapshot data for a new or changed subscription                 |
+| UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic          |
+| WriteNanos           | Sender            | The time it took to write the update to a single subscriber                         |
+| WriteBytes           | Sender            | The payload size of the update in bytes                                             |
+| DeserializationNanos | Receiver          | The time it took to read and deserialize the update from the wire                   |
+| ProcessUpdateNanos   | Receiver          | The time it took to apply a single update during the update graph cycle             |
+| RefreshNanos         | Receiver          | The time it took to apply all queued updates during a single update graph cycle     |
 
 ### Barrage Snapshot Metrics
 
 Snapshot statistics are presented once per request.
 
-| Stat Type      | Description                                                             |
-| -------------- | ----------------------------------------------------------------------- |
-| QueueMillis    | The time it took waiting for a thread to process the request            |
-| SnapshotMillis | The time it took to construct a consistent snapshot of the source table |
-| WriteMillis    | The time it took to write the snapshot                                  |
-| WriteMegabits  | The payload size of the snapshot in megabits                            |
+| Column        | Description                                                             |
+| ------------- | ----------------------------------------------------------------------- |
+| QueueNanos    | The time it took waiting for a thread to process the request            |
+| SnapshotNanos | The time it took to construct a consistent snapshot of the source table |
+| WriteNanos    | The time it took to write the snapshot                                  |
+| WriteBytes    | The payload size of the snapshot in bytes                               |
