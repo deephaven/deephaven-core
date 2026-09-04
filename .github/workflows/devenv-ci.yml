@@ -42,7 +42,14 @@ concurrency:
 
 jobs:
   devenv-shell:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+          - os: macos-15 # Apple Silicon (arm64)
+          - os: macos-26 # Apple Silicon (arm64)
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -62,9 +69,9 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/notifications
-          key: devenv-gradle-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
+          key: devenv-gradle-${{ matrix.os }}-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
-            devenv-gradle-
+            devenv-gradle-${{ matrix.os }}-
 
       - name: Print toolchain versions
         shell: devenv shell bash -- -e {0}
@@ -103,6 +110,6 @@ jobs:
         uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: devenv-ci-jvm-err
+          name: devenv-ci-jvm-err-${{ matrix.os }}
           path: '**/*_pid*.log'
           if-no-files-found: ignore
