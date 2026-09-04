@@ -1,0 +1,148 @@
+name: Devenv CI
+
+# Exercises the devenv.sh dev environment (devenv.nix et al. -- see
+# devenv-README.md) the same way a contributor would: install Nix, enter the
+# shell, and confirm the toolchain pins / Gradle-wrapper vendoring / JDK
+# toolchain isolation it promises actually hold. Only runs when devenv's own
+# inputs change, since it's independent of the rest of the build.
+#
+# This does NOT assert zero network access -- the develocity plugin fetches
+# itself at Gradle configuration time regardless of --offline, so these
+# checks focus on the bootstrap JDK / vendored wrapper / toolchain isolation
+# actually working, not on nothing hitting the network.
+
+on:
+  pull_request:
+    branches: [ 'main', 'rc/v*' ]
+    paths:
+      - 'devenv.nix'
+      - 'devenv.yaml'
+      - 'devenv.lock'
+      - '.envrc'
+      - '.devenv.flake.nix'
+      - 'nix/**'
+      - 'gradle/wrapper/gradle-wrapper.properties'
+      - '.github/workflows/devenv-ci.yml'
+  push:
+    branches: [ 'main', 'check/**', 'release/v*' ]
+    paths:
+      - 'devenv.nix'
+      - 'devenv.yaml'
+      - 'devenv.lock'
+      - '.envrc'
+      - '.devenv.flake.nix'
+      - 'nix/**'
+      - 'gradle/wrapper/gradle-wrapper.properties'
+      - '.github/workflows/devenv-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  devenv-shell:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+          - os: ubuntu-26.04
+          - os: ubuntu-24.04-arm # arm64
+          - os: ubuntu-26.04-arm # arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Several Docker-based Gradle tasks that ./gradlew quick reaches (e.g.
+      # proto-backplane-grpc's generateProtobuf, proto/proto-backplane-grpc/build.gradle)
+      # hardcode platform = 'linux/amd64' regardless of host arch -- on the arm64
+      # runners in this matrix, running/building that image needs binfmt_misc
+      # emulation registered on the host first. This has no effect on the amd64
+      # legs (an amd64 image on an amd64 host needs no emulation).
+      - name: Set up QEMU (emulation for linux/amd64 Docker tasks on arm64 runners)
+        uses: docker/setup-qemu-action@v4
+
+      # BuildKit's image exporter has a long-standing bug (moby/buildkit#3891) that
+      # mis-resolves platform when exporting/tagging a just-built non-native-platform
+      # image, if the daemon's containerd image store is active -- surfacing as "no
+      # match for platform in manifest ...: not found" for the linux/amd64-pinned
+      # Docker tasks above (see also deephaven/deephaven-core#6370, which hit the same
+      # error on Docker Desktop with the experimental containerd image store enabled).
+      # Force it off explicitly rather than relying on whatever a given runner image
+      # currently defaults to.
+      - name: Disable the containerd image store (avoid moby/buildkit#3891)
+        uses: docker/setup-docker-action@v5
+        with:
+          daemon-config: |
+            {
+              "features": {
+                "containerd-snapshotter": false
+              }
+            }
+          # This action's daemon isn't guaranteed to be reachable at the same
+          # socket path the pre-installed one used -- export DOCKER_HOST so later
+          # steps (Gradle's Docker tasks, in particular) definitely talk to it
+          # rather than silently falling back to the original, unconfigured daemon.
+          set-host: true
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@v14
+
+      - name: Install devenv
+        run: nix profile add nixpkgs#devenv
+
+      - name: Cache Gradle caches
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/notifications
+          key: devenv-gradle-${{ matrix.os }}-${{ hashFiles('**/*.gradle', '**/*.gradle.kts', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            devenv-gradle-${{ matrix.os }}-
+
+      - name: Print toolchain versions
+        shell: devenv shell bash -- -e {0}
+        run: |
+          echo "== java ==";       java -version
+          echo "== JAVA_HOME ==";  echo "$JAVA_HOME"
+          echo "== node ==";       node --version
+          echo "== python3 ==";    python3 --version
+          echo "== gcc ==";        gcc --version
+          echo "== cmake ==";      cmake --version
+          echo "== pkg-config ==="; pkg-config --version
+
+      # gradle-wrapper.properties' distribution is vendored into the Nix
+      # store and pre-seeded into $GRADLE_USER_HOME/wrapper/dists by
+      # nix/gradle-wrapper.nix, so this uses that vendored copy rather than
+      # downloading it. (Not passing --offline: the develocity plugin still
+      # needs to fetch itself at configuration time regardless, so this
+      # isn't a true zero-network check -- just confirming Gradle itself
+      # launches against the bootstrap JDK without a fresh wrapper download.)
+      - name: gradlew --version (vendored wrapper distribution)
+        run: devenv shell ./gradlew --version
+
+      # Toolchain resolution is isolated to just the Nix-provided JDK
+      # (auto-detect/auto-download both disabled) -- assert both the
+      # settings and that exactly one JDK is visible.
+      - name: javaToolchains isolation check
+        run: |
+          devenv shell ./gradlew javaToolchains | tee toolchains.txt
+          test "$(grep -c 'Disabled' toolchains.txt)" -eq 2
+          test "$(grep -c '| Location:' toolchains.txt)" -eq 1
+
+      - name: ./gradlew quick
+        run: devenv shell ./gradlew --scan quick
+
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: devenv-ci-jvm-err-${{ matrix.os }}
+          path: '**/*_pid*.log'
+          if-no-files-found: ignore
