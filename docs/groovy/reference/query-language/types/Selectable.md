@@ -40,10 +40,11 @@ Forces the column calculation to execute sequentially on a single core, processi
 
 ```groovy order=result
 import io.deephaven.api.Selectable
+import java.util.concurrent.atomic.AtomicInteger
 
-counter = [0] as int[]
+counter = new AtomicInteger(0)
 
-col = Selectable.parse("ID = counter[0]++").withSerial()
+col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
 result = emptyTable(10).update([col])
 ```
 
