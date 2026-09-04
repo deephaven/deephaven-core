@@ -30,6 +30,17 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
    - For gRPC/proto examples, verify against `proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/`.
    - If you cannot find the source to verify a snippet, flag it: "⚠️ Could not verify: [snippet]"
 
+   **Shell scripts, CLI, and configuration:**
+   - Search `bin/` directory for actual script names and paths.
+   - Verify environment variable names by searching the startup scripts — do NOT assume variable names.
+   - Check CLI flags/arguments against actual script implementations.
+   - Verify file paths exist in the repository structure.
+
+   **Docker and deployment:**
+   - Verify Docker image names, tags, and environment variables against actual Dockerfiles in `docker/`.
+   - Check docker-compose examples against real compose files in the repository.
+   - Verify port numbers, volume mounts, and network configurations.
+
    **Common accuracy pitfalls to check specifically:**
    - **Execution context:** Do `transform` callbacks on live partitioned tables capture and reopen an execution context? (Required because new constituents arrive on update threads.)
    - **Materialization vs. direct access:** Does text claiming "direct access" actually involve a copy? (`toArray()`, `to_pandas()`, `to_numpy()` all materialize data.)
@@ -76,3 +87,13 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
    - For each fix, show the reference source (quoted, briefly) that confirms it's correct.
    - For any link additions, show what confirmed the target file's existence.
    - Do NOT batch fixes without verification — verify each one individually, even under time pressure.
+
+**Quick verification checklist:**
+- [ ] Every method/function name verified against source
+- [ ] Every parameter name and type verified
+- [ ] Every import statement verified against actual package structure
+- [ ] Every configuration property verified
+- [ ] Every script path and variable name verified
+- [ ] Every CLI command verified against actual scripts
+- [ ] Every internal link target file exists
+- [ ] Every external link flagged for manual verification
