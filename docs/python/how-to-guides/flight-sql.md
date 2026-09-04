@@ -33,51 +33,62 @@ Each of the following examples demonstrates:
 [Arrow Database Connectivity (ADBC)](https://arrow.apache.org/docs/format/ADBC.html) is an Arrow-first interface for efficiently fetching large datasets from a database.
 It's a great choice when paired with the Deephaven Flight SQL server given that the Flight protocol itself is Arrow-first.
 
-There are a variety of ADBC client implementations that have [Flight SQL drivers](https://arrow.apache.org/adbc/current/driver/flight_sql.html).
+ADBC drivers are distributed as shared libraries that can be used from any language through an [ADBC client library](https://arrow.apache.org/adbc/current/client_libraries.html) (also called a driver manager).
+The recommended way to get the [Flight SQL driver](https://arrow.apache.org/adbc/current/driver/flight_sql.html) is to install it with the [dbc](https://docs.columnar.tech/dbc/) command-line tool:
+
+```bash skip-test
+dbc install flightsql
+```
+
+This installs the driver's shared library and its driver manifest to a location where an ADBC client library can discover it by slug (`flightsql`).
 
 #### ADBC Python
 
-The [ADBC Python](https://arrow.apache.org/adbc/current/python/index.html) library has a [Flight SQL driver](https://arrow.apache.org/adbc/current/python/api/adbc_driver_flightsql.html), and is simple to use from Python.
-[Installation](https://arrow.apache.org/adbc/main/installation.html#python) is as simple as `pip install adbc-driver-flightsql pyarrow`.
+The [ADBC Python](https://arrow.apache.org/adbc/current/python/index.html) library (driver manager) loads the Flight SQL driver, and is simple to use from Python.
+[Installation](https://arrow.apache.org/adbc/current/python/quickstart.html) is as simple as `pip install adbc-driver-manager pyarrow`.
 
 ```python skip-test
-import adbc_driver_flightsql.dbapi
-from adbc_driver_flightsql import DatabaseOptions
+from adbc_driver_manager import dbapi
 
-with adbc_driver_flightsql.dbapi.connect(
-    "grpc://localhost:10000",
-    db_kwargs={
-        DatabaseOptions.AUTHORIZATION_HEADER.value: "Anonymous",
-    },
-) as conn:
-    with conn.cursor() as cursor:
-        cursor.execute("SELECT 42 as Foo")
-        pa_table = cursor.fetch_arrow_table()
-        print(pa_table)
+with (
+    dbapi.connect(
+        driver="flightsql",
+        db_kwargs={
+            "uri": "grpc://localhost:10000",
+            "adbc.flight.sql.authorization_header": "Anonymous",
+        },
+    ) as connection,
+    connection.cursor() as cursor,
+):
+    cursor.execute("SELECT 42 as Foo")
+    pa_table = cursor.fetch_arrow_table()
+    print(pa_table)
 ```
 
 #### ADBC Java
 
-The [ADBC Java](https://arrow.apache.org/adbc/current/java/index.html) library has a [Flight SQL driver](https://arrow.apache.org/adbc/current/java/api/org/apache/arrow/adbc/driver/flightsql/package-summary.html), and is simple to use from Java.
-[Installation](https://arrow.apache.org/adbc/main/installation.html#java) requires a dependency on `org.apache.arrow.adbc:adbc-driver-flight-sql`.
+The [ADBC Java](https://arrow.apache.org/adbc/current/java/index.html) library (driver manager) loads the Flight SQL driver, and is simple to use from Java.
+[Installation](https://arrow.apache.org/adbc/current/java/quickstart.html) requires a dependency on `org.apache.arrow.adbc.adbc-driver-jni`.
 
 ```java skip-test
-Map<String, Object> options = new HashMap<>();
-AdbcDriver.PARAM_URI.set(options, "grpc://localhost:10000");
-FlightSqlConnectionProperties.WITH_COOKIE_MIDDLEWARE.set(options, true);
-options.put(FlightSqlConnectionProperties.RPC_CALL_HEADER_PREFIX + "Authorization", "Anonymous");
-options.put(FlightSqlConnectionProperties.RPC_CALL_HEADER_PREFIX + "x-deephaven-auth-cookie-request", "true");
+final String DRIVER_FACTORY = "org.apache.arrow.adbc.driver.jni.JniDriverFactory";
+
+Map<String, Object> params = new HashMap<>();
+JniDriver.PARAM_DRIVER.set(params, "flightsql");
+params.put("uri", "grpc://localhost:10000");
+params.put("adbc.flight.sql.authorization_header", "Anonymous");
+params.put("adbc.flight.sql.rpc.call_header.x-deephaven-auth-cookie-request", "true");
 try (
         BufferAllocator allocator = new RootAllocator();
-        AdbcDatabase database = new FlightSqlDriverFactory().getDriver(allocator).open(options);
+        AdbcDatabase database =
+                AdbcDriverManager.getInstance().connect(DRIVER_FACTORY, allocator, params);
         AdbcConnection connection = database.connect()) {
     try (AdbcStatement statement = connection.createStatement()) {
         statement.setSqlQuery("SELECT 42 as Foo");
-        try (QueryResult queryResult = statement.executeQuery()) {
+        try (AdbcStatement.QueryResult queryResult = statement.executeQuery()) {
             ArrowReader reader = queryResult.getReader();
-            VectorSchemaRoot vectorRoot = reader.getVectorSchemaRoot();
             while (reader.loadNextBatch()) {
-                System.out.println(vectorRoot.contentToTSVString());
+                System.out.println(reader.getVectorSchemaRoot().contentToTSVString());
             }
         }
     }
@@ -86,11 +97,15 @@ try (
 
 #### Other ADBC clients
 
-Any ADBC client that has a Flight SQL driver should work with Deephaven Flight SQL:
+Any ADBC client library should work with Deephaven Flight SQL:
 
-- [ADBC C / C++](https://arrow.apache.org/adbc/current/cpp/index.html) [driver and installation](https://arrow.apache.org/adbc/main/installation.html#c-c).
-- [ADBC Go](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc) [driver](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc/driver/flightsql) and [installation](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc#readme-installation).
-- [ADBC R](https://arrow.apache.org/adbc/current/r/index.html) [driver](https://arrow.apache.org/adbc/current/r/adbcflightsql/index.html) and [installation](https://arrow.apache.org/adbc/main/installation.html#r).
+- [ADBC C / C++](https://arrow.apache.org/adbc/current/cpp/index.html) [driver manager](https://arrow.apache.org/adbc/current/cpp/driver_manager.html).
+- [ADBC C# / .NET](https://arrow.apache.org/adbc/current/csharp/index.html) driver manager.
+- [ADBC Go](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc) [driver manager](https://pkg.go.dev/github.com/apache/arrow-adbc/go/adbc/drivermgr).
+- [ADBC JavaScript / TypeScript](https://arrow.apache.org/adbc/current/javascript/index.html) [driver manager](https://arrow.apache.org/adbc/current/javascript/driver_manager.html).
+- [ADBC R](https://arrow.apache.org/adbc/current/r/index.html) driver manager.
+- [ADBC Ruby](https://arrow.apache.org/adbc/current/ruby/index.html) driver manager.
+- [ADBC Rust](https://arrow.apache.org/adbc/current/rust/index.html) [driver manager](https://arrow.apache.org/adbc/current/rust/driver_manager.html).
 
 ### Flight SQL JDBC Driver
 
@@ -154,23 +169,29 @@ Each of the following examples demonstrates:
 
 #### ADBC Python
 
-The [ADBC Python](https://arrow.apache.org/adbc/current/python/index.html) library has a [Flight SQL driver](https://arrow.apache.org/adbc/current/python/api/adbc_driver_flightsql.html), and is simple to use from Python.
-[Installation](https://arrow.apache.org/adbc/main/installation.html#python) is as simple as `pip install adbc-driver-flightsql pyarrow`.
+The [ADBC Python](https://arrow.apache.org/adbc/current/python/index.html) client library (driver manager) loads the `flightsql` driver installed with `dbc install flightsql`.
+After installing the driver, install the ADBC Python client library (`pyarrow` or `polars` is also required to use the DBAPI interface):
+
+```bash skip-test
+pip install adbc-driver-manager pyarrow
+```
 
 ```python skip-test
-from typing import List, Tuple
-from adbc_driver_flightsql import dbapi, DatabaseOptions
+from adbc_driver_manager import dbapi
 
-with dbapi.connect(
-    "grpc://localhost:10000",
-    db_kwargs={
-        DatabaseOptions.AUTHORIZATION_HEADER.value: "Bearer io.deephaven.authentication.psk.PskAuthenticationHandler deephaven",
-    },
-) as conn:
-    with conn.cursor() as cursor:
-        cursor.execute("SELECT 42 as Foo")
-        rows: List[Tuple] = cursor.fetchall()
-        print(rows[0][0])
+with (
+    dbapi.connect(
+        driver="flightsql",
+        db_kwargs={
+            "uri": "grpc://localhost:10000",
+            "adbc.flight.sql.authorization_header": "Bearer io.deephaven.authentication.psk.PskAuthenticationHandler deephaven",
+        },
+    ) as connection,
+    connection.cursor() as cursor,
+):
+    cursor.execute("SELECT 42 as Foo")
+    pa_table = cursor.fetch_arrow_table()
+    print(pa_table)
 ```
 
 #### Python Flight SQL Client
