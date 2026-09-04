@@ -20,7 +20,7 @@ Parallelization occurs at two levels:
 
 When you create multiple tables from the same source, Deephaven computes them simultaneously. In this example, three independent tables derive from `market_data`:
 
-```python order=null
+```python ticking-table order=null
 from deephaven import time_table
 
 # Create a live table that adds a row every second

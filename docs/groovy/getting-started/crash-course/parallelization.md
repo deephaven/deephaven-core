@@ -11,14 +11,14 @@ Modern computers have multiple processors (called "cores") that can work simulta
 
 Deephaven distributes work across cores in a few ways, most visibly:
 
-1. **Across tables**: When your query creates multiple tables, Deephaven computes them at the same time on different cores.
+1. **Across tables**: When multiple tables depend on the same live source, Deephaven updates them at the same time on different cores as new data arrives.
 2. **Across rows**: When computing values for a single table, Deephaven divides the rows among cores so each core handles a portion.
 
 ### Across tables
 
-When one table feeds into several downstream tables, Deephaven computes those downstream tables simultaneously. In this example, `trades` feeds into three separate tables using [`where`](../../reference/table-operations/filter/where.md), [`aggBy`](../../reference/table-operations/group-and-aggregate/aggBy.md), and [`tail`](../../reference/table-operations/filter/tail.md):
+When one table feeds into several downstream tables, Deephaven updates those downstream tables simultaneously as new data arrives. In this example, `trades` feeds into three separate tables using [`where`](../../reference/table-operations/filter/where.md), [`aggBy`](../../reference/table-operations/group-and-aggregate/aggBy.md), and [`tail`](../../reference/table-operations/filter/tail.md):
 
-```groovy test-set=parallel order=null
+```groovy test-set=parallel ticking-table order=null
 import static io.deephaven.api.agg.Aggregation.*
 
 // Create a table that adds a new row every second
@@ -28,7 +28,7 @@ trades = timeTable("PT1s").update(
     "Volume = randomInt(100, 10000)"
 )
 
-// These three tables are computed simultaneously on different cores
+// These three tables update simultaneously on different cores as new data arrives
 highValue = trades.where("Price * Volume > 500000")
 bySymbol = trades.aggBy([AggSum("TotalVolume = Volume")], "Symbol")
 recent = trades.tail(100)

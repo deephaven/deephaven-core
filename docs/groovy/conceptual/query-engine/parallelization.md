@@ -20,7 +20,7 @@ Parallelization occurs at two levels:
 
 When you create multiple tables from the same source, Deephaven computes them simultaneously. In this example, three independent tables derive from `marketData`:
 
-```groovy order=null
+```groovy ticking-table order=null
 // Create a live table that adds a row every second
 marketData = timeTable("PT1s").update(
     "Symbol = `SYM` + (int)(i % 5)",

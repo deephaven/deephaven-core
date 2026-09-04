@@ -137,7 +137,7 @@ result_not_filtered = source.where(filters=["!((boolean)my_filter(IntegerColumn)
 
 By default, Deephaven parallelizes filter evaluation across multiple CPU cores. For filters with side effects or order dependencies, use [`with_serial`](../../query-language/types/Filter.md#with_serial) to force sequential processing.
 
-This filter tracks how many rows it evaluates. On a source with more than 131,072 rows, the filter would be evaluated in parallel and the counter could produce incorrect results. The example below uses 100 rows for clarity; use `with_serial` to protect larger inputs:
+This filter tracks how many rows it evaluates. On a source with more than 131,072 rows, the filter would be evaluated in parallel and the counter could produce incorrect results — but only on a free-threaded Python build; on the standard GIL-enabled build, a Python-backed filter like this one always runs serially regardless of row count. The example below uses 100 rows for clarity; use `with_serial` to protect larger inputs on a free-threaded build.
 
 ```python order=source,result
 from deephaven.filters import Filter
