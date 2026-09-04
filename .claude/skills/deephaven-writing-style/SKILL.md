@@ -7,6 +7,16 @@ description: Deephaven's documentation style guide for deephaven-core — proper
 
 These standards apply to deephaven-core documentation.
 
+## Documentation categories
+
+**Tutorial:** A learning resource that guides a reader step-by-step to a specific outcome. All users will achieve the same outcome. Tutorials are lessons.
+
+**How-to guide:** A follow-along resource that guides a reader step-by-step. These usually show new users how to solve a specific problem. Similar to a recipe, when following along with a how-to guide, all users will learn the same information, but they can use their own ingredients, so outcomes may differ. Advice or general recommendations on how to use a feature/method may be offered.
+
+**Concept guide:** A resource to study. It is intended to broaden understanding of higher concepts and to explain how or why with contextual explanations. Overview pages may be considered concept guides.
+
+**Reference guide:** A study resource. It is purely informative; its purpose is to describe without extraneous information — very pointed, without advice or general tips. JavaDocs, PyDocs, and other API documentation are reference guides.
+
 ## Prose quality
 
 - **Prefer present, active voice.** Avoid future-tense "will". Flag passive constructions and suggest an active rewrite unless the actor is genuinely unknown or irrelevant (e.g., "the file is created" only when who/what creates it doesn't matter to the reader).
@@ -43,13 +53,13 @@ Capitalize:
 
 ## Code formatting
 
-**Python (PEP 8):**
+**Python:** Follow [PEP 8 naming conventions](https://peps.python.org/pep-0008/#naming-conventions).
 
 - `snake_case` for variables (including tables) and functions.
 - `PascalCase` for classes and type variables.
 - Avoid full imports: `from deephaven import time_table` not `from deephaven import *`
 
-**Groovy (Oracle conventions):**
+**Groovy:** Follow [Oracle naming conventions](https://www.oracle.com/java/technologies/javase/codeconventions-namingconventions.html).
 
 - `camelCase` for variables (including tables) and methods.
 - `PascalCase` for classes.
