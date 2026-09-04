@@ -21,7 +21,6 @@ import io.deephaven.engine.table.impl.sort.timsort.DoubleTimsortKernel;
 import io.deephaven.util.compare.DoubleComparisons;
 
 import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.insertionPoint;
-import static io.deephaven.util.QueryConstants.MAX_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -48,10 +47,13 @@ public class DoubleColumnBinarySearchKernel {
         if (filter.getLower() == NULL_DOUBLE && filter.isLowerInclusive()) {
             return binarySearchMax(source, selection, sortColumn, filter.getUpper(), filter.isUpperInclusive(),
                     usePrev);
-        } else if (filter.getUpper() == MAX_DOUBLE && filter.isUpperInclusive()) {
+        } else if (Double.isNaN(filter.getUpper()) && filter.isUpperInclusive()) {
             return binarySearchMin(source, selection, sortColumn, filter.getLower(), filter.isLowerInclusive(),
                     usePrev);
         } else {
+            // gt() and geq() build a NaN upper bound that is exclusive, so the common greater-than filters
+            // land here rather than short-circuiting: the trailing NaN block has to be located and excluded,
+            // which needs the upper bound searched as well as the lower.
             return binarySearchMinMax(source, selection, sortColumn,
                     filter.getLower(), filter.getUpper(),
                     filter.isLowerInclusive(), filter.isUpperInclusive(), usePrev);
@@ -448,8 +450,8 @@ public class DoubleColumnBinarySearchKernel {
      * equals {@code max}. The returned value is the leftmost such position.</li>
      * <li>A negative value {@code p} is returned in all other cases: when {@code max} is absent from the range, when
      * {@code maxInc=false} (exclusive bound), or when no position satisfies the bound. In this case {@code -(p + 1)} is
-     * the insertion point, i.e. the leftmost position whose value falls below {@code max}, or {@code lastPos + 1} if all
-     * values in the range are &gt;= {@code max}.</li>
+     * the insertion point, i.e. the leftmost position whose value falls below {@code max}, or {@code lastPos + 1} if
+     * all values in the range are &gt;= {@code max}.</li>
      * </ul>
      *
      * @param source The element source to search.

@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -625,5 +626,63 @@ public class IntRegionBinarySearchKernelTest {
                         return values.size();
                     }
                 });
+    }
+
+    /**
+     * A match search walks its value list once against the region, advancing a cursor as it goes, so the list must be
+     * ordered the way the data is -- the engine's null-aware order, in which the null sentinel sorts first ascending --
+     * or every value after the first is searched only in the tail and can be missed.
+     *
+     * <p>
+     * Only a multi-value list can detect a mismatch, and only one containing the null sentinel can detect one that
+     * affects the sentinel specifically; every other call site in this class passes a single value.
+     */
+    @Test
+    public void testMatchMultipleValuesIncludingNull() {
+        final List<Integer> ascending =
+                List.of(NULL_INT, (int) 1, (int) 2, (int) 5, (int) 5, (int) 9);
+
+        assertMatchKeys(ascending, new Integer[] {(int) 5, NULL_INT}, List.of(0L, 3L, 4L));
+        assertMatchKeys(ascending, new Integer[] {NULL_INT, (int) 5}, List.of(0L, 3L, 4L));
+        assertMatchKeys(ascending, new Integer[] {(int) 9, (int) 1, NULL_INT}, List.of(0L, 1L, 5L));
+        assertMatchKeys(ascending, new Integer[] {NULL_INT}, List.of(0L));
+        assertMatchKeys(ascending, new Integer[] {(int) 1, (int) 9}, List.of(1L, 5L));
+        assertMatchKeys(ascending, new Integer[] {(int) 1, (int) 3, (int) 9}, List.of(1L, 5L));
+        assertMatchKeys(ascending, new Integer[] {(int) 3, (int) 7}, List.of());
+    }
+
+    /**
+     * Asserts that searching {@code ascendingData} for {@code searchValues} returns exactly {@code expectedAscending}
+     * row keys, checked in both sort directions; for descending the data and expected keys are mirrored.
+     */
+    private static void assertMatchKeys(
+            final List<Integer> ascendingData,
+            final Integer[] searchValues,
+            final List<Long> expectedAscending) {
+        for (final boolean descending : new boolean[] {false, true}) {
+            final List<Integer> data;
+            final List<Long> expected = new ArrayList<>();
+            if (descending) {
+                data = new ArrayList<>(ascendingData);
+                Collections.reverse(data);
+                for (int ii = expectedAscending.size() - 1; ii >= 0; --ii) {
+                    expected.add(ascendingData.size() - 1 - expectedAscending.get(ii));
+                }
+            } else {
+                data = ascendingData;
+                expected.addAll(expectedAscending);
+            }
+            final ColumnRegionInt<Values> region = makeColumnRegionInt(data);
+            final SortColumn sortColumn = descending
+                    ? SortColumn.desc(ColumnName.of("test"))
+                    : SortColumn.asc(ColumnName.of("test"));
+            try (final RowSet matched = IntRegionBinarySearchKernel.binarySearchMatch(
+                    region, 0, data.size() - 1, sortColumn, searchValues)) {
+                final List<Long> actual = new ArrayList<>();
+                matched.forAllRowKeys(actual::add);
+                assertEquals("descending=" + descending + " values=" + Arrays.toString(searchValues),
+                        expected, actual);
+            }
+        }
     }
 }

@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.sort;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
@@ -91,15 +90,24 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
         if (matchFilter != null) {
             final Class<?> dataType = columnSource.getType();
             final Object[] values = matchFilter.getValues();
+            if (values.length == 0) {
+                // Nothing to search for, so the answer is known without touching the data.
+                onComplete.accept(matchFilter.getMatchOptions().inverted()
+                        ? PushdownResult.allMatch(selection)
+                        : PushdownResult.noneMatch(selection));
+                return;
+            }
+            // Safe to search for these values directly: MatchFilter has already removed any NaN the filter does not
+            // intend to match, so the search's NaN == NaN equality cannot disagree with the filter's own.
             try (final RowSet matching =
                     binarySearchMatch(columnSource, dataType, selection, sortColumn, values, usePrev)) {
                 // Handle normal / inverted match filters:
                 if (matchFilter.getMatchOptions().inverted()) {
                     try (final RowSet pushdownMatches = selection.minus(matching)) {
-                        onComplete.accept(PushdownResult.of(selection, pushdownMatches, RowSetFactory.empty()));
+                        onComplete.accept(PushdownResult.exactMatch(selection, pushdownMatches));
                     }
                 } else {
-                    onComplete.accept(PushdownResult.of(selection, matching, RowSetFactory.empty()));
+                    onComplete.accept(PushdownResult.exactMatch(selection, matching));
                 }
                 return;
             }
@@ -107,7 +115,7 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
 
         if (rangeFilter != null) {
             try (final RowSet matching = binarySearchRange(columnSource, selection, sortColumn, rangeFilter, usePrev)) {
-                onComplete.accept(PushdownResult.of(selection, matching, RowSetFactory.empty()));
+                onComplete.accept(PushdownResult.exactMatch(selection, matching));
                 return;
             }
         }
@@ -118,6 +126,18 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
 
     /**
      * Helper method to call correct kernel based on data type.
+     *
+     * <p>
+     * NB: Equality and ordering tests are performed using the type-specific Comparison classes. In the case of float /
+     * double, this returns NaN == NaN -> true. Therefore NaN should be included in the search values IFF it is desired
+     * to match NaN values (i.e. MatchOptions.nanMatch() is true). MatchFilter creation already handles this and will
+     * remove any user-provided NaN from the search values when nanMatch is false.
+     *
+     * <p>
+     * A non-primitive type takes the ordering-consistent-with-equals fast path only when
+     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} shows that compareTo() operations can bound
+     * the search values exactly. Otherwise, will use {@link ComparableColumnBinarySearchKernel} which further tests for
+     * equality before declaring a match.
      */
     public static RowSet binarySearchMatch(
             @NotNull final ColumnSource<?> source,
@@ -151,7 +171,13 @@ public class SortedColumnPushdownManager implements PushdownPredicateManager {
             return DoubleColumnBinarySearchKernel.binarySearchMatch(source, selection, sortColumn, searchValues,
                     usePrev);
         }
-        return ObjectColumnBinarySearchKernel.binarySearchMatch(source, selection, sortColumn, searchValues, usePrev);
+        // We can take the fast path if the comparison of the column is consistent with equality.
+        if (BinarySearchKernelHelper.compareConsistentWithEquality(dataType)) {
+            return ObjectColumnBinarySearchKernel.binarySearchMatch(source, selection, sortColumn, searchValues,
+                    usePrev);
+        }
+        return ComparableColumnBinarySearchKernel.binarySearchMatch(source, selection, sortColumn, searchValues,
+                usePrev);
     }
 
     /**

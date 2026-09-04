@@ -14,6 +14,8 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.math.BigDecimal;
+
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
@@ -131,6 +133,18 @@ public class QueryTableWhereSpecialCasesTest {
             final String charColName,
             final Filter charFilter,
             final CharPredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateCharFilterOnSource(table, charColName, charFilter, predicate);
+        validateCharFilterOnSource(table.sort(charColName), charColName, charFilter, predicate);
+        validateCharFilterOnSource(table.sortDescending(charColName), charColName, charFilter, predicate);
+    }
+
+    private void validateCharFilterOnSource(
+            final Table table,
+            final String charColName,
+            final Filter charFilter,
+            final CharPredicate predicate) {
         final Table result = table.where(charFilter);
         try (final var it = result.characterColumnIterator(charColName)) {
             while (it.hasNext()) {
@@ -154,6 +168,18 @@ public class QueryTableWhereSpecialCasesTest {
     }
 
     private void validateByteFilter(
+            final Table table,
+            final String byteColName,
+            final Filter byteFilter,
+            final BytePredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateByteFilterOnSource(table, byteColName, byteFilter, predicate);
+        validateByteFilterOnSource(table.sort(byteColName), byteColName, byteFilter, predicate);
+        validateByteFilterOnSource(table.sortDescending(byteColName), byteColName, byteFilter, predicate);
+    }
+
+    private void validateByteFilterOnSource(
             final Table table,
             final String byteColName,
             final Filter byteFilter,
@@ -185,6 +211,18 @@ public class QueryTableWhereSpecialCasesTest {
             final String shortColName,
             final Filter shortFilter,
             final ShortPredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateShortFilterOnSource(table, shortColName, shortFilter, predicate);
+        validateShortFilterOnSource(table.sort(shortColName), shortColName, shortFilter, predicate);
+        validateShortFilterOnSource(table.sortDescending(shortColName), shortColName, shortFilter, predicate);
+    }
+
+    private void validateShortFilterOnSource(
+            final Table table,
+            final String shortColName,
+            final Filter shortFilter,
+            final ShortPredicate predicate) {
         final Table result = table.where(shortFilter);
         try (final var it = result.shortColumnIterator(shortColName)) {
             while (it.hasNext()) {
@@ -208,6 +246,18 @@ public class QueryTableWhereSpecialCasesTest {
     }
 
     private void validateIntFilter(
+            final Table table,
+            final String intColName,
+            final Filter intFilter,
+            final IntPredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateIntFilterOnSource(table, intColName, intFilter, predicate);
+        validateIntFilterOnSource(table.sort(intColName), intColName, intFilter, predicate);
+        validateIntFilterOnSource(table.sortDescending(intColName), intColName, intFilter, predicate);
+    }
+
+    private void validateIntFilterOnSource(
             final Table table,
             final String intColName,
             final Filter intFilter,
@@ -239,6 +289,18 @@ public class QueryTableWhereSpecialCasesTest {
             final String longColName,
             final Filter longFilter,
             final LongPredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateLongFilterOnSource(table, longColName, longFilter, predicate);
+        validateLongFilterOnSource(table.sort(longColName), longColName, longFilter, predicate);
+        validateLongFilterOnSource(table.sortDescending(longColName), longColName, longFilter, predicate);
+    }
+
+    private void validateLongFilterOnSource(
+            final Table table,
+            final String longColName,
+            final Filter longFilter,
+            final LongPredicate predicate) {
         final Table result = table.where(longFilter);
         try (final var it = result.longColumnIterator(longColName)) {
             while (it.hasNext()) {
@@ -262,6 +324,18 @@ public class QueryTableWhereSpecialCasesTest {
     }
 
     private void validateFloatFilter(
+            final Table table,
+            final String floatColName,
+            final Filter floatFilter,
+            final FloatPredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateFloatFilterOnSource(table, floatColName, floatFilter, predicate);
+        validateFloatFilterOnSource(table.sort(floatColName), floatColName, floatFilter, predicate);
+        validateFloatFilterOnSource(table.sortDescending(floatColName), floatColName, floatFilter, predicate);
+    }
+
+    private void validateFloatFilterOnSource(
             final Table table,
             final String floatColName,
             final Filter floatFilter,
@@ -293,6 +367,18 @@ public class QueryTableWhereSpecialCasesTest {
             final String doubleColName,
             final Filter doubleFilter,
             final DoublePredicate predicate) {
+        // Sorting by the filtered column engages sorted-column pushdown, which answers the filter with a binary
+        // search rather than the chunk filter. Both paths must agree with the predicate.
+        validateDoubleFilterOnSource(table, doubleColName, doubleFilter, predicate);
+        validateDoubleFilterOnSource(table.sort(doubleColName), doubleColName, doubleFilter, predicate);
+        validateDoubleFilterOnSource(table.sortDescending(doubleColName), doubleColName, doubleFilter, predicate);
+    }
+
+    private void validateDoubleFilterOnSource(
+            final Table table,
+            final String doubleColName,
+            final Filter doubleFilter,
+            final DoublePredicate predicate) {
         final Table result = table.where(doubleFilter);
         try (final var it = result.doubleColumnIterator(doubleColName)) {
             while (it.hasNext()) {
@@ -316,6 +402,63 @@ public class QueryTableWhereSpecialCasesTest {
     }
 
     // endregion Predicate Testing
+
+    /** A short string column with mixed case and a null, plus the ordering the sorted pushdown would see. */
+    private static Table sortedStrings(final boolean descending) {
+        final Table source = newTable(stringCol("S", "alpha", "BETA", "Alpha", null, "beta"));
+        return descending ? source.sortDescending("S") : source.sort("S");
+    }
+
+    /**
+     * A BigDecimal column carries values that are ordering-equal but not equal -- 1.0 and 1.00 differ in scale -- so a
+     * sort leaves them in one contiguous run, in row order. Matching is decided by equality, so a filter must select
+     * only the rows equal to its own value, and must do so whether or not the column is sorted.
+     */
+    @Test
+    public void testMatchOnSortedBigDecimalColumn() {
+        for (final String filter : new String[] {"X = 1.0", "X = 1.00", "X = 1", "X = 2.0", "X != 1.0",
+                // Several values from the one ordering-equal run, so the run has to answer for all of them.
+                "X in 1.0, 1.00", "X not in 1.0, 1.00", "X in 1.000, 1.0", "X in 1.0, 1.000",
+                "X in 1.00, 1, 1.000", "X in 1.0, 1.00, 2.0", "X in 1.000, 2.0", "X in 1.0, 1.0"}) {
+            final Table unsorted = bigDecimals();
+            final Table expected = unsorted.where(filter).sort("X").coalesce();
+            assertTableEquals(expected, bigDecimals().sort("X").where(filter).coalesce());
+
+            final Table expectedDescending = unsorted.where(filter).sortDescending("X").coalesce();
+            assertTableEquals(expectedDescending, bigDecimals().sortDescending("X").where(filter).coalesce());
+        }
+    }
+
+    /** Ordering-equal values at several scales, plus one unrelated value. */
+    private static Table bigDecimals() {
+        return newTable(col("X",
+                new BigDecimal("1.0"), new BigDecimal("1.00"), new BigDecimal("1"),
+                new BigDecimal("1E+0"), new BigDecimal("2.0")));
+    }
+
+    /**
+     * Sorted-column pushdown answers a match filter with a binary search that navigates by {@code compareTo}, which is
+     * case significant, so it cannot reach the rows a case-insensitive filter matches. Its result is emitted as an
+     * exact match with nothing left for a residual pass to repair, so such a filter has to decline the search rather
+     * than answer it with the rows the search happens to visit.
+     */
+    @Test
+    public void testCaseInsensitiveMatchOnSortedColumn() {
+        for (final boolean descending : new boolean[] {false, true}) {
+            for (final String filter : new String[] {"S icase in `alpha`", "S icase not in `alpha`"}) {
+                // A fresh table per side, so neither result is served from the other's memoized where().
+                final boolean originalSetting = QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION;
+                final Table expected;
+                QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = true;
+                try {
+                    expected = sortedStrings(descending).where(filter).coalesce();
+                } finally {
+                    QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = originalSetting;
+                }
+                assertTableEquals(expected, sortedStrings(descending).where(filter).coalesce());
+            }
+        }
+    }
 
     @Test
     public void testRangeGTZero() {
@@ -471,6 +614,90 @@ public class QueryTableWhereSpecialCasesTest {
                 "doubleCol",
                 RawString.of("doubleCol <= 0.0"),
                 val -> (val <= 0 || val == NULL_DOUBLE) && !Double.isNaN(val));
+    }
+
+    /**
+     * Deephaven ordering sorts NaN above positive infinity, so an inclusive {@code +Inf} upper bound is not an
+     * unbounded one: the trailing NaN block has to be located and excluded, which the sorted range pushdown can only do
+     * by searching the upper bound as well as the lower. An inclusive NaN upper bound is the unbounded case, and there
+     * the upper-bound search can be skipped. Neither shape is produced by {@code geq()}, whose NaN upper bound is
+     * exclusive, so both are built directly.
+     */
+    @Test
+    public void testRangeInclusiveInfiniteAndNaNUpperBounds() {
+        final Table source = getStaticTable();
+
+        // An inclusive +Inf upper bound admits +Inf and excludes NaN.
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new DoubleRangeFilter("doubleCol", 0.0, Double.POSITIVE_INFINITY, true, true),
+                val -> val >= 0.0 && !Double.isNaN(val));
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new FloatRangeFilter("floatCol", 0.0f, Float.POSITIVE_INFINITY, true, true),
+                val -> val >= 0.0f && !Float.isNaN(val));
+
+        // An inclusive NaN upper bound is unbounded above, so NaN is admitted along with +Inf.
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new DoubleRangeFilter("doubleCol", 0.0, Double.NaN, true, true),
+                val -> val >= 0.0 || Double.isNaN(val));
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new FloatRangeFilter("floatCol", 0.0f, Float.NaN, true, true),
+                val -> val >= 0.0f || Float.isNaN(val));
+
+        // An exclusive NaN upper bound is what geq() builds, and must exclude NaN.
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                DoubleRangeFilter.geq("doubleCol", 0.0),
+                val -> val >= 0.0 && !Double.isNaN(val));
+        validateFloatFilter(
+                source,
+                "floatCol",
+                FloatRangeFilter.geq("floatCol", 0.0f),
+                val -> val >= 0.0f && !Float.isNaN(val));
+    }
+
+    /**
+     * Under IEEE 754 every ordered comparison against NaN is false, NaN itself included, so a NaN bound matches no row.
+     * Deephaven ordering instead sorts NaN above every other value, which would have {@code <= NaN} admit everything
+     * and {@code >= NaN} admit only NaN; the range operators deliberately do not use that ordering for a NaN bound.
+     * Such a bound normally arrives by accident, through a query scope variable, rather than written out.
+     */
+    @Test
+    public void testNaNRangeBoundsMatchNothing() {
+        final Table source = getStaticTable();
+
+        for (final String op : new String[] {"<", "<=", ">", ">="}) {
+            validateDoubleFilter(
+                    source,
+                    "doubleCol",
+                    RawString.of("doubleCol " + op + " NaN"),
+                    val -> false);
+            validateFloatFilter(
+                    source,
+                    "floatCol",
+                    RawString.of("floatCol " + op + " NaN"),
+                    val -> false);
+        }
+
+        // Equality follows the same rules: nothing equals NaN, and everything differs from it, NaN included.
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol == NaN"),
+                val -> false);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                RawString.of("doubleCol != NaN"),
+                val -> true);
     }
 
     @Test

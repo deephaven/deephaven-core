@@ -14,6 +14,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.select.LongRangeFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.sort.timsort.LongTimsortDescendingKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongTimsortKernel;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionLong;
@@ -22,8 +24,69 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper.insertionPoint;
+import static io.deephaven.util.QueryConstants.MAX_LONG;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class LongRegionBinarySearchKernel {
+    // region binsearchRangeFilter
+    /**
+     * Performs a binary search on a sorted column region using bounds from a {@link LongRangeFilter}, returning the row
+     * keys that satisfy the filter.
+     *
+     * @param region The column region to search.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} representing the sorting order.
+     * @param filter The range filter supplying lower/upper bounds and their inclusive flags.
+     * @return A {@link RowSet} containing the row keys satisfying the filter.
+     */
+    public static RowSet binsearchRangeFilter(
+            @NotNull final ColumnRegionLong<?> region,
+            final long firstKey,
+            final long lastKey,
+            @NotNull final SortColumn sortColumn,
+            @NotNull final LongRangeFilter filter) {
+        if (filter.getLower() == NULL_LONG && filter.isLowerInclusive()) {
+            return binarySearchMax(region, firstKey, lastKey, sortColumn, filter.getUpper(),
+                    filter.isUpperInclusive());
+        } else if (filter.getUpper() == MAX_LONG && filter.isUpperInclusive()) {
+            return binarySearchMin(region, firstKey, lastKey, sortColumn, filter.getLower(),
+                    filter.isLowerInclusive());
+        } else {
+            return binarySearchMinMax(region, firstKey, lastKey, sortColumn,
+                    filter.getLower(), filter.getUpper(),
+                    filter.isLowerInclusive(), filter.isUpperInclusive());
+        }
+    }
+    // endregion binsearchRangeFilter
+
+    // region binsearchMatchFilter
+    /**
+     * Performs a binary search on a sorted column region for the values of a {@link MatchFilter}, returning the row
+     * keys that hold one of them. The filter's {@link io.deephaven.engine.table.MatchOptions#inverted() inverted} flag
+     * is not applied here; the caller must invert the result itself.
+     *
+     * @param region The column region to search.
+     * @param firstKey The first key in the column region to consider for the search.
+     * @param lastKey The last key in the column region to consider for the search.
+     * @param sortColumn A {@link SortColumn} representing the sorting order.
+     * @param filter The match filter supplying the values to find.
+     * @return A {@link RowSet} containing the row keys holding one of the filter's values.
+     */
+    public static RowSet binsearchMatchFilter(
+            @NotNull final ColumnRegionLong<?> region,
+            final long firstKey,
+            final long lastKey,
+            @NotNull final SortColumn sortColumn,
+            @NotNull final MatchFilter filter) {
+        if (filter.getValues().length == 0) {
+            // Nothing to search for, so nothing matches, and the data need not be touched at all.
+            return RowSetFactory.empty();
+        }
+        return binarySearchMatch(region, firstKey, lastKey, sortColumn, filter.getValues());
+    }
+    // endregion binsearchMatchFilter
+
     /**
      * Performs a binary search on a given column region to find the positions (row keys) of specified keys. The method
      * returns the RowSet containing the matched row keys.
@@ -259,7 +322,7 @@ public class LongRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static long lowerBoundAscending(
+    static long lowerBoundAscending(
             @NotNull final ColumnRegionLong<?> region,
             final long firstKey,
             final long lastKey,
@@ -308,7 +371,7 @@ public class LongRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value exceeds {@code max}.
      */
-    private static long upperBoundAscending(
+    static long upperBoundAscending(
             @NotNull final ColumnRegionLong<?> region,
             final long firstKey,
             final long lastKey,
@@ -359,7 +422,7 @@ public class LongRegionBinarySearchKernel {
      * @return A non-negative position if {@code maxInc=true} and {@code max} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the insertion point.
      */
-    private static long lowerBoundDescending(
+    static long lowerBoundDescending(
             @NotNull final ColumnRegionLong<?> region,
             final long firstKey,
             final long lastKey,
@@ -408,7 +471,7 @@ public class LongRegionBinarySearchKernel {
      * @return A non-negative position if {@code minInc=true} and {@code min} is found; otherwise a negative value
      *         {@code p} where {@code -(p + 1)} is the first position whose value falls below {@code min}.
      */
-    private static long upperBoundDescending(
+    static long upperBoundDescending(
             @NotNull final ColumnRegionLong<?> region,
             final long firstKey,
             final long lastKey,
