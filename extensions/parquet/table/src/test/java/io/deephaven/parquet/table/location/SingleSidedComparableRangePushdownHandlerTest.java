@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.location;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.qst.type.Type;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.parquet.bytes.BytesUtils;
@@ -51,9 +52,27 @@ public class SingleSidedComparableRangePushdownHandlerTest {
                 .build();
     }
 
+    /**
+     * Well-formed statistics that this handler cannot decode for a {@code LocalDate} column: the Parquet column is
+     * {@code INT32} annotated as a plain signed int rather than a date, so
+     * {@code MinMaxFromStatistics.getMinMaxForLocalDates} declines them. It carries the name of the {@code LocalDate}
+     * column so a filter over that column resolves against it.
+     */
+    private static Statistics<?> undecodableDateStats() {
+        final PrimitiveType col = Types.required(INT32)
+                .as(LogicalTypeAnnotation.intType(32, /* signed */ true))
+                .named("dateCol");
+        return Statistics.getBuilderForReading(col)
+                .withMin(BytesUtils.intToBytes(0))
+                .withMax(BytesUtils.intToBytes(10))
+                .withNumNulls(0L)
+                .build();
+    }
+
     private static final TableDefinition TABLE_DEF = TableDefinition.of(
             ColumnDefinition.of("dateCol", Type.find(LocalDate.class)),
-            ColumnDefinition.of("ldtCol", Type.find(LocalDateTime.class)));
+            ColumnDefinition.of("ldtCol", Type.find(LocalDateTime.class)),
+            ColumnDefinition.ofString("strCol"));
 
     private static SingleSidedComparableRangeFilter ssFilter(
             final String column,
@@ -144,6 +163,35 @@ public class SingleSidedComparableRangePushdownHandlerTest {
                 ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 0, 0), true, false), stats));
         assertTrue(evaluate(
                 ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 6, 0), true, false), stats));
+    }
+
+    /**
+     * The {@code WhereFilter} entry point, which the scenarios above bypass by calling the typed overload directly. A
+     * single-sided comparison over a column type {@link MinMaxFromStatistics#canDecodeComparable} can decode is
+     * claimed; a String column is declined with {@code null}, since {@link StringPushdownHandler} -- offered the filter
+     * first -- compares those byte-ordered statistics as bytes.
+     */
+    @Test
+    public void entryPointServesDecodableColumnTypesOnly() {
+        final WhereFilter dateComparison = ssFilter("dateCol", LocalDate.of(2020, 6, 1), true, true);
+        assertNotNull(SingleSidedComparableRangePushdownHandler.maybeCreateEvaluator(dateComparison));
+
+        final WhereFilter dateTimeComparison = ssFilter("ldtCol", LocalDateTime.of(2022, 1, 1, 6, 0), true, false);
+        assertNotNull(SingleSidedComparableRangePushdownHandler.maybeCreateEvaluator(dateTimeComparison));
+
+        final WhereFilter stringComparison = ssFilter("strCol", "mmm", true, true);
+        assertNull(SingleSidedComparableRangePushdownHandler.maybeCreateEvaluator(stringComparison));
+    }
+
+    /**
+     * Statistics this handler cannot decode are no evidence about the row group, so it is kept in either direction.
+     */
+    @Test
+    public void undecodableStatisticsKeepTheRowGroup() {
+        final Statistics<?> undecodable = undecodableDateStats();
+
+        assertTrue(evaluate(ssFilter("dateCol", LocalDate.of(2020, 6, 1), true, true), undecodable));
+        assertTrue(evaluate(ssFilter("dateCol", LocalDate.of(2020, 6, 1), true, false), undecodable));
     }
 
     /**

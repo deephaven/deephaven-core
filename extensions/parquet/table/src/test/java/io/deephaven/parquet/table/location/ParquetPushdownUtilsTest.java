@@ -6,13 +6,16 @@ package io.deephaven.parquet.table.location;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.parquet.bytes.BytesUtils;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT96;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -70,5 +73,28 @@ public class ParquetPushdownUtilsTest {
 
         // A repeated column, whose count is over leaf values rather than rows, never reaches here: it is declined
         // upstream by ParquetTableLocation.isSupportedForPushdown.
+    }
+
+    /**
+     * Parquet defines a {@code ColumnOrder} per type and only the type-defined one is interpreted here. {@code INT96}
+     * is the standing example of a type whose order the format leaves undefined, so its {@code min}/{@code max} cannot
+     * be read as bounds at all -- whatever they contain.
+     */
+    @Test
+    public void statisticsWithoutTypeDefinedColumnOrderAreRejected() {
+        final PrimitiveType int96Col = Types.required(INT96).named("int96Col");
+        final Statistics<?> stats = Statistics.getBuilderForReading(int96Col)
+                .withMin(new byte[12])
+                .withMax(new byte[12])
+                .withNumNulls(0L)
+                .build();
+
+        // Premise: extremes are present, and it is the column order alone that disqualifies them.
+        assertTrue(stats.hasNonNullValue());
+        assertNotEquals(ColumnOrder.typeDefined(), stats.type().columnOrder());
+
+        assertFalse(ParquetPushdownUtils.areStatisticsUsable(stats));
+        // The null count stays readable -- the two checks are independent.
+        assertTrue(ParquetPushdownUtils.isProvenFreeOfNulls(stats));
     }
 }
