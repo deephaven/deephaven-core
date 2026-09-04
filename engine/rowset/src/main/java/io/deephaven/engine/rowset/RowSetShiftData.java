@@ -1025,8 +1025,19 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                 }
             }
 
+            // A range holding no pre-shift key is dropped: nothing moves, and recording it would only prevent the
+            // coalescing of the ranges around it. The iterators are only moved past a range once it is recorded, so
+            // after a dropped range (or a gap between ranges) the next key seen may still lie on the far side of this
+            // range; it is brought up to the range before deciding whether the range holds a key.
             final long nextInterveningKey;
             if (polarityReversed) {
+                if (nextReverseKey != RowSequence.NULL_ROW_KEY && nextReverseKey > endRange) {
+                    if (preShiftKeysIteratorReverse.advance(endRange)) {
+                        nextReverseKey = preShiftKeysIteratorReverse.currentValue();
+                    } else {
+                        nextReverseKey = RowSequence.NULL_ROW_KEY;
+                    }
+                }
                 if (nextReverseKey == RowSequence.NULL_ROW_KEY || nextReverseKey < beginRange) {
                     return;
                 }
@@ -1036,6 +1047,13 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                     nextInterveningKey = nextReverseKey = preShiftKeysIteratorReverse.currentValue();
                 }
             } else {
+                if (nextForwardKey != RowSequence.NULL_ROW_KEY && nextForwardKey < beginRange) {
+                    if (preShiftKeysIteratorForward.advance(beginRange)) {
+                        nextForwardKey = preShiftKeysIteratorForward.currentValue();
+                    } else {
+                        nextForwardKey = RowSequence.NULL_ROW_KEY;
+                    }
+                }
                 if (nextForwardKey == RowSequence.NULL_ROW_KEY || nextForwardKey > endRange) {
                     return;
                 }
