@@ -282,7 +282,7 @@ The Deephaven query engine moves data around using a data structure called a _Ch
 
 By working with chunks of data rather than single cells, we allow the engine to amortize data movement costs at every applicable level of the stack. For example, `ColumnSources` are _ChunkSources_, allowing bulk `getChunk` and `fillChunk` data transfers. These data transfers may in turn be implemented by wrapping or copying arrays, by reading the appropriate region of a file, or by evaluating a formula once for each result element.
 
-**Performance impact**: Processing data in chunks of 4,096 elements instead of one at a time reduces method call overhead by orders of magnitude and enables SIMD vectorization, delivering 4-8x throughput for arithmetic operations on modern CPUs.
+**Performance impact**: Processing data in chunks — sized per operation, typically in the thousands of elements — instead of one at a time reduces method call overhead by orders of magnitude and lets the JIT compiler vectorize the resulting tight loops.
 
 By structuring our engine operations as chunk-oriented kernels, we allow the JVM’s JIT compiler to vectorize computations where possible.
 

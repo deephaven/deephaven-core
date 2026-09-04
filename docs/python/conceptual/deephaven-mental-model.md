@@ -58,7 +58,7 @@ The engine parses and executes the string `"Y = Math.sqrt(X * X + 1)"`, not Pyth
 
 This has important implications:
 
-- **Java methods, not Python functions**: Use `Math.sqrt()`, not `math.sqrt()`. Use `String` methods like `.toUpperCase()`, not Python string methods.
+- **Java methods, not Python functions**: Use `Math.sqrt`, not `math.sqrt`. Use `String` methods like `toUpperCase`, not Python string methods.
 - **Python variables are available**: Local and global variables from your script are automatically resolved through [query scope](../how-to-guides/query-scope.md), but you can also call Python functions (with a performance cost).
 - **Much faster**: The engine processes data in optimized batches, not one row at a time.
 
@@ -77,7 +77,7 @@ def my_calculation(x):
 result = empty_table(10).update("Y = (int)my_calculation(i)")
 ```
 
-When you reference a Python function in a formula, the engine must cross into Python to evaluate it. The boundary crossing is batched (once per chunk of rows), but a scalar function is still called once per row within that chunk. This is slower than pure-engine formulas. For performance-critical code, prefer engine-native expressions.
+When you reference a Python function in a formula, the engine must cross into Python to evaluate it. When the call is eligible for auto-vectorization — a bare function call with simple column or constant arguments and a supported return type, as in this example — the engine batches it into one Python call per chunk of rows; otherwise, it falls back to one Python call per row. Either way, this is slower than pure-engine formulas. For performance-critical code, prefer engine-native expressions.
 
 ## Your code doesn't run row-by-row
 
@@ -97,7 +97,7 @@ def next_value():
 result = empty_table(5).update("Value = (int)next_value()")
 ```
 
-You might expect `Value` to be `[1, 2, 3, 4, 5]`. But the engine can evaluate rows in _any order_, potentially in _parallel_ across multiple threads. You might get `[3, 1, 4, 2, 5]` or something else entirely — and results may differ between runs.
+You might expect `Value` to be `[1, 2, 3, 4, 5]`. In general, the engine can evaluate rows in _any order_, potentially in _parallel_ across multiple threads, so a stateful formula like this could produce `[3, 1, 4, 2, 5]` or something else entirely, with results differing between runs. (Deephaven specifically detects formulas that reference Python functions and forces them to run single-threaded and in order, to protect the Python interpreter from unsafe concurrent access — so this particular example will actually produce `[1, 2, 3, 4, 5]` every time. That protection doesn't make the formula safe, though: the same stateful pattern in a pure-engine formula, or in Python on a free-threaded build, can and will reorder.)
 
 **The rule:** Formulas should be _stateless_ — the result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable Python variables (like configuration values) are fine; mutable state and order-dependent logic are not.
 

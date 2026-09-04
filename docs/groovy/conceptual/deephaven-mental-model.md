@@ -54,7 +54,7 @@ The engine parses and executes the string `"Y = Math.sqrt(X * X + 1)"`.
 
 This has important implications:
 
-- **Java methods available**: Use `Math.sqrt()`, `String` methods like `.toUpperCase()`, and other Java standard library methods.
+- **Java methods available**: Use `Math.sqrt`, `String` methods like `toUpperCase`, and other Java standard library methods.
 - **Groovy variables accessible**: Variables from your Groovy script are available inside formulas via the query scope.
 - **Much faster**: The engine processes data in optimized batches, not one row at a time.
 
