@@ -23,7 +23,7 @@ In traditional programming, a data structure is a container holding your data. W
 
 **Deephaven tables work differently.** A table is more like a _recipe_ — a description of how to compute results from source data. When you call [`where`](../reference/table-operations/filter/where.md) or [`update`](../reference/table-operations/select/update.md), you're not creating a copy with filtered data. You're creating a new recipe that says "take this input and apply this transformation."
 
-```groovy order=null
+```groovy ticking-table order=null
 source = timeTable("PT1S").update("X = ii")
 filtered = source.where("X > 2")
 doubled = source.update("Y = X * 2")
@@ -111,7 +111,7 @@ Deephaven tables come in two flavors:
 - **Static tables**: Data that doesn't change. Loaded from files, created with [`emptyTable`](../reference/table-operations/create/emptyTable.md) or [`newTable`](../reference/table-operations/create/newTable.md), or snapshots of live data.
 - **Refreshing (live) tables**: Data that updates continuously. Created with [`timeTable`](../reference/table-operations/create/timeTable.md), connected to streams, or other real-time sources.
 
-```groovy order=staticTable,liveTable
+```groovy ticking-table order=staticTable,liveTable
 // Static: this table will always have 10 rows with values 0-9
 staticTable = emptyTable(10).update("X = i")
 
@@ -121,7 +121,7 @@ liveTable = timeTable("PT1S")  // See timeTable reference for duration syntax
 
 **The key insight:** Transformations on live tables produce live results. If you filter a live table, the filtered result updates automatically. When you need to freeze the data at a point in time, use [`snapshot`](../reference/table-operations/snapshot/snapshot.md) to capture a static copy.
 
-```groovy order=liveSource,recentOnly
+```groovy ticking-table order=liveSource,recentOnly
 liveSource = timeTable("PT1S").update("Value = randomInt(0, 100)")
 recentOnly = liveSource.where("Value > 50")
 // recentOnly continuously updates as new rows arrive and are filtered
@@ -246,7 +246,7 @@ derived = source.view("X", "Doubled = X * 2", "Tripled = X * 3")
 
 Build complex analytics by chaining simple operations. Each step produces a table you can inspect, reuse, or build on:
 
-```groovy order=raw,cleaned,enriched,summary
+```groovy ticking-table order=raw,cleaned,enriched,summary
 import static io.deephaven.api.agg.Aggregation.AggAvg
 import static io.deephaven.api.agg.Aggregation.AggCount
 
@@ -300,7 +300,7 @@ No need for separate batch and streaming codebases.
 
 Split data by key and process each partition efficiently:
 
-```groovy order=trades
+```groovy ticking-table order=trades
 import io.deephaven.api.updateby.UpdateByOperation
 import io.deephaven.engine.context.ExecutionContext
 import io.deephaven.util.SafeCloseable
