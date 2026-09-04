@@ -13,7 +13,16 @@ repo, built on [devenv.sh](https://devenv.sh).
   - `languages.java` — Temurin 21 (`pkgs.temurin-bin-21`), matches
     `.devcontainer/project.Dockerfile`'s JDK and what Gradle 9.7.1 (this
     repo's wrapper version) needs to launch. `JAVA_HOME` is set
-    automatically by the module.
+    automatically by the module — except on Darwin, where `devenv.nix`
+    overrides it (`env.JAVA_HOME`, `mkForce`) to point at the JDK's real
+    nested `Contents/Home` bundle path instead of the module's default
+    (nixpkgs' `temurin-bin.home`, which on Darwin is a symlink farm at the
+    top level of the derivation, not the JDK's actual home). Without this,
+    a running JVM's own `java.home` resolves to a different path string
+    than `JAVA_HOME`, and `./gradlew javaToolchains` lists the same JDK
+    twice — once "Detected by: environment variable 'JAVA_HOME'", once
+    "Detected by: Current JVM". See the comment above `env.JAVA_HOME` in
+    `devenv.nix` for the full explanation.
   - `languages.javascript` — `pkgs.nodejs_24`, tracks
     `web/client-api/types/.nvmrc` (`v24.10.0`) at the major-version level;
     devenv has no `.nvmrc` auto-detection, so this is a manual pin.
