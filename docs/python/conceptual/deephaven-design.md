@@ -36,7 +36,7 @@ Deephaven's architecture is built on several key innovations:
 
 This document provides technical depth on each component. For a conceptual introduction to DAGs, start with our [DAG concept guide](./dag.md).
 
-<Svg src='../assets/conceptual/deephaven-architecture-overview.svg' style={{height: 'auto', maxWidth: '1100px'}} />
+![Deephaven architecture overview](../assets/conceptual/architecture/architecture-overview-diagram.png)
 
 ## Table update model
 
@@ -113,7 +113,7 @@ result2 = live_trades.where("Price > 100").agg_by([agg.avg("Price")], by=["Symbo
 # result2 updates in real-time as new trades arrive
 ```
 
-<Svg src='../assets/conceptual/unified-batch-streaming.svg' style={{height: 'auto', maxWidth: '1000px'}} />
+![Unified batch and streaming](../assets/conceptual/architecture/unified-batch-streaming-diagram.png)
 
 ## Unified batch and streaming
 
@@ -153,7 +153,7 @@ renamed = source.view(["A", "C = B"])  # Shares A's ColumnSource
 # Only one copy of column A exists in memory, shared by all three tables
 ```
 
-<Svg src='../assets/conceptual/table-structure.svg' style={{height: 'auto', maxWidth: '1000px'}} />
+<iframe src="../assets/conceptual/architecture/table-structure.html" title="Diagram showing table structure with RowSets and ColumnSources" loading="lazy" style={{width: '100%', height: '900px', border: 'none'}} />
 
 _Filtering_ ([`where`](../how-to-guides/use-filters.md) operations) creates a new [`RowSet`](#tables-designed-for-sharing-and-updating) that is a subset of an existing `RowSet`; _sorting_ creates a redirecting `RowSet`.
 
@@ -191,7 +191,7 @@ Deephaven’s approach to mechanical sympathy can be summarized with a few key o
 
 The Deephaven query engine moves data around using a data structure called a _Chunk_. This subsystem is key to achieving mechanical sympathy in our implementation.
 
-<Svg src='../assets/conceptual/chunk-architecture.svg' style={{height: 'auto', maxWidth: '1000px'}} />
+<iframe src="../assets/conceptual/architecture/chunk-architecture.html" title="Diagram showing chunk-oriented architecture for bulk data processing" loading="lazy" style={{width: '100%', height: '900px', border: 'none'}} />
 
 By working with chunks of data rather than single cells, we allow the engine to amortize data movement costs at every applicable level of the stack. For example, `ColumnSources` are _ChunkSources_, allowing bulk `getChunk` and `fillChunk` data transfers. These data transfers may in turn be implemented by wrapping or copying arrays, by reading the appropriate region of a file, or by evaluating a formula once for each result element.
 

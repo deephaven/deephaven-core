@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/effects.css">
+  <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/styles.css">
+  <script src="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/_ds_bundle.js"></script>
+  <style>
+    @keyframes dh-tick-flow {
+      0% { offset-distance: 0%; opacity: 0; }
+      12% { opacity: 1; }
+      88% { opacity: 1; }
+      100% { offset-distance: 100%; opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</helmet>
+
+<div style="width:1280px;box-sizing:border-box;padding:40px;background:var(--dh-surface-page);font-family:var(--dh-font-sans);color:var(--dh-text-primary);zoom:0.75;">
+
+  <div style="margin-bottom:28px;">
+    <h1 style="margin:0;font-size:28px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-text-primary);">Table structure: RowSets + ColumnSources</h1>
+    <p style="margin:6px 0 0;font-size:15px;color:var(--dh-text-secondary);">Efficient sharing enables zero-copy operations and reduced memory usage</p>
+  </div>
+
+  <div style="position:relative;width:1200px;height:320px;">
+
+    <div style="position:absolute;top:0;left:40px;width:352px;height:240px;background:var(--dh-surface-card);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-lg);">
+      <div style="position:absolute;top:14px;left:16px;right:16px;font-size:15px;font-weight:600;color:var(--dh-text-primary);">Table: source</div>
+      <div style="position:absolute;top:44px;left:16px;right:16px;height:26px;box-sizing:border-box;padding:5px 10px;background:var(--dh-surface-sunken);border:1px solid var(--dh-border);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:12px;color:var(--dh-text-secondary);">time_table("PT1S")</div>
+      <div style="position:absolute;top:88px;left:16px;width:320px;height:60px;box-sizing:border-box;padding:8px 10px;background:var(--dh-bg-1000);border:1px solid var(--dh-logo-indigo);border-radius:var(--dh-radius-md);">
+        <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">RowSet</div>
+        <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-secondary);margin-top:3px;">Keys: [0, 1, 2, 3, ...]</div>
+        <div style="font-size:10px;color:var(--dh-text-muted);margin-top:1px;">All rows in table</div>
+      </div>
+      <div style="position:absolute;top:164px;left:16px;width:320px;height:60px;display:flex;gap:8px;">
+        <div style="flex:1;box-sizing:border-box;padding:7px 8px;background:var(--dh-bg-1000);border:1px solid var(--dh-logo-cyan);border-radius:var(--dh-radius-md);">
+          <div style="font-size:11px;font-weight:600;color:var(--dh-text-primary);">ColumnSource</div>
+          <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);margin-top:2px;">"A"</div>
+          <div style="font-family:var(--dh-font-mono);font-size:9px;color:var(--dh-text-muted);margin-top:1px;">[0, 1, 2, 3, ...]</div>
+        </div>
+        <div style="flex:1;box-sizing:border-box;padding:7px 8px;background:var(--dh-bg-1000);border:1px solid var(--dh-logo-cyan);border-radius:var(--dh-radius-md);">
+          <div style="font-size:11px;font-weight:600;color:var(--dh-text-primary);">ColumnSource</div>
+          <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);margin-top:2px;">"B"</div>
+          <div style="font-family:var(--dh-font-mono);font-size:9px;color:var(--dh-text-muted);margin-top:1px;">[0, 2, 4, 6, ...]</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:absolute;top:0;left:424px;width:352px;height:240px;background:var(--dh-surface-card);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-lg);">
+      <div style="position:absolute;top:14px;left:16px;right:16px;font-size:15px;font-weight:600;color:var(--dh-text-primary);">Table: filtered</div>
+      <div style="position:absolute;top:44px;left:16px;right:16px;height:26px;box-sizing:border-box;padding:5px 10px;background:var(--dh-surface-sunken);border:1px solid var(--dh-border);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:12px;color:var(--dh-text-secondary);">.where("B &gt; 10")</div>
+      <div style="position:absolute;top:88px;left:16px;width:320px;height:60px;box-sizing:border-box;padding:8px 10px;background:var(--dh-bg-1000);border:1px solid var(--dh-logo-indigo);border-radius:var(--dh-radius-md);">
+        <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">RowSet (new)</div>
+        <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-secondary);margin-top:3px;">Keys: [6, 7, 8, ...]</div>
+        <div style="font-size:10px;color:var(--dh-text-muted);margin-top:1px;">Subset where B &gt; 10</div>
+      </div>
+      <div style="position:absolute;top:164px;left:16px;width:320px;height:60px;display:flex;gap:8px;">
+        <div style="flex:1;box-sizing:border-box;padding:7px 8px;background:var(--dh-bg-1000);border:1px dashed var(--dh-logo-cyan);border-radius:var(--dh-radius-md);">
+          <div style="font-size:11px;font-weight:600;color:var(--dh-text-primary);">ColumnSource</div>
+          <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-logo-cyan);margin-top:2px;">"A" (shared)</div>
+          <div style="font-family:var(--dh-font-mono);font-size:9px;color:var(--dh-text-muted);margin-top:1px;">&#8594; source.A</div>
+        </div>
+        <div style="flex:1;box-sizing:border-box;padding:7px 8px;background:var(--dh-bg-1000);border:1px dashed var(--dh-logo-cyan);border-radius:var(--dh-radius-md);">
+          <div style="font-size:11px;font-weight:600;color:var(--dh-text-primary);">ColumnSource</div>
+          <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-logo-cyan);margin-top:2px;">"B" (shared)</div>
+          <div style="font-family:var(--dh-font-mono);font-size:9px;color:var(--dh-text-muted);margin-top:1px;">&#8594; source.B</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:absolute;top:0;left:808px;width:352px;height:240px;background:var(--dh-surface-card);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-lg);">
+      <div style="position:absolute;top:14px;left:16px;right:16px;font-size:15px;font-weight:600;color:var(--dh-text-primary);">Table: renamed</div>
+      <div style="position:absolute;top:44px;left:16px;right:16px;height:26px;box-sizing:border-box;padding:5px 10px;background:var(--dh-surface-sunken);border:1px solid var(--dh-border);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:12px;color:var(--dh-text-secondary);">.view(["A", "C=B"])</div>
+      <div style="position:absolute;top:88px;left:16px;width:320px;height:60px;box-sizing:border-box;padding:8px 10px;background:var(--dh-bg-1000);border:1px dashed var(--dh-logo-cyan);border-radius:var(--dh-radius-md);">
+        <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">RowSet (shared)</div>
+        <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-logo-cyan);margin-top:3px;">&#8594; source.RowSet</div>
+        <div style="font-size:10px;color:var(--dh-text-muted);margin-top:1px;">Same keys</div>
+      </div>
+      <div style="position:absolute;top:164px;left:16px;width:320px;height:60px;display:flex;gap:8px;">
+        <div style="flex:1;box-sizing:border-box;padding:7px 8px;background:var(--dh-bg-1000);border:1px dashed var(--dh-logo-cyan);border-radius:var(--dh-radius-md);">
+          <div style="font-size:11px;font-weight:600;color:var(--dh-text-primary);">ColumnSource</div>
+          <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-logo-cyan);margin-top:2px;">"A" (shared)</div>
+          <div style="font-family:var(--dh-font-mono);font-size:9px;color:var(--dh-text-muted);margin-top:1px;">&#8594; source.A</div>
+        </div>
+        <div style="flex:1;box-sizing:border-box;padding:7px 8px;background:var(--dh-bg-1000);border:1px dashed var(--dh-logo-cyan);border-radius:var(--dh-radius-md);">
+          <div style="font-size:11px;font-weight:600;color:var(--dh-text-primary);">ColumnSource</div>
+          <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-logo-cyan);margin-top:2px;">"C" (shared)</div>
+          <div style="font-family:var(--dh-font-mono);font-size:9px;color:var(--dh-text-muted);margin-top:1px;">&#8594; source.B</div>
+        </div>
+      </div>
+    </div>
+
+    <svg viewBox="0 0 1200 320" width="1200" height="320" style="position:absolute;top:0;left:0;pointer-events:none;">
+      <defs>
+        <marker id="dh-share-arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="var(--dh-logo-cyan)"></polygon>
+        </marker>
+      </defs>
+      <circle cx="216" cy="240" r="3.5" fill="var(--dh-logo-cyan)"></circle>
+      <path d="M 216 240 L 216 262 L 600 262 L 600 240" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="1.5" marker-end="url(#dh-share-arrow)"></path>
+      <path d="M 216 240 L 216 306 L 984 306 L 984 240" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="1.5" marker-end="url(#dh-share-arrow)"></path>
+      <circle r="4" fill="var(--dh-logo-cyan)" style="offset-path:path('M 216 240 L 216 262 L 600 262 L 600 240');animation:dh-tick-flow 2.4s cubic-bezier(0.2,0,0.2,1) infinite;"></circle>
+      <circle r="4" fill="var(--dh-logo-cyan)" style="offset-path:path('M 216 240 L 216 306 L 984 306 L 984 240');animation:dh-tick-flow 3.1s cubic-bezier(0.2,0,0.2,1) infinite 0.4s;"></circle>
+      <text x="408" y="253" text-anchor="middle" font-family="var(--dh-font-sans)" font-size="12" font-weight="600" fill="var(--dh-logo-cyan)">Columns A &amp; B shared with filtered</text>
+      <text x="600" y="298" text-anchor="middle" font-family="var(--dh-font-sans)" font-size="12" font-weight="600" fill="var(--dh-logo-cyan)">RowSet, Column A &amp; B shared with renamed</text>
+    </svg>
+
+  </div>
+
+  <div style="margin-top:32px;width:1200px;">
+    <x-import component-from-global-scope="DeephavenDesignSystem_e929bc.Card" title="Memory efficiency through sharing" padding="md" hint-size="1200px,auto">
+      <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--dh-text-secondary);line-height:var(--dh-leading-relaxed);">
+        <li>Column A is stored once in memory, referenced by all three tables</li>
+        <li>RowSet for "renamed" table is shared with "source" (zero-copy view operation)</li>
+        <li>Updates to source.A automatically appear in filtered.A and renamed.A</li>
+      </ul>
+    </x-import>
+  </div>
+
+  <div style="margin-top:32px;width:1200px;">
+    <div style="font-size:14px;font-weight:700;color:var(--dh-text-primary);margin-bottom:16px;">Key concepts</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;">
+
+      <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-radius:var(--dh-radius-lg);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:14px;height:14px;flex:none;border-radius:var(--dh-radius-sm);background:var(--dh-bg-1000);border:1.5px solid var(--dh-logo-indigo);"></div>
+          <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);">RowSet</div>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">Sparse set of 64-bit row keys</div>
+        <div style="margin-top:4px;font-size:12px;color:var(--dh-text-muted);line-height:var(--dh-leading-snug);">Can be shared or derived (filtered/redirected)</div>
+      </div>
+
+      <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-radius:var(--dh-radius-lg);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:14px;height:14px;flex:none;border-radius:var(--dh-radius-sm);background:var(--dh-bg-1000);border:1.5px solid var(--dh-logo-cyan);"></div>
+          <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);">ColumnSource</div>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">Column data indexed by row keys</div>
+        <div style="margin-top:4px;font-size:12px;color:var(--dh-text-muted);line-height:var(--dh-leading-snug);">Shared across tables when possible</div>
+      </div>
+
+      <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-radius:var(--dh-radius-lg);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:14px;height:14px;flex:none;border-radius:var(--dh-radius-sm);background:var(--dh-bg-1000);border:1.5px dashed var(--dh-logo-cyan);"></div>
+          <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);">Shared reference</div>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">Points to parent table's data structure</div>
+        <div style="margin-top:4px;font-size:12px;color:var(--dh-text-muted);line-height:var(--dh-leading-snug);">Zero memory overhead for the data itself</div>
+      </div>
+
+      <div style="box-sizing:border-box;padding:14px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-radius:var(--dh-radius-lg);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:14px;height:14px;flex:none;border-radius:var(--dh-radius-sm);background:var(--dh-surface-card);border:1.5px solid var(--dh-border-strong);"></div>
+          <div style="font-size:13px;font-weight:700;color:var(--dh-text-primary);">Table</div>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">Combines RowSet + map of ColumnSources</div>
+        <div style="margin-top:4px;font-size:12px;color:var(--dh-text-muted);line-height:var(--dh-leading-snug);">Lightweight structure, heavy sharing</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280}}"></script>
+</body>
+</html>
