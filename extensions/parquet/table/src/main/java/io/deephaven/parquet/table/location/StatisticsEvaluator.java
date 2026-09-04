@@ -59,8 +59,9 @@ interface StatisticsEvaluator {
      * Whether the row group described by {@code statistics} may contain a row matching the filter. A {@code false}
      * answer excludes the row group; it must only be given when the statistics prove no row can match.
      *
-     * @param statistics the row group's {@link ParquetPushdownUtils#areStatisticsUsable usable} statistics for the
-     *        filtered column
+     * @param statistics the row group's statistics for the filtered column. A handler's own evaluator takes these to be
+     *        {@link ParquetPushdownUtils#areStatisticsUsable usable} and does not re-check; one returned by
+     *        {@link #makeForFilter} accepts any statistics, having {@link UsabilityEvaluator} in front of it.
      */
     boolean maybeOverlaps(@NotNull Statistics<?> statistics);
 
@@ -76,10 +77,12 @@ interface StatisticsEvaluator {
     StatisticsEvaluator ALWAYS_NO_OVERLAP = statistics -> false;
 
     /**
-     * Resolves {@code filter} to the handler for its column type and puts the Parquet-null check in front of it where
-     * the filter needs one. Returns {@link #ALWAYS_MAYBE} when no row group could ever be excluded -- because no
-     * handler serves the filter, or because the one that does cannot bound it. A caller that gets {@link #ALWAYS_MAYBE}
-     * back should skip the row groups entirely rather than ask about each in turn, since the answer is already known.
+     * Resolves {@code filter} to the handler for its column type, puts the Parquet-null check in front of it where the
+     * filter needs one, and the statistics-usability check in front of that. The result can be applied to any row
+     * group's statistics, usable or not; see {@link UsabilityEvaluator}. Returns {@link #ALWAYS_MAYBE} when no row
+     * group could ever be excluded -- because no handler serves the filter, or because the one that does cannot bound
+     * it. A caller that gets {@link #ALWAYS_MAYBE} back should skip the row groups entirely rather than ask about each
+     * in turn, since the answer is already known.
      * <p>
      * Call this once per location and apply the result to each row group's statistics in turn.
      * <p>
@@ -98,7 +101,10 @@ interface StatisticsEvaluator {
             // ALWAYS_MAYBE straight back and let the caller skip the row groups.
             return ALWAYS_MAYBE;
         }
-        return NullAwareEvaluator.maybeWrap(handler, ctx);
+        // Two checks go in front of the handler, and which ends up outermost matters: the usability check does, so
+        // that nothing behind it is handed statistics it is not allowed to read.
+        final StatisticsEvaluator nullChecked = NullAwareEvaluator.maybeWrap(handler, ctx);
+        return UsabilityEvaluator.maybeWrap(nullChecked);
     }
 
     /**

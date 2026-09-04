@@ -30,6 +30,7 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -164,21 +165,53 @@ public class PushdownHandlerNullStatisticsTest {
     }
 
     /**
-     * An all-null row group reports no min/max at all. It never reaches a handler, because
-     * {@link ParquetPushdownUtils#areStatisticsUsable} rejects it first -- which is also why no handler needs to cope
-     * with absent extremes.
+     * An all-null row group reports no min/max at all. It never reaches a handler, because {@link UsabilityEvaluator}
+     * rejects it first -- which is also why no handler needs to cope with absent extremes.
      */
     @Test
     public void allNullStatisticsAreRejectedBeforeAnyHandler() {
-        final Statistics<?> allNull = Statistics.getBuilderForReading(Types.required(INT32).named("intCol"))
-                .withNumNulls(1_000L)
-                .build();
+        final Statistics<?> allNull = allNullStats();
 
         assertFalse("an all-null row group has no non-null value", allNull.hasNonNullValue());
         assertFalse("and so its statistics are unusable", ParquetPushdownUtils.areStatisticsUsable(allNull));
 
         // The null count is still readable, and still proves nothing about the absence of nulls.
         assertFalse(ParquetPushdownUtils.isProvenFreeOfNulls(allNull));
+    }
+
+    /**
+     * The usability gate around a handler, exercised on its own. A handler that has already said "no" is the only
+     * interesting case: statistics this code cannot read are no evidence, so the wrapper must override that "no", and
+     * must leave it standing once they can be read.
+     */
+    @Test
+    public void usableStatisticsEvaluatorKeepsRowGroupsItCannotRead() {
+        final StatisticsEvaluator gated = new UsabilityEvaluator(StatisticsEvaluator.ALWAYS_NO_OVERLAP);
+
+        assertTrue("unreadable statistics prove nothing, so the row group stays",
+                gated.maybeOverlaps(allNullStats()));
+        assertFalse("readable statistics leave the handler's verdict alone",
+                gated.maybeOverlaps(intStats(1, 10, 0L)));
+    }
+
+    /**
+     * The statistics-independent constants are handed back unwrapped. They read nothing, so they have no precondition
+     * to enforce, and {@code ParquetTableLocation} recognizes them by identity to skip the row groups altogether --
+     * which a wrapper would defeat.
+     */
+    @Test
+    public void usableStatisticsEvaluatorLeavesTheConstantsAlone() {
+        assertSame(StatisticsEvaluator.ALWAYS_MAYBE,
+                UsabilityEvaluator.maybeWrap(StatisticsEvaluator.ALWAYS_MAYBE));
+        assertSame(StatisticsEvaluator.ALWAYS_NO_OVERLAP,
+                UsabilityEvaluator.maybeWrap(StatisticsEvaluator.ALWAYS_NO_OVERLAP));
+    }
+
+    /** An all-null row group: a null count, and no extremes at all. */
+    private static Statistics<?> allNullStats() {
+        return Statistics.getBuilderForReading(Types.required(INT32).named("intCol"))
+                .withNumNulls(1_000L)
+                .build();
     }
 
     /**
