@@ -33,7 +33,7 @@ flatbuffers = "25.2.10"
 freemarker = "2.3.35"
 google-findbugs = "3.0.2"
 google-java-allocation-instrumenter = "3.3.5"
-google-rpc-protos="2.70.0"
+google-rpc-protos="2.75.0"
 graalvm = "25.3.4.1"
 groovy = "3.0.25"
 
