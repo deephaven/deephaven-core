@@ -64,6 +64,29 @@ jobs:
       - name: Set up QEMU (emulation for linux/amd64 Docker tasks on arm64 runners)
         uses: docker/setup-qemu-action@v4
 
+      # BuildKit's image exporter has a long-standing bug (moby/buildkit#3891) that
+      # mis-resolves platform when exporting/tagging a just-built non-native-platform
+      # image, if the daemon's containerd image store is active -- surfacing as "no
+      # match for platform in manifest ...: not found" for the linux/amd64-pinned
+      # Docker tasks above (see also deephaven/deephaven-core#6370, which hit the same
+      # error on Docker Desktop with the experimental containerd image store enabled).
+      # Force it off explicitly rather than relying on whatever a given runner image
+      # currently defaults to.
+      - name: Disable the containerd image store (avoid moby/buildkit#3891)
+        uses: docker/setup-docker-action@v5
+        with:
+          daemon-config: |
+            {
+              "features": {
+                "containerd-snapshotter": false
+              }
+            }
+          # This action's daemon isn't guaranteed to be reachable at the same
+          # socket path the pre-installed one used -- export DOCKER_HOST so later
+          # steps (Gradle's Docker tasks, in particular) definitely talk to it
+          # rather than silently falling back to the original, unconfigured daemon.
+          set-host: true
+
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v22
 
