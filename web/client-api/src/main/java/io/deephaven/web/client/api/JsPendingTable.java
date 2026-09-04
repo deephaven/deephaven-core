@@ -36,4 +36,11 @@ public interface JsPendingTable extends JsTableOperations, PromiseLike<JsResolve
     // workaround for a javadoc -> ts issue
     @JsMethod
     void foo();
+
+    /**
+     * Cancels the operation, potentially causing downstream promises to fail. All resources will be released.
+     */
+    // also happens to be a workaround for a javadoc -> ts bug
+    @JsMethod
+    void cancel();
 }

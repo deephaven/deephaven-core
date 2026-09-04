@@ -26,6 +26,10 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class MicrotaskBatchImpl implements JsTableOperations {
+
+    /**
+     * Internal thenable implementation that wraps an ongoing promise, and allows new calls to race that operation.
+     */
     private static class Pending extends MicrotaskBatchImpl implements JsPendingTable {
         public Pending(WorkerConnection connection, Ticket ticket, BatchTableRequest.Operation.Builder operation) {
             super(connection, ticket, operation);
@@ -44,6 +48,12 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         @Override
         public void foo() {
             // workaround for a javadoc -> ts issue
+        }
+
+        @Override
+        public void cancel() {
+            // TODO send cancellation to the server (plus or minus any CTS in the mix)
+            promise.fail("Operation canceled");
         }
     }
 
@@ -97,12 +107,13 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         @Override
         public void close() {
             state = State.RELEASED;
+            retained = false;
             getConnection().releaseTicket(ticket);
         }
 
         @Override
         public Promise<JsResolvedTable> copy() {
-            return null;
+            return Promise.resolve(new Resolved(connection, ticket, operation.toBuilder()));
         }
     }
 
@@ -118,6 +129,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     protected final WorkerConnection connection;
     protected final Ticket ticket;
 
+    private final Exception trace = new Exception();
+
     public MicrotaskBatchImpl(WorkerConnection connection, Ticket ticket,
             BatchTableRequest.Operation.Builder operation) {
         this.connection = connection;
@@ -125,8 +138,20 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         this.operation = operation.build();
     }
 
+    private void checkRetained() {
+        if (!retained && state != State.ENQUEUED) {
+            // While this ticket might still be valid, the user had their chance to use it, notify them they should
+            // have retained it earlier
+            throw new IllegalStateException("Ticket " + ticket.getTicket() + " was not retained, but is now in state "
+                    + state
+                    + ". See the nested trace for where it was created - it should have been retained at that time",
+                    trace);
+        }
+    }
+
     @Override
     public JsPendingTable call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
+        checkRetained();
         if (enqueued.get() == null) {
             ArrayList<MicrotaskBatchImpl> tasks = new ArrayList<>();
             enqueued.set(tasks);
