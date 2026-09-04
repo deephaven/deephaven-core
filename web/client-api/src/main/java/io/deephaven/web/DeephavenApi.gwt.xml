@@ -43,4 +43,8 @@
        and for our purposes firefox will be compatible too.
    -->
   <set-property name="user.agent" value="safari" />
+
+  <set-property name="compiler.useSourceMaps" value="true"/>
+
+  <set-configuration-property name="compiler.embedSourceMaps" value="true"/>
 </module>
