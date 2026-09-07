@@ -399,6 +399,23 @@ public final class IcebergTableAdapter {
         return new IcebergTableWriter(tableWriterOptions, this, dataInstructionsProviderLoader);
     }
 
+    public IcebergTableWriter tableWriter(final ParquetInstructions parquetInstructions,
+            final SortOrderProvider sortOrderProvider) {
+        final Object maybeDataInstructions = dataInstructionsProviderLoader.load(locationUri.getScheme());
+        TableParquetWriterOptions.Builder twob = TableParquetWriterOptions.builder()
+                .tableDefinition(definition())
+                .sortOrderProvider(sortOrderProvider);
+        if (maybeDataInstructions != null) {
+            twob = twob.dataInstructions(maybeDataInstructions);
+        }
+
+        return new IcebergTableWriter(twob.build(), parquetInstructions, this);
+    }
+
+    public IcebergTableWriter tableWriter(final ParquetInstructions parquetInstructions) {
+        return tableWriter(parquetInstructions, SortOrderProvider.useTableDefault());
+    }
+
     /**
      * Get the location URI of the Iceberg table.
      */
