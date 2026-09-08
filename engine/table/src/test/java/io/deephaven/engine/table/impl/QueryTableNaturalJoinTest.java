@@ -52,6 +52,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 @Category(OutOfBandTest.class)
 public class QueryTableNaturalJoinTest extends QueryTableTestBase {
@@ -1614,7 +1615,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(pairMatch, njTable);
     }
 
-    public void testExactJoinIndexedErrorMessage() {
+    public void testExactJoinIndexedErrorMessageBuildRight() {
+        // a refreshing left table forces the build from the right side
         // sparse left row keys, so no index-table group position is a valid left row key
         final QueryTable leftTable = testRefreshingTable(i(10, 20, 30).toTracking(),
                 col("String", "c", "e", "g"));
@@ -1622,12 +1624,23 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table rightTable = testTable(col("String", "c", "e"), col("v", 1, 2));
 
-        try {
-            leftTable.exactJoin(rightTable, "String");
-            TestCase.fail("Previous statement should have thrown an exception");
-        } catch (Exception e) {
-            assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
-        }
+        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+                () -> leftTable.exactJoin(rightTable, "String"));
+        assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
+    }
+
+    public void testExactJoinIndexedErrorMessageBuildLeft() {
+        // a static left table with a data index smaller than the right table builds from the left data index
+        // sparse left row keys, so no index-table group position is a valid left row key
+        final QueryTable leftTable = testTable(i(10, 20, 30).toTracking(),
+                col("String", "c", "e", "g"));
+        DataIndexer.getOrCreateDataIndex(leftTable, "String");
+
+        final Table rightTable = testTable(col("String", "c", "e", "q", "r"), col("v", 1, 2, 3, 4));
+
+        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+                () -> leftTable.exactJoin(rightTable, "String"));
+        assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
 
     private ColumnInfo[] createTestColumnInfos(final float nullFraction, final int maxValue) {
