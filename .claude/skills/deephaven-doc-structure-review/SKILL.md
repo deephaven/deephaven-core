@@ -97,12 +97,14 @@ up front, rather than re-deriving them per check.
   check above) risk losing readers before they reach the summary. Treat any doc matching both
   conditions as a consolidation candidate even if no single example is individually flagged.
 
-- **Closing-section and summary placement:** Confirm a closing summary (commonly "Key
-  takeaways" in this doc set) and a "Related documentation" section exist, per
-  `deephaven-writing-style`'s page-structure rule. Separately — this is the single highest-
-  leverage restructuring move for a long conceptual doc — check whether a quick-reference or
-  summary table that currently appears near the end could be promoted earlier as a short preview,
-  so the reader has an orientation map before working through the detailed walkthrough.
+- **Closing-section and summary placement:** Confirm a "Related documentation" section exists
+  per `deephaven-writing-style`'s page-structure rule — except on landing pages, overviews, or
+  blog articles, which that rule explicitly exempts. A closing summary (commonly "Key takeaways"
+  in this doc set) isn't a writing-style requirement, but it's still a good structural signal to
+  check for on a long conceptual page. Separately — this is the single highest-leverage
+  restructuring move for a long conceptual doc — check whether a quick-reference or summary table
+  that currently appears near the end could be promoted earlier as a short preview, so the reader
+  has an orientation map before working through the detailed walkthrough.
 
 ## 3. Report
 
