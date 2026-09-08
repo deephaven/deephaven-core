@@ -356,13 +356,12 @@ Deephaven table operations often support complex, user-defined expressions for c
 
 ### Expression parsing
 
-Deephaven uses [JavaParser](https://javaparser.org/) to turn user-specified [expressions](../how-to-guides/query-string-overview.md) into one of these implementation paths:
+Deephaven uses [JavaParser](https://javaparser.org/) to turn user-specified [expressions](../how-to-guides/query-string-overview.md) into executable code:
 
 1. **Direct column references**: An expression that is just an existing column name, or an alias for one (e.g., `"Y = X"`), bypasses compilation entirely and reuses the existing `ColumnSource`.
-2. **Vectorizable Python callables**: A formula that calls a single eligible Python function — ordinary or [Numba](https://numba.pydata.org/)-vectorized — is routed to a chunked Python formula kernel instead of a compiled Java class, batching the call once per chunk of rows rather than compiling new Java code.
-3. **New Java classes**: Dynamically compiled, loaded, and instantiated for any other expression, no matter how simple it looks.
+2. **Everything else**: Compiled into a new Java class, no matter how simple the expression looks. If the expression is a single eligible Python function call — ordinary or [Numba](https://numba.pydata.org/)-vectorized — that same setup step also builds a chunked Python formula kernel, and evaluation is dispatched to that kernel (batched once per chunk of rows) instead of running the compiled class directly.
 
-Given these options, direct column references avoid compilation entirely, and eligible Python callables are batched rather than compiled. Every other formula is parsed and compiled into a new Java class — the complexity of the expression changes how much work that compiled code does, not whether compilation happens.
+Given these options, only direct column references avoid compilation. Every other formula — including calls to vectorizable Python functions — is parsed and compiled into a new Java class; whether that compiled class ends up handling evaluation itself, or handing off to a Python kernel afterward, changes how the formula runs, not whether it gets compiled.
 
 **Example of formula evaluation**:
 
