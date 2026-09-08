@@ -354,13 +354,13 @@ Deephaven table operations often support complex, user-defined expressions for c
 
 ### Expression parsing
 
-Deephaven uses [JavaParser](https://javaparser.org/) to turn user-specified [expressions](../how-to-guides/query-string-overview.md) into three implementation categories:
+Deephaven uses [JavaParser](https://javaparser.org/) to turn user-specified [expressions](../how-to-guides/query-string-overview.md) into one of these implementation paths:
 
 1. **Direct column references**: An expression that is just an existing column name, or an alias for one (e.g., `"Y = X"`), bypasses compilation entirely and reuses the existing `ColumnSource`.
-2. **New Java classes**: Dynamically compiled, loaded, and instantiated for any other expression, no matter how simple it looks.
-3. **Numba-compiled machine code**: [Numba](https://numba.pydata.org/) JIT compilation for Python expressions.
+2. **Vectorizable Python callables**: A formula that calls a single eligible Python function — ordinary or [Numba](https://numba.pydata.org/)-vectorized — is routed to a chunked Python formula kernel instead of a compiled Java class, batching the call once per chunk of rows rather than compiling new Java code.
+3. **New Java classes**: Dynamically compiled, loaded, and instantiated for any other expression, no matter how simple it looks.
 
-Given these options, direct column references avoid compilation entirely. Every other formula is parsed and compiled into executable code — the complexity of the expression changes how much work that compiled code does, not whether compilation happens.
+Given these options, direct column references avoid compilation entirely, and eligible Python callables are batched rather than compiled. Every other formula is parsed and compiled into a new Java class — the complexity of the expression changes how much work that compiled code does, not whether compilation happens.
 
 **Example of formula evaluation**:
 
@@ -423,9 +423,9 @@ At Deephaven, we believe that our approach to propagating static and updating ta
 
 As touched upon briefly earlier in this piece, the Deephaven query engine propagates updates concurrently via a [DAG](./dag.md), relying on a logical clock to mark phase and step changes for internal consistency. While this sort of coordination is suitable within a single process, the overhead increases exponentially when extending such a DAG across multiple processes.
 
-Based on this observation, we’ve implemented a design for multi-process data-driven applications that relies on consistent table replication using initial snapshots followed by subsequent deltas. This allows nodes to operate with their logical clocks mutually decoupled, allowing truly parallel update propagation. This also allows for bidirectional data flows, with nodes that publish a given table able to act as consumers for other tables.
+Based on this observation, we've implemented a design for multi-process data-driven applications that relies on consistent table replication using initial snapshots followed by subsequent deltas. This allows nodes to operate with their logical clocks mutually decoupled, allowing truly parallel update propagation. This also allows for bidirectional data flows, with nodes that publish a given table able to act as consumers for other tables.
 
-This approach intentionally trades away “global consistency” for increased throughput and scalability. In practice, we think that such a global view is either illusory or better implemented via end-to-end sequence numbers that allow for data correlation within the query engine. By illusory we mean to observe that input sources often publish in a mutually-asynchronous manner, thus constraining the possibilities for true consistency to something narrower; e.g., “mutual consistency based on the inputs observed at a given point in time.” For data sources that do contain correlatable sequence numbers, Deephaven offers tools for synchronizing table views to reconstruct a truly consistent state.
+This approach intentionally trades away "global consistency" for increased throughput and scalability. In practice, we think that such a global view is either illusory or better implemented via end-to-end sequence numbers that allow for data correlation within the query engine. By illusory we mean to observe that input sources often publish in a mutually-asynchronous manner, thus constraining the possibilities for true consistency to something narrower; e.g., "mutual consistency based on the inputs observed at a given point in time." For data sources that do contain correlatable sequence numbers, Deephaven offers tools for synchronizing table views to reconstruct a truly consistent state.
 
 ## The whole is greater than….
 

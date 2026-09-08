@@ -21,7 +21,7 @@ _For technical details, see [Deephaven's design](./deephaven-design.md). For han
 
 In traditional programming, a data structure is a container holding your data. When you filter or transform it, you get a new container with different data inside.
 
-**Deephaven tables work differently.** A table is more like a _recipe_ — a description of how to compute results from source data. When you call [`where`](../reference/table-operations/filter/where.md) or [`update`](../reference/table-operations/select/update.md), you're not creating a copy with filtered data. You're creating a new recipe that says "take this input and apply this transformation."
+**Deephaven tables work differently.** When you call [`where`](../reference/table-operations/filter/where.md) or [`update`](../reference/table-operations/select/update.md), Deephaven doesn't copy the source data — it builds a new table that shares the parent's unchanged columns and computes only what's new (a filtered `RowSet`, or a computed column). That new table also keeps a live dependency on its parent, so it recomputes automatically when the source changes, without you rerunning any code.
 
 ```groovy ticking-table order=null
 source = timeTable("PT1S").update("X = ii")
@@ -37,7 +37,7 @@ doubled = source.update("Y = X * 2")
 - Multiple transformations can share the same source without duplicating data.
 - Operations are typically much faster than copying entire datasets.
 
-When you call a table operation, Deephaven establishes the dependency and computes the initial result. The "recipe" remains active — if the source data changes, downstream tables update automatically without you re-running code. Operations like [`view`](../reference/table-operations/select/view.md) are an exception: they store the formula but defer evaluation until values are actually accessed, which saves memory for columns you rarely read.
+When you call a table operation, Deephaven establishes the dependency and computes the initial result. That dependency remains active — if the source data changes, downstream tables update automatically without you re-running code. Operations like [`view`](../reference/table-operations/select/view.md) are an exception: they store the formula but defer evaluation until values are actually accessed, which saves memory for columns you rarely read.
 
 ## Formulas run in the engine
 
@@ -119,7 +119,7 @@ staticTable = emptyTable(10).update("X = i")
 liveTable = timeTable("PT1S")  // See timeTable reference for duration syntax
 ```
 
-**The key insight:** Transformations on live tables produce live results. If you filter a live table, the filtered result updates automatically. When you need to freeze the data at a point in time, use [`snapshot`](../reference/table-operations/snapshot/snapshot.md) to capture a static copy.
+**The key insight:** Most transformations on live tables produce live results — filter a live table, and the filtered result updates automatically. [`snapshot`](../reference/table-operations/snapshot/snapshot.md) is a deliberate exception: it's a transformation that takes a live table and returns a static copy at that single point in time.
 
 ```groovy ticking-table order=null
 liveSource = timeTable("PT1S").update("Value = randomInt(0, 100)")
