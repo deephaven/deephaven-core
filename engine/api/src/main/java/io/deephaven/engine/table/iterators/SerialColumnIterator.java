@@ -20,11 +20,14 @@ import java.util.function.BiFunction;
 public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<DATA_TYPE> {
 
     final ColumnSource<DATA_TYPE> columnSource;
-    private final RowSet rowSet;
 
+    private final RowSet.SearchIterator keyIterator;
     private final long lastRowPositionExclusive;
 
     private long nextRowPosition;
+    // Whether keyIterator has been advanced to the first row key, which must then be consumed via currentValue()
+    // rather than nextLong()
+    private boolean pendingAdvancedKey;
 
     /**
      * Create a new SerialColumnIterator.
@@ -40,7 +43,6 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
             final long firstRowKey,
             final long length) {
         this.columnSource = columnSource;
-        this.rowSet = rowSet;
         if (firstRowKey == rowSet.firstRowKey()) {
             nextRowPosition = 0;
         } else if ((nextRowPosition = rowSet.find(firstRowKey)) < 0) {
@@ -53,6 +55,15 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
                     length, rowSet.size(), nextRowPosition));
         }
         lastRowPositionExclusive = nextRowPosition + length;
+        if (length == 0) {
+            keyIterator = null;
+        } else {
+            keyIterator = rowSet.searchIterator();
+            if (nextRowPosition != 0) {
+                keyIterator.advance(firstRowKey);
+                pendingAdvancedKey = true;
+            }
+        }
     }
 
     @Override
@@ -74,7 +85,19 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
         if (nextRowPosition == lastRowPositionExclusive) {
             throw new NoSuchElementException();
         }
-        return rowSet.get(nextRowPosition++);
+        ++nextRowPosition;
+        if (pendingAdvancedKey) {
+            pendingAdvancedKey = false;
+            return keyIterator.currentValue();
+        }
+        return keyIterator.nextLong();
+    }
+
+    @Override
+    public final void close() {
+        if (keyIterator != null) {
+            keyIterator.close();
+        }
     }
 
     @SuppressWarnings("unchecked")
