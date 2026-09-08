@@ -727,6 +727,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     public void testWhereDynamic() throws ExecutionException, InterruptedException, TimeoutException {
         testWhereDynamicInternal(false, false);
+        testWhereNotInDynamicInternal(false, false);
         testWhereDynamicInternalSourceBeforeSet(false, false);
         testWhereDynamicInternalSetBeforeSource(false, false);
         testWhereDynamicInternalStaticSource(false, false);
@@ -734,6 +735,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     public void testWhereDynamicIndexedSource() throws ExecutionException, InterruptedException, TimeoutException {
         testWhereDynamicInternal(true, false);
+        testWhereNotInDynamicInternal(true, false);
         testWhereDynamicInternalSourceBeforeSet(true, false);
         testWhereDynamicInternalSetBeforeSource(true, false);
         testWhereDynamicInternalStaticSource(true, false);
@@ -741,6 +743,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     public void testWhereDynamicIndexedSet() throws ExecutionException, InterruptedException, TimeoutException {
         testWhereDynamicInternal(false, true);
+        testWhereNotInDynamicInternal(false, true);
         testWhereDynamicInternalSourceBeforeSet(false, true);
         testWhereDynamicInternalSetBeforeSource(false, true);
         testWhereDynamicInternalStaticSource(false, true);
@@ -748,6 +751,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     public void testWhereDynamicIndexedBoth() throws ExecutionException, InterruptedException, TimeoutException {
         testWhereDynamicInternal(true, true);
+        testWhereNotInDynamicInternal(true, true);
         testWhereDynamicInternalSourceBeforeSet(true, true);
         testWhereDynamicInternalSetBeforeSource(true, true);
         testWhereDynamicInternalStaticSource(true, true);
@@ -802,6 +806,63 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // Expected result of the filters after the cycle ends
         final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6, 10).toTracking(),
                 col("x", 4, 3, 5), col("y", "d", "c", "e"), col("z", true, true, true));
+
+        TstUtils.assertTableEquals(testUpdate, table1);
+        TstUtils.assertTableEquals(table2, table1);
+        TstUtils.assertTableEquals(table3, table2);
+    }
+
+    /**
+     * The exclusion-mode mirror of {@link #testWhereDynamicInternal}. Exclusion takes different filtering and recompute
+     * branches, and {@code whereNotIn} is declared concurrent alongside {@code whereIn}, so it needs its own current
+     * and previous snapshot coverage over indexed and unindexed inputs.
+     */
+    private void testWhereNotInDynamicInternal(final boolean sourceIndexed, final boolean setIndexed)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8, 10).toTracking(),
+                col("x", 1, 2, 3, 4, 5), col("y", "a", "b", "c", "d", "e"), col("z", true, false, true, false, true));
+        if (sourceIndexed) {
+            DataIndexer.getOrCreateDataIndex(table, "z");
+        }
+        final QueryTable whereTable = TstUtils.testRefreshingTable(i(0).toTracking(), col("z", true));
+        if (setIndexed) {
+            DataIndexer.getOrCreateDataIndex(whereTable, "z");
+        }
+
+        // Exclusion mode: keep the rows whose key is absent from the set table.
+        final DynamicWhereFilter filter =
+                new DynamicWhereFilter(whereTable, false, MatchPairFactory.getExpressions("z"));
+
+        updateGraph.startCycleForUnitTests(false);
+
+        // Expected result of the filters before any mods to the table.
+        final Table tableStart = TstUtils.testRefreshingTable(i(4, 8).toTracking(),
+                col("x", 2, 4), col("y", "b", "d"), col("z", false, false));
+
+        final Table table1 = dualPool.submit(() -> table.where(filter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        assertTableEquals(tableStart, table1);
+
+        // Add rows to the main table.
+        TstUtils.addToTable(table, i(2, 3), col("x", 1, 4), col("y", "a", "d"), col("z", false, true));
+        assertTableEquals(tableStart, prevTable(table1));
+
+        final Table table2 = dualPool.submit(() -> table.where("!z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        assertTableEquals(tableStart, prevTable(table2));
+
+        // Build the exclusion filter through the public API on a worker thread.
+        final Table table3 =
+                dualPool.submit(() -> table.whereNotIn(whereTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        assertTableEquals(tableStart, prevTable(table3));
+
+        // Notify the children of the added / modified rows
+        table.notifyListeners(i(3), i(), i(2));
+        updateGraph.markSourcesRefreshedForUnitTests();
+
+        updateGraph.completeCycleForUnitTests();
+
+        // Expected result of the filters after the cycle ends
+        final Table testUpdate = TstUtils.testRefreshingTable(i(2, 4, 8).toTracking(),
+                col("x", 1, 2, 4), col("y", "a", "b", "d"), col("z", false, false, false));
 
         TstUtils.assertTableEquals(testUpdate, table1);
         TstUtils.assertTableEquals(table2, table1);
