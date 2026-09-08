@@ -3458,7 +3458,9 @@ public class RspBitmapTest {
     }
 
     private static LongOpenHashSet intersect(final LongOpenHashSet s1, LongOpenHashSet s2) {
-        final LongOpenHashSet ans = new LongOpenHashSet();
+        // Presize to s1's capacity: we iterate s1 in hash order, so inserting into a smaller table with the same
+        // hash function creates pathological collision clusters at every intermediate capacity (quadratic cost).
+        final LongOpenHashSet ans = new LongOpenHashSet(s1.size());
         s1.forEach((final long v) -> {
             if (s2.contains(v)) {
                 ans.add(v);

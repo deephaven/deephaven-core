@@ -9,8 +9,15 @@ on:
     # Note: we need to rerun this action on new commits (synchronize events) even though it doesn't
     # effect the labels because the merge requirements need checks to pass against the most recent
     # commit.
-    types: [ opened, synchronize, reopened, labeled, unlabeled ]
+    #
+    # We also rerun on edited events, since the PR title determines whether labels are required.
+    types: [ opened, synchronize, reopened, edited, labeled, unlabeled ]
     branches: [ 'main', 'rc/v*' ]
+
+env:
+  # Documentation-only PRs (conventional commit type "docs", optionally scoped or breaking, e.g.
+  # "docs:", "docs(readme):", "docs!:") do not need documentation or release notes labels.
+  IS_DOCS_PR: ${{ startsWith(github.event.pull_request.title, 'docs:') || startsWith(github.event.pull_request.title, 'docs(') || startsWith(github.event.pull_request.title, 'docs!:') }}
 
 jobs:
   doc-labels:
@@ -20,6 +27,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Check Documentation Labels
+        if: env.IS_DOCS_PR != 'true'
         env:
           HAS_DocumentationNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'DocumentationNeeded') }}
           HAS_NoDocumentationNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'NoDocumentationNeeded') }}
@@ -32,6 +40,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Check Release Notes Labels
+        if: env.IS_DOCS_PR != 'true'
         env:
           HAS_ReleaseNotesNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'ReleaseNotesNeeded') }}
           HAS_NoReleaseNotesNeeded: ${{ contains(github.event.pull_request.labels.*.name, 'NoReleaseNotesNeeded') }}
