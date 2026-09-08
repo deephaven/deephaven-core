@@ -255,7 +255,7 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
             ColumnSource<RowSet> indexRowSets,
             JoinControl.RedirectionType redirectionType) {
         return buildIndexedRowRedirection(leftTable, indexTableRowSet,
-                leftRedirections::getUnsafe, indexRowSets, redirectionType);
+                leftRedirections::getUnsafe, indexRowSets, redirectionType, true);
     }
 
     public WritableRowRedirection buildIndexedRowRedirectionFromHashSlots(
@@ -266,7 +266,7 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
             JoinControl.RedirectionType redirectionType) {
         return buildIndexedRowRedirection(leftTable, indexTableRowSet,
                 (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), indexRowSets,
-                redirectionType);
+                redirectionType, false);
     }
 
     public void errorOnDuplicatesIndexed(IntegerArraySource leftHashSlots, long size,

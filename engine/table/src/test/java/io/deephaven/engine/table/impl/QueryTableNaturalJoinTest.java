@@ -1614,6 +1614,22 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(pairMatch, njTable);
     }
 
+    public void testExactJoinIndexedErrorMessage() {
+        // sparse left row keys, so no index-table group position is a valid left row key
+        final QueryTable leftTable = testRefreshingTable(i(10, 20, 30).toTracking(),
+                col("String", "c", "e", "g"));
+        DataIndexer.getOrCreateDataIndex(leftTable, "String");
+
+        final Table rightTable = testTable(col("String", "c", "e"), col("v", 1, 2));
+
+        try {
+            leftTable.exactJoin(rightTable, "String");
+            TestCase.fail("Previous statement should have thrown an exception");
+        } catch (Exception e) {
+            assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
+        }
+    }
+
     private ColumnInfo[] createTestColumnInfos(final float nullFraction, final int maxValue) {
         final List<String> colsList = new ArrayList<>();
         final List<TestDataGenerator> generators = new ArrayList<>();
