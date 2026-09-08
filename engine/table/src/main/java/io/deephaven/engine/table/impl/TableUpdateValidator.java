@@ -28,7 +28,7 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.rowset.RowSetShiftCallback;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
-import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.vector.*;
 import io.deephaven.util.mutable.MutableInt;
 
@@ -136,7 +136,8 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
                 tableToValidate.getAttributes());
         mcsTransformer = tableToValidate.newModifiedColumnSetIdentityTransformer(resultTable);
 
-        if (SparseConstants.sparseStructureExceedsOverhead(rowSet, maximumSparseMemoryOverhead)) {
+        if (columnInfos.length > 0
+                && SparseConstants.sparseStructureExceedsOverhead(rowSet, maximumSparseMemoryOverhead)) {
             // no values have been recorded yet, so there is nothing to copy
             switchToRedirected(false);
         }
@@ -190,6 +191,15 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
 
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
                 final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
+            // tableToValidate's row set has already been updated for this cycle; if its new shape makes the sparse
+            // structures too expensive, migrate before this update records any values at the scattered keys (our own
+            // rowSet - the mapped key space - is still at its pre-update state, matching the recorded values)
+            if (!isRedirectionUsed() && columnInfos.length > 0
+                    && SparseConstants.sparseStructureExceedsOverhead(
+                            tableToValidate.getRowSet(), maximumSparseMemoryOverhead)) {
+                switchToRedirected(true);
+            }
+
             if (!upstream.modifiedColumnSet().isCompatibleWith(validationMCS)) {
                 noteIssue(
                         () -> "upstream.modifiedColumnSet is not compatible with table.newModifiedColumnSet(...): upstream="
@@ -268,15 +278,10 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
 
             resultTable.notifyListeners(downstream);
-
-            if (!isRedirectionUsed()
-                    && SparseConstants.sparseStructureExceedsOverhead(rowSet, maximumSparseMemoryOverhead)) {
-                switchToRedirected(true);
-            }
         }
     }
 
-    @TestUseOnly
+    @VisibleForTesting
     boolean isRedirectionUsed() {
         return rowRedirection != null;
     }
