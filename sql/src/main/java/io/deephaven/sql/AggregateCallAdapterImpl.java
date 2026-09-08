@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.sql;
 
@@ -24,8 +24,14 @@ final class AggregateCallAdapterImpl {
             Map.entry(SqlStdOperatorTable.AVG, aggSpecFunction(AggSpec.avg())),
             Map.entry(SqlStdOperatorTable.SUM, aggSpecFunction(AggSpec.sum())),
             Map.entry(SqlStdOperatorTable.ANY_VALUE, aggSpecFunction(AggSpec.first())),
-            Map.entry(SqlStdOperatorTable.FIRST_VALUE, aggSpecFunction(AggSpec.first())),
-            Map.entry(SqlStdOperatorTable.LAST_VALUE, aggSpecFunction(AggSpec.last())),
+            // SQLTODO(window-functions): FIRST_VALUE / LAST_VALUE are window-only functions in the SQL standard
+            // (they require an OVER clause); their bare-aggregate form was a non-standard extension. As of Calcite
+            // 1.42, the validator enforces conformance and rejects the bare form, so it can no longer be mapped
+            // here. Windowed usage (OVER ...) produces a LogicalWindow RelNode that is not yet translated (see
+            // RelNodeVisitorAdapter); supporting it would map to Table#updateBy (QST UpdateByTable). Until then,
+            // these are unsupported.
+            // Map.entry(SqlStdOperatorTable.FIRST_VALUE, aggSpecFunction(AggSpec.first())),
+            // Map.entry(SqlStdOperatorTable.LAST_VALUE, aggSpecFunction(AggSpec.last())),
             Map.entry(SqlStdOperatorTable.STDDEV, aggSpecFunction(AggSpec.std())),
             Map.entry(SqlStdOperatorTable.VARIANCE, aggSpecFunction(AggSpec.var())),
             Map.entry(SqlStdOperatorTable.COUNT, AggregateCallAdapterImpl::count),

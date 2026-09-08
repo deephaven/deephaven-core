@@ -9,7 +9,6 @@
 package io.deephaven.engine.rowset.impl.rsp.container;
 
 import java.util.NoSuchElementException;
-import java.util.function.Supplier;
 
 import static java.lang.Long.numberOfLeadingZeros;
 import static java.lang.Long.numberOfTrailingZeros;
@@ -203,12 +202,12 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public Container iset(final short x) {
-        return setImpl(x, () -> this, this::deepCopyIfShared);
+        return setImpl(x, true);
     }
 
     @Override
     public Container set(final short x) {
-        return setImpl(x, this::cowRef, this::deepCopy);
+        return setImpl(x, false);
     }
 
     @Override
@@ -223,12 +222,28 @@ public final class BitmapContainer extends Container implements Cloneable {
         return set(x);
     }
 
-    private Container setImpl(
-            final short x, final Supplier<BitmapContainer> self, final Supplier<BitmapContainer> copy) {
+
+    /**
+     * The container to return when an operation turned out to change nothing: {@code this} for an in-place operation, or
+     * a new reference for a copy-on-write one.
+     */
+    private BitmapContainer unchangedResult(final boolean inPlace) {
+        return inPlace ? this : cowRef();
+    }
+
+    /**
+     * The container an operation may mutate: {@code this} unless it is shared, for an in-place operation, or a private
+     * copy for a copy-on-write one.
+     */
+    private BitmapContainer mutableTarget(final boolean inPlace) {
+        return inPlace ? deepCopyIfShared() : deepCopy();
+    }
+
+    private Container setImpl(final short x, final boolean inPlace) {
         if (contains(x)) {
-            return self.get();
+            return unchangedResult(inPlace);
         }
-        final BitmapContainer ans = copy.get();
+        final BitmapContainer ans = mutableTarget(inPlace);
         ans.setUnsafe(x);
         return ans.maybeSwitchContainerAfterGrowing();
     }
@@ -337,6 +352,11 @@ public final class BitmapContainer extends Container implements Cloneable {
         final BitmapContainer ans;
         if (inPlace) {
             ans = this;
+            // Only the words holding the retained range are written below, and the cardinality is recomputed from
+            // just those, so any values outside the range have to be cleared here. A fresh container needs none of
+            // this because its words start out zero.
+            java.util.Arrays.fill(ans.bitmap, 0, ctx.iFirst, 0L);
+            java.util.Arrays.fill(ans.bitmap, ctx.iLast + 1, ans.bitmap.length, 0L);
         } else {
             ans = new BitmapContainer();
         }
@@ -1095,6 +1115,9 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public Container inot(final int firstOfRange, final int lastOfRange) {
+        if (lastOfRange <= firstOfRange) {
+            return this;
+        }
         final BitmapContainer ans = deepCopyIfShared();
         return ans.inotImpl(firstOfRange, lastOfRange);
     }
@@ -1340,6 +1363,9 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public Container not(final int firstOfRange, final int lastOfRange) {
+        if (lastOfRange <= firstOfRange) {
+            return cowRef();
+        }
         final BitmapContainer answer = deepCopy();
         return answer.inot(firstOfRange, lastOfRange);
     }

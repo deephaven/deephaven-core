@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -179,7 +179,8 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
             ParquetTools.writeTable(badTable, fileUri.toString(), instructions);
             TestCase.fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+            assertTrue(e.getCause() instanceof UncheckedDeephavenException);
+            assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
         }
 
         // Make sure that original file is preserved
@@ -217,7 +218,8 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
                     new String[] {firstFileUri.toString(), secondFileUri.toString()}, instructions);
             TestCase.fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
-            assertTrue(e.getCause() instanceof FormulaEvaluationException);
+            assertTrue(e.getCause() instanceof UncheckedDeephavenException);
+            assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
         }
 
         // All new files should be deleted even though first table would be written successfully. The directory should

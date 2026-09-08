@@ -137,7 +137,7 @@ Cumulative aggregations are the simplest operations in the [`updateby`](/core/ja
 
 To illustrate a cumulative statistic, consider the cumulative sum. For each row, this operation calculates the sum of all previous values in a column, including the current row's value. The following illustration shows this:
 
-![img](../assets/how-to/updateby-cum-sum.png)
+![Cumulative sum illustration](../assets/how-to/updateby-cum-sum.png)
 
 The code for the illustration above looks like this:
 
@@ -222,7 +222,7 @@ The grouping operations collect values within the rolling window into an array. 
 
 To illustrate a simple moving aggregation, consider the rolling average. For each row, this operation calculates the average of all values within a specified window. The following illustration shows this:
 
-![img](../assets/how-to/updateby-rolling-avg.png)
+![Rolling average illustration](../assets/how-to/updateby-rolling-avg.png)
 
 The code for the illustration above looks like this:
 
@@ -343,7 +343,7 @@ Exponential moving statistics are another form of moving aggregations. Unlike si
 
 To visualize an exponential moving statistic, consider the exponential moving average (EMA). The following illustration shows this:
 
-![img](../assets/how-to/updateby-ema.png)
+![Exponential moving average illustration](../assets/how-to/updateby-ema.png)
 
 The code for the illustration above looks like this:
 
@@ -372,17 +372,17 @@ result = source.updateBy([ema2, ema3, ema5], "Letter")
 
 **Tick-based decay** (`decayTicks`):
 
-- Smaller values = faster decay, more weight on recent data
-- `decayTicks=1`: Each previous row has ~37% the weight of the current row
-- `decayTicks=10`: Each previous row has ~90% the weight of the current row
-- Higher values create smoother, slower-responding averages
+- Smaller values = faster decay, more weight on recent data.
+- `decayTicks=1`: Each previous row has ~37% the weight of the current row.
+- `decayTicks=10`: Each previous row has ~90% the weight of the current row.
+- Higher values create smoother, slower-responding averages.
 
 **Time-based decay** (`decayTime`):
 
-- Controls how quickly older data loses influence over time
-- `decayTime="PT1s"`: Data from 1 second ago has ~37% weight
-- `decayTime="PT10s"`: Data from 10 seconds ago has ~37% weight
-- Longer decay times create more stable, less responsive averages
+- Controls how quickly older data loses influence over time.
+- `decayTime="PT1s"`: Data from 1 second ago has ~37% weight.
+- `decayTime="PT10s"`: Data from 10 seconds ago has ~37% weight.
+- Longer decay times create more stable, less responsive averages.
 
 The same example can be modified to use time-based windows instead of tick-based windows:
 
@@ -402,9 +402,9 @@ result = source.updateBy([ema2sec, ema3sec, ema5sec], "Letter")
 
 In this time-based example:
 
-- `decayTime="PT2s"`: Creates a fast-responding average where data loses ~63% influence after 2 seconds
-- `decayTime="PT4s"`: Medium responsiveness, data loses ~63% influence after 4 seconds
-- `decayTime="PT6s"`: Slower response, data loses ~63% influence after 6 seconds
+- `decayTime="PT2s"`: Creates a fast-responding average where data loses ~63% influence after 2 seconds.
+- `decayTime="PT4s"`: Medium responsiveness, data loses ~63% influence after 4 seconds.
+- `decayTime="PT6s"`: Slower response, data loses ~63% influence after 6 seconds.
 
 ## Bollinger Bands
 
@@ -597,7 +597,7 @@ fXyz = plotBollinger(result, "XYZ")
 
 The [`updateBy`](/core/javadoc/io/deephaven/engine/table/impl/updateby/UpdateBy.html) module enables users to create custom rolling aggregations with the [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) function.
 
-The user-defined formula can utilize any of Deephaven's [built-in functions](../reference/query-language/query-library/auto-imported-functions.md), [arithmetic operators](../how-to-guides/operators.md), or even [user-defined Groovy functions](../how-to-guides/groovy-closures.md).
+The user-defined formula can utilize any of Deephaven's [built-in functions](../reference/query-language/query-library/auto-imported/index.md), [arithmetic operators](../how-to-guides/operators.md), or even [user-defined Groovy functions](../how-to-guides/groovy-closures.md).
 
 #### Tick-based rolling formulas
 
@@ -886,21 +886,21 @@ It's common for tables to contain null, NaN, or other erroneous values. Differen
 
 Certain operations can be configured to handle erroneous data through control parameters:
 
-- [`Ema`](../reference/table-operations/update-by-operations/ema.md): Use `control` parameter with [OperationControl](../reference/table-operations/update-by-operations/OperationControl.md)
-- [`Delta`](../reference/table-operations/update-by-operations/delta.md): Use `deltaControl` parameter with [DeltaControl](../reference/table-operations/update-by-operations/DeltaControl.md)
+- [`Ema`](../reference/table-operations/update-by-operations/ema.md): Use `control` parameter with [OperationControl](../reference/table-operations/update-by-operations/OperationControl.md).
+- [`Delta`](../reference/table-operations/update-by-operations/delta.md): Use `deltaControl` parameter with [DeltaControl](../reference/table-operations/update-by-operations/DeltaControl.md).
 
 ### Default null handling behavior
 
 Most [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) operations have consistent default behavior for null values:
 
-- **Cumulative operations** (`CumSum`, `CumMax`, etc.): Skip null values and continue with the last valid result
-- **Rolling operations** (`RollingAvg`, `RollingSum`, etc.): Exclude null values from window calculations
-- **Exponential operations** (`Ema`, `EmMax`, etc.): Skip null values unless configured otherwise via `OperationControl`
+- **Cumulative operations** (`CumSum`, `CumMax`, etc.): Skip null values and continue with the last valid result.
+- **Rolling operations** (`RollingAvg`, `RollingSum`, etc.): Exclude null values from window calculations.
+- **Exponential operations** (`Ema`, `EmMax`, etc.): Skip null values unless configured otherwise via `OperationControl`.
 
 ### Specialized null handling operations
 
-- **[`Fill`](../reference/table-operations/update-by-operations/fill.md)**: Specifically designed to replace null values with the most recent non-null value
-- **[`Delta`](../reference/table-operations/update-by-operations/delta.md)**: Configurable null handling through `DeltaControl` (see [Null handling](#null-handling) section)
+- **[`Fill`](../reference/table-operations/update-by-operations/fill.md)**: Specifically designed to replace null values with the most recent non-null value.
+- **[`Delta`](../reference/table-operations/update-by-operations/delta.md)**: Configurable null handling through `DeltaControl` (see [Null handling](#null-handling) section).
 
 For detailed configuration options, see the [OperationControl reference guide](../reference/table-operations/update-by-operations/OperationControl.md).
 

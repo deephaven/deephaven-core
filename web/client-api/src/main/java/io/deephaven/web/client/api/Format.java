@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -87,7 +87,7 @@ public final class Format {
 
 
     /**
-     * @deprecated Prefer formatString. Number format string to apply to the value in this cell.
+     * @deprecated Prefer {@code formatString}. Number format string to apply to the value in this cell.
      */
     @Deprecated
     @JsNullable

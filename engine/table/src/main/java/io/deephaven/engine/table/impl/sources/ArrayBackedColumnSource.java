@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
@@ -8,7 +8,10 @@ import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.qst.type.BoxedType;
+import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.GenericType;
+import io.deephaven.qst.type.LocalDateType;
+import io.deephaven.qst.type.LocalTimeType;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -49,7 +52,6 @@ public abstract class ArrayBackedColumnSource<T>
         implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 
-    static final int DEFAULT_RECYCLER_CAPACITY = 1024;
     /**
      * Initial number of blocks to allocate.
      * <p>
@@ -90,9 +92,10 @@ public abstract class ArrayBackedColumnSource<T>
     private static final int IN_USE_BLOCK_SIZE = 1 << LOG_INUSE_BLOCK_SIZE;
     static final int IN_USE_MASK = (1 << LOG_INUSE_BITSET_SIZE) - 1;
 
-    static final SoftRecycler<long[]> inUseRecycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
-            () -> new long[IN_USE_BLOCK_SIZE],
-            block -> Arrays.fill(block, 0));
+    static final SoftRecycler<long[]> inUseRecycler =
+            new SoftRecycler<>(ArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY,
+                    () -> new long[IN_USE_BLOCK_SIZE],
+                    block -> Arrays.fill(block, 0));
 
     public static WritableColumnSource<?> from(Array<?> array) {
         return array.walk(new ArrayAdapter<>());
@@ -422,6 +425,33 @@ public abstract class ArrayBackedColumnSource<T>
         return (WritableColumnSource<T>) result;
     }
 
+    /**
+     * Produces an empty ArrayBackedColumnSource for the given {@link ChunkType}.
+     *
+     * @param chunkType the chunk type
+     * @return an in-memory column source of the appropriate primitive or Object type
+     */
+    public static WritableColumnSource<?> getMemoryColumnSource(@NotNull final ChunkType chunkType) {
+        switch (chunkType) {
+            case Byte:
+                return getMemoryColumnSource(byte.class, null);
+            case Char:
+                return getMemoryColumnSource(char.class, null);
+            case Short:
+                return getMemoryColumnSource(short.class, null);
+            case Int:
+                return getMemoryColumnSource(int.class, null);
+            case Long:
+                return getMemoryColumnSource(long.class, null);
+            case Float:
+                return getMemoryColumnSource(float.class, null);
+            case Double:
+                return getMemoryColumnSource(double.class, null);
+            default:
+                return getMemoryColumnSource(Object.class, null);
+        }
+    }
+
     @Override
     public abstract void ensureCapacity(long size, boolean nullFill);
 
@@ -610,6 +640,21 @@ public abstract class ArrayBackedColumnSource<T>
                 @Override
                 public WritableColumnSource<?> visit(InstantType instantType) {
                     return simple(instantType);
+                }
+
+                @Override
+                public WritableColumnSource<?> visit(LocalTimeType localTimeType) {
+                    return simple(localTimeType);
+                }
+
+                @Override
+                public WritableColumnSource<?> visit(LocalDateType localDateType) {
+                    return simple(localDateType);
+                }
+
+                @Override
+                public WritableColumnSource<?> visit(DurationType durationType) {
+                    return simple(durationType);
                 }
 
                 @Override

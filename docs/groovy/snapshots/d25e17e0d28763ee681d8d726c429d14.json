@@ -1,0 +1,1 @@
+{"file":"conceptual/systemic-object-marking.md","objects":{"systemicT":{"type":"Table","data":{"columns":[{"name":"Label","type":"java.lang.String"}],"rows":[[{"value":"I am systemic"}]]}},"notSystemicT":{"type":"Table","data":{"columns":[{"name":"Label","type":"java.lang.String"}],"rows":[[{"value":"I am not systemic"}]]}}}}

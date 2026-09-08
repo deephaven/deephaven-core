@@ -1,5 +1,4 @@
 ---
-id: gcp-linux
 title: Use Deephaven in a GCP Linux instance
 sidebar_label: GCP
 ---
@@ -62,15 +61,12 @@ Alternatively, you can use other Linux distributions like Ubuntu or Debian. The 
 
 ### Startup script for Docker container
 
-A Google Cloud VM can be configured to run Docker containers on startup using a script. Since Deephaven can be [launched from pre-built Docker images](../tutorials/quickstart.md), we'll create a startup script that automatically pulls and runs the Deephaven container when the VM starts.
+A Google Cloud VM can be configured to run Docker containers on startup using a script. Since Deephaven can be [launched from pre-built Docker images](../getting-started/quickstart.md), we'll create a startup script that automatically pulls and runs the Deephaven container when the VM starts.
 
 Deephaven has several pre-built Docker images to choose from. Your choice should depend on your needs.
 
-:::note
-
-`{VERSION}` in the list below is the Deephaven Core version number. Version numbers can be found [here](https://github.com/deephaven/deephaven-core/releases). Additionally, `{VERSION}` can be `latest`, which will always pull the latest version number.
-
-:::
+> [!NOTE]
+> `{VERSION}` in the list below is the Deephaven Core version number. Version numbers can be found [here](https://github.com/deephaven/deephaven-core/releases). Additionally, `{VERSION}` can be `latest`, which will always pull the latest version number.
 
 - Basic Python: `ghcr.io/deephaven/server:{VERSION}`
 - Python with [NLTK](https://www.nltk.org): `ghcr.io/deephaven/server-nltk:{VERSION}`
@@ -124,29 +120,23 @@ docker run \
 
 This startup script will:
 
-- Install Docker if it's not already present (using Docker's official installation script)
-- Stop and remove any existing Deephaven container (useful for VM restarts)
-- Pull the latest Deephaven image
+- Install Docker if it's not already present (using Docker's official installation script).
+- Stop and remove any existing Deephaven container (useful for VM restarts).
+- Pull the latest Deephaven image.
 - Run the container with:
-  - `--restart=always`: Automatically restart if the container crashes
-  - `--publish 10000:10000`: Expose Deephaven's web UI port
-  - `--env START_OPTS="-Xmx4g"`: Configure Deephaven to use 4GB of memory (adjust based on your VM's memory)
+  - `--restart=always`: Automatically restart if the container crashes.
+  - `--publish 10000:10000`: Expose Deephaven's web UI port.
+  - `--env START_OPTS="-Xmx4g"`: Configure Deephaven to use 4GB of memory (adjust based on your VM's memory).
 
-:::note
-
-If you choose a VM with more memory, increase the `-Xmx4g` value in the `START_OPTS` variable to whatever amount suits your needs. For example, use `-Xmx8g` for 8GB of memory.
-
-:::
+> [!NOTE]
+> If you choose a VM with more memory, increase the `-Xmx4g` value in the `START_OPTS` variable to whatever amount suits your needs. For example, use `-Xmx8g` for 8GB of memory.
 
 ### Remaining options
 
 For the remaining options, we will use the defaults. These include `Allow default access` and `Firewall`. Take some time to review each option and ensure the default options (or otherwise) are right for your needs.
 
-:::note
-
-This guide will not cover persistent storage in the cloud. There are several options, including [Docker data volumes](../conceptual/docker-data-volumes.md) and [gcloud storage](https://cloud.google.com/sdk/gcloud/reference/storage), for workflows that require storage of large datasets.
-
-:::
+> [!NOTE]
+> This guide will not cover persistent storage in the cloud. There are several options, including [Docker data volumes](../conceptual/docker-data-volumes.md) and [gcloud storage](https://cloud.google.com/sdk/gcloud/reference/storage), for workflows that require storage of large datasets.
 
 ### Create the VM
 
@@ -213,7 +203,7 @@ With that run, head to your web browser of choice and go to `localhost:10000/ide
 
 ## Related documentation
 
-- [Docker install guide](../tutorials/docker-install.md)
-- [Learn Deephaven](../tutorials/quickstart.md)
+- [Docker install guide](../getting-started/docker-install.md)
+- [Learn Deephaven](../getting-started/quickstart.md)
 - [How to use Deephaven with AWS EC2](../how-to-guides/aws-ec2.md)
 - [Docker data volumes](../conceptual/docker-data-volumes.md)

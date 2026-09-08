@@ -30,7 +30,7 @@ result = new_table(
 
 ## Add links to an InputTable
 
-An [input_table](../../reference/table-operations/create/input-table.md) allows the user to type input directly into the table's cells. Just like with a standard Deephaven table, any string that is correctly formatted as a valid URL will appear as a clickable link.
+An [input table](../../reference/table-operations/create/input-table.md) allows the user to type input directly into the table's cells. Just like with a standard Deephaven table, any string that is correctly formatted as a valid URL will appear as a clickable link.
 
 ```python order=result
 from deephaven import dtypes as dht, input_table

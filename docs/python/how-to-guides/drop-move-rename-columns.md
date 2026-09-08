@@ -12,9 +12,9 @@ The following methods drop columns from a table:
 
 The following methods move columns in a table:
 
+- [`move_columns`](../reference/table-operations/select/move-columns.md)
 - [`move_columns_up`](../reference/table-operations/select/move-columns-up.md)
 - [`move_columns_down`](../reference/table-operations/select/move-columns-down.md)
-- [`move_columns`](../reference/table-operations/select/move-columns.md)
 - [`select`](../reference/table-operations/select/select.md)
 - [`view`](../reference/table-operations/select/view.md)
 

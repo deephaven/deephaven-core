@@ -53,7 +53,7 @@ The following code block adds two new columns to `t`.
 t_update_viewed = t.update_view(["IntRowIndex = i", "Group = IntRowIndex % 5"])
 ```
 
-[`lazy_update`](../../reference/table-operations/select/lazy-update.md) creates _memoized_ columns. A memoized column performs calculations immediately and stores them in memory, but a calculation is only performed and stored once for each unique set of input values.
+[`lazy_update`](../../reference/table-operations/select/lazy-update.md) creates _memoized_ columns. A memoized column computes values on-demand like a formula column, but caches the results. A calculation is only performed once for each unique set of input values, and subsequent requests for the same inputs return the cached result.
 
 The following code block adds two new columns to `t_updated`.
 
@@ -88,6 +88,8 @@ t_viewed = t_updated.view(
 )
 ```
 
+There's a lot to consider when choosing between in-memory, formula, and memoized columns in queries. For more information, see [choose the right selection method](../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method).
+
 ### Drop columns
 
 [`drop_columns`](../../reference/table-operations/select/drop-columns.md) removes columns from a table.
@@ -102,8 +104,6 @@ Alternatively, [`view`](../../reference/table-operations/select/view.md) and [`s
 t_dropped_via_view = t_updated.view(["Timestamp", "Group"])
 t_dropped_via_select = t_updated.select(["Timestamp", "Group"])
 ```
-
-There's a lot to consider when choosing between in-memory, formula, and memoized columns in queries. For more information, see [choose the right selection method](../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method).
 
 ## Filter
 
@@ -166,7 +166,7 @@ See the [filtering guide](../../how-to-guides/use-filters.md) for more informati
 
 ## Sort
 
-The [`sort`](../../reference/table-operations/sort/sort.md) method sorts a table based on one or more columns. The following code block sorts `t_static` by `X` in ascending order.
+The [`sort`](../../reference/table-operations/sort/sort.md) method sorts a table based on one or more columns. The following code block sorts `t_updated` by `Group` in ascending order.
 
 ```python test-set=1
 t_sorted = t_updated.sort("Group")
@@ -195,6 +195,9 @@ t_sort_multi = t_updated.sort(
 ```
 
 See the [sorting guide](../../how-to-guides/sort.md) for more information.
+
+> [!TIP]
+> You can also filter and sort tables directly in the UI without writing code. Right-click a column header to access filter and sort options, or use the **Filters** panel in the Controls area. See [Navigate the GUI](../../how-to-guides/user-interface/navigating-the-ui.md) to learn more about the table context menus.
 
 ## Group and aggregate data
 
@@ -468,7 +471,7 @@ t_right_1 = new_table(
 t_exact_joined = t_left_1.exact_join(t_right_1, "Color")
 ```
 
-Consider the following tables, which are similar to the previous example. However, in this case, `t_left_2` contains the color `Purple`, which is not in `t_right_2`.
+Consider the following tables, which are similar to the previous example. However, in this case, `t_left_2` contains the color `Green`, which is not in `t_right_2`.
 
 ```python test-set=6 order=t_left_2,t_right_2
 from deephaven.column import double_col, int_col, string_col

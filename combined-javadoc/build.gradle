@@ -1,11 +1,26 @@
 plugins {
     id 'io.deephaven.project.register'
     id 'java'
+    id 'io.deephaven.javadoc-conventions'
 }
 
 configurations {
     combinedJavadoc
+    // Gradle 9 forbids resolving another project's configuration directly. This local
+    // resolvable configuration collects all javadoc-worthy projects and their compileOnly
+    // deps so Gradle's variant-aware engine resolves each project's published artifacts
+    // (including BOM-managed version constraints) without cross-project resolution.
+    javadocClasspath {
+        canBeResolved = true
+        canBeConsumed = false
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        }
+    }
 }
+
+// web-client-api depends on com.google.gwt:* which must be substituted with org.gwtproject:* equivalents
+GwtTools.applyGwtSubstitutions(project, configurations.javadocClasspath)
 
 String javaDocOverviewLocation = 'build/docs/overview.html'
 
@@ -24,13 +39,28 @@ def writeJavadocVersion = tasks.register 'writeJavadocVersion', {
         }
 }
 
+// After all projects are evaluated, add javadoc-worthy projects and their compileOnly deps.
+gradle.projectsEvaluated {
+    def isForJavadocs = { Project p -> return io.deephaven.project.util.CombinedJavadoc.includeProject(p) }
+    rootProject.subprojects.findAll { p -> isForJavadocs(p) }.each { p ->
+        dependencies {
+            javadocClasspath project(p.path)
+        }
+        p.configurations.findByName('compileOnly')?.dependencies?.each { dep ->
+            dependencies {
+                javadocClasspath dep
+            }
+        }
+    }
+}
+
 def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
     Javadoc jdoc ->
         jdoc.inputs.file javaDocOverviewLocation
         jdoc.options.overview = new File(javaDocOverviewLocation)
 
         // Fail on warnings to ensure correctness for our published docs
-        jdoc.options.addBooleanOption('Xwerror', true)
+        jdoc.options.addBooleanOption('Werror', true)
 
         def isForJavadocs = { Project p -> return io.deephaven.project.util.CombinedJavadoc.includeProject(p) }
 
@@ -38,9 +68,7 @@ def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
                 .findAll {  it -> isForJavadocs(it) }
                 .collect { it.sourceSets.main.allJava }
 
-        jdoc.classpath = files(rootProject.subprojects
-                .findAll {  it -> isForJavadocs(it) }
-                .collect { it.sourceSets.main.compileClasspath })
+        jdoc.classpath = configurations.javadocClasspath
 
         // https://github.com/gradle/gradle/issues/19869
         def sourcepath = files()
@@ -49,11 +77,9 @@ def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
         }
         options.addStringOption('sourcepath', sourcepath.getAsPath())
 
-        jdoc.destinationDir = file("${buildDir}/docs/javadoc")
+        jdoc.destinationDir = layout.buildDirectory.dir('docs/javadoc').get().asFile
         jdoc.dependsOn(writeJavadocVersion)
 }
-
-apply plugin: 'io.deephaven.javadoc-conventions'
 
 artifacts {
     combinedJavadoc allJavadoc

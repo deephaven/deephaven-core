@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
@@ -29,6 +29,14 @@ public class FloatPercentileTypeMedianHelper extends FloatPercentileTypeHelper {
         if (totalSize == 0) {
             return setResult(destination, NULL_FLOAT);
         } else {
+            // region maybeHandleNaN
+            final FloatSegmentedSortedMultiset floatSsmLo = (FloatSegmentedSortedMultiset) ssmLo;
+            final FloatSegmentedSortedMultiset floatSsmHi = (FloatSegmentedSortedMultiset) ssmHi;
+            if ((hiSize > 0 && Float.isNaN(floatSsmHi.getMax())) || (loSize > 0 && Float.isNaN(floatSsmLo.getMax()))) {
+                // No need to pivot while we have NaN values present
+                return setResult(destination, Float.NaN);
+            }
+            // endregion maybeHandleNaN
             final long targetLo = (int) ((totalSize - 1) * percentile) + 1;
             if (loSize < targetLo) {
                 ssmHi.moveFrontToBack(ssmLo, targetLo - loSize);

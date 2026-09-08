@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.location;
 
@@ -180,9 +180,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionChar<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionChar::createNull, ParquetColumnRegionChar::new,
+                ColumnRegionChar::createNull, cs -> new ParquetColumnRegionChar<>(cs, this),
                 rs -> new ColumnRegionChar.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionChar[]::new)));
+                        rs.toArray(ColumnRegionChar[]::new), this));
     }
 
     @Override
@@ -190,9 +190,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionByte<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionByte::createNull, ParquetColumnRegionByte::new,
+                ColumnRegionByte::createNull, cs -> new ParquetColumnRegionByte<>(cs, this),
                 rs -> new ColumnRegionByte.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionByte[]::new)));
+                        rs.toArray(ColumnRegionByte[]::new), this));
     }
 
     @Override
@@ -200,9 +200,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionShort<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionShort::createNull, ParquetColumnRegionShort::new,
+                ColumnRegionShort::createNull, cs -> new ParquetColumnRegionShort<>(cs, this),
                 rs -> new ColumnRegionShort.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionShort[]::new)));
+                        rs.toArray(ColumnRegionShort[]::new), this));
     }
 
     @Override
@@ -210,9 +210,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionInt<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionInt::createNull, ParquetColumnRegionInt::new,
+                ColumnRegionInt::createNull, cs -> new ParquetColumnRegionInt<>(cs, this),
                 rs -> new ColumnRegionInt.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionInt[]::new)));
+                        rs.toArray(ColumnRegionInt[]::new), this));
     }
 
     @Override
@@ -220,9 +220,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionLong<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionLong::createNull, ParquetColumnRegionLong::new,
+                ColumnRegionLong::createNull, cs -> new ParquetColumnRegionLong<>(cs, this),
                 rs -> new ColumnRegionLong.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionLong[]::new)));
+                        rs.toArray(ColumnRegionLong[]::new), this));
     }
 
     @Override
@@ -230,9 +230,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionFloat<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionFloat::createNull, ParquetColumnRegionFloat::new,
+                ColumnRegionFloat::createNull, cs -> new ParquetColumnRegionFloat<>(cs, this),
                 rs -> new ColumnRegionFloat.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionFloat[]::new)));
+                        rs.toArray(ColumnRegionFloat[]::new), this));
     }
 
     @Override
@@ -240,9 +240,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             @NotNull final ColumnDefinition<?> columnDefinition) {
         // noinspection unchecked
         return (ColumnRegionDouble<Values>) makeColumnRegion(this::getPageStores, columnDefinition,
-                ColumnRegionDouble::createNull, ParquetColumnRegionDouble::new,
+                ColumnRegionDouble::createNull, cs -> new ParquetColumnRegionDouble<>(cs, this),
                 rs -> new ColumnRegionDouble.StaticPageStore<>(tl().getRegionParameters(),
-                        rs.toArray(ColumnRegionDouble[]::new)));
+                        rs.toArray(ColumnRegionDouble[]::new), this));
     }
 
     @Override
@@ -265,7 +265,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 IntStream.range(0, sources.length)
                         .mapToObj(ri -> makeSingleColumnRegionObject(dataType, sources[ri],
                                 dictKeySources[ri], dictionaryChunkSuppliers[ri]))
-                        .toArray(ColumnRegionObject[]::new));
+                        .toArray(ColumnRegionObject[]::new),
+                this);
     }
 
     private <TYPE> ColumnRegionObject<TYPE, ATTR> makeSingleColumnRegionObject(
@@ -277,9 +278,10 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             return ColumnRegionObject.createNull(tl().getRegionParameters().regionMask);
         }
         return new ParquetColumnRegionObject<>(source,
-                () -> new ParquetColumnRegionLong<>(Require.neqNull(dictKeySource, "dictKeySource")),
+                () -> new ParquetColumnRegionLong<>(Require.neqNull(dictKeySource, "dictKeySource"), this),
                 () -> ColumnRegionChunkDictionary.create(tl().getRegionParameters().regionMask,
-                        dataType, Require.neqNull(dictValuesSupplier, "dictValuesSupplier")));
+                        dataType, Require.neqNull(dictValuesSupplier, "dictValuesSupplier")),
+                this);
     }
 
     /**
@@ -382,6 +384,10 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                         : columnTypeInfo.codec().map(CodecInfo::codecName).orElse(null);
         final ColumnTypeInfo.SpecialType specialTypeName =
                 columnTypeInfo == null ? null : columnTypeInfo.specialType().orElse(null);
+        // Keyed on the Deephaven column name, as codecs are above. Null when unrequested, which selects the checked
+        // reader; the lossy SIGNED_LONG interpretation must be asked for explicitly.
+        final ParquetInstructions.UnsignedLongTarget unsignedLongTarget =
+                readInstructions.getUnsignedLongTarget(columnDefinition.getName()).orElse(null);
 
         final boolean isArray = columnChunkReader.getMaxRl() > 0;
         final boolean isCodec = CodecLookup.explicitCodecPresent(codecName);
@@ -400,8 +406,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             ToPage<ATTR, ?> toPage = null;
 
             if (!isCodec && logicalTypeAnnotation != null) {
-                toPage = logicalTypeAnnotation.accept(
-                        new LogicalTypeVisitor<ATTR>(parquetColumnName, columnChunkReader, pageType))
+                toPage = logicalTypeAnnotation.accept(new LogicalTypeVisitor<ATTR>(
+                        parquetColumnName, columnChunkReader, pageType, unsignedLongTarget))
                         .orElse(null);
             }
 
@@ -521,17 +527,27 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         private final String name;
         private final ColumnChunkReader columnChunkReader;
         private final Class<?> pageType;
+        /** Null when the caller expressed no preference. */
+        private final ParquetInstructions.UnsignedLongTarget unsignedLongTarget;
 
         LogicalTypeVisitor(@NotNull final String name, @NotNull final ColumnChunkReader columnChunkReader,
-                final Class<?> pageType) {
+                final Class<?> pageType,
+                @Nullable final ParquetInstructions.UnsignedLongTarget unsignedLongTarget) {
             this.name = name;
             this.columnChunkReader = columnChunkReader;
             this.pageType = pageType;
+            this.unsignedLongTarget = unsignedLongTarget;
         }
 
         @Override
         public Optional<ToPage<ATTR, ?>> visit(
                 final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
+            return Optional.of(ToStringPage.create(pageType, columnChunkReader.getDictionarySupplier()));
+        }
+
+        @Override
+        public Optional<ToPage<ATTR, ?>> visit(
+                final LogicalTypeAnnotation.EnumLogicalTypeAnnotation enumLogicalType) {
             return Optional.of(ToStringPage.create(pageType, columnChunkReader.getDictionarySupplier()));
         }
 
@@ -625,6 +641,20 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                                 "Cannot convert parquet unsigned short column to " + pageType);
                     case 32:
                         return Optional.of(ToLongPage.createFromUnsignedInt(pageType));
+                    case 64:
+                        // Promoted to BigInteger by default, since no Java primitive fits. A long may be requested
+                        // instead, in which case values exceeding Long.MAX_VALUE are rejected while reading.
+                        if (pageType == BigInteger.class) {
+                            return Optional.of(ToBigIntegerPage.createFromUnsignedLong(pageType));
+                        } else if (pageType == long.class) {
+                            // LONG and SIGNED_LONG share long.class, so pageType alone cannot distinguish them.
+                            return Optional.of(
+                                    unsignedLongTarget == ParquetInstructions.UnsignedLongTarget.SIGNED_LONG
+                                            ? ToLongPage.create(pageType)
+                                            : ToLongPage.createFromUnsignedLong(pageType));
+                        }
+                        throw new IllegalArgumentException(
+                                "Cannot convert parquet unsigned long column to " + pageType);
                 }
             }
             return Optional.empty();

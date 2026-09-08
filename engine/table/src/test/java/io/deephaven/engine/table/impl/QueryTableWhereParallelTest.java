@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -46,30 +46,30 @@ public class QueryTableWhereParallelTest extends QueryTableWhereTest {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 2;
         final Table ft = TableTools.emptyTable(1_000_000).where(recordingFilter);
         assertEquals(1_000_000, ft.size());
-        assertEquals(new TLongArrayList(new long[] {500_000, 500_000}), getAndSortSizes(recordingFilter));
+        assertEquals(new LongArrayList(new long[] {500_000, 500_000}), getAndSortSizes(recordingFilter));
 
         recordingFilter.reset();
         final Table ft2 = TableTools.emptyTable(50_000).where(recordingFilter);
         assertEquals(50_000, ft2.size());
-        assertEquals(new TLongArrayList(new long[] {50_000}), getAndSortSizes(recordingFilter));
+        assertEquals(new LongArrayList(new long[] {50_000}), getAndSortSizes(recordingFilter));
 
         recordingFilter.reset();
         QueryTable.PARALLEL_WHERE_SEGMENTS = 4;
         final Table ft3 = TableTools.emptyTable(70_001).where(recordingFilter);
         assertEquals(70_001, ft3.size());
-        assertEquals(new TLongArrayList(new long[] {35_000, 35_001}), getAndSortSizes(recordingFilter));
+        assertEquals(new LongArrayList(new long[] {35_000, 35_001}), getAndSortSizes(recordingFilter));
 
         recordingFilter.reset();
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
         final Table ft4 = TableTools.emptyTable(69_999).where(recordingFilter);
         assertEquals(69_999, ft4.size());
-        assertEquals(new TLongArrayList(new long[] {17_499, 17_500, 17_500, 17_500}),
+        assertEquals(new LongArrayList(new long[] {17_499, 17_500, 17_500, 17_500}),
                 getAndSortSizes(recordingFilter));
 
         recordingFilter.reset();
         final Table ft5 = TableTools.emptyTable(69_999).where(recordingFilter.withSerial());
         assertEquals(69_999, ft5.size());
-        assertEquals(new TLongArrayList(new long[] {69_999}), getAndSortSizes(recordingFilter));
+        assertEquals(new LongArrayList(new long[] {69_999}), getAndSortSizes(recordingFilter));
     }
 
     @Test

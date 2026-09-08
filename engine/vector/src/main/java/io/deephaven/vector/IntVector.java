@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVector and run "./gradlew replicateVectors" to regenerate
@@ -11,7 +11,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.util.annotations.UserInvocationPermitted;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfInt;
-import io.deephaven.qst.type.IntType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
@@ -29,7 +28,7 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
     long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<IntVector, Integer> type() {
-        return PrimitiveVectorType.of(IntVector.class, IntType.of());
+        return Types.INT_VECTOR_TYPE;
     }
 
     /**

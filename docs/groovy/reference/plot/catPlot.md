@@ -153,3 +153,4 @@ result = catPlot("Categories Plot", source, "Categories", "Values")
 
 - [How to use the Chart Builder](../../how-to-guides/user-interface/chart-builder.md)
 - [How to create category plots with the built-in API](../../how-to-guides/plotting/api-plotting.md#category)
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/plot/Figure.html#catPlot(java.lang.Comparable,io.deephaven.engine.table.Table,java.lang.String,java.lang.String))

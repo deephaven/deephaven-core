@@ -2,17 +2,16 @@
 // Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 //
 using Deephaven.Dh_NetClient;
-using Xunit.Abstractions;
 using static Deephaven.Dh_NetClient.UpdateByOperation;
 
 namespace Deephaven.Dh_NetClientTests;
 
-public class UpdateByTest(ITestOutputHelper output) {
+public class UpdateByTest() {
   const int NumCols = 5;
   const int NumRows = 1000;
 
-  [Fact]
-  public void SimpleCumSum() {
+  [Test]
+  public async Task SimpleCumSum() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var tm = ctx.Client.Manager;
 
@@ -22,11 +21,11 @@ public class UpdateByTest(ITestOutputHelper output) {
 
     var expected = new TableMaker();
     expected.AddColumn("SumX", new Int64[] { 0, 1, 2, 4, 6, 9, 12, 16, 20, 25 });
-    TableComparer.AssertSame(expected, filtered);
+    await Assert.That(() => TableComparer.AssertSame(expected, filtered)).ThrowsNothing();
   }
 
-  [Fact]
-  public void SimpleOps() {
+  [Test]
+  public async Task SimpleOps() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var tm = ctx.Client.Manager;
 
@@ -37,17 +36,17 @@ public class UpdateByTest(ITestOutputHelper output) {
       var op = simpleOps[opIndex];
       for (var tableIndex = 0; tableIndex != tables.Length; ++tableIndex) {
         var table = tables[tableIndex];
-        output.WriteLine($"Processing op {opIndex} on Table {tableIndex}");
+        Console.WriteLine($"Processing op {opIndex} on Table {tableIndex}");
         using var result = table.UpdateBy([op], "e");
-        Assert.Equal(table.IsStatic, result.IsStatic);
-        Assert.Equal(2 + table.NumCols, result.NumCols);
-        Assert.True(result.NumRows >= table.NumRows);
+        await Assert.That(result.IsStatic).IsEqualTo(table.IsStatic);
+        await Assert.That(result.NumCols).IsEqualTo(2 + table.NumCols);
+        await Assert.That(result.NumRows >= table.NumRows).IsTrue();
       }
     }
   }
 
-  [Fact]
-  public void EmOps() {
+  [Test]
+  public async Task EmOps() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var tm = ctx.Client.Manager;
 
@@ -58,19 +57,19 @@ public class UpdateByTest(ITestOutputHelper output) {
       var op = emOps[opIndex];
       for (var tableIndex = 0; tableIndex != tables.Length; ++tableIndex) {
         var table = tables[tableIndex];
-        output.WriteLine($"Processing op {opIndex} on Table {tableIndex}");
+        Console.WriteLine($"Processing op {opIndex} on Table {tableIndex}");
         using var result = table.UpdateBy([op], "b");
-        Assert.Equal(table.IsStatic, result.IsStatic);
-        Assert.Equal(1 + table.NumCols, result.NumCols);
+        await Assert.That(result.IsStatic).IsEqualTo(table.IsStatic);
+        await Assert.That(result.NumCols).IsEqualTo(1 + table.NumCols);
         if (result.IsStatic) {
-          Assert.Equal(result.NumRows, table.NumRows);
+          await Assert.That(table.NumRows).IsEqualTo(result.NumRows);
         }
       }
     }
   }
 
-  [Fact]
-  public void RollingOps() {
+  [Test]
+  public async Task RollingOps() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var tm = ctx.Client.Manager;
 
@@ -81,17 +80,17 @@ public class UpdateByTest(ITestOutputHelper output) {
       var op = rollingOps[opIndex];
       for (var tableIndex = 0; tableIndex != tables.Length; ++tableIndex) {
         var table = tables[tableIndex];
-        output.WriteLine($"Processing op {opIndex} on Table {tableIndex}");
+        Console.WriteLine($"Processing op {opIndex} on Table {tableIndex}");
         using var result = table.UpdateBy([op], "c");
-        Assert.Equal(table.IsStatic, result.IsStatic);
-        Assert.Equal(2 + table.NumCols, result.NumCols);
-        Assert.True(result.NumRows >= table.NumRows);
+        await Assert.That(result.IsStatic).IsEqualTo(table.IsStatic);
+        await Assert.That(result.NumCols).IsEqualTo(2 + table.NumCols);
+        await Assert.That(result.NumRows >= table.NumRows).IsTrue();
       }
     }
   }
 
-  [Fact]
-  public void MultipleOps() {
+  [Test]
+  public async Task MultipleOps() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var tm = ctx.Client.Manager;
 
@@ -106,12 +105,12 @@ public class UpdateByTest(ITestOutputHelper output) {
 
     for (var tableIndex = 0; tableIndex != tables.Length; ++tableIndex) {
       var table = tables[tableIndex];
-      output.WriteLine($"Processing table {tableIndex}");
+      Console.WriteLine($"Processing table {tableIndex}");
       using var result = table.UpdateBy(multipleOps, "c");
-      Assert.Equal(table.IsStatic, result.IsStatic);
-      Assert.Equal(10 + table.NumCols, result.NumCols);
+      await Assert.That(result.IsStatic).IsEqualTo(table.IsStatic);
+      await Assert.That(result.NumCols).IsEqualTo(10 + table.NumCols);
       if (result.IsStatic) {
-        Assert.Equal(result.NumRows, table.NumRows);
+        await Assert.That(table.NumRows).IsEqualTo(result.NumRows);
       }
     }
   }

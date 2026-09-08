@@ -71,4 +71,4 @@ The resolver can be passed as an input argument to the [`IcebergCatalogAdapter`]
 - [`UnboundResolver`](./unbound-resolver.md)
 - [`IcebergCatalogAdapter`](./iceberg-catalog-adapter.md)
 - [`SchemaProvider`](./table-parquet-writer-options.md)
-- [Pydoc](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.InferenceResolver)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.InferenceResolver)

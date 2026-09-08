@@ -220,7 +220,9 @@ public class MultiplexedWebSocketServerStream extends AbstractWebSocketServerStr
         }
 
         // Having already stripped the control flow byte, the rest of the payload is our request message
-        stream.inboundDataReceived(ReadableBuffers.wrap(message), false);
+        ByteBuffer copy = ByteBuffer.allocate(message.remaining());
+        copy.put(message);
+        stream.inboundDataReceived(ReadableBuffers.wrap(copy.flip()), false);
     }
 
     @Override

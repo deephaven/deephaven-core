@@ -1,5 +1,4 @@
 ---
-id: query-string-overview
 title: An overview of query strings
 sidebar_label: Overview
 ---
@@ -57,7 +56,7 @@ resultConjunctive = source.where("X <= 2.4", "Z == `Even`")
 resultDisjunctive = source.where("X > 1.6 || Z == `Even`")
 ```
 
-For more on filtering table data, see [Use filters](./filters.md).
+For more on filtering table data, see [Use filters](./use-filters.md).
 
 ### Literals
 
@@ -177,9 +176,8 @@ resultMeta = result.meta()
 
 Additionally, all columns in tables are backed by arrays. You can leverage this with the underscore operator (`_`). For example, the following code grabs previous and next elements from a column:
 
-:::caution
-The special row variable [`ii`](../reference/query-language/variables/special-variables.md) is not safe in ticking tables.
-:::
+> [!CAUTION]
+> The special row variable [`ii`](../reference/query-language/variables/special-variables.md) is not safe in ticking tables.
 
 ```groovy order=source
 source = emptyTable(10).update("X = ii")
@@ -205,7 +203,8 @@ For full coverage on arrays in tables, see [Arrays in Deephaven](./work-with-arr
 - [Groovy closures in query strings](./groovy-closures.md)
 - [Java objects in query strings](./java-classes.md)
 - [Work with arrays](./work-with-arrays.md)
-- [Work with strings](./strings.md)
+- [Work with strings](./work-with-strings.md)
+- [Programmatically generate query strings](./generate-query-strings.md)
 - [Select and update columns](./use-select-view-update.md)
-- [Filter table data](./filters.md)
+- [Filter table data](./use-filters.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)

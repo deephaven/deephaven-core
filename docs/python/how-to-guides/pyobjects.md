@@ -127,8 +127,8 @@ For better performance and type safety, minimize the use of PyObject columns in 
 
 To prevent automatic PyObject creation when using Python functions in query strings:
 
-1. **Add type hints to your functions**: This allows Deephaven to convert return values to appropriate Java types
-2. **Use explicit type casts**: When type hints aren't possible, use Java-style casts like `(int)` or `(String)`
+1. **Add type hints to your functions**: This allows Deephaven to convert return values to appropriate Java types.
+2. **Use explicit type casts**: When type hints aren't possible, use Java-style casts like `(int)` or `(String)`.
 
 The following code block uses both to [cast](./casting.md) columns to appropriate Java primitive types:
 

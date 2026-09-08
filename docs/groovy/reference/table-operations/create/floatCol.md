@@ -44,6 +44,6 @@ result = newTable(
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`newTable`](./newTable.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#floatCol(java.lang.String,float...))

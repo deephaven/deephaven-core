@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
@@ -73,7 +73,9 @@ public class DeephavenAwsClientFactory implements AwsClientFactory {
         return S3AsyncClient.builder()
                 .applyMutation(asyncHttpClientProperties::applyAsyncHttpClientConfigurations)
                 .applyMutation(awsClientProperties::applyClientRegionConfiguration)
-                .applyMutation(awsClientProperties::applyClientCredentialConfigurations)
+                .applyMutation(awsClientProperties::applyLegacyMd5Plugin)
+                .applyMutation(
+                        b -> s3FileIOProperties.applyCredentialConfigurations(awsClientProperties, b))
                 .applyMutation(s3FileIOProperties::applyEndpointConfigurations)
                 .build();
     }

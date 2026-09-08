@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
@@ -9,6 +9,7 @@ import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.parquet.impl.ParquetSchemaUtil;
+import io.deephaven.qst.type.Type;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.metadata.CodecInfo;
@@ -126,15 +127,17 @@ public class ParquetSchemaReader {
             @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) {
         final MutableObject<String> errorString = new MutableObject<>();
         final MutableObject<ColumnDescriptor> currentColumn = new MutableObject<>();
+        // The Deephaven name for currentColumn; per-column read instructions are keyed by it, not the parquet name.
+        final MutableObject<String> currentColumnName = new MutableObject<>();
         final Optional<TableInfo> tableInfo = parseMetadata(keyValueMetadata);
         final Map<String, ColumnTypeInfo> nonDefaultTypeColumns =
                 tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
         final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor =
-                getVisitor(nonDefaultTypeColumns, errorString, currentColumn);
+                getVisitor(nonDefaultTypeColumns, errorString, currentColumn, currentColumnName, readInstructions);
 
         final MutableObject<ParquetInstructions.Builder> instructionsBuilder = new MutableObject<>();
         final Supplier<ParquetInstructions.Builder> builderSupplier = () -> {
-            if (instructionsBuilder.getValue() == null) {
+            if (instructionsBuilder.get() == null) {
                 instructionsBuilder.setValue(new ParquetInstructions.Builder(readInstructions));
             }
             return instructionsBuilder.getValue();
@@ -180,11 +183,13 @@ public class ParquetSchemaReader {
                     colName = parquetColumnName;
                 }
             }
+            currentColumnName.setValue(colName);
             final Optional<ColumnTypeInfo> columnTypeInfo = Optional.ofNullable(nonDefaultTypeColumns.get(colName));
 
             colDef.name = colName;
             colDef.dhSpecialType = columnTypeInfo.flatMap(ColumnTypeInfo::specialType).orElse(null);
-            final Optional<CodecInfo> codecInfo = columnTypeInfo.flatMap(ColumnTypeInfo::codec);
+            final Optional<CodecInfo> codecInfo =
+                    columnTypeInfo.flatMap(ColumnTypeInfo::codec).map(ParquetSchemaReader::maybeMapCodec);
             String codecName = codecInfo.map(CodecInfo::codecName).orElse(null);
             String codecArgs = codecInfo.flatMap(CodecInfo::codecArg).orElse(null);
             colDef.codecType = codecInfo.map(CodecInfo::dataType).orElse(null);
@@ -270,6 +275,30 @@ public class ParquetSchemaReader {
     }
 
     /**
+     * Allows adapting codecs between systems that may not have the same classes available to them during reading.
+     * Implementations should be registered with {@link ServiceLoader}
+     */
+    public interface CodecAdapter {
+        /**
+         * Optionally converts from {@code original} {@link CodecInfo}. If no conversion should be done for a specific
+         * implementation, then the implementation should return {@link Optional#empty()}
+         *
+         * @param original the original codec
+         * @return an Optional {@link CodecInfo}, which should be {@link Optional#empty()} if there is no conversion
+         */
+        Optional<CodecInfo> adapt(CodecInfo original);
+    }
+
+    private static CodecInfo maybeMapCodec(final CodecInfo originalCodec) {
+        return ServiceLoader.load(CodecAdapter.class).stream()
+                .map(p -> p.get().adapt(originalCodec))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst()
+                .orElse(originalCodec);
+    }
+
+    /**
      * Convert schema information from a {@link ParquetMetadata} into {@link ColumnDefinition ColumnDefinitions}.
      *
      * @param schema Parquet schema
@@ -325,7 +354,7 @@ public class ParquetSchemaReader {
             } else {
                 if (parquetColDef.isArray) {
                     if (baseType == byte.class && parquetColDef.noLogicalType) {
-                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, byte[].class, byte.class);
+                        colDef = ColumnDefinition.of(parquetColDef.name, Type.byteType().arrayType());
                     } else {
                         // TODO: ParquetInstruction.loadAsVector
                         final Class<?> componentType = baseType;
@@ -357,26 +386,15 @@ public class ParquetSchemaReader {
     private static LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> getVisitor(
             final Map<String, ColumnTypeInfo> nonDefaultTypeColumns,
             final MutableObject<String> errorString,
-            final MutableObject<ColumnDescriptor> currentColumn) {
+            final MutableObject<ColumnDescriptor> currentColumn,
+            final MutableObject<String> currentColumnName,
+            final ParquetInstructions readInstructions) {
         return new LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>>() {
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
-                final ColumnDescriptor column = currentColumn.getValue();
-                final String columnName = column.getPath()[0];
-                final ColumnTypeInfo columnTypeInfo = nonDefaultTypeColumns.get(columnName);
-                final ColumnTypeInfo.SpecialType specialType =
-                        columnTypeInfo == null ? null : columnTypeInfo.specialType().orElse(null);
-                if (specialType != null) {
-                    if (specialType == ColumnTypeInfo.SpecialType.StringSet) {
-                        return Optional.of(StringSet.class);
-                    }
-                    if (specialType != ColumnTypeInfo.SpecialType.Vector) {
-                        throw new UncheckedDeephavenException("Type " + column.getPrimitiveType()
-                                + " for column " + Arrays.toString(column.getPath())
-                                + " with unknown or incompatible special type " + specialType);
-                    }
-                }
-                return Optional.of(String.class);
+                // Delegate to the shared helper so STRING and ENUM are resolved identically,
+                // including any Deephaven-specific SpecialType metadata (StringSet, Vector).
+                return visitStringLike(currentColumn.getValue(), nonDefaultTypeColumns);
             }
 
             @Override
@@ -393,8 +411,10 @@ public class ParquetSchemaReader {
 
             @Override
             public Optional<Class<?>> visit(final LogicalTypeAnnotation.EnumLogicalTypeAnnotation enumLogicalType) {
-                errorString.setValue("EnumLogicalType");
-                return Optional.empty();
+                // ENUM is physically identical to STRING (UTF-8 encoded BINARY). Delegate to the
+                // shared helper so any future Deephaven SpecialType metadata on ENUM columns is
+                // handled consistently with STRING columns.
+                return visitStringLike(currentColumn.getValue(), nonDefaultTypeColumns);
             }
 
             @Override
@@ -459,6 +479,13 @@ public class ParquetSchemaReader {
                             return Optional.of(char.class);
                         case 32:
                             return Optional.of(long.class);
+                        // uint64 does not fit in any primitive; promoted to BigInteger unless the caller requested
+                        // otherwise.
+                        case 64:
+                            return Optional.of(readInstructions
+                                    .getUnsignedLongTarget(currentColumnName.get())
+                                    .orElse(ParquetInstructions.UnsignedLongTarget.BIG_INTEGER)
+                                    .dataType());
                         default:
                             // fallthrough.
                     }
@@ -500,5 +527,31 @@ public class ParquetSchemaReader {
                 return Optional.empty();
             }
         };
+    }
+
+    /**
+     * Shared resolution logic for string-like logical types (STRING and ENUM). Both are physically BINARY with UTF-8
+     * encoding, so they map to the same Java types. Centralising the logic here ensures that any Deephaven-specific
+     * {@link ColumnTypeInfo.SpecialType} metadata (e.g. {@code StringSet}, {@code Vector}) is respected for both
+     * annotations consistently, including any new special types added in the future.
+     */
+    private static Optional<Class<?>> visitStringLike(
+            final ColumnDescriptor column,
+            final Map<String, ColumnTypeInfo> nonDefaultTypeColumns) {
+        final String columnName = column.getPath()[0];
+        final ColumnTypeInfo columnTypeInfo = nonDefaultTypeColumns.get(columnName);
+        final ColumnTypeInfo.SpecialType specialType =
+                columnTypeInfo == null ? null : columnTypeInfo.specialType().orElse(null);
+        if (specialType != null) {
+            if (specialType == ColumnTypeInfo.SpecialType.StringSet) {
+                return Optional.of(StringSet.class);
+            }
+            if (specialType != ColumnTypeInfo.SpecialType.Vector) {
+                throw new UncheckedDeephavenException("Type " + column.getPrimitiveType()
+                        + " for column " + Arrays.toString(column.getPath())
+                        + " with unknown or incompatible special type " + specialType);
+            }
+        }
+        return Optional.of(String.class);
     }
 }

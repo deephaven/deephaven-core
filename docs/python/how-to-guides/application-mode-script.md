@@ -138,7 +138,7 @@ services:
       - START_OPTS=-Xmx4g -Ddeephaven.application.dir=/app.d
 ```
 
-After building the Docker image, we can now launch the application by running `docker-compose up`.
+After building the Docker image, we can now launch the application by running `docker compose up`.
 
 ## Example scripts
 
@@ -162,5 +162,6 @@ For a real world example of application mode being used in a Deephaven deploymen
 ## Related documentation
 
 - [Application mode config file](../reference/app-mode/application-mode-config.md)
+- [How to use Application Mode video](https://youtu.be/GNm1k0WiRMQ)
 - [How to use Application Mode libraries](./application-mode-libraries.md)
 - [Initialize server state with Application Mode](./application-mode.md)

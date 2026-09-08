@@ -74,6 +74,6 @@ tail = source.tail(20)
 
 ## Related documentation
 
-- [Create an empty table](../../../how-to-guides/new-and-empty-table.md#emptytable)
-- [How to use filters](../../../how-to-guides/filters.md)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
+- [How to use filters](../../../how-to-guides/use-filters.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#slice(long,long))

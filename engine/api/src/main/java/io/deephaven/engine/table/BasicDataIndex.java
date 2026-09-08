@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table;
 
@@ -112,6 +112,13 @@ public interface BasicDataIndex extends LivenessReferent {
     default ColumnSource<RowSet> rowSetColumn(final DataIndexOptions options) {
         return table(options).getColumnSource(rowSetColumnName(), RowSet.class);
     }
+
+    /**
+     * Whether the {@link Table} backing this data index is already created and cached.
+     *
+     * @return {@code true} when the table is cached, {@code false} otherwise
+     */
+    boolean tableIsCached();
 
     /**
      * Get the {@link Table} backing this data index.

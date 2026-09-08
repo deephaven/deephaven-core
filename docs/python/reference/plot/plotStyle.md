@@ -30,7 +30,7 @@ These arguments are case insensitive.
 
 ## Examples
 
-The following example creates a single series plot using the `STACKED_BAR` style.
+The following example creates a single series plot using the `STACKED_AREA` style.
 
 ```python order=plot_single_stacked_area,source
 from deephaven import read_csv
@@ -45,13 +45,13 @@ source = read_csv(
 # apply a plot style
 plot_single_stacked_area = (
     Figure()
-    .axes(plot_style=PlotStyle.STACKED_BAR)
+    .axes(plot_style=PlotStyle.STACKED_AREA)
     .plot_xy(series_name="Heart_rate", t=source, x="Time", y="HeartRate")
     .show()
 )
 ```
 
-The following example creates a category plot with the `stacked_bar` style.
+The following example creates a category plot with the `STACKED_BAR` style.
 
 ```python order=result,source_one,source_two
 from deephaven import new_table

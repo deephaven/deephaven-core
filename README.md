@@ -44,7 +44,7 @@ The following list contains documentation links for installation instructions an
 - [Java client](https://deephaven.io/core/docs/how-to-guides/java-client/)
 - [JS client](https://deephaven.io/core/client-api/javascript/modules/dh.html)
 - [Go client](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
-- [R client](https://github.com/deephaven/deephaven-core/blob/main/R/rdeephaven/README.md)
+- [R client](https://github.com/deephaven/deephaven-core/blob/main/R/README.md)
 
 ## Install and run Deephaven
 
@@ -134,7 +134,7 @@ Building and running Deephaven requires a few software packages.
 | Package        | Version                       | OS           | Required/Recommended |
 | -------------- | ----------------------------- | ------------ | -------------------- |
 | git            | ^2.25.0                       | All          | Required             |
-| java           | >=11, <=22                    | All          | Required             |
+| java           | >=17, <=25                    | All          | Required             |
 | docker         | ^20.10.8                      | All          | Required             |
 | docker compose | ^2                            | All          | Recommended          |
 | Windows        | 10 (OS build 20262 or higher) | Only Windows | Required             |

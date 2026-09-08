@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl.sortedranges;
 
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 public final class SortedRangesShort extends SortedRangesPacked<short[]> {
 
@@ -22,14 +22,14 @@ public final class SortedRangesShort extends SortedRangesPacked<short[]> {
         return new SortedRangesShort(initialCapacity, offset);
     }
 
-    private static ThreadLocal<TIntObjectHashMap<short[]>> ARRAY_POOL =
-            ThreadLocal.withInitial(() -> new TIntObjectHashMap<>(16));
+    private static final ThreadLocal<Int2ObjectOpenHashMap<short[]>> ARRAY_POOL =
+            ThreadLocal.withInitial(() -> new Int2ObjectOpenHashMap<>(16));
 
     @Override
     protected short[] makeArray(final int capacity) {
         final int roundedCapacity = arraySizeRoundingShort(capacity);
         if (POOL_ARRAYS) {
-            final TIntObjectHashMap<short[]> localPool = ARRAY_POOL.get();
+            final Int2ObjectOpenHashMap<short[]> localPool = ARRAY_POOL.get();
             final short[] arr = localPool.remove(roundedCapacity);
             if (arr != null) {
                 return arr;
@@ -47,7 +47,7 @@ public final class SortedRangesShort extends SortedRangesPacked<short[]> {
         if (!isShortAllocationSize(arr.length)) {
             return;
         }
-        final TIntObjectHashMap<short[]> localPool = ARRAY_POOL.get();
+        final Int2ObjectOpenHashMap<short[]> localPool = ARRAY_POOL.get();
         localPool.put(arr.length, arr);
     }
 
@@ -101,22 +101,6 @@ public final class SortedRangesShort extends SortedRangesPacked<short[]> {
 
     public SortedRangesShort(final short[] data, final long offset, final int count, final long cardinality) {
         super(data, offset, count, cardinality);
-    }
-
-    public SortedRangesShort(final SortedRangesLong sa) {
-        super(fromLongArray(sa.data, sa.count), sa.first(), sa.count, sa.cardinality);
-    }
-
-    private static short[] fromLongArray(final long[] longArray, final int count) {
-        final short[] shortArray = new short[longArray.length];
-        shortArray[0] = 0;
-        final long offset = longArray[0];
-        for (int i = 1; i < count; ++i) {
-            final long v = longArray[i];
-            final short iv = (short) (v < 0 ? v + offset : v - offset);
-            shortArray[i] = iv;
-        }
-        return shortArray;
     }
 
     public SortedRangesShort(final long offset, final SortedRangesInt sa, final int initialCapacity) {

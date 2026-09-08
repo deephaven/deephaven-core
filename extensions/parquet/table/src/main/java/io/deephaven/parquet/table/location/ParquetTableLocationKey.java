@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.location;
 
@@ -33,10 +33,10 @@ public class ParquetTableLocationKey extends URITableLocationKey {
 
     private static final String IMPLEMENTATION_NAME = ParquetTableLocationKey.class.getSimpleName();
 
-    private ParquetFileReader fileReader;
+    protected ParquetFileReader fileReader;
     private ParquetMetadata metadata;
     private int[] rowGroupIndices;
-    private SeekableChannelsProvider channelsProvider;
+    protected SeekableChannelsProvider channelsProvider;
 
     /**
      * Construct a new ParquetTableLocationKey for the supplied {@code parquetFileUri} and {@code partitions}.

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.configuration;
 
@@ -448,14 +448,22 @@ public class TestConfiguration extends TestCase {
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n",
                     history.get(0).fileName);
         } else if ("21".equals(javaVersion)) {
-            assertEquals(
+            final String expected1 =
                     "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
                             +
                             "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\n"
                             +
-                            "java.base/java.lang.reflect.Method.invoke(Method.java:580)\n",
-                    history.get(0).fileName);
-        } else if ("24".equals(javaVersion)) {
+                            "java.base/java.lang.reflect.Method.invoke(Method.java:580)\n";
+            final String expected2 =
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
+                            +
+                            "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)\n"
+                            +
+                            "java.base/java.lang.reflect.Method.invoke(Unknown Source)\n";
+            final String actual = history.get(0).fileName;
+            assertTrue("Expected one of two known JDK 21 stack traces, got: " + actual,
+                    expected1.equals(actual) || expected2.equals(actual));
+        } else if ("25".equals(javaVersion)) {
             assertEquals(
                     "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
                             +

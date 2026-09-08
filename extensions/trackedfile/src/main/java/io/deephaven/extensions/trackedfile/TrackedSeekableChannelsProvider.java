@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.extensions.trackedfile;
 
@@ -70,6 +70,13 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
         // context is unused here
         Assert.assertion(FILE_URI_SCHEME.equals(uri.getScheme()), "Expected a file uri, got " + uri);
         return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, new File(uri));
+    }
+
+    @Override
+    public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
+            long fileSize) throws IOException {
+        // Note: we _could_ push through knownFileSize to save a size call to FS
+        return getReadChannel(channelContext, uri);
     }
 
     @Override

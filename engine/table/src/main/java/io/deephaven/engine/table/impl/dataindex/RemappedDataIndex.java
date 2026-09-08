@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.dataindex;
 
@@ -88,6 +88,11 @@ public class RemappedDataIndex extends AbstractDataIndex implements DataIndexer.
     @NotNull
     public List<String> keyColumnNames() {
         return sourceIndex.keyColumnNames();
+    }
+
+    @Override
+    public boolean tableIsCached() {
+        return sourceIndex.tableIsCached();
     }
 
     @Override

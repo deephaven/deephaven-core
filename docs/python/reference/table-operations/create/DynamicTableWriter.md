@@ -28,7 +28,7 @@ A [`DynamicTableWriter`](/core/pydoc/code/deephaven.table_factory.html#deephaven
 
 [`DynamicTableWriter`](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.DynamicTableWriter) supports the following methods:
 
-- [`close()`](/core/pydoc/code/deephaven.html#deephaven.DynamicTableWriter.close) - Closes the [`DynamicTableWriter`](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.DynamicTableWriter).
+- [`close`](/core/pydoc/code/deephaven.html#deephaven.DynamicTableWriter.close) - Closes the [`DynamicTableWriter`](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.DynamicTableWriter).
 - [`write_row(values...)`](/core/pydoc/code/deephaven.html#deephaven.DynamicTableWriter.write_row) - Writes a row of values to the table.
 
 ## Properties

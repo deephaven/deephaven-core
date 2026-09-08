@@ -35,6 +35,7 @@ result = source.agg_by(
 
 A number of built-in aggregations are available:
 
+- [`agg.abs_sum`](../reference/table-operations/group-and-aggregate/AggAbsSum.md) - Sum of absolute values for each group.
 - [`agg.avg`](../reference/table-operations/group-and-aggregate/AggAvg.md) - Average value for each group.
 - [`agg.count_`](../reference/table-operations/group-and-aggregate/AggCount.md) - Number of rows for each group.
 - [`agg.count_distinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) - Number of unique values for each group.

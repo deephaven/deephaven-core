@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -39,10 +39,12 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.LongVector;
+import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -62,6 +64,7 @@ import static org.junit.Assert.*;
 /**
  * Test QueryTable select and update operations.
  */
+@Category(OutOfBandTest.class)
 public class QueryTableSelectUpdateTest {
 
     @Rule

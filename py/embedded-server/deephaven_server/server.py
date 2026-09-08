@@ -1,13 +1,14 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
-""" This module supports embedding a Deephaven server in Python."""
+"""This module supports embedding a Deephaven server in Python."""
 
-from typing import List, Optional
-import sys
 import atexit
+import sys
+from typing import List, Optional
 
 from .start_jvm import start_jvm
+
 
 # These classes are explicitly not JObjectWrapper, as that would require importing deephaven and jpy
 # before the JVM was running.
@@ -33,10 +34,12 @@ class ServerConfig:
         """
         return self.j_server_config.targetUrlOrDefault()
 
+
 class AuthenticationHandler:
     """
     Represents an authentication handler for a Deephaven server.
     """
+
     def __init__(self, j_authentication_handler):
         self.j_authentication_handler = j_authentication_handler
 
@@ -67,7 +70,6 @@ class AuthenticationHandler:
 
         """
         return list(self.j_authentication_handler.urls(target_url).toArray())
-
 
 
 class Server:
@@ -144,19 +146,26 @@ class Server:
         # If the server was already created, emit an error to warn away from trying again
         if Server.instance is not None:
             from deephaven import DHError
+
             raise DHError("Cannot create more than one instance of the server")
 
         if extra_classpath is None:
             extra_classpath = []
 
         # given the jvm args, ensure that the jvm has started
-        start_jvm(jvm_args=jvm_args, default_jvm_args=default_jvm_args, extra_classpath=extra_classpath)
+        start_jvm(
+            jvm_args=jvm_args,
+            default_jvm_args=default_jvm_args,
+            extra_classpath=extra_classpath,
+        )
 
         # it is now safe to import jpy
         import jpy
 
         # Create a python-wrapped java server that we can reference to talk to the platform
-        self.j_server = jpy.get_type("io.deephaven.python.server.EmbeddedServer")(host, port)
+        self.j_server = jpy.get_type("io.deephaven.python.server.EmbeddedServer")(
+            host, port
+        )
 
         # Obtain references to the deephaven logbuffer and redirect stdout/stderr to it. Note that we should not import
         # this until after jpy has started.
@@ -171,7 +180,7 @@ class Server:
         # On halt, prevent the JVM from writing to sys.out and sys.err
         atexit.register(self.j_server.prepareForShutdown)
 
-    def start(self):
+    def start(self) -> None:
         """
         Starts the server. Presently once the server is started, it cannot be stopped until the
         python process halts.

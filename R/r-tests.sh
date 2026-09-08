@@ -25,7 +25,7 @@ status = tryCatch(
      test_package('rdeephaven', reporter = 'junit')
      0
   },
-  error=function(e) 1
+  error=function(e) { print(paste0('ERROR: ', e)); 1 }
 )
 print(paste0('status=', status))
 quit(save='no', status=status)

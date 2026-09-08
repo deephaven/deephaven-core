@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl;
 
@@ -137,6 +137,18 @@ public class RowKeyChunkUtilsTest {
                     validateChunk(chunks.first, RowKeyChunkUtils.convertToOrderedKeyRanges(chunks.second));
                 }
             }
+        }
+    }
+
+    @Test
+    public void testConvertToOrderedKeyIndicesWithOffsetSizesFromOffset() {
+        // The sizing loop used to count the whole chunk regardless of srcOffset, over-allocating and
+        // potentially throwing a spurious SizeException.
+        final LongChunk<OrderedRowKeyRanges> ranges = createChunk(0, 9, 20, 24);
+        final LongChunk<OrderedRowKeys> result = RowKeyChunkUtils.convertToOrderedKeyIndices(2, ranges);
+        assertEquals(5, result.size());
+        for (int i = 0; i < 5; ++i) {
+            assertEquals(20 + i, result.get(i));
         }
     }
 

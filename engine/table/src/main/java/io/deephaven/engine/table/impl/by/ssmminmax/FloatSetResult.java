@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSetResult and run "./gradlew replicateSegmentedSortedMultiset" to regenerate
@@ -30,7 +30,13 @@ public class FloatSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = NULL_FLOAT;
         } else {
             final FloatSegmentedSortedMultiset floatSsm = (FloatSegmentedSortedMultiset) ssm;
-            newResult = minimum ? floatSsm.getMinFloat() : floatSsm.getMaxFloat();
+            // region nan handling
+            if (minimum) {
+                newResult = Float.isNaN(floatSsm.getMaxFloat()) ? Float.NaN : floatSsm.getMinFloat();
+            } else {
+                newResult = floatSsm.getMaxFloat(); // NaN sorts to max
+            }
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

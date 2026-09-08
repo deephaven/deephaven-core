@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharVectorTest and run "./gradlew replicateVectorTests" to regenerate
@@ -20,7 +20,6 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 // endregion NullConstantImport
-import static io.deephaven.util.QueryConstants.NULL_INT;
 import static junit.framework.TestCase.*;
 
 /**

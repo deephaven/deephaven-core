@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.layout;
 
@@ -91,6 +91,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * Create a new {@link IcebergTableLocationKey} for the given {@link ManifestFile}, {@link DataFile} and
      * {@link URI}.
      *
+     * @param manifestPartitionSpec The {@link PartitionSpec} that applies to the manifest file from which the data file
+     *        was discovered
      * @param manifestFile The manifest file from which the data file was discovered
      * @param dataFile The data file that backs the keyed location
      * @param fileUri The {@link URI} for the file that backs the keyed location

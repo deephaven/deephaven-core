@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl.sortedranges;
 
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 public final class SortedRangesLong extends SortedRangesTyped<long[]> {
 
@@ -37,13 +37,13 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
         return longArrayCapacityForLastIndex(lastIndex, isDense);
     }
 
-    private static ThreadLocal<TIntObjectHashMap<long[]>> ARRAY_POOL =
-            ThreadLocal.withInitial(() -> new TIntObjectHashMap<>(16));
+    private static ThreadLocal<Int2ObjectOpenHashMap<long[]>> ARRAY_POOL =
+            ThreadLocal.withInitial(() -> new Int2ObjectOpenHashMap<>(16));
 
     @Override
     protected long[] makeArray(final int capacity) {
         if (POOL_ARRAYS) {
-            final TIntObjectHashMap<long[]> localPool = ARRAY_POOL.get();
+            final Int2ObjectOpenHashMap<long[]> localPool = ARRAY_POOL.get();
             final long[] arr = localPool.remove(capacity);
             if (arr != null) {
                 return arr;
@@ -61,7 +61,7 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
         if (!isLongAllocationSize(arr.length)) {
             return;
         }
-        final TIntObjectHashMap<long[]> localPool = ARRAY_POOL.get();
+        final Int2ObjectOpenHashMap<long[]> localPool = ARRAY_POOL.get();
         localPool.put(arr.length, arr);
     }
 
@@ -159,12 +159,12 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
     }
 
     @Override
-    public final SortedRanges appendInternal(final long v, final boolean writeCheck) {
+    public SortedRanges appendInternal(final long v, final boolean writeCheck) {
         return appendPacked(this, v, v, writeCheck);
     }
 
     @Override
-    public final SortedRanges appendRangeInternal(final long start, final long end, final boolean writeCheck) {
+    public SortedRanges appendRangeInternal(final long start, final long end, final boolean writeCheck) {
         return appendRangePacked(this, start, end, start, end, writeCheck);
     }
 
@@ -196,6 +196,9 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
         if (v + shiftOffset < 0) {
             throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when first=" + v);
         }
+        if (shiftOffset > 0 && last() + shiftOffset < 0) {
+            throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when last=" + last());
+        }
         final boolean isNew = !canWrite();
         final long[] targetData = isNew ? new long[data.length] : data;
         shiftValues(targetData, shiftOffset, this, v);
@@ -216,6 +219,9 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
         long v = data[0];
         if (v + shiftOffset < 0) {
             throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when first=" + v);
+        }
+        if (shiftOffset > 0 && last() + shiftOffset < 0) {
+            throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when last=" + last());
         }
         final long[] targetData = new long[data.length];
         shiftValues(targetData, shiftOffset, this, v);
@@ -279,9 +285,16 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
         if (range > Integer.MAX_VALUE) {
             return null;
         }
-        final SortedRanges sr = (range > Short.MAX_VALUE)
-                ? new SortedRangesInt(count, first)
-                : new SortedRangesShort(count, first);
+        // Respect the target type's capacity limit: packing must not create over-capacity instances.
+        if (range <= Short.MAX_VALUE && shortArrayCapacityForLastIndex(count - 1) != 0) {
+            final SortedRanges sr = new SortedRangesShort(count, first);
+            copyTo(sr);
+            return sr;
+        }
+        if (intArrayCapacityForLastIndex(count - 1, isDense()) == 0) {
+            return null;
+        }
+        final SortedRanges sr = new SortedRangesInt(count, first);
         copyTo(sr);
         return sr;
     }

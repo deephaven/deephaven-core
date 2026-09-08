@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.liveness;
 
@@ -11,6 +11,13 @@ import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Unit tests for liveness code.
@@ -75,5 +82,260 @@ public class TestLiveness {
         } catch (LivenessStateException expected) {
             expected.printStackTrace();
         }
+    }
+
+    private static class NamedLivenessArtifact extends LivenessArtifact {
+        public String name;
+
+        public NamedLivenessArtifact(String name, boolean strong) {
+            super(strong);
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    @Test
+    public void testMultipleReferences() {
+        testMultipleReferences(false);
+        testMultipleReferences(true);
+    }
+
+    private void testMultipleReferences(boolean strong) {
+        final LivenessArtifact a1, a2, a3;
+        final LivenessScope scope = new LivenessScope();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a1 = new NamedLivenessArtifact("a1", strong);
+            a2 = new NamedLivenessArtifact("a2", strong);
+            a3 = new NamedLivenessArtifact("a3", strong);
+            a1.manage(a3);
+            a1.manage(a2);
+            scope.manage(a1);
+        }
+
+        final LivenessArtifact a4;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a4 = new NamedLivenessArtifact("a4", strong);
+            a4.manage(a1);
+            a4.manage(a2);
+            a4.manage(a3);
+        }
+
+        if (a4.tryManage(a1)) {
+            TestCase.fail("Expected not to manage a1");
+        }
+
+        scope.release();
+
+        final LivenessArtifact a5;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a5 = new NamedLivenessArtifact("a5", strong);
+            if (a5.tryManage(a1)) {
+                TestCase.fail("Expected not to manage a1");
+            }
+            if (a5.tryManage(a2)) {
+                TestCase.fail("Expected not to manage a2");
+            }
+            if (a5.tryManage(a3)) {
+                TestCase.fail("Expected not to manage a3");
+            }
+        }
+    }
+
+    @Test
+    public void testSingletonLivenessManager() {
+        testSingletonLivenessManager(false);
+        testSingletonLivenessManager(true);
+    }
+
+    private void testSingletonLivenessManager(final boolean strong) {
+        final LivenessArtifact a1, a2, a3;
+        final SingletonLivenessManager slm;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a1 = new NamedLivenessArtifact("a1", strong);
+            a2 = new NamedLivenessArtifact("a2", strong);
+            a3 = new NamedLivenessArtifact("a3", strong);
+            a2.manage(a1);
+            a3.manage(a1);
+            a3.manage(a2);
+            slm = new SingletonLivenessManager(a3);
+        }
+
+        assertTrue(a1.tryRetainReference());
+        a1.dropReference();
+        assertTrue(a2.tryRetainReference());
+        a2.dropReference();
+        assertTrue(a3.tryRetainReference());
+        a3.dropReference();
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final LivenessArtifact a4 = new NamedLivenessArtifact("a4", strong);
+            a4.manage(a3);
+        }
+
+        slm.release();
+
+        assertFalse(a1.tryRetainReference());
+        assertFalse(a2.tryRetainReference());
+        assertFalse(a3.tryRetainReference());
+    }
+
+    @Test
+    public void testSingletonDrop() {
+        testSingletonDrop(false);
+        testSingletonDrop(true);
+    }
+
+    private void testSingletonDrop(final boolean strong) {
+        final LivenessArtifact a0, a1, a2, a3;
+        final SingletonLivenessManager slm;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a0 = new NamedLivenessArtifact("a0", strong);
+            a1 = new NamedLivenessArtifact("a1", strong);
+            a2 = new NamedLivenessArtifact("a2", strong);
+            a3 = new NamedLivenessArtifact("a3", strong);
+
+
+            a1.manage(a0);
+            a2.manage(a1);
+            a3.manage(a1);
+            a3.manage(a2);
+
+            // negative test for a referent that isn't managed
+            a1.unmanage(Stream.of(a3));
+            a2.unmanage(a3);
+
+            // drop the single value
+            a1.unmanage(Stream.of(a0));
+            a2.unmanage(a1);
+
+            a3.unmanage(a1);
+            a3.unmanage(a2);
+
+            slm = new SingletonLivenessManager(a3);
+        }
+
+        assertFalse(a0.tryRetainReference());
+        assertFalse(a1.tryRetainReference());
+        assertFalse(a2.tryRetainReference());
+        assertTrue(a3.tryRetainReference());
+        a3.dropReference();
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final LivenessArtifact a4 = new NamedLivenessArtifact("a4", strong);
+            a4.manage(a3);
+        }
+
+        slm.release();
+
+        assertFalse(a1.tryRetainReference());
+        assertFalse(a2.tryRetainReference());
+        assertFalse(a3.tryRetainReference());
+    }
+
+    @Test
+    public void testSillyDrops() {
+        testSillyDrops(false);
+        testSillyDrops(true);
+    }
+
+    private void testSillyDrops(final boolean strong) {
+        final LivenessArtifact a0, a1, a2;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a0 = new NamedLivenessArtifact("a0", strong);
+            a1 = new NamedLivenessArtifact("a1", strong);
+            a2 = new NamedLivenessArtifact("a2", strong);
+
+            // empty implementations drops a thing, which obviously does not exist ...
+            a0.unmanage(a1);
+            a0.unmanage(Stream.of(a1, a2));
+
+            a0.manage(a1);
+            a0.unmanage(a1);
+
+            // singleton implementation, but with an empty reference drops a thing, which also obviously does not exist
+            a0.unmanage(a2);
+            a0.unmanage(Stream.of(a1, a2));
+        }
+
+        assertFalse(a0.tryRetainReference());
+        assertFalse(a1.tryRetainReference());
+        assertFalse(a2.tryRetainReference());
+    }
+
+    @Test
+    public void testTransferTo() {
+        testTransferTo(false);
+        // If the liveness scope enforced strong reachability, it does not permit transfer; so we cannot test it.
+        // testTransferTo(true);
+    }
+
+    private void testTransferTo(final boolean strong) {
+        final LivenessArtifact a0, a1, a2;
+
+        final LivenessScope ls = new LivenessScope(strong);
+        final LivenessScope ls2 = new LivenessScope(strong);
+
+        LivenessScopeStack.push(ls);
+        // for empty
+        ls.transferTo(ls2);
+        a0 = new NamedLivenessArtifact("a0", strong);
+        // for single
+        ls.transferTo(ls2);
+        a1 = new NamedLivenessArtifact("a1", strong);
+        a2 = new NamedLivenessArtifact("a2", strong);
+        // for double
+        ls.transferTo(ls2);
+        LivenessScopeStack.pop(ls);
+        ls.release();
+
+        assertTrue(a0.tryRetainReference());
+        a0.dropReference();
+        assertTrue(a1.tryRetainReference());
+        a1.dropReference();
+        assertTrue(a2.tryRetainReference());
+        a2.dropReference();
+        ls2.release();
+
+        assertFalse(a0.tryRetainReference());
+        assertFalse(a1.tryRetainReference());
+        assertFalse(a2.tryRetainReference());
+    }
+
+    @Test
+    public void testMakePermanent() {
+        testMakePermanent(false);
+        // cannot transfer a liveness scope with strong reachability
+        // testMakePermanent(true);
+    }
+
+    private void testMakePermanent(final boolean strong) {
+        final LivenessArtifact a0, a1, a2;
+
+        final LivenessScope ls = new LivenessScope(strong);
+        final PermanentLivenessManager permanentLivenessManager = new PermanentLivenessManager();
+
+        LivenessScopeStack.push(ls);
+        // for empty
+        ls.transferTo(permanentLivenessManager);
+        a0 = new NamedLivenessArtifact("a0", strong);
+        // for single
+        ls.transferTo(permanentLivenessManager);
+        a1 = new NamedLivenessArtifact("a1", strong);
+        a2 = new NamedLivenessArtifact("a2", strong);
+        // for double
+        ls.transferTo(permanentLivenessManager);
+        LivenessScopeStack.pop(ls);
+        ls.release();
+
+        assertTrue(a0.tryRetainReference());
+        a0.dropReference();
+        assertTrue(a1.tryRetainReference());
+        a1.dropReference();
+        assertTrue(a2.tryRetainReference());
+        a2.dropReference();
     }
 }

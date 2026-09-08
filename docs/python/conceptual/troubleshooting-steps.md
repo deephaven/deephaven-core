@@ -35,9 +35,60 @@ In static tables, a formula need not be re-evaluated because the table does not 
 
 ### Tick amplification
 
-Tick amplification occurs any time an operation produces a downstream update that changes a larger number of cells than the upstream update it is processing. Certain operations, such as cross joins and grouping/ungrouping, can cause tick amplification. This can lead to performance degradation, as the engine has to check more cells than necessary to ensure the results are correct.
+Tick amplification occurs any time an operation produces a downstream update that changes a larger number of cells than the upstream update it is processing. There are certain operations in Deephaven where the engine can't know exactly which cells in a table will change. As a result, the engine _must_ check every cell that could possibly change to ensure the results are correct. For instance, a grouping and ungrouping operation may only change a single value, but every single member of the group must be checked to ensure the results are correct.
 
-For an example, see [Tick amplification](../how-to-guides/partitioned-tables.md#tick-amplification).
+The following example demonstrates tick amplification by comparing a group/ungroup operation with a partition/merge operation:
+
+```python ticking-table order=null
+from deephaven import time_table
+from deephaven.table_listener import listen
+
+
+def print_changes(label, update, is_replay):
+    added = update.added()
+    modified = update.modified()
+    n_added = len(added["X"]) if "X" in added else 0
+    n_modified = len(modified["X"]) if "X" in modified else 0
+    changes = n_added + n_modified
+    print(f"TICK PROPAGATION: {label} {changes} changes")
+
+
+t1 = time_table("PT5s").update(["A=ii%2", "X=ii"])
+
+# Group/ungroup
+t2 = t1.group_by("A").update("Y=X+1").ungroup()
+
+# Partition/merge
+t3 = t1.partition_by("A").proxy().update("Y=X+1").target.merge()
+
+h1 = listen(
+    t1, lambda update, is_replay: print_changes("RAW            ", update, is_replay)
+)
+h2 = listen(
+    t2, lambda update, is_replay: print_changes("GROUP/UNGROUP  ", update, is_replay)
+)
+h3 = listen(
+    t3, lambda update, is_replay: print_changes("PARTITION/MERGE", update, is_replay)
+)
+```
+
+Initially, the output shows one change for each approach:
+
+```
+TICK PROPAGATION: RAW             1 changes
+TICK PROPAGATION: GROUP/UNGROUP   1 changes
+TICK PROPAGATION: PARTITION/MERGE 1 changes
+```
+
+After running for a while, the group/ungroup operation reports increasingly more changes while partition/merge stays at one:
+
+```
+TICK PROPAGATION: RAW             1 changes
+TICK PROPAGATION: GROUP/UNGROUP   10 changes
+TICK PROPAGATION: PARTITION/MERGE 1 changes
+```
+
+The group/ungroup operation suffers from tick amplification because the engine must check all members of each group. The partition/merge approach avoids this problem.
 
 ## Troubleshooting steps
 
@@ -58,7 +109,7 @@ When calculations are complex or expensive, it's typically best practice to perf
 
 You can use [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) to reduce the frequency at which a table ticks. Keep in mind that snapshotting a table pulls all of its data into memory.
 
-#### Reorder operations that amplify ticks
+#### Reorder join operations
 
 In queries on ticking tables, it's best practice to join tables in order of how often they tick. Generally speaking, it's best to join the tables that tick most often last.
 
@@ -107,7 +158,7 @@ The second case is _much_ more performant for two reasons:
 - The formula is evaluated much less often.
 - The joins are ordered so that the table that ticks most often is joined last, which means it has the least impact on the overall performance of the query.
 
-#### Reorder operations that reduce ticks
+#### Use dynamic filters
 
 You can reduce computational load by applying dynamic filters in your queries via [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md). These operations allow you to filter a table based on values in another table. By defining a table with values of interest, such as the highest-volume stocks, or all stocks in a specific sector, you can reduce the number of rows that need to be processed in your query. When the values in the values-of-interest table change, the result of the dynamic filter updates in tandem. The changes propagate through downstream query operations.
 
@@ -129,7 +180,7 @@ You can typically minimize the effect of tick amplification with [partitioned ta
 
 Every instance of Deephaven has a predefined maximum amount of memory. When memory usage approaches the configured maximum, query performance can degrade significantly. If a query requires more memory than what's available, it will crash.
 
-When working with live data, the amount of memory a query requires typically grows over time. The extent of this growth depends on a number of factors such as the growth rate of the data itself, the operations involved, and the [table types](../conceptual/table-types.md) used in the query.
+When working with live data, the amount of memory a query requires typically grows over time. The extent of this growth depends on a number of factors such as the growth rate of the data itself, the operations involved, and the [table types](./table-types.md) used in the query.
 
 #### Create formula columns
 

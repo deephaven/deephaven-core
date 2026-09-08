@@ -6,7 +6,7 @@ import unittest
 
 from tests.test_ticking_basic import TickingBasicTestCase
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     suite = unittest.TestSuite()
     suite.addTests(unittest.TestLoader().loadTestsFromTestCase(TickingBasicTestCase))
 

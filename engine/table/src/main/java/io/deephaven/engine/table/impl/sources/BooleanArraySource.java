@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources;
 
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
@@ -94,7 +94,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                     prevBlocks[block] = recycler.borrowItem();
                     prevInUse[block] = inUse = inUseRecycler.borrowItem();
                     if (prevAllocated == null) {
-                        prevAllocated = new TIntArrayList();
+                        prevAllocated = new IntArrayList();
                     }
                     prevAllocated.add(block);
                 } else {

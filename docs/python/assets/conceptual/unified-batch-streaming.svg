@@ -1,0 +1,159 @@
+<svg viewBox="0 0 1000 650" xmlns="http://www.w3.org/2000/svg">
+  <!-- Light background for dark theme compatibility -->
+  <rect width="100%" height="100%" fill="#ffffff" rx="8"/>
+  <defs>
+    <style>
+      .title { font: bold 16px sans-serif; fill: #1f2937; }
+      .label { font: 14px sans-serif; fill: #374151; }
+      .description { font: 11px sans-serif; fill: #6b7280; }
+      .batch { fill: #dbeafe; stroke: #3b82f6; stroke-width: 2.5; }
+      .realtime { fill: #fef3c7; stroke: #f59e0b; stroke-width: 2.5; }
+      .serving { fill: #dcfce7; stroke: #22c55e; stroke-width: 2.5; }
+      .unified { fill: #f3e8ff; stroke: #a855f7; stroke-width: 3; }
+      .arrow { stroke: #6b7280; stroke-width: 2.5; fill: none; marker-end: url(#arrowhead); }
+      .data-flow { stroke: #6366f1; stroke-width: 2; fill: none; marker-end: url(#dataflow); stroke-dasharray: 5,5; }
+      .shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
+    </style>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6b7280" />
+    </marker>
+    
+    <marker id="dataflow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#6366f1" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text class="title" x="500" y="30" text-anchor="middle">Unified Batch and Streaming: Traditional vs. Deephaven</text>
+  <text class="description" x="500" y="50" text-anchor="middle">Unified API eliminates complexity of separate batch and real-time systems</text>
+  
+  <!-- Traditional Lambda Architecture -->
+  <g transform="translate(50, 80)">
+    <text class="label" x="200" y="0" text-anchor="middle" font-weight="bold">Traditional: Complex Multi-System</text>
+    
+    <!-- Batch Layer -->
+    <g class="shadow" transform="translate(0, 30)">
+      <rect class="batch" x="0" y="0" width="180" height="100" rx="8"/>
+      <text class="label" x="10" y="25" font-weight="bold">Batch Layer</text>
+      <text class="description" x="10" y="45" font-size="10">• Historical data</text>
+      <text class="description" x="10" y="60" font-size="10">• Parquet, HDFS</text>
+      <text class="description" x="10" y="75" font-size="10">• Spark/Hadoop</text>
+      <text class="description" x="10" y="90" font-size="10">• Hours/days latency</text>
+    </g>
+    
+    <!-- Speed Layer -->
+    <g class="shadow" transform="translate(220, 30)">
+      <rect class="realtime" x="0" y="0" width="180" height="100" rx="8"/>
+      <text class="label" x="10" y="25" font-weight="bold">Speed Layer</text>
+      <text class="description" x="10" y="45" font-size="10">• Real-time streams</text>
+      <text class="description" x="10" y="60" font-size="10">• Kafka, Flink</text>
+      <text class="description" x="10" y="75" font-size="10">• Storm, Samza</text>
+      <text class="description" x="10" y="90" font-size="10">• ms-second latency</text>
+    </g>
+    
+    <!-- Arrows to serving -->
+    <path class="arrow" d="M 90 130 L 90 180 L 200 180"/>
+    <path class="arrow" d="M 310 130 L 310 180 L 200 180"/>
+    
+    <!-- Serving Layer -->
+    <g class="shadow" transform="translate(20, 180)">
+      <rect class="serving" x="0" y="0" width="360" height="100" rx="8"/>
+      <text class="label" x="10" y="25" font-weight="bold">Serving Layer</text>
+      <text class="description" x="10" y="45" font-size="10">• Merges batch + real-time views</text>
+      <text class="description" x="10" y="60" font-size="10">• Complex data reconciliation</text>
+      <text class="description" x="10" y="75" font-size="10">• Different APIs for each layer</text>
+      <text class="description" x="10" y="90" font-size="10">• Manual consistency management</text>
+    </g>
+    
+    <!-- Pain points -->
+    <g transform="translate(0, 300)">
+      <text class="label" x="0" y="0" fill="#ef4444" font-weight="bold">❌ Challenges:</text>
+      <text class="description" x="0" y="20" fill="#ef4444">• Multiple systems to learn & maintain</text>
+      <text class="description" x="0" y="35" fill="#ef4444">• Different APIs for batch vs streaming</text>
+      <text class="description" x="0" y="50" fill="#ef4444">• Complex data reconciliation logic</text>
+      <text class="description" x="0" y="65" fill="#ef4444">• Infrastructure overhead</text>
+    </g>
+  </g>
+  
+  <!-- Deephaven Unified Architecture -->
+  <g transform="translate(550, 80)">
+    <text class="label" x="200" y="0" text-anchor="middle" font-weight="bold">Deephaven: Unified Single System</text>
+    
+    <!-- Unified Layer -->
+    <g class="shadow" transform="translate(20, 30)">
+      <rect class="unified" x="0" y="0" width="360" height="250" rx="8"/>
+      <text class="label" x="180" y="25" text-anchor="middle" font-weight="bold" font-size="16">Deephaven Query Engine</text>
+      
+      <!-- Batch inside -->
+      <g transform="translate(10, 40)">
+        <rect class="batch" x="0" y="0" width="160" height="80" rx="5"/>
+        <text class="label" x="10" y="20" font-size="12">Batch Data</text>
+        <text class="description" x="10" y="38" font-size="9">• Parquet, CSV</text>
+        <text class="description" x="10" y="51" font-size="9">• Historical tables</text>
+        <text class="description" x="10" y="64" font-size="9">• Static sources</text>
+      </g>
+      
+      <!-- Real-time inside -->
+      <g transform="translate(190, 40)">
+        <rect class="realtime" x="0" y="0" width="160" height="80" rx="5"/>
+        <text class="label" x="10" y="20" font-size="12">Real-time Data</text>
+        <text class="description" x="10" y="38" font-size="9">• Kafka streams</text>
+        <text class="description" x="10" y="51" font-size="9">• Live tables</text>
+        <text class="description" x="10" y="64" font-size="9">• Ticking sources</text>
+      </g>
+      
+      <!-- DAG inside -->
+      <g transform="translate(10, 135)">
+        <rect fill="#e0e7ff" stroke="#6366f1" stroke-width="2" x="0" y="0" width="340" height="50" rx="5"/>
+        <text class="label" x="10" y="20" font-size="12">Unified DAG-based Update Model</text>
+        <text class="description" x="10" y="38" font-size="9">Same API • Same semantics • Automatic consistency</text>
+      </g>
+      
+      <!-- API -->
+      <g transform="translate(10, 195)">
+        <rect class="serving" x="0" y="0" width="340" height="45" rx="5"/>
+        <text class="label" x="170" y="22" text-anchor="middle" font-size="12">Single Table API</text>
+        <text class="description" x="170" y="38" text-anchor="middle" font-size="9">.where() .agg_by() .join() - works on all data</text>
+      </g>
+    </g>
+    
+    <!-- Benefits -->
+    <g transform="translate(20, 300)">
+      <text class="label" x="0" y="0" fill="#22c55e" font-weight="bold">✅ Benefits:</text>
+      <text class="description" x="0" y="20" fill="#22c55e">• One system, one API to learn</text>
+      <text class="description" x="0" y="35" fill="#22c55e">• Seamless batch + real-time integration</text>
+      <text class="description" x="0" y="50" fill="#22c55e">• Automatic consistency via DAG</text>
+      <text class="description" x="0" y="65" fill="#22c55e">• Lower operational complexity</text>
+    </g>
+  </g>
+  
+  <!-- Example code -->
+  <g class="shadow" transform="translate(50, 450)">
+    <rect fill="#f9fafb" stroke="#d1d5db" stroke-width="2" x="0" y="0" width="900" height="180" rx="8"/>
+    <text class="label" x="20" y="25" font-weight="bold">Code Example: Same API for Both</text>
+    
+    <text class="description" x="30" y="50" font-size="11">Python code works identically for batch and real-time data:</text>
+    
+    <!-- Batch example -->
+    <g transform="translate(30, 60)">
+      <text class="label" x="0" y="0" font-size="11" fill="#3b82f6">Batch (Historical):</text>
+      <rect fill="#ffffff" stroke="#3b82f6" x="0" y="5" width="400" height="55" rx="3"/>
+      <text class="code" x="10" y="25" font-size="10">historical = read_csv("trades_2024.csv")</text>
+      <text class="code" x="10" y="40" font-size="10">result = historical.where("Price > 100")</text>
+      <text class="code" x="10" y="55" font-size="10">  .agg_by([agg.avg("Price")], by=["Symbol"])</text>
+    </g>
+    
+    <!-- Real-time example -->
+    <g transform="translate(460, 60)">
+      <text class="label" x="0" y="0" font-size="11" fill="#f59e0b">Real-time (Live):</text>
+      <rect fill="#ffffff" stroke="#f59e0b" x="0" y="5" width="410" height="55" rx="3"/>
+      <text class="code" x="10" y="25" font-size="10">live = consume_kafka({"topic": "trades"})</text>
+      <text class="code" x="10" y="40" font-size="10">result = live.where("Price > 100")</text>
+      <text class="code" x="10" y="55" font-size="10">  .agg_by([agg.avg("Price")], by=["Symbol"])</text>
+    </g>
+    
+    <text class="description" x="30" y="140" font-size="11" font-weight="bold" fill="#a855f7">Identical operations! The only difference is the data source.</text>
+    <text class="description" x="30" y="158" font-size="10">Both use the same DAG, both maintain consistency, both support all table operations.</text>
+  </g>
+</svg>

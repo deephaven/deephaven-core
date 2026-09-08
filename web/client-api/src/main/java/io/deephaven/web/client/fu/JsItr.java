@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.fu;
 
@@ -30,7 +30,7 @@ public class JsItr {
         }
     };
 
-    public static <T> MappedIterable<T> iterate(JsIteratorIterable<T> values) {
+    public static <T> MappedIterable<T> iterate(JsIteratorIterable<T, Object, Object> values) {
         final Iterator<T> itr = new Iterator<T>() {
 
             public JsIIterableResult<T> next;

@@ -112,11 +112,15 @@ handle = merged_listen([t1, t2], listener_function)
 ### With a listener class
 
 The merged listener class gives more control when listening to multiple table changes. It requires defining an `on_update` function that takes the same arguments as a [listener function](#with-a-listener-function), `update` and `is_replay`. The `on_update` function is called every time the associated tables are updated.
+
 Listener classes are useful in cases where the listener must keep track of state. In this example, the listener will keep track of how many times it has been called.
 
 ```python ticking-table order=null
 from deephaven.table_listener import merged_listen, MergedListener
 from deephaven import time_table
+
+source1 = time_table("PT1S").update(formulas=["X=i"]).tail(5)
+source2 = time_table("PT2S").update(formulas=["Y=ii"]).tail(5)
 
 
 class ExampleListener(MergedListener):
@@ -134,9 +138,6 @@ class ExampleListener(MergedListener):
 
 
 listener_class = ExampleListener()
-
-source1 = time_table("PT1S").update(formulas=["X=i"]).tail(5)
-source2 = time_table("PT2S").update(formulas=["Y=ii"]).tail(5)
 handle = merged_listen([source1, source2], listener_class)
 ```
 
@@ -151,7 +152,7 @@ The following methods return a dict with column names as keys and [NumPy arrays]
 - [`added`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.added) - rows added during the current update cycle.
 - [`modified`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified) - rows modified during the current update cycle.
 - [`removed`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.removed) - rows removed during the current update cycle.
-- [`modified_prev`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev) - rows modified during the previous update cycle.
+- [`modified_prev`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev) - previous values of rows modified during the current update cycle (what the values were before they were modified).
 
 The following example listens to added rows during each update cycle. It prints the data as the listener receives it.
 
@@ -177,7 +178,7 @@ The following methods are chunked accessors and return a generator. Each call to
 - [`added_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.added_chunks) - rows added during the current update cycle.
 - [`modified_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_chunks) - rows modified during the current update cycle.
 - [`removed_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.removed_chunks) - rows removed during the current update cycle.
-- [`modified_prev_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev_chunks) - rows modified during the previous update cycle.
+- [`modified_prev_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev_chunks) - previous values of rows modified during the current update cycle, returned in chunks.
 
 Chunked accessors are typically used when updates are large. While normal accessors load an entire update into memory all at once, chunked accessors load the update in smaller pieces, thus limiting memory usage. The following example splits added data into chunks of 100 rows at a time and prints the size of each chunk.
 
@@ -297,6 +298,72 @@ Timer(6, start_listener, args=[handle]).start()
 
 ![`handle` is registered and deregistered](../assets/how-to/listener-deregister.gif)
 
+### Update graph locks and thread safety
+
+When code running outside the Deephaven console creates a ticking table and adds a listener, the table may update between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
+
+> [!NOTE]
+> Code run in the Deephaven console is already protected — consecutive lines in the console cannot have updates slip between them. This section applies to code running on other threads, such as timer callbacks or background workers.
+
+The [Update Graph](../conceptual/table-update-model.md) coordinates all table updates in Deephaven. By holding a lock while creating the table _and_ adding the listener, you ensure no updates occur in between.
+
+![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-lock.png)
+
+> [!TIP]
+> The lock ensures "create table" and "add listener" happen together as one unit — no updates can slip through.
+
+The [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) and [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen) functions automatically acquire a lock when registering the listener (when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, which is the default). However, this only protects the registration itself — not table creation.
+
+**Separate locks (race condition):**
+
+If you create a table in one lock and add the listener in another, a race window exists between them:
+
+```python skip-test
+from deephaven import update_graph
+from deephaven.execution_context import get_exec_ctx
+
+ctx = get_exec_ctx()
+
+# On background thread with reopened context
+with ctx:
+    # First lock: create the table
+    with update_graph.shared_lock(ctx.update_graph):
+        table = time_table("PT1s").update("X=i")
+    # RACE WINDOW: table can update here before listener is added
+    handle = listen(table, listener_function)  # listen() locks, but too late
+```
+
+**Single lock (safe):**
+
+Wrap both operations in a single lock to eliminate the race:
+
+```python skip-test
+from deephaven import update_graph
+from deephaven.execution_context import get_exec_ctx
+
+# Before dispatching to background thread: capture the context
+ctx = get_exec_ctx()
+
+# On background thread: reopen context, then lock both operations together
+with ctx:
+    with update_graph.shared_lock(ctx.update_graph):
+        table = time_table("PT1s").update("X=i")
+        handle = listen(table, listener_function)
+```
+
+> [!NOTE]
+> Background threads don't have an execution context by default. Table operations like `time_table` require a valid context. Capture the context before dispatching, then reopen it on the background thread.
+
+Deephaven provides two types of locks:
+
+- **Shared lock** ([`shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock)): Pauses table updates while your code runs. Use this for table operations like creating tables and adding listeners.
+- **Exclusive lock** ([`exclusive_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.exclusive_lock)): Blocks all Update Graph activity. Use this only for advanced cases, such as waiting for specific update conditions.
+
+> [!NOTE]
+> Keep locks brief. Tables cannot update while a lock is held, so long-held locks can delay data.
+
+For more details on locks and thread safety, see [Synchronization and locking](../conceptual/query-engine/engine-locking.md).
+
 ## Reduce data volumes
 
 Tables often tick at high frequencies and with large quantities of incoming data. It's best practice to only listen to what's required for an operation. In such cases, applying [filters](./use-filters.md) and/or [reducing tick frequencies](./performance/reduce-update-frequency.md) will reduce both the quantity and frequency of incoming data to a listener.
@@ -350,7 +417,7 @@ handle_no_replay.stop()
 handle_replay.stop()
 ```
 
-![`handle_replay` recieves all the data the table started with, while `handle_no_replay` only receives the updates after it was registered](../assets/how-to/listener-replay.gif)
+![`handle_replay` receives all the data the table started with, while `handle_no_replay` only receives the updates after it was registered](../assets/how-to/listener-replay.gif)
 
 ## Dependent tables
 
@@ -430,6 +497,8 @@ handle = listen(source, listener_function, do_replay=False)
 - [NumPy and Deephaven](./use-numpy.md)
 - [`to_numpy`](../reference/numpy/to-numpy.md)
 - [`time_table`](../reference/table-operations/create/timeTable.md)
-- [TableUpdate](/core/pydoc/code/deephaven.table_listener.html?#deephaven.table_listener.TableUpdate)
-- [Table](/core/javadoc/io/deephaven/engine/table/Table.html)
-- [`listen()`](/core/pydoc/code/deephaven.table_listener.html?#deephaven.table_listener.listen)
+- [`TableUpdate`](/core/pydoc/code/deephaven.table_listener.html?#deephaven.table_listener.TableUpdate)
+- [`Table`](/core/javadoc/io/deephaven/engine/table/Table.html)
+- [`listen`](/core/pydoc/code/deephaven.table_listener.html?#deephaven.table_listener.listen)
+- [Synchronization and locking](../conceptual/query-engine/engine-locking.md)
+- [`update_graph`](/core/pydoc/code/deephaven.update_graph.html)

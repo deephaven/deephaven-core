@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkedAddOnlyMinMaxOperator and run "./gradlew replicateOperators" to regenerate
@@ -58,6 +58,8 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         long value = QueryConstants.NULL_LONG;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final long candidate = values.get(ii);
+            // region extra chunk value test
+            // endregion extra chunk value test
             if (candidate != QueryConstants.NULL_LONG) {
                 if (nonNull++ == 0) {
                     value = candidate;
@@ -75,6 +77,8 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         long value = QueryConstants.NULL_LONG;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final long candidate = values.get(ii);
+            // region extra chunk value test
+            // endregion extra chunk value test
             if (candidate != QueryConstants.NULL_LONG) {
                 if (nonNull++ == 0) {
                     value = candidate;
@@ -146,6 +150,9 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         if (chunkSize == 0) {
             return false;
         }
+        final long oldValue = resultColumn.getUnsafe(destination);
+        // region extra oldValue test
+        // endregion extra oldValue test
         final MutableInt chunkNonNull = new MutableInt(0);
         final int chunkEnd = chunkStart + chunkSize;
         final long chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
@@ -153,9 +160,8 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         if (chunkNonNull.get() == 0) {
             return false;
         }
-
+        // region compute result
         final long result;
-        final long oldValue = resultColumn.getUnsafe(destination);
         if (oldValue == QueryConstants.NULL_LONG) {
             // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know
             // that it is in fact empty and we should use the value from the chunk
@@ -163,6 +169,7 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         } else {
             result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
         }
+        // endregion compute result
         if (!LongComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
             return true;

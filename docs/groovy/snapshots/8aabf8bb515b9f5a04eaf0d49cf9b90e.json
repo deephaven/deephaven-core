@@ -1,0 +1,1 @@
+{"file":"reference/engine/LivenessScope.md","objects":{"tableFromFunc":{"type":"Table","data":{"columns":[{"name":"X","type":"int"},{"name":"Y","type":"double"}],"rows":[[{"value":"9"},{"value":"20.0029"}],[{"value":"7"},{"value":"-15.8457"}],[{"value":"8"},{"value":"-15.9336"}],[{"value":"5"},{"value":"-6.5067"}],[{"value":"1"},{"value":"-20.4466"}]]}}}}

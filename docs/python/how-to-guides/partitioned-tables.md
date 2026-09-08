@@ -90,23 +90,43 @@ Deephaven can consume data from Kafka streams. Streaming data can be ingested in
 
 When ingesting streaming Kafka data directly into a partitioned table, the data is partitioned by the Kafka partition number of the topic. The constituent tables are the tables per topic partition.
 
-The following example ingests data from the Kafka topic `testTopic` directly into a partitioned table.
+The following example ingests data from the Kafka topic `orders` directly into a partitioned table.
 
 ```python skip-test
+from deephaven import dtypes as dht
 from deephaven import kafka_consumer as kc
+from deephaven.stream.kafka.consumer import KeyValueSpec, TableType
 
 result_partitioned = kc.consume_to_partitioned_table(
     kafka_config={
-        "bootstrap.servers": "redpanda:29092",
-        "deephaven.key.column.type": "String",
-        "deephaven.value.column.type": "String",
+        "bootstrap.servers": "redpanda:9092",
     },
-    topic="testTopic",
+    topic="orders",
+    offsets=kc.ALL_PARTITIONS_DONT_SEEK,
+    key_spec=KeyValueSpec.IGNORE,
+    value_spec=kc.json_spec(
+        col_defs={
+            "Symbol": dht.string,
+            "Side": dht.string,
+            "Price": dht.double,
+            "Qty": dht.int32,
+        },
+        mapping={
+            "jsymbol": "Symbol",
+            "jside": "Side",
+            "jprice": "Price",
+            "jqty": "Qty",
+        },
+    ),
+    table_type=TableType.append(),
 )
-print(result_partitioned.key_columns)
+
+keys = result_partitioned.table.select_distinct("Partition")
 ```
 
-For more information and examples on ingesting Kafka streams directly into partitioned tables, see [`consume_to_partitioned_table`](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.consume_to_partitioned_table).
+![The above `keys` table](../assets/how-to/partitionkeys.png)
+
+For more information and examples on ingesting Kafka streams directly into partitioned tables, see [`consume_to_partitioned_table`](../reference/data-import-export/Kafka/consume-to-partitioned-table.md).
 
 ### Partitioned table methods
 
@@ -239,7 +259,7 @@ trades_updated = pt_trades_updated.merge()
 ```
 
 > [!NOTE]
-> When using a Partitioned Table proxy, you must call `.target` to obtain the underlying partitioned table.
+> When using a Partitioned Table proxy, you must access the `target` attribute to obtain the underlying partitioned table.
 
 #### Should I use transform or proxy?
 
@@ -308,6 +328,11 @@ pt_joined = pt_proxy_joined.target
 result_via_proxy = pt_joined.merge()
 ```
 
+> [!CAUTION]
+> `PartitionedTable` transforms and proxies produce different results than on a single-table join (e.g., [`natural_join`](../reference/table-operations/join/natural-join.md)), [`where_in`](../reference/table-operations/filter/where-in.md), or [`where_not_in`](../reference/table-operations/filter/where-not-in.md) when the filter or join keys span partitions. You must ensure that your data's keys map to appropriate partitions to enable correct answers.
+>
+> When the second argument `sanity_check_joins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition, but it does not validate that a key exists in the same partition in both the left and right table.
+
 ## Why use partitioned tables?
 
 So far this guide has shown how you can use partitioned tables in your queries. But it doesn't cover why you may want to use them. Initially, we discussed that partitioned tables are useful for:
@@ -332,7 +357,7 @@ Partitioned tables can improve performance in a couple of different ways.
 #### Parallelization
 
 > [!CAUTION]
-> Python's [Global Interpreter Lock (GIL)](https://wiki.python.org/moin/GlobalInterpreterLock) prevents threads from running concurrently. To maximize parallelization, users should be careful not to invoke Python code unnecessarily in partitioned tables.
+> Python's [Global Interpreter Lock (GIL)](https://docs.python.org/3/glossary.html#term-global-interpreter-lock) prevents threads from running Python code concurrently, unless the Python build is free-threaded. To maximize parallelization, users should be careful not to invoke Python code unnecessarily in partitioned tables.
 
 Partitioned tables can also improve query performance by parallelizing things that standard tables cannot. Take, for example, an as-of join between two tables. If the tables are partitioned by the exact match columns, then the join operation is done in parallel.
 
@@ -406,60 +431,9 @@ Partitioned tables are faster in this case because, as mentioned earlier, the jo
 
 If you are unsure if parallelization through partitioned tables could improve your query performance, reach out to us on [Slack](/slack) for more specific guidance.
 
-#### Tick amplification
+#### Avoid tick amplification
 
-In grouping and ungrouping operations, the Deephaven query engine does not know which cells change. Even if only a single cell changes, an entire array is marked as modified, and large sections of the output table change. In a real-time query, this can potentially cause many unnecessary calculations to be performed. Take, for instance, the following query.
-
-```python ticking-table order=null
-from deephaven import time_table
-from deephaven.table_listener import listen
-
-
-def print_changes(label, update, is_replay):
-    added = update.added()
-    modified = update.modified()
-    n_added = len(added["X"]) if "X" in added else 0
-    n_modified = len(modified["X"]) if "X" in modified else 0
-    changes = n_added + n_modified
-    print(f"TICK PROPAGATION: {label} {changes} changes")
-
-
-t1 = time_table("PT5s").update(["A=ii%2", "X=ii"])
-
-# Group/ungroup
-t2 = t1.group_by("A").update("Y=X+1").ungroup()
-
-# Partition/merge
-t3 = t1.partition_by("A").proxy().update("Y=X+1").target.merge()
-
-h1 = listen(
-    t1, lambda update, is_replay: print_changes("RAW            ", update, is_replay)
-)
-h2 = listen(
-    t2, lambda update, is_replay: print_changes("GROUP/UNGROUP  ", update, is_replay)
-)
-h3 = listen(
-    t3, lambda update, is_replay: print_changes("PARTITION/MERGE", update, is_replay)
-)
-```
-
-At first, this is the output of the query:
-
-```
-TICK PROPAGATION: RAW             1 changes
-TICK PROPAGATION: GROUP/UNGROUP   1 changes
-TICK PROPAGATION: PARTITION/MERGE 1 changes
-```
-
-After letting the code run for a little while, this is the output:
-
-```
-TICK PROPAGATION: RAW             1 changes
-TICK PROPAGATION: GROUP/UNGROUP   10 changes
-TICK PROPAGATION: PARTITION/MERGE 1 changes
-```
-
-As the code runs longer, the grouping/ungrouping operation on its own continues to make more and more changes, whereas the partition/merge stays at one. Every change reported in the group/ungroup is an unnecessary calculation that performs extra work for no benefit. This is tick amplification in action. Where a group and ungroup suffers from this problem, a partition and merge does not.
+Partitioned tables also help avoid [tick amplification](../conceptual/troubleshooting-steps.md#tick-amplification) — a performance issue where group/ungroup operations cause unnecessary recalculations. When using partition/merge instead of group/ungroup, the engine processes smaller sets of data independently, avoiding the overhead of checking entire groups for changes.
 
 ## Related documentation
 
@@ -476,4 +450,4 @@ As the code runs longer, the grouping/ungrouping operation on its own continues 
 - [`proxy`](../reference/table-operations/partitioned-tables/proxy.md)
 - [`transform`](../reference/table-operations/partitioned-tables/transform.md)
 - [metadata methods](../reference/table-operations/partitioned-tables/metadata-methods.md)
-- [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTable)
+- [Pydoc](https://deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTable)

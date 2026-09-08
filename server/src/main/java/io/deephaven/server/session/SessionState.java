@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.session;
 
@@ -8,7 +8,9 @@ import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.WeakSimpleReference;
+import io.deephaven.base.text.TimestampBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -47,6 +49,7 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 import javax.inject.Provider;
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -57,7 +60,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
-import static io.deephaven.base.log.LogOutput.MILLIS_FROM_EPOCH_FORMATTER;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
 
@@ -89,6 +91,13 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
  * </ul>
  */
 public class SessionState {
+    private static final TimestampBuffer millisFormatter = new TimestampBuffer(ZoneId.systemDefault());
+    /**
+     * Formats long millis from epoch based on the default timezone
+     */
+    LogOutput.LongFormatter MILLIS_FROM_EPOCH_FORMATTER =
+            (logOutput, millis) -> logOutput.append(millisFormatter.getTimestamp(millis));
+
     // Some work items will be dependent on other exports, but do not export anything themselves.
     public static final int NON_EXPORT_ID = 0;
 
@@ -359,6 +368,26 @@ public class SessionState {
     }
 
     /**
+     * Create and export a pre-computed failure element.
+     *
+     * @param failure the result of the export
+     * @return the ExportObject for this item for ease of access to the export
+     */
+    public ExportObject<Void> newFailedServerSideExport(final Exception failure) {
+        if (isExpired()) {
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+        }
+
+        final int exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
+
+        // noinspection unchecked
+        final ExportObject<Void> result =
+                (ExportObject<Void>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+        result.setCaughtException(failure);
+        return result;
+    }
+
+    /**
      * Create an ExportBuilder to create the export after dependencies are satisfied.
      *
      * @param ticket the grpc {@link Flight.Ticket} for this export
@@ -613,8 +642,8 @@ public class SessionState {
             this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
 
             if (result == null) {
-                maybeAssignErrorId(caughtException, null);
                 state = ExportNotification.State.FAILED;
+                maybeAssignErrorId(caughtException, null, state);
             } else {
                 state = ExportNotification.State.EXPORTED;
             }
@@ -710,7 +739,7 @@ public class SessionState {
 
                 // since this is the first we know of the errorHandler, it could not have been invoked yet
                 if (errorHandler != null) {
-                    maybeAssignErrorId(caughtException, null);
+                    maybeAssignErrorId(caughtException, null, state);
                     errorHandler.onError(state, errorId, caughtException, failedDependencyLogIdentity);
                 }
                 return;
@@ -859,7 +888,7 @@ public class SessionState {
             }
 
             if (isExportStateFailure(state) && errorHandler != null) {
-                maybeAssignErrorId(caughtException, null);
+                maybeAssignErrorId(caughtException, null, state);
                 try {
                     final Exception toReport;
                     if (caughtException != null && errorTransformer != null) {
@@ -1012,7 +1041,7 @@ public class SessionState {
                 if (caughtException != null) {
                     synchronized (this) {
                         if (!isExportStateTerminal(state)) {
-                            maybeAssignErrorId(caughtException, null);
+                            maybeAssignErrorId(caughtException, null, ExportNotification.State.FAILED);
                             setState(ExportNotification.State.FAILED);
                         }
                     }
@@ -1027,15 +1056,17 @@ public class SessionState {
             }
         }
 
-        private void maybeAssignErrorId(final Exception caughtException, final String errorDetails) {
+        private void maybeAssignErrorId(final Exception caughtException, final String errorDetails,
+                ExportNotification.State state) {
             if (errorId == null) {
                 errorId = UuidCreator.toString(UuidCreator.getRandomBased());
 
                 if (caughtException == null && errorDetails == null) {
                     // We log the assigned error ID, even though we have no details. If we do not assign the error ID,
                     // then we may not correctly propagate than an error occurred.
-                    log.error().append("Internal Error '").append(errorId).append("' for ").append(logIdentity)
-                            .append(" and no error details are available.").endl();
+                    LogEntry level = state == ExportNotification.State.CANCELLED ? log.info() : log.error();
+                    level.append("Internal Error '").append(errorId).append("' for ").append(logIdentity)
+                            .append(" and no error details are available; state is ").append(state.name()).endl();
                     return;
                 }
 
@@ -1084,7 +1115,7 @@ public class SessionState {
                         break;
                 }
 
-                maybeAssignErrorId(caughtException, errorDetails);
+                maybeAssignErrorId(caughtException, errorDetails, terminalState);
                 failedDependencyLogIdentity = parent.logIdentity;
             }
 
@@ -1115,6 +1146,36 @@ public class SessionState {
                             manage((LivenessReferent) result);
                         }
                         setState(ExportNotification.State.EXPORTED);
+                    }
+                }
+            } finally {
+                dropReference();
+            }
+        }
+
+        /**
+         * Sets the final result for this export.
+         *
+         * @param exception the exception this export failed with
+         */
+        private void setCaughtException(final Exception exception) {
+            if (this.result != null || this.caughtException != null) {
+                throw new IllegalStateException("cannot set result/exception twice!");
+            }
+
+            // result is cleared on destroy; so don't set if it won't be called
+            if (!tryRetainReference()) {
+                return;
+            }
+
+            try {
+                synchronized (this) {
+                    // client may race a cancel with setCaughtException
+                    if (!isExportStateTerminal(state)) {
+                        // assign an error id (and log the failure) so that consumers of this export report a coherent
+                        // error rather than treating the FAILED state as unexpected; mirrors doExport's failure path
+                        maybeAssignErrorId(exception, null, ExportNotification.State.FAILED);
+                        setState(ExportNotification.State.FAILED);
                     }
                 }
             } finally {

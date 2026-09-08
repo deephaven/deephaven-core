@@ -52,7 +52,7 @@ The formulas used above all leverage query language built-ins including [built-i
 
 ### Filters
 
-Filters evaluate to True/False and are used to determine which rows are included in the result table. Consider the following example, which uses the table created in the [previous section](#formulas):
+Filters evaluate to true/false and are used to determine which rows are included in the result table. Consider the following example, which uses the table created in the [previous section](#formulas):
 
 ```python test-set=1 order=result_lessthan,result_even,result_rng,result_conjunctive,result_disjunctive
 result_lessthan = source.where("X <= 1.2")
@@ -132,7 +132,7 @@ For more on query language built-in constants, variables, and functions, see:
 Deephaven's Python-Java interoperability allows you to use Python code in query strings. This powerful feature is facilitated by [jpy](./use-jpy.md), a bidirectional Python-Java bridge usable from both languages.
 
 > [!CAUTION]
-> Care should be taken when calling Python in query strings for [performance reasons](../conceptual/python-java-boundary.md).
+> Care should be taken when calling Python in query strings for [performance and memory reasons](../conceptual/python-java-boundary.md).
 
 The following example uses a Python variable, function, and class in a query string.
 

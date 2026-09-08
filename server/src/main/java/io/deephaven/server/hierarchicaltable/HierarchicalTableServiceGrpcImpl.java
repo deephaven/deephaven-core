@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.hierarchicaltable;
 
@@ -422,7 +422,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
         }
 
         final Table source = inputHierarchicalTable.getSource();
-        final Selectable[] selectables = request.getUpdateViewsList().stream()
+        final Selectable[] selectables = request.getFormatViewsList().stream()
                 .map(uvr -> AggregationAdapter.adapt(uvr.getColumnSpec()))
                 .toArray(Selectable[]::new);
         final String[] columnSpecs = Arrays.asList(selectables).stream()

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit RegionedColumnSourceChar and run "./gradlew replicateRegionsAndRegionedSources" to regenerate
@@ -90,7 +90,9 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
                         "Unexpected partitioning column value type for " + columnDefinition.getName()
                                 + ": " + partitioningColumnValue + " is not a Byte at location " + locationKey);
             }
-            return new ColumnRegionByte.Constant<>(regionMask(), unbox((Byte) partitioningColumnValue));
+            return partitioningColumnValue == null
+                    ? ColumnRegionByte.createNull(regionMask())
+                    : new ColumnRegionByte.Constant<>(regionMask(), unbox((Byte) partitioningColumnValue));
         }
     }
 }

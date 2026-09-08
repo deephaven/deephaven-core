@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.state;
 
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
+import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.web.client.api.TableTicket;
 import io.deephaven.web.client.state.ClientTableState;
 
@@ -25,7 +25,7 @@ public class StateCache {
     private final Map<TableTicket, ClientTableState> allStates = new HashMap<>();
 
     public Optional<ClientTableState> get(Ticket ticket) {
-        return get(new TableTicket(ticket.getTicket_asU8()));
+        return get(new TableTicket(ticket));
     }
 
     public Optional<ClientTableState> get(TableTicket handle) {
@@ -33,7 +33,7 @@ public class StateCache {
     }
 
     public ClientTableState getNullable(Ticket handle) {
-        return getNullable(new TableTicket(handle.getTicket_asU8()));
+        return getNullable(new TableTicket(handle));
     }
 
     public ClientTableState getNullable(TableTicket handle) {

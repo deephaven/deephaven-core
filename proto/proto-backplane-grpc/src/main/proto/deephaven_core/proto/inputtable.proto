@@ -10,6 +10,7 @@ option optimize_for = SPEED;
 option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/inputtable";
 
 import "deephaven_core/proto/ticket.proto";
+import "google/protobuf/any.proto";
 
 /*
  * This service offers methods to manipulate the contents of input tables.
@@ -18,12 +19,18 @@ service InputTableService {
     /*
      * Adds the provided table to the specified input table. The new data to add must only have
      * columns (name, types, and order) which match the given input table's columns.
+     *
+     * If the data is invalid, an error response will be returned with details containing an
+     * InputTableValidationErrorList.
      */
     rpc AddTableToInputTable(AddTableRequest) returns (AddTableResponse) {}
 
     /*
     * Removes the provided table from the specified input tables. The tables indicating which rows
     * to remove are expected to only have columns that match the key columns of the input table.
+    *
+    * If the data is invalid, an error response will be returned with details containing an
+    * InputTableValidationErrorList.
     */
     rpc DeleteTableFromInputTable(DeleteTableRequest) returns (DeleteTableResponse) {}
 
@@ -34,8 +41,26 @@ message AddTableRequest {
     Ticket table_to_add = 2;
 }
 
-message AddTableResponse {
+// An error indicating invalid values were passed to AddTableRequest, optionally annotated with the input row and column
+// that caused the error.
+message InputTableValidationError {
+    // the error message
+    string message = 1;
+    // the row position in the table_to_add that caused this error, not present when unknown
+    optional int64 row = 2;
+    // the column name in the table_to_add that caused this error, not present when unknown
+    optional string column = 3;
+}
 
+// A list of validation errors encountered when processing an AddTableRequest or DeleteTableRequest.  This message is
+// not directly used in the service definition, but may be packed in the headers of error responses using a googlerpc
+// status.
+message InputTableValidationErrorList {
+    // The errors encountered when processing the request.
+    repeated InputTableValidationError validation_errors = 1;
+}
+
+message AddTableResponse {
 }
 
 message DeleteTableRequest {
@@ -45,4 +70,58 @@ message DeleteTableRequest {
 
 message DeleteTableResponse {
 
+}
+
+// Information about a column in an input table
+message InputTableColumnInfo {
+    // whether this column is a key or value column
+    enum Kind {
+        KIND_UNKNOWN = 0;
+        KIND_KEY = 1;       // this column is a key column
+        KIND_VALUE = 2;     // this column is a value column
+    }
+    Kind kind = 1;
+    // Any restrictions on the column's values, which are implementation specific.  The server enforces these
+    // constraints, but they are included in the metadata so that the UI can display them to the user.
+    repeated google.protobuf.Any restrictions = 2;
+}
+
+// Wrapper around the InputTableMetadata, so that we can include more non-input table information later if desired.  At
+// that point, this message definition would need to move.
+message DeephavenTableMetadata {
+    // Input table metadata, if this table is an input table
+    InputTableMetadata input_table_metadata = 1;
+}
+
+// metadata for the input table, encoded into the Barrage meta-data as a base64 encoded protobuf
+message InputTableMetadata {
+    // a map from column name to column info, each column that participates in input table updates is included in the
+    // map.  Additional columns are not part of the input table update
+    map <string, InputTableColumnInfo> column_info = 1;
+}
+
+// An example restriction indicating that integer values must be within the given range (inclusive)
+message IntegerRangeRestriction {
+    optional int64 min_inclusive = 1;
+    optional int64 max_inclusive = 2;
+}
+
+// An example restriction indicating that double values must be within the given range (inclusive)
+message DoubleRangeRestriction {
+    optional double min_inclusive = 1;
+    optional double max_inclusive = 2;
+}
+
+// An example restriction indicating that the value must not be null
+message NotNullRestriction {
+}
+
+// An example restriction indicating that the value must not be empty
+message NonEmptyRestriction {
+}
+
+// An example restriction indicating that the string value must belong to the provided set of values (or Null), to
+// forbid null values, include both a StringListRestriction and NotNullRestriction.
+message StringListRestriction {
+    repeated string allowed_values = 1;
 }

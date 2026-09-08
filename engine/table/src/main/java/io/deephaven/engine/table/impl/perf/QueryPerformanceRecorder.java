@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.perf;
 
@@ -127,6 +127,27 @@ public interface QueryPerformanceRecorder {
      */
     static boolean setCallsite() {
         return QueryPerformanceRecorderState.setCallsite();
+    }
+
+    /**
+     * Attempt to compute and set the thread local callsite so that invocations of {@link #getCallerLine()} will not
+     * spend time trying to recompute.
+     *
+     * @return a SafeCloseable (or null) that should be invoked to restore the callsite.
+     */
+    static SafeCloseable setCallsiteWithCloseable() {
+        return QueryPerformanceRecorderState.setCallSiteWithCloseable();
+    }
+
+    /**
+     * Attempt to compute and set the thread local callsite so that invocations of {@link #getCallerLine()} will not
+     * spend time trying to recompute.
+     *
+     * @param callsite The call site to use.
+     * @return a SafeCloseable (or null) that should be invoked to restore the callsite.
+     */
+    static SafeCloseable setCallsiteWithCloseable(final String callsite) {
+        return QueryPerformanceRecorderState.setCallSiteWithCloseable(callsite);
     }
 
     /**

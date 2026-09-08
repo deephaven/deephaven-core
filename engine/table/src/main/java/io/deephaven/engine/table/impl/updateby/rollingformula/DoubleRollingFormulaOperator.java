@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharRollingFormulaOperator and run "./gradlew replicateUpdateBy" to regenerate
@@ -27,6 +27,7 @@ import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper.DoubleRingBufferVectorWrapper;
 import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -193,7 +194,7 @@ public class DoubleRollingFormulaOperator extends BaseRollingFormulaOperator {
             final long forwardWindowScaleUnits,
             final Class<?> columnType,
             final Class<?> componentType,
-            final Class<?> vectorType,
+            final Class<? extends Vector<?>> vectorType,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef
     // region extra-constructor-args

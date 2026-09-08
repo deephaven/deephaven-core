@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.util;
 
@@ -95,7 +95,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         this.classCacheDirectory = classCacheDirectory;
 
         queryScope = new ScriptSessionQueryScope();
-        final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory, parentClassLoader);
+        final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory);
 
         executionContext = ExecutionContext.newBuilder()
                 .markSystemic()
@@ -104,6 +104,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .setQueryCompiler(compilerContext)
                 .setUpdateGraph(updateGraph)
                 .setOperationInitializer(operationInitializer)
+                .setClassLoader(parentClassLoader)
                 .build();
     }
 

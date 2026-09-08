@@ -7,7 +7,12 @@ Data I/O is mission-critical for any real-time data analysis platform. Deephaven
 
 ## CSV
 
-Deephaven can [read CSV](../../how-to-guides/data-import-export/csv-import.md) files that exist locally or remotely. This example reads a local CSV file.
+Deephaven can [read CSV](../../how-to-guides/data-import-export/csv-import.md) files that exist locally or remotely.
+
+> [!TIP]
+> To import a CSV without writing code, use **Upload Table from File** in the Console Options menu (⋮). See [Upload a table from a file](../../how-to-guides/user-interface/upload-table-from-file.md).
+
+This example reads a local CSV file.
 
 ```python test-set=1 order=iris
 from deephaven import read_csv
@@ -215,7 +220,7 @@ html_string = to_html(source_table)
 
 Deephaven provides a seamless way to convert tables to [Pandas DataFrames](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) and vice-versa using the `deephaven.pandas` module. This is particularly useful when you want to leverage Pandas' extensive data manipulation and analysis capabilities or integrate with other Python libraries that operate on DataFrames.
 
-To convert a Deephaven table to a Pandas DataFrame, use the `to_pandas()` function.
+To convert a Deephaven table to a Pandas DataFrame, use the `to_pandas` function.
 
 ```python order=iris,iris_df
 from deephaven import read_csv
@@ -232,7 +237,7 @@ iris_df = to_pandas(iris)
 
 **Note:** Converting an entire large table to a Pandas DataFrame will load all data into memory. For very large tables, consider filtering or aggregating the data within Deephaven first before converting to a DataFrame to avoid potential memory issues.
 
-You can also convert a Pandas DataFrame back to a Deephaven table using `to_table()` from the same module.
+You can also convert a Pandas DataFrame back to a Deephaven table using `to_table` from the same module.
 
 ```python order=sample_df,deephaven_table_from_df
 import pandas as pd

@@ -40,7 +40,7 @@ This mounts the `./data` directory on your file system as `/data` in Deephaven. 
 
 ## Add mount points
 
-While `/data` is the default place for external data to reside, you have the option of creating other mount points. To create a mount point, you must add the volumes to the `server` and `web` services in your Docker-Compose YAML file.
+While `/data` is the default place for external data to reside, you have the option of creating other mount points. To create a mount point, you must add the volumes to the `server` and `web` services in your Docker Compose YAML file.
 
 Say we're working on a machine learning application and want separate volumes to store training, testing, and validation data sets. These volumes can be added by modifying the `volumes` section of the Docker Compose YAML file for both the `server` and `web` services:
 

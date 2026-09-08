@@ -1,0 +1,1 @@
+{"file":"reference/table-operations/create/addOnlyToBlink.md","objects":{"source":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},"result":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"}],"rows":[]}},":log":{"type":"Log","data":"Before conversion: false\nAfter conversion: true\n"}}}

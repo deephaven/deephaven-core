@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.widget.plot;
 
@@ -18,8 +18,7 @@ public class JsSourceDescriptor {
     public JsTable table;
 
     public String columnName;
-    // TODO (deephaven-core#3442) change to some kind of String+int union type
-    public String type;
+    public StringOrNumber type;
 
     @JsConstructor
     public JsSourceDescriptor() {}
@@ -38,6 +37,6 @@ public class JsSourceDescriptor {
         }
         table = JsData.getRequiredProperty(source, "table").cast();
         columnName = JsData.getRequiredStringProperty(source, "columnName");
-        type = JsData.getRequiredStringProperty(source, "type");
+        type = JsData.getRequiredStringOrIntProperty(source, "type");
     }
 }

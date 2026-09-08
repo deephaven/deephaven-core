@@ -1,17 +1,15 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
-import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.web.client.state.ClientTableState;
-import io.deephaven.web.shared.fu.JsBiConsumer;
+import io.grpc.stub.StreamObserver;
 
 /**
  * Describe how to perform initial fetch for a table
  */
 public interface JsTableFetch {
-    void fetch(JsBiConsumer<Object, ExportedTableCreationResponse> callback, ClientTableState newState,
-            BrowserHeaders metadata);
+    void fetch(StreamObserver<ExportedTableCreationResponse> callback, ClientTableState newState);
 }

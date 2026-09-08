@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.plugin.type;
 
@@ -26,6 +26,39 @@ public interface ObjectType extends Plugin {
      * @return true if the {@code object} is compatible
      */
     boolean isType(Object object);
+
+    /**
+     * Declares how the server should authorize the server-side references this plugin passes to
+     * {@link MessageStream#onData(ByteBuffer, Object...)} before they are exported to the client.
+     */
+    enum AuthorizationExportBehavior {
+        /**
+         * The server applies the authorization transform to each exported reference. If the transform denies access to
+         * a reference, that reference will resolve to a failed export.
+         */
+        TRANSFORM,
+        /**
+         * The plugin takes responsibility for authorizing the references it exports (or no authorization is required);
+         * the server does not transform them.
+         */
+        MANUAL,
+        /**
+         * The plugin makes no declaration; the effective behavior is resolved by the server's policy.
+         */
+        UNSET
+    }
+
+    /**
+     * Declares how the server should authorize the references this plugin passes to
+     * {@link MessageStream#onData(ByteBuffer, Object...)}. The server's policy determines the behavior for plugins that
+     * return {@link AuthorizationExportBehavior#UNSET}; a strict (fail-closed) server transforms such a plugin's
+     * references and logs a warning.
+     *
+     * @return the authorization export behavior for this plugin
+     */
+    default AuthorizationExportBehavior authorizationExportBehavior() {
+        return AuthorizationExportBehavior.UNSET;
+    }
 
     /**
      * A stream of messages, either sent from the server to the client, or client to the server. ObjectType plugin

@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replication;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.text.WordUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -304,6 +305,20 @@ public class ReplicationUtils {
     }
 
     /**
+     * Remove all of the specified imports -- Error if any are not found.
+     */
+    public static List<String> removeDuplicateImports(List<String> lines) {
+        final Set<String> importLines = new HashSet<>();
+        return lines.stream().filter(line -> {
+            if (line.startsWith("import ")) {
+                return importLines.add(line);
+            } else {
+                return true;
+            }
+        }).collect(Collectors.toList());
+    }
+
+    /**
      * Remove imports if they match any of the patterns.
      */
     public static List<String> removeAnyImports(List<String> lines, String... importRegex) {
@@ -426,14 +441,25 @@ public class ReplicationUtils {
 
     public static Stream<String> fileHeaderStream(String gradleTask, String sourceClassJavaPath) {
         return Stream.of("//",
-                "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
+                "// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending",
                 "//",
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Edit " + sourceClassJavaPath + " and run \"./gradlew " + gradleTask
                         + "\" to regenerate",
                 "//",
                 "// @formatter:off",
-                "");
+                "").flatMap(ReplicationUtils::linewrap);
+    }
+
+    public static Stream<String> linewrap(final String line) {
+        if (line.length() < 120) {
+            return Stream.of(line);
+        }
+        if (line.startsWith("// ")) {
+            return Arrays.stream(WordUtils.wrap(line.substring(3), 115, "\n", false).split("\n")).map(l -> "// " + l);
+        } else {
+            return Stream.of(WordUtils.wrap(line, 115, "\n", false));
+        }
     }
 
     @NotNull

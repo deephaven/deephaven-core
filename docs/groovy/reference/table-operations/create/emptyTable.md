@@ -40,7 +40,7 @@ result = emptyTable(5).update("X = 5")
 
 ## Related documentation
 
-- [Create new and empty tables](../../../how-to-guides/new-and-empty-table.md)
+- [Create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [`newTable`](./newTable.md)
 - [`update`](../select/update.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/TableTools.html#emptyTable(long))

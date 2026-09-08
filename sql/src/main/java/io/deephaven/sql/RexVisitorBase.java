@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.sql;
 
@@ -13,6 +13,7 @@ import org.apache.calcite.rex.RexLambdaRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexNodeAndFieldIndex;
 import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexPatternFieldRef;
 import org.apache.calcite.rex.RexRangeRef;
@@ -89,6 +90,11 @@ class RexVisitorBase<T> implements RexVisitor<T> {
     @Override
     public T visitLambdaRef(RexLambdaRef fieldRef) {
         throw unsupported(fieldRef, RexLambdaRef.class);
+    }
+
+    @Override
+    public T visitNodeAndFieldIndex(RexNodeAndFieldIndex fieldRef) {
+        throw unsupported(fieldRef, RexNodeAndFieldIndex.class);
     }
 
     private <T extends RexNode> UnsupportedSqlOperation unsupported(T node, Class<T> clazz) {

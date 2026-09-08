@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table.location;
 
@@ -646,6 +646,21 @@ public class MinMaxFromStatisticsTest {
                 MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
                 min, "aaa",
                 max, "zzz");
+    }
+
+    @Test
+    public void enumLogicalStatisticsAreMaterialised() {
+        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.enumType())
+                .named("enumBinary");
+        final Statistics<?> stats = buildStats(
+                colType, "ALPHA".getBytes(StandardCharsets.UTF_8), "ZETA".getBytes(StandardCharsets.UTF_8), 0L);
+        final MutableObject<String> min = new MutableObject<>();
+        final MutableObject<String> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
+                min, "ALPHA",
+                max, "ZETA");
     }
 
     @Test

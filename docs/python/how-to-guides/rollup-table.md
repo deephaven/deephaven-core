@@ -38,31 +38,31 @@ The [`rollup`](../reference/table-operations/create/rollup.md) method takes thre
 
 The following aggregations are supported:
 
-| Aggregation                                                                               | Supported by `rollup()` |
-| ----------------------------------------------------------------------------------------- | ----------------------- |
-| [`abs_sum`](../reference/table-operations/group-and-aggregate/AggAbsSum.md)               | <Check/>                |
-| [`avg`](../reference/table-operations/group-and-aggregate/AggAvg.md)                      | <Check/>                |
-| [`count_`](../reference/table-operations/group-and-aggregate/AggCount.md)                 | <Check/>                |
-| [`count_distinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) | <Check/>                |
-| [`count_where`](../reference/table-operations/group-and-aggregate/AggCountWhere.md)       | <Check/>                |
-| [`distinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)            | <RedX/>                 |
-| [`first`](../reference/table-operations/group-and-aggregate/AggFirst.md)                  | <Check/>                |
-| [`formula`](../reference/table-operations/group-and-aggregate/AggFormula.md)              | <RedX/>                 |
-| [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md)                  | <RedX/>                 |
-| [`last`](../reference/table-operations/group-and-aggregate/AggLast.md)                    | <Check/>                |
-| [`max_`](../reference/table-operations/group-and-aggregate/AggMax.md)                     | <Check/>                |
-| [`median`](../reference/table-operations/group-and-aggregate/AggMed.md)                   | <RedX/>                 |
-| [`min_`](../reference/table-operations/group-and-aggregate/AggMin.md)                     | <Check/>                |
-| [`partition`](../reference/table-operations/group-and-aggregate/AggPartition.md)          | <RedX/>                 |
-| [`pct`](../reference/table-operations/group-and-aggregate/AggPct.md)                      | <RedX/>                 |
-| [`sorted_first`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md)     | <Check/>                |
-| [`sorted_last`](../reference/table-operations/group-and-aggregate/AggSortedLast.md)       | <Check/>                |
-| [`std`](../reference/table-operations/group-and-aggregate/AggStd.md)                      | <Check/>                |
-| [`sum_`](../reference/table-operations/group-and-aggregate/AggSum.md)                     | <RedX/>                 |
-| [`unique`](../reference/table-operations/group-and-aggregate/AggUnique.md)                | <Check/>                |
-| [`var`](../reference/table-operations/group-and-aggregate/AggVar.md)                      | <Check/>                |
-| [`weighted_avg`](../reference/table-operations/group-and-aggregate/AggWAvg.md)            | <Check/>                |
-| [`weighted_sum`](../reference/table-operations/group-and-aggregate/AggWSum.md)            | <Check/>                |
+| Aggregation                                                                               | Supported by `rollup` |
+| ----------------------------------------------------------------------------------------- | --------------------- |
+| [`abs_sum`](../reference/table-operations/group-and-aggregate/AggAbsSum.md)               | <Check/>              |
+| [`avg`](../reference/table-operations/group-and-aggregate/AggAvg.md)                      | <Check/>              |
+| [`count_`](../reference/table-operations/group-and-aggregate/AggCount.md)                 | <Check/>              |
+| [`count_distinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) | <Check/>              |
+| [`count_where`](../reference/table-operations/group-and-aggregate/AggCountWhere.md)       | <Check/>              |
+| [`distinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)            | <RedX/>               |
+| [`first`](../reference/table-operations/group-and-aggregate/AggFirst.md)                  | <Check/>              |
+| [`formula`](../reference/table-operations/group-and-aggregate/AggFormula.md)              | <RedX/>               |
+| [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md)                  | <RedX/>               |
+| [`last`](../reference/table-operations/group-and-aggregate/AggLast.md)                    | <Check/>              |
+| [`max_`](../reference/table-operations/group-and-aggregate/AggMax.md)                     | <Check/>              |
+| [`median`](../reference/table-operations/group-and-aggregate/AggMed.md)                   | <RedX/>               |
+| [`min_`](../reference/table-operations/group-and-aggregate/AggMin.md)                     | <Check/>              |
+| [`partition`](../reference/table-operations/group-and-aggregate/AggPartition.md)          | <RedX/>               |
+| [`pct`](../reference/table-operations/group-and-aggregate/AggPct.md)                      | <RedX/>               |
+| [`sorted_first`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md)     | <Check/>              |
+| [`sorted_last`](../reference/table-operations/group-and-aggregate/AggSortedLast.md)       | <Check/>              |
+| [`std`](../reference/table-operations/group-and-aggregate/AggStd.md)                      | <Check/>              |
+| [`sum_`](../reference/table-operations/group-and-aggregate/AggSum.md)                     | <RedX/>               |
+| [`unique`](../reference/table-operations/group-and-aggregate/AggUnique.md)                | <Check/>              |
+| [`var`](../reference/table-operations/group-and-aggregate/AggVar.md)                      | <Check/>              |
+| [`weighted_avg`](../reference/table-operations/group-and-aggregate/AggWAvg.md)            | <Check/>              |
+| [`weighted_sum`](../reference/table-operations/group-and-aggregate/AggWSum.md)            | <Check/>              |
 
 In the case of a rollup table with a single aggregation, that aggregation can be on its own or in a single-element list. When more than one aggregation is used, the aggregations must be in a list. The aggregation(s) can be defined outside of the `rollup` call just like with [combined aggregations](./combined-aggregations.md#syntax).
 
@@ -116,6 +116,43 @@ result = source.rollup(aggs=agg_list, by=by_list)
 ```
 
 ![Creating a rollup table](../assets/how-to/new-rollup.gif)
+
+Note that rollup tables can only be created from String or primitive columns. Attempting to use a non-primitive type such as `LocalDate` or a Timestamp as a rollup column results in an error:
+
+```python skip-test
+from deephaven import new_table, agg
+from deephaven.column import string_col, int_col, double_col, datetime_col
+from deephaven.time import to_j_instant
+
+t = new_table(
+    [
+        datetime_col(
+            "ExchangeTimestamp",
+            [
+                to_j_instant("2017-08-25T09:30:00 UTC"),
+                to_j_instant("2017-08-25T10:15:00 UTC"),
+                to_j_instant("2017-08-25T11:45:00 UTC"),
+                to_j_instant("2017-08-25T14:20:00 UTC"),
+                to_j_instant("2017-08-25T15:50:00 UTC"),
+            ],
+        ),
+        string_col("Sym", ["AAPL", "AAPL", "GOOGL", "GOOGL", "AAPL"]),
+        double_col("Last", [150.25, 151.50, 920.75, 922.10, 152.00]),
+        int_col("Size", [100, 200, 50, 150, 300]),
+    ]
+)
+
+t = t.update(
+    "LocalExchangeTimestampDate=toLocalDate(ExchangeTimestamp, timeZone(`UTC`))"
+)
+
+agg_list = [agg.avg(cols=["Last", "Size"])]
+by_list = ["LocalExchangeTimestampDate"]
+
+t_rollup = t.rollup(aggs=agg_list, by=by_list, include_constituents=True)
+```
+
+![An error message stating that Deephaven can't parse the LOCAL_DATE data type](../assets/how-to/cant-parse-local-date.png)
 
 ## Related documentation
 

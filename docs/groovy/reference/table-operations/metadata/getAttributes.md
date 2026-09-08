@@ -27,7 +27,7 @@ All of the attributes in the source table's `AttributeMap`.
 
 ## Examples
 
-In this example, we create an [Input Table](../../../how-to-guides/input-tables.md) and then print the result of a call to `getAttributes()`, returning our Input Table's `AttributeMap`.
+In this example, we create an [Input Table](../../../how-to-guides/input-tables.md) and then print the result of a call to `getAttributes`, returning our Input Table's `AttributeMap`.
 
 ```groovy order=:log
 import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable

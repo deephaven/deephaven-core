@@ -1,10 +1,8 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.replicators;
 
-import gnu.trove.stack.TIntStack;
-import gnu.trove.stack.array.TIntArrayStack;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.ChunkType;
@@ -12,6 +10,8 @@ import io.deephaven.engine.table.impl.HashTableAnnotations.EmptyStateValue;
 import io.deephaven.engine.table.impl.HashTableAnnotations.OverflowStateColumnSource;
 import io.deephaven.engine.table.impl.HashTableAnnotations.StateColumnSource;
 import io.deephaven.replication.ReplicationUtils;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntStack;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -267,7 +267,7 @@ public class ReplicateHashTable {
             iterator.remove();
         }
         rewrittenLines.addAll(0, Arrays.asList("//",
-                "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
+                "// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending",
                 "//",
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Edit " + ReplicationUtils.className(sourceClassJavaFile)
@@ -440,7 +440,7 @@ public class ReplicateHashTable {
 
         String currentRegion = null;
         final Stack<String> mixinStack = new Stack<>();
-        final TIntStack mixinOpenLine = new TIntArrayStack();
+        final IntStack mixinOpenLine = new IntArrayList();
         String currentMixin = null;
 
         final RegionedFile result = new RegionedFile();
@@ -478,7 +478,7 @@ public class ReplicateHashTable {
                 }
                 mixinStack.pop();
                 currentMixin = mixinStack.isEmpty() ? null : mixinStack.peek();
-                mixinOpenLine.pop();
+                mixinOpenLine.popInt();
                 final boolean oldInExclude = inExclude;
                 inExclude = excludedMixins.contains(currentMixin);
                 if (oldInExclude) {
@@ -541,7 +541,7 @@ public class ReplicateHashTable {
 
         if (currentMixin != null) {
             throw new IllegalStateException(
-                    "Mixin " + currentMixin + " never ended, started on line " + mixinOpenLine.peek());
+                    "Mixin " + currentMixin + " never ended, started on line " + mixinOpenLine.topInt());
         }
 
         result.noRegionSegments.add(accumulated);

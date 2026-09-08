@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.jetty;
 
+import com.google.auto.service.AutoService;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
@@ -13,6 +14,9 @@ import io.deephaven.server.plugin.js.JsPluginsNpmPackageRegistration;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
 import io.deephaven.server.table.validation.ExpressionValidatorModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpFields;
@@ -21,6 +25,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 
 import javax.inject.Singleton;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -104,6 +109,31 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
         testJsPluginExamples(true, true, false);
     }
 
+    @Override
+    public void setupBefore() throws IOException, InterruptedException {
+        MyInitializer.initialized = false;
+        super.setupBefore();
+    }
+
+    @AutoService(ServletContainerInitializer.class)
+    public static class MyInitializer implements ServletContainerInitializer {
+
+        private static boolean initialized;
+
+        @Override
+        public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException {
+            initialized = true;
+        }
+    }
+
+    @Test
+    public void servletContainerInitializerCalled() {
+        // Note: our setup in does involve org.eclipse.jetty.ee10.webapp.WebAppContext, so
+        // jakarta.servlet.ServletContainerInitializer is invoked. If this changes in the future, we can consider
+        // removing the "logbackDisableServletContainerInitializer" workaround.
+        assertThat(MyInitializer.initialized).isTrue();
+    }
+
     private void testJsPluginExamples(boolean example1IsLimited, boolean example2IsLimited, boolean hasExample3)
             throws Exception {
         final HttpClient client = new HttpClient();
@@ -126,14 +156,21 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
 
     private void manifestTest12(HttpClient client) throws InterruptedException, TimeoutException, ExecutionException {
         final ContentResponse manifestResponse = get(client, "js-plugins/manifest.json");
-        assertOk(manifestResponse, "application/json",
-                "{\"plugins\":[{\"name\":\"@deephaven_test/example1\",\"version\":\"0.1.0\",\"main\":\"dist/index.js\"},{\"name\":\"@deephaven_test/example2\",\"version\":\"0.2.0\",\"main\":\"dist/index.js\"}]}");
+        assertOk(manifestResponse, "application/json", """
+                {"plugins":[\
+                {"name":"@deephaven_test/example1","version":"0.1.0","main":"dist/index.js","loader":{"npm":"loader"}},\
+                {"name":"@deephaven_test/example2","version":"0.2.0","main":"dist/index.js"}\
+                ]}""");
     }
 
     private void manifestTest123(HttpClient client) throws InterruptedException, TimeoutException, ExecutionException {
         final ContentResponse manifestResponse = get(client, "js-plugins/manifest.json");
-        assertOk(manifestResponse, "application/json",
-                "{\"plugins\":[{\"name\":\"@deephaven_test/example1\",\"version\":\"0.1.0\",\"main\":\"dist/index.js\"},{\"name\":\"@deephaven_test/example2\",\"version\":\"0.2.0\",\"main\":\"dist/index.js\"},{\"name\":\"@deephaven_test/example3\",\"version\":\"0.3.0\",\"main\":\"index.js\"}]}");
+        assertOk(manifestResponse, "application/json", """
+                {"plugins":[\
+                {"name":"@deephaven_test/example1","version":"0.1.0","main":"dist/index.js","loader":{"foo":"bar"}},\
+                {"name":"@deephaven_test/example2","version":"0.2.0","main":"dist/index.js"},\
+                {"name":"@deephaven_test/example3","version":"0.3.0","main":"index.js"}\
+                ]}""");
     }
 
     private void example1Tests(HttpClient client, boolean isLimited)
@@ -143,8 +180,9 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                     .isEqualTo(HttpStatus.NOT_FOUND_404);
         } else {
             assertOk(get(client, "js-plugins/@deephaven_test/example1/package.json"),
-                    "application/json",
-                    "{\"name\":\"@deephaven_test/example1\",\"version\":\"0.1.0\",\"main\":\"dist/index.js\",\"files\":[\"dist\"]}");
+                    "application/json", """
+                            {"name":"@deephaven_test/example1","version":"0.1.0","main":"dist/index.js",\
+                            "files":["dist"],"loader":{"npm":"loader"}}""");
         }
 
         assertOk(
@@ -165,8 +203,9 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                     .isEqualTo(HttpStatus.NOT_FOUND_404);
         } else {
             assertOk(get(client, "js-plugins/@deephaven_test/example2/package.json"),
-                    "application/json",
-                    "{\"name\":\"@deephaven_test/example2\",\"version\":\"0.2.0\",\"main\":\"dist/index.js\",\"files\":[\"dist\"]}");
+                    "application/json", """
+                            {"name":"@deephaven_test/example2","version":"0.2.0","main":"dist/index.js",\
+                            "files":["dist"]}""");
         }
 
         assertOk(

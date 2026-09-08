@@ -4,7 +4,7 @@ title: currentTimeMicros
 
 `currentTimeMicros` returns the number of microseconds since the epoch (1970-01-01T00:00:00Z).
 
-The resolution is greater than or equal to `currentTimeMillis()`.
+The resolution is greater than or equal to `currentTimeMillis`.
 
 ## Syntax
 

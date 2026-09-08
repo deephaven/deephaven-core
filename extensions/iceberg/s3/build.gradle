@@ -54,6 +54,7 @@ dependencies {
     annotationProcessor libs.autoservice.compiler
 
     testImplementation project(':engine-test-utils')
+    testImplementation libs.dsi.fastutil
 
     testImplementation libs.testcontainers
     testImplementation libs.testcontainers.junit.jupiter
@@ -71,6 +72,19 @@ dependencies {
     testImplementation libs.junit.jupiter
     testRuntimeOnly libs.junit.jupiter.engine
     testRuntimeOnly libs.junit.platform.launcher
+
+    constraints {
+        implementation(libs.httpcore5) {
+            // used by calcite-core, iceberg, and confluent
+            because 'CVE-2026-54399'
+        }
+        implementation(libs.httpcore5.h2) {
+            because 'Keeping consistency with libs.httpcore5'
+        }
+        implementation(libs.httpclient) {
+            because 'CVE-2026-64607'
+        }
+    }
 }
 
 test {

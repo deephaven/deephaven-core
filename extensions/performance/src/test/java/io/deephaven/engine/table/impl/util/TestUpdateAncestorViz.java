@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -56,8 +56,7 @@ public class TestUpdateAncestorViz {
         cacheDir.deleteOnExit();
 
         executionContext = ExecutionContext.newBuilder().newQueryLibrary().newQueryScope()
-                .setQueryCompiler(QueryCompilerImpl.create(
-                        cacheDir, TestUpdateAncestorViz.class.getClassLoader()))
+                .setQueryCompiler(QueryCompilerImpl.create())
                 .setOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool())
                 .setUpdateGraph(defaultUpdateGraph).build().withAuthContext(new AuthContext.Anonymous());
     }

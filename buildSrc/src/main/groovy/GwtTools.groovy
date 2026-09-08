@@ -19,6 +19,24 @@ import org.gradle.api.tasks.compile.JavaCompile
 @CompileStatic
 class GwtTools {
 
+    /**
+     * Applies GWT coordinate substitutions to a configuration. Use this when resolving dependencies
+     * from projects that depend on com.google.gwt:* coordinates (which don't exist on Maven Central
+     * and must be mapped to org.gwtproject:* equivalents).
+     */
+    static void applyGwtSubstitutions(Project p, Configuration conf) {
+        def libs = p.extensions.getByType(VersionCatalogsExtension).named("libs")
+        def gwtVersion = libs.findVersion("gwt").map(VersionConstraint::getRequiredVersion).orElseThrow()
+        conf.resolutionStrategy.dependencySubstitution { sub ->
+            sub.substitute(sub.module("com.google.gwt:gwt-dev"))
+                    .using(sub.module("org.gwtproject:gwt-dev:${gwtVersion}"))
+            sub.substitute(sub.module("com.google.gwt:gwt-user"))
+                    .using(sub.module("org.gwtproject:gwt-user:${gwtVersion}"))
+            sub.substitute(sub.module("com.google.gwt:gwt-codeserver"))
+                    .using(sub.module("org.gwtproject:gwt-codeserver:${gwtVersion}"))
+        }
+    }
+
     static GwtExtension gwtCompile(Project p, String module, String description) {
         p.plugins.apply(GwtPlugin)
         GwtExtension ext = p.extensions.getByType(GwtExtension)
@@ -59,6 +77,11 @@ class GwtTools {
                 checkAssertions = true
                 setExtraArgs('-includeJsInteropExports', 'io.deephaven.*')
                 if (gwtDev) {
+                    extraArgs = [
+                            '-includeJsInteropExports', 'io.deephaven.*',
+                            '-setProperty', 'gwt.logging.logLevel=FINE',
+                            '-setProperty', 'jre.logging.logLevel=ALL',
+                    ]
                     saveSource = true
                     extra = extras
                     logLevel = 'INFO'
@@ -80,18 +103,31 @@ class GwtTools {
         def libs = p.getExtensions().getByType(VersionCatalogsExtension).named("libs")
         def gwtVersion = libs.findVersion("gwt").map(VersionConstraint::getRequiredVersion).orElseThrow()
         def gwtJettyVersion = libs.findVersion("gwtJetty").map(VersionConstraint::getRequiredVersion).orElseThrow()
+        def protobufVers = libs.findVersion('protobuf-gwt').get().requiredVersion
+        def grpcVers = libs.findVersion('grpc-gwt').get().requiredVersion
 
         gwt.gwtVersion = gwtVersion
         gwt.jettyVersion = gwtJettyVersion
         p.configurations.all { Configuration c ->
+            applyGwtSubstitutions(p, c)
             c.resolutionStrategy.dependencySubstitution { sub ->
-                sub.substitute(sub.module("com.google.gwt:gwt-codeserver"))
-                        .using(sub.module("org.gwtproject:gwt-codeserver:${gwtVersion}"))
-                sub.substitute(sub.module("com.google.gwt:gwt-user"))
-                        .using(sub.module("org.gwtproject:gwt-user:${gwtVersion}"))
-                sub.substitute(sub.module("com.google.gwt:gwt-dev"))
-                        .using(sub.module("org.gwtproject:gwt-dev:${gwtVersion}"))
+                sub.substitute(sub.module('com.google.protobuf:protobuf-java'))
+                        .using(sub.module("com.vertispan.protobuf:protobuf-gwt:${protobufVers}"))
+                sub.substitute(sub.module('io.grpc:grpc-api'))
+                        .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
+                sub.substitute(sub.module('io.grpc:grpc-core'))
+                        .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
+                sub.substitute(sub.module('io.grpc:grpc-stub'))
+                        .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
+                sub.substitute(sub.module('io.grpc:grpc-protobuf'))
+                        .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
+                sub.substitute(sub.module('io.grpc:grpc-protobuf-stub'))
+                        .using(sub.module("com.vertispan.grpc:grpc-gwt:${grpcVers}"))
             }
+            c.exclude(group: 'io.grpc', module: 'grpc-netty')
+            c.exclude(group: 'com.google.protobuf', module: 'protobuf-java-util')
+
+            c.resolutionStrategy.force('org.osgi:org.osgi.service.prefs:1.1.2')
         }
         String warPath = new File(p.buildDir, 'gwt').absolutePath
 
@@ -114,7 +150,7 @@ class GwtTools {
             /** Fail compilation if any input file contains an error. */
             strict = true
             /** Specifies Java source level. ("1.6", "1.7")*/
-            sourceLevel = "11"
+            sourceLevel = "17"
             /** The number of local workers to use when compiling permutations. */
             localWorkers = 1
             /** Emit extra information allow chrome dev tools to display Java identifiers in many places instead of JavaScript functions. (NONE, ONLY_METHOD_NAME, ABBREVIATED, FULL)*/

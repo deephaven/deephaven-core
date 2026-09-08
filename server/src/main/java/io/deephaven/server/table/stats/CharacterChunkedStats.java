@@ -1,12 +1,8 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.table.stats;
 
-import gnu.trove.map.TCharLongMap;
-import gnu.trove.map.hash.TCharLongHashMap;
-import gnu.trove.set.TCharSet;
-import gnu.trove.set.hash.TCharHashSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -15,9 +11,12 @@ import io.deephaven.engine.table.iterators.CharacterColumnIterator;
 import io.deephaven.engine.table.iterators.ChunkedCharacterColumnIterator;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
+import it.unimi.dsi.fastutil.chars.Char2LongMaps;
+import it.unimi.dsi.fastutil.chars.Char2LongOpenHashMap;
+import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
+import it.unimi.dsi.fastutil.chars.CharSet;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +36,9 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
         long count = 0;
         int uniqueCount = 0;
 
-        final TCharLongMap countValues = new TCharLongHashMap();
+        final Char2LongOpenHashMap countValues = new Char2LongOpenHashMap();
         boolean useSet = false;
-        final TCharSet uniqueValues = new TCharHashSet();
+        final CharSet uniqueValues = new CharOpenHashSet();
 
         try (CharacterColumnIterator iterator =
                 new ChunkedCharacterColumnIterator(usePrev ? columnSource.getPrevSource() : columnSource, rowSet)) {
@@ -50,7 +49,9 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
                 }
                 count++;
 
-                if (countValues.adjustOrPutValue(val, 1, 1) == 1 && ++uniqueCount > maxUniqueToCollect) {
+                // Char2LongOpenHashMap.addTo returns the previous value (defaultReturnValue() == 0 if absent).
+                // Counts start at 1 and only grow, so a 0 return means the key was absent on this call.
+                if (countValues.addTo(val, 1) == 0 && ++uniqueCount > maxUniqueToCollect) {
                     // we no longer want to track counts for these items; fall back to a Set to get at least a count
                     uniqueValues.addAll(countValues.keySet());
                     countValues.clear();
@@ -79,10 +80,10 @@ public class CharacterChunkedStats implements ChunkedStatsKernel {
         }
         List<Map.Entry<String, Long>> sorted = new ArrayList<>(countValues.size());
 
-        countValues.forEachEntry((o, c) -> {
-            sorted.add(Map.entry(Objects.toString(o), c));
-            return true;
-        });
+        // region add_entries
+        Char2LongMaps.fastForEach(countValues, entry -> sorted
+                .add(Map.entry(Objects.toString(entry.getCharKey()), entry.getLongValue())));
+        // endregion add_entries
         sorted.sort(Map.Entry.<String, Long>comparingByValue().reversed());
 
         int resultCount = Math.min(maxUniqueToDisplay, sorted.size());

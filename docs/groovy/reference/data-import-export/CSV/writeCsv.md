@@ -221,7 +221,7 @@ result = readCsv("/data/output.csv")
 
 ## Related documentation
 
-- [CSV import via query](../../../how-to-guides/csv-import.md)
-- [CSV export via query](../../../how-to-guides/csv-export.md)
+- [CSV import via query](../../../how-to-guides/data-import-export/csv-import.md)
+- [CSV export via query](../../../how-to-guides/data-import-export/csv-export.md)
 - [Docker data volumes](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/csv/CsvTools.html#writeCsv(io.deephaven.engine.table.Table,java.lang.String,java.lang.String...))

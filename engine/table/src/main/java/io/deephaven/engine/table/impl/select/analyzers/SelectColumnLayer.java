@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
@@ -114,7 +114,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // the select column is stateless
         canParallelizeThisColumn = !isRedirected
                 && WritableSourceWithPrepareForParallelPopulation.supportsParallelPopulation(writableSource)
-                && sc.isStateless();
+                && sc.isStateless() && sc.isParallelizable();
 
         // If we were created on a systemic thread, we want to be sure to make sure that any updates are also
         // applied systemically.

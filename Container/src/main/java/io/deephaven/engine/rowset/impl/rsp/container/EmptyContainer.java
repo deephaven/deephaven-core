@@ -330,7 +330,8 @@ public final class EmptyContainer extends ImmutableContainer {
 
     @Override
     public int nextValue(short fromValue) {
-        throw new IllegalStateException("fromValue=" + fromValue);
+        // No value at or above any bound, which is what -1 reports; see Container.nextValue.
+        return -1;
     }
 
     @Override

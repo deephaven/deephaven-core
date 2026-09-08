@@ -52,7 +52,7 @@ A new table containing the sum for each group.
 
 ## Examples
 
-In this example, `sumBy` returns the sum of the whole table. Because a sum cannot be computed for the string column `X` and `Y`, these columns are dropped before applying `sumBy`.
+In this example, `sumBy` returns the sum of the whole table. Because a sum cannot be computed for the string columns `X` and `Y`, these columns are dropped before applying `sumBy`.
 
 ```groovy order=source,result
 source = newTable(
@@ -90,8 +90,9 @@ result = source.sumBy("X", "Y")
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to perform dedicated aggregations](../../../how-to-guides/dedicated-aggregations.md)
 - [`aggBy`](./aggBy.md)
+- [`AggSum`](./AggSum.md)
 - [`dropColumns`](../select/drop-columns.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#sumBy(java.lang.String...))

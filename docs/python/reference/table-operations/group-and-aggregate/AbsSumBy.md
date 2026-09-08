@@ -42,7 +42,7 @@ source = new_table(
 result = source.abs_sum_by()
 ```
 
-In this example, `abs_sum_by` returns the absolute sum, as grouped by `X`. Because a sum can not be computed for the string column `Y`, this column is dropped before applying `abs_sum_by`.
+In this example, `abs_sum_by` returns the absolute sum, as grouped by `X`. Because a sum cannot be computed for the string column `Y`, this column is dropped before applying `abs_sum_by`.
 
 ```python order=source,result
 from deephaven import new_table

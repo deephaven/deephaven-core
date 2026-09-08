@@ -3,9 +3,7 @@ title: Programmatically generate query strings with Groovy
 sidebar_label: Generate query strings
 ---
 
-The Deephaven Query Language allows users to write very powerful queries to filter and modify tables of data. Consider the following query, which uses a formula to add a new column to a table and a filter to filter the resulting table.
-
-<!--TODO: add filter and formula links when https://deephaven.atlassian.net/jira/software/projects/DOC/boards/8?selectedIssue=DOC-905 is complete-->
+The Deephaven Query Language allows users to write very powerful queries to filter and modify tables of data. Consider the following query, which uses a [formula](./formulas.md) to add a new column to a table and a [filter](./filters.md) to filter the resulting table.
 
 ```groovy order=result,source
 source = emptyTable(7).update("Value = i")
@@ -131,18 +129,15 @@ for (offset in offsets) {
 
 ## Related documentation
 
-<!--TODO: add links when https://deephaven.atlassian.net/jira/software/projects/DOC/boards/8?selectedIssue=DOC-905 is complete
-- [Built-in query language constants]
-- [Built-in query language variables]
-- [Built-in query language functions]
-- [Formulas in query strings]
-- [Filters]
-- [Operators]
-- [Groovy variables]
-- [Groovy functions]
-- [Groovy classes]
--->
-
+- [Built-in query language constants](./built-in-constants.md)
+- [Built-in query language variables](./built-in-variables.md)
+- [Built-in query language functions](./built-in-functions.md)
 - [Create a new table](./new-and-empty-table.md#newtable)
 - [Create an empty table](./new-and-empty-table.md#emptytable)
+- [Formulas in query strings](./formulas.md)
+- [Filters in query strings](./filters.md)
+- [Operators in query strings](./operators.md)
+- [Groovy variables in query strings](./groovy-variables.md)
+- [Groovy closures in query strings](./groovy-closures.md)
+- [Groovy classes in query strings](./groovy-classes.md)
 - [Think like a Deephaven ninja](../conceptual/ninja.md)

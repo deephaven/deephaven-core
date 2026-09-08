@@ -1,22 +1,33 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-import jpy
+from typing import TYPE_CHECKING, Union, cast
+
 import deephaven.plugin
-
-from typing import Union, Type
-from deephaven.plugin import Plugin, Registration, Callback
-from deephaven.plugin.object_type import ObjectType
+import jpy
+from deephaven.plugin import Callback, Plugin
 from deephaven.plugin.js import JsPlugin
-from .object import ObjectTypeAdapter
-from .js import to_j_js_plugin
+from deephaven.plugin.object_type import ObjectType
 
-_JCallbackAdapter = jpy.get_type("io.deephaven.server.plugin.python.CallbackAdapter")
+from .js import to_j_js_plugin
+from .object import ObjectTypeAdapter
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias  # novermin  # noqa
+
+_JCallbackAdapter = cast(
+    type, jpy.get_type("io.deephaven.server.plugin.python.CallbackAdapter")
+)  # type: TypeAlias
 
 
 def initialize_all_and_register_into(callback: _JCallbackAdapter):
     """Python method that Java can call to create plugin instances on startup."""
+    from ._authorization import set_transformer
+
+    # Make the authorization transformer available to plugins (via deephaven.plugin_authorization) before any plugin
+    # is registered, so plugins may apply manual transformations to the references they export.
+    set_transformer(callback.authorizationTransformer())
     deephaven.plugin.register_all_into(RegistrationAdapter(callback))
 
 
@@ -26,7 +37,7 @@ class RegistrationAdapter(Callback):
     def __init__(self, callback: _JCallbackAdapter):
         self._callback = callback
 
-    def register(self, plugin: Union[Plugin, Type[Plugin]]):
+    def register(self, plugin: Union[Plugin, type[Plugin]]):
         if isinstance(plugin, type):
             # If registering a class, instantiate it before adapting it and passing to java
             plugin = plugin()

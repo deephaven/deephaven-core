@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.lang;
 
@@ -18,8 +18,9 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.comments.BlockComment;
-import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.comments.LineComment;
+import com.github.javaparser.ast.comments.MarkdownComment;
+import com.github.javaparser.ast.comments.TraditionalJavadocComment;
 import com.github.javaparser.ast.expr.ArrayAccessExpr;
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
 import com.github.javaparser.ast.expr.ArrayInitializerExpr;
@@ -95,6 +96,7 @@ import io.deephaven.engine.util.PyCallableWrapperJpyImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.TimeLiteralReplacedExpression;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ByteVector;
@@ -533,7 +535,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return types.toArray(new Class[0]);
     }
 
-    static Class<?> binaryNumericPromotionType(Class<?> type1, Class<?> type2) {
+    @InternalUseOnly
+    public static Class<?> binaryNumericPromotionType(Class<?> type1, Class<?> type2) {
         if (type1 == double.class || type2 == double.class) {
             return double.class;
         }
@@ -569,9 +572,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @return The class, if it exists; otherwise, {@code null}.
      */
     private Class<?> findClass(String name) {
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         if (name.contains(".")) { // Fully-qualified class name
             try {
-                return Class.forName(name);
+                return contextClassLoader.loadClass(name);
             } catch (ClassNotFoundException ignored) {
             }
         } else { // Simple name
@@ -601,7 +605,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // check whether 'name' is the name of a class in an imported package:
             for (Package packageImport : packageImports) {
                 try {
-                    return Class.forName(packageImport.getName() + '.' + name);
+                    return contextClassLoader.loadClass(packageImport.getName() + '.' + name);
                 } catch (ClassNotFoundException ignored) {
                 }
             }
@@ -1185,7 +1189,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return op.asString();
     }
 
-    static String getOperatorName(BinaryExpr.Operator op) {
+    @InternalUseOnly
+    public static String getOperatorName(BinaryExpr.Operator op) {
         switch (op) {
             case OR:
                 return "or";
@@ -1461,27 +1466,23 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      */
     @Nullable
     private Class<?> lookupStaticImport(@NotNull final String name) {
-        return staticImportLookupCache.computeIfAbsent(name, nameForLookup -> {
-            for (final Class<?> staticImportedClass : staticImports) {
-                // We don't support static imports of individual fields/methods -- have to check among
-                // *all* members of a class.
-                try {
-                    final Field field = staticImportedClass.getField(nameForLookup);
+        if (staticImportLookupCache.isEmpty()) {
+            // Preload the cache on our first hit - our defaults ensure it can never be empty unless not loaded yet.
+            // For any given name, if we have already seen that name, don't add another item to the cache.
+            for (final Class<?> staticImport : staticImports) {
+                for (final Field field : staticImport.getFields()) {
                     if (Modifier.isStatic(field.getModifiers())) {
-                        return field.getType();
+                        staticImportLookupCache.putIfAbsent(field.getName(), field.getType());
                     }
-                } catch (NoSuchFieldException ignored) {
                 }
-
-                for (final Class<?> nestedClass : staticImportedClass.getDeclaredClasses()) {
-                    if (Modifier.isStatic(nestedClass.getModifiers())
-                            && nestedClass.getSimpleName().equals(nameForLookup)) {
-                        return nestedClass;
+                for (final Class<?> nestedClass : staticImport.getDeclaredClasses()) {
+                    if (Modifier.isStatic(nestedClass.getModifiers())) {
+                        staticImportLookupCache.putIfAbsent(nestedClass.getSimpleName(), nestedClass);
                     }
                 }
             }
-            return null;
-        });
+        }
+        return staticImportLookupCache.get(name);
     }
 
     @Override
@@ -3127,8 +3128,13 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     @Override
-    public Class<?> visit(JavadocComment n, VisitArgs printer) {
-        throw new UnsupportedOperationException("JavadocComment Operation not supported!");
+    public Class<?> visit(TraditionalJavadocComment n, VisitArgs printer) {
+        throw new UnsupportedOperationException("TraditionalJavadocComment Operation not supported!");
+    }
+
+    @Override
+    public Class<?> visit(MarkdownComment n, VisitArgs printer) {
+        throw new UnsupportedOperationException("MarkdownComment Operation not supported!");
     }
 
     @Override

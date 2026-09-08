@@ -18,7 +18,7 @@ We'll show you how to create and use both types in this guide.
 
 ## Create an input table
 
-First, you need to import the `input_table` method from the `deephaven` module.
+First, you need to import the `input_table` method from the `deephaven` module:
 
 ```python
 from deephaven import input_table
@@ -221,6 +221,95 @@ result = input_table(col_defs=my_col_defs)
 ```
 
 ![Manually adding a clickable link to an input table](../assets/how-to/ui/clickable_link_gif.gif)
+
+<!-- TODO DH-22694: Uncomment and update this section when the test-only validators are made production ready.
+
+## Input table validators
+
+Input table validators allow you to add validation rules to input tables, ensuring that data entered (either programmatically or manually through the UI) meets specific criteria. Validators wrap an existing input table and check data before it's added, throwing validation exceptions if the data doesn't meet the requirements.
+
+Deephaven provides several built-in validators:
+
+- **`RangeValidatingInputTable`** - Validates that integer values fall within a specified range (min/max inclusive).
+- **`DoubleRangeValidatingInputTable`** - Validates that double values fall within a specified range (min/max inclusive).
+- **`NotNullValidatingInputTable`** - Validates that values in a column are not null.
+- **`NonEmptyValidatingInputTable`** - Validates that string values are not empty.
+- **`StringListValidatingInputTable`** - Validates that string values belong to a predefined set of allowed values.
+
+### Creating validated input tables
+
+To create a validated input table, first create a base input table, then wrap it with one or more validators. Here's an example showing all available validators:
+
+```python order=int_range_validator,double_range_validator,not_null_validator,not_null_validator_int,non_empty_validator,string_list_validator
+from deephaven import new_table, input_table
+from deephaven.column import string_col, int_col, double_col
+
+# Create source table with various column types
+source = new_table(
+    [
+        string_col("Key", ["Apple", "Banana", "Carrot", "Date", "Eggplant"]),
+        int_col("IntValue", [1, 2, 3, 50, 75]),
+        double_col("DoubleValue", [1.5, 2.5, 3.5, 50.5, 75.5]),
+        string_col("Category", ["Fruit", "Fruit", "Vegetable", "Fruit", "Vegetable"]),
+        string_col("Description", ["Red", "Yellow", "Orange", "Sweet", "Purple"]),
+    ]
+)
+
+# Import Java classes for validators (not available in Python API yet)
+import jpy
+
+range_validating_input_table = jpy.get_type(
+    "io.deephaven.server.table.inputtables.RangeValidatingInputTable"
+)
+double_range_validating_input_table = jpy.get_type(
+    "io.deephaven.server.table.inputtables.DoubleRangeValidatingInputTable"
+)
+not_null_validating_input_table = jpy.get_type(
+    "io.deephaven.server.table.inputtables.NotNullValidatingInputTable"
+)
+non_empty_validating_input_table = jpy.get_type(
+    "io.deephaven.server.table.inputtables.NonEmptyValidatingInputTable"
+)
+string_list_validating_input_table = jpy.get_type(
+    "io.deephaven.server.table.inputtables.StringListValidatingInputTable"
+)
+
+# Example 1: Integer Range Validator (0-100)
+int_range_validator = range_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table, "IntValue", 0, 100
+)
+
+# Example 2: Double Range Validator (0.0-100.0)
+double_range_validator = double_range_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table, "DoubleValue", 0.0, 100.0
+)
+
+# Example 3: Not Null Validator on Category column
+not_null_validator = not_null_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table, "Category"
+)
+
+# Example 3.1: Not Null Validator on IntValue column
+not_null_validator_int = not_null_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table, "IntValue"
+)
+
+# Example 4: Non-Empty Validator on Description column
+non_empty_validator = non_empty_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table, "Description"
+)
+
+# Example 5: String List Validator - Category must be "Fruit" or "Vegetable"
+string_list_validator = string_list_validating_input_table.make(
+    input_table(init_table=source, key_cols="Key").j_table,
+    "Category",
+    "Fruit",
+    "Vegetable",
+    "Grain",
+)
+```
+
+-->
 
 ## Related documentation
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharChunkMatchFilterFactory and run "./gradlew replicateChunkFilters" to regenerate
@@ -7,7 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import gnu.trove.set.hash.TIntHashSet;
+import io.deephaven.engine.table.MatchOptions;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 
 /**
  * Creates chunk filters for int values.
@@ -20,8 +22,8 @@ import gnu.trove.set.hash.TIntHashSet;
 public class IntChunkMatchFilterFactory {
     private IntChunkMatchFilterFactory() {} // static use only
 
-    public static IntChunkFilter makeFilter(boolean invertMatch, int... values) {
-        if (invertMatch) {
+    public static IntChunkFilter makeFilter(final MatchOptions matchOptions, final int... values) {
+        if (matchOptions.inverted()) {
             if (values.length == 1) {
                 return new InverseSingleValueIntChunkFilter(values[0]);
             }
@@ -137,10 +139,10 @@ public class IntChunkMatchFilterFactory {
     }
 
     private final static class MultiValueIntChunkFilter extends IntChunkFilter {
-        private final TIntHashSet values;
+        private final IntSet values;
 
         private MultiValueIntChunkFilter(int... values) {
-            this.values = new TIntHashSet(values);
+            this.values = new IntOpenHashSet(values);
         }
 
         @Override
@@ -150,10 +152,10 @@ public class IntChunkMatchFilterFactory {
     }
 
     private final static class InverseMultiValueIntChunkFilter extends IntChunkFilter {
-        private final TIntHashSet values;
+        private final IntSet values;
 
         private InverseMultiValueIntChunkFilter(int... values) {
-            this.values = new TIntHashSet(values);
+            this.values = new IntOpenHashSet(values);
         }
 
         @Override

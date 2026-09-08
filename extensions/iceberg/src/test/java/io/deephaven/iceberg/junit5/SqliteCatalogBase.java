@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.junit5;
 
@@ -1550,7 +1550,8 @@ public abstract class SqliteCatalogBase {
             failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
         } catch (UncheckedDeephavenException e) {
             // Exception expected for invalid formula in table
-            assertThat(e).cause().isInstanceOf(FormulaEvaluationException.class);
+            assertThat(e).cause().isInstanceOf(UncheckedDeephavenException.class);
+            assertThat(e).cause().cause().isInstanceOf(FormulaEvaluationException.class);
         }
 
         // Now create a table with good data with same schema and append a bad source to it
@@ -1570,7 +1571,8 @@ public abstract class SqliteCatalogBase {
             failBecauseExceptionWasNotThrown(UncheckedDeephavenException.class);
         } catch (UncheckedDeephavenException e) {
             // Exception expected for invalid formula in table
-            assertThat(e).cause().isInstanceOf(FormulaEvaluationException.class);
+            assertThat(e).cause().isInstanceOf(UncheckedDeephavenException.class);
+            assertThat(e).cause().cause().isInstanceOf(FormulaEvaluationException.class);
         }
 
         try {
@@ -1903,6 +1905,111 @@ public abstract class SqliteCatalogBase {
     }
 
     @Test
+    void testPartitionOrdering() {
+        final Table part1 = TableTools.emptyTable(6)
+                .update("intCol = (int) 2 * i + 10",
+                        "doubleCol = (double) 2.5 * i + 10");
+        final Table part2 = TableTools.emptyTable(5)
+                .update("intCol = (int) 3 * i + 20",
+                        "doubleCol = (double) 3.5 * i + 20");
+        final Table part3 = TableTools.emptyTable(4)
+                .update("intCol = (int) 4 * i + 30",
+                        "doubleCol = (double) 4.5 * i + 30");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.PartitionOrderingTest");
+
+        final TableDefinition tableDefinition1 = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("InternalPartition").withPartitioning(),
+                ColumnDefinition.ofString("Date").withPartitioning());
+        final IcebergTableAdapter tableAdapter1 = catalogAdapter.createTable(tableIdentifier, tableDefinition1);
+        final IcebergTableWriter tableWriter1 = tableAdapter1.tableWriter(writerOptionsBuilder()
+                .tableDefinition(tableDefinition1)
+                .build());
+
+        tableWriter1.append(IcebergWriteInstructions.builder()
+                .addTables(part1, part2, part3)
+                .addAllPartitionPaths(List.of(
+                        "InternalPartition=0/Date=2024-08-01",
+                        "InternalPartition=1/Date=2024-08-02",
+                        "InternalPartition=2/Date=2024-08-02"))
+                .build());
+        final Table fromIceberg1 = tableAdapter1.table();
+        final Table expected1 = TableTools.merge(
+                part1.update("InternalPartition = `0`", "Date = `2024-08-01`"),
+                part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
+                part3.update("InternalPartition = `2`", "Date = `2024-08-02`"));
+        assertTableEquals(expected1, fromIceberg1);
+
+        // Add another partition for same date, but with the partitions ordered differently
+        final TableDefinition tableDefinition2 = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofDouble("doubleCol"),
+                ColumnDefinition.ofString("Date").withPartitioning(), // NOTE: opposite order here!
+                ColumnDefinition.ofString("InternalPartition").withPartitioning());
+        final IcebergTableWriter tableWriter2 = tableAdapter1.tableWriter(writerOptionsBuilder()
+                .tableDefinition(tableDefinition2)
+                .build());
+
+        final Table part4 = TableTools.emptyTable(3)
+                .update("intCol = (int) 5 * i + 30",
+                        "doubleCol = (double) 5.5 * i + 30");
+        tableWriter2.append(IcebergWriteInstructions.builder()
+                .addTables(part4)
+                .addPartitionPaths("InternalPartition=1/Date=2024-08-02")
+                .build());
+        final Table fromIceberg2 = tableAdapter1.table();
+        final Table expected2 = TableTools.merge(
+                expected1,
+                part4.update("InternalPartition = `1`", "Date = `2024-08-02`"));
+        assertTableEquals(expected2, fromIceberg2);
+
+        // We have successfully written with the alternative partition-ordering. Make sure we can read it that way, too.
+        final Schema schema = tableAdapter1.icebergTable().schema();
+        final IcebergTableAdapter tableAdapter2 = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(tableIdentifier)
+                .resolver(Resolver.builder()
+                        // NOTE: this `TableDefinition` has `Date` before `InternalPartition`
+                        .definition(tableDefinition2)
+                        .schema(schema)
+                        .spec(PartitionSpec.builderFor(schema)
+                                .identity("InternalPartition")
+                                .identity("Date")
+                                .build())
+                        .putColumnInstructions("intCol", schemaField(schema.findField("intCol").fieldId()))
+                        .putColumnInstructions("doubleCol", schemaField(schema.findField("doubleCol").fieldId()))
+                        .putColumnInstructions("InternalPartition",
+                                schemaField(schema.findField("InternalPartition").fieldId()))
+                        .putColumnInstructions("Date", schemaField(schema.findField("Date").fieldId()))
+                        .build())
+                .build());
+        final Table fromIceberg3 = tableAdapter2.table();
+        // we've defined `Date` to be the first PartitioningColumn in the returned table instead of `InternalPartition`,
+        // so we need to re-order for the comparison (or tell it to ignore column-ordering differences)
+        assertTableEquals(expected2.view("intCol", "doubleCol", "Date", "InternalPartition"), fromIceberg3);
+
+        // Try reading with no partitioning columns defined
+        final IcebergTableAdapter tableAdapter3 = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(tableIdentifier)
+                .resolver(Resolver.builder()
+                        // NOTE: this `TableDefinition` has no partitioning columns
+                        .definition(TableDefinition.of(ColumnDefinition.ofInt("intCol"),
+                                ColumnDefinition.ofDouble("doubleCol"),
+                                ColumnDefinition.ofString("InternalPartition"),
+                                ColumnDefinition.ofString("Date")))
+                        .schema(schema)
+                        .putColumnInstructions("intCol", schemaField(schema.findField("intCol").fieldId()))
+                        .putColumnInstructions("doubleCol", schemaField(schema.findField("doubleCol").fieldId()))
+                        .putColumnInstructions("InternalPartition",
+                                schemaField(schema.findField("InternalPartition").fieldId()))
+                        .putColumnInstructions("Date", schemaField(schema.findField("Date").fieldId()))
+                        .build())
+                .build());
+        final Table fromIceberg4 = tableAdapter3.table();
+        assertTableEquals(expected2, fromIceberg4);
+    }
+
+    @Test
     void testPartitionedAppendWithDeleting() {
         final Table part1 = TableTools.emptyTable(6)
                 .update("intCol = (int) 2 * i + 10",
@@ -1933,11 +2040,11 @@ public abstract class SqliteCatalogBase {
                         "InternalPartition=2/Date=2024-08-02"))
                 .build());
         final Table fromIceberg = tableAdapter.table();
-        final Table expected = TableTools.merge(
+        final Table expected1 = TableTools.merge(
                 part1.update("InternalPartition = `0`", "Date = `2024-08-01`"),
                 part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
                 part3.update("InternalPartition = `2`", "Date = `2024-08-02`"));
-        assertTableEquals(expected, fromIceberg.select());
+        assertTableEquals(expected1, fromIceberg);
 
         // Add another partition for same date
         final Table part4 = TableTools.emptyTable(3)
@@ -1949,11 +2056,9 @@ public abstract class SqliteCatalogBase {
                 .build());
         final Table fromIceberg2 = tableAdapter.table();
         final Table expected2 = TableTools.merge(
-                part1.update("InternalPartition = `0`", "Date = `2024-08-01`"),
-                part2.update("InternalPartition = `1`", "Date = `2024-08-02`"),
-                part3.update("InternalPartition = `2`", "Date = `2024-08-02`"),
+                expected1,
                 part4.update("InternalPartition = `1`", "Date = `2024-08-02`"));
-        assertTableEquals(expected2, fromIceberg2.select());
+        assertTableEquals(expected2, fromIceberg2);
 
         // Now delete the partition for date 2024-08-02
         final Expression delExpr = Expressions.equal("Date", "2024-08-02");
@@ -1964,7 +2069,7 @@ public abstract class SqliteCatalogBase {
         final IcebergTableAdapter latestTableAdapter = catalogAdapter.loadTable(tableIdentifier);
         final Table fromIceberg3 = latestTableAdapter.table();
         final Table expected3 = part1.update("InternalPartition = `0`", "Date = `2024-08-01`");
-        assertTableEquals(expected3, fromIceberg3.select());
+        assertTableEquals(expected3, fromIceberg3);
     }
 
     @Test
@@ -2292,6 +2397,73 @@ public abstract class SqliteCatalogBase {
 
         final Table expected2 = TableTools.merge(expected, part3.update("PC = `cat`"));
         assertTableEquals(expected2, fromIcebergRefreshing.select());
+    }
+
+    /**
+     * Regression test for a bug where a refreshing Iceberg table with a filtered child crashed with an
+     * {@link IndexOutOfBoundsException} when a commit replaced a partition's data file (remove + add). The
+     * pushdown-filter helpers in {@code RegionedColumnSourceManager} resolved locations by indexing the
+     * included-locations list (which is compacted on removal) with the region index (which is never reused), so after a
+     * removal the newly-added region's index exceeded the list size.
+     */
+    @Test
+    void testManualRefreshingFilteredPartitionReplace() {
+        final Table part1 = TableTools.emptyTable(10)
+                .update("intCol = (int) i");
+        final Table part2 = TableTools.emptyTable(10)
+                .update("intCol = (int) 100 + i");
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+
+        final TableDefinition tableDefinition = TableDefinition.of(
+                ColumnDefinition.ofInt("intCol"),
+                ColumnDefinition.ofString("PC").withPartitioning());
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, tableDefinition);
+        final IcebergTableWriter tableWriter = tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(tableDefinition)
+                .build());
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(part1, part2)
+                .addAllPartitionPaths(List.of("PC=apple", "PC=boy"))
+                .build());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final IcebergTableImpl fromIcebergRefreshing =
+                (IcebergTableImpl) tableAdapter.table(IcebergReadInstructions.builder()
+                        .updateMode(IcebergUpdateMode.manualRefreshingMode())
+                        .build());
+
+        // Filter on a non-partitioning column, so it executes (with pushdown) against the regioned column sources
+        // rather than being satisfied from partition values. The filter window must cover rows in both the
+        // replacement data file and the surviving one.
+        final Table filtered = fromIcebergRefreshing.where("intCol >= 5");
+        final Table expected = TableTools.merge(
+                part1.update("PC = `apple`"),
+                part2.update("PC = `boy`"))
+                .where("intCol >= 5");
+        assertTableEquals(expected, filtered.sort("intCol"));
+
+        // Replace partition PC=apple: one commit removes its data file, another adds a replacement, and a single
+        // refresh observes both. The reader drops the removed file's region (index 0) -- compacting the
+        // included-locations list -- and assigns the replacement file the next region index (2), so region indices
+        // no longer correspond to positions in that list.
+        tableAdapter.icebergTable().newDelete()
+                .deleteFromRowFilter(Expressions.equal("PC", "apple"))
+                .commit();
+        final Table part1Replacement = TableTools.emptyTable(10)
+                .update("intCol = (int) 50 + i");
+        tableWriter.append(IcebergWriteInstructions.builder()
+                .addTables(part1Replacement)
+                .addPartitionPaths("PC=apple")
+                .build());
+
+        fromIcebergRefreshing.update();
+        updateGraph.runWithinUnitTestCycle(fromIcebergRefreshing::refresh);
+
+        final Table expected2 = TableTools.merge(
+                part1Replacement.update("PC = `apple`"),
+                part2.update("PC = `boy`"))
+                .where("intCol >= 5");
+        assertTableEquals(expected2, filtered.sort("intCol"));
     }
 
     @Test

@@ -1,10 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by.typed;
 
 import com.google.common.io.BaseEncoding;
-import com.squareup.javapoet.*;
+import com.palantir.javapoet.*;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
@@ -311,11 +311,13 @@ public class TypedHasherFactory {
                     true, true, TypedNaturalJoinFactory::incrementalLeftFoundUpdate,
                     TypedNaturalJoinFactory::incrementalLeftInsertUpdate,
                     ParameterSpec.builder(LongArraySource.class, "leftRedirections").build(),
-                    ParameterSpec.builder(long.class, "leftRedirectionOffset").build()));
+                    ParameterSpec.builder(long.class, "leftRedirectionOffset").build(),
+                    modifiedSlotTrackerParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", "rightState", true,
                     TypedNaturalJoinFactory::incrementalRemoveLeftFound,
-                    TypedNaturalJoinFactory::incrementalRemoveLeftMissing));
+                    TypedNaturalJoinFactory::incrementalRemoveLeftMissing,
+                    modifiedSlotTrackerParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("applyLeftShift", null, true,
                     TypedNaturalJoinFactory::incrementalShiftLeftFound,
@@ -692,7 +694,7 @@ public class TypedHasherFactory {
 
         final JavaFile.Builder fileBuilder = JavaFile.builder(packageName, hasher).indent("    ");
         fileBuilder.addFileComment("\n");
-        fileBuilder.addFileComment("Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending\n");
+        fileBuilder.addFileComment("Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending\n");
         fileBuilder.addFileComment("\n");
         fileBuilder.addFileComment("****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY\n");
         fileBuilder
@@ -729,7 +731,7 @@ public class TypedHasherFactory {
             TypeSpec.Builder hasherBuilder) {
         CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
         final String extraSuper = hasherConfig.extraConstructorParameters.isEmpty() ? ""
-                : ", " + hasherConfig.extraConstructorParameters.stream().map(spec -> spec.name)
+                : ", " + hasherConfig.extraConstructorParameters.stream().map(ParameterSpec::name)
                         .collect(Collectors.joining(", "));
 
         if (hasherConfig.includeOriginalSources) {
@@ -842,8 +844,7 @@ public class TypedHasherFactory {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("destKeyArray$L[destinationTableLocation] = k$L", ii, ii);
         }
-        builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]",
-                hasherConfig.mainStateName);
+        builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]");
         if (!hasherConfig.alwaysMoveMain) {
             builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
         }
@@ -1012,7 +1013,7 @@ public class TypedHasherFactory {
     private static @NotNull String getExtraMigrateParams(List<ParameterSpec> hasherConfig) {
         final String extraParamNames;
         if (!hasherConfig.isEmpty()) {
-            extraParamNames = ", " + hasherConfig.stream().map(ps -> ps.name)
+            extraParamNames = ", " + hasherConfig.stream().map(ParameterSpec::name)
                     .collect(Collectors.joining(", "));
         } else {
             extraParamNames = "";

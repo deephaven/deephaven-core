@@ -121,6 +121,8 @@ t = empty_table(1).update(formulas=["X = new int[]{1, 2, 3}", "Z = new int[]{4, 
 t_ungrouped = t.ungroup()
 ```
 
+The example below uses [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) to unwrap both an Array (column `X`) and a Java array (column `Z`) at the same time.
+
 ```python order=t,t_ungrouped
 from deephaven import new_table
 from deephaven.column import int_col

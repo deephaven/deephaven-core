@@ -1,10 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.gen;
 
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.*;
@@ -17,7 +17,7 @@ public class GenUtils {
 
     private static final Logger log = Logger.getLogger(GenUtils.class.toString());
 
-    private static final TIntObjectMap<String> cachedIndents = new TIntObjectHashMap<>();
+    private static final Int2ObjectMap<String> cachedIndents = new Int2ObjectOpenHashMap<>();
 
     /**
      * Get a String of spaces for indenting code.
@@ -43,7 +43,7 @@ public class GenUtils {
     public static String javaHeader(final Class<?> generatorClass, final String gradleTask) {
         return String.join("\n",
                 "//",
-                "// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending",
+                "// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending",
                 "//",
                 "// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY",
                 "// ****** Run " + generatorClass.getSimpleName() + " or \"./gradlew " + gradleTask

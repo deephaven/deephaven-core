@@ -1,17 +1,17 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 import unittest
 
 from pydeephaven.session import Session
-from pydeephaven.ticket import SharedTicket, ServerObject, ScopeTicket
+from pydeephaven.ticket import ScopeTicket, ServerObject, SharedTicket
 from tests.testbase import BaseTestCase
 
 
 class PluginClientTestCase(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
-        server_script = '''
+        server_script = """
 from deephaven.plot.figure import Figure
 from deephaven import empty_table
 import deephaven.pandas as dhpd
@@ -28,11 +28,13 @@ plot2 = Figure().plot_xy(series_name="Random numbers", t=source2, x="X", y="Y", 
 
 plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(["Letter = (i % 2 == 0) ? `A` : `B`", "X = 0.1 * i", "Y = randomDouble(0.0, 5.0)"]), x="X", y="Y").show()
 
-    '''
+    """
         self.session.run_script(server_script)
 
     def test_create(self):
-        plugin_client = self.session.plugin_client(self.session.exportable_objects["plot"])
+        plugin_client = self.session.plugin_client(
+            self.session.exportable_objects["plot"]
+        )
         self.assertIsNotNone(plugin_client)
         payload, refs = next(plugin_client.resp_stream)
         self.assertGreater(len(payload), 0)
@@ -42,7 +44,9 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
         plugin_client.close()
 
     def test_publish_fetch_figure(self):
-        plugin_client = self.session.plugin_client(self.session.exportable_objects["plot3"])
+        plugin_client = self.session.plugin_client(
+            self.session.exportable_objects["plot3"]
+        )
         self.assertIsNotNone(plugin_client)
 
         with self.subTest("Fetchable in the Plugin object"):
@@ -99,7 +103,9 @@ plot3 = Figure().plot_xy(series_name="Random numbers", t=empty_table(30).update(
         plugin_client.close()
 
     def test_publish_fetch_pandas(self):
-        plugin_client = self.session.plugin_client(self.session.exportable_objects["df"])
+        plugin_client = self.session.plugin_client(
+            self.session.exportable_objects["df"]
+        )
         self.assertIsNotNone(plugin_client)
 
         # First fetch the Plugin object, then publish it

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.shared.ide.lsp;
 
@@ -10,9 +10,22 @@ import jsinterop.base.JsPropertyMap;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * Markup content for use in IDE language tools.
+ *
+ * This is a JS-exposed model type ({@code dh.lsp.MarkupContent}) that closely follows the Language Server Protocol
+ * markup content shape.
+ */
 @JsType(namespace = "dh.lsp")
 public class MarkupContent implements Serializable {
+    /**
+     * The markup kind, for example {@code plaintext} or {@code markdown}.
+     */
     public String kind;
+
+    /**
+     * The markup text.
+     */
     public String value;
 
     @Override

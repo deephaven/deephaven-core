@@ -1,0 +1,50 @@
+plugins {
+    id 'io.deephaven.project.register'
+}
+
+description 'Barrage Benchmark: Benchmarks for Barrage message serialization/deserialization'
+
+dependencies {
+    implementation project(':extensions-barrage')
+    implementation project(':engine-table')
+    implementation project(':BenchmarkSupport')
+    implementation libs.arrow.vector
+    implementation libs.flatbuffers.java
+    implementation platform(libs.grpc.bom)
+    implementation libs.grpc.api
+    implementation TestTools.projectDependency(project, 'engine-rowset')
+    implementation TestTools.projectDependency(project, 'engine-table')
+
+    annotationProcessor libs.jmh.generator.annprocess
+    compileOnly libs.jmh.generator.annprocess
+
+    runtimeOnly project(':configs')
+    runtimeOnly project(':test-configs')
+}
+
+def createJmhTask = {
+    taskName, cliArgs, jvmAddArgs=[], heapSize='8g' -> tasks.create(taskName, JavaExec, { JavaExec task ->
+        new File("$rootDir/tmp/workspace").mkdirs()
+        new File("$rootDir/tmp/logs").mkdirs()
+
+        task.workingDir "$rootDir/tmp/workspace"
+        task.classpath = sourceSets.main.runtimeClasspath
+        task.mainClass.set 'io.deephaven.benchmarking.runner.BenchmarkRunner'
+
+        // arguments to pass to the application
+        def jvmArgs = [ '-DConfiguration.rootFile=dh-tests.prop',
+                "-Dworkspace=$rootDir/tmp/workspace",
+                '-Dconfiguration.quiet=true',
+                '-Djava.awt.headless=true',
+                '-DQueryTable.memoizeResults=false',
+                "-Xmx$heapSize"
+        ]
+        jvmArgs.addAll(jvmAddArgs)
+        task.jvmArgs jvmArgs
+        task.args cliArgs
+
+        return
+    })
+}
+
+createJmhTask('jmhRunBarrageRoundTrip', 'BarrageMessageRoundTripBenchmark')

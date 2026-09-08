@@ -57,4 +57,4 @@ with adbc_driver_postgresql.dbapi.connect(uri) as conn:
 - [How to execute SQL queries](../../../how-to-guides/data-import-export/execute-sql-queries.md)
 - [`odbc.read_cursor`](./odbc.md)
 - [`read_sql`](./read_sql.md)
-- [Pydoc](/core/pydoc/code/deephaven.dbc.adbc.html#deephaven.dbc.adbc.read_cursor)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.dbc.adbc.html#deephaven.dbc.adbc.read_cursor)

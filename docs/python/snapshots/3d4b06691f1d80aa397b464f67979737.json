@@ -1,0 +1,1 @@
+{"file":"getting-started/crash-course/vectorization-vs-loops.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"X","type":"int"},{"name":"XSquared","type":"int"}],"rows":[[{"value":"0"},{"value":"0"}],[{"value":"1"},{"value":"1"}],[{"value":"2"},{"value":"4"}],[{"value":"3"},{"value":"9"}],[{"value":"4"},{"value":"16"}]]}}}}

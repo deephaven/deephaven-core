@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by;
 
@@ -25,6 +25,13 @@ public final class RollupConstants {
      * columns used in "distinct", "count distinct", and "unique" rollup aggregations.
      */
     public static final String ROLLUP_DISTINCT_SSM_COLUMN_ID = "_SSM_";
+
+    /**
+     * Middle column name component (between source column name and {@link #ROLLUP_COLUMN_SUFFIX suffix}) for the
+     * singleton-count column the "unique" rollup aggregation reads to classify each constituent state as empty
+     * ({@code 0}/{@code NULL_LONG}), unique ({@code > 0}, holding a single value), or non-unique ({@code < 0}).
+     */
+    public static final String ROLLUP_DISTINCT_SSM_COUNT_COLUMN_ID = "_SSMC_";
 
     /**
      * Middle column name component (between source column name and {@link #ROLLUP_COLUMN_SUFFIX suffix}) for running
@@ -67,4 +74,10 @@ public final class RollupConstants {
      * infinity count columns used in rollup aggregations.
      */
     static final String ROLLUP_NI_COUNT_COLUMN_ID = "_NIC_";
+
+    /**
+     * Middle column name component (between source column name and {@link #ROLLUP_COLUMN_SUFFIX suffix}) for group
+     * columns used in support of rollup formulas.
+     */
+    static final String ROLLUP_GRP_COLUMN_ID = "_GRP_";
 }

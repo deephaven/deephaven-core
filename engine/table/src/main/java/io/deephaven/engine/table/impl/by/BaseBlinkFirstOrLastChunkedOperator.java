@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by;
 
@@ -98,11 +98,12 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
 
     @Override
     @OverridingMethodsMustInvokeSuper
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+    public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         if ((redirections = cachedRedirections.get()) == null) {
             cachedRedirections = new SoftReference<>(redirections = new LongArraySource());
             ensureCapacity(startingDestinationsCount);
         }
+        return false;
     }
 
     // -----------------------------------------------------------------------------------------------------------------

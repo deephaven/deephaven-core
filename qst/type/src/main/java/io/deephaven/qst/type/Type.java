@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.qst.type;
 
@@ -157,6 +157,33 @@ public interface Type<T> {
      */
     static InstantType instantType() {
         return InstantType.of();
+    }
+
+    /**
+     * Creates the local time type.
+     *
+     * @return the local time type
+     */
+    static LocalTimeType localTimeType() {
+        return LocalTimeType.of();
+    }
+
+    /**
+     * Creates the local date type.
+     *
+     * @return the local date type
+     */
+    static LocalDateType localDateType() {
+        return LocalDateType.of();
+    }
+
+    /**
+     * Creates the duration type.
+     *
+     * @return the duration type
+     */
+    static DurationType durationType() {
+        return DurationType.of();
     }
 
     /**

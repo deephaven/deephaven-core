@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.locations.util;
 
@@ -54,12 +54,12 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
                 new ScheduledThreadPoolExecutor(threadPoolSize, threadFactory, new ThreadPoolExecutor.AbortPolicy());
         scheduler.setRemoveOnCancelPolicy(true);
 
-        providerSubscriptions = Stats.makeItem(NAME_PREFIX + name, "providerSubscriptions", Counter.FACTORY).getValue();
+        providerSubscriptions = Stats.makeItem(NAME_PREFIX + name, "providerSubscriptions", State.FACTORY).getValue();
         providerSubscriptionRefreshDurationNanos = Stats
-                .makeItem(NAME_PREFIX + name, "providerSubscriptionRefreshDurationNanos", State.FACTORY).getValue();
-        locationSubscriptions = Stats.makeItem(NAME_PREFIX + name, "locationSubscriptions", Counter.FACTORY).getValue();
+                .makeItem(NAME_PREFIX + name, "providerSubscriptionRefreshDurationNanos", Counter.FACTORY).getValue();
+        locationSubscriptions = Stats.makeItem(NAME_PREFIX + name, "locationSubscriptions", State.FACTORY).getValue();
         locationSubscriptionRefreshDurationNanos = Stats
-                .makeItem(NAME_PREFIX + name, "locationSubscriptionRefreshDurationNanos", State.FACTORY).getValue();
+                .makeItem(NAME_PREFIX + name, "locationSubscriptionRefreshDurationNanos", Counter.FACTORY).getValue();
     }
 
     @Override

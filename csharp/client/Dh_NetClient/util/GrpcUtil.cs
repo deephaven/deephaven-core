@@ -1,5 +1,5 @@
 ﻿//
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 
 using Grpc.Core;
@@ -19,13 +19,19 @@ public static class GrpcUtil {
   }
 
   public static GrpcChannelOptions MakeChannelOptions(ClientOptions clientOptions) {
-    var channelOptions = new GrpcChannelOptions();
+    var channelOptions = new GrpcChannelOptions {
+      // Match outgoing size in io.deephaven.extensions.barrage.BarrageMessageWriterImpl
+      MaxReceiveMessageSize = 100 * 1024 * 1024
+    };
 
     if (!clientOptions.UseTls && !clientOptions.TlsRootCerts.IsEmpty()) {
       throw new Exception("GrpcUtil.MakeChannelOptions: UseTls is false but pem provided");
     }
 
-    if (clientOptions.TlsRootCerts.IsEmpty() || clientOptions.OverrideAuthority == null) {
+    if (clientOptions.TlsRootCerts.IsEmpty()) {
+      if (clientOptions.OverrideAuthority != null) {
+        throw new Exception("GrpcUtil.MakeChannelOptions: TlsRootCerts empty but OverrideAuthority exists");
+      }
       return channelOptions;
     }
 
@@ -39,9 +45,11 @@ public static class GrpcUtil {
         return false;
       }
 
-      var subjectName = cert.GetNameInfo(X509NameType.SimpleName, false);
-      if (subjectName != clientOptions.OverrideAuthority) {
-        return false;
+      if (clientOptions.OverrideAuthority != null) {
+        var subjectName = cert.GetNameInfo(X509NameType.SimpleName, false);
+        if (subjectName != clientOptions.OverrideAuthority) {
+          return false;
+        }
       }
 
       var certColl = new X509Certificate2Collection();

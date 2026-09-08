@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharPartitionKernel and run "./gradlew replicateSortKernel" to regenerate
@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.compare.FloatComparisons;
 
 import java.util.stream.IntStream;
 
@@ -239,7 +240,7 @@ public class FloatPartitionKernel {
 
     // region comparison functions
     private static int doComparison(float lhs, float rhs) {
-        return Float.compare(lhs, rhs);
+        return FloatComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

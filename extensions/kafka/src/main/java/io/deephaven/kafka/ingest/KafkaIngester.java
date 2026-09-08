@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.kafka.ingest;
 
-import gnu.trove.map.hash.TIntObjectHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
@@ -53,7 +54,7 @@ public class KafkaIngester {
     private final String logPrefix;
     private final KafkaConsumer<?, ?> kafkaConsumer;
 
-    private final TIntObjectHashMap<KafkaRecordConsumer> streamConsumers = new TIntObjectHashMap<>();
+    private final Int2ObjectMap<KafkaRecordConsumer> streamConsumers = new Int2ObjectOpenHashMap<>();
     private final KeyedIntObjectHashMap<TopicPartition> assignedPartitions =
             new KeyedIntObjectHashMap<>(new KeyedIntObjectKey.BasicStrict<>() {
                 @Override
@@ -409,7 +410,7 @@ public class KafkaIngester {
     private void notifyAllConsumersOnFailure(Exception ex) {
         final KafkaRecordConsumer[] allConsumers;
         synchronized (streamConsumers) {
-            allConsumers = streamConsumers.valueCollection().toArray(KafkaRecordConsumer[]::new);
+            allConsumers = streamConsumers.values().toArray(KafkaRecordConsumer[]::new);
         }
         for (final KafkaRecordConsumer streamConsumer : allConsumers) {
             streamConsumer.acceptFailure(ex);

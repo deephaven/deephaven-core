@@ -6,8 +6,8 @@ using Deephaven.Dh_NetClient;
 namespace Deephaven.Dh_NetClientTests;
 
 public class SortTest {
-  [Fact]
-  public void SortDemoTable() {
+  [Test]
+  public async Task SortDemoTable() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
     var testTable = ctx.TestTable;
 
@@ -23,11 +23,11 @@ public class SortTest {
     expected.AddColumn("Open", [541.2, 685.3, 92.3, 50.5, 83.1]);
     expected.AddColumn("Volume", [(Int64)46123, 48300, 6060842, 87000, 345000]);
 
-    TableComparer.AssertSame(expected, table1);
+    await Assert.That(() => TableComparer.AssertSame(expected, table1)).ThrowsNothing();
   }
 
-  [Fact]
-  public void SortTempTable() {
+  [Test]
+  public async Task SortTempTable() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
 
     var maker = new TableMaker();
@@ -46,6 +46,6 @@ public class SortTest {
     expected.AddColumn("IntValue2", [2, 2, 2, 2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1, 1]);
     expected.AddColumn("IntValue3", [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]);
 
-    TableComparer.AssertSame(expected, sorted);
+    await Assert.That(() => TableComparer.AssertSame(expected, sorted)).ThrowsNothing();
   }
 }

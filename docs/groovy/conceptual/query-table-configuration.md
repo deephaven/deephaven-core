@@ -5,9 +5,9 @@ sidebar_label: Query table configuration
 
 This guide discusses how to control various `QueryTable` features that affect your Deephaven tables' latency and throughput.
 
-# QueryTable
+## `QueryTable`
 
-[`QueryTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) is Deephaven's primary implementation of our [Table API](../tutorials/crash-course/table-ops.md).
+[`QueryTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html) is Deephaven's primary implementation of our [Table API](../getting-started/crash-course/table-ops.md).
 
 The `QueryTable` has the following user-configurable properties:
 
@@ -20,8 +20,13 @@ The `QueryTable` has the following user-configurable properties:
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForWhere`                        | true       |
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForAggregation`                  | true       |
 | [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForJoins`                        | true       |
+| [DataIndex](#dataindex)                                             | `QueryTable.dataIndexForWhereThreshold`                  | 0.25       |
 | [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDataIndex`               | false      |
 | [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownMergedTables`            | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDictionary`              | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownSortedColumn`            | false      |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.dictionaryForWhereThreshold`                 | 0.25       |
 | [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false      |
 | [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`  |
 | [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1         |
@@ -31,6 +36,9 @@ The `QueryTable` has the following user-configurable properties:
 | [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
+| [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
 | [Stateless filters by default](#stateless-by-default)               | `QueryTable.statelessFiltersByDefault`                   | false      |
 | [Stateless select by default](#stateless-by-default)                | `QueryTable.statelessSelectByDefault`                    | false      |
 
@@ -48,7 +56,7 @@ It can be beneficial to disable memoization when benchmarking or testing, as mem
 
 ## Redirection
 
-Deephaven Tables maintain a 63-bit keyspace that maps a logical row in row-key space to its data. Many of Deephaven's column sources use a multi-level data layout to avoid allocating more resources than necessary to fulfill operational requirements. See [selection method properties](/core/groovy/docs/reference/community-questions/selection-method-properties/) for more details.
+Deephaven Tables maintain a 63-bit keyspace that maps a logical row in row-key space to its data. Many of Deephaven's column sources use a multi-level data layout to avoid allocating more resources than necessary to fulfill operational requirements. See [selection method properties](../reference/community-questions/selection-method-properties.md) for more details.
 
 Redirection is a mapping between a parent column source and the resulting column source for a given operation. A sorted column, for example, is redirected from the original to present the rows in the targeted sort order. Redirection may also flatten from a sparse keyspace to a flat and dense keyspace.
 
@@ -68,15 +76,25 @@ A Deephaven [DataIndex](../how-to-guides/data-indexes.md) is an index that can i
 | `QueryTable.useDataIndexForAggregation`    | true          | Enables data index usage in `QueryTable#aggBy`, `QueryTable#selectDistinct`, within [rollup-tables](../reference/table-operations/create/rollup.md) and [tree-tables](../reference/table-operations/create/tree.md) |
 | `QueryTable.useDataIndexForJoins`          | true          | Enables data index usage in [Deephaven Joins](../how-to-guides/joins-timeseries-range.md#which-method-should-you-use)                                                                                               |
 | `QueryTable.disableWherePushdownDataIndex` | false         | Disables data index usage within [where's pushdown predicates](#pushdown-predicates-with-where)                                                                                                                     |
+| `QueryTable.dataIndexForWhereThreshold`    | 0.25 (double) | The maximum size of a data index table, as a fraction of the rows remaining to be filtered, for the index to be used by `where`                                                                                     |
 
 ## Pushdown predicates with `where`
 
 Pushdown predicates refer to the mechanism whereby filtering conditions are applied as early as possible, ideally at the data source (e.g., Parquet or other columnar formats), before loading data into the system. By annotating source reads with predicates, the engine pulls in only the rows that satisfy the conditions, significantly reducing I/O and improving performance.
 
-| Property Name                                            | Default Value | Description                                                                                           |
-| -------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------- |
-| `QueryTable.disableWherePushdownDataIndex`               | false         | Disables the use of [data index](../how-to-guides/data-indexes.md) within where's pushdown predicates |
-| `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false         | Disables the usage of Parquet row group metadata during push-down filtering                           |
+| Property Name                                            | Default Value | Description                                                                                                                                    |
+| -------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `QueryTable.disableWherePushdownDataIndex`               | false         | Disables the use of [data index](../how-to-guides/data-indexes.md) within where's pushdown predicates                                          |
+| `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false         | Disables the usage of Parquet row group metadata during pushdown filtering                                                                     |
+| `QueryTable.disableWherePushdownMergedTables`            | false         | Disables predicate pushdown when filtering merged tables                                                                                       |
+| `QueryTable.disableWherePushdownDictionary`              | false         | Disables dictionary-encoding predicate pushdown operations                                                                                     |
+| `QueryTable.disableWherePushdownSortedColumn`            | false         | Disables the use of sorted column binary search during pushdown filtering                                                                      |
+| `QueryTable.dataIndexForWhereThreshold`                  | 0.25 (double) | The maximum size of a data index table, as a fraction of the rows remaining to be filtered, for the index to be used by `where`                |
+| `QueryTable.dictionaryForWhereThreshold`                 | 0.25 (double) | The dictionary size, as a fraction of the rows remaining to be filtered, that the dictionary must fall below for push-down filtering to use it |
+
+The two `*ForWhereThreshold` properties are cost heuristics rather than on/off switches. Scanning a data index table or a dictionary costs time proportional to its size, so the engine only does so when that structure is small relative to the rows it can eliminate. Rows skipped by this check are not eliminated — they are filtered directly by a later stage. Raise the value toward `1.0` to apply these optimizations to columns with more distinct values, or set it to `0` to effectively disable the technique.
+
+For more details, see [Predicate pushdown filtering](../how-to-guides/predicate-pushdown.md).
 
 ## Parallel processing with `where`
 
@@ -112,19 +130,106 @@ Parallel snapshotting is not enabled until the snapshot size exceeds `QueryTable
 | `QueryTable.enableParallelSnapshot`      | true          | Enables parallelized optimizations for snapshotting operations, such as Barrage subscription requests |
 | `QueryTable.minimumParallelSnapshotRows` | `1L << 20`    | The minimum number of rows required to enable parallel snapshotting operations                        |
 
+## Ungroup operations
+
+The `ungroup` table operation can expand one row into multiple rows. `QueryTable.minimumUngroupBase` controls the initial allocation used by `ungroup`.
+
+| Property Name                   | Default Value | Description                                                                  |
+| ------------------------------- | ------------- | ---------------------------------------------------------------------------- |
+| `QueryTable.minimumUngroupBase` | 10            | The minimum base used for ungroup output row allocation (uses `2^base` rows) |
+
+## `SoftRecycler` configuration
+
+Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources. These column sources must maintain previous values during an update graph cycle. Rather than allocating fresh memory on each cycle, when memory is needed to record previous values it is borrowed from the recycler and returned at the end of the update cycle. These pools can improve performance and reduce garbage collection pressure.
+
+The capacity of these recyclers (how many arrays each recycler holds) can be configured on a per-type basis, allowing you to tune memory usage based on your workload characteristics.
+
+### Array column source recyclers
+
+Array-backed column sources (dense arrays) use SoftRecyclers to manage blocks of data for each primitive type.
+
+| Property Name                     | Default Value           | Description                                                                                           |
+| --------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| `array.recycler.capacity.default` | 1024                    | Default recycler capacity for all array types (used if type-specific property is not set)             |
+| `array.recycler.capacity.boolean` | 1024                    | Recycler capacity for boolean array blocks                                                            |
+| `array.recycler.capacity.byte`    | 1024                    | Recycler capacity for byte array blocks                                                               |
+| `array.recycler.capacity.char`    | 1024                    | Recycler capacity for character array blocks                                                          |
+| `array.recycler.capacity.double`  | 1024                    | Recycler capacity for double array blocks                                                             |
+| `array.recycler.capacity.float`   | 1024                    | Recycler capacity for float array blocks                                                              |
+| `array.recycler.capacity.int`     | 1024                    | Recycler capacity for integer array blocks                                                            |
+| `array.recycler.capacity.long`    | 1024                    | Recycler capacity for long array blocks                                                               |
+| `array.recycler.capacity.short`   | 1024                    | Recycler capacity for short array blocks                                                              |
+| `array.recycler.capacity.object`  | 1024                    | Recycler capacity for object array blocks                                                             |
+| `array.recycler.capacity.inuse`   | 9216 (max of all types) | Recycler capacity for "in use" bitmap blocks (should be at least the maximum capacity of other types) |
+
+### Sparse array column source recyclers
+
+Sparse array column sources use a multi-level hierarchical structure and maintain separate recyclers at each level. Each level can be configured independently to optimize memory usage for your access patterns.
+
+| Property Name                             | Default Value                | Description                                                      |
+| ----------------------------------------- | ---------------------------- | ---------------------------------------------------------------- |
+| `sparsearray.recycler.capacity.default`   | 1024                         | Default recycler capacity for all sparse array types             |
+| `sparsearray.recycler.capacity.boolean`   | 1024                         | Base recycler capacity for boolean sparse arrays                 |
+| `sparsearray.recycler.capacity.byte`      | 1024                         | Base recycler capacity for byte sparse arrays                    |
+| `sparsearray.recycler.capacity.char`      | 1024                         | Base recycler capacity for character sparse arrays               |
+| `sparsearray.recycler.capacity.double`    | 1024                         | Base recycler capacity for double sparse arrays                  |
+| `sparsearray.recycler.capacity.float`     | 1024                         | Base recycler capacity for float sparse arrays                   |
+| `sparsearray.recycler.capacity.int`       | 1024                         | Base recycler capacity for integer sparse arrays                 |
+| `sparsearray.recycler.capacity.long`      | 1024                         | Base recycler capacity for long sparse arrays                    |
+| `sparsearray.recycler.capacity.short`     | 1024                         | Base recycler capacity for short sparse arrays                   |
+| `sparsearray.recycler.capacity.object`    | 1024                         | Base recycler capacity for object sparse arrays                  |
+| `sparsearray.recycler.capacity.boolean.2` | 1024                         | Level 2 recycler capacity for boolean sparse arrays              |
+| `sparsearray.recycler.capacity.byte.2`    | 1024                         | Level 2 recycler capacity for byte sparse arrays                 |
+| `sparsearray.recycler.capacity.char.2`    | 1024                         | Level 2 recycler capacity for character sparse arrays            |
+| `sparsearray.recycler.capacity.double.2`  | 1024                         | Level 2 recycler capacity for double sparse arrays               |
+| `sparsearray.recycler.capacity.float.2`   | 1024                         | Level 2 recycler capacity for float sparse arrays                |
+| `sparsearray.recycler.capacity.int.2`     | 1024                         | Level 2 recycler capacity for integer sparse arrays              |
+| `sparsearray.recycler.capacity.long.2`    | 1024                         | Level 2 recycler capacity for long sparse arrays                 |
+| `sparsearray.recycler.capacity.short.2`   | 1024                         | Level 2 recycler capacity for short sparse arrays                |
+| `sparsearray.recycler.capacity.object.2`  | 1024                         | Level 2 recycler capacity for object sparse arrays               |
+| `sparsearray.recycler.capacity.boolean.1` | 1024                         | Level 1 recycler capacity for boolean sparse arrays              |
+| `sparsearray.recycler.capacity.byte.1`    | 1024                         | Level 1 recycler capacity for byte sparse arrays                 |
+| `sparsearray.recycler.capacity.char.1`    | 1024                         | Level 1 recycler capacity for character sparse arrays            |
+| `sparsearray.recycler.capacity.double.1`  | 1024                         | Level 1 recycler capacity for double sparse arrays               |
+| `sparsearray.recycler.capacity.float.1`   | 1024                         | Level 1 recycler capacity for float sparse arrays                |
+| `sparsearray.recycler.capacity.int.1`     | 1024                         | Level 1 recycler capacity for integer sparse arrays              |
+| `sparsearray.recycler.capacity.long.1`    | 1024                         | Level 1 recycler capacity for long sparse arrays                 |
+| `sparsearray.recycler.capacity.short.1`   | 1024                         | Level 1 recycler capacity for short sparse arrays                |
+| `sparsearray.recycler.capacity.object.1`  | 1024                         | Level 1 recycler capacity for object sparse arrays               |
+| `sparsearray.recycler.capacity.boolean.0` | 1024                         | Level 0 (top) recycler capacity for boolean sparse arrays        |
+| `sparsearray.recycler.capacity.byte.0`    | 1024                         | Level 0 (top) recycler capacity for byte sparse arrays           |
+| `sparsearray.recycler.capacity.char.0`    | 1024                         | Level 0 (top) recycler capacity for character sparse arrays      |
+| `sparsearray.recycler.capacity.double.0`  | 1024                         | Level 0 (top) recycler capacity for double sparse arrays         |
+| `sparsearray.recycler.capacity.float.0`   | 1024                         | Level 0 (top) recycler capacity for float sparse arrays          |
+| `sparsearray.recycler.capacity.int.0`     | 1024                         | Level 0 (top) recycler capacity for integer sparse arrays        |
+| `sparsearray.recycler.capacity.long.0`    | 1024                         | Level 0 (top) recycler capacity for long sparse arrays           |
+| `sparsearray.recycler.capacity.short.0`   | 1024                         | Level 0 (top) recycler capacity for short sparse arrays          |
+| `sparsearray.recycler.capacity.object.0`  | 1024                         | Level 0 (top) recycler capacity for object sparse arrays         |
+| `sparsearray.recycler.capacity.inuse`     | 9216 (sum of all base types) | Recycler capacity for "in use" bitmap blocks at the lowest level |
+| `sparsearray.recycler.capacity.inuse.2`   | 9216 (max of level 2)        | Recycler capacity for "in use" bitmap blocks at level 2          |
+| `sparsearray.recycler.capacity.inuse.1`   | 9216 (max of level 1)        | Recycler capacity for "in use" bitmap blocks at level 1          |
+| `sparsearray.recycler.capacity.inuse.0`   | 9216 (max of level 0)        | Recycler capacity for "in use" bitmap blocks at level 0 (top)    |
+
+#### Tuning `SoftRecycler` capacity
+
+The recycler capacity determines how many array blocks are kept in memory for potential reuse. Increasing capacity can improve performance if your workload uses more blocks within an update cycle than the recycler can hold, at the cost of higher baseline memory usage. Decreasing capacity reduces baseline memory requirements, but may increase garbage collection.
+
+- **High throughput environments**: Consider increasing capacities to reduce allocation/deallocation overhead.
+- **Type-specific tuning**: If certain types are used more frequently, you can increase their capacity while reducing others.
+
 ## Stateless by default
 
-In a future release of Deephaven, the flags in this category will change from a default of false to a default of true. These flags enable the engine to assume more often that a given Filter or Selectable can be executed in parallel (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where) interface).
+These flags enable the engine to assume more often that a given Filter or Selectable can be executed in parallel (unless the Filter or Selectable is [marked serial or has barriers](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where) interface).
 
 | Property Name                          | Default Value | Description                                                                                             |
 | -------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------- |
-| `QueryTable.statelessFiltersByDefault` | false         | Enables the engine to assume that filters are stateless by default, allowing for more optimizations     |
-| `QueryTable.statelessSelectByDefault`  | false         | Enables the engine to assume that Selectables are stateless by default, allowing for more optimizations |
+| `QueryTable.statelessFiltersByDefault` | true          | Enables the engine to assume that filters are stateless by default, allowing for more optimizations     |
+| `QueryTable.statelessSelectByDefault`  | true          | Enables the engine to assume that Selectables are stateless by default, allowing for more optimizations |
 
 ## Related documentation
 
 - [QueryTable JavaDocs](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html)
-- [Table API](../tutorials/crash-course/table-ops.md)
+- [Table API](../getting-started/crash-course/table-ops.md)
 - [Incremental update model](./table-update-model.md)
 - [Query Memoization](../reference/community-questions/query-memoization.md)
 - [Data indexes](../how-to-guides/data-indexes.md)

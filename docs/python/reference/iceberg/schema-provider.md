@@ -83,4 +83,4 @@ writer_options = iceberg.TableParquetWriterOptions(
 - [`InferenceResolver`](./inference-resolver.md)
 - [`UnboundResolver`](./unbound-resolver.md)
 - [`TableParquetWriterOptions`](./table-parquet-writer-options.md)
-- [Pydoc](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.SchemaProvider)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.SchemaProvider)

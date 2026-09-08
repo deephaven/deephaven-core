@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -40,7 +40,7 @@ import java.util.stream.LongStream;
  * Each time the set table ticks, the entire where filter is recalculated.
  */
 public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
-        implements NotificationQueue.Dependency, HasParentPerformanceIds {
+        implements NotificationQueue.Dependency, HasParentPerformanceIds, NoPredicatePushdown {
 
     private static final int CHUNK_SIZE = 1 << 16;
 
@@ -85,30 +85,30 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         this.inclusion = inclusion;
 
         // Ensure that only distinct values are passed to the setKernel
-        final QueryTable distinctSetTable;
+        final QueryTable setTableToUse;
         final boolean setRefreshing = setTable.isRefreshing();
 
-        final String[] rightColumnNames = MatchPair.getRightColumns(sourceToSetColumnNamePairs);
-        final DataIndex rightIndex = DataIndexer.getDataIndex(setTable, rightColumnNames);
-        if (rightIndex != null) {
+        final String[] setColumnNames = MatchPair.getRightColumns(sourceToSetColumnNamePairs);
+        final DataIndex setIndex = DataIndexer.getDataIndex(setTable, setColumnNames);
+        if (setIndex != null) {
             // We have a distinct index table, let's use it.
-            distinctSetTable = (QueryTable) rightIndex.table();
+            setTableToUse = (QueryTable) setIndex.table();
         } else if (setRefreshing) {
-            distinctSetTable = (QueryTable) setTable.selectDistinct(rightColumnNames);
+            setTableToUse = (QueryTable) setTable.selectDistinct(setColumnNames);
         } else {
-            final TableDefinition rightDef = setTable.getDefinition();
+            final TableDefinition setDef = setTable.getDefinition();
             final boolean allPartitioning =
-                    Arrays.stream(rightColumnNames).allMatch(cn -> rightDef.getColumn(cn).isPartitioning());
+                    Arrays.stream(setColumnNames).allMatch(cn -> setDef.getColumn(cn).isPartitioning());
             if (allPartitioning) {
-                distinctSetTable = (QueryTable) setTable.selectDistinct(rightColumnNames);
+                setTableToUse = (QueryTable) setTable.selectDistinct(setColumnNames);
             } else {
-                distinctSetTable = (QueryTable) setTable.coalesce();
+                setTableToUse = (QueryTable) setTable.coalesce();
             }
         }
 
         // Use reinterpreted column sources for the set table tuple source.
         final ColumnSource<?>[] setColumns = Arrays.stream(this.sourceToSetColumnNamePairs)
-                .map(mp -> distinctSetTable.getColumnSource(mp.rightColumn()))
+                .map(mp -> setTableToUse.getColumnSource(mp.rightColumn()))
                 .map(ReinterpretUtils::maybeConvertToPrimitive)
                 .toArray(ColumnSource[]::new);
         setKeyTypes = Arrays.stream(setColumns).map(ColumnSource::getType).toArray(Class[]::new);
@@ -117,16 +117,16 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         if (!setRefreshing) {
             this.setTable = null;
             setUpdateListener = null;
-            setKernel = createKernel(distinctSetTable, setKeySource, inclusion, false);
+            setKernel = createKernel(setTableToUse, setKeySource, inclusion, false);
             return;
         }
 
-        this.setTable = distinctSetTable;
+        this.setTable = setTableToUse;
 
         final Mutable<SetInclusionKernel> resultKernel = new MutableObject<>();
         final Mutable<InstrumentedTableUpdateListener> resultListener = new MutableObject<>();
 
-        snapshotAndCreate(distinctSetTable, setKeySource, inclusion, resultKernel, resultListener);
+        snapshotAndCreate(setTableToUse, setKeySource, inclusion, resultKernel, resultListener);
 
         this.setKernel = resultKernel.get();
         this.setUpdateListener = resultListener.get();
@@ -156,29 +156,29 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     /**
-     * Create and populate the kernel and install the update listener on the same edge of the cycle.
+     * Create and populate the kernel and install the update listener on the same step of the cycle.
      */
     private void snapshotAndCreate(
-            @NotNull final QueryTable distinctSetTable,
+            @NotNull final QueryTable setTable,
             @NotNull final TupleSource<?> setKeySource,
             final boolean inclusion,
             final Mutable<SetInclusionKernel> resultKernel,
             final Mutable<InstrumentedTableUpdateListener> resultListener) {
 
-        ConstructSnapshot.callDataSnapshotFunction("DynamicWhereFilter-snapshotAndCreate",
-                ConstructSnapshot.makeSnapshotControl(false, true, distinctSetTable),
+        ConstructSnapshot.callDataSnapshotFunction("DynamicWhereFilter-createKernel",
+                ConstructSnapshot.makeSnapshotControl(true, true, setTable),
                 (usePrev, beforeClockUnused) -> {
                     final SetInclusionKernel localKernel =
-                            createKernel(distinctSetTable, setKeySource, inclusion, usePrev);
+                            createKernel(setTable, setKeySource, inclusion, usePrev);
 
                     final String[] setColumnNames = Arrays.stream(this.sourceToSetColumnNamePairs)
                             .map(MatchPair::rightColumn).toArray(String[]::new);
-                    final ModifiedColumnSet setColumnsMCS = distinctSetTable.newModifiedColumnSet(setColumnNames);
+                    final ModifiedColumnSet setColumnsMCS = setTable.newModifiedColumnSet(setColumnNames);
 
                     final String humanReadablePrefix =
                             "DynamicWhereFilter(" + Arrays.toString(sourceToSetColumnNamePairs) + ")";
                     final InstrumentedTableUpdateListener localListener = new InstrumentedTableUpdateListenerAdapter(
-                            humanReadablePrefix, distinctSetTable, false) {
+                            humanReadablePrefix, setTable, false) {
                         @Override
                         public void onUpdate(final TableUpdate upstream) {
                             final boolean hasAdds = upstream.added().isNonempty();
@@ -260,7 +260,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                             }
                         }
                     };
-                    distinctSetTable.addUpdateListener(localListener);
+                    setTable.addUpdateListener(localListener);
                     manage(localListener);
 
                     resultKernel.setValue(localKernel);
@@ -331,12 +331,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         }
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * If {@code sourceTable#isRefreshing()}, this method must only be invoked when it's
-     * {@link UpdateGraph#checkInitiateSerialTableOperation() safe} to initialize serial table operations.
-     */
     @Override
     public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
         if (sourceDataIndex != null) {
@@ -437,7 +431,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private void computeTupleIndexMaps() {
         assert sourceDataIndex != null;
 
-        if (sourceDataIndex.keyColumns().length == 1) {
+        if (sourceDataIndex.keyColumns().length == 1 && sourceKeyColumns.length == 1) {
             // Trivial mapping, no need to compute anything.
             return;
         }
@@ -538,24 +532,20 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             @NotNull final Table table,
             final boolean usePrev) {
         if (sourceDataIndex != null) {
-            // Does our index contain every key column?
+            // Use previous size when filtering with previous values, so the heuristic is consistent with the data
+            // we are about to read.
             final long indexTableSize = usePrev
                     ? sourceDataIndex.table().getRowSet().sizePrev()
                     : sourceDataIndex.table().getRowSet().size();
-
+            final long threshold = (long) (indexTableSize / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+            if (selection.size() <= threshold) {
+                return filterLinear(selection, inclusion, usePrev);
+            }
+            // Does our index contain every key column?
             if (sourceDataIndex.keyColumnNames().size() == sourceKeyColumns.length) {
-                // Even if we have an index, we may be better off with a linear search.
-                if (selection.size() > (indexTableSize * 2L)) {
-                    return filterFullIndex(selection, usePrev);
-                } else {
-                    return filterLinear(selection, inclusion, usePrev);
-                }
+                return filterFullIndex(selection, usePrev);
             }
-
-            // We have a partial index, should we use it?
-            if (selection.size() > (indexTableSize * 4L)) {
-                return filterPartialIndex(selection, usePrev);
-            }
+            return filterPartialIndex(selection, usePrev);
         }
         return filterLinear(selection, inclusion, usePrev);
     }

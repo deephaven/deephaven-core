@@ -8,10 +8,11 @@ description 'Reflective Replicators: Source code generators and replicators with
 dependencies {
     implementation project(':replication-util')
     implementation project(':engine-table')
-    implementation libs.squareup.javapoet
-    implementation libs.trove
+    implementation libs.javapoet
+    implementation libs.dsi.fastutil
     implementation libs.commons.io
     implementation libs.commons.lang3
+    implementation libs.javaparser.core
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':configs')
@@ -22,6 +23,7 @@ dependencies {
 
     // needed at compile + runtime due to our use of code-generation at runtime
     implementation libs.jetbrains.annotations
+    implementation project(':util-annotations')
 }
 
 task replicateAll {
@@ -30,4 +32,8 @@ task replicateAll {
 
     dependsOn Tasks.registerMainExecTask(project, 'generateArrowColumnSources', 'io.deephaven.replicators.GenerateArrowColumnSources')
     dependsOn Tasks.registerMainExecTask(project, 'generateArrowColumnTestSources', 'io.deephaven.replicators.GenerateArrowColumnSourceTests')
+
+    dependsOn Tasks.registerMainExecTask(project, 'generateQueryLanguageFunctions', 'io.deephaven.replicators.GenerateQueryLanguageFunctions')
+
+    dependsOn Tasks.registerMainExecTask(project, 'generateTimsortKernels', 'io.deephaven.replicators.GenerateTimsortKernels')
 }

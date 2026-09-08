@@ -1,11 +1,14 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.FailureListener;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -24,11 +27,24 @@ import java.util.concurrent.CountDownLatch;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
 import static io.deephaven.engine.util.TableTools.stringCol;
+import static org.junit.Assert.assertThrows;
 
 public class TestKeyedArrayBackedInputTable {
 
     @Rule
     public final EngineCleanup liveTableTestCase = new EngineCleanup();
+
+    @Test
+    public void testInputTablesValidateColumnNames() {
+        final TableDefinition badDefinition = TableDefinition.of(
+                ColumnDefinition.ofString("Name"),
+                ColumnDefinition.ofInt("Asdf:"));
+
+        assertThrows(NameValidator.InvalidNameException.class,
+                () -> AppendOnlyArrayBackedInputTable.make(badDefinition));
+        assertThrows(NameValidator.InvalidNameException.class,
+                () -> KeyedArrayBackedInputTable.make(badDefinition, "Name"));
+    }
 
     @Test
     public void testSimple() throws Exception {

@@ -18,7 +18,7 @@ For a basic setup, there are three required files:
 
 - A SQL file to create a database of username/password combinations.
 - A Dockerfile that will build the Deephaven image and add the required JAR to the Deephaven classpath.
-- A docker-compose file that builds the SQL and Deephaven services.
+- A Docker Compose file that builds the SQL and Deephaven services.
 
 More advanced setups will build off this basic configuration.
 
@@ -92,3 +92,10 @@ services:
 ### Start Deephaven
 
 Start Deephaven with `docker compose up --build`, head to `https://localhost:10000/ide`, and enter the username/password combo to start writing queries.
+
+## Related documentation
+
+- [Pre-shared key authentication](./auth-psk.md)
+- [Anonymous authentication](./auth-anon.md)
+- [Keycloak authentication](./auth-keycloak.md)
+- [mTLS authentication](./auth-mtls.md)

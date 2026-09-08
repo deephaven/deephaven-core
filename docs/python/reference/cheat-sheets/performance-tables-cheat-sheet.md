@@ -75,11 +75,11 @@ Here are server-side flags that change the behavior of barrage metrics.
 You can access these tables as follows:
 
 ```python order=subs,snaps
-import jpy
+from deephaven.perfmon import (
+    barrage_subscription_performance_log,
+    barrage_snapshot_performance_log,
+)
 
-bpl = jpy.get_type(
-    "io.deephaven.extensions.barrage.BarragePerformanceLog"
-).getInstance()
-subs = bpl.getSubscriptionTable()
-snaps = bpl.getSnapshotTable()
+subs = barrage_subscription_performance_log()
+snaps = barrage_snapshot_performance_log()
 ```

@@ -1,10 +1,11 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-import jpy
 import pathlib
 
+import jpy
+from deephaven.jcompat import j_json_value
 from deephaven.plugin.js import JsPlugin
 
 _JJsPlugin = jpy.get_type("io.deephaven.plugin.js.JsPlugin")
@@ -26,4 +27,10 @@ def to_j_js_plugin(js_plugin: JsPlugin) -> jpy.JType:
     builder.version(js_plugin.version)
     builder.main(main_path)
     builder.path(j_path)
+    # "loader" is not required field on the deephaven.plugin.js.JsPlugin interface, so we duck-type check for it
+    # here to allow plugins to opt-in to providing loader configuration without requiring a new release of the
+    # deephaven-plugin package.
+    loader = getattr(js_plugin, "loader", None)
+    if loader is not None:
+        builder.loader(j_json_value(loader))
     return builder.build()

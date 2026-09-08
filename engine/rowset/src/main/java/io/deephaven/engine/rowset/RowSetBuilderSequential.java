@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset;
 
@@ -29,6 +29,13 @@ public interface RowSetBuilderSequential extends LongRangeConsumer {
      */
     default void setDomain(long minRowKey, long maxRowKey) {}
 
+    /**
+     * Build the {@link WritableRowSet} from the accumulated row keys. Builders are single use: at most one build call
+     * is permitted, and subsequent calls throw {@link IllegalStateException}. The effect of providing further row keys
+     * after building is undefined.
+     *
+     * @return The built RowSet
+     */
     WritableRowSet build();
 
     void appendKey(long rowKey);

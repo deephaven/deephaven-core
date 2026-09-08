@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSetInclusionKernel and run "./gradlew replicateSetInclusionKernel" to regenerate
@@ -7,30 +7,30 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import gnu.trove.iterator.TIntIterator;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.type.TypeUtils;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
+import it.unimi.dsi.fastutil.ints.IntIterator;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
 public class IntSetInclusionKernel implements SetInclusionKernel {
 
-    private final TIntSet liveValues;
+    private final IntSet liveValues;
     private final boolean inclusion;
 
     IntSetInclusionKernel(@NotNull final Collection<Object> liveValues, final boolean inclusion) {
-        this.liveValues = new TIntHashSet(liveValues.size());
+        this.liveValues = new IntOpenHashSet(liveValues.size());
         liveValues.forEach(x -> this.liveValues.add(TypeUtils.unbox((Integer) x)));
         this.inclusion = inclusion;
     }
 
     IntSetInclusionKernel(final boolean inclusion) {
-        this.liveValues = new TIntHashSet();
+        this.liveValues = new IntOpenHashSet();
         this.inclusion = inclusion;
     }
 
@@ -51,9 +51,9 @@ public class IntSetInclusionKernel implements SetInclusionKernel {
 
     private static final class Iterator implements java.util.Iterator<Object> {
 
-        private final TIntIterator inner;
+        private final IntIterator inner;
 
-        private Iterator(@NotNull final TIntIterator inner) {
+        private Iterator(@NotNull final IntIterator inner) {
             this.inner = inner;
         }
 
@@ -64,7 +64,7 @@ public class IntSetInclusionKernel implements SetInclusionKernel {
 
         @Override
         public Integer next() {
-            return TypeUtils.box(inner.next());
+            return TypeUtils.box(inner.nextInt());
         }
     }
 

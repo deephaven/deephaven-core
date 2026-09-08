@@ -5,7 +5,7 @@ sidebar_label: mTLS
 
 This guide will show you how to configure Deephaven to use mTLS to authenticate users trying to gain access.
 
-Mutual Transport Layer Security (mTLS) is an authentication method that ensures data security through both parties authenticating each other simultaneously. With mTLS, authentication happens through certificates, where a certificate authority determines what certificates are valid, and which are not. Once both parties are verified, the authentication is complete.
+Mutual Transport Layer Security (mTLS) is an authentication method that ensures data security through both parties authenticating each other simultaneously. With mTLS, authentication happens through certificates, where a certificate authority determines which certificates are valid, and which are not. Once both parties are verified, the authentication is complete.
 
 Configuring Deephaven to use mTLS to guard against unauthorized access requires a custom setup with a few extra steps.
 
@@ -50,7 +50,7 @@ There's a lot of text in the `environment`. Here's what it all means:
 - `-Dssl.trust.type=certs`: Certificates are used.
 - `-Dssl.trust.path=/data/certs/ca.crt`: The certificate authority is found at `/data/certs/ca.crt`.
 - `-Dssl.clientAuthentication=NEEDED`: Any client trying to connect **must** use mTLS with a certificate to do so.
-- `-Dhttp.port=8443`: The process happens over port 8443.
+- `-Dhttp.port=8443`: The authentication process happens over port 8443.
 
 Keeping certificates and keys in `/data/certs` isn't the most secure storage method. For more information on best security practices with Docker, see [How to use secrets in Docker Compose](https://docs.docker.com/compose/use-secrets/).
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -44,9 +44,9 @@ public class QueryTableSelectBarrierTest {
 
     @Test
     public void testPropertyDefaults() {
-        assertFalse(QueryTable.STATELESS_FILTERS_BY_DEFAULT);
-        assertFalse(QueryTable.STATELESS_SELECT_BY_DEFAULT);
-        assertTrue(QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS);
+        assertTrue(QueryTable.STATELESS_FILTERS_BY_DEFAULT);
+        assertTrue(QueryTable.STATELESS_SELECT_BY_DEFAULT);
+        assertFalse(QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS);
     }
 
     @Test

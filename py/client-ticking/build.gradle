@@ -37,6 +37,8 @@ def pyClientTickingWheel = { String pythonTag -> Docker.registerDockerTask(proje
     copyIn {
         from(layout.projectDirectory) {
             include 'setup.py'
+            include 'pyproject.toml'
+            include 'requirements-dev.txt'
             include 'README.md'
             include 'src/**/py.typed'
             include 'src/**/*.py'
@@ -54,13 +56,33 @@ def pyClientTickingWheel = { String pythonTag -> Docker.registerDockerTask(proje
                         /out \\
                         '${prefix}/log' \\
                         '${prefix}/src/py-client-ticking/src' \\
-                        '${prefix}/src/py-client-ticking/in-wheels'; \\
-                   /opt/python/${pythonTag}/bin/pip install cython setuptools
+                        '${prefix}/src/py-client-ticking/in-wheels'
                    """)
         copyFile('setup.py', "${prefix}/src/py-client-ticking")
+        copyFile('pyproject.toml', "${prefix}/src/py-client-ticking")
+        copyFile('requirements-dev.txt', "${prefix}/src/py-client-ticking")
         copyFile('README.md', "${prefix}/src/py-client-ticking")
         copyFile('src/', "${prefix}/src/py-client-ticking/src/")
         copyFile('pyClientTickingWheel/entrypoint.sh', '/entrypoint.sh')
+        if (pythonTag.startsWith('cp39')) {
+            runCommand("""cd "${prefix}/src/py-client-ticking"; \\
+                       /opt/python/${pythonTag}/bin/pip install --root-user-action ignore --upgrade pip; \\
+                       /opt/python/${pythonTag}/bin/pip install --root-user-action ignore --only-binary :all: -r requirements-dev.txt; \\
+                        /opt/python/${pythonTag}/bin/pip install --root-user-action ignore types-setuptools; \\
+                       /opt/python/${pythonTag}/bin/mypy --install-types --non-interactive --config-file pyproject.toml .; \\
+                       rm -rf .mypy_cache;\\
+                       /opt/python/${pythonTag}/bin/ruff check; \\
+                       /opt/python/${pythonTag}/bin/ruff format --check; \\
+                       /opt/python/${pythonTag}/bin/pip freeze | xargs /opt/python/${pythonTag}/bin/pip uninstall -y; \\
+                       /opt/python/${pythonTag}/bin/pip install --root-user-action ignore cython setuptools packaging wheel;
+                       """)
+        } else {
+            runCommand("""cd "${prefix}/src/py-client-ticking"; \\
+                       /opt/python/${pythonTag}/bin/pip install --upgrade pip; \\
+                       /opt/python/${pythonTag}/bin/pip install cython setuptools
+                       """)
+        }
+
         environmentVariable([
                 PREFIX: prefix,
                 PYTHON_TAG: pythonTag,
@@ -76,7 +98,7 @@ def getCPythonTag = { String pythonVersion ->
     return "cp${noPeriodVersion}-cp${noPeriodVersion}".toString()
 }
 
-def pythonVersions = [ '3.8', '3.9', '3.10', '3.11', '3.12' ]
+def pythonVersions = [ '3.9', '3.10', '3.11', '3.12', '3.13' ]
 
 Map<String, TaskProvider<? extends Task>> cpythonBuilds = pythonVersions.collectEntries { pythonVersion ->
     def cpythonTag = getCPythonTag(pythonVersion)

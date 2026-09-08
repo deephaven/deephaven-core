@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.iceberg.util;
 
@@ -7,6 +7,7 @@ import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.transforms.Transforms;
@@ -45,8 +46,14 @@ public abstract class InferenceInstructions {
     /**
      * The schema to use for {@link Resolver#infer(InferenceInstructions) inference}. The resulting
      * {@link Resolver#definition() definition} will have columns in the same order as defined by this {@link Schema}.
+     * Equality for this Schema is defined by {@link SchemaProvider#sameSchemaAndId(Schema, Schema)}.
      */
-    public abstract Schema schema();
+    public final Schema schema() {
+        return directSchema().schema();
+    }
+
+    // Implementation detail to provide a better equality check
+    abstract SchemaProvider.DirectSchema directSchema();
 
     /**
      * The partition spec to use for {@link Resolver#infer(InferenceInstructions) inference}. The
@@ -128,7 +135,12 @@ public abstract class InferenceInstructions {
     }
 
     public interface Builder {
-        Builder schema(Schema schema);
+        default Builder schema(Schema schema) {
+            return directSchema(SchemaProvider.fromSchema(schema));
+        }
+
+        @InternalUseOnly
+        Builder directSchema(SchemaProvider.DirectSchema schema);
 
         Builder spec(PartitionSpec spec);
 

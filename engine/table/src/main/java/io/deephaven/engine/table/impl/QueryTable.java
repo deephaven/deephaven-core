@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -22,7 +22,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.TableInitializationException;
-import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
@@ -31,9 +30,7 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
-import io.deephaven.engine.table.impl.filter.ExtractBarriers;
-import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
-import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
+import io.deephaven.engine.table.impl.filter.*;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -60,8 +57,6 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.IterableUtils;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
@@ -78,7 +73,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -207,6 +201,14 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForWhere", true);
 
     /**
+     * Before using a data index for a where filter, ensure that the index table size is at most this fraction of the
+     * size of the rows remaining to be filtered. If the fraction is greater than this threshold, then the engine will
+     * ignore the index table and filter the rows directly.
+     */
+    public static double DATA_INDEX_FOR_WHERE_THRESHOLD =
+            Configuration.getInstance().getDoubleWithDefault("QueryTable.dataIndexForWhereThreshold", 0.25);
+
+    /**
      * If the Configuration property "QueryTable.useDataIndexForAggregation" is set to true (default), then permit
      * aggregation to use a data index, when applicable. If false, data indexes are not used even if present.
      */
@@ -220,6 +222,18 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static boolean USE_DATA_INDEX_FOR_JOINS =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForJoins", true);
 
+    /**
+     * If the Configuration property "QueryTable.useIndirectSortKernels" is set to true (default), then sorts of Object
+     * columns and sorts of multiple columns use generated indirect timsort kernels that compare each column in turn
+     * while permuting only a parallel chunk of positions (the permuted row keys are assembled in a single linear pass
+     * at the end). The single-column kernels are pregenerated; every multi-column shape — any mix of column types, sort
+     * directions, and per-column comparators — is compiled on demand and cached, so multi-column sorts never fall back
+     * to sorting one column at a time. Single-column sorts of primitive types always use the existing direct kernels,
+     * which are faster for them. If false, sorting always uses the existing one-column-at-a-time kernels with run
+     * finding in between.
+     */
+    public static boolean USE_INDIRECT_SORT_KERNELS =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.useIndirectSortKernels", true);
 
     /**
      * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
@@ -259,6 +273,13 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getIntegerWithDefault("QueryTable.parallelWhereSegments", -1);
 
     /**
+     * Disable the usage of push-down filtering on a merged table.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_MERGED_TABLES =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownMergedTables",
+                    false);
+
+    /**
      * Disable the usage of parquet row group metadata during push-down filtering.
      */
     public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA =
@@ -274,8 +295,25 @@ public class QueryTable extends BaseTable<QueryTable> {
     /**
      * Disable the usage of parquet row group dictionaries during push-down filtering.
      */
-    public static boolean DISABLE_WHERE_PUSHDOWN_PARQUET_DICTIONARY =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownParquetDictionary",
+    public static boolean DISABLE_WHERE_PUSHDOWN_DICTIONARY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownDictionary",
+                    false);
+
+    /**
+     * Before using a dictionary for a where filter, ensure that the dictionary holds fewer entries than this fraction
+     * of the size of the rows remaining to be filtered. If the dictionary is at least that large, then the engine will
+     * ignore the dictionary and filter the rows directly. A dictionary sitting exactly on the fraction is therefore not
+     * used: at the default of 0.25, a 25-entry dictionary over 100 remaining rows is skipped, while a 24-entry one is
+     * read.
+     */
+    public static double DICTIONARY_FOR_WHERE_THRESHOLD =
+            Configuration.getInstance().getDoubleWithDefault("QueryTable.dictionaryForWhereThreshold", 0.25);
+
+    /**
+     * Disable the usage of sorted column regions during push-down filtering.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownSortedColumn",
                     false);
 
     /**
@@ -289,6 +327,22 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     public static long MINIMUM_PARALLEL_SELECT_ROWS =
             Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSelectRows", 1L << 22);
+
+    /**
+     * Whether the engine may parallelize sorts at all; when false every sort is processed entirely on the calling
+     * thread, regardless of {@link #MINIMUM_PARALLEL_SORT_ROWS}.
+     */
+    public static boolean PARALLEL_SORT =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.parallelSort", true);
+
+    /**
+     * The minimum number of rows in a sort for which the engine may parallelize work: filling the values chunks that
+     * feed the sort kernels, sorting segments of the positions with pairwise merges, and gathering the permuted row
+     * keys. Below this, dividing the work into segments costs more than the work itself, so sorts of fewer rows — and
+     * all sorts when the value is zero or negative — are processed entirely on the calling thread.
+     */
+    public static long MINIMUM_PARALLEL_SORT_ROWS =
+            Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSortRows", 1L << 20);
 
     /**
      * For unit tests, we do want to force the column parallel select and update at times.
@@ -314,7 +368,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * the data source when possible, like in case of parquet files.
      */
     public static boolean STATELESS_FILTERS_BY_DEFAULT =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", false);
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessFiltersByDefault", true);
 
     /**
      * If set to true, then the default behavior of formulas is to be stateless. Stateless formulas are allowed to be
@@ -323,7 +377,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      * stateless, use {@link SelectColumn#ofStateless(Selectable)}.
      */
     public static boolean STATELESS_SELECT_BY_DEFAULT =
-            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessSelectByDefault", false);
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.statelessSelectByDefault", true);
 
     /**
      * If set to true, then stateful SelectColumns form implicit barriers. If set to false, then StatefulSelectColumns
@@ -644,14 +698,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final Table partitioned = aggBy(Partition.of(CONSTITUENT, !dropKeys), columns);
                 final Set<String> keyColumnNamesSet =
                         Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
+                final Set<String> consistentKeyColumns;
                 final TableDefinition constituentDefinition;
                 if (dropKeys) {
                     constituentDefinition = TableDefinition.of(definition.getColumnStream()
                             .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
+                    consistentKeyColumns = Collections.emptySet();
                 } else {
                     constituentDefinition = definition;
+                    consistentKeyColumns = keyColumnNamesSet;
                 }
-                return new PartitionedTableImpl(partitioned, keyColumnNamesSet, true, CONSTITUENT.name(),
+                return new PartitionedTableImpl(partitioned, keyColumnNamesSet, consistentKeyColumns, true,
+                        CONSTITUENT.name(),
                         constituentDefinition, isRefreshing(), false);
             });
         }
@@ -678,13 +736,17 @@ public class QueryTable extends BaseTable<QueryTable> {
             final Set<String> keyColumnNamesSet =
                     Arrays.stream(keyColumnNames).collect(Collectors.toCollection(LinkedHashSet::new));
             final TableDefinition constituentDefinition;
+            final Collection<String> consistentKeyColumns;
             if (partition.includeGroupByColumns()) {
                 constituentDefinition = definition;
+                consistentKeyColumns = keyColumnNamesSet;
             } else {
                 constituentDefinition = TableDefinition.of(definition.getColumnStream()
                         .filter(cd -> !keyColumnNamesSet.contains(cd.getName())).toArray(ColumnDefinition[]::new));
+                consistentKeyColumns = Collections.emptySet();
             }
-            return new PartitionedTableImpl(aggregated, keyColumnNamesSet, true, partition.column().name(),
+            return new PartitionedTableImpl(aggregated, keyColumnNamesSet, consistentKeyColumns, true,
+                    partition.column().name(),
                     constituentDefinition, isRefreshing(), false);
         }
     }
@@ -1056,6 +1118,11 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         @Override
+        public String toString() {
+            return "FilteredTable(" + whereListener + ")";
+        }
+
+        @Override
         public void requestRecompute() {
             refilterMatchedRequested = refilterUnmatchedRequested = true;
             Require.neqNull(whereListener, "whereListener").notifyChanges();
@@ -1288,11 +1355,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
-    private void initializeAndPrioritizeFilters(@NotNull final WhereFilter... filters) {
-        final DataIndexer dataIndexer = USE_DATA_INDEX_FOR_WHERE ? DataIndexer.existingOf(rowSet) : null;
-        final int numFilters = filters.length;
-        final BitSet priorityFilterIndexes = new BitSet(numFilters);
-
+    private void initializeFilters(@NotNull final WhereFilter[] filters) {
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
 
         // Initialize our filters immediately so we can examine the columns they use. Note that filter
@@ -1319,56 +1382,21 @@ public class QueryTable extends BaseTable<QueryTable> {
             }
         }
         compilationProcessor.compile();
+    }
 
-        final Set<Object> priorityBarriers = new HashSet<>();
-        for (int fi = 0; fi < numFilters; ++fi) {
-            final WhereFilter filter = filters[fi];
-
-            if (!filter.permitParallelization()) {
-                // serial filters are guaranteed to see the expected rowset as if all previous filters were applied
-                // thus, we're not allowed to reorder any remaining filters
-                break;
-            }
-
-            if (!priorityBarriers.containsAll(ExtractRespectedBarriers.of(filter))) {
-                // this filter is not permitted to be reordered as it depends on a filter that has not been prioritized
-                continue;
-            }
-
-            // Simple filters against indexed columns get priority
-            if (dataIndexer != null
-                    && !(filter instanceof ReindexingFilter)
-                    && filter.isSimpleFilter()
-                    && DataIndexer.hasDataIndex(this, filter.getColumns().toArray(String[]::new))) {
-                priorityFilterIndexes.set(fi);
-                priorityBarriers.addAll(ExtractBarriers.of(filter));
-            }
+    /**
+     * Create a copy of the array of filters, introducing the declared barriers into the first filter if any are
+     * provided.
+     */
+    private WhereFilter[] cloneFiltersForReindexing(final WhereFilter[] filters,
+            final Collection<Object> declaredBarriers) {
+        if (filters.length == 0 || declaredBarriers.isEmpty()) {
+            return filters;
         }
-
-        if (priorityFilterIndexes.isEmpty()) {
-            return;
-        }
-
-        // Copy the priority filters to a temporary array
-        final int numPriorityFilters = priorityFilterIndexes.cardinality();
-        final WhereFilter[] priorityFilters = new WhereFilter[numPriorityFilters];
-        // @formatter:off
-        for (int pfi = 0, fi = priorityFilterIndexes.nextSetBit(0);
-             fi >= 0;
-             fi = priorityFilterIndexes.nextSetBit(fi + 1)) {
-            // @formatter:on
-            priorityFilters[pfi++] = filters[fi];
-        }
-        // Move the regular (non-priority) filters to the back of the array
-        // @formatter:off
-        for (int rfi = numFilters - 1, fi = priorityFilterIndexes.previousClearBit(numFilters - 1);
-             fi >= 0;
-             fi = priorityFilterIndexes.previousClearBit(fi - 1)) {
-            // @formatter:on
-            filters[rfi--] = filters[fi];
-        }
-        // Re-add the priority filters at the front of the array
-        System.arraycopy(priorityFilters, 0, filters, 0, numPriorityFilters);
+        final WhereFilter[] toUse = filters.clone();
+        // Force the first filter to declare all the barriers we have already processed.
+        toUse[0] = toUse[0].withDeclaredBarriers(declaredBarriers.toArray());
+        return toUse;
     }
 
     private QueryTable whereInternal(final WhereFilter... filters) {
@@ -1376,58 +1404,120 @@ public class QueryTable extends BaseTable<QueryTable> {
             return (QueryTable) prepareReturnThis();
         }
 
-        final String whereDescription = "where(" + Arrays.toString(filters) + ")";
+        final WhereFilter[] extractedFilters = Arrays.stream(filters)
+                .flatMap(filter -> ExtractInnerConjunctiveFilters.of(filter).stream())
+                .toArray(WhereFilter[]::new);
+
+        final String whereDescription = "where(" + Arrays.toString(extractedFilters) + ")";
         return QueryPerformanceRecorder.withNugget(whereDescription, sizeForInstrumentation(),
                 () -> {
-                    initializeAndPrioritizeFilters(filters);
+                    initializeFilters(extractedFilters);
 
-                    for (int fi = 0; fi < filters.length; ++fi) {
-                        if (!(filters[fi] instanceof ReindexingFilter)) {
-                            continue;
+                    final boolean hasReindexingFilter = Arrays.stream(extractedFilters)
+                            .anyMatch(filter -> !ExtractReindexingFilters.of(filter).isEmpty());
+                    if (hasReindexingFilter) {
+                        // Filters will be processed in subsets of the provided list. Need to track all the
+                        // declared barriers that we have encountered.
+                        final Set<Object> declaredBarriers = new HashSet<>();
+
+                        for (int fi = 0; fi < extractedFilters.length; ++fi) {
+                            final WhereFilter filter = extractedFilters[fi];
+                            final Collection<ReindexingFilter> reindexingFilters = ExtractReindexingFilters.of(filter);
+                            if (reindexingFilters.isEmpty()) {
+                                continue;
+                            }
+                            if (reindexingFilters.size() > 1) {
+                                throw new IllegalStateException(
+                                        "Expected at most one reindexing filter per component filter: " + filter);
+                            }
+                            final ReindexingFilter reindexingFilter = reindexingFilters.iterator().next();
+                            final boolean first = fi == 0;
+                            final boolean last = fi == extractedFilters.length - 1;
+                            if (last && !reindexingFilter.requiresSorting()) {
+                                // If this is the last (or only) filter, we can just run it as normal unless it requires
+                                // sorting.
+                                break;
+                            }
+                            QueryTable result = this;
+                            if (!first) {
+                                final WhereFilter[] subset = Arrays.copyOf(extractedFilters, fi);
+                                final WhereFilter[] toUse = cloneFiltersForReindexing(subset, declaredBarriers);
+                                result = result.whereInternal(toUse);
+                                // collect all the newly declared barriers
+                                for (final WhereFilter priorFilter : subset) {
+                                    declaredBarriers.addAll(ExtractBarriers.of(priorFilter));
+                                }
+                            }
+                            if (reindexingFilter.requiresSorting()) {
+                                result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
+                                if (!result.isFlat()) {
+                                    // The only reindexing filters are ClockFilters; and the SortedClockFilter is the
+                                    // only one that requires sorting. It makes the assumption that sort flattens the
+                                    // table, which is generally true for a historical sort - but if the input was
+                                    // already sorted, we don't create a new table but rather just return a copy of the
+                                    // table with the sorted columns set.
+                                    result = (QueryTable) result.flatten();
+                                }
+                                reindexingFilter.sortingDone();
+                            }
+                            // Execute the current filter (which is or wraps a reindexing filter)
+                            // adding all previous encountered barriers as declared barriers.
+                            if (!declaredBarriers.isEmpty()) {
+                                result = result.whereInternal(filter.withDeclaredBarriers(declaredBarriers.toArray()));
+                            } else {
+                                result = result.whereInternal(filter);
+                            }
+                            // Add the barriers from the current filter.
+                            declaredBarriers.addAll(ExtractBarriers.of(filter));
+                            if (!last) {
+                                final WhereFilter[] subset =
+                                        Arrays.copyOfRange(extractedFilters, fi + 1, extractedFilters.length);
+                                final WhereFilter[] toUse = cloneFiltersForReindexing(subset, declaredBarriers);
+                                result = result.whereInternal(toUse);
+                                // collect all the new barriers that may have been processed
+                                for (final WhereFilter priorFilter : subset) {
+                                    declaredBarriers.addAll(ExtractBarriers.of(priorFilter));
+                                }
+                            }
+                            return result;
                         }
-                        final ReindexingFilter reindexingFilter = (ReindexingFilter) filters[fi];
-                        final boolean first = fi == 0;
-                        final boolean last = fi == filters.length - 1;
-                        if (last && !reindexingFilter.requiresSorting()) {
-                            // If this is the last (or only) filter, we can just run it as normal unless it requires
-                            // sorting.
-                            break;
-                        }
-                        QueryTable result = this;
-                        if (!first) {
-                            result = result.whereInternal(Arrays.copyOf(filters, fi));
-                        }
-                        if (reindexingFilter.requiresSorting()) {
-                            result = (QueryTable) result.sort(reindexingFilter.getSortColumns());
-                            reindexingFilter.sortingDone();
-                        }
-                        result = result.whereInternal(reindexingFilter);
-                        if (!last) {
-                            result = result.whereInternal(Arrays.copyOfRange(filters, fi + 1, filters.length));
-                        }
-                        return result;
                     }
 
                     boolean hasConstArrayOffsetFilter = false;
-                    for (final WhereFilter filter : filters) {
-                        final Set<ShiftedColumnDefinition> shifted = ExtractShiftedColumnDefinitions.of(filter);
-                        if (shifted != null && !shifted.isEmpty()) {
+                    for (final WhereFilter filter : extractedFilters) {
+                        if (ExtractShiftedColumnDefinitions.hasAny(filter)) {
                             hasConstArrayOffsetFilter = true;
                             break;
                         }
                     }
                     if (hasConstArrayOffsetFilter) {
-                        return (QueryTable) ShiftedColumnsFactory.where(this, Arrays.asList(filters));
+                        return (QueryTable) ShiftedColumnsFactory.where(this, Arrays.asList(extractedFilters));
                     }
 
-                    return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
-                        try (final SafeCloseable ignored = Arrays.stream(filters)
+                    return memoizeResult(MemoizedOperationKey.filter(extractedFilters), () -> {
+                        try (final SafeCloseable ignored = Arrays.stream(extractedFilters)
                                 .map(filter -> filter.beginOperation(this)).collect(SafeCloseableList.COLLECTOR)) {
-                            final NotificationQueue.Dependency[] filterDependencies =
-                                    WhereListener.extractDependencies(filters)
-                                            .toArray(NotificationQueue.Dependency[]::new);
+                            // Identify which data indexes we might use during this operation and create a map
+                            // from filter to data index.
+                            final Map<WhereFilter, DataIndex> filterDataIndexMap = USE_DATA_INDEX_FOR_WHERE
+                                    ? WhereListener.extractFilterDataIndexMap(this, extractedFilters)
+                                    : Collections.emptyMap();
+                            // Need to add the data index tables to the dependency list of the snapshot control.
+                            final Collection<NotificationQueue.Dependency> dataIndexDependencies =
+                                    USE_DATA_INDEX_FOR_WHERE
+                                            ? filterDataIndexMap.values().stream()
+                                                    .distinct()
+                                                    .map(di -> (NotificationQueue.Dependency) di.table())
+                                                    .collect(Collectors.toList())
+                                            : List.of();
+                            final NotificationQueue.Dependency[] filterDependencies = Stream.concat(
+                                    dataIndexDependencies.stream(),
+                                    WhereListener.extractDependencies(extractedFilters).stream())
+                                    .toArray(NotificationQueue.Dependency[]::new);
                             getUpdateGraph(filterDependencies);
 
+                            // Note that a static source may still need snapshot control, because a filter may have
+                            // refreshing dependencies (e.g. a DynamicWhereFilter with a refreshing set table).
                             final OperationSnapshotControl snapshotControl =
                                     isRefreshing() || filterDependencies.length > 0
                                             ? filterDependencies.length > 0
@@ -1444,7 +1534,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
                                                 new CompletableFuture<>();
                                         final InitialFilterExecution initialFilterExecution =
-                                                new InitialFilterExecution(this, filters, rowSetToUse.copy(), usePrev);
+                                                new InitialFilterExecution(this, extractedFilters, filterDataIndexMap,
+                                                        rowSetToUse.copy(),
+                                                        usePrev);
                                         final TrackingWritableRowSet currentMapping;
                                         initialFilterExecution.scheduleCompletion((adds, mods) -> {
                                             currentMappingFuture.complete(adds.writableCast().toTracking());
@@ -1472,11 +1564,11 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                                         final FilteredTable filteredTable = new FilteredTable(currentMapping, this);
 
-                                        for (final WhereFilter filter : filters) {
+                                        for (final WhereFilter filter : extractedFilters) {
                                             filter.setRecomputeListener(filteredTable);
                                         }
                                         final boolean refreshingFilters =
-                                                Arrays.stream(filters).anyMatch(WhereFilter::isRefreshing);
+                                                Arrays.stream(extractedFilters).anyMatch(WhereFilter::isRefreshing);
                                         copyAttributes(filteredTable, CopyAttributeOperation.Filter);
                                         // as long as filters do not change, we can propagate add-only/append-only attrs
                                         if (!refreshingFilters) {
@@ -1492,8 +1584,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                             if (!isRefreshing()) {
                                                 // Static source, but had dependencies requiring snapshot control.
                                                 if (refreshingFilters) {
-                                                    final WhereListener whereListener =
-                                                            new WhereListener(log, this, null, filteredTable, filters);
+                                                    final WhereListener whereListener = new WhereListener(
+                                                            log, this, null, filteredTable, extractedFilters);
                                                     filteredTable.setWhereListener(whereListener);
                                                     filteredTable.addParentReference(whereListener);
                                                 }
@@ -1502,8 +1594,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                 // Refreshing source, possibly refreshing filters with dependencies.
                                                 final ListenerRecorder recorder = new ListenerRecorder(whereDescription,
                                                         QueryTable.this, filteredTable);
-                                                final WhereListener whereListener =
-                                                        new WhereListener(log, this, recorder, filteredTable, filters);
+                                                final WhereListener whereListener = new WhereListener(
+                                                        log, this, recorder, filteredTable, extractedFilters);
                                                 filteredTable.setWhereListener(whereListener);
                                                 recorder.setMergedListener(whereListener);
                                                 snapshotControl.setListenerAndResult(recorder, filteredTable);
@@ -1512,7 +1604,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         } else if (refreshingFilters) {
                                             // Refreshing filters, but a static table.
                                             final WhereListener whereListener = new WhereListener(
-                                                    log, this, null, filteredTable, filters);
+                                                    log, this, null, filteredTable, extractedFilters);
                                             filteredTable.setWhereListener(whereListener);
                                             filteredTable.addParentReference(whereListener);
                                         }
@@ -1551,9 +1643,6 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final Table where = whereInternal(dynamicWhereFilter);
                     if (rightTable.isRefreshing()) {
                         where.addParentReference(rightTable);
-                    }
-                    if (dynamicWhereFilter.isRefreshing()) {
-                        where.addParentReference(dynamicWhereFilter);
                     }
                     return where;
                 });
@@ -1716,7 +1805,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                         final TrackingRowSet resultRowSet = analyzer.flatResult() && !rowSet.isFlat()
                                 ? RowSetFactory.flat(rowSet.size()).toTracking()
                                 : rowSet;
-                        resultTable = new QueryTable(resultRowSet, analyzerContext.getPublishedColumnSources());
+                        final Map<String, ColumnSource<?>> newMap = analyzerContext.getPublishedColumnSources();
+                        final TableDefinition resultDef = TableDefinition.inferFrom(this, newMap);
+                        resultTable = new QueryTable(resultDef, resultRowSet, newMap);
                         if (liveResultCapture != null) {
                             analyzer.startTrackingPrev();
                             final Map<String, String[]> effects = analyzerContext.calcEffects();
@@ -1881,14 +1972,6 @@ public class QueryTable extends BaseTable<QueryTable> {
         // Assuming that the description is human-readable, we make it once here and use it twice.
         final String updateDescription = humanReadablePrefix + '(' + selectColumnString(viewColumns) + ')';
 
-        if (STATELESS_SELECT_BY_DEFAULT) {
-            // An updateView can fetch things in any order; therefore we cannot allow it to be stateful. That said, we
-            // cannot check this if stateful is the default, because it will break too much user code.
-            if (Arrays.stream(viewColumns).anyMatch(Predicate.not(SelectColumn::isStateless))) {
-                throw new IllegalArgumentException("A stateful column cannot safely be used in a view or updateView.");
-            }
-        }
-
         if (Arrays.stream(viewColumns).anyMatch(vc -> vc.respectedBarriers() != null)) {
             throw new IllegalArgumentException("view and updateView cannot respect barriers");
         }
@@ -1908,8 +1991,23 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                 publishTheseSources, true, viewColumns);
                                 final SelectColumn[] processedViewColumns = analyzerContext.getProcessedColumns()
                                         .toArray(SelectColumn[]::new);
-                                QueryTable queryTable = new QueryTable(
-                                        rowSet, analyzerContext.getPublishedColumnSources());
+
+                                if (STATELESS_SELECT_BY_DEFAULT) {
+                                    // An updateView can fetch things in any order; therefore we cannot allow it to be
+                                    // stateful. That said, we cannot check this if stateful is the default, because
+                                    // it will break too much user code.
+                                    if (Arrays.stream(processedViewColumns)
+                                            .anyMatch(Predicate.not(SelectColumn::isStateless))) {
+                                        throw new IllegalArgumentException(
+                                                "A stateful column cannot safely be used in a view or updateView.");
+                                    }
+                                }
+
+                                final Map<String, ColumnSource<?>> resultMap =
+                                        analyzerContext.getPublishedColumnSources();
+                                final TableDefinition tableDef = TableDefinition.inferFrom(this,
+                                        analyzerContext.getPublishedColumnSources());
+                                QueryTable queryTable = new QueryTable(tableDef, rowSet, resultMap);
                                 if (sc != null) {
                                     final Map<String, String[]> effects = analyzerContext.calcEffects();
                                     final TableUpdateListener listener =
@@ -1932,6 +2030,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         flavor == Flavor.UpdateView
                                                 ? SelectAndViewAnalyzer.UpdateFlavor.UpdateView
                                                 : SelectAndViewAnalyzer.UpdateFlavor.View;
+                                // We set the notification step to our (i.e. the parent of queryTable) step; because
+                                // the applyShiftsAndRemainingColumns does downstream operations on queryTable. The
+                                // snapshot completion normally does this, but if we don't set it, then those operations
+                                // initialize with an incorrect step. If the step ends up being wrong, we're going to
+                                // be inconsistent and throw the result away anyway.
+                                queryTable.setLastNotificationStep(getLastNotificationStep());
                                 queryTable = analyzerContext.applyShiftsAndRemainingColumns(
                                         this, queryTable, updateFlavor);
 
@@ -1998,8 +2102,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         this, SelectAndViewAnalyzer.Mode.VIEW_LAZY, true, true, selectColumns);
                         final SelectColumn[] processedColumns = analyzerContext.getProcessedColumns()
                                 .toArray(SelectColumn[]::new);
-                        final QueryTable result = new QueryTable(
-                                rowSet, analyzerContext.getPublishedColumnSources());
+
+                        final Map<String, ColumnSource<?>> newMap = analyzerContext.getPublishedColumnSources();
+                        final TableDefinition resultDef = TableDefinition.inferFrom(this, newMap);
+                        final QueryTable result = new QueryTable(resultDef, rowSet, newMap);
                         if (isRefreshing()) {
                             addUpdateListener(new ListenerImpl(
                                     "lazyUpdate(" + Arrays.deepToString(processedColumns) + ')', this, result));
@@ -2035,7 +2141,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
                         initializeWithSnapshot("dropColumns", snapshotControl, (usePrev, beforeClockValue) -> {
-                            final QueryTable resultTable = new QueryTable(rowSet, newColumns);
+                            final TableDefinition resultDef = TableDefinition.inferFrom(this, newColumns);
+                            final QueryTable resultTable = new QueryTable(resultDef, rowSet, newColumns);
                             propagateFlatness(resultTable);
 
                             copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
@@ -2157,7 +2264,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final OperationSnapshotControl snapshotControl =
                             createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                     initializeWithSnapshot("renameColumns", snapshotControl, (usePrev, beforeClockValue) -> {
-                        final QueryTable resultTable = new QueryTable(rowSet, newColumns);
+                        final TableDefinition resultDef = TableDefinition.inferFrom(this, newColumns);
+                        final QueryTable resultTable = new QueryTable(resultDef, rowSet, newColumns);
                         propagateFlatness(resultTable);
 
                         copyAttributes(resultTable, CopyAttributeOperation.RenameColumns);
@@ -2540,7 +2648,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     public Table silent() {
-        return new QueryTable(getRowSet(), getColumnSourceMap());
+        return new QueryTable(getDefinition(), getRowSet(), getColumnSourceMap());
     }
 
     private Table snapshot(String nuggetName, Table baseTable, boolean doInitialSnapshot,
@@ -2759,6 +2867,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             final boolean incremental = options.has(Flag.INCREMENTAL);
             final boolean history = options.has(Flag.HISTORY);
             final String description = options.description();
+            final QueryTable triggerQueryTable = (QueryTable) trigger.coalesce();
             if (history) {
                 if (initial || incremental) {
                     // noinspection ThrowableNotThrown
@@ -2766,12 +2875,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                             "SnapshotWhenOptions should disallow history with initial or incremental");
                     return null;
                 }
-                return ((QueryTable) trigger).snapshotHistory(description, this, options.stampColumns());
+                return triggerQueryTable.snapshotHistory(description, this, options.stampColumns());
             }
             if (incremental) {
-                return ((QueryTable) trigger).snapshotIncremental(description, this, initial, options.stampColumns());
+                return triggerQueryTable.snapshotIncremental(description, this, initial,
+                        options.stampColumns());
             }
-            return ((QueryTable) trigger).snapshot(description, this, initial, options.stampColumns());
+            return triggerQueryTable.snapshot(description, this, initial, options.stampColumns());
         }
     }
 
@@ -2821,7 +2931,8 @@ public class QueryTable extends BaseTable<QueryTable> {
      * 2^minimumUngroupBase rows in the output table at startup. If rows are added to the table, this base may need to
      * grow. If a single row in the input has more than 2^base rows, then the base must change for all of the rows.
      */
-    static int minimumUngroupBase = 10;
+    static int minimumUngroupBase =
+            Configuration.getInstance().getIntegerWithDefault("QueryTable.minimumUngroupBase", 10);
 
     /**
      * For unit testing, it can be useful to reduce the minimum ungroup base.
@@ -2958,7 +3069,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final LinkedHashMap<String, ColumnSource<?>> columns = new LinkedHashMap<>(this.columns);
             columns.putAll(additionalSources);
-            final TableDefinition definition = TableDefinition.inferFrom(columns);
+            final TableDefinition definition = TableDefinition.inferFrom(this, columns);
             return new QueryTable(definition, rowSet, columns, null, null);
         }
     }
@@ -3158,59 +3269,6 @@ public class QueryTable extends BaseTable<QueryTable> {
             Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations) {
         // noinspection unchecked
         return (MemoizedResult<R>) cachedOperations.computeIfAbsent(memoKey, k -> new MemoizedResult<>());
-    }
-
-    private static class MemoizedResult<R> {
-        private volatile WeakReference<R> reference;
-
-        R getOrCompute(Supplier<R> operation) {
-            final R cachedResult = getIfValid();
-            if (cachedResult != null) {
-                return maybeMarkSystemic(cachedResult);
-            }
-
-            synchronized (this) {
-                final R cachedResultLocked = getIfValid();
-                if (cachedResultLocked != null) {
-                    return maybeMarkSystemic(cachedResultLocked);
-                }
-
-                final R result;
-                result = operation.get();
-
-                reference = new WeakReference<>(result);
-
-                return result;
-            }
-        }
-
-        private R maybeMarkSystemic(R cachedResult) {
-            if (cachedResult instanceof SystemicObject && SystemicObjectTracker.isSystemicThread()) {
-                // noinspection unchecked
-                return (R) ((SystemicObject) cachedResult).markSystemic();
-            }
-            return cachedResult;
-        }
-
-        R getIfValid() {
-            if (reference != null) {
-                final R cachedResult = reference.get();
-                if (!isFailed(cachedResult) && Liveness.verifyCachedObjectForReuse(cachedResult)) {
-                    return cachedResult;
-                }
-            }
-            return null;
-        }
-
-        private boolean isFailed(R cachedResult) {
-            if (cachedResult instanceof Table) {
-                return ((Table) cachedResult).isFailed();
-            }
-            if (cachedResult instanceof PartitionedTable) {
-                return ((PartitionedTable) cachedResult).table().isFailed();
-            }
-            return false;
-        }
     }
 
     public <T extends DynamicNode & NotificationStepReceiver> T getResult(final Operation<T> operation) {

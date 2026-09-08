@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl;
 
@@ -26,7 +26,7 @@ public class BasicRowSetBuilderSequential extends OrderedLongSetBuilderSequentia
     @Override
     public void appendRowSequenceWithOffset(final RowSequence rowSequence, final long shiftAmount) {
         if (rowSequence instanceof WritableRowSetImpl) {
-            appendOrderedLongSet(shiftAmount, ((WritableRowSetImpl) rowSequence).getInnerSet(), false);
+            appendOrderedLongSet(shiftAmount, ((WritableRowSetImpl) rowSequence).getInnerSet());
             return;
         }
         rowSequence.forAllRowKeyRanges((start, end) -> {

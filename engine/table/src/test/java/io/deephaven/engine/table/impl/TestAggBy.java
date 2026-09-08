@@ -1,13 +1,15 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
-import gnu.trove.set.TDoubleSet;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TDoubleHashSet;
-import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.util.profiling.ThreadProfiler;
+import it.unimi.dsi.fastutil.doubles.DoubleOpenHashSet;
+import it.unimi.dsi.fastutil.doubles.DoubleSet;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.object.UnionObject;
@@ -20,6 +22,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -36,12 +39,15 @@ import io.deephaven.vector.CharVector;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
 import junit.framework.TestCase;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
@@ -60,6 +66,122 @@ public class TestAggBy extends RefreshingTableTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
+    }
+
+    @Test
+    public void testDoubleFormula() {
+        ColumnHolder<?> aHolder = col("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
+        ColumnHolder<?> bHolder = col("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        ColumnHolder<?> cHolder = col("C", 1, 1, 1, 1, 1, 1, 1, 1, 1, 1);
+        Table table = TableTools.newTable(aHolder, bHolder, cHolder);
+        show(table);
+        assertEquals(10, table.size());
+        assertEquals(2, table.groupBy("A").size());
+
+        Table minMax = table.aggBy(
+                List.of(
+                        AggFormula("f_const=6.0 + 3"),
+                        AggFormula("f_max=max(B)"),
+                        AggFormula("f_sum_two_col=sum(B) + sum(C)")),
+                "A");
+        show(minMax);
+
+        assertEquals(2, minMax.size());
+    }
+
+    /**
+     * An {@code AggFormula} names its formula column in the {@link ModifiedColumnSet} it reports whenever churn in a
+     * group makes it recompute that column.
+     *
+     * <p>
+     * The non-rollup counterpart to {@code TestRollupTable.testRollupFormulaReportsModifiedFormulaColumn}. The
+     * {@code AggGroup} here registers the shared group operator, which leaves the formula operator non-delegating --
+     * the same condition every rollup level meets, reached through a plain {@code aggBy}. Two keys puts this on the
+     * bucketed path, where the rollup's zero-key root covers the singleton one.
+     *
+     * <p>
+     * Reporting holds for every kind of churn, hence the add, remove, and modify cycles, and reaches no further: a
+     * plain {@code aggBy} exposes no group RowSet column, so the leading shift owes nothing downstream at all.
+     */
+    @Test
+    public void testAggFormulaReportsModifiedFormulaColumn() {
+        final QueryTable source = testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final QueryTable agged = (QueryTable) source.aggBy(
+                List.of(AggGroup("Grp=Value"), AggFormula("FSum=sum(Value)")), "Sym");
+
+        // A direct read, correct whether or not the column is advertised, and one gated on the reported MCS.
+        final Table direct = agged.select("Sym", "FSum");
+        final Table mcsGated = agged.sort("Sym").select("Sym", "FSum");
+
+        final Table initial = newTable(stringCol("Sym", "a", "b"), longCol("FSum", 21, 41));
+        assertTableEquals(initial, direct);
+        assertTableEquals(initial, mcsGated);
+
+        final SimpleListener listener = new SimpleListener(agged);
+        agged.addUpdateListener(listener);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+
+        // A pure shift of the "b" rows: their keys move but their values do not, so the formula cannot change, and with
+        // no group RowSet column exposed nothing is owed downstream. The cycles after it run against shifted keys.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(0, listener.getCount());
+        assertTableEquals(initial, direct);
+        assertTableEquals(initial, mcsGated);
+
+        // A row joins the "b" group.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(4), stringCol("Sym", "b"), intCol("Value", 22));
+            source.notifyListeners(i(4), i(), i());
+        });
+        assertFormulaReported(agged, listener, direct, mcsGated,
+                newTable(stringCol("Sym", "a", "b"), longCol("FSum", 21, 63)));
+
+        // A row leaves the "a" group.
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(0));
+            source.notifyListeners(i(), i(0), i());
+        });
+        assertFormulaReported(agged, listener, direct, mcsGated,
+                newTable(stringCol("Sym", "a", "b"), longCol("FSum", 11, 63)));
+
+        // A row keeps its group but changes value, so the group's membership is untouched.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(1), stringCol("Sym", "a"), intCol("Value", 111));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    source.newModifiedColumnSet("Value")));
+        });
+        assertFormulaReported(agged, listener, direct, mcsGated,
+                newTable(stringCol("Sym", "a", "b"), longCol("FSum", 111, 63)));
+
+        agged.removeUpdateListener(listener);
+        listener.close();
+    }
+
+    /**
+     * Assert that the update {@code listener} just captured off {@code agged} marks rows modified and names
+     * {@code FSum} in its {@link ModifiedColumnSet}, and that the result reads as {@code expected} both directly and
+     * through the gated consumer.
+     */
+    private static void assertFormulaReported(final QueryTable agged, final SimpleListener listener,
+            final Table direct, final Table mcsGated, final Table expected) {
+        final TableUpdate update = listener.getUpdate();
+        assertTrue(update.modified().isNonempty());
+        assertTrue("modifiedColumnSet " + update.modifiedColumnSet() + " should contain FSum",
+                update.modifiedColumnSet().containsAny(agged.newModifiedColumnSet("FSum")));
+
+        assertTableEquals(expected, direct);
+        assertTableEquals(expected, mcsGated);
     }
 
     @Test
@@ -648,7 +770,21 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 AggUnique("uic=intCol", "uid=doubleCol"),
                                 AggUnique(true, "uicN=intColNulls", "uidN=doubleColNulls")), "Sym")
                                 .sort("Sym"),
-                        "AggCountDistinct")
+                        "AggCountDistinct"),
+                // Zero-key distinct/unique/countDistinct: drives the SingletonContext add/remove/modify path (the
+                // net-delta modify the unique operator applies); compared incrementally against a from-scratch
+                // recompute
+                new EvalNugget() {
+                    public Table e() {
+                        return queryTable.aggBy(List.of(
+                                AggCountDistinct("cdi=intCol", "ddi=doubleCol"),
+                                AggCountDistinct(true, "cdiN=intColNulls", "ddiN=doubleColNulls"),
+                                AggDistinct("dic=intCol", "did=doubleCol"),
+                                AggDistinct(true, "dicN=intColNulls", "didN=doubleColNulls"),
+                                AggUnique("uic=intCol", "uid=doubleCol"),
+                                AggUnique(true, "uicN=intColNulls", "uidN=doubleColNulls")));
+                    }
+                }
         };
         final int steps = 100; // 8;
         for (int step = 0; step < steps; step++) {
@@ -775,6 +911,61 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new char[] {'n', 'r'}, cs.get(1).toArray());
         assertArrayEquals(new char[] {'k', 'o', 's'}, cs.get(2).toArray());
         assertArrayEquals(new char[] {'l', 'p', 't'}, cs.get(3).toArray());
+    }
+
+    /**
+     * An AggDistinct result column hands the live SSM to formulas as the column value, so a query that indexes or
+     * slices such a column lands directly on the SSM's Vector implementation -- {@code Let[-1]} parses to
+     * {@code Let.get(-1)}. Offsets outside {@code [0, size())} must read as null there, exactly as they do for any
+     * other Vector, and a slice must be exclusive at its end.
+     */
+    @Test
+    public void testComboByDistinctVectorContract() {
+        final Instant firstTime = DateTimeUtils.epochNanosToInstant(1_600_000_000_000_000_000L);
+        final Instant secondTime = DateTimeUtils.plus(firstTime, 1_000_000_000L);
+        final Instant thirdTime = DateTimeUtils.plus(firstTime, 2_000_000_000L);
+
+        final QueryTable dataTable = TstUtils.testRefreshingTable(
+                intCol("Grp", 1, 1, 1, 2),
+                charCol("Let", 'a', 'b', 'c', 'z'),
+                col("Timestamp", firstTime, secondTime, thirdTime, firstTime));
+
+        // Grp 1 holds three distinct values, Grp 2 exactly one -- the SSM's singleton representation
+        final Table result = dataTable
+                .aggBy(List.of(AggDistinct("Let"), AggDistinct("Timestamp")), "Grp")
+                .update("Before = Let[-1]",
+                        "First = Let[0]",
+                        "After = Let[3]",
+                        "Whole = Let.subVector(0, Let.size())",
+                        "Overrun = Let.subVector(0, Let.size() + 2)",
+                        "BeforeTime = Timestamp[-1]",
+                        "AfterTime = Timestamp[3]",
+                        "WholeTimes = Timestamp.subVector(0, Timestamp.size())");
+
+        assertEquals(2, result.size());
+
+        // an offset before the first element, or at/after the last, reads as null instead of throwing or handing back
+        // a stale value from a leaf's unused slots
+        assertArrayEquals(new char[] {NULL_CHAR, NULL_CHAR}, ColumnVectors.ofChar(result, "Before").toArray());
+        assertArrayEquals(new char[] {'a', 'z'}, ColumnVectors.ofChar(result, "First").toArray());
+        assertArrayEquals(new char[] {NULL_CHAR, NULL_CHAR}, ColumnVectors.ofChar(result, "After").toArray());
+        assertArrayEquals(new Object[] {null, null}, ColumnVectors.ofObject(result, "BeforeTime", Object.class)
+                .toArray());
+        assertArrayEquals(new Object[] {null, null}, ColumnVectors.ofObject(result, "AfterTime", Object.class)
+                .toArray());
+
+        // subVector is exclusive at its end, and pads whatever it is asked for beyond the end with nulls
+        final ColumnSource<CharVector> whole = result.getColumnSource("Whole");
+        assertArrayEquals(new char[] {'a', 'b', 'c'}, whole.get(0).toArray());
+        assertArrayEquals(new char[] {'z'}, whole.get(1).toArray());
+
+        final ColumnSource<CharVector> overrun = result.getColumnSource("Overrun");
+        assertArrayEquals(new char[] {'a', 'b', 'c', NULL_CHAR, NULL_CHAR}, overrun.get(0).toArray());
+        assertArrayEquals(new char[] {'z', NULL_CHAR, NULL_CHAR}, overrun.get(1).toArray());
+
+        final ColumnSource<ObjectVector<Instant>> wholeTimes = result.getColumnSource("WholeTimes");
+        assertArrayEquals(new Instant[] {firstTime, secondTime, thirdTime}, wholeTimes.get(0).toArray());
+        assertArrayEquals(new Instant[] {firstTime}, wholeTimes.get(1).toArray());
     }
 
     @Test
@@ -1051,7 +1242,7 @@ public class TestAggBy extends RefreshingTableTestCase {
             return arr.get(0);
         }
 
-        final TIntSet keys = new TIntHashSet();
+        final IntSet keys = new IntOpenHashSet();
         for (int ii = 0; ii < arr.size(); ii++) {
             keys.add(arr.get(ii));
         }
@@ -1060,7 +1251,7 @@ public class TestAggBy extends RefreshingTableTestCase {
             keys.remove(NULL_INT);
         }
 
-        return keys.size() == 1 ? keys.iterator().next() : NULL_INT;
+        return keys.size() == 1 ? keys.iterator().nextInt() : NULL_INT;
     }
 
     /**
@@ -1079,7 +1270,7 @@ public class TestAggBy extends RefreshingTableTestCase {
             return arr.get(0);
         }
 
-        final TDoubleSet keys = new TDoubleHashSet();
+        final DoubleSet keys = new DoubleOpenHashSet();
         for (int ii = 0; ii < arr.size(); ii++) {
             keys.add(arr.get(ii));
         }
@@ -1088,7 +1279,7 @@ public class TestAggBy extends RefreshingTableTestCase {
             keys.remove(NULL_DOUBLE);
         }
 
-        return keys.size() == 1 ? keys.iterator().next() : NULL_DOUBLE;
+        return keys.size() == 1 ? keys.iterator().nextDouble() : NULL_DOUBLE;
     }
 
     @Test
@@ -1296,4 +1487,118 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         TableTools.show(result);
     }
+
+    /**
+     * Directed coverage for the base "unique" operator's modifyChunk path, which the randomized and rollup tests never
+     * exercise (they only ever add or remove source rows). A single keyed group is walked through every modify
+     * transition the operator's modifyState handles. {@code Count} (a count-distinct in the same group) makes the
+     * multiset's distinct cardinality observable so the SSM-internal cases are distinguishable.
+     */
+    @Test
+    public void testAggUniqueModifyTransitions() {
+        final QueryTable table = TstUtils.testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                stringCol("Key", "G", "G", "G", "G"),
+                intCol("Value", 10, 10, 10, 10));
+        final Table result = table.aggBy(
+                List.of(AggUnique(false, UnionObject.of(-1), "Unique=Value"), AggCountDistinct("Count=Value")), "Key");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        assertUniqueModifyState(result, 10, 1); // singleton(10)
+
+        // 2. remove a value and add a different one, changing the singleton -> singleton(20)
+        modifyValues(updateGraph, table, i(0, 1, 2, 3), 20, 20, 20, 20);
+        assertUniqueModifyState(result, 20, 1);
+
+        // 4. a second distinct value transitions the singleton to an SSM -> {20, 30}
+        modifyValues(updateGraph, table, i(0), 30);
+        assertUniqueModifyState(result, -1, 2);
+
+        // 7. modify into an already-present SSM value (30) while the old value (20) survives elsewhere
+        modifyValues(updateGraph, table, i(1), 30);
+        assertUniqueModifyState(result, -1, 2);
+
+        // 8. modify into a brand-new SSM value (40) while the old value (20) survives elsewhere -> {20, 30, 40}
+        modifyValues(updateGraph, table, i(2), 40);
+        assertUniqueModifyState(result, -1, 3);
+
+        // 9. modify away the last 20, removing that value from the SSM -> {30, 40}
+        modifyValues(updateGraph, table, i(3), 30);
+        assertUniqueModifyState(result, -1, 2);
+
+        // 1. swap two rows' values so the SSM's net removals and additions cancel -> {30, 40} unchanged
+        modifyValues(updateGraph, table, i(0, 2), 40, 30);
+        assertUniqueModifyState(result, -1, 2);
+
+        // 5. modify away the last 40, collapsing the SSM back to singleton(30)
+        modifyValues(updateGraph, table, i(0), 30);
+        assertUniqueModifyState(result, 30, 1);
+
+        // 3. null out the singleton's only value, transitioning to empty
+        modifyValues(updateGraph, table, i(0, 1, 2, 3), NULL_INT, NULL_INT, NULL_INT, NULL_INT);
+        assertUniqueModifyState(result, NULL_INT, NULL_LONG);
+
+        // (empty -> SSM) two distinct values arrive via modify, re-allocating the SSM -> {50, 60}
+        modifyValues(updateGraph, table, i(0, 1), 50, 60);
+        assertUniqueModifyState(result, -1, 2);
+
+        // 6. null out both SSM values, transitioning the SSM to empty
+        modifyValues(updateGraph, table, i(0, 1), NULL_INT, NULL_INT);
+        assertUniqueModifyState(result, NULL_INT, NULL_LONG);
+    }
+
+    /**
+     * Modify the {@code Value} of the given (all-{@code "G"}-keyed) rows in a single update cycle, reporting only the
+     * {@code Value} column as modified so the keyed aggregation runs its bucketed modifyChunk.
+     */
+    private static void modifyValues(final ControlledUpdateGraph updateGraph, final QueryTable table,
+            final RowSet rows, final int... values) {
+        final String[] keys = new String[values.length];
+        Arrays.fill(keys, "G");
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, rows, stringCol("Key", keys), intCol("Value", values));
+            table.notifyListeners(new TableUpdateImpl(i(), i(), rows.copy(), RowSetShiftData.EMPTY,
+                    table.newModifiedColumnSet("Value")));
+        });
+    }
+
+    private static void assertUniqueModifyState(final Table result, final int unique, final long count) {
+        assertTableEquals(newTable(stringCol("Key", "G"), intCol("Unique", unique), longCol("Count", count)), result);
+    }
+
+    // @Test
+    @Ignore
+    public void testAggUniquePerf() {
+        final Table input = TableTools.emptyTable(7_250_000).update("X=Long.toHexString(ii)", "Y=X.toUpperCase()",
+                "Z=X.toLowerCase()", "A=Long.toString(i)", "Bucket=ii%100 == 0 ? 0 : ii");
+        final long startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
+        System.out.println("Select done");
+        final long start = System.nanoTime();
+        final Table uniqued = input.aggBy(AggUnique("X", "Y", "Z", "A"), "Bucket");
+        final long end = System.nanoTime();
+        final DecimalFormat df = new DecimalFormat("###,###.##");
+        System.out.println("Duration: " + df.format(end - start));
+
+        final long endAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
+        System.out.println("Allocated Bytes: " + df.format(endAllocatedBytes - startAllocatedBytes));
+    }
+
+    // @Test
+    @Ignore
+    public void testAggUniquePerfWithRollup() {
+        final Table input = TableTools.emptyTable(2_500_000).update("X=Long.toHexString(ii % 10000)",
+                "Y=X.toUpperCase()",
+                "Z=X.toLowerCase()", "A=Long.toString(i)", "Bucket=ii%100 == 0 ? 0 : ii", "Bucket2=ii % 10_000");
+        final long startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
+        System.out.println("Select done");
+        final long start = System.nanoTime();
+        final RollupTable uniqued = input.rollup(List.of(AggUnique("X", "Y", "Z", "A")), "Bucket", "Bucket2");
+        final long end = System.nanoTime();
+        final DecimalFormat df = new DecimalFormat("###,###.##");
+        System.out.println("Duration: " + df.format(end - start));
+
+        final long endAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
+        System.out.println("Allocated Bytes: " + df.format(endAllocatedBytes - startAllocatedBytes));
+    }
+
 }

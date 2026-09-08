@@ -52,4 +52,4 @@ print(np_result)
 
 ## Related documentation
 
-- [Pydoc](/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_numpy)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_numpy)

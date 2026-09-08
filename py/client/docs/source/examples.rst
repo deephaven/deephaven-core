@@ -215,7 +215,7 @@ as shown in the example::
         def on_error(self, error: Exception):
             print(f"Error happened: {error}")
 
-        def _show_deltas(self, what: str, dict: Dict[str, pa.Array]):
+        def _show_deltas(self, what: str, dict: dict[str, pa.Array]):
             if len(dict) == 0:
                 return
 

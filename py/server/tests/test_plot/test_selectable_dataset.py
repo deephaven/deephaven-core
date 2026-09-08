@@ -1,10 +1,10 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
 
-from deephaven import read_csv, DHError
+from deephaven import DHError, read_csv
 from deephaven.plot.selectable_dataset import one_click, one_click_partitioned_table
 from tests.testbase import BaseTestCase
 
@@ -19,9 +19,9 @@ class SelectableDatasetTestCase(BaseTestCase):
         super().tearDown()
 
     def test_one_click(self):
-        sds = one_click(self.test_table, by=['a', 'b'])
+        sds = one_click(self.test_table, by=["a", "b"])
         self.assertIsNotNone(sds)
-        sds = one_click(self.test_table, by=['a', 'b'], require_all_filters=True)
+        sds = one_click(self.test_table, by=["a", "b"], require_all_filters=True)
         self.assertIsNotNone(sds)
 
         with self.assertRaises(DHError):
@@ -38,5 +38,5 @@ class SelectableDatasetTestCase(BaseTestCase):
         self.assertIsNotNone(sds)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

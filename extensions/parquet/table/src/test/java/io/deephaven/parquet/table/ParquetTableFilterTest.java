@@ -1,8 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.parquet.table;
 
+import com.google.common.collect.Lists;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.FileUtils;
@@ -11,12 +12,11 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownPredicateManager;
+import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.select.ConditionFilter;
-import io.deephaven.engine.table.impl.select.DoubleRangeFilter;
-import io.deephaven.engine.table.impl.select.FloatRangeFilter;
-import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.filters.ParallelizedRowSetCapturingFilter;
@@ -57,8 +57,7 @@ import static io.deephaven.engine.util.TableTools.floatCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static io.deephaven.parquet.table.ParquetTools.readTable;
-import static io.deephaven.parquet.table.ParquetTools.writeTable;
+import static io.deephaven.parquet.table.ParquetTools.*;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -71,6 +70,8 @@ public final class ParquetTableFilterTest {
     private static final ParquetInstructions EMPTY = ParquetInstructions.EMPTY;
 
     private static File rootFile;
+    private boolean whereDataIndexEnabled;
+    private double configuredDictionaryThreshold;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -83,11 +84,17 @@ public final class ParquetTableFilterTest {
         }
         // noinspection ResultOfMethodCallIgnored
         rootFile.mkdirs();
+        whereDataIndexEnabled = QueryTable.USE_DATA_INDEX_FOR_WHERE;
+
+        configuredDictionaryThreshold = QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = Double.MAX_VALUE;
     }
 
     @After
     public void tearDown() {
         FileUtils.deleteRecursively(rootFile);
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = whereDataIndexEnabled;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = configuredDictionaryThreshold;
     }
 
     private Table[] splitTable(final Table source, int numSplits, boolean randomSizes) {
@@ -357,7 +364,7 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, "boolean_col = true");
         filterAndVerifyResultsAllowEmpty(diskTable, memTable, "boolean_col = false");
 
-        // BigDecimal range filters (match is complicated with BD, given
+        // BigDecimal range filters (match is complicated with BD, given precision)
         ExecutionContext.getContext().getQueryScope().putParam("bd_500", BigDecimal.valueOf(500.0));
         ExecutionContext.getContext().getQueryScope().putParam("bd_1000", BigDecimal.valueOf(1000.00));
 
@@ -861,6 +868,110 @@ public final class ParquetTableFilterTest {
     }
 
     @Test
+    public void flatPartitionsLoadedDataIndexTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_flatPartitionsTest").toString();
+        final int tableSize = 1_000_000;
+
+        final Instant baseTime = parseInstant("2023-01-01T00:00:00 NY");
+        QueryScope.addParam("baseTime", baseTime);
+
+        final Table largeTable = TableTools.emptyTable(tableSize).update(
+                "symbol = ii % 119 == 0 ? null : String.format(`%04d`, randomInt(0,97))",
+                "exchange = randomInt(0,11)",
+                "price = randomInt(0,10000) * 0.01");
+        final int partitionCount = 11;
+
+        final Table[] randomPartitions = splitTable(largeTable, partitionCount, true);
+
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .addIndexColumns("symbol", "exchange")
+                .addIndexColumns("symbol")
+                .addIndexColumns("exchange")
+                .build();
+
+        writeTables(destPath, randomPartitions, instructions);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+
+        // Turn off memoization on the tables to we get accurate results.
+        QueryTable.setMemoizeResults(false);
+
+        final List<RowSetCapturingFilter> filters = Lists.newArrayList(
+                new ParallelizedRowSetCapturingFilter(RawString.of("symbol = null")),
+                new ParallelizedRowSetCapturingFilter(RawString.of("symbol < `0050`")),
+                new ParallelizedRowSetCapturingFilter(Filter.and(RawString.of("symbol < `0050`"),
+                        RawString.of("symbol >= `0049`"))),
+                new ParallelizedRowSetCapturingFilter(RawString.of("symbol = `0050`")),
+                new ParallelizedRowSetCapturingFilter(RawString.of("symbol != null && symbol.startsWith(`002`)")),
+
+                new ParallelizedRowSetCapturingFilter(RawString.of("exchange <= 10")),
+                new ParallelizedRowSetCapturingFilter(Filter.and(RawString.of("exchange <= 10"),
+                        RawString.of("exchange >= 9"))),
+                new ParallelizedRowSetCapturingFilter(RawString.of("exchange = 10")),
+                new ParallelizedRowSetCapturingFilter(RawString.of("exchange % 10 == 0")),
+
+                new ParallelizedRowSetCapturingFilter(
+                        Filter.and(RawString.of("symbol < `0050`"), RawString.of("exchange <= 10"))),
+                new ParallelizedRowSetCapturingFilter(Filter.and(RawString.of("symbol < `0050`"),
+                        RawString.of("exchange <= 10"), RawString.of("exchange >= 9"))),
+
+                new ParallelizedRowSetCapturingFilter(
+                        Filter.or(Filter.from("symbol < `1000`", "symbol > `0900`", "exchange = 10"))),
+                new ParallelizedRowSetCapturingFilter(Filter.or(RawString.of("symbol < `1000`"),
+                        RawString.of("exchange <= 10"), RawString.of("exchange >= 9"))));
+
+        // Collect the mem table baseline results.
+        final List<Long> memRowsProcessed = new ArrayList<>(filters.size());
+        for (final RowSetCapturingFilter filter : filters) {
+            filter.reset();
+            memTable.where(filter).coalesce();
+            memRowsProcessed.add(filter.numRowsProcessed());
+        }
+
+        // Collect the disk table baseline results.
+        final List<Long> diskRowsProcessedLocationIndexes = new ArrayList<>(filters.size());
+        for (final RowSetCapturingFilter filter : filters) {
+            filter.reset();
+            diskTable.where(filter).coalesce();
+            diskRowsProcessedLocationIndexes.add(filter.numRowsProcessed());
+        }
+
+        // Verify that the disk table with location indexes processed strictly fewer rows than the mem table.
+        for (int i = 0; i < filters.size(); i++) {
+            Assert.assertTrue(
+                    "Disk table with location indexes did not process fewer rows than the mem table for filter: "
+                            + i + ", Disk rows processed: " + diskRowsProcessedLocationIndexes.get(i)
+                            + ", Mem rows processed: " + memRowsProcessed.get(i),
+                    diskRowsProcessedLocationIndexes.get(i) < memRowsProcessed.get(i));
+        }
+
+        // Create the merged in-memory index tables.
+        final Table symbolIndexTable = DataIndexer.getDataIndex(diskTable, "symbol").table();
+        final Table exchangeIndexTable = DataIndexer.getDataIndex(diskTable, "exchange").table();
+        final Table symbolExchangeIndexTable = DataIndexer.getDataIndex(diskTable, "symbol", "exchange").table();
+
+        // Collect the disk table baseline results.
+        final List<Long> diskRowsProcessedMergedIndex = new ArrayList<>(filters.size());
+        for (final RowSetCapturingFilter filter : filters) {
+            filter.reset();
+            diskTable.where(filter).coalesce();
+            diskRowsProcessedMergedIndex.add(filter.numRowsProcessed());
+        }
+
+        // Verify that the merged indexes processed strictly fewer rows than the mem table.
+        for (int i = 0; i < filters.size(); i++) {
+            Assert.assertTrue(
+                    "Merged indexes did not process fewer rows than Location indexes: "
+                            + i + ", Merged index rows processed: " + diskRowsProcessedMergedIndex.get(i)
+                            + ", Mem rows processed: " + memRowsProcessed.get(i),
+                    diskRowsProcessedMergedIndex.get(i) < memRowsProcessed.get(i));
+        }
+    }
+
+    @Test
     public void flatPartitionsDataIndexSequentialTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_flatPartitionsTest").toString();
         final int tableSize = 1_000_000;
@@ -1179,7 +1290,7 @@ public final class ParquetTableFilterTest {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setTableDefinition(TableDefinition.of(
                         ColumnDefinition.ofInt("Baz"),
-                        ColumnDefinition.fromGenericType("Longs", long[].class, long.class)))
+                        ColumnDefinition.of("Longs", io.deephaven.qst.type.Type.longType().arrayType())))
                 .build();
         nestedStructsFilterImpl(instructions);
     }
@@ -1192,7 +1303,7 @@ public final class ParquetTableFilterTest {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setTableDefinition(TableDefinition.of(
                         ColumnDefinition.ofInt("Baz"),
-                        ColumnDefinition.fromGenericType("Longs", long[].class, long.class)))
+                        ColumnDefinition.of("Longs", io.deephaven.qst.type.Type.longType().arrayType())))
                 .setColumnResolverFactory((tk, tlk) -> ParquetColumnResolverMap.builder()
                         .putMap("Baz", List.of("Baz"))
                         .putMap("Longs", List.of("Longs", "list", "element"))
@@ -1278,7 +1389,7 @@ public final class ParquetTableFilterTest {
                 costFuture::complete,
                 costFuture::completeExceptionally);
         Assert.assertTrue(costFuture.isDone());
-        Assert.assertEquals(Long.MAX_VALUE, (long) costFuture.join());
+        Assert.assertEquals(PushdownResult.UNSUPPORTED_ACTION_COST, (long) costFuture.join());
     }
 
     /**
@@ -1428,15 +1539,15 @@ public final class ParquetTableFilterTest {
 
         // Empty match filter should return no rows
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "ints"));
+                new MatchFilter(MatchOptions.REGULAR, "ints"));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.CaseSensitivity.MatchCase, MatchFilter.MatchType.Regular, "strings"));
+                new MatchFilter(MatchOptions.REGULAR, "strings"));
 
         // Inverted empty match filter should return all rows
         filterAndVerifyResults(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "ints"));
+                new MatchFilter(MatchOptions.INVERTED, "ints"));
         filterAndVerifyResults(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "strings"));
+                new MatchFilter(MatchOptions.INVERTED, "strings"));
     }
 
     @Test
@@ -1451,9 +1562,9 @@ public final class ParquetTableFilterTest {
         final Table memTable = diskTable.select();
 
         filterAndVerifyResults(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "Timestamp", baseTime));
+                new MatchFilter(MatchOptions.REGULAR, "Timestamp", baseTime));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "Timestamp", baseTime));
+                new MatchFilter(MatchOptions.INVERTED, "Timestamp", baseTime));
     }
 
     @Test
@@ -1485,13 +1596,13 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
                 new FloatRangeFilter("floats", Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "floats", Float.POSITIVE_INFINITY));
+                new MatchFilter(MatchOptions.INVERTED, "floats", Float.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "floats", Float.NEGATIVE_INFINITY));
+                new MatchFilter(MatchOptions.INVERTED, "floats", Float.NEGATIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "floats", Float.POSITIVE_INFINITY));
+                new MatchFilter(MatchOptions.REGULAR, "floats", Float.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "floats", Float.NEGATIVE_INFINITY));
+                new MatchFilter(MatchOptions.REGULAR, "floats", Float.NEGATIVE_INFINITY));
     }
 
     @Test
@@ -1523,13 +1634,13 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
                 new DoubleRangeFilter("doubles", Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "doubles", Double.POSITIVE_INFINITY));
+                new MatchFilter(MatchOptions.INVERTED, "doubles", Double.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Inverted, "doubles", Double.NEGATIVE_INFINITY));
+                new MatchFilter(MatchOptions.INVERTED, "doubles", Double.NEGATIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "doubles", Double.POSITIVE_INFINITY));
+                new MatchFilter(MatchOptions.REGULAR, "doubles", Double.POSITIVE_INFINITY));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
-                new MatchFilter(MatchFilter.MatchType.Regular, "doubles", Double.NEGATIVE_INFINITY));
+                new MatchFilter(MatchOptions.REGULAR, "doubles", Double.NEGATIVE_INFINITY));
     }
 
     /**
@@ -1774,6 +1885,127 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal == `Cat`"));
     }
 
+    /** The value the threshold tests filter for; {@link #writeAndReadDictionaryTable} always includes it. */
+    private static final String THRESHOLD_MATCH_VALUE = "animal_0";
+
+    /** Rows in the threshold fixtures. The dictionary sizes below are derived from it, not hard-coded. */
+    private static final int THRESHOLD_ROW_COUNT = 100;
+
+    /**
+     * The fraction the boundary tests run at, in place of the configured one. The configured value cannot be relied on
+     * to express this boundary: {@code 0} is a documented setting that disables the optimization, and any fraction
+     * outside {@code [0.02, 1.0]} asks for a dictionary that {@link #THRESHOLD_ROW_COUNT} rows cannot hold — too few
+     * distinct entries to build a fixture at one end, more than one per row at the other. {@link #setUp} and
+     * {@link #tearDown} still save and restore whatever is configured.
+     */
+    private static final double THRESHOLD_TEST_FRACTION = 0.25;
+
+    /**
+     * The smallest dictionary {@link #THRESHOLD_TEST_FRACTION} declines to read for {@link #THRESHOLD_ROW_COUNT} rows.
+     * Pushdown is skipped once a dictionary holds at least {@code rows * fraction} entries, so this is 25 — meaning 25
+     * entries decline and 24 proceed.
+     */
+    private static int smallestDecliningDictionarySize() {
+        return (int) (THRESHOLD_ROW_COUNT * THRESHOLD_TEST_FRACTION);
+    }
+
+    /**
+     * Write {@code rowCount} rows drawn from a dictionary of {@code distinctValues} animals as a single
+     * dictionary-encoded row group without row group statistics, and read it back. Cycling keeps the column unsorted,
+     * and omitting the statistics keeps the cheaper metadata action from resolving anything, so the dictionary action
+     * decides the outcome.
+     */
+    private static Table writeAndReadDictionaryTable(
+            final String name,
+            final int rowCount,
+            final int distinctValues) {
+        final String[] animals = new String[rowCount];
+        for (int ii = 0; ii < rowCount; ii++) {
+            animals[ii] = "animal_" + (ii % distinctValues);
+        }
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setWriteRowGroupStatistics(false)
+                .build();
+        final String destPath = Path.of(rootFile.getPath(), name) + ".parquet";
+        writeTable(TableTools.newTable(stringCol("animal", animals)), destPath, writeInstructions);
+        return ParquetTools.readTable(destPath).coalesce();
+    }
+
+    /**
+     * Run the pushdown actions available at or below the dictionary action's cost against {@code diskTable} and return
+     * what they resolved.
+     */
+    private static PushdownResult runPushdownThroughDictionary(final Table diskTable, final String filterExpr) {
+        final WhereFilter filter = getExpression(filterExpr);
+        filter.init(diskTable.getDefinition());
+        Assert.assertEquals("Expected a single column in the filter: " + filterExpr, 1, filter.getColumns().size());
+
+        final ColumnSource<?> columnSource = diskTable.getColumnSource(filter.getColumns().get(0));
+        final PushdownPredicateManager ppm = PushdownPredicateManager.getSharedPPM(List.of(columnSource));
+        Assert.assertNotNull("pushdown predicate manager", ppm);
+
+        try (final PushdownFilterContext context = ppm.makePushdownFilterContext(filter, List.of(columnSource))) {
+            final CompletableFuture<PushdownResult> resultFuture = new CompletableFuture<>();
+            ppm.pushdownFilter(
+                    filter,
+                    diskTable.getRowSet(),
+                    false,
+                    context,
+                    PushdownResult.REGION_DICTIONARY_DATA_COST,
+                    new ImmediateJobScheduler(),
+                    resultFuture::complete,
+                    resultFuture::completeExceptionally);
+            return resultFuture.join();
+        }
+    }
+
+    /**
+     * Reading and filtering a whole dictionary costs O(dictionary), so it only pays off when enough rows remain that
+     * filtering them directly would cost more. This test and {@link #dictionaryPushdownThresholdProceedsTest()} sit on
+     * the two dictionary sizes either side of that boundary — the smallest that declines and the largest that proceeds
+     * — at {@link #THRESHOLD_TEST_FRACTION}, the heuristic that the other dictionary tests here deliberately disable.
+     */
+    @Test
+    public void dictionaryPushdownThresholdDeclinesTest() {
+        // The smallest dictionary that declines: 100 * 0.25 = 25, and 25 >= 25, so reading the dictionary does not pay
+        // for itself and every row must be left for the filter to evaluate directly.
+        final Table diskTable = writeAndReadDictionaryTable(
+                "dictionaryThresholdDeclines", THRESHOLD_ROW_COUNT, smallestDecliningDictionarySize());
+        final String filterExpr = "animal == `" + THRESHOLD_MATCH_VALUE + "`";
+        final long expectedMatches = diskTable.where(filterExpr).size();
+        assertTrue(expectedMatches > 0);
+
+        // First with the heuristic still disabled, so that the assertions below pin the threshold rather than some
+        // other reason this fixture's dictionary could not be used.
+        try (final PushdownResult pinnedOpen = runPushdownThroughDictionary(diskTable, filterExpr)) {
+            assertEquals(expectedMatches, pinnedOpen.match().size());
+            assertTrue("maybeMatch should be empty", pinnedOpen.maybeMatch().isEmpty());
+        }
+
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = THRESHOLD_TEST_FRACTION;
+        try (final PushdownResult result = runPushdownThroughDictionary(diskTable, filterExpr)) {
+            assertTrue("match should be empty", result.match().isEmpty());
+            assertEquals(diskTable.size(), result.maybeMatch().size());
+        }
+    }
+
+    @Test
+    public void dictionaryPushdownThresholdProceedsTest() {
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = THRESHOLD_TEST_FRACTION;
+
+        // One entry fewer over the same hundred rows -- the largest dictionary that still proceeds: 100 * 0.25 = 25,
+        // and 24 < 25, so the dictionary is worth reading and resolves every row exactly.
+        final Table diskTable = writeAndReadDictionaryTable(
+                "dictionaryThresholdProceeds", THRESHOLD_ROW_COUNT, smallestDecliningDictionarySize() - 1);
+        final String filterExpr = "animal == `" + THRESHOLD_MATCH_VALUE + "`";
+        final long expectedMatches = diskTable.where(filterExpr).size();
+        assertTrue(expectedMatches > 0);
+        try (final PushdownResult result = runPushdownThroughDictionary(diskTable, filterExpr)) {
+            assertEquals(expectedMatches, result.match().size());
+            assertTrue("maybeMatch should be empty", result.maybeMatch().isEmpty());
+        }
+    }
+
     @Test
     public void multiColumnConditionalFilters() {
         final Table source = TableTools.newTable(
@@ -1803,6 +2035,56 @@ public final class ParquetTableFilterTest {
                 ConditionFilter.createStateless("weight > 1000 || legs <= 4"));
         filterAndVerifyResultsAllowEmpty(diskTable, memTable,
                 ConditionFilter.createStateless("weight > 1000 || legs < 4"));
+    }
+
+    @Test
+    public void singleColumnConditionalFilters() {
+        final Table source = TableTools.newTable(
+                stringCol("animal", "Centipede", "Lion", "Elephant", "Cat", "Whale"),
+                intCol("legs", 100, 4, 4, 4, 0),
+                intCol("weight", 1, 420, 6000, 10, 150000));
+
+        // Disable writing row group statistics to verify filtering using dictionary
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(2))
+                .setWriteRowGroupStatistics(false)
+                .build();
+
+        final String destPath = Path.of(rootFile.getPath(), "singleColumnConditionalFilters") + ".parquet";
+        writeTable(source, destPath, writeInstructions);
+
+        // Read back and test filtering
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("legs >= 4 && legs <= 100"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("weight > 1000"));
+    }
+
+    @Test
+    public void singleColumnSortedMultipleRowGroupFilters() {
+        final int targetRows = 50000;
+        final Table source = TableTools.emptyTable(targetRows)
+                .update("ID = ii", "Value = Math.random()")
+                .sort("ID");
+
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setRowGroupInfo(RowGroupInfo.maxRows(1_000))
+                .build();
+
+        final String destPath = Path.of(rootFile.getPath(), "singleColumnSortedMultipleRowGroupFilters") + ".parquet";
+        writeTable(source, destPath, writeInstructions);
+
+        // Read back and test filtering
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("ID < 25000"));
+        filterAndVerifyResults(diskTable, memTable,
+                ConditionFilter.createStateless("ID = 22000"));
     }
 
     @Test
@@ -1897,7 +2179,6 @@ public final class ParquetTableFilterTest {
                 ConditionFilter.createStateless("StringCol = null || StringCol != null"));
     }
 
-
     @Test
     public void testNonDictionaryEncodingStrings() {
         final Table source = TableTools.newTable(
@@ -1931,5 +2212,212 @@ public final class ParquetTableFilterTest {
                 ConditionFilter.createStateless("StringCol = null"));
         filterAndVerifyResults(diskTable, memTable,
                 ConditionFilter.createStateless("StringCol = null || StringCol != null"));
+    }
+
+    @Test
+    public void testLocationDataIndexWithFilterBarriers() {
+        final Table memTable = TableTools.emptyTable(100_000).update("A = ii % 97", "B = ii % 11", "C = ii");
+        final String destPath = Path.of(rootFile.getPath(), "locationDataIndexWithFilterBarriers") + ".parquet";
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .addIndexColumns("A")
+                .build();
+        writeTable(memTable, destPath, writeInstructions);
+
+        final Table diskTable = ParquetTools.readTable(destPath);
+        assertTableEquals(memTable, diskTable);
+
+        // Create some capturing filters to verify the row sets being passed through the filter chain.
+        final RowSetCapturingFilter filterA = new ParallelizedRowSetCapturingFilter(RawString.of("A < 50"));
+        final RowSetCapturingFilter filterB = new ParallelizedRowSetCapturingFilter(RawString.of("B < 5"));
+
+        final List<RowSetCapturingFilter> allFilters = List.of(filterA, filterB);
+
+        Table result;
+        Filter f;
+
+        // Test with no barrier, expect A then B
+        f = Filter.and(filterA, filterB);
+        result = diskTable.where(f).coalesce();
+        // A has an index, stored as sorted data. Applying to the index results in bin search, bypassing filter
+        // row set capture.
+        assertEquals(0, filterA.numRowsProcessed());
+        assertEquals(51550, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Test with no barrier, expect A then B despite user ordering
+        f = Filter.and(filterB, filterA);
+        result = diskTable.where(f).coalesce();
+        assertEquals(0, filterA.numRowsProcessed());
+        assertEquals(51550, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Barrier to force B then A
+        f = Filter.and(filterB.withDeclaredBarriers("b1"), filterA.withRespectedBarriers("b1"));
+        result = diskTable.where(f).coalesce();
+        assertEquals(0, filterA.numRowsProcessed());
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Barrier to force B then A
+        f = Filter.and(filterB.withSerial(), filterA);
+        result = diskTable.where(f).coalesce();
+        assertEquals(0, filterA.numRowsProcessed());
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(23435, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
+        allFilters.forEach(RowSetCapturingFilter::reset);
+
+        // Inverted - Barrier to force B then A
+        f = Filter.and(
+                WhereFilterInvertedImpl.of(filterB.withDeclaredBarriers("b1")),
+                WhereFilterInvertedImpl.of(filterA.withRespectedBarriers("b1")));
+        result = diskTable.where(f).coalesce();
+        // filterA not recognized as a range filter (because of the inversion), so applied to index table rows.
+        assertEquals(97, filterA.numRowsProcessed());
+        assertEquals(100_000, filterB.numRowsProcessed());
+
+        assertEquals(26430, result.size());
+        assertTableEquals(memTable.where(f).coalesce(), result);
+        allFilters.forEach(RowSetCapturingFilter::reset);
+    }
+
+    @Test
+    public void testPartitioningTableColumnRegions() {
+        // Partitioning columns are automatically added to a data index. We have to disable use of the data index
+        // in order to test constant and null column region pushdown features.
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = false;
+
+        QueryScope.addParam("symList", List.of("alpha", "bravo", "charlie", "delta", "echo", "foxtrot"));
+        final Table tmpTable = TableTools.emptyTable(100_000).update(
+                "Sym = i % 7 == 6 ? (String)null : (String)symList.get(i % 7)",
+                "A = i % 97 == 0 ? null : i % 97",
+                "B = i % 11 == 0 ? null : i % 11",
+                "C = i");
+        final PartitionedTable partitionedTable = tmpTable.partitionBy("Sym", "A");
+
+        final String destPath = Path.of(rootFile.getPath(), "partitioningTableColumnRegions").toString();
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .build();
+        writeKeyValuePartitionedTable(partitionedTable, destPath, writeInstructions);
+
+        // Coalesce the table to prevent PAST optimizations.
+        final Table diskTable = ParquetTools.readTable(destPath).coalesce();
+        final Table memTable = diskTable.select();
+
+        final Filter filterSym = RawString.of("Sym in `alpha`, `bravo`");
+        final Filter filterSymConditional = RawString.of("true && (Sym == `alpha` || Sym == `bravo`)");
+        final Filter filterA = RawString.of("A < 50");
+        final Filter filterAConditional = RawString.of("true && A < 50");
+        final Filter filterB = RawString.of("B < 5");
+
+
+        // Create some capturing filters to verify the row sets being passed through the filter chain.
+        try (final RowSetCapturingFilter capturingFilterSym = new ParallelizedRowSetCapturingFilter(filterSym);
+                final RowSetCapturingFilter capturingFilterSymConditional =
+                        new ParallelizedRowSetCapturingFilter(filterSymConditional);
+                final RowSetCapturingFilter capturingFilterA = new ParallelizedRowSetCapturingFilter(filterA);
+                final RowSetCapturingFilter capturingFilterAConditional =
+                        new ParallelizedRowSetCapturingFilter(filterAConditional);
+                final RowSetCapturingFilter capturingFilterB = new ParallelizedRowSetCapturingFilter(filterB)) {
+
+            final List<RowSetCapturingFilter> allFilters = List.of(capturingFilterSym, capturingFilterSymConditional,
+                    capturingFilterA, capturingFilterAConditional, capturingFilterB);
+
+            Table result;
+
+            result = diskTable.where(capturingFilterSym).coalesce();
+
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
+            assertEquals(0, capturingFilterSym.numRowsProcessed());
+            assertEquals(28572, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterSym));
+            assertTableEquals(result, diskTable.where(filterSym));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
+            result = diskTable.where(capturingFilterSymConditional).coalesce();
+
+            assertEquals(0, capturingFilterSymConditional.numRowsProcessed());
+            assertEquals(28572, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterSymConditional));
+            assertTableEquals(result, diskTable.where(filterSymConditional));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
+            result = diskTable.where(capturingFilterA).coalesce();
+
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
+            assertEquals(0, capturingFilterA.numRowsProcessed());
+            assertEquals(51550, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterA));
+            assertTableEquals(result, diskTable.where(filterA));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
+            result = diskTable.where(capturingFilterAConditional).coalesce();
+
+            assertEquals(0, capturingFilterAConditional.numRowsProcessed());
+            assertEquals(51550, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterAConditional));
+            assertTableEquals(result, diskTable.where(filterAConditional));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
+            result = diskTable.where(capturingFilterB).coalesce();
+
+            // All rows to be tested.
+            assertEquals(100000, capturingFilterB.numRowsProcessed());
+            assertEquals(45455, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(filterB));
+            assertTableEquals(result, diskTable.where(filterB));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+
+            //////////////////////////////////////////////////////
+
+            // This filter is executed as a chunk filter over the constant regions, no rows are logged.
+            result = diskTable.where(Filter.and(capturingFilterSym, capturingFilterA)).coalesce();
+
+            assertEquals(0, capturingFilterSym.numRowsProcessed());
+            // A subset of regions tested for A match
+            assertEquals(0, capturingFilterA.numRowsProcessed());
+            assertEquals(14729, result.size());
+
+            // Use the unwrapped filter to test other optimization paths (i.e. chunk filtering) and assert equality.
+            assertTableEquals(result, memTable.where(Filter.and(filterSym, filterA)));
+            assertTableEquals(result, diskTable.where(Filter.and(filterSym, filterA)));
+
+            allFilters.forEach(RowSetCapturingFilter::reset);
+        }
     }
 }

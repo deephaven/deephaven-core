@@ -178,6 +178,6 @@ plot_ohlc = (
 ## Related documentation
 
 - [How to use the Chart Builder](../../how-to-guides/user-interface/chart-builder.md)
-- [How to create plots with the built-in API](../../how-to-guides/plotting/api-plotting.md)
+- [How to create OHLC plots with the built-in API](../../how-to-guides/plotting/api-plotting.md#ohlc)
 - [`plot`](./plot.md)
 - [Pydoc](/core/pydoc/code/deephaven.plot.figure.html#deephaven.plot.figure.Figure.plot_ohlc)

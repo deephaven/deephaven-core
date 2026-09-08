@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -175,7 +175,7 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(false),
                         with(ColumnToCodecMappings.EMPTY),
-                        with(equal(TABLE_DEFINITION.getColumns())));
+                        with(equal(TABLE_DEFINITION)));
                 will(returnValue(columnSourceManager));
                 allowing(columnSourceManager).tryRetainReference();
                 will(returnValue(true));
@@ -263,6 +263,15 @@ public class TestPartitionAwareSourceTableNoRemoval extends RefreshingTableTestC
         doRefreshOkCheck();
         doRemoveLocations(locationKeysSlice(3));
         doBadRefreshCheck();
+
+        // We expect a DelayedErrorNotifier source in this test. Assert that we encountered exactly one,
+        // and it is the expected type.
+        assertEquals(1, delayedErrors.size());
+        final Throwable error = delayedErrors.get(0).getError();
+        assertTrue(error instanceof TableLocationRemovedException);
+
+        // Clear the list to avoid failure in tearDown()
+        delayedErrors.clear();
     }
 
     private void doInitializeCheck(final ImmutableTableLocationKey[] tableLocationKeys,

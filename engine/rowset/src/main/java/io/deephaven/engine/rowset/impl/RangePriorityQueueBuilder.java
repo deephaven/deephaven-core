@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl;
 
@@ -92,9 +92,10 @@ public class RangePriorityQueueBuilder {
      * Adds an element to the range queues.
      */
     private void enter(final long startKey, final long endKey) {
+        // Written so neither side overflows: the stored end may be Long.MAX_VALUE, and keys are never negative.
         if (lastEntered >= 1 &&
                 endKey >= start[lastEntered] - 1 &&
-                startKey <= end[lastEntered] + 1) {
+                startKey - 1 <= end[lastEntered]) {
             // the endPosition is after the start position, and the start position is before the end position,
             // so we overlap this range
             if (endKey > end[lastEntered]) {

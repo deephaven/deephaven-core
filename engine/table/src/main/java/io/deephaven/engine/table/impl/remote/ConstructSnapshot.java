@@ -1,15 +1,16 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.remote;
 
-import gnu.trove.TIntCollection;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntCollection;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.ColumnSnapshotUnsuccessfulException;
@@ -85,10 +86,9 @@ public class ConstructSnapshot {
     private static final int MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttemptDurationMillis", 5000);
 
-    // TODO (deephaven-core#188): use ChunkPoolConstants.LARGEST_POOL_CHUNK_CAPACITY when JS API allows multiple batches
-    // default enables more than 100MB of 8-byte values in a single record batch
     public static final int SNAPSHOT_CHUNK_SIZE = Configuration.getInstance()
-            .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize", 1 << 24);
+            .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize",
+                    ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY);
 
     public interface State {
 
@@ -296,7 +296,9 @@ public class ConstructSnapshot {
         }
 
         private void maybeClearUpdateGraph() {
-            if (concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0) {
+            // Note that we must retain the update graph while we hold a lock acquired on behalf of a nested snapshot,
+            // since we need it in order to release the lock.
+            if (concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0 && !acquiredLock) {
                 this.updateGraph = null;
             }
         }
@@ -401,6 +403,7 @@ public class ConstructSnapshot {
             if (acquiredLock && concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0) {
                 updateGraph.sharedLock().unlock();
                 acquiredLock = false;
+                updateGraph = null;
             }
         }
     }
@@ -617,7 +620,7 @@ public class ConstructSnapshot {
             };
             final long clockStep =
                     callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
-            final BarrageMessage snapshot = snapshotMsg.getValue();
+            final BarrageMessage snapshot = snapshotMsg.get();
             snapshot.firstSeq = snapshot.lastSeq = clockStep;
             return snapshot;
         }
@@ -1111,6 +1114,28 @@ public class ConstructSnapshot {
             return LogicalClock.NULL_CLOCK_VALUE;
         }
 
+        try {
+            return callDataSnapshotFunctionRefreshing(logPrefix, control, function, state, updateGraph, overallStart);
+        } finally {
+            // Release the update graph lock if a nested locked snapshot acquired it on this thread's behalf and no
+            // enclosing snapshot remains in progress. This is a no-op on all successful paths, but ensures that we do
+            // not leak the lock when an exception propagates out of a concurrent attempt.
+            state.maybeReleaseLock();
+        }
+    }
+
+    /**
+     * Implementation of {@link #callDataSnapshotFunction(LogOutputAppendable, SnapshotControl, SnapshotFunction)} for
+     * refreshing data. Must be invoked with {@code state} being the current thread's {@link StateImpl}, and the caller
+     * is responsible for invoking {@link StateImpl#maybeReleaseLock()} when this method returns or throws.
+     */
+    private static long callDataSnapshotFunctionRefreshing(
+            @NotNull final LogOutputAppendable logPrefix,
+            @NotNull final SnapshotControl control,
+            @NotNull final SnapshotFunction function,
+            @NotNull final StateImpl state,
+            @NotNull final UpdateGraph updateGraph,
+            final long overallStart) {
         final boolean onUpdateThread = updateGraph.currentThreadProcessesUpdates();
         final boolean alreadyLocked = StateImpl.locked(updateGraph);
 
@@ -1204,6 +1229,17 @@ public class ConstructSnapshot {
                     }
                     break;
                 }
+            }
+            if (state.acquiredLock) {
+                // A nested locked snapshot acquired the update graph lock during this attempt, and it remains held
+                // until the outermost snapshot on this thread completes. We must not make another concurrent
+                // attempt (or sleep) while holding the lock, so fall back to a locked snapshot immediately.
+                if (log.isDebugEnabled()) {
+                    log.debug().append(logPrefix)
+                            .append(" Nested snapshot acquired update graph lock, proceeding to locked snapshot")
+                            .endl();
+                }
+                break;
             }
             if (attemptDurationMillis > MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS) {
                 if (log.isDebugEnabled()) {
@@ -1332,7 +1368,7 @@ public class ConstructSnapshot {
         // Snapshot empty columns serially, and collect indices of non-empty columns
         final int numColumnsToSnapshot =
                 columnsToSnapshot != null ? columnsToSnapshot.cardinality() : columnSources.length;
-        final TIntList nonEmptyColumnIndices = new TIntArrayList(numColumnsToSnapshot);
+        final IntList nonEmptyColumnIndices = new IntArrayList(numColumnsToSnapshot);
         final List<ColumnSource<?>> nonEmptyColumnSources = new ArrayList<>(numColumnsToSnapshot);
         if (!snapshotEmptyColumns(columnSources, columnsToSnapshot, table, logIdentityObject, snapshot,
                 nonEmptyColumnIndices, nonEmptyColumnSources)) {
@@ -1405,7 +1441,7 @@ public class ConstructSnapshot {
      * Snapshot the specified columns in parallel.
      */
     private static boolean snapshotColumnsParallel(
-            @NotNull final TIntList columnIndices,
+            @NotNull final IntList columnIndices,
             @NotNull final List<ColumnSource<?>> columnSources,
             final boolean usePrev,
             final ExecutionContext executionContext,
@@ -1418,7 +1454,7 @@ public class ConstructSnapshot {
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, columnIndices.size(),
                 (context, colRank, nestedErrorConsumer) -> snapshotColumnsSerial(
-                        new TIntArrayList(new int[] {columnIndices.get(colRank)}),
+                        new IntArrayList(new int[] {columnIndices.getInt(colRank)}),
                         columnSources.subList(colRank, colRank + 1),
                         usePrev, snapshot),
                 () -> waitForParallelSnapshot.complete(null),
@@ -1448,7 +1484,7 @@ public class ConstructSnapshot {
             @NotNull final Table table,
             @NotNull final Object logIdentityObject,
             @NotNull final BarrageMessage snapshot,
-            @NotNull final TIntCollection nonEmptyColumnsIndices,
+            @NotNull final IntCollection nonEmptyColumnsIndices,
             @NotNull final Collection<ColumnSource<?>> nonEmptyColumnSources) {
         final boolean rowsetIsEmpty = snapshot.rowsIncluded.isEmpty();
         for (int colIdx = 0; colIdx < columnSources.length; ++colIdx) {
@@ -1493,7 +1529,7 @@ public class ConstructSnapshot {
     }
 
     private static void snapshotColumnsSerial(
-            @NotNull final TIntList columnIndices,
+            @NotNull final IntList columnIndices,
             @NotNull final List<ColumnSource<?>> columnSources,
             final boolean usePrev,
             @NotNull final BarrageMessage snapshot) {
@@ -1514,7 +1550,7 @@ public class ConstructSnapshot {
                 final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(maxChunkSize);
                 // Populate the snapshot data for each column for the current chunk of rows
                 for (int colRank = 0; colRank < numCols; ++colRank) {
-                    final int colIdx = columnIndices.get(colRank);
+                    final int colIdx = columnIndices.getInt(colRank);
                     final ColumnSource<?> columnSource = columnSources.get(colRank);
                     final ColumnSource.FillContext fillContext = fillContexts[colRank];
                     final WritableChunk<Values> currentChunk =

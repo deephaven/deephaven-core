@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit BaseTestCharTimSortKernel and run "./gradlew replicateSortKernelTests" to regenerate
@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.tuple.generated.DoubleLongLongTuple;
 import io.deephaven.tuple.generated.DoubleLongTuple;
 import io.deephaven.engine.table.impl.sort.findruns.DoubleFindRunsKernel;
@@ -35,13 +36,13 @@ import java.util.stream.Collectors;
 public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
     public static Comparator<DoubleLongTuple> getJavaComparator() {
-        return Comparator.comparing(DoubleLongTuple::getFirstElement);
+        return Comparator.comparing(DoubleLongTuple::getFirstElement, DoubleComparisons::compare);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
     public static Comparator<DoubleLongLongTuple> getJavaMultiComparator() {
-        return Comparator.comparing(DoubleLongLongTuple::getFirstElement).thenComparing(DoubleLongLongTuple::getSecondElement);
+        return Comparator.comparing(DoubleLongLongTuple::getFirstElement, DoubleComparisons::compare).thenComparing(DoubleLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
@@ -181,7 +182,7 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
 
         public void run() {
             // region mergesort
-            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Double.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
+            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> DoubleComparisons.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
         }
     }
@@ -515,7 +516,7 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
 
     // region comparison functions
     private static int doComparison(double lhs, double rhs) {
-        return Double.compare(lhs, rhs);
+        return DoubleComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

@@ -4,7 +4,7 @@ title: Group and ungroup data
 
 This guide will show you how to group and ungroup table data in Deephaven.
 
-This guide uses a table of apple data called `apples` created using [`newTable`](../reference/table-operations/create/newTable.md). Many of the grouping and ungrouping examples use this table. If you are unfamiliar with creating tables from scratch using [`newTable`](../reference/table-operations/create/newTable.md), please see our guide [Create a new table](./new-and-empty-table.md#newtable).
+This guide uses a table of apple data called `apples` created using [`newTable`](../reference/table-operations/create/newTable.md). Many of the grouping and ungrouping examples use this table. If you are unfamiliar with creating tables from scratch using [`newTable`](../reference/table-operations/create/newTable.md), please see our guide [on creating new tables](./new-and-empty-table.md#newtable).
 
 Use the code below to create the `apples` table:
 
@@ -134,7 +134,7 @@ t_ungroupedByZ = t.ungroup("Z")
 
 Using [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) on a table with null values will work properly. Null values will appear as empty [array](../reference/query-language/types/arrays.md) elements when grouped with [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md). Null [array](../reference/query-language/types/arrays.md) elements expanded using [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) will appear as null (empty) row entries in the corresponding column.
 
-The example below uses the [`emptyTable`](../reference/table-operations/create/emptyTable.md) method and the [ternary operator](../how-to-guides/ternary-if-how-to.md) to create a table with two columns of 5 rows. The first and second rows contain null values. Null values behave as expected during grouping and ungrouping.
+The example below uses the [`emptyTable`](../reference/table-operations/create/emptyTable.md) method and the [ternary operator](./ternary-if-how-to.md) to create a table with two columns of 5 rows. The first and second rows contain null values. Null values behave as expected during grouping and ungrouping.
 
 ```groovy order=t,t_by,new_t
 t = emptyTable(5).update("X = i", "Z = i < 2 ? NULL_INT : i-2")

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.liveness;
 
@@ -29,9 +29,6 @@ public class LivenessScope extends ReferenceCountedLivenessNode implements Relea
      */
     public LivenessScope(boolean enforceStrongReachability) {
         super(enforceStrongReachability);
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return;
-        }
         if (Liveness.DEBUG_MODE_ENABLED) {
             Liveness.log.info().append("LivenessDebug: Creating scope ").append(Utils.REFERENT_FORMATTER, this).endl();
         }
@@ -45,9 +42,6 @@ public class LivenessScope extends ReferenceCountedLivenessNode implements Relea
      * @param other The other {@link LivenessManager}
      */
     public final void transferTo(@NotNull final LivenessManager other) {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return;
-        }
         if (enforceStrongReachability) {
             throw new UnsupportedOperationException(
                     "LivenessScope does not support reference transfer if enforceStrongReachability is specified");
@@ -68,9 +62,6 @@ public class LivenessScope extends ReferenceCountedLivenessNode implements Relea
      */
     @Override
     public final void release() {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return;
-        }
         if (Liveness.DEBUG_MODE_ENABLED) {
             Liveness.log.info().append("LivenessDebug: Begin releasing scope ").append(Utils.REFERENT_FORMATTER, this)
                     .endl();

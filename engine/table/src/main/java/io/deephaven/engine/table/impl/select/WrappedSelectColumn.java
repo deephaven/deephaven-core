@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.select;
 
@@ -116,6 +116,11 @@ abstract class WrappedSelectColumn implements SelectColumn {
     @Override
     public boolean isStateless() {
         return inner.isStateless();
+    }
+
+    @Override
+    public boolean isParallelizable() {
+        return inner.isParallelizable();
     }
 
     @Override

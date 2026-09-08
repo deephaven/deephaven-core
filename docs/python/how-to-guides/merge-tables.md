@@ -7,7 +7,7 @@ Deephaven tables can be combined via two different categories of operation: merg
 
 This guide discusses how to merge tables in Deephaven. If you want to join tables horizontally, see [Joins: Exact and Relational](./joins-exact-relational.md) and [Joins: Time-Series and Range](./joins-timeseries-range.md).
 
-There are two methods for merging tables in Deephaven: [`merge`](../reference/table-operations/merge/merge-sorted.md) and [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md).
+There are two methods for merging tables in Deephaven: [`merge`](../reference/table-operations/merge/merge.md) and [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md).
 
 The following code block initializes three tables, each with two columns. We will use these tables in the following examples.
 
@@ -83,7 +83,7 @@ for i in range(5):
         result = merge([result, new_result])
 ```
 
-Instead, we can make the operation more efficient by calling the [`merge`](../reference/table-operations/merge/merge-sorted.md) method just once. Here [`merge`](../reference/table-operations/merge/merge-sorted.md) is applied to an array containing all of the source tables:
+Instead, we can make the operation more efficient by calling the [`merge`](../reference/table-operations/merge/merge.md) method just once. Here [`merge`](../reference/table-operations/merge/merge.md) is applied to an array containing all of the source tables:
 
 ```python order=result
 from deephaven import merge, new_table
@@ -100,7 +100,7 @@ for i in range(5):
 result = merge(table_array)
 ```
 
-If you are sorting the data you want to merge, it is more efficient to use the [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md) method instead of [`merge`](../reference/table-operations/merge/merge-sorted.md) followed by [`sort`](../reference/table-operations/sort/sort.md). Your code will be easier to read, too.
+If you are sorting the data you want to merge, it is more efficient to use the [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md) method instead of [`merge`](../reference/table-operations/merge/merge.md) followed by [`sort`](../reference/table-operations/sort/sort.md). Your code will be easier to read, too.
 
 ```python order=null
 from deephaven import merge, merge_sorted, new_table
@@ -125,7 +125,7 @@ result = merge_sorted(tables=[source1, source2, source3], order_by="Number")
 
 ![Log readout showing how long it took for `t_merged` vs `result`](../assets/how-to/merge-n-sort-vs-merge-sorted.png)
 
-When we use [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md), our query completes ten times as fast as it does when using [`merge`](../reference/table-operations/merge/merge-sorted.md) followed by [`sort`](../reference/table-operations/sort/sort.md).
+When we use [`merge_sorted`](../reference/table-operations/merge/merge-sorted.md), our query completes more than _ten times faster_ (on average) than it does when using [`merge`](../reference/table-operations/merge/merge.md) followed by [`sort`](../reference/table-operations/sort/sort.md).
 
 ## Related documentation
 

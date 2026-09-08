@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api.filter;
 
@@ -22,6 +22,8 @@ import static io.deephaven.api.filter.Filter.and;
 import static io.deephaven.api.filter.Filter.isFalse;
 import static io.deephaven.api.filter.Filter.isNotNull;
 import static io.deephaven.api.filter.Filter.isNull;
+import static io.deephaven.api.filter.Filter.isNotNaN;
+import static io.deephaven.api.filter.Filter.isNaN;
 import static io.deephaven.api.filter.Filter.isTrue;
 import static io.deephaven.api.filter.Filter.not;
 import static io.deephaven.api.filter.Filter.ofFalse;
@@ -67,6 +69,18 @@ public class FilterTest {
     void filterIsNotNull() {
         stringsOf(isNotNull(FOO), "!isNull(Foo)");
         stringsOf(not(isNotNull(FOO)), "isNull(Foo)");
+    }
+
+    @Test
+    void filterIsNaN() {
+        stringsOf(isNaN(FOO), "isNaN(Foo)");
+        stringsOf(not(isNaN(FOO)), "!isNaN(Foo)");
+    }
+
+    @Test
+    void FilterIsNotNaN() {
+        stringsOf(isNotNaN(FOO), "!isNaN(Foo)");
+        stringsOf(not(isNotNaN(FOO)), "isNaN(Foo)");
     }
 
     @Test
@@ -209,6 +223,7 @@ public class FilterTest {
      */
     public static void visitAll(Visitor<?> visitor) {
         visitor.visit((FilterIsNull) null);
+        visitor.visit((FilterIsNaN) null);
         visitor.visit((FilterComparison) null);
         visitor.visit((FilterIn) null);
         visitor.visit((FilterNot<?>) null);
@@ -230,6 +245,11 @@ public class FilterTest {
         @Override
         public String visit(FilterIsNull isNull) {
             return of(isNull);
+        }
+
+        @Override
+        public String visit(FilterIsNaN isNaN) {
+            return of(isNaN);
         }
 
         @Override
@@ -304,6 +324,12 @@ public class FilterTest {
 
         @Override
         public CountingVisitor visit(FilterIsNull isNull) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterIsNaN isNaN) {
             ++count;
             return this;
         }
@@ -405,6 +431,12 @@ public class FilterTest {
         @Override
         public Void visit(FilterIsNull isNull) {
             out.add(FilterIsNull.of(FOO));
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterIsNaN isNaN) {
+            out.add(FilterIsNaN.of(FOO));
             return null;
         }
 

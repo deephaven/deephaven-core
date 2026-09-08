@@ -437,7 +437,7 @@ You can also get help by asking questions in our [GitHub Discussions](https://gi
 
    - will not search for classes Groovy that you use. If they are not part of the [standard set of Deephaven imports](https://github.com/deephaven/deephaven-core/blob/main/engine/table/src/main/java/io/deephaven/engine/table/lang/impl/QueryLibraryImportsDefaults.java), you must import them yourself.
 
-# Related documentation
+## Related documentation
 
 - [Create a new table](./new-and-empty-table.md#new_table)
 - [How to handle null, infinity, and not-a-number values](./null-inf-nan.md)

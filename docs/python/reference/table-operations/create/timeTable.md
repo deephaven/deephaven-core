@@ -26,7 +26,7 @@ The time interval between new row additions. Can be given as:
 - String input format is "PT00:00:00:00.001" - days, hours, minutes, seconds, and milliseconds.
 - A [datetime.timedelta](https://docs.python.org/3/library/datetime.html#datetime.timedelta) object.
 - A [numpy.timedelta64](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.timedelta64) object.
-- A [pandas.Timedelta](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Timedelta.html) object.
+- A [pandas.Timedelta](https://pandas.pydata.org/docs/reference/api/pandas.Timedelta.html) object.
 
 </Param>
 <Param name="start_time" type="Union[None, str, datetime.datetime, np.datetime64" optional>

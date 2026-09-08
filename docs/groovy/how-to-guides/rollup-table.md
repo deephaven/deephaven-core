@@ -35,35 +35,37 @@ result = source.rollup(aggregations, includeConstituents, groupByColumns...)
 
 In the result table, only the first and second levels are initially expanded. Levels can be expanded by clicking on the right-facing arrow in a corresponding `by` column.
 
+The [`rollup`](../reference/table-operations/create/rollup.md) method takes up to three arguments. The first one is required, while the other two are optional.
+
 1. `aggregations`: One or more aggregations.
 
 The following aggregations are supported:
 
-| Aggregation                                                                                 | Supported by `rollup()` |
-| ------------------------------------------------------------------------------------------- | ----------------------- |
-| [`AggAbsSum`](../reference/table-operations/group-and-aggregate/AggAbsSum.md)               | <Check/>                |
-| [`AggAvg`](../reference/table-operations/group-and-aggregate/AggAvg.md)                     | <Check/>                |
-| [`AggCount`](../reference/table-operations/group-and-aggregate/AggCount.md)                 | <Check/>                |
-| [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md)       | <Check/>                |
-| [`AggCountDistinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) | <Check/>                |
-| [`AggDistinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)           | <RedX/>                 |
-| [`AggFirst`](../reference/table-operations/group-and-aggregate/AggFirst.md)                 | <Check/>                |
-| [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md)             | <RedX/>                 |
-| [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md)                 | <RedX/>                 |
-| [`AggLast`](../reference/table-operations/group-and-aggregate/AggLast.md)                   | <Check/>                |
-| [`AggMax`](../reference/table-operations/group-and-aggregate/AggMax.md)                     | <Check/>                |
-| [`AggMed`](../reference/table-operations/group-and-aggregate/AggMed.md)                     | <RedX/>                 |
-| [`AggMin`](../reference/table-operations/group-and-aggregate/AggMin.md)                     | <Check/>                |
-| [`AggPartition`](../reference/table-operations/group-and-aggregate/AggPartition.md)         | <RedX/>                 |
-| [`AggPct`](../reference/table-operations/group-and-aggregate/AggPct.md)                     | <RedX/>                 |
-| [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md)     | <Check/>                |
-| [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md)       | <Check/>                |
-| [`AggStd`](../reference/table-operations/group-and-aggregate/AggStd.md)                     | <Check/>                |
-| [`AggSum`](../reference/table-operations/group-and-aggregate/AggSum.md)                     | <Check/>                |
-| [`AggUnique`](../reference/table-operations/group-and-aggregate/AggUnique.md)               | <Check/>                |
-| [`AggVar`](../reference/table-operations/group-and-aggregate/AggVar.md)                     | <Check/>                |
-| [`AggWAvg`](../reference/table-operations/group-and-aggregate/AggWAvg.md)                   | <Check/>                |
-| [`AggWSum`](../reference/table-operations/group-and-aggregate/AggWSum.md)                   | <Check/>                |
+| Aggregation                                                                                 | Supported by `rollup` |
+| ------------------------------------------------------------------------------------------- | --------------------- |
+| [`AggAbsSum`](../reference/table-operations/group-and-aggregate/AggAbsSum.md)               | <Check/>              |
+| [`AggAvg`](../reference/table-operations/group-and-aggregate/AggAvg.md)                     | <Check/>              |
+| [`AggCount`](../reference/table-operations/group-and-aggregate/AggCount.md)                 | <Check/>              |
+| [`AggCountWhere`](../reference/table-operations/group-and-aggregate/AggCountWhere.md)       | <Check/>              |
+| [`AggCountDistinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) | <Check/>              |
+| [`AggDistinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)           | <RedX/>               |
+| [`AggFirst`](../reference/table-operations/group-and-aggregate/AggFirst.md)                 | <Check/>              |
+| [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md)             | <RedX/>               |
+| [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md)                 | <RedX/>               |
+| [`AggLast`](../reference/table-operations/group-and-aggregate/AggLast.md)                   | <Check/>              |
+| [`AggMax`](../reference/table-operations/group-and-aggregate/AggMax.md)                     | <Check/>              |
+| [`AggMed`](../reference/table-operations/group-and-aggregate/AggMed.md)                     | <RedX/>               |
+| [`AggMin`](../reference/table-operations/group-and-aggregate/AggMin.md)                     | <Check/>              |
+| [`AggPartition`](../reference/table-operations/group-and-aggregate/AggPartition.md)         | <RedX/>               |
+| [`AggPct`](../reference/table-operations/group-and-aggregate/AggPct.md)                     | <RedX/>               |
+| [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md)     | <Check/>              |
+| [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md)       | <Check/>              |
+| [`AggStd`](../reference/table-operations/group-and-aggregate/AggStd.md)                     | <Check/>              |
+| [`AggSum`](../reference/table-operations/group-and-aggregate/AggSum.md)                     | <Check/>              |
+| [`AggUnique`](../reference/table-operations/group-and-aggregate/AggUnique.md)               | <Check/>              |
+| [`AggVar`](../reference/table-operations/group-and-aggregate/AggVar.md)                     | <Check/>              |
+| [`AggWAvg`](../reference/table-operations/group-and-aggregate/AggWAvg.md)                   | <Check/>              |
+| [`AggWSum`](../reference/table-operations/group-and-aggregate/AggWSum.md)                   | <Check/>              |
 
 In the case of a rollup table with a single aggregation, that aggregation can be on its own or in a single-element list. When more than one aggregation is used, the aggregations must be in a list. The aggregation(s) can be defined outside of the `rollup` call just like with [combined aggregations](./combined-aggregations.md#syntax).
 
@@ -112,6 +114,33 @@ result = source.rollup(aggList, "Group", "Subgroup")
 ```
 
 ![Creating a rollup table](../assets/how-to/new-rollup.gif)
+
+Note that rollup tables can only be created from String or primitive columns. Attempting to use a non-primitive type such as `LocalDate` or a Timestamp as a rollup column results in an error:
+
+```groovy skip-test
+import io.deephaven.api.agg.Aggregation
+
+t = newTable(
+    stringCol("Sym", "AAPL", "AAPL", "GOOGL", "GOOGL", "AAPL"),
+    doubleCol("Last", 150.25, 151.50, 920.75, 922.10, 152.00),
+    intCol("Size", 100, 200, 50, 150, 300),
+    instantCol("ExchangeTimestamp",
+        parseInstant("2017-08-25T09:30:00 UTC"),
+        parseInstant("2017-08-25T10:15:00 UTC"),
+        parseInstant("2017-08-25T11:45:00 UTC"),
+        parseInstant("2017-08-25T14:20:00 UTC"),
+        parseInstant("2017-08-25T15:50:00 UTC")
+    )
+)
+
+t = t.update("LocalExchangeTimestampDate=toLocalDate(ExchangeTimestamp, timeZone(`UTC`))")
+
+aggList = [Aggregation.AggAvg("Last", "Size")]
+
+tRollup = t.rollup(aggList, "LocalExchangeTimestampDate")
+```
+
+![An error message stating that Deephaven can't parse the LOCAL_DATE data type](../assets/how-to/cant-parse-local-date.png)
 
 ## Related documentation
 

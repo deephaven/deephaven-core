@@ -5,6 +5,9 @@ sidebar_label: Classes & Objects
 
 The ability to use your own custom Python [variables](./python-variables.md), [functions](./python-functions.md), classes, and objects in Deephaven query strings is one of its most powerful features. The use of Python classes in query strings follows some basic rules, which are outlined in this guide.
 
+> [!CAUTION]
+> Python classes and objects in query strings have [performance and memory implications](../conceptual/python-java-boundary.md). Python memory grows outside the Java heap and can lead to significant resident memory growth. For performance-critical or high-throughput queries, consider using [built-in query language functions](./built-in-functions.md) instead.
+
 > [!IMPORTANT]
 > Deephaven does not currently support Python [type hints](./python-functions.md#type-hints) for classes. If you want to ensure that the data types of class variables and methods are correct, you must use [type casts](./casting.md) in the query strings.
 

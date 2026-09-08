@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset;
 
@@ -59,13 +59,17 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Create a {@link WritableRowSet} containing the continuous range [firstRowKey, lastRowKey].
+     * Create a {@link WritableRowSet} containing the continuous range [firstRowKey, lastRowKey], or an {@link #empty()
+     * empty row set} if {@code lastRowKey < firstRowKey}.
      *
      * @param firstRowKey The first row key in the continuous range
      * @param lastRowKey The last row key in the continuous range
      * @return A new {@link WritableRowSet} containing the specified row key range
      */
     public static WritableRowSet fromRange(final long firstRowKey, final long lastRowKey) {
+        if (lastRowKey < firstRowKey) {
+            return empty();
+        }
         return new WritableRowSetImpl(SingleRange.make(firstRowKey, lastRowKey));
     }
 

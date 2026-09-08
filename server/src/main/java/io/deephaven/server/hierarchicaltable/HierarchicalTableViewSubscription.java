@@ -1,11 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.hierarchicaltable;
 
 import com.google.rpc.Code;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -307,7 +306,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             @NotNull final BarrageSubscriptionOptions subscriptionOptions,
             @NotNull final HierarchicalTableView view,
             @NotNull final LongConsumer snapshotNanosConsumer,
-            @NotNull final BarragePerformanceLog.WriteMetricsConsumer writeMetricsConsumer,
+            @NotNull final BarrageMessageWriter.WriteMetricsConsumer writeMetricsConsumer,
             @NotNull final BitSet columns,
             @NotNull final RowSet rows,
             @NotNull final WritableRowSet prevKeyspaceViewportRows) {

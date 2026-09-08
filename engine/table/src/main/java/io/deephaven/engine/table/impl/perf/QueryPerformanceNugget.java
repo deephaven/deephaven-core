@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.perf;
 
@@ -29,7 +29,7 @@ public class QueryPerformanceNugget extends BasePerformanceEntry implements Safe
     private static final int MAX_DESCRIPTION_LENGTH = 16 << 10;
 
     /**
-     * A re-usable "dummy" nugget which will never collect any information or be recorded.
+     * A re-usable "dummy" nugget that will never collect any information or be recorded.
      */
     static final QueryPerformanceNugget DUMMY_NUGGET = new QueryPerformanceNugget() {
         @Override

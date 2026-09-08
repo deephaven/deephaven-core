@@ -20,7 +20,7 @@ A crash course in Deephaven that covers the basics of working with tables and pl
 
 ## Get started
 
-This guide provides a broad - but clear and technically informative - overview of Deephaven’s capabilities. Dive in and unlock the potential of this powerful platform.
+This guide provides a broad - but clear and technically informative - overview of Deephaven's capabilities. Dive in and unlock the potential of this powerful platform.
 
 </CoreTutorialCard>
 
@@ -53,6 +53,14 @@ This section will cover some table operations that appear in almost all queries.
 ## Query strings
 
 Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They translate the user's intention into compiled code that the engine can execute.
+
+</CoreTutorialCard>
+
+<CoreTutorialCard to="/core/docs/getting-started/crash-course/vectorization-vs-loops/">
+
+## Recipes, not loops!
+
+Understand why Deephaven uses declarative recipes instead of loops. Learn the paradigm shift that unlocks automatic real-time updates.
 
 </CoreTutorialCard>
 

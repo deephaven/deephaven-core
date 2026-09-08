@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.by.ssmminmax;
 
@@ -26,7 +26,9 @@ public class CharSetResult implements SsmChunkedMinMaxOperator.SetResult {
             newResult = NULL_CHAR;
         } else {
             final CharSegmentedSortedMultiset charSsm = (CharSegmentedSortedMultiset) ssm;
+            // region nan handling
             newResult = minimum ? charSsm.getMinChar() : charSsm.getMaxChar();
+            // endregion nan handling
         }
         return setResult(destination, newResult);
     }

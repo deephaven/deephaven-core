@@ -48,4 +48,4 @@ print(has_data_index(source, ["Key1", "Key2"]))
 ## Related documentation
 
 - [`data_index`](./data-index.md)
-- [Pydoc](/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.has_data_index)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.has_data_index)

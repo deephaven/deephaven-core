@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharSetInclusionKernel and run "./gradlew replicateSetInclusionKernel" to regenerate
@@ -7,30 +7,30 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import gnu.trove.iterator.TByteIterator;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.type.TypeUtils;
-import gnu.trove.set.TByteSet;
-import gnu.trove.set.hash.TByteHashSet;
+import it.unimi.dsi.fastutil.bytes.ByteIterator;
+import it.unimi.dsi.fastutil.bytes.ByteOpenHashSet;
+import it.unimi.dsi.fastutil.bytes.ByteSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
 public class ByteSetInclusionKernel implements SetInclusionKernel {
 
-    private final TByteSet liveValues;
+    private final ByteSet liveValues;
     private final boolean inclusion;
 
     ByteSetInclusionKernel(@NotNull final Collection<Object> liveValues, final boolean inclusion) {
-        this.liveValues = new TByteHashSet(liveValues.size());
+        this.liveValues = new ByteOpenHashSet(liveValues.size());
         liveValues.forEach(x -> this.liveValues.add(TypeUtils.unbox((Byte) x)));
         this.inclusion = inclusion;
     }
 
     ByteSetInclusionKernel(final boolean inclusion) {
-        this.liveValues = new TByteHashSet();
+        this.liveValues = new ByteOpenHashSet();
         this.inclusion = inclusion;
     }
 
@@ -51,9 +51,9 @@ public class ByteSetInclusionKernel implements SetInclusionKernel {
 
     private static final class Iterator implements java.util.Iterator<Object> {
 
-        private final TByteIterator inner;
+        private final ByteIterator inner;
 
-        private Iterator(@NotNull final TByteIterator inner) {
+        private Iterator(@NotNull final ByteIterator inner) {
             this.inner = inner;
         }
 
@@ -64,7 +64,7 @@ public class ByteSetInclusionKernel implements SetInclusionKernel {
 
         @Override
         public Byte next() {
-            return TypeUtils.box(inner.next());
+            return TypeUtils.box(inner.nextByte());
         }
     }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit CharBlinkSortedFirstOrLastChunkedOperator and run "./gradlew replicateOperators" to regenerate
@@ -57,11 +57,12 @@ public class DoubleBlinkSortedFirstOrLastChunkedOperator extends CopyingPermuted
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
-        super.resetForStep(upstream, startingDestinationsCount);
+    public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
+        final boolean modified = super.resetForStep(upstream, startingDestinationsCount);
         if (isCombo) {
             changedDestinationsBuilder = RowSetFactory.builderRandom();
         }
+        return modified;
     }
 
     @Override

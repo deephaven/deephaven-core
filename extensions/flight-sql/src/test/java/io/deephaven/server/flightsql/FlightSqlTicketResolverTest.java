@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.server.flightsql;
 
@@ -146,7 +146,7 @@ public class FlightSqlTicketResolverTest {
     }
 
     private static void isSimilar(TableDefinition definition, Schema expected) {
-        isSimilar(BarrageUtil.toSchema(definition, Map.of(), true), expected);
+        isSimilar(BarrageUtil.makeSchema(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, definition, Map.of(), true), expected);
     }
 
     private static void isSimilar(Schema actual, Schema expected) {

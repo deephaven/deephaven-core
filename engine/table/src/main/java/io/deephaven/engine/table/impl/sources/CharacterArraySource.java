@@ -1,10 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
-import gnu.trove.list.array.TIntArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -38,7 +38,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
         implements MutableColumnSourceGetDefaults.ForChar /* MIXIN_IMPLS */ {
-    private static final SoftRecycler<char[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
+    private static final SoftRecycler<char[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY,
             () -> new char[BLOCK_SIZE], null);
 
     private char[][] blocks;
@@ -101,7 +101,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
                     prevBlocks[block] = recycler.borrowItem();
                     prevInUse[block] = inUse = inUseRecycler.borrowItem();
                     if (prevAllocated == null) {
-                        prevAllocated = new TIntArrayList();
+                        prevAllocated = new IntArrayList();
                     }
                     prevAllocated.add(block);
                 } else {

@@ -7,7 +7,7 @@ sidebar_label: Where can I find the password for the Deephaven IDE?
 
 <p></p>
 
-If you didn't set the password, you can't find it. When starting a server from Python, either [set the key yourself](../../how-to-guides/authentication/auth-psk.md#pip-installed-deephaven) or use [anonymous authentication](../../how-to-guides/authentication/auth-anon.md#pip-installed-deephaven).
+If you didn't set the password, you can't find it. When starting a server, either [set the key yourself](../../how-to-guides/authentication/auth-psk.md#setting-your-own-key) or use [anonymous authentication](../../how-to-guides/authentication/auth-anon.md).
 
 > [!NOTE]
 > These FAQ pages contain answers to questions about Deephaven Community Core that our users have asked in our [Community Slack](/slack). If you have a question that is not in our documentation, [join our Community](/slack) and we'll be happy to help!

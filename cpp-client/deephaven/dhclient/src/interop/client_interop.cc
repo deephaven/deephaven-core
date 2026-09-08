@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/interop/client_interop.h"
 
@@ -708,7 +708,7 @@ void deephaven_client_TableHandle_ToArrowTable(
     NativePtr<ArrowTableSpWrapper> *result,
     ErrorStatus *status) {
   status->Run([=]() {
-    auto at = self->ToArrowTable();
+    auto at = self->ToArrowTable(true);
     result->Reset(new ArrowTableSpWrapper(std::move(at)));
   });
 }

@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
@@ -72,7 +72,7 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      *        ChunkColumnSources
      * @return an empty ChunkColumnSource
      */
-    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, TLongArrayList sharedOffsetForData) {
+    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, LongArrayList sharedOffsetForData) {
         return make(chunkType, dataType, null, sharedOffsetForData);
     }
 
@@ -87,7 +87,7 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      * @return an empty ChunkColumnSource
      */
     static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, Class<?> componentType,
-            TLongArrayList sharedOffsetForData) {
+            LongArrayList sharedOffsetForData) {
         switch (chunkType) {
             case Char:
                 return new CharChunkColumnSource(sharedOffsetForData);

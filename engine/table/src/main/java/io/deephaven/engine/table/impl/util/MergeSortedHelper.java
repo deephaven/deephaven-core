@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.util;
 
@@ -11,8 +11,8 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -88,15 +88,15 @@ public class MergeSortedHelper {
         PriorityQueue<TableCursor> priorityQueue = new PriorityQueue<>();
 
         LinkedHashMap<String, SortedMergeColumnSource<?>> columnSources = new LinkedHashMap<>();
-        TIntArrayList tableList = new TIntArrayList();
-        TLongArrayList indexList = new TLongArrayList();
+        IntArrayList tableList = new IntArrayList();
+        LongArrayList indexList = new LongArrayList();
 
         int tableIndex = 0;
         for (Table table : tables) {
             if (!(table instanceof BaseTable)) {
                 throw new UnsupportedOperationException("Can not perform mergeSorted unless you pass in a BaseTable!");
             }
-            if (((BaseTable) table).isRefreshing()) {
+            if (table.isRefreshing()) {
                 throw new UnsupportedOperationException("mergeSorted does not yet support refreshing tables!");
             }
 
@@ -140,8 +140,8 @@ public class MergeSortedHelper {
     }
 
     static public class SortedMergeColumnSource<T> extends AbstractColumnSource<T> {
-        private final TIntArrayList tableIndex;
-        private final TLongArrayList columnIndex;
+        private final IntArrayList tableIndex;
+        private final LongArrayList columnIndex;
         private final ArrayList<ColumnSource<T>> innerSources;
 
         @Override
@@ -149,7 +149,7 @@ public class MergeSortedHelper {
             return innerSources.get(0).getComponentType();
         }
 
-        public SortedMergeColumnSource(TIntArrayList tableIndex, TLongArrayList columnIndex,
+        public SortedMergeColumnSource(IntArrayList tableIndex, LongArrayList columnIndex,
                 ColumnSource<T> firstSource) {
             super(firstSource.getType());
             this.tableIndex = tableIndex;
@@ -166,65 +166,65 @@ public class MergeSortedHelper {
 
         @Override
         public T get(long rowKey) {
-            int table = tableIndex.getQuick((int) rowKey);
-            long indexKey = columnIndex.getQuick((int) rowKey);
+            int table = tableIndex.getInt((int) rowKey);
+            long indexKey = columnIndex.getLong((int) rowKey);
             return innerSources.get(table).get(indexKey);
         }
 
         @Override
         public Boolean getBoolean(long rowKey) {
-            int table = tableIndex.getQuick((int) rowKey);
-            long indexKey = columnIndex.getQuick((int) rowKey);
+            int table = tableIndex.getInt((int) rowKey);
+            long indexKey = columnIndex.getLong((int) rowKey);
             return innerSources.get(table).getBoolean(indexKey);
         }
 
         @Override
         public byte getByte(long rowKey) {
-            int table = tableIndex.getQuick((int) rowKey);
-            long indexKey = columnIndex.getQuick((int) rowKey);
+            int table = tableIndex.getInt((int) rowKey);
+            long indexKey = columnIndex.getLong((int) rowKey);
             return innerSources.get(table).getByte(indexKey);
         }
 
         @Override
         public char getChar(long rowKey) {
-            int table = tableIndex.getQuick((int) rowKey);
-            long indexKey = columnIndex.getQuick((int) rowKey);
+            int table = tableIndex.getInt((int) rowKey);
+            long indexKey = columnIndex.getLong((int) rowKey);
             return innerSources.get(table).getChar(indexKey);
         }
 
         @Override
         public double getDouble(long rowKey) {
-            int table = tableIndex.getQuick((int) rowKey);
-            long indexKey = columnIndex.getQuick((int) rowKey);
+            int table = tableIndex.getInt((int) rowKey);
+            long indexKey = columnIndex.getLong((int) rowKey);
             return innerSources.get(table).getDouble(indexKey);
         }
 
         @Override
         public float getFloat(long rowKey) {
-            int table = tableIndex.getQuick((int) rowKey);
-            long indexKey = columnIndex.getQuick((int) rowKey);
+            int table = tableIndex.getInt((int) rowKey);
+            long indexKey = columnIndex.getLong((int) rowKey);
             return innerSources.get(table).getFloat(indexKey);
         }
 
         @Override
         public int getInt(long rowKey) {
-            int table = tableIndex.getQuick((int) rowKey);
-            long indexKey = columnIndex.getQuick((int) rowKey);
+            int table = tableIndex.getInt((int) rowKey);
+            long indexKey = columnIndex.getLong((int) rowKey);
             return innerSources.get(table).getInt(indexKey);
 
         }
 
         @Override
         public long getLong(long rowKey) {
-            int table = tableIndex.getQuick((int) rowKey);
-            long indexKey = columnIndex.getQuick((int) rowKey);
+            int table = tableIndex.getInt((int) rowKey);
+            long indexKey = columnIndex.getLong((int) rowKey);
             return innerSources.get(table).getLong(indexKey);
         }
 
         @Override
         public short getShort(long rowKey) {
-            int table = tableIndex.getQuick((int) rowKey);
-            long indexKey = columnIndex.getQuick((int) rowKey);
+            int table = tableIndex.getInt((int) rowKey);
+            long indexKey = columnIndex.getLong((int) rowKey);
             return innerSources.get(table).getShort(indexKey);
         }
 

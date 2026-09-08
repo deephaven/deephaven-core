@@ -12,7 +12,7 @@ configurations {
 dependencies {
     primitiveCodegen project(':codegen')
 
-    api libs.trove
+    implementation libs.dsi.fastutil
     api project(':Util')
     api project(':engine-vector')
     api project(':engine-primitive')

@@ -1,0 +1,4 @@
+<module>
+  <inherits name="io.deephaven.Util" />
+  <source path="" includes="ArraySort.java" />
+</module>

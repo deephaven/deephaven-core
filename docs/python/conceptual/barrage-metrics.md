@@ -12,7 +12,7 @@ This guide covers the statistics Deephaven records on [Barrage](/barrage/docs) a
 
 Barrage listens to UpdateGraph changes from the source table. Whenever the source table ticks, Barrage records `enqueueMillis`, the time it took to record relevant information.
 
-!["Delta -> Delta -> Delta"](../assets/how-to/barrage-deltas.png)
+![Diagram reading "Delta -> Delta -> Delta"](../assets/how-to/barrage-deltas.png)
 
 2. `PeriodicUpdateGraph.targetCycleDurationMillis` versus `barrage.minUpdateInterval`
 
@@ -35,7 +35,7 @@ Each delta and snapshot is then propagated to subscribers. Barrage records `Prop
 
 5. Writing to the OutputStream
 
-Another thread writes the resulting bytes to the actual gRPC stream. Barrage records `WriteMillis`, the time it took to drain the subscriber-specific filtered view of the update (including coalesced and snapshots) to the OutputStream. Barrage records `WriteMegabits`, the number of megabits (Mb) written on a single message. The choice to record this in Mb is for easy comparison against the bandwidth allowed by the connected hardware.
+Another thread writes the resulting bytes to the actual gRPC stream. Barrage records `WriteMillis`, the time it took to drain the subscriber-specific filtered view of the update (including coalesced and snapshots) to the OutputStream. Barrage records `WriteMegabits`, the number of megabits (Mb) that were written on a single message. The choice to record this in Mb is for easy comparison against the bandwidth allowed by the connected hardware.
 
 6. Receiver bundles gRPC messages into an update (coalesced or snapshot)
 
@@ -61,7 +61,7 @@ The snapshot request is queued for processing. Barrage records `QueueMillis`, th
 
 The snapshot request is then fulfilled. The process typically occurs concurrently with the UG, but larger snapshots may require holding the UG exclusive lock. Barrage records `SnapshotMillis`, the time it took to construct the snapshot for the listener.
 
-Similar to subscription requests, Barrage records `WriteMillis` and `WriteMegabits`, the time it took to write, and the number of Mb written.
+Similar to subscription requests, Barrage records `WriteMillis` and `WriteMegabits`, the time it took to write, and how many Mb were written.
 
 ## Related documentation
 

@@ -1,0 +1,76 @@
+plugins {
+    id 'java'
+    id 'jvm-test-suite'
+    id 'io.deephaven.project.register'
+}
+
+testing {
+    suites {
+        configureEach {
+            useJUnitJupiter()
+            dependencies {
+                implementation(libs.hadoop.common) {
+                    transitive = false
+                }
+
+                implementation libs.assertj
+                implementation libs.slf4j.api
+                runtimeOnly libs.slf4j.simple
+
+                implementation platform(libs.junit.bom)
+                implementation libs.junit.jupiter
+                runtimeOnly libs.junit.jupiter.engine
+                runtimeOnly libs.junit.platform.launcher
+            }
+        }
+        test {
+            dependencies {
+                runtimeOnly libs.woodstox.core
+                runtimeOnly libs.commons.collections4
+                runtimeOnly libs.hadoop.shaded.guava
+            }
+        }
+        missingWoodstoxTest(JvmTestSuite) {
+            sources {
+                java {
+                    srcDirs = ['src/missingWoodstoxTest/java']
+                }
+            }
+            dependencies {
+                // runtimeOnly libs.woodstox.core
+                runtimeOnly libs.commons.collections4
+                runtimeOnly libs.hadoop.shaded.guava
+            }
+        }
+        missingCollections4Test(JvmTestSuite) {
+            sources {
+                java {
+                    srcDirs = ['src/missingCollections4Test/java']
+                }
+            }
+            dependencies {
+                runtimeOnly libs.woodstox.core
+                // runtimeOnly libs.commons.collections4
+                runtimeOnly libs.hadoop.shaded.guava
+            }
+        }
+        missingHadoopShadedGuavaTest(JvmTestSuite) {
+            sources {
+                java {
+                    srcDirs = ['src/missingHadoopShadedGuavaTest/java']
+                }
+            }
+            dependencies {
+                runtimeOnly libs.woodstox.core
+                runtimeOnly libs.commons.collections4
+                // runtimeOnly libs.hadoop.shaded.guava
+            }
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn(testing.suites.missingWoodstoxTest)
+    dependsOn(testing.suites.missingCollections4Test)
+    dependsOn(testing.suites.missingHadoopShadedGuavaTest)
+}

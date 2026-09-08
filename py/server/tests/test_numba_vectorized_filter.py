@@ -1,14 +1,13 @@
 #
-# Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
 
-from numba import vectorize, int64, boolean, short
+from numba import boolean, int64, short, vectorize
 
 from deephaven import empty_table
 from deephaven.html import to_html
-
 from tests.testbase import BaseTestCase
 
 
@@ -23,14 +22,20 @@ def vectorized_func_wrong_return_type(x, y):
 
 
 class NumbaVectorizedFilterTestCase(BaseTestCase):
-
     def test_wrong_return_type(self):
         with self.assertRaises(Exception):
-            t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]) \
+            t = (
+                empty_table(10)
+                .view(formulas=["I=ii", "J=(ii * 2)"])
                 .where("vectorized_func_wrong_return_type(I, J)")
+            )
 
     def test_filter(self):
-        t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where("vectorized_func(I, J)")
+        t = (
+            empty_table(10)
+            .view(formulas=["I=ii", "J=(ii * 2)"])
+            .where("vectorized_func(I, J)")
+        )
         html_output = to_html(t)
         self.assertIn("<td>5</td><td>10</td>", html_output)
 

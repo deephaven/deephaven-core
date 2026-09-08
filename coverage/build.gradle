@@ -16,12 +16,17 @@ tasks.register("jacoco-merge", JacocoReport) {
     }
     additionalSourceDirs = files(jprojects.sourceSets.main.allSource.srcDirs)
     sourceDirectories = files(jprojects.sourceSets.main.allSource.srcDirs)
-    classDirectories = files(jprojects.sourceSets.main.output)
+    classDirectories = files(jprojects.sourceSets.main.output).asFileTree.matching {
+        // DH-23193 added a GWT supersource LittleEndianCodec that compiles into web-client-api
+        // under the same package as the real class in extensions-barrage, causing a JaCoCo
+        // "Can't add different class with same name" error. Exclude only the supersource copy.
+        exclude 'io/deephaven/extensions/barrage/chunk/LittleEndianCodec.class'
+    }
     reports {
         html.required = true
         html.outputLocation = layout.buildDirectory.dir('./reports/java/java-coverage.html')
         csv.required = true
-        csv.destination = file("$buildDir/reports/java/java-coverage.csv")
+        csv.outputLocation = layout.buildDirectory.file('reports/java/java-coverage.csv')
         xml.required = false
     }
     def projRootDir = rootProject.rootDir.absolutePath
@@ -30,7 +35,7 @@ tasks.register("jacoco-merge", JacocoReport) {
 
 tasks.register("python-merge") {
     def projRootDir = rootProject.rootDir.absolutePath
-    def outputDir = file("$buildDir/reports/python/")
+    def outputDir = layout.buildDirectory.dir('reports/python/').get().asFile
     def outputFile = new File(outputDir, "python-coverage.tsv")
     doLast {
         outputDir.mkdirs()

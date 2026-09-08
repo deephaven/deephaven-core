@@ -66,5 +66,5 @@ apt-get install vim -y
 
 ## Related documentation
 
-- [How to install Java packages](./install-and-use-java-packages.md)
+- [How to install and use Java packages](./install-and-use-java-packages.md)
 - [TA-lib sample app](https://github.com/jakemulf/ta-lib-install)<!--TODO: Change to Deephaven repo-->

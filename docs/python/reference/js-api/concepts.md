@@ -13,10 +13,8 @@ results of the operation.
 Table subscriptions consist of the client specifying which rows or columns they want data from, and the server will then
 send updates as needed. These updates can take the form of:
 
-- a snapshot, the data for all rows and columns that were
-  requested
-- a delta, where only added, modified, and removed rows and columns will be sent. The client can cancel their
-  subscription to a table, and can also request a snapshot be sent without any subscription.
+- a snapshot, the data for all rows and columns that were requested
+- a delta, where only added, modified, and removed rows and columns will be sent. The client can cancel their subscription to a table, and can also request a snapshot be sent without any subscription.
 
 While the server's Table is immutable, the JS API provides Tables that seem to be mutable, so that a given UI component
 can be bound to a single Table instance and get updates based on its current configuration. For example, if a new sort
@@ -52,10 +50,10 @@ When using the viewport in this way, changes made to the table itself will stop 
 change is finished.
 
 Alternatively, the `TableViewportSubscription` will fire the "updated" event, so after `Table.setViewport` is called, an
-event listener can be attached to the result. The viewport instance also exposes a `getViewportData()` method to get the
+event listener can be attached to the result. The viewport instance also exposes a `getViewportData` method to get the
 most recent data available, and a `setViewport` method to change the viewport. If obtained in this way,
 `Table.setViewport` can be used to create another viewport while still leaving this one open - any
-`TableViewportSubscription` instances need to have `close()` called on them to release their resources. Additionally, if
+`TableViewportSubscription` instances need to have `close` called on them to release their resources. Additionally, if
 the table changes, this viewport will not close automatically.
 
 ### Full-table subscriptions
@@ -66,7 +64,7 @@ inundating the client with data, since JS is a singly threaded language, and mil
 depending on how many columns are being read.
 
 To create a full-table subscription, use `Table.subscribe()` - a `TableSubscription` will be returned, with an "updated"
-event when data is available, and 2. a `close()` method to stop the subscription. Unlike viewports, these will not fire
+event when data is available, and 2. a `close` method to stop the subscription. Unlike viewports, these will not fire
 events from the table instance.
 
 <!--

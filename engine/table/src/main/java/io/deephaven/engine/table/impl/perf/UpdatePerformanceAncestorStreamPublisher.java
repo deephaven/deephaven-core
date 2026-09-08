@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl.perf;
 
@@ -28,7 +28,7 @@ class UpdatePerformanceAncestorStreamPublisher implements StreamPublisher {
             ColumnDefinition.ofString("UpdateGraph"),
             ColumnDefinition.ofLong("EntryId"),
             ColumnDefinition.ofString("EntryDescription"),
-            ColumnDefinition.ofVector("Ancestors", LongVector.class));
+            ColumnDefinition.of("Ancestors", LongVector.type()));
 
     public static TableDefinition definition() {
         return DEFINITION;

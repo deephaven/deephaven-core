@@ -6,7 +6,7 @@ plugins {
 description "Basic formula validation using annotations and reflective method names."
 
 dependencies {
-    implementation project(':Util')
+    implementation project(':util-annotations')
     api project(':engine-validation')
 
     implementation libs.javaparser.core

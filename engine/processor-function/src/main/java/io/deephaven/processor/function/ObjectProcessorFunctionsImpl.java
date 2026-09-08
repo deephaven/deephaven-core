@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.processor.function;
 
@@ -36,6 +36,7 @@ import io.deephaven.qst.type.BoxedLongType;
 import io.deephaven.qst.type.BoxedShortType;
 import io.deephaven.qst.type.BoxedType;
 import io.deephaven.qst.type.CustomType;
+import io.deephaven.qst.type.DurationType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.StringType;
@@ -222,6 +223,24 @@ final class ObjectProcessorFunctionsImpl<T> implements ObjectProcessor<T> {
         public LongAppender<T> visit(InstantType instantType) {
             // to long function
             return v.visit(f.cast(instantType).mapToLong(DateTimeUtils::epochNanos));
+        }
+
+        @Override
+        public ObjectAppender<T> visit(io.deephaven.qst.type.LocalTimeType localTimeType) {
+            // LocalTime is a generic object type
+            return new ObjectAppender<>(f);
+        }
+
+        @Override
+        public ObjectAppender<T> visit(io.deephaven.qst.type.LocalDateType localDateType) {
+            // LocalDate is a generic object type
+            return new ObjectAppender<>(f);
+        }
+
+        @Override
+        public ObjectAppender<T> visit(DurationType durationType) {
+            // Duration is a generic object type
+            return new ObjectAppender<>(f);
         }
 
         @Override

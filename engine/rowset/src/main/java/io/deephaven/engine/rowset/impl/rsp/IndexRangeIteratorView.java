@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl.rsp;
 
@@ -7,9 +7,16 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.rsp.container.SearchRangeIterator;
 import io.deephaven.engine.rowset.impl.rsp.container.ContainerUtil;
 
+import static io.deephaven.engine.rowset.impl.rsp.RspArray.uGreaterOrEqual;
+
 public class IndexRangeIteratorView implements SearchRangeIterator {
     private RowSet.RangeIterator it;
     private final long offset;
+    /**
+     * Exclusive end of the range of keys this view exposes. One past the last key of the block, which for the last
+     * block of the key space is one past {@link Long#MAX_VALUE} and so wraps negative; every comparison against it is
+     * therefore unsigned.
+     */
     private final long rangesEnd;
     private long itStart;
     private long itEnd;
@@ -42,13 +49,13 @@ public class IndexRangeIteratorView implements SearchRangeIterator {
     }
 
     private void computeNext() {
-        if (noMore || itStart >= rangesEnd) {
+        if (noMore || uGreaterOrEqual(itStart, rangesEnd)) {
             setTerminated();
             return;
         }
         nextValid = true;
         nextStart = (int) (itStart - offset);
-        if (itEnd >= rangesEnd) {
+        if (uGreaterOrEqual(itEnd, rangesEnd)) {
             nextEnd = (int) (rangesEnd - offset);
             itStart = rangesEnd;
             it.postpone(itStart);

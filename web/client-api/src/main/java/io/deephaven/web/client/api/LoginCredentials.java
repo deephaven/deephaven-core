@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -10,6 +10,9 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
+/**
+ * Login credentials used to authenticate a Deephaven client session.
+ */
 @JsType(namespace = "dh")
 public class LoginCredentials {
 
@@ -42,6 +45,9 @@ public class LoginCredentials {
         }
     }
 
+    /**
+     * The username to authenticate with, if applicable.
+     */
     @JsProperty
     @JsNullable
     public final String getUsername() {
@@ -53,6 +59,9 @@ public class LoginCredentials {
         this.username = username;
     }
 
+    /**
+     * The authentication token.
+     */
     @JsProperty
     @JsNullable
     public final String getToken() {
@@ -64,6 +73,10 @@ public class LoginCredentials {
         this.token = token;
     }
 
+    /**
+     * The token type, such as {@link CoreClient#LOGIN_TYPE_PASSWORD}, {@link CoreClient#LOGIN_TYPE_ANONYMOUS}, or the
+     * name of a custom authentication handler.
+     */
     @JsProperty
     @JsNullable
     public final String getType() {

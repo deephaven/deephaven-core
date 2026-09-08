@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.rowset.impl.sortedranges;
 
@@ -41,11 +41,6 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
 
     protected SortedRangesPacked(final int initialCapacity, final long offset) {
         super(initialCapacity);
-        this.offset = offset;
-    }
-
-    protected SortedRangesPacked(final ArrayType data, final long offset) {
-        super(data);
         this.offset = offset;
     }
 
@@ -150,6 +145,9 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         if (v + shiftOffset < 0) {
             throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when first=" + v);
         }
+        if (shiftOffset > 0 && last() + shiftOffset < 0) {
+            throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when last=" + last());
+        }
         return applyShiftImpl(shiftOffset, v, !canWrite());
     }
 
@@ -188,10 +186,13 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         if (v + shiftOffset < 0) {
             throw new IllegalArgumentException("offsetDelta=" + shiftOffset + " when first=" + v);
         }
+        if (shiftOffset > 0 && last() + shiftOffset < 0) {
+            throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when last=" + last());
+        }
         return applyShiftImpl(shiftOffset, v, true);
     }
 
-    // try to convert this to a SortedArrayLong with enough space to accomodate deltaCapacity elements
+    // try to convert this to a SortedArrayLong with enough space to accommodate deltaCapacity elements
     // in its data array.
     private SortedRangesLong tryConvertToSrLong(final int deltaCapacity) {
         if (count == 0) {

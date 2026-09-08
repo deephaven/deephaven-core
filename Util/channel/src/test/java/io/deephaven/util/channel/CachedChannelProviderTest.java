@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.util.channel;
 
@@ -173,6 +173,12 @@ public class CachedChannelProviderTest {
         @Override
         public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri) {
             return new TestMockChannel(count.getAndIncrement(), uri.toString(), channelContext);
+        }
+
+        @Override
+        public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull URI uri,
+                long fileSize) throws IOException {
+            return getReadChannel(channelContext, uri);
         }
 
         @Override

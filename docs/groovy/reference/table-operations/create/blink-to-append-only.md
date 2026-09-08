@@ -59,3 +59,8 @@ appendOnlyResult = BlinkTableTools.blinkToAppendOnly(tt1)
 ## Related Documentation
 
 - [`timeTable`](./timeTable.md)
+- [`isBlink`](../metadata/isBlink.md)
+- [`removeBlink`](./remove-blink.md)
+- [`addOnlyToBlink`](./addOnlyToBlink.md)
+- [Table types: Specialized semantics for blink tables](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables)
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/BlinkTableTools.html#blinkToAppendOnly(io.deephaven.engine.table.Table))

@@ -73,4 +73,4 @@ employeeDepartmentsByType = catPlotBy('Employee departments by type', source, 'D
 - [How to use the Chart Builder](../../how-to-guides/user-interface/chart-builder.md)
 - [How to create category plots](../../how-to-guides/plotting/api-plotting.md#category)
 - [Arrays](../query-language/types/arrays.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/plot/Axes.html#catPlotBy(java.lang.Comparable,io.deephaven.engine.table.Table,java.lang.String,java.lang.String,java.lang.String...))
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/plot/Axes.html#catPlotBy(java.lang.Comparable,io.deephaven.engine.table.Table,java.lang.String,java.lang.String,java.lang.String...))

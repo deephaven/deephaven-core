@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
@@ -63,6 +63,24 @@ public class LocalTimeWrapper {
         this.minute = minute;
         this.second = second;
         this.nano = nano;
+    }
+
+    /**
+     * Converts this time to an int value in the given units. The parameter matches the convention used by
+     * {@link #intCreator(int)} - 1 for seconds, 1_000 for milliseconds.
+     */
+    public int toInt(int unitsPerSecond) {
+        return (int) toLong(unitsPerSecond);
+    }
+
+    /**
+     * Converts this time to a long value in the given units. The parameter matches the convention used by
+     * {@link #longCreator(int)} - 1_000_000_000 for nanoseconds, 1_000_000 for microseconds.
+     */
+    public long toLong(int unitsPerSecond) {
+        long totalNanos = ((long) (hour * 3600 + minute * 60 + second)) * 1_000_000_000L + nano;
+        int nanoPerUnit = 1_000_000_000 / unitsPerSecond;
+        return totalNanos / nanoPerUnit;
     }
 
     @JsMethod

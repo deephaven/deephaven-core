@@ -1,6 +1,6 @@
 ---
 title: Community Core Docs
-description: Learn how to use the Deephaven real-time query engine with Groovy. Find getting started tutorials, practical how-to guides, deep conceptual explanations, detailed API references, and helpful cheat sheets.
+description: Learn how to use the Deephaven real-time query engine. Find getting started tutorials, practical how-to guides, deep conceptual explanations, detailed API references, and helpful cheat sheets.
 hide_title: true
 # hide_table_of_contents: true
 sidebar_label: Introduction
@@ -27,7 +27,7 @@ import { vsCommentDiscussion } from '@deephaven/icons';
 
 <div className="comment-title">
 
-Deephaven Community Core is a real-time, time-series, column-oriented query engine with relational database features. [Read the overview](/core/docs/conceptual/deephaven-overview) for a more detailed introduction.
+Deephaven Community Core is a real-time, time-series, column-oriented query engine with relational database features. [Read the overview](./conceptual/deephaven-overview.md) for a more detailed introduction.
 
 </div>
 
@@ -36,7 +36,7 @@ Deephaven Community Core is a real-time, time-series, column-oriented query engi
 <div className="padding-vert--md"></div>
 
 <div className="row">
-<QuickstartCTA/><TutorialCTA/>
+<QuickstartCTA /><TutorialCTA/>
 </div>
 
 <HelpCTA/>
@@ -57,10 +57,12 @@ Step-by-step guides to help you achieve a specific goal. Most useful when you're
 
 Popular guides
 
-- [Use filters](./how-to-guides/filters.md)
+- [Use filters](./how-to-guides/use-filters.md)
 - [Group and ungroup data](./how-to-guides/grouping-data.md)
 - [Read Parquet files](./how-to-guides/data-import-export/parquet-import.md)
 - [Write Parquet files](./how-to-guides/data-import-export/parquet-export.md)
+- [Import from Kafka](./how-to-guides/data-import-export/kafka-stream.md)
+- [Install Java packages](./how-to-guides/install-and-use-java-packages.md)
 
 </div>
 </div>
@@ -81,6 +83,7 @@ Clear explanations of core concepts to improve your fundamental understanding of
 Important concepts
 
 - [Deephaven overview](./conceptual/deephaven-overview.md)
+- [Deephaven's architectural design](./conceptual/deephaven-design.md)
 - [Core API features](./conceptual/deephaven-core-api.md)
 - [Table update model](./conceptual/table-update-model.md)
 - [Docker data volumes](./conceptual/docker-data-volumes.md)
@@ -106,6 +109,7 @@ API documentation
 - [Javadoc (Java client/server)](/core/javadoc)
 - [Pydoc (Python client)](/core/client-api/python)
 - [Pydoc (Python server)](/core/pydoc)
+- [JavaScript (client)](/core/client-api/javascript/modules/dh.html)
 - [Godoc (go client)](https://pkg.go.dev/github.com/deephaven/deephaven-core/go)
 - [C++ (client)](/core/client-api/cpp)
 - [C++ (examples)](/core/client-api/cpp-examples)
@@ -128,6 +132,8 @@ Short snippets and example queries. Most useful to keep open in a browser tab wh
 
 Useful cheat sheets
 
+- [Table operations](./reference/cheat-sheets/cheat-sheet.md)
+- [Table constructors](./reference/cheat-sheets/simple-table-constructors.md)
 - [Ultimate Cheat Sheet](./reference/cheat-sheets/cheat-sheet.md)
 - [Time operations](./reference/cheat-sheets/datetime-cheat-sheet.md)
 

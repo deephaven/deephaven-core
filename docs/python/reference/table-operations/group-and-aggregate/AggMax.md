@@ -131,7 +131,7 @@ result = source.agg_by(
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
+- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
 - [How to create multiple summary statistics for groups](../../../how-to-guides/combined-aggregations.md)
 - [`agg_by`](./aggBy.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggMax(java.lang.String...))

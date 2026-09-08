@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit TestCharLongMegaMerge and run "./gradlew replicateSortKernelTests" to regenerate
@@ -9,8 +9,6 @@ package io.deephaven.engine.table.impl.sort.megamerge;
 
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.util.hashing.LongChunkEquals;
-import io.deephaven.chunk.util.hashing.LongChunkEquals;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;

@@ -20,7 +20,7 @@ constituentFor(keyColumnValues...)
 <ParamTable>
 <Param name="keyColumnValues" type="Object...">
 
-Ordered, boxed values for the key columns, in the same order as [`keyColumnNames()`](./keyColumnNames.md).
+Ordered, boxed values for the key columns, in the same order as [`keyColumnNames`](./keyColumnNames.md).
 
 The `keyColumnValues` can be thought of as a tuple constraining the values for the corresponding key columns for the result row.
 If there are no matching rows, the result is null. If there are multiple matching rows, an `UnsupportedOperationException` is thrown.

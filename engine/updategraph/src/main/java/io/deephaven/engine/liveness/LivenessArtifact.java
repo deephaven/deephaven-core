@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.liveness;
 
@@ -46,9 +46,6 @@ public class LivenessArtifact extends ReferenceCountedLivenessNode implements Se
      * Add this artifact to the current manager provided by the {@link LivenessScopeStack}.
      */
     public final void manageWithCurrentScope() {
-        if (Liveness.REFERENCE_TRACKING_DISABLED) {
-            return;
-        }
         LivenessScopeStack.peek().manage(this);
     }
 }

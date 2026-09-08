@@ -1,9 +1,10 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api;
 
 import com.google.flatbuffers.FlatBufferBuilder;
+import com.google.protobuf.ByteStringAccess;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
@@ -14,33 +15,33 @@ import elemental2.promise.Promise;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.RollupRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.hierarchicaltable_pb.TreeRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.PartitionByRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb.PartitionByResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.AggregateRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.AsOfJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.BatchTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ColumnStatisticsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.CrossJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.DropColumnsRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExactJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.ExportedTableCreationResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.Literal;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.NaturalJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.RunChartDownsampleRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SeekRowRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SeekRowResponse;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SelectDistinctRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SelectOrUpdateRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SnapshotTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.SnapshotWhenTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.TableReference;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.batchtablerequest.Operation;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.table_pb.runchartdownsamplerequest.ZoomRange;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
+import io.deephaven.flightjs.protocol.BrowserFlight;
+import io.deephaven.proto.backplane.grpc.AggregateRequest;
+import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest;
+import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
+import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.Literal;
+import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.PartitionByRequest;
+import io.deephaven.proto.backplane.grpc.PartitionByResponse;
+import io.deephaven.proto.backplane.grpc.RollupRequest;
+import io.deephaven.proto.backplane.grpc.RollupResponse;
+import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
+import io.deephaven.proto.backplane.grpc.SeekRowRequest;
+import io.deephaven.proto.backplane.grpc.SeekRowResponse;
+import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
+import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
+import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
+import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
+import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.backplane.grpc.TreeRequest;
+import io.deephaven.proto.backplane.grpc.TreeResponse;
+import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
 import io.deephaven.web.client.api.barrage.WebBarrageMessageReader;
@@ -87,9 +88,11 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
+import org.apache.arrow.flight.impl.Flight;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
@@ -97,8 +100,12 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
 
 /**
  * Provides access to data in a table. Note that several methods present their response through Promises. This allows
- * the client to both avoid actually connecting to the server until necessary, and also will permit some changes not to
- * inform the UI right away that they have taken place.
+ * the client to:
+ *
+ * <ol>
+ * <li>Avoid actually connecting to the server until necessary.</li>
+ * <li>Permit some changes not to inform the UI right away that they have taken place.</li>
+ * </ol>
  */
 @TsName(namespace = "dh", name = "Table")
 public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject {
@@ -106,49 +113,90 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * The table size has updated, so live scrollbars and the like can be updated accordingly.
      */
     @JsProperty(namespace = "dh.Table")
-    public static final String EVENT_SIZECHANGED = "sizechanged",
-            /**
-             * event.detail is the currently visible window, the same as if getViewportData() was called and resolved.
-             * Listening to this event removes the need to listen to the finer grained events below for data changes. In
-             * contrast, using the finer grained events may enable only updating the specific rows which saw a change.
-             */
-            EVENT_UPDATED = "updated",
-            /**
-             * Finer grained visibility into data being added, rather than just seeing the currently visible viewport.
-             * Provides the row being added, and the offset it will exist at.
-             */
-            EVENT_ROWADDED = "rowadded",
-            /**
-             * Finer grained visibility into data being removed, rather than just seeing the currently visible viewport.
-             * Provides the row being removed, and the offset it used to exist at.
-             */
-            EVENT_ROWREMOVED = "rowremoved",
-            /**
-             * Finer grained visibility into data being updated, rather than just seeing the currently visible viewport.
-             * Provides the row being updated and the offset it exists at.
-             */
-            EVENT_ROWUPDATED = "rowupdated",
-            /**
-             * Indicates that a sort has occurred, and that the UI should be replaced with the current viewport.
-             */
-            EVENT_SORTCHANGED = "sortchanged",
-            /**
-             * Indicates that a filter has occurred, and that the UI should be replaced with the current viewport.
-             */
-            EVENT_FILTERCHANGED = "filterchanged",
-            /**
-             * Indicates that columns for this table have changed, and column headers should be updated.
-             */
-            EVENT_CUSTOMCOLUMNSCHANGED = "customcolumnschanged",
-            EVENT_DISCONNECT = "disconnect",
-            EVENT_RECONNECT = "reconnect",
-            EVENT_RECONNECTFAILED = "reconnectfailed",
-            /**
-             * Indicates that an error occurred on this table on the server or while communicating with it. The message
-             * will provide more insight, but recent operations were likely unsuccessful and may need to be reapplied.
-             */
-            EVENT_REQUEST_FAILED = "requestfailed",
-            EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
+    public static final String EVENT_SIZECHANGED = "sizechanged";
+
+    /**
+     * {@code event.detail} is the currently visible window, the same as if {@code getViewportData} was called and
+     * resolved. Listening to this event removes the need to listen to the finer grained events below for data changes.
+     * In contrast, using the finer grained events may enable only updating the specific rows which saw a change.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_UPDATED = "updated";
+
+    /**
+     * Finer grained visibility into data being added, rather than just seeing the currently visible viewport. Provides
+     * the row being added, and the offset it will exist at.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_ROWADDED = "rowadded";
+
+    /**
+     * Finer grained visibility into data being removed, rather than just seeing the currently visible viewport.
+     * Provides the row being removed, and the offset it used to exist at.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_ROWREMOVED = "rowremoved";
+
+    /**
+     * Finer grained visibility into data being updated, rather than just seeing the currently visible viewport.
+     * Provides the row being updated and the offset it exists at.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_ROWUPDATED = "rowupdated";
+
+    /**
+     * Indicates that a sort has occurred, and that the UI should be replaced with the current viewport.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_SORTCHANGED = "sortchanged";
+
+    /**
+     * Indicates that a filter has occurred, and that the UI should be replaced with the current viewport.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_FILTERCHANGED = "filterchanged";
+
+    /**
+     * Indicates that columns for this table have changed, and column headers should be updated.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_CUSTOMCOLUMNSCHANGED = "customcolumnschanged";
+
+    /**
+     * This table has lost its connection to the server. Events will not fire and data will not update until the
+     * connection is reestablished, at which point {@link #EVENT_RECONNECT} will fire. A reconnect will be attempted
+     * automatically.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_DISCONNECT = "disconnect";
+
+    /**
+     * This table has reconnected to the server, and data will update again. Any viewport or subscription that was
+     * active before the disconnect is restored.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_RECONNECT = "reconnect";
+
+    /**
+     * This table failed to reconnect to the server. The {@code event.detail} value describes the failure.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_RECONNECTFAILED = "reconnectfailed";
+
+    /**
+     * Indicates that an error occurred on this table on the server or while communicating with it. The message will
+     * provide more insight, but recent operations were likely unsuccessful and may need to be reapplied.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_REQUEST_FAILED = "requestfailed";
+
+    /**
+     * Indicates that a pending change to this table, such as a new sort or filter, was applied on the server. Any
+     * {@link #EVENT_SORTCHANGED}, {@link #EVENT_FILTERCHANGED}, or {@link #EVENT_CUSTOMCOLUMNSCHANGED} resulting from
+     * that change fires after this event.
+     */
+    @JsProperty(namespace = "dh.Table")
+    public static final String EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
 
     /**
      * The size the table will have if it is uncoalesced.
@@ -187,8 +235,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     private static int nextSubscriptionId;
 
     /**
-     * Creates a new Table directly from an existing ClientTableState. The CTS manages all fetch operations, so this is
-     * just a simple constructor to get a table that points to the given state.
+     * Creates a new {@code Table} directly from an existing {@code ClientTableState} (CTS). The CTS manages all fetch
+     * operations, so this is just a simple constructor to get a table that points to the given state.
      */
     public JsTable(
             WorkerConnection workerConnection,
@@ -219,8 +267,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a Sort than can be used to reverse a table. This can be passed into n array in applySort. Note that Tree Tables
-     * do not support reverse.
+     * A {@link Sort} that can be used to reverse a table. This can be passed into an array in applySort. Note that Tree
+     * Tables do not support {@code reverse}.
      * 
      * @return {@link Sort}
      */
@@ -237,10 +285,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     public TypedTicket typedTicket() {
-        TypedTicket typedTicket = new TypedTicket();
-        typedTicket.setTicket(state().getHandle().makeTicket());
-        typedTicket.setType(JsVariableType.TABLE);
-        return typedTicket;
+        return TypedTicket.newBuilder()
+                .setTicket(state().getHandle().makeTicket())
+                .setType(JsVariableType.TABLE)
+                .build();
     }
 
     @JsMethod
@@ -261,8 +309,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Retrieve a column by the given name. You should prefer to always retrieve a new Column instance instead of
-     * caching a returned value.
+     * Retrieve a column by the given name. You should prefer to always retrieve a new {@code Column} instance instead
+     * of caching a returned value.
      *
      * @param key
      * @return {@link Column}
@@ -322,26 +370,28 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * True if this table represents a user Input Table (created by InputTable.newInputTable). When true, you may call
-     * .inputTable() to add or remove data from the underlying table.
-     * 
-     * @return boolean
+     * {@code true} if this table represents a user Input Table (see {@link JsInputTable dh.InputTable}). When
+     * {@code true}, you may call {@link #inputTable()} to add or remove data from the underlying table.
      */
     @JsProperty(name = "hasInputTable")
     public boolean hasInputTable() {
         return hasInputTable;
     }
 
+    /**
+     * Checks whether this table is a blink table.
+     *
+     * @return {@code true} if this table is a blink table; {@code false} otherwise.
+     */
     @JsMethod
     public boolean isBlinkTable() {
         return isBlinkTable;
     }
 
     /**
-     * If .hasInputTable is true, you may call this method to gain access to an InputTable object which can be used to
-     * mutate the data within the table. If the table is not an Input Table, the promise will be immediately rejected.
-     *
-     * @return Promise of dh.InputTable
+     * If {@link #hasInputTable()} is {@code true}, you may call this method to gain access to an {@link JsInputTable}
+     * object which can be used to mutate the data within the table. If the table is not an Input Table, the promise
+     * will be immediately rejected.
      */
     @JsMethod
     public Promise<JsInputTable> inputTable() {
@@ -362,7 +412,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Indicates that this Table instance will no longer be used, and its connection to the server can be cleaned up.
+     * Indicates that this {@code Table} instance will no longer be used, and its connection to the server can be
+     * cleaned up.
      */
     @JsMethod
     public void close() {
@@ -386,6 +437,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         subscriptions.clear();
     }
 
+    /**
+     * Gets the names of attributes present on this table.
+     *
+     * @return String[] of attribute names.
+     */
     @JsMethod
     public String[] getAttributes() {
         TableAttributesDefinition attrs = lastVisibleState().getTableDef().getAttributes();
@@ -395,8 +451,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * null if no property exists, a string if it is an easily serializable property, or a {@code Promise
-     * &lt;Table&gt;} that will either resolve with a table or error out if the object can't be passed to JS.
+     * {@code null} if no attribute exists, a string if it is an easily serializable attribute value, or a
+     * {@link Promise} that resolves to a {@link JsTable} if the attribute value is a table.
      * 
      * @param attributeName
      * @return Object
@@ -419,7 +475,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
         // Finally, assume that this is a table value, since we won't have any other way to serialze
         // some other type. If this isn't correct, the server will fail and we'll fail the promise.
-        return workerConnection.newState((c, cts, metadata) -> {
+        return workerConnection.newState((c, cts) -> {
             // workerConnection.getServer().fetchTableAttributeAsTable(
             // state().getHandle(),
             // cts.getHandle(),
@@ -429,7 +485,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             throw new UnsupportedOperationException("getAttribute");
         },
                 "reading table from attribute with name " + attributeName)
-                .refetch(this, workerConnection.metadata())
+                .refetch()
                 .then(cts -> Promise.resolve(new JsTable(workerConnection, cts)));
     }
 
@@ -439,9 +495,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * The columns that are present on this table. This is always all possible columns. If you specify fewer columns in
-     * .setViewport(), you will get only those columns in your ViewportData. <b>Number size</b> The total count of rows
-     * in the table. The size can and will change; see the <b>sizechanged</b> event for details. Size will be negative
-     * in exceptional cases (eg. the table is uncoalesced, see the <b>isUncoalesced</b> property for details).
+     * {@link #setViewport(double, double, JsArray)}, you will get only those columns in your
+     * {@link io.deephaven.web.client.api.subscription.ViewportData ViewportData}. {@code size} is the total count of
+     * rows in the table. The size can and will change; see the {@link #EVENT_SIZECHANGED} event for details. Size will
+     * be negative in exceptional cases (eg. the table is uncoalesced, see the {@link #isUncoalesced()} property for
+     * details).
      * 
      * @return {@link Column} array
      */
@@ -450,6 +508,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         return Js.uncheckedCast(lastVisibleState().getColumns());
     }
 
+    /**
+     * Layout hints for displaying this table.
+     */
     @JsProperty
     @JsNullable
     public JsLayoutHints getLayoutHints() {
@@ -462,9 +523,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * {@link #SIZE_UNCOALESCED}. Otherwise, the size will be updated when the server's update graph processes changes.
      * <p>
      * When the size changes, the {@link #EVENT_SIZECHANGED} event will be fired.
-     *
-     * @return the size of the table, or {@link #SIZE_UNCOALESCED} if there is no subscription and the table is
-     *         uncoalesced.
      */
     @JsProperty
     public double getSize() {
@@ -480,6 +538,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         return size;
     }
 
+    /**
+     * The table description attribute.
+     *
+     * @return The description, or {@code null}.
+     */
     @JsProperty
     @JsNullable
     public String getDescription() {
@@ -490,8 +553,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * The total count of the rows in the table, excluding any filters. Unlike {@link #getSize()}, changes to this value
      * will not result in any event. If the table is unfiltered, this will return the same size as {@link #getSize()}.
      * If this table was uncoalesced before it was filtered, this will return {@link #SIZE_UNCOALESCED}.
-     * 
-     * @return the size of the table before filters, or {@link #SIZE_UNCOALESCED}
      */
     @JsProperty
     public double getTotalSize() {
@@ -503,11 +564,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * An ordered list of Sorts to apply to the table. To update, call <b>applySort()</b>. Note that this getter will
-     * return the new value immediately, even though it may take a little time to update on the server. You may listen
-     * for the <b>sortchanged</b> event to know when to update the UI.
-     * 
-     * @return {@link Sort} array
+     * An ordered list of {@link Sort}s to apply to the table. To update, call {@link #applySort(Sort[])}. Note that
+     * this getter will return the new value immediately, even though it may take a little time to update on the server.
+     * You may listen for the {@link #EVENT_SORTCHANGED} event to know when to update the UI.
      */
     @JsProperty
     public JsArray<Sort> getSort() {
@@ -515,11 +574,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * An ordered list of Filters to apply to the table. To update, call applyFilter(). Note that this getter will
-     * return the new value immediately, even though it may take a little time to update on the server. You may listen
-     * for the <b>filterchanged</b> event to know when to update the UI.
-     * 
-     * @return {@link FilterCondition} array
+     * An ordered list of filter conditions to apply to the table. To update, call
+     * {@link #applyFilter(FilterCondition[])}. Note that this getter will return the new value immediately, even though
+     * it may take a little time to update on the server. You may listen for the {@link #EVENT_FILTERCHANGED} event to
+     * know when to update the UI.
      */
     @JsProperty
     public JsArray<FilterCondition> getFilter() {
@@ -529,12 +587,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * Replace the currently set sort on this table. Returns the previously set value. Note that the sort property will
      * immediately return the new value, but you may receive update events using the old sort before the new sort is
-     * applied, and the <b>sortchanged</b> event fires. Reusing existing, applied sorts may enable this to perform
-     * better on the server. The <b>updated</b> event will also fire, but <b>rowadded</b> and <b>rowremoved</b> will
-     * not.
+     * applied, and the {@link #EVENT_SORTCHANGED} event fires. Reusing existing, applied sorts may enable this to
+     * perform better on the server. The {@link #EVENT_UPDATED} event will also fire, but {@link #EVENT_ROWADDED} and
+     * {@link #EVENT_ROWREMOVED} will not.
      *
      * @param sort
-     * @return {@link Sort} array
      */
     @JsMethod
     @SuppressWarnings("unusable-by-js")
@@ -568,12 +625,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * Replace the currently set filters on the table. Returns the previously set value. Note that the filter property
      * will immediately return the new value, but you may receive update events using the old filter before the new one
-     * is applied, and the <b>filterchanged</b> event fires. Reusing existing, applied filters may enable this to
-     * perform better on the server. The <b>updated</b> event will also fire, but <b>rowadded</b> and <b>rowremoved</b>
-     * will not.
+     * is applied, and the {@link #EVENT_FILTERCHANGED} event fires. Reusing existing, applied filters may enable this
+     * to perform better on the server. The {@link #EVENT_UPDATED} event will also fire, but {@link #EVENT_ROWADDED} and
+     * {@link #EVENT_ROWREMOVED} will not.
      *
      * @param filter
-     * @return {@link FilterCondition} array
      */
     @JsMethod
     @SuppressWarnings("unusable-by-js")
@@ -634,10 +690,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * used when adding new filter and sort operations to the table, as long as they are present.
+     * Used when adding new filter and sort operations to the table, as long as they are present.
      *
      * @param customColumns
-     * @return {@link CustomColumn} array
      */
     @JsMethod
     public JsArray<CustomColumn> applyCustomColumns(JsArray<CustomColumnArgUnionType> customColumns) {
@@ -676,10 +731,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * An ordered list of custom column formulas to add to the table, either adding new columns or replacing existing
-     * ones. To update, call <b>applyCustomColumns()</b>.
-     * 
-     * @return {@link CustomColumn} array
-     *
+     * ones. To update, call {@link #applyCustomColumns(JsArray)}.
      */
     @JsProperty
     public JsArray<CustomColumn> getCustomColumns() {
@@ -687,31 +739,30 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Overload for Java (since JS just omits the optional params)
+     * Overload for Java (since JS just omits the optional params).
      */
     public TableViewportSubscription setViewport(double firstRow, double lastRow) {
         return setViewport(firstRow, lastRow, null, null, null);
     }
 
     /**
-     * Overload for Java (since JS just omits the optional param)
+     * Overload for Java (since JS just omits the optional param).
      */
     public TableViewportSubscription setViewport(double firstRow, double lastRow, JsArray<Column> columns) {
         return setViewport(firstRow, lastRow, columns, null, null);
     }
 
     /**
-     * If the columns parameter is not provided, all columns will be used. If the updateIntervalMs parameter is not
-     * provided, a default of one second will be used. Until this is called, no data will be available. Invoking this
-     * will result in events to be fired once data becomes available, starting with an `updated` event and a
-     * <b>rowadded</b> event per row in that range. The returned object allows the viewport to be closed when no longer
+     * If the columns parameter is not provided, all columns will be used. If the {@code updateIntervalMs} parameter is
+     * not provided, a default of one second will be used. Until this is called, no data will be available. Invoking
+     * this will result in events to be fired once data becomes available, starting with an {@code updated} event and a
+     * {@code rowadded} event per row in that range. The returned object allows the viewport to be closed when no longer
      * needed.
      *
      * @param firstRow
      * @param lastRow
      * @param columns
      * @param updateIntervalMs
-     * @return {@link TableViewportSubscription}
      * @deprecated Use {@link #createViewportSubscription(Object)} instead.
      */
     @JsMethod
@@ -780,20 +831,20 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * Creates a subscription to the specified columns, across all rows in the table. The optional parameter
-     * updateIntervalMs may be specified to indicate how often the server should send updates, defaulting to one second
-     * if omitted. Useful for charts or taking a snapshot of the table atomically. The initial snapshot will arrive in a
-     * single event, but later changes will be sent as updates. However, this may still be very expensive to run from a
-     * browser for very large tables. Each call to subscribe creates a new subscription, which must have <b>close()</b>
-     * called on it to stop it, and all events are fired from the TableSubscription instance.
+     * {@code updateIntervalMs} may be specified to indicate how often the server should send updates, defaulting to one
+     * second if omitted. Useful for charts or taking a snapshot of the table atomically. The initial snapshot will
+     * arrive in a single event, but later changes will be sent as updates. However, this may still be very expensive to
+     * run from a browser for very large tables. Each call to subscribe creates a new subscription, which must have
+     * {@link TableSubscription#close()} called on it to stop it, and all events are fired from the
+     * {@link TableSubscription} instance.
      *
      * @param columns
      * @param updateIntervalMs
-     * @return {@link TableSubscription}
      * @deprecated Use {@link #createSubscription(Object)} with a {@link DataOptions.SubscriptionOptions} instead.
      */
     @JsMethod
     @Deprecated
-    public TableSubscription subscribe(JsArray<Column> columns, @JsOptional Double updateIntervalMs) {
+    public TableSubscription subscribe(JsArray<Column> columns, @JsOptional @JsNullable Double updateIntervalMs) {
         DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
         options.previewOptions = new DataOptions.PreviewOptions();
         options.previewOptions.convertArrayToString = true;
@@ -806,8 +857,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * Creates a subscription to the specified columns, across all rows in the table. Useful for charts or taking a
      * snapshot of the table atomically. The initial snapshot will arrive in a single event, but later changes will be
      * sent as updates. However, this may still be very expensive to run from a browser for very large tables. Each call
-     * to {@code createSubscription} creates a new subscription, which must have {@link TableSubscription#close()}
-     * called on it to stop it and release its resources, and all events are fired from the TableSubscription instance.
+     * to {@link #createSubscription(Object) createSubscription} creates a new subscription, which must have
+     * {@link TableSubscription#close()} called on it to stop it and release its resources, and all events are fired
+     * from the {@link TableSubscription} instance.
      * 
      * @param options options for the subscription; see {@link DataOptions.SubscriptionOptions} for details
      * @return a new {@link TableSubscription}
@@ -819,10 +871,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     /**
      * Creates a viewport subscription to the specified columns, across the specified rows in the table. The returned
-     * TableViewportSubscription instance allows the viewport to be changed over time, and events are fired from it when
-     * the data changes or when a viewport change has been applied. Each call to {@code createSubscription} creates a
-     * new subscription, which must have {@link TableViewportSubscription#close()} called on it to stop it and release
-     * its resources
+     * {@link TableViewportSubscription} instance allows the viewport to be changed over time, and events are fired from
+     * it when the data changes or when a viewport change has been applied. Each call to
+     * {@link #createViewportSubscription(Object) createViewportSubscription} creates a new subscription, which must
+     * have {@link TableViewportSubscription#close()} called on it to stop it and release its resources
      *
      * @param options options for the viewport subscription; see {@link DataOptions.ViewportSubscriptionOptions} for
      *        details
@@ -835,16 +887,21 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         if (copy.columns == null) {
             throw new IllegalArgumentException("Missing 'columns' property in viewport subscription options");
         }
-        return TableViewportSubscription.make(copy, this);
+        TableViewportSubscription subscription = TableViewportSubscription.make(copy, this);
+
+        // Sever any connection between this table and the subscription
+        subscription.retainForExternalUse();
+        subscription.internalClose();
+
+        return subscription;
     }
 
 
     /**
-     * Returns a promise that will resolve to a TableData containing a snapshot of the current state of the table,
-     * within the bounds of the specified rows and columns.
+     * Returns a promise that will resolve to a {@link TableData} instance containing a snapshot of the current state of
+     * the table, within the bounds of the specified rows and columns.
      *
      * @param options options for the snapshot; see {@link DataOptions.SnapshotOptions} for details
-     * @return Promise of {@link TableData}
      */
     @JsMethod
     public Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options) {
@@ -878,21 +935,18 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
             WebBarrageMessageReader reader = new WebBarrageMessageReader();
 
-            BiDiStream<FlightData, FlightData> doExchange =
-                    workerConnection.<FlightData, FlightData>streamFactory().create(
+            BiDiStream<Flight.FlightData, Flight.FlightData> doExchange =
+                    workerConnection.<Flight.FlightData, Flight.FlightData>streamFactory().<BrowserFlight.BrowserNextResponse>create(
                             headers -> workerConnection.flightServiceClient().doExchange(headers),
                             (first, headers) -> workerConnection.browserFlightServiceClient().openDoExchange(first,
                                     headers),
-                            (next, headers, c) -> workerConnection.browserFlightServiceClient().nextDoExchange(next,
-                                    headers,
-                                    c::apply),
-                            new FlightData());
+                            (next, headers) -> workerConnection.browserFlightServiceClient().nextDoExchange(next,
+                                    headers));
             MutableLong rowsReceived = new MutableLong(0);
             doExchange.onData(data -> {
                 WebBarrageMessage message;
                 try {
-                    message = reader.parseFrom(barrageSnapshotOptions, cts.columnTypes(),
-                            cts.componentTypes(), data);
+                    message = reader.parseFrom(barrageSnapshotOptions, data);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -910,7 +964,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     snapshot.applyUpdates(message);
                 }
             });
-            FlightData payload = new FlightData();
+            Flight.FlightData.Builder payload = Flight.FlightData.newBuilder();
             final FlatBufferBuilder metadata = new FlatBufferBuilder();
 
             int colOffset = BarrageSnapshotRequest.createColumnsVector(metadata,
@@ -920,7 +974,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             int optOffset = barrageSnapshotOptions.appendTo(metadata);
 
             final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata,
-                    Js.<byte[]>uncheckedCast(cts.getHandle().getTicket()));
+                    cts.getHandle().getTicket().getTicket().toByteArray());
             BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
             BarrageSnapshotRequest.addColumns(metadata, colOffset);
             BarrageSnapshotRequest.addViewport(metadata, vpOffset);
@@ -929,7 +983,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             BarrageSnapshotRequest.addReverseViewport(metadata, false);
             metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
 
-            payload.setAppMetadata(WebBarrageUtils.wrapMessage(metadata, BarrageMessageType.BarrageSnapshotRequest));
+            payload.setAppMetadata(ByteStringAccess
+                    .wrap(WebBarrageUtils.wrapMessage(metadata, BarrageMessageType.BarrageSnapshotRequest)));
             doExchange.onEnd(status -> {
                 if (status.isOk()) {
                     // notify the caller that the snapshot is finished
@@ -951,7 +1006,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 }
             });
 
-            doExchange.send(payload);
+            doExchange.send(payload.build());
             doExchange.end();
 
         }, promise::fail, () -> promise.fail("Table was closed"));
@@ -959,7 +1014,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a new table containing the distinct tuples of values from the given columns that are present in the original
+     * A new table containing the distinct tuples of values from the given columns that are present in the original
      * table. This table can be manipulated as any other table. Sorting is often desired as the default sort is the
      * order of appearance of values from the original table.
      * 
@@ -971,16 +1026,17 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         final ClientTableState state = state();
         // We are going to forget all configuration for the current state
         // by just creating a new, fresh state. This should be an optional flatten()/copy() step instead.
-        String[] columnNames = Arrays.stream(columns).map(Column::getName).toArray(String[]::new);
-        final ClientTableState distinct = workerConnection.newState((c, cts, metadata) -> {
-            SelectDistinctRequest request = new SelectDistinctRequest();
-            request.setSourceId(state.getHandle().makeTableReference());
-            request.setResultId(cts.getHandle().makeTicket());
-            request.setColumnNamesList(columnNames);
-            workerConnection.tableServiceClient().selectDistinct(request, metadata, c::apply);
+        List<String> columnNames = Arrays.stream(columns).map(Column::getName).collect(Collectors.toList());
+        final ClientTableState distinct = workerConnection.newState((c, cts) -> {
+            SelectDistinctRequest request = SelectDistinctRequest.newBuilder()
+                    .setSourceId(state.getHandle().makeTableReference())
+                    .setResultId(cts.getHandle().makeTicket())
+                    .addAllColumnNames(columnNames)
+                    .build();
+            workerConnection.tableServiceClient().selectDistinct(request, c);
         },
-                "selectDistinct " + Arrays.toString(columnNames));
-        return distinct.refetch(this, workerConnection.metadata())
+                "selectDistinct " + columnNames);
+        return distinct.refetch()
                 .then(cts -> Promise.resolve(new JsTable(workerConnection, cts)));
     }
 
@@ -1008,10 +1064,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a promise that will resolve to a Totals Table of this table. This table will obey the configurations provided as
+     * A promise that will resolve to a Totals Table of this table. This table will obey the configurations provided as
      * a parameter, or will use the table's default if no parameter is provided, and be updated once per second as
-     * necessary. Note that multiple calls to this method will each produce a new TotalsTable which must have close()
-     * called on it when not in use.
+     * necessary. Note that multiple calls to this method will each produce a new {@link JsTotalsTable dh.TotalsTable}
+     * which must have {@link JsTotalsTable#close() close()} called on it when not in use.
      * 
      * @param config
      * @return Promise of dh.TotalsTable
@@ -1026,9 +1082,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * The default configuration to be used when building a <b>TotalsTable</b> for this table.
+     * The default configuration to be used when building a {@link JsTotalsTable dh.TotalsTable} for this table.
      * 
-     * @return dh.TotalsTableConfig
+     * @return {@link JsTotalsTableConfig dh.TotalsTableConfig}
      */
     @JsProperty
     public JsTotalsTableConfig getTotalsTableConfig() {
@@ -1042,7 +1098,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     private Promise<JsTotalsTable> fetchTotals(Object config, JsProvider<ClientTableState> state) {
         JsTotalsTableConfig directive = getTotalsDirectiveFromOptionalConfig(config);
         ClientTableState[] lastGood = {null};
-        final JsTableFetch totalsFactory = (callback, newState, metadata) -> {
+        final JsTableFetch totalsFactory = (callback, newState) -> {
             final ClientTableState target;
             // we know this will get called at least once, immediately, so lastGood will never be null
             if (isClosed()) {
@@ -1062,60 +1118,58 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     "(", LazyString.of(target::getHandle), "), into ", LazyString.of(newState::getHandle), "(",
                     newState, ")");
 
-            AggregateRequest requestMessage = directive.buildRequest(getColumns());
-            JsArray<String> updateViewExprs = directive.getCustomColumns();
-            JsArray<String> dropColumns = directive.getDropColumns();
+            AggregateRequest.Builder requestMessage = directive.buildRequest(getColumns()).toBuilder();
+            List<String> updateViewExprs = directive.getCustomColumns().asList();
+            List<String> dropColumns = directive.getDropColumns().asList();
             requestMessage.setSourceId(target.getHandle().makeTableReference());
-            requestMessage.setResultId(newState.getHandle().makeTicket());
-            if (updateViewExprs.length != 0) {
-                SelectOrUpdateRequest columnExpr = new SelectOrUpdateRequest();
-                columnExpr.setResultId(requestMessage.getResultId());
-                requestMessage.setResultId();
-                columnExpr.setColumnSpecsList(updateViewExprs);
-                columnExpr.setSourceId(new TableReference());
-                columnExpr.getSourceId().setBatchOffset(0);
-                BatchTableRequest batch = new BatchTableRequest();
-                Operation aggOp = new Operation();
-                aggOp.setAggregate(requestMessage);
-                Operation colsOp = new Operation();
-                colsOp.setUpdateView(columnExpr);
-                batch.addOps(aggOp);
-                batch.addOps(colsOp);
-                if (dropColumns.length != 0) {
-                    DropColumnsRequest drop = new DropColumnsRequest();
-                    drop.setColumnNamesList(dropColumns);
-                    drop.setResultId(columnExpr.getResultId());
-                    columnExpr.setResultId();
-                    drop.setSourceId(new TableReference());
-                    drop.getSourceId().setBatchOffset(1);
+            Ticket resultTicket = newState.getHandle().makeTicket();
+            if (!updateViewExprs.isEmpty()) {
+                BatchTableRequest.Builder batch = BatchTableRequest.newBuilder();
 
-                    Operation dropOp = new Operation();
-                    dropOp.setDropColumns(drop);
-                    batch.addOps(dropOp);
+                batch.addOps(BatchTableRequest.Operation.newBuilder()
+                        .setAggregate(requestMessage));
+
+                SelectOrUpdateRequest.Builder columnExpr = SelectOrUpdateRequest.newBuilder()
+                        .addAllColumnSpecs(updateViewExprs)
+                        .setSourceId(TableReference.newBuilder().setBatchOffset(0));
+
+                if (!dropColumns.isEmpty()) {
+                    batch.addOps(BatchTableRequest.Operation.newBuilder()
+                            .setUpdateView(columnExpr));
+                    batch.addOps(BatchTableRequest.Operation.newBuilder()
+                            .setDropColumns(DropColumnsRequest.newBuilder()
+                                    .addAllColumnNames(dropColumns)
+                                    .setResultId(resultTicket)
+                                    .setSourceId(TableReference.newBuilder().setBatchOffset(1))));
+                } else {
+                    batch.addOps(BatchTableRequest.Operation.newBuilder()
+                            .setUpdateView(columnExpr
+                                    .setResultId(resultTicket)));
                 }
                 ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper
-                        .of(workerConnection.tableServiceClient().batch(batch, workerConnection.metadata()));
+                        .of(observer -> workerConnection.tableServiceClient().batch(batch.build(), observer));
                 stream.onData(creationResponse -> {
                     if (creationResponse.getResultId().hasTicket()) {
                         // represents the final output
-                        callback.apply(null, creationResponse);
+                        callback.onNext(creationResponse);
+                        callback.onCompleted();
                     }
                 });
                 stream.onEnd(status -> {
                     if (!status.isOk()) {
-                        callback.apply(status, null);
+                        callback.onError(status.asRuntimeException());
                     }
                 });
             } else {
-                workerConnection.tableServiceClient().aggregate(requestMessage, workerConnection.metadata(),
-                        callback::apply);
+                requestMessage.setResultId(resultTicket);
+                workerConnection.tableServiceClient().aggregate(requestMessage.build(), callback);
             }
         };
         String summary = "totals table " + directive + ", " + directive.groupBy.join(",");
         final ClientTableState totals = workerConnection.newState(totalsFactory, summary);
         final LazyPromise<JsTotalsTable> result = new LazyPromise<>();
         boolean[] downsample = {true};
-        return totals.refetch(this, workerConnection.metadata()) // lastGood will always be non-null after this
+        return totals.refetch() // lastGood will always be non-null after this
                 .then(ready -> {
                     JsTable wrapped = new JsTable(workerConnection, ready);
                     // technically this is overkill, but it is more future-proofed than only listening for column
@@ -1160,7 +1214,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                                             return null;
                                         };
                                         final Promise<ClientTableState> promise =
-                                                nextState.refetch(this, workerConnection.metadata());
+                                                nextState.refetch();
                                         if (needsMutation) { // nextState will be empty, so we might want to test for
                                                              // isEmpty() instead
                                             wrapped.batch(b -> b.setConfig(existing)).then(restoreVp);
@@ -1196,11 +1250,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a promise that will resolve to a Totals Table of this table, ignoring any filters. See <b>getTotalsTable()</b>
-     * above for more specifics.
+     * A promise that will resolve to a Totals Table of this table, ignoring any filters. See
+     * {@link #getTotalsTable(Object)} for more specifics.
      * 
      * @param config
-     * @return promise of dh.TotalsTable
+     * @return promise of {@link JsTotalsTable dh.TotalsTable}
      */
     @JsMethod
     public Promise<JsTotalsTable> getGrandTotalsTable(
@@ -1219,11 +1273,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a promise that will resolve to a new roll-up <b>TreeTable</b> of this table. Multiple calls to this method will
-     * each produce a new <b>TreeTable</b> which must have close() called on it when not in use.
+     * a promise that will resolve to a new roll-up {@link JsTreeTable dh.TreeTable} of this table. Multiple calls to
+     * this method will each produce a new {@link JsTreeTable dh.TreeTable} which must have {@link JsTreeTable#close()
+     * close()} called on it when not in use.
      * 
      * @param configObject
-     * @return Promise of dh.TreeTable
+     * @return Promise of {@link JsTreeTable dh.TreeTable}
      */
     @JsMethod
     public Promise<JsTreeTable> rollup(@TsTypeRef(JsRollupConfig.class) Object configObject) {
@@ -1237,16 +1292,17 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
         Ticket rollupTicket = workerConnection.getTickets().newExportTicket();
 
-        Promise<Object> rollupPromise = Callbacks.grpcUnaryPromise(c -> {
-            RollupRequest request = config.buildRequest(getColumns());
+        Promise<RollupResponse> rollupPromise = Callbacks.grpcUnaryPromise(c -> {
+            RollupRequest.Builder request = config.buildRequest(getColumns()).toBuilder();
             request.setSourceTableId(state().getHandle().makeTicket());
             request.setResultRollupTableId(rollupTicket);
-            workerConnection.hierarchicalTableServiceClient().rollup(request, workerConnection.metadata(), c::apply);
+            workerConnection.hierarchicalTableServiceClient().rollup(request.build(), c);
         });
 
-        TypedTicket typedTicket = new TypedTicket();
-        typedTicket.setType(JsVariableType.HIERARCHICALTABLE);
-        typedTicket.setTicket(rollupTicket);
+        TypedTicket typedTicket = TypedTicket.newBuilder()
+                .setType(JsVariableType.HIERARCHICALTABLE)
+                .setTicket(rollupTicket)
+                .build();
 
         JsWidget widget = new JsWidget(workerConnection, typedTicket);
 
@@ -1255,11 +1311,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a promise that will resolve to a new `TreeTable` of this table. Multiple calls to this method will each produce a
-     * new `TreeTable` which must have close() called on it when not in use.
+     * A promise that will resolve to a new {@link JsTreeTable dh.TreeTable} of this table. Multiple calls to this
+     * method will each produce a new {@link JsTreeTable dh.TreeTable} which must have {@link JsTreeTable#close()
+     * close()} called on it when not in use.
      * 
      * @param configObject
-     * @return Promise dh.TreeTable
+     * @return Promise of {@link JsTreeTable dh.TreeTable}
      */
     @JsMethod
     public Promise<JsTreeTable> treeTable(@TsTypeRef(JsTreeTableConfig.class) Object configObject) {
@@ -1273,21 +1330,22 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
         Ticket treeTicket = workerConnection.getTickets().newExportTicket();
 
-        Promise<Object> treePromise = Callbacks.grpcUnaryPromise(c -> {
-            TreeRequest requestMessage = new TreeRequest();
-            requestMessage.setSourceTableId(state().getHandle().makeTicket());
-            requestMessage.setResultTreeTableId(treeTicket);
-            requestMessage.setIdentifierColumn(config.idColumn);
-            requestMessage.setParentIdentifierColumn(config.parentColumn);
-            requestMessage.setPromoteOrphans(config.promoteOrphansToRoot);
+        Promise<TreeResponse> treePromise = Callbacks.grpcUnaryPromise(c -> {
+            TreeRequest requestMessage = TreeRequest.newBuilder()
+                    .setSourceTableId(state().getHandle().makeTicket())
+                    .setResultTreeTableId(treeTicket)
+                    .setIdentifierColumn(config.idColumn)
+                    .setParentIdentifierColumn(config.parentColumn)
+                    .setPromoteOrphans(config.promoteOrphansToRoot)
+                    .build();
 
-            workerConnection.hierarchicalTableServiceClient().tree(requestMessage, workerConnection.metadata(),
-                    c::apply);
+            workerConnection.hierarchicalTableServiceClient().tree(requestMessage, c);
         });
 
-        TypedTicket typedTicket = new TypedTicket();
-        typedTicket.setType(JsVariableType.HIERARCHICALTABLE);
-        typedTicket.setTicket(treeTicket);
+        TypedTicket typedTicket = TypedTicket.newBuilder()
+                .setType(JsVariableType.HIERARCHICALTABLE)
+                .setTicket(treeTicket)
+                .build();
 
         JsWidget widget = new JsWidget(workerConnection, typedTicket);
 
@@ -1296,27 +1354,28 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a "frozen" version of this table (a server-side snapshot of the entire source table). Viewports on the frozen
+     * A "frozen" version of this table (a server-side snapshot of the entire source table). Viewports on the frozen
      * table will not update. This does not change the original table, and the new table will not have any of the client
      * side sorts/filters/columns. New client side sorts/filters/columns can be added to the frozen copy.
      *
-     * @return Promise of dh.Table
+     * @return Promise of {@link JsTable dh.Table}
      */
     @JsMethod
     public Promise<JsTable> freeze() {
-        return workerConnection.newState((c, state, metadata) -> {
-            SnapshotTableRequest request = new SnapshotTableRequest();
-            request.setSourceId(state().getHandle().makeTableReference());
-            request.setResultId(state.getHandle().makeTicket());
-            workerConnection.tableServiceClient().snapshot(request, metadata, c::apply);
-        }, "freeze").refetch(this, workerConnection.metadata())
+        return workerConnection.newState((c, state) -> {
+            SnapshotTableRequest request = SnapshotTableRequest.newBuilder()
+                    .setSourceId(state().getHandle().makeTableReference())
+                    .setResultId(state.getHandle().makeTicket())
+                    .build();
+            workerConnection.tableServiceClient().snapshot(request, c);
+        }, "freeze").refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
     @Override
     @JsMethod
-    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional Boolean doInitialSnapshot,
-            @JsOptional String[] stampColumns) {
+    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
+            @JsOptional @JsNullable String[] stampColumns) {
         Objects.requireNonNull(baseTable, "Snapshot base table");
         final boolean realDoInitialSnapshot;
         if (doInitialSnapshot != null) {
@@ -1324,25 +1383,21 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         } else {
             realDoInitialSnapshot = true;
         }
-        final String[] realStampColumns;
-        if (stampColumns == null) {
-            realStampColumns = new String[0]; // server doesn't like null
-        } else {
-            // make sure we pass an actual string array
-            realStampColumns = Arrays.stream(stampColumns).toArray(String[]::new);
-        }
         final String fetchSummary =
                 "snapshot(" + baseTable + ", " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")";
-        return workerConnection.newState((c, state, metadata) -> {
-            SnapshotWhenTableRequest request = new SnapshotWhenTableRequest();
-            request.setBaseId(baseTable.state().getHandle().makeTableReference());
-            request.setTriggerId(state().getHandle().makeTableReference());
-            request.setResultId(state.getHandle().makeTicket());
-            request.setInitial(realDoInitialSnapshot);
-            request.setStampColumnsList(realStampColumns);
+        return workerConnection.newState((c, state) -> {
+            SnapshotWhenTableRequest.Builder request = SnapshotWhenTableRequest.newBuilder()
+                    .setBaseId(baseTable.state().getHandle().makeTableReference())
+                    .setTriggerId(state().getHandle().makeTableReference())
+                    .setResultId(state.getHandle().makeTicket())
+                    .setInitial(realDoInitialSnapshot);
 
-            workerConnection.tableServiceClient().snapshotWhen(request, metadata, c::apply);
-        }, fetchSummary).refetch(this, workerConnection.metadata())
+            if (stampColumns != null) {
+                request.addAllStampColumns(Arrays.asList(stampColumns));
+            }
+
+            workerConnection.tableServiceClient().snapshotWhen(request.build(), c);
+        }, fetchSummary).refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
@@ -1376,20 +1431,21 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
-        return workerConnection.newState((c, state, metadata) -> {
-            AsOfJoinTablesRequest request = new AsOfJoinTablesRequest();
+        return workerConnection.newState((c, state) -> {
+            AsOfJoinTablesRequest.Builder request = AsOfJoinTablesRequest.newBuilder();
             request.setLeftId(state().getHandle().makeTableReference());
             request.setRightId(rightTable.state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
-            request.setColumnsToMatchList(columnsToMatch);
-            request.setColumnsToAddList(columnsToAdd);
-            if (asOfMatchRule != null) {
-                request.setAsOfMatchRule(
-                        Js.asPropertyMap(AsOfJoinTablesRequest.MatchRule).getAsAny(asOfMatchRule).asDouble());
+            request.addAllColumnsToMatch(columnsToMatch.asList());
+            if (columnsToAdd != null) {
+                request.addAllColumnsToAdd(columnsToAdd.asList());
             }
-            workerConnection.tableServiceClient().asOfJoinTables(request, metadata, c::apply);
+            if (asOfMatchRule != null) {
+                request.setAsOfMatchRule(AsOfJoinTablesRequest.MatchRule.valueOf(asOfMatchRule));
+            }
+            workerConnection.tableServiceClient().asOfJoinTables(request.build(), c);
         }, "asOfJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")")
-                .refetch(this, workerConnection.metadata())
+                .refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
@@ -1401,109 +1457,123 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
-        return workerConnection.newState((c, state, metadata) -> {
-            CrossJoinTablesRequest request = new CrossJoinTablesRequest();
+        return workerConnection.newState((c, state) -> {
+            CrossJoinTablesRequest.Builder request = CrossJoinTablesRequest.newBuilder();
             request.setLeftId(state().getHandle().makeTableReference());
             request.setRightId(rightTable.state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
-            request.setColumnsToMatchList(columnsToMatch);
-            request.setColumnsToAddList(columnsToAdd);
-            if (reserveBits != null) {
-                request.setReserveBits(reserveBits);
+            request.addAllColumnsToMatch(columnsToMatch.asList());
+            if (columnsToAdd != null) {
+                request.addAllColumnsToAdd(columnsToAdd.asList());
             }
-            workerConnection.tableServiceClient().crossJoinTables(request, metadata, c::apply);
+            if (reserveBits != null) {
+                request.setReserveBits((int) (double) reserveBits);
+            }
+            workerConnection.tableServiceClient().crossJoinTables(request.build(), c);
         }, "join(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + reserveBits + ")")
-                .refetch(this, workerConnection.metadata())
+                .refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
     @Override
     @JsMethod
     public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd) {
         if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
-        return workerConnection.newState((c, state, metadata) -> {
-            ExactJoinTablesRequest request = new ExactJoinTablesRequest();
-            request.setLeftId(state().getHandle().makeTableReference());
-            request.setRightId(rightTable.state().getHandle().makeTableReference());
-            request.setResultId(state.getHandle().makeTicket());
-            request.setColumnsToMatchList(columnsToMatch);
-            request.setColumnsToAddList(columnsToAdd);
-            workerConnection.tableServiceClient().exactJoinTables(request, metadata, c::apply);
+        return workerConnection.newState((c, state) -> {
+            ExactJoinTablesRequest.Builder request = ExactJoinTablesRequest.newBuilder()
+                    .setLeftId(state().getHandle().makeTableReference())
+                    .setRightId(rightTable.state().getHandle().makeTableReference())
+                    .setResultId(state.getHandle().makeTicket())
+                    .addAllColumnsToMatch(columnsToMatch.asList());
+            if (columnsToAdd != null) {
+                request.addAllColumnsToAdd(columnsToAdd.asList());
+            }
+            workerConnection.tableServiceClient().exactJoinTables(request.build(), c);
         }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
-                .refetch(this, workerConnection.metadata())
+                .refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
     @Override
     @JsMethod
     public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd) {
         if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
-        return workerConnection.newState((c, state, metadata) -> {
-            NaturalJoinTablesRequest request = new NaturalJoinTablesRequest();
-            request.setLeftId(state().getHandle().makeTableReference());
-            request.setRightId(rightTable.state().getHandle().makeTableReference());
-            request.setResultId(state.getHandle().makeTicket());
-            request.setColumnsToMatchList(columnsToMatch);
-            request.setColumnsToAddList(columnsToAdd);
-            workerConnection.tableServiceClient().naturalJoinTables(request, metadata, c::apply);
+        return workerConnection.newState((c, state) -> {
+            NaturalJoinTablesRequest.Builder request = NaturalJoinTablesRequest.newBuilder()
+                    .setLeftId(state().getHandle().makeTableReference())
+                    .setRightId(rightTable.state().getHandle().makeTableReference())
+                    .setResultId(state.getHandle().makeTicket())
+                    .addAllColumnsToMatch(columnsToMatch.asList());
+            if (columnsToAdd != null) {
+                request.addAllColumnsToAdd(columnsToAdd.asList());
+            }
+            workerConnection.tableServiceClient().naturalJoinTables(request.build(), c);
         }, "naturalJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
-                .refetch(this, workerConnection.metadata())
+                .refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
+    /**
+     * Alias for {@link #partitionBy(Object, Boolean)}.
+     *
+     * @param keys The partition key column name or names.
+     * @param dropKeys Whether to drop the key columns from the partitioned constituent tables.
+     * @return Promise of {@link JsPartitionedTable}.
+     */
     @JsMethod
-    public Promise<JsPartitionedTable> byExternal(Object keys, @JsOptional Boolean dropKeys) {
+    public Promise<JsPartitionedTable> byExternal(Object keys, @JsOptional @JsNullable Boolean dropKeys) {
         return partitionBy(keys, dropKeys);
     }
 
     /**
-     * Creates a new PartitionedTable from the contents of the current table, partitioning data based on the specified
-     * keys.
+     * Creates a new {@link JsPartitionedTable dh.PartitionedTable} from the contents of the current table, partitioning
+     * data based on the specified keys.
      *
      * @param keys
      * @param dropKeys
      *
-     * @return Promise dh.PartitionedTable
+     * @return Promise of {@link JsPartitionedTable dh.PartitionedTable}
      */
     @JsMethod
-    public Promise<JsPartitionedTable> partitionBy(Object keys, @JsOptional Boolean dropKeys) {
-        final String[] actualKeys;
+    public Promise<JsPartitionedTable> partitionBy(Object keys, @JsOptional @JsNullable Boolean dropKeys) {
+        final List<String> actualKeys;
         if (keys instanceof String) {
-            actualKeys = new String[] {(String) keys};
+            actualKeys = List.of((String) keys);
         } else if (JsArray.isArray(keys)) {
-            actualKeys = Js.asArrayLike(keys).asList().toArray(new String[0]);
+            // noinspection unchecked,rawtypes
+            actualKeys = ((JsArray) Js.asArrayLike(keys)).asList();
         } else {
             throw new IllegalArgumentException("Can't use keys argument as either a string or array of strings");
         }
         // We don't validate that the keys are non-empty, since that is allowed, but ensure they are all columns
-        findColumns(actualKeys);
+        findColumns(actualKeys.toArray(new String[0]));
 
         // Start the partitionBy on the server - we want to get the error from here, but we'll race the fetch against
         // this to avoid an extra round-trip
         Ticket partitionedTableTicket = workerConnection.getTickets().newExportTicket();
-        Promise<PartitionByResponse> partitionByPromise = Callbacks.<PartitionByResponse, Object>grpcUnaryPromise(c -> {
-            PartitionByRequest partitionBy = new PartitionByRequest();
-            partitionBy.setTableId(state().getHandle().makeTicket());
-            partitionBy.setResultId(partitionedTableTicket);
-            partitionBy.setKeyColumnNamesList(actualKeys);
+        Promise<PartitionByResponse> partitionByPromise = Callbacks.grpcUnaryPromise(c -> {
+            PartitionByRequest.Builder partitionBy = PartitionByRequest.newBuilder()
+                    .setTableId(state().getHandle().makeTicket())
+                    .setResultId(partitionedTableTicket)
+                    .addAllKeyColumnNames(actualKeys);
             if (dropKeys != null) {
                 partitionBy.setDropKeys(dropKeys);
             }
-            workerConnection.partitionedTableServiceClient().partitionBy(partitionBy, workerConnection.metadata(),
-                    c::apply);
+            workerConnection.partitionedTableServiceClient().partitionBy(partitionBy.build(), c);
         });
         // construct the partitioned table around the ticket created above
-        TypedTicket typedTicket = new TypedTicket();
-        typedTicket.setType(JsVariableType.PARTITIONEDTABLE);
-        typedTicket.setTicket(partitionedTableTicket);
+        TypedTicket typedTicket = TypedTicket.newBuilder()
+                .setType(JsVariableType.PARTITIONEDTABLE)
+                .setTicket(partitionedTableTicket)
+                .build();
         Promise<JsPartitionedTable> fetchPromise = new JsWidget(workerConnection, typedTicket).refetch().then(
                 widget -> Promise.resolve(new JsPartitionedTable(workerConnection, widget)));
 
@@ -1513,22 +1583,23 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * a promise that will resolve to ColumnStatistics for the column of this table.
+     * A promise that will resolve to {@link JsColumnStatistics ColumnStatistics} for the column of this table.
      *
      * @param column
-     * @return Promise of dh.ColumnStatistics
+     * @return Promise of {@link JsColumnStatistics ColumnStatistics}
      */
     @JsMethod
     public Promise<JsColumnStatistics> getColumnStatistics(Column column) {
         List<Runnable> toRelease = new ArrayList<>();
-        return workerConnection.newState((c, state, metadata) -> {
-            ColumnStatisticsRequest req = new ColumnStatisticsRequest();
-            req.setColumnName(column.getName());
-            req.setSourceId(state().getHandle().makeTableReference());
-            req.setResultId(state.getHandle().makeTicket());
-            workerConnection.tableServiceClient().computeColumnStatistics(req, metadata, c::apply);
+        return workerConnection.newState((c, state) -> {
+            ColumnStatisticsRequest req = ColumnStatisticsRequest.newBuilder()
+                    .setColumnName(column.getName())
+                    .setSourceId(state().getHandle().makeTableReference())
+                    .setResultId(state.getHandle().makeTicket())
+                    .build();
+            workerConnection.tableServiceClient().computeColumnStatistics(req, c);
         }, "get column statistics")
-                .refetch(this, workerConnection.metadata())
+                .refetch()
                 .then(state -> {
                     JsTable table = new JsTable(workerConnection, state);
                     toRelease.add(table::close);
@@ -1544,11 +1615,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     private Literal objectToLiteral(String valueType, Object value) {
-        Literal literal = new Literal();
+        Literal.Builder literal = Literal.newBuilder();
         if (value instanceof DateWrapper) {
-            literal.setNanoTimeValue(((DateWrapper) value).valueOf());
+            literal.setNanoTimeValue(((DateWrapper) value).getWrapped());
         } else if (value instanceof LongWrapper) {
-            literal.setLongValue(((LongWrapper) value).valueOf());
+            literal.setLongValue(((LongWrapper) value).getWrapped());
         } else if (Js.typeof(value).equals("number")) {
             literal.setDoubleValue(Js.asDouble(value));
         } else if (Js.typeof(value).equals("boolean")) {
@@ -1562,10 +1633,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     literal.setDoubleValue(Double.parseDouble(value.toString()));
                     break;
                 case ValueType.LONG:
-                    literal.setLongValue(value.toString());
+                    literal.setLongValue(Long.parseLong(value.toString()));
                     break;
                 case ValueType.DATETIME:
-                    literal.setNanoTimeValue(value.toString());
+                    literal.setNanoTimeValue(Long.parseLong(value.toString()));
                     break;
                 case ValueType.BOOLEAN:
                     literal.setBoolValue(Boolean.parseBoolean(value.toString()));
@@ -1574,7 +1645,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     throw new UnsupportedOperationException("Invalid value type for seekRow: " + valueType);
             }
         }
-        return literal;
+        return literal.build();
     }
 
     /**
@@ -1584,10 +1655,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param column Column to seek for value on
      * @param valueType Type of value provided
      * @param seekValue Value to seek
-     * @param insensitive Optional value to flag a search as case-insensitive. Defaults to `false`.
+     * @param insensitive Optional value to flag a search as case-insensitive. Defaults to {@code false}.
      * @param contains Optional value to have the seek value do a contains search instead of exact equality. Defaults to
-     *        `false`.
-     * @param isBackwards Optional value to seek backwards through the table instead of forwards. Defaults to `false`.
+     *        {@code false}.
+     * @param isBackwards Optional value to seek backwards through the table instead of forwards. Defaults to
+     *        {@code false}.
      * @return A promise that resolves to the row value found.
      */
     @JsMethod
@@ -1599,9 +1671,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             @JsOptional @JsNullable Boolean insensitive,
             @JsOptional @JsNullable Boolean contains,
             @JsOptional @JsNullable Boolean isBackwards) {
-        SeekRowRequest seekRowRequest = new SeekRowRequest();
+        SeekRowRequest.Builder seekRowRequest = SeekRowRequest.newBuilder();
         seekRowRequest.setSourceId(state().getHandle().makeTicket());
-        seekRowRequest.setStartingRow(String.valueOf(startingRow));
+        seekRowRequest.setStartingRow((long) startingRow);
         seekRowRequest.setColumnName(column.getName());
         seekRowRequest.setSeekValue(objectToLiteral(valueType, seekValue));
         if (insensitive != null) {
@@ -1615,9 +1687,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         }
 
         return Callbacks
-                .<SeekRowResponse, Object>grpcUnaryPromise(c -> workerConnection.tableServiceClient()
-                        .seekRow(seekRowRequest, workerConnection.metadata(), c::apply))
-                .then(seekRowResponse -> Promise.resolve((double) Long.parseLong(seekRowResponse.getResultRow())));
+                .<SeekRowResponse>grpcUnaryPromise(c -> workerConnection.tableServiceClient()
+                        .seekRow(seekRowRequest.build(), c))
+                .then(seekRowResponse -> Promise.resolve((double) seekRowResponse.getResultRow()));
     }
 
     public void maybeRevive(ClientTableState state) {
@@ -1637,11 +1709,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Get a downsampled version of the table. Currently only supports downsampling with an Instant or long `xCol`.
+     * Get a downsampled version of the table. Currently only supports downsampling with an Instant or long
+     * {@code xCol}.
      *
-     * @param zoomRange The visible range as `[start, end]` or null to always use all data.
+     * @param zoomRange The visible range as {@code [start, end]} or {@code null} to always use all data.
      * @param pixelCount The width of the visible area in pixels.
-     * @param xCol The name of the X column to downsample. Must be an Instant or long.
+     * @param xCol The name of the X column to downsample. Must be an {@code Instant} or {@code long}.
      * @param yCols The names of the Y columns to downsample.
      * @return A promise that resolves to the downsampled table.
      */
@@ -1650,27 +1723,25 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         JsLog.info("downsample", zoomRange, pixelCount, xCol, yCols);
         final String fetchSummary = "downsample(" + Arrays.toString(zoomRange) + ", " + pixelCount + ", " + xCol + ", "
                 + Arrays.toString(yCols) + ")";
-        return workerConnection.newState((c, state, metadata) -> {
-            RunChartDownsampleRequest downsampleRequest = new RunChartDownsampleRequest();
+        return workerConnection.newState((c, state) -> {
+            RunChartDownsampleRequest.Builder downsampleRequest = RunChartDownsampleRequest.newBuilder();
             downsampleRequest.setPixelCount(pixelCount);
             if (zoomRange != null) {
-                ZoomRange zoom = new ZoomRange();
-                zoom.setMinDateNanos(Long.toString(zoomRange[0].getWrapped()));
-                zoom.setMaxDateNanos(Long.toString(zoomRange[1].getWrapped()));
-                downsampleRequest.setZoomRange(zoom);
+                downsampleRequest.setZoomRange(RunChartDownsampleRequest.ZoomRange.newBuilder()
+                        .setMinDateNanos(zoomRange[0].getWrapped())
+                        .setMaxDateNanos(zoomRange[1].getWrapped()));
             }
             downsampleRequest.setXColumnName(xCol);
-            downsampleRequest.setYColumnNamesList(yCols);
+            downsampleRequest.addAllYColumnNames(Arrays.asList(yCols));
             downsampleRequest.setSourceId(state().getHandle().makeTableReference());
             downsampleRequest.setResultId(state.getHandle().makeTicket());
-            workerConnection.tableServiceClient().runChartDownsample(downsampleRequest, workerConnection.metadata(),
-                    c::apply);
-        }, fetchSummary).refetch(this, workerConnection.metadata())
+            workerConnection.tableServiceClient().runChartDownsample(downsampleRequest.build(), c);
+        }, fetchSummary).refetch()
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
     /**
-     * True if this table has been closed.
+     * {@code true} if this table has been closed.
      * 
      * @return boolean
      */
@@ -1680,8 +1751,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * True if this table may receive updates from the server, including size changed events, updated events after
-     * initial snapshot.
+     * {@code true} if this table may receive updates from the server, including size changed events, updated events
+     * after initial snapshot.
      *
      * @return boolean
      */
@@ -1691,7 +1762,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     /**
-     * Read-only. True if this table is uncoalesced, indicating that work must be done before the table can be used.
+     * Read-only. {@code true} if this table is uncoalesced, indicating that work must be done before the table can be
+     * used.
      * <p>
      * Uncoalesced tables are expensive to operate on - filter to a single partition or range of partitions before
      * subscribing to access only the desired data efficiently. A subscription can be specified without a filter, but
@@ -1699,13 +1771,19 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * have {@link Column#getIsPartitionColumn()} as {@code true}, and filter those columns. To read the possible values
      * for those columns, use {@link #selectDistinct(Column[])}.
      *
-     * @return True if the table is uncoaleced and should be filtered before operating on it, otherwise false.
+     * @return {@code true} if the table is uncoaleced and should be filtered before operating on it, otherwise
+     *         {@code false}.
      */
     @JsProperty(name = "isUncoalesced")
     public boolean isUncoalesced() {
         return size == Long.MIN_VALUE;
     }
 
+    /**
+     * The plugin name attribute for this table.
+     *
+     * @return The plugin name, or {@code null}.
+     */
     @JsProperty
     @JsNullable
     public String getPluginName() {
@@ -1732,6 +1810,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         return head;
     }
 
+    /**
+     * Gets a string representation of this table instance.
+     *
+     * @return A string representation of this table.
+     */
     @JsMethod
     @Override
     public String toString() {

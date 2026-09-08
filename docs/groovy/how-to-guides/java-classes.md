@@ -64,14 +64,37 @@ source = emptyTable(10).update(
 sourceMeta = source.meta()
 ```
 
+## Nested (inner) classes
+
+Java allows users to define classes inside other classes. In Groovy, you access these nested (inner) classes using dot notation — `OuterClass.InnerClass` — which is standard Java syntax.
+
+```groovy order=null test-set=inner-classes-groovy
+import io.deephaven.engine.table.impl.util.SyncTableFilter
+
+// Access the Builder inner class of SyncTableFilter using dot notation
+def builder = new SyncTableFilter.Builder()
+```
+
+You can also import the inner class directly to use it without the outer class qualifier:
+
+```groovy order=null test-set=inner-classes-groovy
+import io.deephaven.engine.table.impl.util.SyncTableFilter.Builder
+
+// Use Builder directly after importing
+def builder2 = new Builder()
+```
+
+> [!NOTE]
+> If you load a class dynamically with `Class.forName()`, use `$` as the separator — `OuterClass$InnerClass`. This is the JVM's internal binary class name format. In Groovy source code, always use dot notation.
+
 ## Groovy's Java interoperability
 
 One of Groovy's greatest strengths is its seamless interoperability with Java. In Groovy query strings, you can:
 
-- Use any Java class without imports (for classes in `java.lang` and other common packages)
-- Access Java static methods and variables directly
-- Create Java objects using the `new` keyword
-- Call Java instance methods on objects
+- Use any Java class without imports (for classes in `java.lang` and other common packages).
+- Access Java static methods and variables directly.
+- Create Java objects using the `new` keyword.
+- Call Java instance methods on objects.
 
 This makes working with Java objects in Groovy query strings very natural and straightforward.
 
@@ -84,7 +107,7 @@ This makes working with Java objects in Groovy query strings very natural and st
 - [Built-in functions](./built-in-functions.md)
 - [Built-in constants](./built-in-constants.md)
 - [Work with arrays](./work-with-arrays.md)
-- [Work with strings](./strings.md)
+- [Work with strings](./work-with-strings.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`meta`](../reference/table-operations/metadata/meta.md)
 - [`update`](../reference/table-operations/select/update.md)

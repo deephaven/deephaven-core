@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit TestCharSegmentedSortedMultiset and run "./gradlew replicateSegmentedSortedMultisetTests" to regenerate
@@ -26,8 +26,12 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfInt;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.IntVectorDirect;
+import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
@@ -37,7 +41,9 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.TreeMap;
 
@@ -95,35 +101,355 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
-    public void testPartialCopy() {
-        final int nodeSize = 8;
-        final IntSegmentedSortedMultiset ssm = new IntSegmentedSortedMultiset(nodeSize);
+    public void testEqualsArray() {
+        // exercise the singleton (size == 1), single-leaf (partial, then exactly full), and multi-leaf (exactly two
+        // full leaves, then several with a partial tail) representations
+        checkEqualsArray(1);
+        checkEqualsArray(3);
+        checkEqualsArray(4);
+        checkEqualsArray(8);
+        checkEqualsArray(20);
+    }
 
-        final int[] data = new int[24];
-        try (final WritableIntChunk<Values> valuesChunk = WritableIntChunk.makeWritableChunk(24);
-             final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(24)) {
-
-            for (int ii = 0; ii < 24; ii++) {
-                data[ii] = (int) ('a' + ii);
-                countsChunk.set(ii, 1);
-                valuesChunk.set(ii, data[ii]);
+    public void testIterator() {
+        // node sizes that put the same value counts in different representations
+        for (final int nodeSize : new int[] {4, 8}) {
+            // exercise the empty, singleton (size == 1), single-leaf, and multi-leaf representations
+            for (final int valueCount : new int[] {0, 1, 3, 4, 8, 20}) {
+                checkIterator(nodeSize, valueCount);
             }
+        }
+    }
 
-            ssm.insert(valuesChunk, countsChunk);
+    /**
+     * hashCode() walks the leaves directly instead of delegating to the shared Vector helper, which duplicates that
+     * helper's seed, multiplier, and per-element hash. Pin the two together across the empty, singleton, single-leaf,
+     * and multi-leaf representations so the copy cannot drift -- equals() accepts any Vector with matching contents,
+     * so a divergence here would silently break the hashCode contract.
+     */
+    public void testHashCodeMatchesVectorHelper() {
+        for (final int valueCount : new int[] {0, 1, 3, 4, 8, 20}) {
+            final int[] values = new int[valueCount];
+            for (int ii = 0; ii < valueCount; ++ii) {
+                values[ii] = (int) ('a' + ii);
+            }
+            final IntSegmentedSortedMultiset ssm = makeSsm(4, values);
+            final String message = "valueCount=" + valueCount;
+
+            // the helper applied to this SSM, to its materialized copy, and to an independently built Vector must all
+            // agree with the walk
+            assertEquals(message, IntVector.hashCode(ssm), ssm.hashCode());
+            assertEquals(message, IntVector.hashCode(ssm.getDirect()), ssm.hashCode());
+            assertEquals(message, new IntVectorDirect(values).hashCode(), ssm.hashCode());
+        }
+    }
+
+    public void testMoveSingletonSource() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        // destination states: empty, singleton, partial leaf, full single leaf, multi-leaf (last leaf partial and full)
+        for (final int destCount : new int[] {0, 1, 3, 4, 6, 8}) {
+            checkAppendMaximum(nodeSize, destCount, desc);
+            checkPrependMinimum(nodeSize, destCount, desc);
+        }
+    }
+
+    public void testMoveSingletonMerge() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        final int v = (int) ('a' + 5);
+        final int w = (int) ('a' + 6);
+
+        // moveFrontToBack: a singleton whose value equals the destination's (singleton) maximum merges via addMaxCount
+        {
+            final IntSegmentedSortedMultiset source = makeSsm(nodeSize, new int[] {v}, new int[] {2});
+            final IntSegmentedSortedMultiset dest = makeSsm(nodeSize, new int[] {v}, new int[] {3});
+            source.moveFrontToBack(dest, source.totalSize());
+            verifySsm(source, new int[0], desc);
+            verifySsm(dest, new int[] {v, v, v, v, v}, desc);
         }
 
-        assertArrayEquals(data, ssm.toArray()/*EXTRA*/);
-        assertArrayEquals(data, ssm.subVector(0, 23).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data,0, 4), ssm.subVector(0, 3).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 0, 8), ssm.subVector(0, 7).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 0, 16), ssm.subVector(0, 15).toArray()/*EXTRA*/);
+        // moveBackToFront: a singleton whose value equals the destination's (singleton) minimum merges via addMinCount
+        {
+            final IntSegmentedSortedMultiset source = makeSsm(nodeSize, new int[] {v}, new int[] {2});
+            final IntSegmentedSortedMultiset dest = makeSsm(nodeSize, new int[] {v}, new int[] {3});
+            source.moveBackToFront(dest, source.totalSize());
+            verifySsm(source, new int[0], desc);
+            verifySsm(dest, new int[] {v, v, v, v, v}, desc);
+        }
 
-        assertArrayEquals(Arrays.copyOfRange(data, 2, 6), ssm.subVector(2, 5).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 2, 12), ssm.subVector(2, 11).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 7, 12), ssm.subVector(7, 11).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 7, 16), ssm.subVector(7, 15).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 11, 16), ssm.subVector(11, 15).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 2, 20), ssm.subVector(2, 19).toArray()/*EXTRA*/);
+        // moveFrontToBack: a non-singleton source whose minimum equals the destination's maximum, moving fewer than the
+        // minimum's count, reduces the source minimum in place (addMinCount(-count)) rather than removing it
+        {
+            final IntSegmentedSortedMultiset source = makeSsm(nodeSize, new int[] {v, w}, new int[] {3, 1});
+            final IntSegmentedSortedMultiset dest = makeSsm(nodeSize, new int[] {v}, new int[] {1});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new int[] {v, v, w}, desc);
+            verifySsm(dest, new int[] {v, v}, desc);
+        }
+
+        // moveBackToFront: the symmetric case, reducing the source maximum in place (addMaxCount(-count))
+        {
+            final IntSegmentedSortedMultiset source = makeSsm(nodeSize, new int[] {v, w}, new int[] {1, 3});
+            final IntSegmentedSortedMultiset dest = makeSsm(nodeSize, new int[] {w}, new int[] {1});
+            source.moveBackToFront(dest, 1);
+            verifySsm(source, new int[] {v, w, w}, desc);
+            verifySsm(dest, new int[] {w, w}, desc);
+        }
+    }
+
+    public void testInsertIntoMiddleLeafSplit() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // three full leaves at even offsets; inserting new odd-offset values into the first leaf overflows it, forcing a
+        // hole that shifts the trailing leaves (copyLeavesAndDirectory) and runs the existing-value merge (maybeCompact)
+        final int[] initial = new int[12];
+        for (int ii = 0; ii < 12; ++ii) {
+            initial[ii] = (int) ('a' + 2 * ii);
+        }
+        final IntSegmentedSortedMultiset ssm = makeSsm(nodeSize, initial);
+
+        try (final WritableIntChunk<Values> values = WritableIntChunk.makeWritableChunk(3);
+                final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(3)) {
+            values.set(0, (int) ('a' + 1));
+            values.set(1, (int) ('a' + 3));
+            values.set(2, (int) ('a' + 5));
+            counts.set(0, 1);
+            counts.set(1, 1);
+            counts.set(2, 1);
+            ssm.insert(values, counts);
+        }
+
+        final int[] expected = new int[] {
+                (int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3), (int) ('a' + 4),
+                (int) ('a' + 5), (int) ('a' + 6), (int) ('a' + 8), (int) ('a' + 10), (int) ('a' + 12),
+                (int) ('a' + 14), (int) ('a' + 16), (int) ('a' + 18), (int) ('a' + 20), (int) ('a' + 22)};
+        verifySsm(ssm, expected, desc);
+    }
+
+    public void testRemoveMaxMultiLeaf() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a multi-leaf source whose maximum equals the destination minimum, moving the whole maximum entry, exercises
+        // removeMax's leafCount > 1 branch
+        final IntSegmentedSortedMultiset source = makeSsm(nodeSize, new int[] {
+                (int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3), (int) ('a' + 4)});
+        final IntSegmentedSortedMultiset dest =
+                makeSsm(nodeSize, new int[] {(int) ('a' + 4), (int) ('a' + 5)});
+        source.moveBackToFront(dest, 1);
+        verifySsm(source, new int[] {(int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3)}, desc);
+        verifySsm(dest, new int[] {(int) ('a' + 4), (int) ('a' + 4), (int) ('a' + 5)}, desc);
+    }
+
+    public void testRemoveMaxSizeOne() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a two-value single-leaf directory; removing its maximum leaves a size-1 directory (removeMax's leafCount == 1
+        // branch) rather than collapsing to the singleton representation
+        final IntSegmentedSortedMultiset source =
+                makeSsm(nodeSize, new int[] {(int) ('a' + 3), (int) ('a' + 4)});
+        final IntSegmentedSortedMultiset dest1 =
+                makeSsm(nodeSize, new int[] {(int) ('a' + 4), (int) ('a' + 5)});
+        source.moveBackToFront(dest1, 1);
+        verifySsm(source, new int[] {(int) ('a' + 3)}, desc);
+        verifySsm(dest1, new int[] {(int) ('a' + 4), (int) ('a' + 4), (int) ('a' + 5)}, desc);
+
+        // removing the maximum of that size-1 directory clears the set (removeMax's size == 1 branch)
+        final IntSegmentedSortedMultiset dest2 =
+                makeSsm(nodeSize, new int[] {(int) ('a' + 3), (int) ('a' + 6)});
+        source.moveBackToFront(dest2, 1);
+        verifySsm(source, new int[0], desc);
+        verifySsm(dest2, new int[] {(int) ('a' + 3), (int) ('a' + 3), (int) ('a' + 6)}, desc);
+    }
+
+    public void testMoveFrontToBackPartialAppend() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // single-leaf directory destination: moving part of the source minimum's count appends the partial value into
+        // the destination directory (the directoryCount != null branch of the partial-append handling)
+        {
+            final IntSegmentedSortedMultiset source =
+                    makeSsm(nodeSize, new int[] {(int) ('a' + 2), (int) ('a' + 3)}, new int[] {2, 2});
+            final IntSegmentedSortedMultiset dest =
+                    makeSsm(nodeSize, new int[] {(int) ('a' + 0), (int) ('a' + 1)});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new int[] {(int) ('a' + 2), (int) ('a' + 3), (int) ('a' + 3)}, desc);
+            verifySsm(dest, new int[] {(int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2)}, desc);
+        }
+
+        // multi-leaf destination: the same partial move appends into the destination's last leaf, and the leftover count
+        // is decremented on that leaf (the directoryCount == null leftover branch)
+        {
+            final IntSegmentedSortedMultiset source =
+                    makeSsm(nodeSize, new int[] {(int) ('a' + 5), (int) ('a' + 6)}, new int[] {2, 2});
+            final IntSegmentedSortedMultiset dest = makeSsm(nodeSize, new int[] {
+                    (int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3), (int) ('a' + 4)});
+            source.moveFrontToBack(dest, 1);
+            verifySsm(source, new int[] {(int) ('a' + 5), (int) ('a' + 6), (int) ('a' + 6)}, desc);
+            verifySsm(dest, new int[] {(int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3),
+                    (int) ('a' + 4), (int) ('a' + 5)}, desc);
+        }
+    }
+
+    public void testMoveBackToFrontCompleteLeaves() {
+        final int nodeSize = 4;
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+
+        // a three-leaf source where the boundary value's count is split: moving the six largest transfers two complete
+        // leaves plus a leftover slot of the boundary value (the multi-leaf complete-leaf move with a leftover slot)
+        final IntSegmentedSortedMultiset source = makeSsm(nodeSize, new int[] {
+                (int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3), (int) ('a' + 4),
+                (int) ('a' + 5), (int) ('a' + 6), (int) ('a' + 7), (int) ('a' + 8)},
+                new int[] {1, 1, 1, 2, 1, 1, 1, 1, 1});
+        final IntSegmentedSortedMultiset dest =
+                makeSsm(nodeSize, new int[] {(int) ('a' + 9), (int) ('a' + 10)});
+        source.moveBackToFront(dest, 6);
+        verifySsm(source,
+                new int[] {(int) ('a' + 0), (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3)}, desc);
+        verifySsm(dest, new int[] {(int) ('a' + 3), (int) ('a' + 4), (int) ('a' + 5), (int) ('a' + 6),
+                (int) ('a' + 7), (int) ('a' + 8), (int) ('a' + 9), (int) ('a' + 10)}, desc);
+    }
+
+    public void testScalarInsertRemove() {
+        final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
+        final int alphabet = 12;
+        // a small node size so the scalar inserts/removes exercise the directory, multi-leaf, split, and collapse
+        // paths with only a handful of distinct values
+        final int nodeSize = 4;
+        for (int seed = 0; seed < 20; ++seed) {
+            final Random rng = new Random(seed);
+            final IntSegmentedSortedMultiset ssm = new IntSegmentedSortedMultiset(nodeSize);
+            final long[] refCounts = new long[alphabet];
+
+            for (int ii = 0; ii < 60; ++ii) {
+                final int offset = rng.nextInt(alphabet);
+                final int count = 1 + rng.nextInt(3);
+                final boolean wasPresent = refCounts[offset] > 0;
+                final boolean added = ssm.insert((int) ('a' + offset), count);
+                refCounts[offset] += count;
+                assertEquals(!wasPresent, added);
+                verifyScalar(ssm, refCounts, desc);
+            }
+
+            while (true) {
+                final int[] present = new int[alphabet];
+                int presentCount = 0;
+                for (int offset = 0; offset < alphabet; ++offset) {
+                    if (refCounts[offset] > 0) {
+                        present[presentCount++] = offset;
+                    }
+                }
+                if (presentCount == 0) {
+                    break;
+                }
+                final int offset = present[rng.nextInt(presentCount)];
+                final int count = 1 + rng.nextInt((int) refCounts[offset]);
+                final boolean fully = count == refCounts[offset];
+                final boolean removed = ssm.remove((int) ('a' + offset), count);
+                refCounts[offset] -= count;
+                assertEquals(fully, removed);
+                verifyScalar(ssm, refCounts, desc);
+            }
+
+            assertEquals(0, ssm.size());
+            assertEquals(0, ssm.totalSize());
+        }
+    }
+
+    private void verifyScalar(IntSegmentedSortedMultiset ssm, long[] refCounts, SsaTestHelpers.TestDescriptor desc) {
+        int total = 0;
+        int distinct = 0;
+        for (int offset = 0; offset < refCounts.length; ++offset) {
+            total += refCounts[offset];
+            if (refCounts[offset] > 0) {
+                distinct++;
+            }
+        }
+        final int[] expanded = new int[total];
+        int position = 0;
+        for (int offset = 0; offset < refCounts.length; ++offset) {
+            for (long kk = 0; kk < refCounts[offset]; ++kk) {
+                expanded[position++] = (int) ('a' + offset);
+            }
+        }
+        verifySsm(ssm, expanded, desc);
+        assertEquals(distinct, ssm.size());
+        assertEquals(total, ssm.totalSize());
+    }
+
+    public void testInsertRemoveWithOffset() {
+        final int nodeSize = 4;
+        final int prefix = 3;
+        // `subject` is built with offset inserts/removes (from chunks carrying a junk prefix that must be ignored);
+        // `reference` is built with the plain (offset 0) calls. After every step the contents must be identical.
+        final IntSegmentedSortedMultiset subject = new IntSegmentedSortedMultiset(nodeSize);
+        final IntSegmentedSortedMultiset reference = new IntSegmentedSortedMultiset(nodeSize);
+
+        // empty -> multiple leaves (makeLeavesInitial with an offset)
+        applyInsert(subject, reference, prefix, range(1, 10), ones(10));
+        // a new minimum plus merges into existing values (insertExisting + distributeNewIntoLeaves with an offset)
+        applyInsert(subject, reference, prefix, new int[] {0, 1, 3}, new int[] {1, 2, 3});
+        // new maximums (doAppend with an offset)
+        applyInsert(subject, reference, prefix, new int[] {11, 12}, new int[] {5, 5});
+        // removals from an offset (removeFromLeaf with an offset)
+        applyRemove(subject, reference, prefix, new int[] {1, 3, 11}, new int[] {1, 2, 1});
+    }
+
+    /**
+     * {@link IntSegmentedSortedMultiset#subVector} is exclusive at its end, and -- like every Vector -- must accept
+     * offsets outside {@code [0, size())}, which read as the null value rather than throwing. Pin every representation
+     * against {@link IntVectorDirect}, the reference implementation of that contract.
+     */
+    public void testPartialCopy() {
+        // node sizes that put the same value counts in different representations
+        for (final int nodeSize : new int[] {4, 8}) {
+            // empty, singleton, partial leaf, exactly-full leaf, two full leaves, and many leaves
+            for (final int valueCount : new int[] {0, 1, 3, 4, 8, 24}) {
+                checkPartialCopy(nodeSize, valueCount);
+            }
+        }
+    }
+
+    private void checkPartialCopy(final int nodeSize, final int valueCount) {
+        final int[] values = new int[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (int) ('a' + ii);
+        }
+        final IntSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+        final IntVector reference = new IntVectorDirect(values);
+        final String prefix = "nodeSize=" + nodeSize + ", valueCount=" + valueCount;
+
+        assertArrayEquals(prefix, values, ssm.toArray()/*EXTRA*/);
+
+        // an offset outside [0, size()) reads as null; it is neither an error nor a peek at a leaf's unused slots
+        assertEquals(prefix, NULL_INT, ssm.get(-1));
+        assertEquals(prefix, NULL_INT, ssm.get(valueCount));
+        assertEquals(prefix, NULL_INT, ssm.get(valueCount + 1));
+        assertEquals(prefix, NULL_INT, ssm.get(Long.MAX_VALUE));
+
+        // sub-ranges that fall short of, span, and overrun each end
+        for (int from = -3; from <= valueCount + 3; ++from) {
+            for (int to = from; to <= valueCount + 3; ++to) {
+                final String message = prefix + ", from=" + from + ", to=" + to;
+                final IntVector expected = reference.subVector(from, to);
+                final IntVector actual = ssm.subVector(from, to);
+                assertEquals(message, to - from, actual.size());
+                assertArrayEquals(message, expected.toArray(), actual.toArray()/*EXTRA*/);
+                for (int ii = 0; ii < to - from; ++ii) {
+                    assertEquals(message, expected.get(ii), actual.get(ii));
+                }
+            }
+        }
+
+        // positions are read individually, in the order given, may repeat, and may fall outside [0, size())
+        final long[] positions =
+                new long[] {valueCount - 1, -1, 0, valueCount, valueCount / 2, 0, Long.MAX_VALUE};
+        assertArrayEquals(prefix, reference.subVectorByPositions(positions).toArray(),
+                ssm.subVectorByPositions(positions).toArray()/*EXTRA*/);
     }
 
     // region SortFixupSanityCheck
@@ -135,12 +461,12 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(1024)
         ) {
             valueSource.fillChunk(fillContext, chunk, john.getRowSet());
-            IntCompactKernel.compactAndCount(chunk, counts, true);
+            IntCompactKernel.compactAndCount(chunk, counts, true, true);
         }
     }
     //endregion SortFixupSanityCheck
 
-    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNull) {
+    private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNullNaN) {
         final Random random = new Random(desc.seed());
         final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
@@ -153,7 +479,7 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
         //noinspection unchecked
         final ColumnSource<Integer> valueSource = asInteger.getColumnSource("Value");
 
-        checkSsmInitial(asInteger, ssm, valueSource, countNull, desc);
+        checkSsmInitial(asInteger, ssm, valueSource, countNullNaN, desc);
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
             final ShiftObliviousListener asIntegerListener = new ShiftObliviousInstrumentedListenerAdapter(asInteger, false) {
@@ -168,14 +494,14 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
 
                         if (removed.isNonempty()) {
                             valueSource.fillPrevChunk(fillContext, chunk, removed);
-                            IntCompactKernel.compactAndCount(chunk, counts, countNull);
+                            IntCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.remove(removeContext, chunk, counts);
                         }
 
 
                         if (added.isNonempty()) {
                             valueSource.fillChunk(fillContext, chunk, added);
-                            IntCompactKernel.compactAndCount(chunk, counts, countNull);
+                            IntCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.insert(chunk, counts);
                         }
                     }
@@ -192,7 +518,7 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
                 });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asInteger.intSize())) {
-                    checkSsm(ssm, valueSource.getChunk(getContext, asInteger.getRowSet()).asIntChunk(), countNull, desc);
+                    checkSsm(ssm, valueSource.getChunk(getContext, asInteger.getRowSet()).asIntChunk(), countNullNaN, desc);
                 }
 
                 if (!allowAddition && table.size() == 0) {
@@ -274,19 +600,19 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
         checkSsm(asInteger, ssmLo, valueSource, countNull, desc);
     }
 
-    private void checkSsmInitial(Table asInteger, IntSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
+    private void checkSsmInitial(Table asInteger, IntSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNullNaN, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asInteger.intSize());
              final WritableIntChunk<Values> valueChunk = WritableIntChunk.makeWritableChunk(asInteger.intSize());
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(asInteger.intSize())) {
             valueSource.fillChunk(fillContext, valueChunk, asInteger.getRowSet());
             valueChunk.sort();
 
-            IntCompactKernel.compactAndCount(valueChunk, counts, countNull);
+            IntCompactKernel.compactAndCount(valueChunk, counts, countNullNaN, countNullNaN);
 
             ssm.insert(valueChunk, counts);
 
             valueSource.fillChunk(fillContext, valueChunk, asInteger.getRowSet());
-            checkSsm(ssm, valueChunk, countNull, desc);
+            checkSsm(ssm, valueChunk, countNullNaN, desc);
         }
     }
 
@@ -334,5 +660,374 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
         } catch (AssertionFailure e) {
             TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
         }
+    }
+
+    private IntSegmentedSortedMultiset makeSsm(int nodeSize, int[] values) {
+        final int[] counts = new int[values.length];
+        Arrays.fill(counts, 1);
+        return makeSsm(nodeSize, values, counts);
+    }
+
+    private IntSegmentedSortedMultiset makeSsm(int nodeSize, int[] values, int[] counts) {
+        final IntSegmentedSortedMultiset ssm = new IntSegmentedSortedMultiset(nodeSize);
+        if (values.length > 0) {
+            try (final WritableIntChunk<Values> valuesChunk = WritableIntChunk.makeWritableChunk(values.length);
+                 final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+                for (int ii = 0; ii < values.length; ++ii) {
+                    valuesChunk.set(ii, values[ii]);
+                    countsChunk.set(ii, counts[ii]);
+                }
+                ssm.insert(valuesChunk, countsChunk);
+            }
+        }
+        return ssm;
+    }
+
+    private static int[] range(int start, int count) {
+        final int[] result = new int[count];
+        for (int ii = 0; ii < count; ++ii) {
+            result[ii] = start + ii;
+        }
+        return result;
+    }
+
+    private static int[] ones(int count) {
+        final int[] result = new int[count];
+        Arrays.fill(result, 1);
+        return result;
+    }
+
+    private void applyInsert(IntSegmentedSortedMultiset subject, IntSegmentedSortedMultiset reference, int prefix,
+            int[] valueOffsets, int[] counts) {
+        final int[] values = new int[valueOffsets.length];
+        for (int ii = 0; ii < values.length; ++ii) {
+            values[ii] = (int) ('a' + valueOffsets[ii]);
+        }
+
+        // reference: a plain (offset 0) insert
+        try (final WritableIntChunk<Values> valuesChunk = WritableIntChunk.makeWritableChunk(values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(ii, values[ii]);
+                countsChunk.set(ii, counts[ii]);
+            }
+            reference.insert(valuesChunk, countsChunk);
+        }
+
+        // subject: an offset insert from a chunk with a junk prefix that must be left untouched
+        final int junk = (int) ('a' - 1);
+        try (final WritableIntChunk<Values> valuesChunk = WritableIntChunk.makeWritableChunk(prefix + values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk =
+                     WritableIntChunk.makeWritableChunk(prefix + values.length)) {
+            for (int ii = 0; ii < prefix; ++ii) {
+                valuesChunk.set(ii, junk);
+                countsChunk.set(ii, 7);
+            }
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(prefix + ii, values[ii]);
+                countsChunk.set(prefix + ii, counts[ii]);
+            }
+            subject.insert(valuesChunk, countsChunk, prefix, values.length);
+            for (int ii = 0; ii < prefix; ++ii) {
+                assertEquals(junk, valuesChunk.get(ii));
+            }
+        }
+
+        assertSameContents(subject, reference);
+    }
+
+    private void applyRemove(IntSegmentedSortedMultiset subject, IntSegmentedSortedMultiset reference, int prefix,
+            int[] valueOffsets, int[] counts) {
+        final int[] values = new int[valueOffsets.length];
+        for (int ii = 0; ii < values.length; ++ii) {
+            values[ii] = (int) ('a' + valueOffsets[ii]);
+        }
+        final SegmentedSortedMultiSet.RemoveContext removeContext =
+                SegmentedSortedMultiSet.makeRemoveContext(reference.getNodeSize());
+
+        try (final WritableIntChunk<Values> valuesChunk = WritableIntChunk.makeWritableChunk(values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(values.length)) {
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(ii, values[ii]);
+                countsChunk.set(ii, counts[ii]);
+            }
+            reference.remove(removeContext, valuesChunk, countsChunk);
+        }
+
+        final int junk = (int) ('a' - 1);
+        try (final WritableIntChunk<Values> valuesChunk = WritableIntChunk.makeWritableChunk(prefix + values.length);
+             final WritableIntChunk<ChunkLengths> countsChunk =
+                     WritableIntChunk.makeWritableChunk(prefix + values.length)) {
+            for (int ii = 0; ii < prefix; ++ii) {
+                valuesChunk.set(ii, junk);
+                countsChunk.set(ii, 7);
+            }
+            for (int ii = 0; ii < values.length; ++ii) {
+                valuesChunk.set(prefix + ii, values[ii]);
+                countsChunk.set(prefix + ii, counts[ii]);
+            }
+            subject.remove(removeContext, valuesChunk, countsChunk, prefix, values.length);
+            for (int ii = 0; ii < prefix; ++ii) {
+                assertEquals(junk, valuesChunk.get(ii));
+            }
+        }
+
+        assertSameContents(subject, reference);
+    }
+
+    private void assertSameContents(IntSegmentedSortedMultiset subject, IntSegmentedSortedMultiset reference) {
+        subject.validate();
+        reference.validate();
+        assertEquals(reference.size(), subject.size());
+        assertEquals(reference.totalSize(), subject.totalSize());
+        try (final WritableIntChunk<?> subjectKeys = subject.keyChunk();
+             final WritableLongChunk<?> subjectCounts = subject.countChunk();
+             final WritableIntChunk<?> referenceKeys = reference.keyChunk();
+             final WritableLongChunk<?> referenceCounts = reference.countChunk()) {
+            assertEquals(referenceKeys.size(), subjectKeys.size());
+            for (int ii = 0; ii < referenceKeys.size(); ++ii) {
+                assertEquals(referenceKeys.get(ii), subjectKeys.get(ii));
+                assertEquals(referenceCounts.get(ii), subjectCounts.get(ii));
+            }
+        }
+    }
+
+    private void checkEqualsArray(int valueCount) {
+        final int nodeSize = 4;
+        final int[] values = new int[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (int) ('a' + ii);
+        }
+        final IntSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+
+        // a Vector with identical contents is equal, in both directions, and anything equal must hash alike -- so the
+        // SSM has to use the same shared Vector helper that the *VectorDirect implementations use, and compare
+        // elements the same way that helper hashes them, rather than either with a scheme of its own
+        assertEqualBothWays(ssm, ssm.getDirect());
+        assertEqualBothWays(ssm, new IntVectorDirect(values));
+
+        // region BoxedEquals
+        // a boxed Vector of the same values is not equal in either direction: it would hold a null reference wherever
+        // this SSM holds the null sentinel, so accepting it would make equal values hash differently
+        final Integer[] boxed = new Integer[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            boxed[ii] = values[ii];
+        }
+        assertNotEqualBothWays(ssm, new ObjectVectorDirect<>(boxed));
+        // endregion BoxedEquals
+
+        // another SSM holding the same values is equal however those values happen to be laid out: equality is a
+        // property of the contents, and identical contents can occupy different leaf structures, since leaves need
+        // not be full and the two node sizes need not agree
+        assertEqualBothWays(ssm, makeSsm(nodeSize, values));
+        assertEqualBothWays(ssm, makeSsm(nodeSize * 16, values));
+
+        // an SSM of the same length holding different values is not equal, under either layout
+        final int[] shifted = new int[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            shifted[ii] = (int) ('a' + ii + 1);
+        }
+        assertNotEqualBothWays(ssm, makeSsm(nodeSize, shifted));
+        assertNotEqualBothWays(ssm, makeSsm(nodeSize * 16, shifted));
+
+        // ... and neither is a longer one
+        final int[] longerValues = new int[valueCount + 1];
+        for (int ii = 0; ii < longerValues.length; ++ii) {
+            longerValues[ii] = (int) ('a' + ii);
+        }
+        assertNotEqualBothWays(ssm, makeSsm(nodeSize, longerValues));
+        assertNotEqualBothWays(ssm, makeSsm(nodeSize * 16, longerValues));
+
+        // a Vector of a different length is not equal
+        final int[] longer = new int[valueCount + 1];
+        for (int ii = 0; ii < longer.length; ++ii) {
+            longer[ii] = (int) ('a' + ii);
+        }
+        assertFalse(ssm.equals(new IntVectorDirect(longer)));
+
+        // a Vector that differs from the original in a single position is not equal; check the first, middle, and last
+        if (valueCount > 0) {
+            final int different = (int) ('a' + 20);
+            for (final int position : new int[] {0, valueCount / 2, valueCount - 1}) {
+                final int[] modifiedValues = values.clone();
+                modifiedValues[position] = different;
+                assertFalse(ssm.equals(new IntVectorDirect(modifiedValues)));
+            }
+        }
+    }
+
+    /**
+     * Assert that two Vectors agree that they are equal no matter which is the receiver, and that they hash alike as
+     * {@link Object#hashCode()} then requires.
+     */
+    private void assertEqualBothWays(Object lhs, Object rhs) {
+        assertTrue(lhs + " should equal " + rhs, lhs.equals(rhs));
+        assertTrue(rhs + " should equal " + lhs, rhs.equals(lhs));
+        assertEquals("equal values must hash alike", lhs.hashCode(), rhs.hashCode());
+    }
+
+    /**
+     * Assert that two Vectors agree that they are unequal no matter which is the receiver. Their hash codes are
+     * unconstrained -- unequal values are permitted to collide.
+     */
+    private void assertNotEqualBothWays(Object lhs, Object rhs) {
+        assertFalse(lhs + " should not equal " + rhs, lhs.equals(rhs));
+        assertFalse(rhs + " should not equal " + lhs, rhs.equals(lhs));
+    }
+
+    private void checkIterator(final int nodeSize, final int valueCount) {
+        final int[] values = new int[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (int) ('a' + ii);
+        }
+        final IntSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+        // the reference implementation of the slice contract, including the null values owed for offsets outside
+        // [0, size())
+        final IntVector reference = new IntVectorDirect(values);
+        final String prefix = "nodeSize=" + nodeSize + ", valueCount=" + valueCount;
+
+        // a full traversal must visit every element in order
+        try (final ValueIteratorOfInt it = ssm.iterator()) {
+            assertEquals(prefix, valueCount, it.remaining());
+            for (int ii = 0; ii < valueCount; ++ii) {
+                assertTrue(prefix, it.hasNext());
+                assertEquals(prefix, values[ii], it.nextInt());
+            }
+            assertFalse(prefix, it.hasNext());
+        }
+
+        // every sub-range must resolve its starting leaf correctly and stop at the right position; for a multi-leaf
+        // SSM the start may land mid-leaf, on a leaf boundary, or past several whole leaves. Ranges that fall outside
+        // [0, size()) are legal, and iterate as null at those offsets.
+        for (int from = -3; from <= valueCount + 3; ++from) {
+            for (int to = from; to <= valueCount + 3; ++to) {
+                final String message = prefix + ", from=" + from + ", to=" + to;
+                try (final ValueIteratorOfInt it = ssm.iterator(from, to)) {
+                    assertEquals(message, to - from, it.remaining());
+                    for (int ii = from; ii < to; ++ii) {
+                        assertTrue(message, it.hasNext());
+                        assertEquals(message, reference.get(ii), it.nextInt());
+                        assertEquals(message, to - ii - 1, it.remaining());
+                    }
+                    assertFalse(message, it.hasNext());
+
+                    // an exhausted iterator must not hand back whatever value happens to be stored next
+                    try {
+                        it.nextInt();
+                        fail(message + ": expected a NoSuchElementException from an exhausted iterator");
+                    } catch (NoSuchElementException expected) {
+                        // expected
+                    }
+                }
+
+                // documented equivalence: iterator(from, to) matches subVector(from, to).iterator()
+                try (final ValueIteratorOfInt it = ssm.iterator(from, to);
+                     final ValueIteratorOfInt sliceIt = ssm.subVector(from, to).iterator()) {
+                    while (sliceIt.hasNext()) {
+                        assertTrue(message, it.hasNext());
+                        assertEquals(message, sliceIt.nextInt(), it.nextInt());
+                    }
+                    assertFalse(message, it.hasNext());
+                }
+            }
+        }
+    }
+
+    // region NullEquals
+    public void testEqualsArrayNull() {
+        // a singleton holding the null sentinel
+        checkEqualsArrayNull(4, new int[] {NULL_INT});
+        // a single leaf containing the null sentinel
+        checkEqualsArrayNull(4, new int[] {NULL_INT, (int) ('a' + 1), (int) ('a' + 2)});
+        // multiple leaves containing the null sentinel
+        checkEqualsArrayNull(4, new int[] {NULL_INT,
+                (int) ('a' + 1), (int) ('a' + 2), (int) ('a' + 3), (int) ('a' + 4), (int) ('a' + 5)});
+    }
+
+    private void checkEqualsArrayNull(int nodeSize, int[] sortedValues) {
+        // sortedValues must be sorted and distinct and contain the null sentinel (which sorts first)
+        final IntSegmentedSortedMultiset ssm = makeSsm(nodeSize, sortedValues);
+        final int[] stored = ssm.toArray();
+
+        // the null sentinel is an ordinary value to a IntVector comparison: equal both ways, and hashing alike
+        assertEqualBothWays(ssm, new IntVectorDirect(stored));
+
+        // boxing the sentinel yields a non-null element holding the sentinel value...
+        final Integer[] boxedSentinel = new Integer[stored.length];
+        for (int ii = 0; ii < stored.length; ++ii) {
+            boxedSentinel[ii] = stored[ii];
+        }
+        // ...but a boxed Vector is still not a IntVector, so it is not equal in either direction
+        assertNotEqualBothWays(ssm, new ObjectVectorDirect<>(boxedSentinel));
+
+        // a boxed Vector holding a literal null where this SSM holds the sentinel is likewise not equal. This is the
+        // case that made the branch unsound: the two would have compared equal while hashing differently, since
+        // hashCode() hashes the sentinel and a boxed Vector hashes the null reference.
+        final Integer[] boxedNull = boxedSentinel.clone();
+        for (int ii = 0; ii < stored.length; ++ii) {
+            if (stored[ii] == NULL_INT) {
+                boxedNull[ii] = null;
+            }
+        }
+        final ObjectVectorDirect<Integer> boxedNullVector = new ObjectVectorDirect<>(boxedNull);
+        assertNotEqualBothWays(ssm, boxedNullVector);
+
+        // ... and a hash lookup keyed on that boxed Vector must therefore miss rather than silently mismatch
+        final Map<Object, String> map = new HashMap<>();
+        map.put(boxedNullVector, "boxed");
+        assertNull(map.get(ssm));
+    }
+    // endregion NullEquals
+
+    private void verifySsm(IntSegmentedSortedMultiset ssm, int[] expanded, SsaTestHelpers.TestDescriptor desc) {
+        try (final WritableIntChunk<Values> valueChunk =
+                WritableIntChunk.makeWritableChunk(Math.max(expanded.length, 1))) {
+            valueChunk.setSize(expanded.length);
+            for (int ii = 0; ii < expanded.length; ++ii) {
+                valueChunk.set(ii, expanded[ii]);
+            }
+            checkSsm(ssm, valueChunk, true, desc);
+        }
+    }
+
+    private void checkAppendMaximum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final int[] destValues = new int[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (int) ('a' + 1 + ii);
+        }
+        // strictly greater than everything in the destination, so it becomes the new maximum (exercises appendMaximum)
+        final int value = (int) ('a' + 20);
+
+        final IntSegmentedSortedMultiset source = makeSsm(nodeSize, new int[] {value});
+        final IntSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveFrontToBack(dest, source.totalSize());
+
+        verifySsm(source, new int[0], desc);
+        final int[] expected = Arrays.copyOf(destValues, destCount + 1);
+        expected[destCount] = value;
+        verifySsm(dest, expected, desc);
+    }
+
+    private void checkPrependMinimum(int nodeSize, int destCount, SsaTestHelpers.TestDescriptor desc) {
+        final int[] destValues = new int[destCount];
+        for (int ii = 0; ii < destCount; ++ii) {
+            destValues[ii] = (int) ('a' + 1 + ii);
+        }
+        // strictly less than everything in the destination, so it becomes the new minimum (exercises prependMinimum).
+        // Use ('a' + 0) rather than a bare 'a' so that the Object replication boxes to the same type as the other
+        // values (int arithmetic boxes to Integer; a bare int literal would box to Integer and break comparisons).
+        final int value = (int) ('a' + 0);
+
+        final IntSegmentedSortedMultiset source = makeSsm(nodeSize, new int[] {value});
+        final IntSegmentedSortedMultiset dest = makeSsm(nodeSize, destValues);
+
+        source.moveBackToFront(dest, source.totalSize());
+
+        verifySsm(source, new int[0], desc);
+        final int[] expected = new int[destCount + 1];
+        expected[0] = value;
+        System.arraycopy(destValues, 0, expected, 1, destCount);
+        verifySsm(dest, expected, desc);
     }
 }

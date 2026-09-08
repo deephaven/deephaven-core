@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #include <iostream>
 #include "deephaven/third_party/catch.hpp"
@@ -46,7 +46,7 @@ TEST_CASE("Fetch the entire table (small)", "[client_table]") {
       });
   std::cout << th.Stream(true) << '\n';
 
-  auto arrow_table = th.ToArrowTable();
+  auto arrow_table = th.ToArrowTable(true);
 
   auto chars = MakeReservedVector<std::optional<char16_t>>(target);
   auto int8s = MakeReservedVector<std::optional<int8_t>>(target);

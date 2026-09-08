@@ -29,7 +29,7 @@ A `Table` that is a subscribed to the remote table.
 
 ## Examples
 
-The following example installs the Deephaven Python Client ([`pydeephaven`](/core/client-api/python/)) on a Deephaven server running on port `10001`. It also starts a Deephaven server running locally on port `10000` with [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md).
+The following example uses the Deephaven Python Client ([`pydeephaven`](/core/client-api/python/)) to connect to a Deephaven server running on port `10000` with [PSK authentication](../../../how-to-guides/authentication/auth-psk.md).
 
 Next, the client creates a table on the server on port `10000`. A shared ticket is created that publishes the table, which allows it to be shared with other sessions. Finally, a Barrage session is started that listens to the server on port `10000`, and a new local table that is subscribed to the shared ticket's table is obtained.
 
@@ -99,4 +99,6 @@ services:
 
 ## Related documentation
 
+- [`fetch_table`](../../client-api/session/fetch-table.md)
+- [`publish_table`](../../client-api/session/publish-table.md)
 - [Pydoc](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession.subscribe)

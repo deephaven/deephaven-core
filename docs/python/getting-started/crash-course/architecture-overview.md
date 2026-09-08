@@ -3,7 +3,7 @@ title: An Overview of Deephaven's Architecture
 sidebar_label: Architecture Overview
 ---
 
-Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like [Pandas DataFrames](https://pandas.pydata.org/pandas-docs/stable/user_guide/dsintro.html#dataframe), except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data for a seamless, integrated experience. This section will discuss the conceptual building blocks of Deephaven tables before diving into some real code.
+Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like [Pandas DataFrames](https://pandas.pydata.org/docs/user_guide/dsintro.html#dataframe), except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data for a seamless, integrated experience. This section will discuss the conceptual building blocks of Deephaven tables before diving into some real code.
 
 ## The Deephaven Table API
 
@@ -90,4 +90,4 @@ The UI is also highly extensible. You can add custom widgets, visualizations, an
 
 All components of the Deephaven UI are published as packages to npmjs under the [@deephaven](https://www.npmjs.com/org/deephaven) and [@deephaven-enterprise](https://www.npmjs.com/org/deephaven-enterprise) organizations. These packages can be used and installed in your own web applications. Example React applications that use the Deephaven UI components are available in the [deephaven-react-app](https://github.com/deephaven-examples/deephaven-react-app) and [deephaven-react-app-enterprise](https://github.com/deephaven-examples/deephaven-react-app-enterprise) repositories.
 
-In addition to publishing the packages, all components of the UI are available open-source on GitHub in the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository. You can explore the source code, contribute to the project, or even fork it to create your own custom version of the Deephaven UI.
+In addition to publishing the packages, all Core components of the UI are available open-source on GitHub in the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository. Source code for the plugins is at [deephaven/deephaven-plugins](https://github.com/deephaven/deephaven-plugins). You can explore the source code, contribute to the project, or even fork it to create your own custom version of the Deephaven UI.

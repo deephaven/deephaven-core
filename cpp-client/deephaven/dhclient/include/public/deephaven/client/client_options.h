@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -8,6 +8,11 @@
 #include <vector>
 
 namespace deephaven::client {
+
+// Header/option key constants
+inline constexpr const char *kAuthorizationHeader = "authorization";
+inline constexpr const char *kBearerPrefix = "Bearer ";
+inline constexpr const char *kEnvoyPrefixHeader = "envoy-prefix";
 
 class Client;
 

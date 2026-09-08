@@ -1,19 +1,20 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.testutil.rowset;
 
-import gnu.trove.list.array.TLongArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
 
 import java.text.NumberFormat;
 
 public class PerfStats {
-    private TLongArrayList samples;
+    private LongList samples;
     private double avg;
     private double stddev;
 
     public PerfStats(final int nsamples) {
-        samples = new TLongArrayList(nsamples);
+        samples = new LongArrayList(nsamples);
     }
 
     public void sample(final long v) {
@@ -37,14 +38,14 @@ public class PerfStats {
         long sumx = 0;
         long sumsqx = 0;
         for (int i = 0; i < n; ++i) {
-            final long v = samples.get(i);
+            final long v = samples.getLong(i);
             sumx += v;
             sumsqx += v * v;
         }
         avg = sumx / (double) n;
         final double stddev2 = sumsqx / n + avg * avg;
         stddev = Math.sqrt(stddev2);
-        samples.sort();
+        samples.sort(null);
     }
 
     // assumption: before calling percentile compute was called (and thus the array is sorted).
@@ -53,7 +54,7 @@ public class PerfStats {
             return 0;
         final int n = samples.size();
         final int i = (int) Math.ceil((n * p) / 100.0);
-        return samples.get(i > 0 ? i - 1 : 0);
+        return samples.getLong(i > 0 ? i - 1 : 0);
     }
 
     public static final int defaultPrintPs[] = {0, 5, 50, 90, 95, 99};

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
 // ****** Edit LongSsaChecker and run "./gradlew replicateReverseSegmentedSortedArray" to regenerate
@@ -12,10 +12,7 @@ package io.deephaven.engine.table.impl.ssa;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;

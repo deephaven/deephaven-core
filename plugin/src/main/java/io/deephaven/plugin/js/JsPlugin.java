@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.plugin.js;
 
@@ -12,6 +12,7 @@ import org.immutables.value.Value.Immutable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 /**
  * A JS plugin is a {@link Plugin} that allows for custom javascript and related content to be served, see
@@ -100,6 +101,15 @@ public abstract class JsPlugin extends PluginBase {
         return Paths.all();
     }
 
+    /**
+     * The JS plugin loader configuration, as sourced from the "loader" field of the plugin's package.json (if present).
+     * This is an arbitrary, plugin-specific JSON object that is opaque to the server and is simply passed through as
+     * the "loader" field for the manifest entry in "js-plugins/manifest.json".
+     *
+     * @return the loader configuration
+     */
+    public abstract Optional<Object> loader();
+
     @Override
     public final <T, V extends Plugin.Visitor<T>> T walk(V visitor) {
         return visitor.visit(this);
@@ -141,6 +151,8 @@ public abstract class JsPlugin extends PluginBase {
         Builder path(Path path);
 
         Builder paths(Paths paths);
+
+        Builder loader(Object loader);
 
         JsPlugin build();
     }

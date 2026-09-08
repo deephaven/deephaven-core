@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.web.client.api.console;
 
@@ -16,10 +16,10 @@ import jsinterop.annotations.JsProperty;
 public class JsCommandResult {
     private final JsVariableChanges changes;
     private final String error;
-    private final String startTimestamp;
-    private final String endTimestamp;
+    private final long startTimestamp;
+    private final long endTimestamp;
 
-    public JsCommandResult(JsVariableChanges changes, String error, String startTimestamp, String endTimestamp) {
+    public JsCommandResult(JsVariableChanges changes, String error, long startTimestamp, long endTimestamp) {
         this.changes = changes;
         this.error = error;
         this.startTimestamp = startTimestamp;
@@ -53,7 +53,7 @@ public class JsCommandResult {
      */
     @JsProperty
     public DateWrapper getStartTimestamp() {
-        return DateWrapper.of(Long.parseLong(startTimestamp));
+        return DateWrapper.of(startTimestamp);
     }
 
     /**
@@ -63,7 +63,7 @@ public class JsCommandResult {
      */
     @JsProperty
     public DateWrapper getEndTimestamp() {
-        return DateWrapper.of(Long.parseLong(endTimestamp));
+        return DateWrapper.of(endTimestamp);
     }
 
     @Override

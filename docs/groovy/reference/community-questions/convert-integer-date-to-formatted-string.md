@@ -5,7 +5,7 @@ sidebar_label: How can I convert an integer date to a formatted string?
 
 _I have a column containing dates as integers (like 20250401). How can I convert these to formatted date strings (YYYY-MM-DD) in Deephaven?_
 
-The best practice is to first format the integer as a proper date string, then use Deephaven's built-in [`parseLocalDate`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseLocalDate(java.lang.String)) function:
+The best practice is to first format the integer as a proper date string, then use Deephaven's built-in [`parseLocalDate`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseLocalDate(java.lang.String)) function:
 
 ```groovy order=source,result
 // Sample table with integer dates

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.engine.table.impl;
 
@@ -519,10 +519,16 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
         verifyStringColumnContents(spt.table(), "TableName", "p1", "p2");
         assertNotNull(p2tl.getRowSet());
 
-        // TODO: DH-19011: Make this test pass, and then improve it to not have a sleep if possible:
-        // spt = null;
-        // System.gc();
-        // Thread.sleep(5000);
-        // assertNull(p2tl.getRowSet());
+        // Test that we cleanup even in the static case (DH-19011)
+        spt = null;
+        final long cleanupDeadlineMillis = System.currentTimeMillis() + 5_000;
+        do {
+            System.gc();
+            if (p2tl.getRowSet() == null) {
+                break;
+            }
+            Thread.sleep(50);
+        } while (System.currentTimeMillis() < cleanupDeadlineMillis);
+        assertNull(p2tl.getRowSet());
     }
 }

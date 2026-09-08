@@ -140,7 +140,7 @@ result = source.snapshotWhen(trigger, myOpts)
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [Capture the history of a ticking table](../../../how-to-guides/capture-table-history.md)
-- [How to reduce the update frequency of ticking tables](../../../how-to-guides/reduce-update-frequency.md)
+- [How to reduce the update frequency of ticking tables](../../../how-to-guides/performance/reduce-update-frequency.md)
 - [`snapshot`](./snapshot.md)
 - [`timeTable`](../create/timeTable.md)
 - [`update`](../select/update.md)

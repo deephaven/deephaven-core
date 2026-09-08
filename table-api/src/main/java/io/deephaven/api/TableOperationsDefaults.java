@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 package io.deephaven.api;
 
@@ -177,6 +177,12 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     default TOPS join(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
         return join(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)),
                 JoinAddition.from(TableOperationsDefaults.splitToCollection(columnsToAdd)));
+    }
+
+    @Override
+    default TOPS join(TABLE rightTable, String columnsToMatch, String columnsToAdd, int reserveBits) {
+        return join(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)),
+                JoinAddition.from(TableOperationsDefaults.splitToCollection(columnsToAdd)), reserveBits);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

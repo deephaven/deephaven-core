@@ -165,5 +165,5 @@ pt = (
 - [`consume`](./consume.md)
 - [`produce`](./produce.md)
 - [How to connect to a Kafka stream](../../../how-to-guides/data-import-export/kafka-stream.md)
-- [Javadoc](/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html)
-- [Pydoc](/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.consume)
+- [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/kafka/KafkaTools.Consume.html)
+- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.stream.kafka.consumer.html#deephaven.stream.kafka.consumer.consume_to_partitioned_table)

@@ -121,6 +121,8 @@ Schema new_schema = new Schema(new_fields, curr_schema.getCustomMetadata())
 t = t.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
 ```
 
+For focused Groovy examples of using `Table.BARRAGE_SCHEMA_ATTRIBUTE` for Union and Map wire types, see [Barrage Schema Annotation](barrage-schema.md).
+
 ## Custom Mappings
 
 Deephaven allows extending the set of supported type mappings. We currently do not support allowing the user to change the default mappings.
@@ -135,7 +137,7 @@ Let's go through a full example of how to add and use a custom mapping from an A
 4. Download the table from the server and print the returned data.
 
 > [!IMPORTANT]
-> While this example is provided as Groovy, it is a best practice to implement custom type mappings from Java within [Application Mode](../app-mode.md).
+> While this example is provided as Groovy, it is a best practice to implement custom type mappings from Java within [Application Mode](../application-mode.md).
 
 ### Register the Custom Mapping
 
