@@ -30,29 +30,32 @@ This is what the snapshots table looks like after processing a few requests:
 
 Subscription statistics are presented in percentiles bucketed over a time period. Here are the various metrics that are recorded by the Deephaven server:
 
-| Stat Type             | Sender / Receiver | Description                                                                         |
-| --------------------- | ----------------- | ----------------------------------------------------------------------------------- |
-| EnqueueMillis         | Sender            | The time it took to record changes that occurred during a single update graph cycle |
-| AggregateMillis       | Sender            | The time it took to aggregate multiple updates within the same interval             |
-| PropagateMillis       | Sender            | The time it took to deliver an aggregated message to all subscribers                |
-| SnapshotMillis        | Sender            | The time it took to snapshot data for a new or changed subscription                 |
-| UpdateJobMillis       | Sender            | The time it took to run one full cycle of the off-thread propagation logic          |
-| WriteMillis           | Sender            | The time it took to write the update to a single subscriber                         |
-| WriteMegabits         | Sender            | The payload size of the update in megabits                                          |
-| DeserializationMillis | Receiver          | The time it took to read and deserialize the update from the wire                   |
-| ProcessUpdateMillis   | Receiver          | The time it took to apply a single update during the update graph cycle             |
-| RefreshMillis         | Receiver          | The time it took to apply all queued updates during a single update graph cycle     |
+| Stat Type            | Sender / Receiver | Description                                                                         |
+| -------------------- | ----------------- | ----------------------------------------------------------------------------------- |
+| EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle |
+| AggregateNanos       | Sender            | The time it took to aggregate multiple updates within the same interval             |
+| PropagateNanos       | Sender            | The time it took to deliver an aggregated message to all subscribers                |
+| SnapshotNanos        | Sender            | The time it took to snapshot data for a new or changed subscription                 |
+| UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic          |
+| WriteNanos           | Sender            | The time it took to write the update to a single subscriber                         |
+| WriteBytes           | Sender            | The payload size of the update in bytes                                             |
+| DeserializationNanos | Receiver          | The time it took to read and deserialize the update from the wire                   |
+| ProcessUpdateNanos   | Receiver          | The time it took to apply a single update during the update graph cycle             |
+| RefreshNanos         | Receiver          | The time it took to apply all queued updates during a single update graph cycle     |
 
 ### Barrage snapshot metrics summary
 
 Snapshot statistics are presented once per request.
 
-| Stat Type      | Description                                                             |
-| -------------- | ----------------------------------------------------------------------- |
-| QueueMillis    | The time it took waiting for a thread to process the request            |
-| SnapshotMillis | The time it took to construct a consistent snapshot of the source table |
-| WriteMillis    | The time it took to write the snapshot                                  |
-| WriteMegabits  | The payload size of the snapshot in megabits                            |
+| Column        | Description                                                             |
+| ------------- | ----------------------------------------------------------------------- |
+| QueueNanos    | The time it took waiting for a thread to process the request            |
+| SnapshotNanos | The time it took to construct a consistent snapshot of the source table |
+| WriteNanos    | The time it took to write the snapshot                                  |
+| WriteBytes    | The payload size of the snapshot in bytes                               |
+
+> [!NOTE]
+> All durations are nanoseconds and all payload sizes are bytes, stored as `long`. This matches Deephaven's other performance tables. Convert in a query when you want different units — for example `WriteMillis = WriteNanos / 1e6`, or `WriteMegabits = WriteBytes * 8 / 1e6` to compare against link bandwidth.
 
 ## Identify a table
 
@@ -130,25 +133,25 @@ The following properties control other aspects of Barrage behavior:
 
 Use the metrics tables described above to diagnose common Barrage issues.
 
-### High `SnapshotMillis`
+### High `SnapshotNanos`
 
-If `SnapshotMillis` is consistently high:
+If `SnapshotNanos` is consistently high:
 
 - The source table may be very large. Consider using viewports or filtering data before subscription.
 - The update graph may be holding a lock. Check for long-running operations blocking the cycle.
 - Consider enabling subscription growth with smaller chunk sizes (see [Control subscription snapshot size](#control-subscription-snapshot-size)).
 
-### High `WriteMillis` or `WriteMegabits`
+### High `WriteNanos` or `WriteBytes`
 
-If `WriteMillis` is high or `WriteMegabits` is large:
+If `WriteNanos` is high or `WriteBytes` is large:
 
 - Network bandwidth may be saturated. Check network utilization.
 - Consider subscribing to fewer columns or using viewports to reduce data volume.
 - Increase `barrage.minUpdateInterval` to batch more updates together.
 
-### High `PropagateMillis`
+### High `PropagateNanos`
 
-If `PropagateMillis` is consistently high:
+If `PropagateNanos` is consistently high:
 
 - Many subscribers may be connected to the same table. Consider load balancing across multiple server instances.
 - The server may be under memory pressure. Check JVM heap usage and garbage collection metrics.

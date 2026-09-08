@@ -29,6 +29,7 @@ import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
+import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger.StatType;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.BarrageCopyKernel;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
@@ -2427,7 +2428,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     private void recordWriteMetrics(final long bytes, final long cpuNanos) {
-        recordMetric(stats -> stats.writeBits, bytes * 8);
+        recordMetric(stats -> stats.writeBytes, bytes);
         recordMetric(stats -> stats.writeTime, cpuNanos);
     }
 
@@ -2451,7 +2452,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         public final Histogram snapshot = new Histogram(NUM_SIG_FIGS);
         public final Histogram updateJob = new Histogram(NUM_SIG_FIGS);
         public final Histogram writeTime = new Histogram(NUM_SIG_FIGS);
-        public final Histogram writeBits = new Histogram(NUM_SIG_FIGS);
+        public final Histogram writeBytes = new Histogram(NUM_SIG_FIGS);
 
         private volatile boolean running = true;
 
@@ -2474,13 +2475,13 @@ public class BarrageMessageProducer extends LivenessArtifact
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
             synchronized (logger) {
-                flush(now, logger, enqueue, "EnqueueMillis");
-                flush(now, logger, aggregate, "AggregateMillis");
-                flush(now, logger, propagate, "PropagateMillis");
-                flush(now, logger, snapshot, "SnapshotMillis");
-                flush(now, logger, updateJob, "UpdateJobMillis");
-                flush(now, logger, writeTime, "WriteMillis");
-                flush(now, logger, writeBits, "WriteMegabits");
+                flush(now, logger, enqueue, StatType.ENQUEUE_NANOS);
+                flush(now, logger, aggregate, StatType.AGGREGATE_NANOS);
+                flush(now, logger, propagate, StatType.PROPAGATE_NANOS);
+                flush(now, logger, snapshot, StatType.SNAPSHOT_NANOS);
+                flush(now, logger, updateJob, StatType.UPDATE_JOB_NANOS);
+                flush(now, logger, writeTime, StatType.WRITE_NANOS);
+                flush(now, logger, writeBytes, StatType.WRITE_BYTES);
             }
         }
 
