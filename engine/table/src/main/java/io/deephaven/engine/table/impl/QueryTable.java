@@ -1125,13 +1125,13 @@ public class QueryTable extends BaseTable<QueryTable> {
         @Override
         public void requestRecompute() {
             refilterMatchedRequested = refilterUnmatchedRequested = true;
-            Require.neqNull(whereListener, "whereListener").notifyChanges();
+            notifyWhereListener();
         }
 
         @Override
         public void requestRecomputeUnmatched() {
             refilterUnmatchedRequested = true;
-            Require.neqNull(whereListener, "whereListener").notifyChanges();
+            notifyWhereListener();
         }
 
         /**
@@ -1141,7 +1141,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         @Override
         public void requestRecomputeMatched() {
             refilterMatchedRequested = true;
-            Require.neqNull(whereListener, "whereListener").notifyChanges();
+            notifyWhereListener();
         }
 
         @Override
@@ -1151,7 +1151,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             } else {
                 refilterRequestedRowset.insert(rowSet);
             }
-            Require.neqNull(whereListener, "whereListener").notifyChanges();
+            notifyWhereListener();
         }
 
         /**
@@ -1340,6 +1340,26 @@ public class QueryTable extends BaseTable<QueryTable> {
             }
             // Release the upstream update and set the final notification step.
             listener.finalizeUpdate(upstream);
+        }
+
+        /**
+         * Notify the {@link WhereListener} that a refilter has been requested, if there is one yet.
+         * <p>
+         * The where listener is installed only after the initial filter completes, so a refreshing filter whose inputs
+         * tick while the initial snapshot is still running may request a recompute before there is anything to notify.
+         * For a {@link NotificationAwareDependency} such as {@link DynamicWhereFilter}, that snapshot has necessarily
+         * read the filter's inputs inconsistently, so its
+         * {@link OperationSnapshotControlEx#snapshotCompletedConsistently snapshot control} fails it and the whole
+         * attempt is retried against a fresh result table, which makes the dropped notification irrelevant.
+         * <p>
+         * Note that this reasoning does not extend to a refreshing filter that is not notification aware, such as the
+         * release and time series filters. Nothing fails their snapshot, so the request flag set by the caller survives
+         * but its wake-up is lost until some later notification arrives.
+         */
+        private void notifyWhereListener() {
+            if (whereListener != null) {
+                whereListener.notifyChanges();
+            }
         }
 
         private void setWhereListener(MergedListener whereListener) {

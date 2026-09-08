@@ -22,18 +22,33 @@ import static io.deephaven.engine.updategraph.LogicalClock.NULL_CLOCK_VALUE;
  * in addition to the source {@link BaseTable} when determining whether to use previous values during initialization or
  * evaluating success. This is useful anytime an operation needs to listen to and snapshot one data source while also
  * snapshotting others.
+ * <p>
+ * Extras are treated as <em>notification oblivious</em> by default: their notifications do not invalidate a snapshot,
+ * because their previous values remain stable for the whole cycle and a snapshot using previous values reads them
+ * consistently no matter when they tick. That is the correct treatment for the usual extras, which are tables or
+ * table-backed structures such as data index tables.
+ * <p>
+ * An extra that also implements {@link NotificationAwareDependency} is the exception: it keeps no previous version of
+ * the state it guards, so a snapshot that used previous values while that extra changed its state on the same step must
+ * be retried. Such extras are detected automatically from those passed to the constructor, so callers need do nothing
+ * beyond passing them as dependencies.
  */
 public final class OperationSnapshotControlEx extends OperationSnapshotControl {
 
     private static final Logger log = LoggerFactory.getLogger(OperationSnapshotControlEx.class);
 
     private final NotificationQueue.Dependency[] extras;
+    private final NotificationAwareDependency[] notificationAwareExtras;
 
     public OperationSnapshotControlEx(
             @NotNull final BaseTable<?> sourceTable,
             @NotNull final NotificationQueue.Dependency... extras) {
         super(sourceTable);
         this.extras = extras;
+        this.notificationAwareExtras = Arrays.stream(extras)
+                .filter(NotificationAwareDependency.class::isInstance)
+                .map(NotificationAwareDependency.class::cast)
+                .toArray(NotificationAwareDependency[]::new);
     }
 
     @Override
@@ -109,6 +124,56 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
                     .endl();
         }
         return usePrev;
+    }
+
+    @Override
+    public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+        return notificationAwareExtrasConsistent(currentClockValue, usingPreviousValues)
+                && super.snapshotConsistent(currentClockValue, usingPreviousValues);
+    }
+
+    @Override
+    public synchronized boolean snapshotCompletedConsistently(
+            final long afterClockValue,
+            final boolean usedPreviousValues) {
+        // Note that we must not delegate to super when we have already failed: on success it records the result's
+        // last notification step and subscribes the eventual listener, which must not happen for a snapshot that is
+        // about to be retried.
+        if (!notificationAwareExtrasConsistent(afterClockValue, usedPreviousValues)) {
+            if (DEBUG) {
+                log.info().append("OperationSnapshotControlEx {source=")
+                        .append(System.identityHashCode(sourceTable))
+                        .append(", control=").append(System.identityHashCode(this))
+                        .append("} snapshotCompletedConsistently: afterClockValue=").append(afterClockValue)
+                        .append(", usedPreviousValues=").append(usedPreviousValues)
+                        .append(", notificationAwareExtraChanged=").append(true)
+                        .endl();
+            }
+            return false;
+        }
+        return super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
+    }
+
+    /**
+     * A snapshot that used previous values cannot read a {@link NotificationAwareDependency} consistently if that
+     * dependency changes its guarded state while being snapshotted. These dependencies cannot provide a consistent set
+     * of previous values, so a snapshot that used previous values must be retried.
+     *
+     * @param clockValue The clock value to evaluate against
+     * @param usedPreviousValues Whether the snapshot used previous values
+     * @return Whether the notification aware extras were read consistently
+     */
+    private boolean notificationAwareExtrasConsistent(final long clockValue, final boolean usedPreviousValues) {
+        if (!usedPreviousValues || notificationAwareExtras.length == 0) {
+            return true;
+        }
+        final long step = LogicalClock.getStep(clockValue);
+        for (final NotificationAwareDependency extra : notificationAwareExtras) {
+            if (extra.stateChangedOnStep(step)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean satisfied(@NotNull final NotificationQueue.Dependency dependency, final long step) {

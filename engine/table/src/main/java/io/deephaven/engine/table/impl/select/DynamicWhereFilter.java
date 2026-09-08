@@ -20,7 +20,6 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
@@ -40,7 +39,7 @@ import java.util.stream.LongStream;
  * Each time the set table ticks, the entire where filter is recalculated.
  */
 public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
-        implements NotificationQueue.Dependency, HasParentPerformanceIds, NoPredicatePushdown {
+        implements NotificationAwareDependency, HasParentPerformanceIds, NoPredicatePushdown {
 
     private static final int CHUNK_SIZE = 1 << 16;
 
@@ -68,6 +67,15 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     private RecomputeListener listener;
     private QueryTable resultTable;
+
+    /**
+     * The step on which the set update listener began changing {@link #setKernel}, published before the change.
+     * <p>
+     * Note that this guards the whole step, not just the interval while the listener runs. Once the kernel holds this
+     * step's contents it no longer matches a previous-values view of the source, so the step is never cleared. See
+     * {@link NotificationAwareDependency}.
+     */
+    private volatile long lastStateChangeStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
 
     /**
      * Construct a DynamicWhereFilter with key values from given set table. The set table may be static or refreshing.
@@ -122,6 +130,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         }
 
         this.setTable = setTableToUse;
+        // This filter, and any copy of it, reads and listens to the set table for as long as it lives. Manage it
+        // here so that it is not released when the caller's liveness scope closes.
+        manage(setTableToUse);
 
         final Mutable<SetInclusionKernel> resultKernel = new MutableObject<>();
         final Mutable<InstrumentedTableUpdateListener> resultListener = new MutableObject<>();
@@ -186,8 +197,15 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                             final boolean hasModifies = upstream.modified().isNonempty()
                                     && upstream.modifiedColumnSet().containsAny(setColumnsMCS);
                             if (!hasAdds && !hasRemoves && !hasModifies) {
+                                // The set kernel is unchanged, so a concurrent snapshot reading it remains
+                                // consistent; deliberately do not record a state change step.
                                 return;
                             }
+
+                            // We are mutating during this step. Publish the step before changing the kernel,
+                            // never after, so that a reader which observes the change is guaranteed to observe
+                            // this step and reject what it read.
+                            lastStateChangeStep = getUpdateGraph().clock().currentStep();
 
                             // Remove removed keys
                             if (hasRemoves) {
@@ -232,6 +250,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                                     addedKeysIterator.forEachRemaining(DynamicWhereFilter.this::addKey);
                                 }
                             }
+
+                            // All the mutations are complete, the listener will be auto-marked "satisfied" after this
+                            // method returns.
 
                             // Pretend every row of the original table was modified, this is essential so that the where
                             // clause can be re-evaluated based on the updated live set.
@@ -294,6 +315,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         snapshotAndCreate(setTable, setKeySource, inclusion, resultKernel, resultListener);
 
         this.setTable = setTable;
+        // This copied filter also needs to manage the set table.
+        manage(setTable);
         this.setKernel = resultKernel.get();
         this.setUpdateListener = resultListener.get();
     }
@@ -333,7 +356,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     @Override
     public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
-        if (sourceDataIndex != null) {
+        if (sourceKeySource != null) {
             throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
         }
         getUpdateGraph(this, sourceTable);
@@ -699,6 +722,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             return new DynamicWhereFilter(setKeyTypes, setKernel, inclusion, sourceToSetColumnNamePairs);
         }
         return new DynamicWhereFilter(setTable, setKeyTypes, inclusion, sourceToSetColumnNamePairs);
+    }
+
+    @Override
+    public boolean stateChangedOnStep(final long step) {
+        return lastStateChangeStep == step;
     }
 
     @Override

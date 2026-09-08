@@ -824,7 +824,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.addToTable(setTable, i(1), col("z", false));
         TstUtils.addToTable(source, i(2, 3), col("x", 1, 4), col("y", "a", "d"), col("z", false, true));
 
-        // MOTE: source notified first! This changes the downstream notifications significantly.
+        // NOTE: source notified first! This changes the downstream notifications significantly.
         source.notifyListeners(i(3), i(), i(2));
         setTable.notifyListeners(i(1), i(), i());
 
@@ -925,7 +925,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.addToTable(setTable, i(1), col("z", false));
         TstUtils.addToTable(source, i(2, 3), col("x", 1, 4), col("y", "a", "d"), col("z", false, true));
 
-        // MOTE: setTable notified first! This changes the downstream notifications significantly.
+        // NOTE: setTable notified first! This changes the downstream notifications significantly.
         setTable.notifyListeners(i(1), i(), i());
         source.notifyListeners(i(3), i(), i(2));
 
@@ -1495,7 +1495,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         table.notifyListeners(i(3), i(), i());
 
-        // We need to flush two notifications: one for the source source and one for the "withView" source in the
+        // We need to flush two notifications: one for the source table and one for the "withView" table in the
         // aggregation helper.
         updateGraph.flushOneNotificationForUnitTests();
         updateGraph.flushOneNotificationForUnitTests();
@@ -2027,7 +2027,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(expected2, prevTable(distinct3));
     }
 
-    @ReflexiveUse(referrers = "io.deephaven.engine.source.impl.TestConcurrentInstantiation")
+    @ReflexiveUse(referrers = "io.deephaven.engine.table.impl.TestConcurrentInstantiation")
     public static String identitySleep(String x) {
         SleepUtil.sleep(50);
         return x;
@@ -2194,7 +2194,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 slowed = table.updateView("KeyColumn=barrierFunction.apply(KeyColumn)");
                 callable = () -> {
                     final long start = System.currentTimeMillis();
-                    System.out.println("Applying callable to slowed source.");
+                    System.out.println("Applying callable to slowed table.");
                     try {
                         return function.apply(slowed);
                     } finally {
@@ -2206,8 +2206,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 callable = () -> function.apply(table);
             }
 
-            // We only care about the silent version of this source, as it's just a vessel to tick and ensure that the
-            // resultant source is computed using the appropriate version.
+            // We only care about the silent version of this table, as it's just a vessel to tick and ensure that the
+            // resultant table is computed using the appropriate version.
             final Table expected1 = updateGraph.exclusiveLock().computeLocked(
                     () -> function.apply(table.silent()).select());
             final Table expected2 = updateGraph.exclusiveLock()
@@ -2249,7 +2249,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             System.out.println("Expected 1");
             TableTools.show(expected1);
 
-            // The column sources are redirected, and the underlying source has been updated without a notification
+            // The column sources are redirected, and the underlying table has been updated without a notification
             // _yet_,
             // so the column sources have _already_ changed and we are inside an update cycle, so the value of get() is
             // indeterminate
@@ -2330,8 +2330,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             callable = () -> table.partitionBy("KeyColumn");
         }
 
-        // We only care about the silent version of this source, as it's just a vessel to tick and ensure that the
-        // resultant source
+        // We only care about the silent version of this table, as it's just a vessel to tick and ensure that the
+        // resultant table
         // is computed using the appropriate version.
         final Table expected1 = updateGraph.exclusiveLock().computeLocked(
                 () -> table.silent().partitionBy("KeyColumn").merge().select());
@@ -2503,7 +2503,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                         // and make sure the terrible thing has happened
                         if (result1.length == 4) {
-                            Assert.eq(table.getRowSet().size(), "source.build().size()", 5);
+                            Assert.eq(table.getRowSet().size(), "table.build().size()", 5);
                         }
 
                         final ColumnSource<String> cs = table.getColumnSource("y");
@@ -2523,7 +2523,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // going to be kicked off in the idle cycle
         SleepUtil.sleep(100);
 
-        // add a row to the source
+        // add a row to the table
         updateGraph.startCycleForUnitTests();
         TstUtils.addToTable(table, i(10), col("y", "e"));
         table.notifyListeners(i(10), i(), i());
@@ -2581,7 +2581,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             snap.retainReference();
         }
 
-        // assert each source is still alive w.r.t. Liveness
+        // assert each table is still alive w.r.t. Liveness
         for (final QueryTable t : new QueryTable[] {trigger, base, snap}) {
             t.retainReference();
             t.dropReference();
