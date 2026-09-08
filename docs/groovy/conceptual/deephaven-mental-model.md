@@ -363,12 +363,12 @@ Partitioned tables let you parallelize processing, quickly retrieve subtables by
 | Process by groups          | `partitionBy`                                          |
 | Connect remotely           | Python/Java/JS client                                  |
 
-| Engine capability          | What it means                                    |
-| -------------------------- | ------------------------------------------------ |
-| **Incremental updates**    | Only recompute what changed, not entire datasets |
-| **Automatic propagation**  | Downstream tables update when sources change     |
-| **Parallel execution**     | Multiple threads process data simultaneously     |
-| **Shared data structures** | Filtered views share memory with source tables   |
+| Engine capability          | What it means                                              |
+| -------------------------- | ---------------------------------------------------------- |
+| **Incremental updates**    | Typically recompute only what changed, not entire datasets |
+| **Automatic propagation**  | Downstream tables update when sources change               |
+| **Parallel execution**     | Multiple threads process data simultaneously               |
+| **Shared data structures** | Filtered views share memory with source tables             |
 
 ## Related documentation
 

@@ -41,7 +41,7 @@ At the core of this stack are **Live Dataframes** — Deephaven's unique abstrac
 2. **APIs**: Barrage protocol streams incremental updates to connected clients
 3. **UI**: Components automatically refresh to reflect the latest data
 
-This architecture means the same table can simultaneously serve a Python script, a Java application, a web dashboard, and a remote client — each receiving consistent snapshots and incremental deltas without any additional code. (Remote clients receive updates via their own subscription stream, so different clients may see updates at slightly different times.)
+This architecture means the same table can simultaneously serve a Python script, a Java application, a web dashboard, and a remote client. Clients with an active Barrage subscription receive consistent, incremental deltas as the table updates. A client that instead takes a one-time snapshot — such as `pydeephaven.Table.to_arrow()`, which uses Flight's `DoGet` — gets a static copy at that moment, not a live stream. (Remote clients receive updates via their own subscription stream, so different clients may see updates at slightly different times.)
 
 **Why this matters**: Traditional systems require separate pipelines for batch and streaming, with different APIs, different mental models, and complex coordination. Deephaven's live data stack eliminates this complexity. Whether you're analyzing historical Parquet files or streaming Kafka data, you use the same code, the same operations, and the same UI — and everything stays in sync.
 
@@ -233,13 +233,13 @@ The [`update`](../reference/table-operations/select/update.md) operation adds or
 
 Most Deephaven table operations follow this pattern:
 
-| Operation Type                           | `RowSet`      | `ColumnSource`s          |
-| ---------------------------------------- | ------------- | ------------------------ |
-| **Filtering** (`where`)                  | New (subset)  | Shared                   |
-| **Column derivation** (`update`, `view`) | Shared        | Mixed (shared + new)     |
-| **Sorting** (`sort`)                     | New (flat)    | Shared (via redirection) |
-| **Joining** (`naturalJoin`, etc.)        | New or shared | Mixed                    |
-| **Aggregation** (`aggBy`, etc.)          | New           | New                      |
+| Operation Type                           | `RowSet`             | `ColumnSource`s          |
+| ---------------------------------------- | -------------------- | ------------------------ |
+| **Filtering** (`where`)                  | New (subset)         | Shared                   |
+| **Column derivation** (`update`, `view`) | Shared               | Mixed (shared + new)     |
+| **Sorting** (`sort`)                     | New (flat or ranged) | Shared (via redirection) |
+| **Joining** (`naturalJoin`, etc.)        | New or shared        | Mixed                    |
+| **Aggregation** (`aggBy`, etc.)          | New                  | New                      |
 
 This sharing model, combined with [incremental updates](./table-update-model.md) through the [DAG](./dag.md), enables Deephaven to handle complex queries on large, rapidly-changing datasets efficiently.
 
