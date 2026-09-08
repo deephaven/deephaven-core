@@ -20,11 +20,15 @@ after a structural edit that moves or merges prose).
 - Extract the full heading outline — but not with a naive `grep -n '^#'`: this doc set's fenced
   code blocks contain column-1 `#`-prefixed comments (Python) that a bare grep misreads as
   headings, and some pages nest a ` ``` ` example inside a ` ```` ` outer fence (e.g.
-  `docs/snapshotter/README.md`), so a fence tracker also needs to match closing-delimiter length
-  against the opening one, not just toggle on every backtick line. Use:
-  `awk 'match($0,/^`{3,}/){len=RLENGTH; if(!f){f=1;delim=len} else if(len>=delim){f=0}; next} f{next} /^#/{print NR": "$0}' <file>`
-  (verified against both a simple-fence and a nested-fence file). Note each real heading's depth
-  (`#`, `##`, `###`, ...), not just its text. Do this first — most of the patterns below are
+  `docs/snapshotter/README.md`). As a fast first pass, this awk one-liner tracks the opening
+  fence's backtick count and only closes on a line with at least that many, which covers every
+  fence style actually used in `docs/{python,groovy}` today (plain and nested backtick fences;
+  this corpus has no indented or `~~~` fences as of this writing):
+  `awk 'match($0,/^`{3,}/){len=RLENGTH; if(!f){f=1;delim=len} else if(len>=delim){f=0}; next} f{next} /^#/{print NR": "$0}' <file>`.
+  Treat its output as a draft, not ground truth — skim the file once yourself to catch anything
+  the heuristic wouldn't (a fence style it doesn't handle, an ATX heading it miscounts) before
+  relying on the outline for the checks below. Note each real heading's depth (`#`, `##`, `###`,
+  ...), not just its text. Do this first — most of the patterns below are
   visible from the outline alone, before you've read a single paragraph closely.
 - List every code example in the doc (fenced blocks) with a one-line note on what concept or
   scenario each one demonstrates.
