@@ -483,7 +483,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
         private WhereFilter getExpression(String x) {
             // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
-            return WhereFilterFactory.getExpression((inverted ? "!isNull(" : "isNull(") + x + ")");
+            return WhereFilterFactory.getExpression((inverted ? "!" : "") + "isNull(" + x + ")");
         }
 
         @Override
@@ -544,7 +544,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
         private WhereFilter getExpression(String x) {
             // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
-            return WhereFilterFactory.getExpression((inverted ? "!isNaN" : "isNaN(") + x + ")");
+            return WhereFilterFactory.getExpression((inverted ? "!" : "") + "isNaN(" + x + ")");
         }
 
         @Override
