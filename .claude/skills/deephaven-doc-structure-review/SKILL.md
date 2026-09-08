@@ -27,7 +27,7 @@ after a structural edit that moves or merges prose).
   `docs/groovy/how-to-guides/install-use-plugins.md:46`) and blockquoted fences
   (`docs/python/how-to-guides/use-uris.md:186`), plus `~~~` fences it was never meant to catch.
   It's a fast first pass, not full coverage:
-  `awk 'match($0,/^`{3,}/){len=RLENGTH; if(!f){f=1;delim=len} else if(len>=delim){f=0}; next} f{next} /^#/{print NR": "$0}' <file>`.
+  `` awk 'match($0,/^`{3,}/){len=RLENGTH; if(!f){f=1;delim=len} else if(len>=delim){f=0}; next} f{next} /^#/{print NR": "$0}' <file> ``.
   Treat its output as a draft, not ground truth — skim the file once yourself against the
   extracted outline, and if the doc uses an indented, list-nested, blockquoted, or `~~~` fence
   anywhere, fall back to reading it directly rather than trusting the script's output for that
