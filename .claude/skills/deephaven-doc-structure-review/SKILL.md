@@ -17,9 +17,12 @@ after a structural edit that moves or merges prose).
 
 ## 1. Build the structure map before reading prose in depth
 
-- Extract the full heading outline with `grep -n '^#' <file>` and note each heading's depth
-  (`#`, `##`, `###`, ...), not just its text. Do this first — most of the patterns below are
-  visible from the outline alone, before you've read a single paragraph closely.
+- Extract the full heading outline — but not with a naive `grep -n '^#'`: this doc set's fenced
+  code blocks contain column-1 `#`-prefixed comments (Python) that a bare grep misreads as
+  headings. Track fence state instead, e.g.
+  `awk '/^```/{f=!f; next} !f && /^#/{print NR": "$0}' <file>`, and note each real heading's
+  depth (`#`, `##`, `###`, ...), not just its text. Do this first — most of the patterns below
+  are visible from the outline alone, before you've read a single paragraph closely.
 - List every code example in the doc (fenced blocks) with a one-line note on what concept or
   scenario each one demonstrates.
 - List every callout/admonition (`> [!NOTE]`, `> [!WARNING]`, `> [!IMPORTANT]`, etc.) with a
@@ -40,10 +43,15 @@ up front, rather than re-deriving them per check.
   reference ("see **Key concepts** below") the first time the term appears.
 
 - **Split or duplicated core-concept explanations:** Check whether the *same* underlying concept
-  gets explained twice at different points in the document — once briefly or implicitly early,
-  then fully much later. If a reader has to hold the same idea in mind across two separated
-  explanations, that's a defect even if neither explanation is individually wrong. Fix: merge
-  into one explanation at first substantive use; later mentions should link back, not re-explain.
+  gets explained *in full* twice at different points in the document — once briefly or implicitly
+  early, then fully much later, with neither occurrence acknowledging the other. If a reader has
+  to hold two independent full explanations of the same idea in mind, that's a defect even if
+  neither is individually wrong. This is distinct from a short, explicitly-labeled preview
+  followed by the one full explanation, or a callback that reinforces an already-given
+  explanation rather than re-teaching it from scratch — those are legitimate, and the
+  early-preview and compare/contrast-as-reinforcement guidance elsewhere in this skill depends on
+  telling the two apart. Fix: merge redundant full explanations into one at first substantive use;
+  later mentions should link back or explicitly recap, not silently re-explain.
 
 - **Near-verbatim repeated examples:** Using your example list from step 1, cluster examples by
   the underlying scenario they illustrate (e.g., multiple "shared counter" examples, multiple
@@ -66,12 +74,16 @@ up front, rather than re-deriving them per check.
   back. Fix: keep all sections about one continuous topic contiguous; move the detour either
   before the topic starts or after it's fully wrapped up.
 
-- **Heading depth mismatch for parallel concepts:** From your heading outline, check whether
-  conceptually parallel ideas sit at the same nesting depth throughout the document. If concepts
-  A/B/C appear as sibling `###` headings in one section, and A/B/C get re-covered later as `####`
-  headings nested under a *different* `###`, the document effectively has two competing outlines
-  of the same ideas — confusing when scanning a table of contents. Fix: either fold the second
-  pass into the first section, or make the depths consistent.
+- **Heading depth mismatch for duplicated (not overview/detail) coverage:** Heading depth
+  expresses local parent/child structure, not a document-wide semantic rank — an overview section
+  naming A/B/C as `###` siblings, followed later by a legitimately deeper "Deep dive" section that
+  nests full treatments of A/B/C as `####`s, is a normal and fine outline; don't flag that. The
+  actual pitfall is when the *same level of explanation* for A/B/C is given twice — once as
+  siblings in one section, again as siblings nested under a different, unrelated parent later —
+  which is two competing outlines of the same content, not an overview-then-detail structure, and
+  is confusing when scanning a table of contents. Fix: fold the duplicate pass into the first
+  section, or make explicit (in heading text or a lead-in sentence) that the second occurrence is
+  deliberately deeper detail rather than a repeat.
 
 - **Compare/contrast arriving too late:** When a document introduces two related-but-distinct
   mechanisms (e.g., two ways to control the same behavior), a side-by-side comparison is most
@@ -97,14 +109,14 @@ up front, rather than re-deriving them per check.
   check above) risk losing readers before they reach the summary. Treat any doc matching both
   conditions as a consolidation candidate even if no single example is individually flagged.
 
-- **Closing-section and summary placement:** Confirm a "Related documentation" section exists
-  per `deephaven-writing-style`'s page-structure rule — except on landing pages, overviews, or
-  blog articles, which that rule explicitly exempts. A closing summary (commonly "Key takeaways"
-  in this doc set) isn't a writing-style requirement, but it's still a good structural signal to
-  check for on a long conceptual page. Separately — this is the single highest-leverage
-  restructuring move for a long conceptual doc — check whether a quick-reference or summary table
-  that currently appears near the end could be promoted earlier as a short preview, so the reader
-  has an orientation map before working through the detailed walkthrough.
+- **Closing-section and summary placement:** This is about structural placement, not the
+  "Related documentation" requirement itself — that's `deephaven-writing-style`'s rule (with its
+  own exemptions), don't re-derive it here. A closing summary (commonly "Key takeaways" in this
+  doc set) isn't required by that rule either, but its presence or absence on a long conceptual
+  page is still a useful structural signal to note. Separately — this is the single highest-
+  leverage restructuring move for a long conceptual doc — check whether a quick-reference or
+  summary table that currently appears near the end could be promoted earlier as a short preview,
+  so the reader has an orientation map before working through the detailed walkthrough.
 
 ## 3. Report
 
