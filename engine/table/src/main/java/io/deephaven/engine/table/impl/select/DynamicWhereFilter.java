@@ -179,6 +179,17 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         ConstructSnapshot.callDataSnapshotFunction("DynamicWhereFilter-createKernel",
                 ConstructSnapshot.makeSnapshotControl(true, true, setTable),
                 (usePrev, beforeClockUnused) -> {
+                    // This function is re-invoked for every snapshot attempt. An attempt that proves inconsistent
+                    // leaves behind a subscribed, managed listener, which would otherwise stay attached to the set
+                    // table for the life of this filter and redundantly process every set table update.
+                    final InstrumentedTableUpdateListener staleListener = resultListener.getValue();
+                    if (staleListener != null) {
+                        resultKernel.setValue(null);
+                        resultListener.setValue(null);
+                        unmanage(staleListener);
+                        setTable.removeUpdateListener(staleListener);
+                    }
+
                     final SetInclusionKernel localKernel =
                             createKernel(setTable, setKeySource, inclusion, usePrev);
 
@@ -212,7 +223,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                                 try (final CloseableIterator<?> removedKeysIterator = ChunkedColumnIterator.make(
                                         setKeySource.getPrevSource(), upstream.removed(),
                                         getChunkSize(upstream.removed()))) {
-                                    removedKeysIterator.forEachRemaining(DynamicWhereFilter.this::removeKey);
+                                    removedKeysIterator.forEachRemaining(key -> removeKey(localKernel, key));
                                 }
                             }
 
@@ -234,8 +245,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                                         final Object newKey = postModifiedKeysIterator.next();
                                         if (!Objects.equals(oldKey, newKey)) {
                                             trueModification = true;
-                                            removeKey(oldKey);
-                                            addKey(newKey);
+                                            removeKey(localKernel, oldKey);
+                                            addKey(localKernel, newKey);
                                         }
                                     }
                                     Assert.assertion(!postModifiedKeysIterator.hasNext(),
@@ -247,7 +258,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                             if (hasAdds) {
                                 try (final CloseableIterator<?> addedKeysIterator = ChunkedColumnIterator.make(
                                         setKeySource, upstream.added(), getChunkSize(upstream.added()))) {
-                                    addedKeysIterator.forEachRemaining(DynamicWhereFilter.this::addKey);
+                                    addedKeysIterator.forEachRemaining(key -> addKey(localKernel, key));
                                 }
                             }
 
@@ -281,17 +292,16 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                             }
                         }
                     };
-                    setTable.addUpdateListener(localListener);
-                    manage(localListener);
-
                     resultKernel.setValue(localKernel);
                     resultListener.setValue(localListener);
+                    manage(localListener);
+                    setTable.addUpdateListener(localListener);
                     return true;
                 });
     }
 
     /**
-     * "Copy constructor" for DynamicWhereFilter's with refreshing set tables.
+     * "Copy constructor" for DynamicWhereFilters with refreshing set tables.
      */
     private DynamicWhereFilter(
             @NotNull final QueryTable setTable,
@@ -322,7 +332,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     /**
-     * "Copy constructor" for DynamicWhereFilter's with static set tables.
+     * "Copy constructor" for DynamicWhereFilters with static set tables.
      */
     private DynamicWhereFilter(
             @NotNull final Class<?> @NotNull [] setKeyTypes,
@@ -342,14 +352,24 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         return updateGraph;
     }
 
-    private void removeKey(Object key) {
-        if (!setKernel.remove(key)) {
+    /**
+     * Remove a key from {@code kernel}. Called only from a set update listener, on the update graph thread.
+     * <p>
+     * Note that the kernel is supplied rather than read from {@link #setKernel}, which is assigned only once the
+     * snapshot that creates it has committed. A listener must maintain the kernel it was created alongside, so that a
+     * listener belonging to a discarded snapshot attempt cannot reach the committed one.
+     */
+    private static void removeKey(@NotNull final SetInclusionKernel kernel, final Object key) {
+        if (!kernel.remove(key)) {
             throw new RuntimeException("Inconsistent state, key not found in set: " + key);
         }
     }
 
-    private void addKey(Object key) {
-        if (!setKernel.add(key)) {
+    /**
+     * Add a key to {@code kernel}. See {@link #removeKey(SetInclusionKernel, Object)} for why the kernel is supplied.
+     */
+    private static void addKey(@NotNull final SetInclusionKernel kernel, final Object key) {
+        if (!kernel.add(key)) {
             throw new RuntimeException("Inconsistent state, key already in set:" + key);
         }
     }

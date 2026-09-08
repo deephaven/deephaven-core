@@ -1658,13 +1658,12 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget(
                 "whereIn(rightTable, " + inclusion + ", " + matchString(columnsToMatch) + ")",
                 sizeForInstrumentation(), () -> {
-                    final DynamicWhereFilter dynamicWhereFilter =
-                            new DynamicWhereFilter(rightTable, inclusion, columnsToMatch);
-                    final Table where = whereInternal(dynamicWhereFilter);
-                    if (rightTable.isRefreshing()) {
-                        where.addParentReference(rightTable);
-                    }
-                    return where;
+                    // The filter derives its own set table from rightTable, and manages it. Reachability, liveness
+                    // and dependent-satisfaction of the actual set table are therefore imposed by the filter, which
+                    // the result reaches through its WhereListener, so no parent reference is needed here. Note that
+                    // a reference to rightTable would in any case be the wrong table to retain, since the set table
+                    // actually used may be a data index table or a selectDistinct of it.
+                    return whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch));
                 });
     }
 

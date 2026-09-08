@@ -93,6 +93,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         super.tearDown();
         pool.shutdown();
         dualPool.shutdown();
+        largePool.shutdown();
     }
 
     public void testTreeTableFilter() throws ExecutionException, InterruptedException, TimeoutException {
@@ -707,6 +708,23 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, matchFilter3);
     }
 
+    /**
+     * Assert that both submitted operations block, rather than completing, because a dependency is not yet satisfied.
+     * <p>
+     * Both futures must already be submitted: waiting on the first inline would throw {@link TimeoutException} and the
+     * second operation would never run, leaving it silently untested.
+     */
+    private static void assertAllTimeOut(final Future<?>... futures)
+            throws InterruptedException, ExecutionException {
+        for (int fi = 0; fi < futures.length; ++fi) {
+            try {
+                futures[fi].get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+                fail("Expected operation " + fi + " to time out waiting for dependencies");
+            } catch (final TimeoutException ignored) {
+            }
+        }
+    }
+
     public void testWhereDynamic() throws ExecutionException, InterruptedException, TimeoutException {
         testWhereDynamicInternal(false, false);
         testWhereDynamicInternalSourceBeforeSet(false, false);
@@ -833,11 +851,22 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTrue(source.satisfied(updateGraph.clock().currentStep()));
         assertTrue(setTable.satisfied(updateGraph.clock().currentStep()));
 
-        try {
-            largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            fail("Expected timeout waiting for dependencies");
-        } catch (TimeoutException ignored) {
+        // Submit both before waiting: waiting on the first inline would throw, and the second operation would
+        // never run.
+        final Future<Table> copiedFilterResult = largePool.submit(() -> source.where(filter.copy()));
+        final Future<Table> freshWhereInResult = largePool.submit(() -> source.whereIn(setTable, "z"));
+
+        // A copy of the existing filter shares a set table that has not yet caught up, so it must wait.
+        assertAllTimeOut(copiedFilterResult);
+
+        if (sourceIndexed || setIndexed) {
+            // A data index table has not caught up either, so a freshly built whereIn must wait as well.
+            assertAllTimeOut(freshWhereInResult);
+        } else {
+            // With no data index involved, a freshly built whereIn takes its own consistent snapshot of the
+            // current state and completes immediately rather than waiting. That is the concurrency this change
+            // is for, so assert the result rather than a timeout.
+            assertTableEquals(source, freshWhereInResult.get(TIMEOUT_LENGTH, TIMEOUT_UNIT));
         }
 
         // The filter is still not satisfied.
@@ -848,12 +877,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             final Table indexTable = DataIndexer.getDataIndex(source, "z").table();
             assertFalse(indexTable.satisfied(updateGraph.clock().currentStep()));
 
-            try {
-                largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-                largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-                fail("Expected timeout waiting for dependencies");
-            } catch (TimeoutException ignored) {
-            }
+            assertAllTimeOut(
+                    largePool.submit(() -> source.where(filter.copy())),
+                    largePool.submit(() -> source.whereIn(setTable, "z")));
 
             while (!indexTable.satisfied(updateGraph.clock().currentStep())) {
                 assertTrue(updateGraph.flushOneNotificationForUnitTests());
@@ -935,11 +961,22 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTrue(setTable.satisfied(updateGraph.clock().currentStep()));
         assertFalse(filter.satisfied(updateGraph.clock().currentStep()));
 
-        try {
-            largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            fail("Expected timeout waiting for dependencies");
-        } catch (TimeoutException ignored) {
+        // Submit both before waiting: waiting on the first inline would throw, and the second operation would
+        // never run.
+        final Future<Table> copiedFilterResult = largePool.submit(() -> source.where(filter.copy()));
+        final Future<Table> freshWhereInResult = largePool.submit(() -> source.whereIn(setTable, "z"));
+
+        // A copy of the existing filter shares a set table that has not yet caught up, so it must wait.
+        assertAllTimeOut(copiedFilterResult);
+
+        if (sourceIndexed || setIndexed) {
+            // A data index table has not caught up either, so a freshly built whereIn must wait as well.
+            assertAllTimeOut(freshWhereInResult);
+        } else {
+            // With no data index involved, a freshly built whereIn takes its own consistent snapshot of the
+            // current state and completes immediately rather than waiting. That is the concurrency this change
+            // is for, so assert the result rather than a timeout.
+            assertTableEquals(source, freshWhereInResult.get(TIMEOUT_LENGTH, TIMEOUT_UNIT));
         }
 
         // If the source has an index, let it catch up
@@ -947,12 +984,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             final Table indexTable = DataIndexer.getDataIndex(source, "z").table();
             assertFalse(indexTable.satisfied(updateGraph.clock().currentStep()));
 
-            try {
-                largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-                largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-                fail("Expected timeout waiting for dependencies");
-            } catch (TimeoutException ignored) {
-            }
+            assertAllTimeOut(
+                    largePool.submit(() -> source.where(filter.copy())),
+                    largePool.submit(() -> source.whereIn(setTable, "z")));
 
             while (!indexTable.satisfied(updateGraph.clock().currentStep())) {
                 assertTrue(updateGraph.flushOneNotificationForUnitTests());
@@ -1017,12 +1051,11 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTrue(source.satisfied(updateGraph.clock().currentStep()));
 
         // Fails because setTable is not yet satisfied
-        try {
-            largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            fail("Expected timeout waiting for dependencies");
-        } catch (TimeoutException ignored) {
-        }
+        // Submit both before waiting, so that each is asserted to block independently. Waiting on the first inline
+        // would throw and skip the second submission entirely.
+        assertAllTimeOut(
+                largePool.submit(() -> source.where(filter.copy())),
+                largePool.submit(() -> source.whereIn(setTable, "z")));
 
         // Make changes to the set tables.
         TstUtils.addToTable(setTable, i(1), col("z", false));
