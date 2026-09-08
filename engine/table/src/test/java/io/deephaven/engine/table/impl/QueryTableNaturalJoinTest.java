@@ -1624,6 +1624,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table rightTable = testTable(col("String", "c", "e"), col("v", 1, 2));
 
+        // a plain natural join tolerates the unmatched key
+        assertEquals(3, leftTable.naturalJoin(rightTable, "String").size());
+
         final RuntimeException e = assertThrowsExactly(RuntimeException.class,
                 () -> leftTable.exactJoin(rightTable, "String"));
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
@@ -1637,6 +1640,32 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         DataIndexer.getOrCreateDataIndex(leftTable, "String");
 
         final Table rightTable = testTable(col("String", "c", "e", "q", "r"), col("v", 1, 2, 3, 4));
+
+        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+                () -> leftTable.exactJoin(rightTable, "String"));
+        assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
+    }
+
+    public void testExactJoinIndexedErrorMessageContiguous() {
+        // a flat static left table produces a contiguous row redirection
+        final Table leftTable = testTable(col("String", "c", "e", "g")).flatten();
+        DataIndexer.getOrCreateDataIndex(leftTable, "String");
+
+        final Table rightTable = testTable(col("String", "c", "e", "q", "r"), col("v", 1, 2, 3, 4));
+
+        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+                () -> leftTable.exactJoin(rightTable, "String"));
+        assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
+    }
+
+    public void testExactJoinIndexedErrorMessageHash() {
+        // left row keys spread across distant blocks make a sparse redirection too wasteful, producing a hashed one
+        final QueryTable leftTable = testRefreshingTable(
+                i(10, 1L << 20, 2L << 20, 3L << 20, 4L << 20).toTracking(),
+                col("String", "c", "e", "g", "h", "j"));
+        DataIndexer.getOrCreateDataIndex(leftTable, "String");
+
+        final Table rightTable = testTable(col("String", "c", "e", "h", "j"), col("v", 1, 2, 3, 4));
 
         final RuntimeException e = assertThrowsExactly(RuntimeException.class,
                 () -> leftTable.exactJoin(rightTable, "String"));
