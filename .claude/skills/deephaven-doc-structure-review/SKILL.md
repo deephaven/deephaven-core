@@ -1,7 +1,7 @@
 ---
 name: deephaven-doc-structure-review
 description: Critique the structure, organization, and readability of a deephaven-core (Community) documentation page — will a new reader find it easy to follow, are concepts introduced in a sensible order, is content duplicated or interleaved oddly? Use this when a doc "feels hard to follow," when asked to review organization/flow/readability specifically (not facts or prose style), when drafting or substantially restructuring a long conceptual guide, or when a reviewer's feedback is about the document's shape rather than its content. Complements `deephaven-core-accuracy-check` (is it true?) and `deephaven-writing-style` (is each sentence/heading/example styled correctly?) — this skill asks whether the document as a whole is organized so a reader can follow it.
-allowed-tools: Read, Grep, Glob, Edit
+allowed-tools: Read, Grep, Glob, Edit, Bash(awk *)
 ---
 
 # Deephaven documentation structure review
@@ -19,10 +19,13 @@ after a structural edit that moves or merges prose).
 
 - Extract the full heading outline — but not with a naive `grep -n '^#'`: this doc set's fenced
   code blocks contain column-1 `#`-prefixed comments (Python) that a bare grep misreads as
-  headings. Track fence state instead, e.g.
-  `awk '/^```/{f=!f; next} !f && /^#/{print NR": "$0}' <file>`, and note each real heading's
-  depth (`#`, `##`, `###`, ...), not just its text. Do this first — most of the patterns below
-  are visible from the outline alone, before you've read a single paragraph closely.
+  headings, and some pages nest a ` ``` ` example inside a ` ```` ` outer fence (e.g.
+  `docs/snapshotter/README.md`), so a fence tracker also needs to match closing-delimiter length
+  against the opening one, not just toggle on every backtick line. Use:
+  `awk 'match($0,/^`{3,}/){len=RLENGTH; if(!f){f=1;delim=len} else if(len>=delim){f=0}; next} f{next} /^#/{print NR": "$0}' <file>`
+  (verified against both a simple-fence and a nested-fence file). Note each real heading's depth
+  (`#`, `##`, `###`, ...), not just its text. Do this first — most of the patterns below are
+  visible from the outline alone, before you've read a single paragraph closely.
 - List every code example in the doc (fenced blocks) with a one-line note on what concept or
   scenario each one demonstrates.
 - List every callout/admonition (`> [!NOTE]`, `> [!WARNING]`, `> [!IMPORTANT]`, etc.) with a
