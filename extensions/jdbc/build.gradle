@@ -13,6 +13,9 @@ dependencies {
 
     implementation libs.guava
 
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
     testImplementation platform(libs.junit.bom)
     testImplementation libs.assertj
 
