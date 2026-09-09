@@ -372,6 +372,33 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         }
     }
 
+    public void testMergeSortedColumnsAttribute() {
+        final Table sorted = TableTools.newTable(intCol("Col0", 5, 3, 1)).sort("Col0");
+        TestCase.assertEquals("Col0=Ascending", sorted.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE));
+
+        // A merge of a single constituent is still sorted, so the attribute may be retained.
+        final Table mergedOne = TableTools.merge(sorted);
+        TestCase.assertEquals("Col0=Ascending", mergedOne.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE));
+
+        // The concatenation of two sorted tables is not sorted; the claim must not be propagated.
+        final Table mergedTwo = TableTools.merge(sorted, sorted);
+        TestCase.assertNull(mergedTwo.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE));
+
+        // Sorted-column pushdown against a false claim silently drops rows; verify we get them all.
+        assertTableEquals(TableTools.newTable(intCol("Col0", 3, 5, 3, 5)), mergedTwo.where("Col0 >= 3"));
+
+        // The same must hold for a partitionBy-produced PartitionedTable whose constituents are each sorted.
+        final Table source = TableTools.newTable(
+                col("Sym", "aa", "bb", "aa", "bb"),
+                intCol("Col0", 5, 6, 3, 4));
+        final PartitionedTable partitioned = source.partitionBy("Sym")
+                .transform(t -> t.sort("Col0"));
+        for (final Table constituent : partitioned.constituents()) {
+            TestCase.assertEquals("Col0=Ascending", constituent.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE));
+        }
+        TestCase.assertNull(partitioned.merge().getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE));
+    }
+
     public void testJoinSanity() {
         final QueryTable left = testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("USym", "aa", "bb", "aa", "bb"),
