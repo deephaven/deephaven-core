@@ -19,6 +19,7 @@ import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable.SnapshotState;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.sources.ByteAsBooleanColumnSource;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
@@ -348,6 +349,58 @@ public class TestHierarchicalTableSnapshots {
     }
 
     @Test
+    public void testMissingKeyNotFirstSlot() {
+        final QueryTable source = TstUtils.testRefreshingTable(intCol("Key1", 1, 2), intCol("Key2", 10, 20),
+                intCol("SortColumn", 0, 0), intCol("Sentinel", 100, 200));
+
+        final RollupTable rollupTable =
+                source.rollup(List.of(Aggregation.of(AggSpec.last(), "Sentinel", "SortColumn")), "Key1", "Key2");
+        final RollupTable sortedRollup = rollupTable.withNodeOperations(
+                rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).sortDescending("SortColumn"));
+
+        final Table emptyExpansions = sortedRollup.getEmptyExpansionsTable();
+        // expand node Key1=2, whose aggregation slot follows Key1=1's
+        final Table expand2 = TableTools.merge(emptyExpansions, TableTools.newTable(
+                intCol(sortedRollup.getRowDepthColumn().name(), 2), intCol("Key1", 2), intCol("Key2", NULL_INT)));
+
+        final SnapshotState ss = sortedRollup.makeSnapshotState();
+        final Table snapshot1 =
+                snapshotToTable(sortedRollup, ss, expand2, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot1);
+        final Table expect1 = TableTools.newTable(
+                intCol("__DEPTH__", 1, 2, 2, 3),
+                booleanCol("__EXPANDED__", true, false, true, null),
+                intCol("Key1", NULL_INT, 1, 2, 2),
+                intCol("Key2", NULL_INT, NULL_INT, NULL_INT, 20),
+                intCol("Sentinel", 200, 100, 200, 200),
+                intCol("SortColumn", 0, 0, 0, 0));
+        assertTableEquals(expect1, snapshot1);
+
+        // remove the group whose node is expanded; the group with the earlier aggregation slot survives
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(source, i(1));
+            source.notifyListeners(
+                    new TableUpdateImpl(i(), i(1), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+        });
+
+        final Table snapshot2 =
+                snapshotToTable(sortedRollup, ss, expand2, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot2);
+        final Table expect2 = TableTools.newTable(
+                intCol("__DEPTH__", 1, 2),
+                booleanCol("__EXPANDED__", true, false),
+                intCol("Key1", NULL_INT, 1),
+                intCol("Key2", NULL_INT, NULL_INT),
+                intCol("Sentinel", 100, 100),
+                intCol("SortColumn", 0, 0));
+        assertTableEquals(expect2, snapshot2);
+
+        freeSnapshotTableChunks(snapshot1);
+        freeSnapshotTableChunks(snapshot2);
+    }
+
+    @Test
     public void testMissingKeyTree() {
         final QueryTable source = TstUtils.testRefreshingTable(intCol("ID", 1, 2, 3), intCol("Parent", NULL_INT, 1, 2),
                 intCol("SortColumn", 0, 0, 0), intCol("Sentinel", 100, 200, 300));
@@ -412,6 +465,36 @@ public class TestHierarchicalTableSnapshots {
         freeSnapshotTableChunks(snapshot1);
         freeSnapshotTableChunks(snapshot2);
         freeSnapshotTableChunks(snapshot3);
+    }
+
+    @Test
+    public void testMissingKeyTreeFiltered() {
+        final QueryTable source = TstUtils.testRefreshingTable(intCol("ID", 1, 2, 3), intCol("Parent", NULL_INT, 1, 2),
+                intCol("SortColumn", 0, 0, 0), intCol("Sentinel", 100, 200, 300));
+
+        final TreeTable treeTable = source.tree("ID", "Parent");
+        // the filter excludes IDs 2 and 3, but the tree's source row lookup still knows them; ID 2's source row key
+        // follows ID 1's
+        final TreeTable sortedFilteredTree = treeTable
+                .withNodeOperations(treeTable.makeNodeOperationsRecorder().sortDescending("SortColumn"))
+                .withFilter(WhereFilterFactory.getExpression("Sentinel < 150"));
+
+        final Table expand1 = TableTools.newTable(intCol("ID", 1, 2));
+
+        final SnapshotState ss = sortedFilteredTree.makeSnapshotState();
+        final Table snapshot1 =
+                snapshotToTable(sortedFilteredTree, ss, expand1, null, null, RowSetFactory.flat(30));
+        TableTools.showWithRowSet(snapshot1);
+        final Table expect1 = TableTools.newTable(
+                intCol("__DEPTH__", 1),
+                booleanCol("__EXPANDED__", new Boolean[] {null}),
+                intCol("ID", 1),
+                intCol("Parent", NULL_INT),
+                intCol("SortColumn", 0),
+                intCol("Sentinel", 100));
+        assertTableEquals(expect1, snapshot1);
+
+        freeSnapshotTableChunks(snapshot1);
     }
 
     @Test
