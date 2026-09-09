@@ -47,13 +47,17 @@ public class ExternalizableRowSetUtils {
         long offset = 0;
         final ShortArrayList shorts = new ShortArrayList();
 
-        for (final RowSet.RangeIterator it = rowSet.rangeIterator(); it.hasNext();) {
-            it.next();
-            if (it.currentRangeEnd() == it.currentRangeStart()) {
-                offset = appendWithOffsetDelta(out, shorts, offset, it.currentRangeStart(), false);
-            } else {
-                offset = appendWithOffsetDelta(out, shorts, offset, it.currentRangeStart(), false);
-                offset = appendWithOffsetDelta(out, shorts, offset, it.currentRangeEnd(), true);
+        // Closed explicitly: a walk that reaches the end releases the reference it holds on rowSet by itself, but a
+        // write that throws part way through does not.
+        try (final RowSet.RangeIterator it = rowSet.rangeIterator()) {
+            while (it.hasNext()) {
+                it.next();
+                if (it.currentRangeEnd() == it.currentRangeStart()) {
+                    offset = appendWithOffsetDelta(out, shorts, offset, it.currentRangeStart(), false);
+                } else {
+                    offset = appendWithOffsetDelta(out, shorts, offset, it.currentRangeStart(), false);
+                    offset = appendWithOffsetDelta(out, shorts, offset, it.currentRangeEnd(), true);
+                }
             }
         }
 

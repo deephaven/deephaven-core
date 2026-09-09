@@ -81,16 +81,20 @@ public class RowSetUtils {
     }
 
     static boolean equalsDeepImpl(final RowSet index, final RowSet other) {
-        final RowSet.RangeIterator it1 = other.rangeIterator();
-        final RowSet.RangeIterator it2 = index.rangeIterator();
-        while (it1.hasNext() && it2.hasNext()) {
-            it1.next();
-            it2.next();
-            if (it1.currentRangeStart() != it2.currentRangeStart() || it1.currentRangeEnd() != it2.currentRangeEnd()) {
-                return false;
+        // An iterator run to exhaustion gives back the reference it holds on its rowset by itself; one abandoned at
+        // the first difference below has to be closed for that to happen.
+        try (final RowSet.RangeIterator it1 = other.rangeIterator();
+                final RowSet.RangeIterator it2 = index.rangeIterator()) {
+            while (it1.hasNext() && it2.hasNext()) {
+                it1.next();
+                it2.next();
+                if (it1.currentRangeStart() != it2.currentRangeStart()
+                        || it1.currentRangeEnd() != it2.currentRangeEnd()) {
+                    return false;
+                }
             }
+            return !(it1.hasNext() || it2.hasNext());
         }
-        return !(it1.hasNext() || it2.hasNext());
     }
 
     static boolean equals(final RowSet index, final Object other) {

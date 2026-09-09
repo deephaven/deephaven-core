@@ -1,13 +1,14 @@
 ---
-name: core-research-tool
-description: Research the Community Core codebase to understand implementations, architecture, and feature behavior
+name: deephaven-core-research
+description: Research the deephaven-core (Community) codebase to understand implementations, architecture, and feature behavior. Use when the user asks about how a feature works, where code lives, why something was implemented a certain way, or needs to trace data/control flow through the deephaven-core repo specifically.
+allowed-tools: Read, Grep, Glob, Bash(git log *), Bash(git blame *), Bash(git show *)
 ---
 
 Perform deep research on the Core codebase to develop SME-level understanding.
 
 ## 1. Clarify and plan
 
-Ask the user what they want to research. Classify the goal and plan your approach:
+If the research goal isn't already clear from the request, ask what the user wants to research. Classify the goal and plan your approach:
 
 | Research type | Focus areas | Depth target |
 |--------------|-------------|--------------|
@@ -36,15 +37,16 @@ Before diving into code, understand WHAT you're researching:
 
 Start broad, then narrow. Iterate until you find the right code.
 
-**Semantic search first:**
+**Broad search first (Glob for filenames, Grep for content):**
 ```
-code_search: "Find where table update notifications are propagated"
+Glob pattern="**/*UpdateListener*.java"
+Grep pattern="notifyChanges|propagate.*update" path="engine/" -i
 ```
 
 **Exact symbol search when you know names:**
 ```
-grep_search: Query="TableUpdateListener" SearchPath="{repo_root}"
-grep_search: Query="implements UpdateGraph" SearchPath="{repo_root}"
+Grep pattern="TableUpdateListener" output_mode="files_with_matches"
+Grep pattern="implements UpdateGraph"
 ```
 
 **If search returns nothing useful:**
@@ -96,7 +98,7 @@ For architecture questions, build a mental model:
 **Common architectural patterns:**
 ```
 Configuration flow:
-props/*.prop files or environment → Configuration/ utilities → Runtime component
+props/**/*.prop files or environment → Configuration/ utilities → Runtime component
 
 gRPC service flow:
 proto/proto-backplane-grpc/*.proto → generated Java → server/src/.../server/**/*ServiceGrpcImpl.java → java-client/ or py/client/
@@ -110,19 +112,18 @@ Source data change → UpdateGraph cycle → TableUpdateListener.onUpdate → Do
 For feature traces, follow data/control through all layers:
 
 1. **Entry point** — gRPC service (`server/`), UI action (`web/`), or Python/Groovy API (`py/`)
-2. **Service layer** — `*ServiceGrpcImpl.java` in `server/src/main/java/io/deephaven/server/*/`
+2. **Service layer** — `*ServiceGrpcImpl.java` in `server/src/main/java/io/deephaven/server/**/` (nested, e.g. `table/ops/TableServiceGrpcImpl.java`, `table/inputtables/InputTableServiceGrpcImpl.java`)
 3. **Domain logic** — Core classes in `engine/table/` or `extensions/`
-4. **Data access** — `ColumnSource`, `RowSet` in `engine/api/`
+4. **Data access** — `ColumnSource` in `engine/api/`, `RowSet` in `engine/rowset/`
 
 **Example trace (client executes a table operation via gRPC):**
 ```
 User calls table.where("Price > 100") in py/client/pydeephaven
   → Client sends gRPC request to server
-  → server/src/.../table/ops/TableServiceGrpcImpl receives request
-  → engine/table/impl/QueryTable.where() creates WhereListener
-  → WhereFilter evaluates condition against ColumnSource data
-  → Result table registered with UpdateGraph for live updates
-  → Barrage streams result back to client
+  → server/src/.../table/ops/TableServiceGrpcImpl receives request, returns an ExportedTableCreationResponse (a result_id TableReference plus success/error/schema/staticness/size metadata, not itself a ticket) — no row data yet
+  → engine/table/impl/QueryTable.where() evaluates WhereFilter against ColumnSource data
+  → If the source or filters are refreshing, a WhereListener is created and the result table is registered with UpdateGraph for live updates; a fully static where() has no listener
+  → Client fetches row data separately via an Arrow Flight DoGet against the ticket (e.g. session.flight_service.do_get_table); this pydeephaven path is a plain Flight fetch, not Barrage — the web client's createSubscription, by contrast, does use Barrage even for a one-time atomic snapshot of a static table
 ```
 
 **Iterate until you can explain:**
@@ -190,7 +191,7 @@ Report comprehensively:
 ## Quick reference
 
 | Research goal | Start here |
-|--------------|------------|
+|--------------|-------------|
 | Table operations | `engine/table/src/main/java/io/deephaven/engine/table/impl/` |
 | Table API/interfaces | `engine/api/src/main/java/io/deephaven/engine/table/` |
 | Live updates | `engine/updategraph/src/main/java/io/deephaven/engine/updategraph/` |
@@ -217,7 +218,7 @@ Report comprehensively:
 
 ### engine/api/ — Table interfaces and contracts
 - **Entry points**: `engine/api/src/main/java/io/deephaven/engine/table/`
-- **Key classes**: `Table`, `TableDefinition`, `ColumnSource`, `RowSet`, `TableUpdateListener`, `TableUpdate`
+- **Key classes**: `Table`, `TableDefinition`, `ColumnSource`, `TableUpdateListener`, `TableUpdate` (see `engine/rowset/` below for `RowSet`)
 
 ### engine/table/ — Table implementations
 - **Entry points**: `engine/table/src/main/java/io/deephaven/engine/table/impl/`
@@ -271,7 +272,7 @@ Report comprehensively:
 
 ### web/client-api/ — GWT JavaScript API
 - **Entry points**: `web/client-api/src/main/java/io/deephaven/web/client/api/`
-- **Key classes**: `JsTable`, `JsSession`, `WorkerConnection`
+- **Key classes**: `JsTable`, `CoreClient`, `WorkerConnection`
 
 ### web/client-ui/ — React IDE (links to external repo)
 - Points to `deephaven/web-client-ui` repository
@@ -305,9 +306,9 @@ Report comprehensively:
 - **Entry points**: `Plot/src/main/java/io/deephaven/plot/`
 - **Key classes**: `Figure`, `Axes`, `Series`
 
-### Integrations/ — Python/Groovy integration
+### Integrations/ — Python integration
 - **Entry points**: `Integrations/src/main/java/io/deephaven/integrations/`
-- **Subpackages**: `python/`, `groovy/`
+- **Subpackages**: `python/` (no `groovy/` subpackage — Groovy session support lives in `engine/table/src/main/java/io/deephaven/engine/util/GroovyDeephavenSession.java` and the server console wiring under `server/src/main/java/io/deephaven/server/console/groovy/`)
 
 ### ModelFarm/ — Model execution
 - **Entry points**: `ModelFarm/src/main/java/io/deephaven/modelfarm/`
@@ -316,7 +317,7 @@ Report comprehensively:
 
 **Configuration flow:**
 ```
-props/*.prop or environment → Configuration/ → Runtime component
+props/**/*.prop or environment → Configuration/ → Runtime component
 ```
 
 **gRPC service flow:**
@@ -326,6 +327,5 @@ proto/proto-backplane-grpc/*.proto → generated Java → server/src/.../server/
 
 **Table update flow:**
 ```
-Source change → UpdateGraph.requestRefresh → Notification cycle → TableUpdateListener.onUpdate → Downstream tables → Barrage → Client
+PeriodicUpdateGraph's refresh thread runs cycles continuously on its own timer (or, for an EventDrivenUpdateGraph, an explicit UpdateGraph.requestRefresh call triggers one) → Any source changes pending by that cycle are processed → Notification cycle → TableUpdateListener.onUpdate → Downstream tables → Barrage (if a subscription is active) → Client
 ```
-

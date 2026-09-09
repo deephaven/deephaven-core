@@ -20,6 +20,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.FlattenOperation;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
@@ -29,6 +30,7 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.io.log.LogLevel;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
@@ -56,6 +58,14 @@ public class BarrageRedirectedTable extends BarrageTable {
      */
     protected final boolean isFullSubscription;
 
+    /**
+     * Whether the server has yet to acknowledge this full subscription. The server may grow the client's viewport
+     * toward the entire table over several update graph cycles. Nothing is published until the subscription is
+     * complete. {@link #addUpdateListener} rejects a listener until then, because it would never be told about the rows
+     * delivered in the meantime.
+     */
+    private volatile boolean incomplete;
+
     protected BarrageRedirectedTable(
             @Nullable final String channelName,
             final UpdateSourceRegistrar registrar,
@@ -74,6 +84,37 @@ public class BarrageRedirectedTable extends BarrageTable {
         this.isFullSubscription = isFullSubscription;
         if (!isFullSubscription || isFlat) {
             setFlat();
+        }
+    }
+
+    @Override
+    public void addSourceToRegistrar() {
+        super.addSourceToRegistrar();
+        // Only a refreshing table notifies listeners, so only a refreshing table has anything to withhold.
+        incomplete = isFullSubscription;
+    }
+
+    @Override
+    public void addUpdateListener(@NotNull final TableUpdateListener listener) {
+        checkNotIncomplete();
+        super.addUpdateListener(listener);
+    }
+
+    @Override
+    public boolean addUpdateListener(
+            @NotNull final TableUpdateListener listener, final long requiredLastNotificationStep) {
+        checkNotIncomplete();
+        return super.addUpdateListener(listener, requiredLastNotificationStep);
+    }
+
+    /**
+     * @throws IllegalStateException if this table is still {@link #incomplete}, and therefore publishes no updates for
+     *         the rows it is being given
+     */
+    private void checkNotIncomplete() {
+        if (incomplete) {
+            throw new IllegalStateException("Can not listen to incomplete table " + getDescription()
+                    + "; the server has not yet acknowledged this full subscription");
         }
     }
 
@@ -263,6 +304,11 @@ public class BarrageRedirectedTable extends BarrageTable {
 
             // Only totalMods is a new RowSet, clean it up.
             try (final RowSet ignored = totalMods) {
+                if (incomplete) {
+                    // there is nothing to publish while this table is incomplete
+                    return coalescer;
+                }
+
                 final TableUpdate downstream = new TableUpdateImpl(
                         update.rowsAdded, update.rowsRemoved, totalMods, updateShiftData, modifiedColumnSet);
 
@@ -338,16 +384,34 @@ public class BarrageRedirectedTable extends BarrageTable {
         }
     }
 
+    @Override
     protected TableUpdate applyUpdates(ArrayDeque<BarrageMessage> localPendingUpdates) {
+        // Note that `incomplete` is not cleared until every message in this batch has been applied, so that a batch
+        // spanning the acknowledgement publishes nothing rather than publishing only its tail.
+        final boolean wasIncomplete = incomplete;
+
         UpdateCoalescer coalescer = null;
+        boolean acknowledged = false;
         for (final BarrageMessage update : localPendingUpdates) {
             final long startTm = System.nanoTime();
+            // A snapshot carrying no viewport is how the server acknowledges that a full subscription is satisfied.
+            acknowledged |= update.isSnapshot && update.snapshotRowSet == null;
             coalescer = processUpdate(update, coalescer);
             update.close();
             recordMetric(stats -> stats.processUpdate, System.nanoTime() - startTm);
         }
 
-        return coalescer != null ? coalescer.coalesce() : null;
+        if (!wasIncomplete) {
+            return coalescer != null ? coalescer.coalesce() : null;
+        }
+
+        if (acknowledged) {
+            // This table is complete, and therefore live from here on, so it must begin tracking previous values. Its
+            // contents are the initial state for any listener that attaches now; there is no update to publish.
+            incomplete = false;
+            maybeEnablePrevTracking();
+        }
+        return null;
     }
 
     @Override

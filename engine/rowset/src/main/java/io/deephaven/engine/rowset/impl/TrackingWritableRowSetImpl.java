@@ -52,7 +52,7 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
             }
             prevInnerSet.ixRelease();
             prevInnerSet = getInnerSet().ixCowRef();
-            prev.assign(prevInnerSet.ixCowRef());
+            prev.assignRef(prevInnerSet);
             changeTimeStep = currentClockStep;
             return prevInnerSet;
         }
