@@ -33,15 +33,15 @@ import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.datastructures.ArrayWeakReferenceManager;
+import io.deephaven.util.datastructures.WeakReferenceManager;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.LongStream;
 
@@ -81,9 +81,10 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
 
     /**
      * The filters sharing this set, weakly referenced so that a filter, and the result table that reaches it, remain
-     * collectable. Guarded by itself.
+     * collectable. Registration is guarded by this manager's monitor; delivery deliberately is not, so that a filter's
+     * recompute handling cannot deadlock against a concurrent registration.
      */
-    private final List<WeakReference<DynamicWhereFilter>> filters = new ArrayList<>();
+    private final WeakReferenceManager<DynamicWhereFilter> filters = new ArrayWeakReferenceManager<>(true);
 
     /**
      * Create the shared set for {@code setTable}, reducing it to distinct key values first.
@@ -266,16 +267,13 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
                             // its own inclusion, so exclusion filters invert the requests.
                             final boolean added = hasAdds || trueModification;
                             final boolean removed = hasRemoves || trueModification;
-                            for (final DynamicWhereFilter filter : liveFilters()) {
-                                filter.onSetChanged(added, removed);
-                            }
+                            filters.forEachValidReference(filter -> filter.onSetChanged(added, removed));
                         }
 
                         @Override
                         public void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
-                            for (final DynamicWhereFilter filter : liveFilters()) {
-                                filter.onSetError(originalException, sourceEntry);
-                            }
+                            filters.forEachValidReference(
+                                    filter -> filter.onSetError(originalException, sourceEntry));
                         }
                     };
                     resultKernel.setValue(localKernel);
@@ -325,43 +323,21 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
     }
 
     /**
-     * Register {@code filter} to be told when the shared keys change. Registration is weak, so a filter that becomes
-     * unreachable stops being notified without any explicit removal.
+     * Register {@code filter} to be told when the shared keys change. Registration is idempotent for a given filter,
+     * and weak, so a filter that becomes unreachable stops being notified without any explicit removal.
      */
     void addFilter(@NotNull final DynamicWhereFilter filter) {
         synchronized (filters) {
-            filters.removeIf(reference -> reference.get() == null);
-            filters.add(new WeakReference<>(filter));
+            // A failed snapshot attempt can register the same filter again; remove first to avoid a double notify.
+            filters.remove(filter);
+            filters.add(filter);
         }
     }
 
     void removeFilter(@NotNull final DynamicWhereFilter filter) {
         synchronized (filters) {
-            filters.removeIf(reference -> {
-                final DynamicWhereFilter referent = reference.get();
-                return referent == null || referent == filter;
-            });
+            filters.remove(filter);
         }
-    }
-
-    /**
-     * Snapshot the still-reachable filters, pruning any that have been collected. The result is used outside the lock,
-     * so that a filter's recompute handling cannot deadlock against registration.
-     */
-    private List<DynamicWhereFilter> liveFilters() {
-        final List<DynamicWhereFilter> result;
-        synchronized (filters) {
-            result = new ArrayList<>(filters.size());
-            filters.removeIf(reference -> {
-                final DynamicWhereFilter referent = reference.get();
-                if (referent == null) {
-                    return true;
-                }
-                result.add(referent);
-                return false;
-            });
-        }
-        return result;
     }
 
     /**
@@ -369,7 +345,9 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
      */
     @VisibleForTesting
     int registeredFilterCount() {
-        return liveFilters().size();
+        final MutableInt count = new MutableInt();
+        filters.forEachValidReference(filter -> count.increment());
+        return count.get();
     }
 
     @Override

@@ -3799,9 +3799,10 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            return PartitionedTableProxy(
-                j_pt_proxy=self.j_pt_proxy.whereIn(filter_table.j_table, *cols)
-            )
+            with auto_locking_ctx(self, filter_table):
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.whereIn(filter_table.j_table, *cols)
+                )
         except Exception as e:
             raise DHError(
                 e, "where_in operation on the PartitionedTableProxy failed."
@@ -3826,9 +3827,10 @@ class PartitionedTableProxy(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            return PartitionedTableProxy(
-                j_pt_proxy=self.j_pt_proxy.whereNotIn(filter_table.j_table, *cols)
-            )
+            with auto_locking_ctx(self, filter_table):
+                return PartitionedTableProxy(
+                    j_pt_proxy=self.j_pt_proxy.whereNotIn(filter_table.j_table, *cols)
+                )
         except Exception as e:
             raise DHError(
                 e, "where_not_in operation on the PartitionedTableProxy failed."

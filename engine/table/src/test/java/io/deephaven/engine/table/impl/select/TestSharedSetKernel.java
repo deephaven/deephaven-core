@@ -127,4 +127,23 @@ public class TestSharedSetKernel {
         assertEquals(2, result.size());
         assertEquals(2, second.size());
     }
+
+    /**
+     * Registration is idempotent. A filter is given its recompute listener once per snapshot attempt, and a retried
+     * instantiation would otherwise leave one registration per attempt for the same filter, each producing a redundant
+     * recompute request.
+     */
+    @Test
+    public void testRegistrationIsIdempotent() {
+        final DynamicWhereFilter filter = new DynamicWhereFilter(refreshingSet(), true, pairs());
+        final SharedSetKernel shared = filter.sharedSet();
+
+        shared.addFilter(filter);
+        assertEquals(1, shared.registeredFilterCount());
+        shared.addFilter(filter);
+        assertEquals(1, shared.registeredFilterCount());
+
+        shared.removeFilter(filter);
+        assertEquals(0, shared.registeredFilterCount());
+    }
 }
