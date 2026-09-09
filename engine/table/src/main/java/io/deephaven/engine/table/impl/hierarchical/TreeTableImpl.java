@@ -341,7 +341,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         final long sourceRowPosition = usePrev
                 ? getSource().getRowSet().findPrev(sourceRowKey)
                 : getSource().getRowSet().find(sourceRowKey);
-        if (sourceRowPosition == NULL_ROW_KEY) {
+        if (sourceRowPosition < 0) {
             return NULL_ROW_KEY;
         }
         return sourceRowKey;
