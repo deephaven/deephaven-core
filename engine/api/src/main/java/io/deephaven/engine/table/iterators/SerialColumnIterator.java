@@ -21,7 +21,8 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
 
     final ColumnSource<DATA_TYPE> columnSource;
 
-    private final RowSet.SearchIterator keyIterator;
+    // Released when the final requested key is consumed, or on close
+    private RowSet.SearchIterator keyIterator;
     private final long lastRowPositionExclusive;
 
     private long nextRowPosition;
@@ -86,17 +87,24 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
             throw new NoSuchElementException();
         }
         ++nextRowPosition;
+        final long result;
         if (pendingAdvancedKey) {
             pendingAdvancedKey = false;
-            return keyIterator.currentValue();
+            result = keyIterator.currentValue();
+        } else {
+            result = keyIterator.nextLong();
         }
-        return keyIterator.nextLong();
+        if (nextRowPosition == lastRowPositionExclusive) {
+            close();
+        }
+        return result;
     }
 
     @Override
     public final void close() {
         if (keyIterator != null) {
             keyIterator.close();
+            keyIterator = null;
         }
     }
 
