@@ -67,6 +67,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     private ExecutorService pool;
     private ExecutorService dualPool;
     private ExecutorService largePool;
+
+    /**
+     * Operations that {@link #assertAllTimeOut} left running because they were blocked on an unsatisfied dependency.
+     * They must finish before the update graph is torn down, or a worker can still hold the update graph lock when the
+     * next test begins.
+     */
+    private final List<Future<?>> blockedOperations = Collections.synchronizedList(new ArrayList<>());
     private ControlledUpdateGraph updateGraph;
 
     @Override
@@ -90,6 +97,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     @Override
     public void tearDown() throws Exception {
+        awaitBlockedOperations();
         super.tearDown();
         pool.shutdown();
         dualPool.shutdown();
@@ -714,13 +722,34 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
      * Both futures must already be submitted: waiting on the first inline would throw {@link TimeoutException} and the
      * second operation would never run, leaving it silently untested.
      */
-    private static void assertAllTimeOut(final Future<?>... futures)
+    private void assertAllTimeOut(final Future<?>... futures)
             throws InterruptedException, ExecutionException {
         for (int fi = 0; fi < futures.length; ++fi) {
+            // Each of these is still running, and must be awaited before the update graph is torn down.
+            blockedOperations.add(futures[fi]);
             try {
                 futures[fi].get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                 fail("Expected operation " + fi + " to time out waiting for dependencies");
             } catch (final TimeoutException ignored) {
+            }
+        }
+    }
+
+    /**
+     * Let every operation that was left blocked finish, now that the cycle it was waiting on has completed. Without
+     * this, a worker can still be inside a table operation, holding the update graph lock, when the test ends.
+     */
+    private void awaitBlockedOperations() {
+        final List<Future<?>> toAwait;
+        synchronized (blockedOperations) {
+            toAwait = new ArrayList<>(blockedOperations);
+            blockedOperations.clear();
+        }
+        for (final Future<?> future : toAwait) {
+            try {
+                future.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+            } catch (final Exception ignored) {
+                future.cancel(true);
             }
         }
     }

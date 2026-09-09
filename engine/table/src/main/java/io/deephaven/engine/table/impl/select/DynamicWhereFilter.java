@@ -17,12 +17,12 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -46,14 +46,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private final MatchPair[] sourceToSetColumnNamePairs;
     private final boolean inclusion;
 
-    @SuppressWarnings("FieldCanBeLocal")
-    @ReferentialIntegrity
-    private final InstrumentedTableUpdateListener setUpdateListener;
+    /**
+     * The set table, kernel and update listener, shared with every copy of this filter. See {@link SharedSetKernel}.
+     */
+    private final SharedSetKernel sharedSet;
 
-    private final SetInclusionKernel setKernel;
-    private final Class<?> @NotNull [] setKeyTypes;
-
-    private final QueryTable setTable;
     private List<Object> staticSetLookupKeys;
 
     private ColumnSource<?>[] sourceKeyColumns;
@@ -69,15 +66,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private QueryTable resultTable;
 
     /**
-     * The step on which the set update listener began changing {@link #setKernel}, published before the change.
-     * <p>
-     * Note that this guards the whole step, not just the interval while the listener runs. Once the kernel holds this
-     * step's contents it no longer matches a previous-values view of the source, so the step is never cleared. See
-     * {@link NotificationAwareDependency}.
-     */
-    private volatile long lastStateChangeStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
-
-    /**
      * Construct a DynamicWhereFilter with key values from given set table. The set table may be static or refreshing.
      *
      * @param setTable the table containing the inclusion or exclusion keys
@@ -89,289 +77,27 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             @NotNull final Table setTable,
             final boolean inclusion,
             final MatchPair... sourceToSetColumnNamePairs) {
-        this.sourceToSetColumnNamePairs = sourceToSetColumnNamePairs;
-        this.inclusion = inclusion;
-
-        // Ensure that only distinct values are passed to the setKernel
-        final QueryTable setTableToUse;
-        final boolean setRefreshing = setTable.isRefreshing();
-
-        final String[] setColumnNames = MatchPair.getRightColumns(sourceToSetColumnNamePairs);
-        final DataIndex setIndex = DataIndexer.getDataIndex(setTable, setColumnNames);
-        if (setIndex != null) {
-            // We have a distinct index table, let's use it.
-            setTableToUse = (QueryTable) setIndex.table();
-        } else if (setRefreshing) {
-            setTableToUse = (QueryTable) setTable.selectDistinct(setColumnNames);
-        } else {
-            final TableDefinition setDef = setTable.getDefinition();
-            final boolean allPartitioning =
-                    Arrays.stream(setColumnNames).allMatch(cn -> setDef.getColumn(cn).isPartitioning());
-            if (allPartitioning) {
-                setTableToUse = (QueryTable) setTable.selectDistinct(setColumnNames);
-            } else {
-                setTableToUse = (QueryTable) setTable.coalesce();
-            }
-        }
-
-        // Use reinterpreted column sources for the set table tuple source.
-        final ColumnSource<?>[] setColumns = Arrays.stream(this.sourceToSetColumnNamePairs)
-                .map(mp -> setTableToUse.getColumnSource(mp.rightColumn()))
-                .map(ReinterpretUtils::maybeConvertToPrimitive)
-                .toArray(ColumnSource[]::new);
-        setKeyTypes = Arrays.stream(setColumns).map(ColumnSource::getType).toArray(Class[]::new);
-        final TupleSource<?> setKeySource = TupleSourceFactory.makeTupleSource(setColumns);
-
-        if (!setRefreshing) {
-            this.setTable = null;
-            setUpdateListener = null;
-            setKernel = createKernel(setTableToUse, setKeySource, inclusion, false);
-            return;
-        }
-
-        this.setTable = setTableToUse;
-        // This filter, and any copy of it, reads and listens to the set table for as long as it lives. Manage it
-        // here so that it is not released when the caller's liveness scope closes.
-        manage(setTableToUse);
-
-        final Mutable<SetInclusionKernel> resultKernel = new MutableObject<>();
-        final Mutable<InstrumentedTableUpdateListener> resultListener = new MutableObject<>();
-
-        snapshotAndCreate(setTableToUse, setKeySource, inclusion, resultKernel, resultListener);
-
-        this.setKernel = resultKernel.get();
-        this.setUpdateListener = resultListener.get();
+        this(SharedSetKernel.create(setTable, sourceToSetColumnNamePairs), inclusion, sourceToSetColumnNamePairs);
     }
 
     /**
-     * Create and populate the set inclusion kernel from the set table and set key source.
-     */
-    private static @NotNull SetInclusionKernel createKernel(
-            @NotNull QueryTable setTable,
-            @NotNull final TupleSource<?> setKeySource,
-            final boolean inclusion,
-            final boolean usePrev) {
-        final SetInclusionKernel localKernel =
-                SetInclusionKernel.makeKernel(setKeySource.getChunkType(), inclusion);
-
-        // Fill liveValues and the set kernel with the initial keys from the set table.
-        final RowSet rsToUse = usePrev ? setTable.getRowSet().prev() : setTable.getRowSet();
-        final ChunkSource<?> sourceToUse = usePrev ? setKeySource.getPrevSource() : setKeySource;
-        if (rsToUse.isNonempty()) {
-            try (final CloseableIterator<?> initialKeysIterator = ChunkedColumnIterator.make(
-                    sourceToUse, rsToUse, getChunkSize(rsToUse))) {
-                initialKeysIterator.forEachRemaining(localKernel::add);
-            }
-        }
-        return localKernel;
-    }
-
-    /**
-     * Create and populate the kernel and install the update listener on the same step of the cycle.
-     */
-    private void snapshotAndCreate(
-            @NotNull final QueryTable setTable,
-            @NotNull final TupleSource<?> setKeySource,
-            final boolean inclusion,
-            final Mutable<SetInclusionKernel> resultKernel,
-            final Mutable<InstrumentedTableUpdateListener> resultListener) {
-
-        ConstructSnapshot.callDataSnapshotFunction("DynamicWhereFilter-createKernel",
-                ConstructSnapshot.makeSnapshotControl(true, true, setTable),
-                (usePrev, beforeClockUnused) -> {
-                    // This function is re-invoked for every snapshot attempt. An attempt that proves inconsistent
-                    // leaves behind a subscribed, managed listener, which would otherwise stay attached to the set
-                    // table for the life of this filter and redundantly process every set table update.
-                    final InstrumentedTableUpdateListener staleListener = resultListener.getValue();
-                    if (staleListener != null) {
-                        resultKernel.setValue(null);
-                        resultListener.setValue(null);
-                        unmanage(staleListener);
-                        setTable.removeUpdateListener(staleListener);
-                    }
-
-                    final SetInclusionKernel localKernel =
-                            createKernel(setTable, setKeySource, inclusion, usePrev);
-
-                    final String[] setColumnNames = Arrays.stream(this.sourceToSetColumnNamePairs)
-                            .map(MatchPair::rightColumn).toArray(String[]::new);
-                    final ModifiedColumnSet setColumnsMCS = setTable.newModifiedColumnSet(setColumnNames);
-
-                    final String humanReadablePrefix =
-                            "DynamicWhereFilter(" + Arrays.toString(sourceToSetColumnNamePairs) + ")";
-                    final InstrumentedTableUpdateListener localListener = new InstrumentedTableUpdateListenerAdapter(
-                            humanReadablePrefix, setTable, false) {
-                        @Override
-                        public void onUpdate(final TableUpdate upstream) {
-                            final boolean hasAdds = upstream.added().isNonempty();
-                            final boolean hasRemoves = upstream.removed().isNonempty();
-                            final boolean hasModifies = upstream.modified().isNonempty()
-                                    && upstream.modifiedColumnSet().containsAny(setColumnsMCS);
-                            if (!hasAdds && !hasRemoves && !hasModifies) {
-                                // The set kernel is unchanged, so a concurrent snapshot reading it remains
-                                // consistent; deliberately do not record a state change step.
-                                return;
-                            }
-
-                            // We are mutating during this step. Publish the step before changing the kernel,
-                            // never after, so that a reader which observes the change is guaranteed to observe
-                            // this step and reject what it read.
-                            lastStateChangeStep = getUpdateGraph().clock().currentStep();
-
-                            // Remove removed keys
-                            if (hasRemoves) {
-                                try (final CloseableIterator<?> removedKeysIterator = ChunkedColumnIterator.make(
-                                        setKeySource.getPrevSource(), upstream.removed(),
-                                        getChunkSize(upstream.removed()))) {
-                                    removedKeysIterator.forEachRemaining(key -> removeKey(localKernel, key));
-                                }
-                            }
-
-                            // Update modified keys
-                            boolean trueModification = false;
-                            if (hasModifies) {
-                                try (final CloseableIterator<?> preModifiedKeysIterator = ChunkedColumnIterator.make(
-                                        setKeySource.getPrevSource(), upstream.getModifiedPreShift(),
-                                        getChunkSize(upstream.getModifiedPreShift()));
-                                        final CloseableIterator<?> postModifiedKeysIterator =
-                                                ChunkedColumnIterator.make(
-                                                        setKeySource, upstream.modified(),
-                                                        getChunkSize(upstream.modified()))) {
-                                    // @formatter:on
-                                    while (preModifiedKeysIterator.hasNext()) {
-                                        Assert.assertion(postModifiedKeysIterator.hasNext(),
-                                                "Pre and post modified row sets must be the same size; post is exhausted, but pre is not");
-                                        final Object oldKey = preModifiedKeysIterator.next();
-                                        final Object newKey = postModifiedKeysIterator.next();
-                                        if (!Objects.equals(oldKey, newKey)) {
-                                            trueModification = true;
-                                            removeKey(localKernel, oldKey);
-                                            addKey(localKernel, newKey);
-                                        }
-                                    }
-                                    Assert.assertion(!postModifiedKeysIterator.hasNext(),
-                                            "Pre and post modified row sets must be the same size; pre is exhausted, but post is not");
-                                }
-                            }
-
-                            // Add added keys
-                            if (hasAdds) {
-                                try (final CloseableIterator<?> addedKeysIterator = ChunkedColumnIterator.make(
-                                        setKeySource, upstream.added(), getChunkSize(upstream.added()))) {
-                                    addedKeysIterator.forEachRemaining(key -> addKey(localKernel, key));
-                                }
-                            }
-
-                            // All the mutations are complete, the listener will be auto-marked "satisfied" after this
-                            // method returns.
-
-                            // Pretend every row of the original table was modified, this is essential so that the where
-                            // clause can be re-evaluated based on the updated live set.
-                            if (listener != null) {
-                                if (hasAdds || trueModification) {
-                                    if (inclusion) {
-                                        listener.requestRecomputeUnmatched();
-                                    } else {
-                                        listener.requestRecomputeMatched();
-                                    }
-                                }
-                                if (hasRemoves || trueModification) {
-                                    if (inclusion) {
-                                        listener.requestRecomputeMatched();
-                                    } else {
-                                        listener.requestRecomputeUnmatched();
-                                    }
-                                }
-                            }
-                        }
-
-                        @Override
-                        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
-                            if (listener != null) {
-                                resultTable.notifyListenersOnError(originalException, sourceEntry);
-                            }
-                        }
-                    };
-                    resultKernel.setValue(localKernel);
-                    resultListener.setValue(localListener);
-                    manage(localListener);
-                    setTable.addUpdateListener(localListener);
-                    return true;
-                });
-    }
-
-    /**
-     * "Copy constructor" for DynamicWhereFilters with refreshing set tables.
+     * "Copy constructor", sharing the set table, kernel and update listener of the filter being copied. A filter is
+     * copied for each operation that uses it, and once per constituent table by a {@code PartitionedTable} proxy, so
+     * rebuilding the set for each copy would repeat that work and leave a listener per copy on the set table.
      */
     private DynamicWhereFilter(
-            @NotNull final QueryTable setTable,
-            @NotNull final Class<?> @NotNull [] setKeyTypes,
+            @NotNull final SharedSetKernel sharedSet,
             final boolean inclusion,
             final MatchPair... sourceToSetColumnNamePairs) {
-        this.setKeyTypes = setKeyTypes;
-        this.inclusion = inclusion;
         this.sourceToSetColumnNamePairs = sourceToSetColumnNamePairs;
-
-        // Create the set kernel and update listener from the existing set table.
-        final Mutable<SetInclusionKernel> resultKernel = new MutableObject<>();
-        final Mutable<InstrumentedTableUpdateListener> resultListener = new MutableObject<>();
-
-        final ColumnSource<?>[] setColumns = Arrays.stream(this.sourceToSetColumnNamePairs)
-                .map(mp -> setTable.getColumnSource(mp.rightColumn()))
-                .map(ReinterpretUtils::maybeConvertToPrimitive)
-                .toArray(ColumnSource[]::new);
-        final TupleSource<?> setKeySource = TupleSourceFactory.makeTupleSource(setColumns);
-
-        snapshotAndCreate(setTable, setKeySource, inclusion, resultKernel, resultListener);
-
-        this.setTable = setTable;
-        // This copied filter also needs to manage the set table.
-        manage(setTable);
-        this.setKernel = resultKernel.get();
-        this.setUpdateListener = resultListener.get();
-    }
-
-    /**
-     * "Copy constructor" for DynamicWhereFilters with static set tables.
-     */
-    private DynamicWhereFilter(
-            @NotNull final Class<?> @NotNull [] setKeyTypes,
-            @NotNull final SetInclusionKernel setKernel,
-            final boolean inclusion,
-            final MatchPair... sourceToSetColumnNamePairs) {
-        this.setKeyTypes = setKeyTypes;
-        this.setKernel = setKernel;
         this.inclusion = inclusion;
-        this.sourceToSetColumnNamePairs = sourceToSetColumnNamePairs;
-        setTable = null;
-        setUpdateListener = null;
+        this.sharedSet = sharedSet;
+        manage(sharedSet);
     }
 
     @Override
     public UpdateGraph getUpdateGraph() {
         return updateGraph;
-    }
-
-    /**
-     * Remove a key from {@code kernel}. Called only from a set update listener, on the update graph thread.
-     * <p>
-     * Note that the kernel is supplied rather than read from {@link #setKernel}, which is assigned only once the
-     * snapshot that creates it has committed. A listener must maintain the kernel it was created alongside, so that a
-     * listener belonging to a discarded snapshot attempt cannot reach the committed one.
-     */
-    private static void removeKey(@NotNull final SetInclusionKernel kernel, final Object key) {
-        if (!kernel.remove(key)) {
-            throw new RuntimeException("Inconsistent state, key not found in set: " + key);
-        }
-    }
-
-    /**
-     * Add a key to {@code kernel}. See {@link #removeKey(SetInclusionKernel, Object)} for why the kernel is supplied.
-     */
-    private static void addKey(@NotNull final SetInclusionKernel kernel, final Object key) {
-        if (!kernel.add(key)) {
-            throw new RuntimeException("Inconsistent state, key already in set:" + key);
-        }
     }
 
     @Override
@@ -396,6 +122,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final ColumnSource<?>[] reinterpretedSourceKeyColumns = Arrays.stream(sourceKeyColumns)
                 .map(ReinterpretUtils::maybeConvertToPrimitive)
                 .toArray(ColumnSource[]::new);
+        final Class<?>[] setKeyTypes = sharedSet.setKeyTypes();
         for (int ki = 0; ki < setKeyTypes.length; ++ki) {
             if (setKeyTypes[ki] != reinterpretedSourceKeyColumns[ki].getType()) {
                 throw new IllegalArgumentException(String.format(
@@ -405,28 +132,28 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         }
         sourceKeySource = TupleSourceFactory.makeTupleSource(reinterpretedSourceKeyColumns);
 
-        if (setTable == null // Set table is static
+        if (!sharedSet.isRefreshing() // Set table is static
                 && staticSetLookupKeys == null // We haven't already computed the lookup keys
                 && sourceDataIndex != null // We might use the lookup keys if we compute them
                 && sourceDataIndex.isRefreshing() // We might use the lookup keys more than once
                 && sourceKeyColumns.length > 1 // Making a lookup key is more complicated than boxing a primitive
         ) {
             // Convert the tuples in liveValues to be lookup keys in the sourceDataIndex
-            staticSetLookupKeys = new ArrayList<>(setKernel.size());
+            staticSetLookupKeys = new ArrayList<>(sharedSet.kernel().size());
             final int indexKeySize = sourceDataIndex.keyColumns().length;
             if (indexKeySize > 1) {
                 final Function<Object, Object> keyMappingFunction = indexKeySize == keyColumnNames.length
                         ? tupleToFullKeyMappingFunction()
                         : tupleToPartialKeyMappingFunction();
 
-                setKernel.iterator().forEachRemaining(key -> {
+                sharedSet.kernel().iterator().forEachRemaining(key -> {
                     final Object[] lookupKey = (Object[]) keyMappingFunction.apply(key);
                     // Store a copy because the mapping function returns the same array each invocation.
                     staticSetLookupKeys.add(Arrays.copyOf(lookupKey, indexKeySize));
                 });
             } else {
                 final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
-                setKernel.iterator().forEachRemaining(
+                sharedSet.kernel().iterator().forEachRemaining(
                         key -> staticSetLookupKeys.add(sourceKeySource.exportElement(key, keyOffset)));
             }
         }
@@ -469,7 +196,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
      * Calculates mappings from the offset of a {@link ColumnSource} in the {@code sourceDataIndex} to the offset of the
      * corresponding {@link ColumnSource} in the key sources from the set or source table of a DynamicWhereFilter
      * ({@code indexToTupleMap}, as well as the reverse ({@code tupleToIndexMap}). This allows for mapping keys from the
-     * {@link #setKernel} to keys in the {@link #sourceDataIndex}.
+     * {@link SharedSetKernel kernel} to keys in the {@link #sourceDataIndex}.
      */
     private void computeTupleIndexMaps() {
         assert sourceDataIndex != null;
@@ -608,10 +335,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             values = staticSetLookupKeys.iterator();
             keyMappingFunction = Function.identity();
         } else if (sourceKeyColumns.length == 1) {
-            values = setKernel.iterator();
+            values = sharedSet.kernel().iterator();
             keyMappingFunction = Function.identity();
         } else {
-            values = setKernel.iterator();
+            values = sharedSet.kernel().iterator();
             keyMappingFunction = tupleToFullKeyMappingFunction();
         }
 
@@ -652,7 +379,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 values = staticSetLookupKeys.iterator();
                 keyMappingFunction = Function.identity();
             } else {
-                values = setKernel.iterator();
+                values = sharedSet.kernel().iterator();
                 if (sourceDataIndex.keyColumnNames().size() == 1) {
                     final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
                     keyMappingFunction = (final Object key) -> sourceKeySource.exportElement(key, keyOffset);
@@ -704,7 +431,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                         ? sourceKeySource.getPrevChunk(keyGetContext, selectionChunk)
                         : sourceKeySource.getChunk(keyGetContext, selectionChunk);
                 final Chunk<Values> keyChunk = Chunk.downcast(sourceChunk);
-                setKernel.matchValues(keyChunk, selectionRowKeyChunk, matchingKeys, filterInclusion);
+                sharedSet.kernel().matchValues(keyChunk, selectionRowKeyChunk, matchingKeys, filterInclusion);
                 filteredRowSetBuilder.appendOrderedRowKeysChunk(matchingKeys);
             }
         }
@@ -724,7 +451,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     @Override
     public boolean isRefreshing() {
-        return setUpdateListener != null;
+        return sharedSet.isRefreshing();
     }
 
     @Override
@@ -733,26 +460,74 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         this.resultTable = listener.getTable();
         if (isRefreshing()) {
             listener.setIsRefreshing(true);
+            // Only now can this filter act on a set change, so only now is it worth being told about one.
+            sharedSet.addFilter(this);
         }
+    }
+
+    @Override
+    protected void destroy() {
+        super.destroy();
+        // Stop the shared set from holding, and notifying, a filter whose result is gone.
+        sharedSet.removeFilter(this);
+    }
+
+    /**
+     * Called by {@link SharedSetKernel} when the shared keys change, so that this filter's result re-evaluates the rows
+     * that may have changed status. Exclusion filters invert the requests.
+     *
+     * @param added Whether keys were added to the set
+     * @param removed Whether keys were removed from the set
+     */
+    void onSetChanged(final boolean added, final boolean removed) {
+        final RecomputeListener localListener = listener;
+        if (localListener == null) {
+            return;
+        }
+        if (added) {
+            if (inclusion) {
+                localListener.requestRecomputeUnmatched();
+            } else {
+                localListener.requestRecomputeMatched();
+            }
+        }
+        if (removed) {
+            if (inclusion) {
+                localListener.requestRecomputeMatched();
+            } else {
+                localListener.requestRecomputeUnmatched();
+            }
+        }
+    }
+
+    /**
+     * Called by {@link SharedSetKernel} when maintaining the shared keys fails, to fail this filter's result.
+     */
+    void onSetError(final Throwable originalException, final TableListener.Entry sourceEntry) {
+        if (listener != null && resultTable != null) {
+            resultTable.notifyListenersOnError(originalException, sourceEntry);
+        }
+    }
+
+    @VisibleForTesting
+    SharedSetKernel sharedSet() {
+        return sharedSet;
     }
 
     @Override
     public DynamicWhereFilter copy() {
-        if (setTable == null) {
-            return new DynamicWhereFilter(setKeyTypes, setKernel, inclusion, sourceToSetColumnNamePairs);
-        }
-        return new DynamicWhereFilter(setTable, setKeyTypes, inclusion, sourceToSetColumnNamePairs);
+        return new DynamicWhereFilter(sharedSet, inclusion, sourceToSetColumnNamePairs);
     }
 
     @Override
     public boolean stateChangedOnStep(final long step) {
-        return lastStateChangeStep == step;
+        return sharedSet.stateChangedOnStep(step);
     }
 
     @Override
     public boolean satisfied(final long step) {
         final boolean indexSatisfied = sourceDataIndex == null || sourceDataIndex.table().satisfied(step);
-        return indexSatisfied && (setUpdateListener == null || setUpdateListener.satisfied(step));
+        return indexSatisfied && sharedSet.satisfied(step);
     }
 
     @Override
@@ -764,10 +539,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     @Override
     public LongStream parentPerformanceEntryIds() {
-        if (setUpdateListener == null) {
-            return LongStream.empty();
-        }
-        final PerformanceEntry entry = setUpdateListener.getEntry();
-        return entry == null ? LongStream.empty() : LongStream.of(entry.getId());
+        return sharedSet.parentPerformanceEntryIds();
     }
 }
