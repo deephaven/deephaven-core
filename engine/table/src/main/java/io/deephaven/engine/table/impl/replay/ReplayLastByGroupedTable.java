@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.replay;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.time.DateTimeUtils;
@@ -26,13 +25,18 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         if (allIterators.isEmpty()) {
             return;
         }
-        RowSetBuilderRandom candidatesBuilder = RowSetFactory.builderRandom();
+        RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
+        RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
         // List<IteratorsAndNextTime> iteratorsToAddBack = new ArrayList<>(allIterators.size());
         while (!allIterators.isEmpty()
                 && DateTimeUtils.epochNanos(allIterators.peek().lastTime) < replayer.clock().currentTimeNanos()) {
             IteratorsAndNextTime currentIt = allIterators.poll();
             rowRedirection.put(currentIt.pos, currentIt.lastIndex);
-            candidatesBuilder.addKey(currentIt.pos);
+            if (getRowSet().find(currentIt.pos) >= 0) {
+                modifiedBuilder.addKey(currentIt.pos);
+            } else {
+                addedBuilder.addKey(currentIt.pos);
+            }
             do {
                 currentIt = currentIt.next();
             } while (currentIt != null
@@ -41,9 +45,8 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
                 allIterators.add(currentIt);
             }
         }
-        // rows already in the result are modifies; the remainder are adds
-        final WritableRowSet added = candidatesBuilder.build();
-        final RowSet modified = added.extract(getRowSet());
+        final RowSet added = addedBuilder.build();
+        final RowSet modified = modifiedBuilder.build();
         if (!added.isEmpty() || !modified.isEmpty()) {
             getRowSet().writableCast().insert(added);
             notifyListeners(added, RowSetFactory.empty(), modified);
