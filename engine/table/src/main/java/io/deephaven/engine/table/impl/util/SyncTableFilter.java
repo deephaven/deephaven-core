@@ -24,6 +24,7 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -198,8 +199,9 @@ public class SyncTableFilter {
                     if (recorder.getShifted().nonempty()) {
                         throw new IllegalStateException("Can not process shifted rows in SyncTableFilter!");
                     }
-                    final RowSet addedAndModified = recorder.getAdded().union(recorder.getModified());
-                    consumeRows(rr, addedAndModified);
+                    try (final RowSet addedAndModified = recorder.getAdded().union(recorder.getModified())) {
+                        consumeRows(rr, addedAndModified);
+                    }
                 }
             }
 
@@ -224,10 +226,11 @@ public class SyncTableFilter {
                     if (!keysToRefilter.contains(key)) {
                         // if we did not refilter this key; then we should add the currently matched values,
                         // otherwise we ignore them because they have already been superseded
-                        final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build();
-                        state.matchedRows.insert(newlyMatchedRows);
-                        newlyMatchedRows.remove(resultRowSet[tt]);
-                        addedBuilder.addRowSet(newlyMatchedRows);
+                        try (final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build()) {
+                            state.matchedRows.insert(newlyMatchedRows);
+                            newlyMatchedRows.remove(resultRowSet[tt]);
+                            addedBuilder.addRowSet(newlyMatchedRows);
+                        }
                     }
                     state.currentIdBuilder = null;
                 }
@@ -237,19 +240,23 @@ public class SyncTableFilter {
                 resultRowSet[tt].remove(removed);
                 resultRowSet[tt].insert(added);
 
-                final WritableRowSet addedAndRemoved = added.intersect(removed);
-
                 final WritableRowSet modified;
                 if (recorders.get(tt).getNotificationStep() == currentStep) {
                     modified = recorders.get(tt).getModified().intersect(resultRowSet[tt]);
                     modified.remove(added);
-                    modified.insert(addedAndRemoved);
+                    try (final WritableRowSet addedAndRemoved = added.intersect(removed)) {
+                        modified.insert(addedAndRemoved);
+                    }
                 } else {
-                    modified = addedAndRemoved;
+                    // Rows that were both added and removed are the only modifications in this case.
+                    modified = added.intersect(removed);
                 }
 
                 if (added.isNonempty() || removed.isNonempty() || modified.isNonempty()) {
                     results[tt].notifyListeners(added, removed, modified);
+                } else {
+                    // There is nothing to notify, so nothing takes ownership of these.
+                    SafeCloseable.closeAll(added, removed, modified);
                 }
             }
             keysToRefilter.clear();

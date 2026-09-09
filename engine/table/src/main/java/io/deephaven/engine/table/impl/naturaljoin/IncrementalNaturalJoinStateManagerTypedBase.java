@@ -440,6 +440,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     protected void freeDuplicateLocation(long duplicateLocation) {
+        // The duplicate row set at this location is no longer reachable; the location is reused by
+        // allocateDuplicateLocation, which overwrites the slot with a freshly built row set.
+        final WritableRowSet duplicates = rightSideDuplicateRowSets.getAndSetUnsafe(duplicateLocation, null);
+        if (duplicates != null) {
+            duplicates.close();
+        }
         freeDuplicateValues.add(duplicateLocation);
     }
 
