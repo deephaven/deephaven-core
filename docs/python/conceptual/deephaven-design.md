@@ -247,7 +247,7 @@ This sharing model, combined with [incremental updates](./table-update-model.md)
 
 ### How operations stay live
 
-The listeners that attach to refreshing tables are what makes Deephaven tables "live." When a parent table updates:
+The listeners that attach to refreshing tables are what make Deephaven tables "live." When a parent table updates:
 
 1. The parent's `notifyListeners` method enqueues update notifications for all child listeners.
 2. Each listener receives a `TableUpdate` describing which rows were added, removed, modified, or shifted, along with information about which columns changed.
