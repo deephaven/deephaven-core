@@ -197,6 +197,12 @@ public class RspRangeBatchIterator implements SafeCloseable {
                     return chunkDelta / 2;
                 }
             }
+            if (!moreSpans) {
+                // The last span has been fully delivered; only a maxCount larger than the number of keys available
+                // keeps remaining positive at this point.
+                setFinished();
+                return chunkDelta / 2;
+            }
             Object s = p.span();
             long spanInfo = p.spanInfo();
             final long slen = getFullBlockSpanLen(spanInfo, s);

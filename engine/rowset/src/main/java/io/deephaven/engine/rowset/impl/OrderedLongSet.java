@@ -446,6 +446,9 @@ public interface OrderedLongSet {
 
         @Override
         public OrderedLongSet ixInvertOnNew(OrderedLongSet keys, long maximumPosition) {
+            if (!keys.ixIsEmpty()) {
+                throw new IllegalArgumentException("invert for non-existing key:" + keys.ixFirstKey());
+            }
             return this;
         }
 
