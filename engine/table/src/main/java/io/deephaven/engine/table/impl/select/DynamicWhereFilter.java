@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -29,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -138,7 +140,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 && sourceDataIndex.isRefreshing() // We might use the lookup keys more than once
                 && sourceKeyColumns.length > 1 // Making a lookup key is more complicated than boxing a primitive
         ) {
-            // Convert the tuples in liveValues to be lookup keys in the sourceDataIndex
+            // Convert the tuples in liveValues to be lookup keys in the sourceDataIndex.
             staticSetLookupKeys = new ArrayList<>(sharedSet.kernel().size());
             final int indexKeySize = sourceDataIndex.keyColumns().length;
             if (indexKeySize > 1) {
@@ -320,6 +322,31 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         return filterLinear(selection, inclusion, usePrev);
     }
 
+    /**
+     * Apply {@code action} to each key, abandoning the enclosing snapshot attempt if the set changes underneath us; see
+     * {@link SharedSetKernel#kernel()}. The check is made once per {@value #CHUNK_SIZE} keys, the same granularity as
+     * the linear path's per-chunk check, and once more at the end so that no torn tail goes unchecked. Harmless for a
+     * static set or a static lookup key list, whose generation never changes.
+     *
+     * @param keys The keys to iterate
+     * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before {@code keys} was obtained
+     * @param action What to do with each key
+     */
+    private void forEachKernelKey(
+            @NotNull final Iterator<Object> keys,
+            final long kernelGeneration,
+            @NotNull final Consumer<Object> action) {
+        int sinceCheck = 0;
+        while (keys.hasNext()) {
+            action.accept(keys.next());
+            if (++sinceCheck == CHUNK_SIZE) {
+                sharedSet.failIfChangedSince(kernelGeneration);
+                sinceCheck = 0;
+            }
+        }
+        sharedSet.failIfChangedSince(kernelGeneration);
+    }
+
     @NotNull
     private WritableRowSet filterFullIndex(@NotNull final RowSet selection, final boolean usePrev) {
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
@@ -329,6 +356,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
         final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
 
+        final long kernelGeneration = sharedSet.beginRead();
         final Iterator<Object> values;
         final Function<Object, Object> keyMappingFunction;
         if (staticSetLookupKeys != null) {
@@ -342,7 +370,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             keyMappingFunction = tupleToFullKeyMappingFunction();
         }
 
-        values.forEachRemaining(key -> {
+        forEachKernelKey(values, kernelGeneration, key -> {
             final Object mappedKey = keyMappingFunction.apply(key);
             final long rowKey = rowKeyLookup.apply(mappedKey, usePrev);
             final RowSet rowSet = usePrev ? rowSetColumn.getPrev(rowKey) : rowSetColumn.get(rowKey);
@@ -372,6 +400,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
             final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
 
+            final long kernelGeneration = sharedSet.beginRead();
             final Iterator<Object> values;
             final Function<Object, Object> keyMappingFunction;
 
@@ -388,7 +417,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 }
             }
 
-            values.forEachRemaining(key -> {
+            forEachKernelKey(values, kernelGeneration, key -> {
                 final Object lookupKey = keyMappingFunction.apply(key);
                 final long rowKey = rowKeyLookup.apply(lookupKey, usePrev);
                 final RowSet rowSet = usePrev ? rowSetColumn.getPrev(rowKey) : rowSetColumn.get(rowKey);
@@ -415,6 +444,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             return RowSetFactory.empty();
         }
 
+        final long kernelGeneration = sharedSet.beginRead();
+        final SetInclusionKernel setKernel = sharedSet.kernel();
+
         final RowSetBuilderSequential filteredRowSetBuilder = RowSetFactory.builderSequential();
 
         final int maxChunkSize = getChunkSize(selection);
@@ -431,7 +463,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                         ? sourceKeySource.getPrevChunk(keyGetContext, selectionChunk)
                         : sourceKeySource.getChunk(keyGetContext, selectionChunk);
                 final Chunk<Values> keyChunk = Chunk.downcast(sourceChunk);
-                sharedSet.kernel().matchValues(keyChunk, selectionRowKeyChunk, matchingKeys, filterInclusion);
+                setKernel.matchValues(keyChunk, selectionRowKeyChunk, matchingKeys, filterInclusion);
+                // A set change makes this attempt's results junk; abandon it rather than finish them.
+                sharedSet.failIfChangedSince(kernelGeneration);
                 filteredRowSetBuilder.appendOrderedRowKeysChunk(matchingKeys);
             }
         }

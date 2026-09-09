@@ -169,13 +169,11 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             transformer =
                     parent.newModifiedColumnSetTransformer(resultTable, parent.getDefinition().getColumnNamesArray());
 
-            // Set up the column to be a listener for recomputes
             matchColumns.forEach(mc -> {
                 if (mc.getFilter() instanceof LivenessReferent) {
                     resultTable.manage((LivenessArtifact) mc.getFilter());
                 }
                 mc.column.setResultTable(resultTable);
-                mc.getFilter().setRecomputeListener(mc.column);
             });
 
             TableUpdateListener eventualListener = null;
@@ -201,6 +199,11 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 resultTable.addParentReference(eventualMergedListener);
                 matchColumns.forEach(h -> h.column.setMergedListener(finalMergedListener));
             }
+
+            // Set up the column to be a listener for recomputes. This must come last: a refreshing filter's inputs
+            // can tick as soon as it has its recompute listener, and the resulting request has nothing to notify
+            // until the merged listener above is installed.
+            matchColumns.forEach(mc -> mc.getFilter().setRecomputeListener(mc.column));
 
             return new Result<>(resultTable, eventualListener);
         }

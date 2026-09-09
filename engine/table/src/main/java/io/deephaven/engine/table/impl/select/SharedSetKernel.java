@@ -17,7 +17,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TupleSource;
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NotificationAwareDependency;
@@ -66,18 +65,27 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
 
     /** The distinct set table, or {@code null} if the set is static and needs no maintenance. */
     private final QueryTable setTable;
+    /** The kernel; owned by {@link #setUpdateListener} when the set is refreshing. */
     private final SetInclusionKernel kernel;
     private final Class<?> @NotNull [] setKeyTypes;
 
     @SuppressWarnings("FieldCanBeLocal")
     @ReferentialIntegrity
-    private final InstrumentedTableUpdateListener setUpdateListener;
+    private final SetUpdateListener setUpdateListener;
 
     /**
      * The step on which {@link #setUpdateListener} began changing {@link #kernel}, published before the change. See
      * {@link NotificationAwareDependency}.
      */
     private volatile long lastStateChangeStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+
+    /**
+     * Incremented by {@link #setUpdateListener} immediately before and immediately after it mutates {@link #kernel}, so
+     * that it is odd for exactly as long as a mutation is in progress, and any reader that observes an effect of a
+     * mutation is guaranteed to observe the leading increment. Readers capture it with {@link #beginRead()} and pass it
+     * back through {@link #failIfChangedSince(long)} as they go; see {@link #kernel()}.
+     */
+    private volatile long generation;
 
     /**
      * The filters sharing this set, weakly referenced so that a filter, and the result table that reaches it, remain
@@ -142,11 +150,10 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
         // This set outlives the caller's liveness scope, because the filters sharing it do.
         manage(setTableToUse);
 
-        final Mutable<SetInclusionKernel> resultKernel = new MutableObject<>();
-        final Mutable<InstrumentedTableUpdateListener> resultListener = new MutableObject<>();
-        snapshotAndCreate(setTableToUse, setKeySource, resultKernel, resultListener);
-        this.kernel = resultKernel.getValue();
-        this.setUpdateListener = resultListener.getValue();
+        final Mutable<SetUpdateListener> resultListenerHolder = new MutableObject<>();
+        snapshotAndCreate(setTableToUse, setKeySource, resultListenerHolder);
+        this.setUpdateListener = resultListenerHolder.getValue();
+        this.kernel = setUpdateListener.kernel;
     }
 
     /**
@@ -176,8 +183,7 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
     private void snapshotAndCreate(
             @NotNull final QueryTable setTable,
             @NotNull final TupleSource<?> setKeySource,
-            final Mutable<SetInclusionKernel> resultKernel,
-            final Mutable<InstrumentedTableUpdateListener> resultListener) {
+            final Mutable<SetUpdateListener> resultListenerHolder) {
 
         ConstructSnapshot.callDataSnapshotFunction("SharedSetKernel-createKernel",
                 ConstructSnapshot.makeSnapshotControl(true, true, setTable),
@@ -185,15 +191,12 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
                     // This function is re-invoked for every snapshot attempt. An attempt that proves inconsistent
                     // leaves behind a subscribed, managed listener, which would otherwise stay attached to the set
                     // table for the life of this set and redundantly process every set table update.
-                    final InstrumentedTableUpdateListener staleListener = resultListener.getValue();
+                    final SetUpdateListener staleListener = resultListenerHolder.getValue();
                     if (staleListener != null) {
-                        resultKernel.setValue(null);
-                        resultListener.setValue(null);
+                        resultListenerHolder.setValue(null);
                         unmanage(staleListener);
                         setTable.removeUpdateListener(staleListener);
                     }
-
-                    final SetInclusionKernel localKernel = createKernel(setTable, setKeySource, usePrev);
 
                     final String[] setColumnNames = Arrays.stream(sourceToSetColumnNamePairs)
                             .map(MatchPair::rightColumn).toArray(String[]::new);
@@ -201,87 +204,9 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
 
                     final String humanReadablePrefix =
                             "DynamicWhereFilter(" + Arrays.toString(sourceToSetColumnNamePairs) + ")";
-                    final InstrumentedTableUpdateListener localListener = new InstrumentedTableUpdateListenerAdapter(
-                            humanReadablePrefix, setTable, false) {
-                        @Override
-                        public void onUpdate(final TableUpdate upstream) {
-                            final boolean hasAdds = upstream.added().isNonempty();
-                            final boolean hasRemoves = upstream.removed().isNonempty();
-                            final boolean hasModifies = upstream.modified().isNonempty()
-                                    && upstream.modifiedColumnSet().containsAny(setColumnsMCS);
-                            if (!hasAdds && !hasRemoves && !hasModifies) {
-                                // The kernel is unchanged, so a concurrent snapshot reading it remains consistent;
-                                // deliberately do not record a state change step.
-                                return;
-                            }
-
-                            // We are mutating during this step. Publish the step before changing the kernel, never
-                            // after, so that a reader which observes the change is guaranteed to observe this step
-                            // and reject what it read.
-                            // Note that a modifies-only update whose keys all compare equal below would over-report,
-                            // failing concurrent previous-value snapshots that in fact read this set consistently.
-                            // The set table is always a selectDistinct or a data index table, which produce only adds
-                            // and removes for a key change, so no such update arises today.
-                            lastStateChangeStep = getUpdateGraph().clock().currentStep();
-
-                            // Remove removed keys
-                            if (hasRemoves) {
-                                try (final CloseableIterator<?> removedKeysIterator = ChunkedColumnIterator.make(
-                                        setKeySource.getPrevSource(), upstream.removed(),
-                                        getChunkSize(upstream.removed()))) {
-                                    removedKeysIterator.forEachRemaining(key -> removeKey(localKernel, key));
-                                }
-                            }
-
-                            // Update modified keys
-                            boolean trueModification = false;
-                            if (hasModifies) {
-                                try (final CloseableIterator<?> preModifiedKeysIterator = ChunkedColumnIterator.make(
-                                        setKeySource.getPrevSource(), upstream.getModifiedPreShift(),
-                                        getChunkSize(upstream.getModifiedPreShift()));
-                                        final CloseableIterator<?> postModifiedKeysIterator =
-                                                ChunkedColumnIterator.make(
-                                                        setKeySource, upstream.modified(),
-                                                        getChunkSize(upstream.modified()))) {
-                                    while (preModifiedKeysIterator.hasNext()) {
-                                        Assert.assertion(postModifiedKeysIterator.hasNext(),
-                                                "Pre and post modified row sets must be the same size; post is exhausted, but pre is not");
-                                        final Object oldKey = preModifiedKeysIterator.next();
-                                        final Object newKey = postModifiedKeysIterator.next();
-                                        if (!Objects.equals(oldKey, newKey)) {
-                                            trueModification = true;
-                                            removeKey(localKernel, oldKey);
-                                            addKey(localKernel, newKey);
-                                        }
-                                    }
-                                    Assert.assertion(!postModifiedKeysIterator.hasNext(),
-                                            "Pre and post modified row sets must be the same size; pre is exhausted, but post is not");
-                                }
-                            }
-
-                            // Add added keys
-                            if (hasAdds) {
-                                try (final CloseableIterator<?> addedKeysIterator = ChunkedColumnIterator.make(
-                                        setKeySource, upstream.added(), getChunkSize(upstream.added()))) {
-                                    addedKeysIterator.forEachRemaining(key -> addKey(localKernel, key));
-                                }
-                            }
-
-                            // Every filter sharing this set must re-evaluate against the updated keys. Each applies
-                            // its own inclusion, so exclusion filters invert the requests.
-                            final boolean added = hasAdds || trueModification;
-                            final boolean removed = hasRemoves || trueModification;
-                            filters.forEachValidReference(filter -> filter.onSetChanged(added, removed));
-                        }
-
-                        @Override
-                        public void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
-                            filters.forEachValidReference(
-                                    filter -> filter.onSetError(originalException, sourceEntry));
-                        }
-                    };
-                    resultKernel.setValue(localKernel);
-                    resultListener.setValue(localListener);
+                    final SetUpdateListener localListener = new SetUpdateListener(humanReadablePrefix, setTable,
+                            createKernel(setTable, setKeySource, usePrev), setKeySource, setColumnsMCS);
+                    resultListenerHolder.setValue(localListener);
                     manage(localListener);
                     setTable.addUpdateListener(localListener);
                     return true;
@@ -292,8 +217,8 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
      * Remove a key from {@code kernel}. Called only from the set update listener, on the update graph thread.
      * <p>
      * The kernel is supplied rather than read from {@link #kernel}, which is assigned only once the snapshot that
-     * creates it has committed. A listener must maintain the kernel it was created alongside, so that a listener
-     * belonging to a discarded snapshot attempt cannot reach the committed one.
+     * creates it has committed. A listener maintains the kernel it was created alongside, so that a listener belonging
+     * to a discarded snapshot attempt cannot reach the committed one.
      */
     private static void removeKey(@NotNull final SetInclusionKernel kernel, final Object key) {
         if (!kernel.remove(key)) {
@@ -314,8 +239,62 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
         return (int) Math.min(selection.size(), CHUNK_SIZE);
     }
 
+    /**
+     * The kernel. Readers use it with no synchronization at all, even though {@link #setUpdateListener} may be mutating
+     * it on the update graph thread at the same time; they capture {@link #generation()} first and call
+     * {@link #failIfChangedSince(long)} as they go, so that a read overtaken by a mutation is abandoned early.
+     * <p>
+     * Reading without synchronization is safe because a concurrent read of the fastutil open hash set behind every
+     * kernel can return a wrong answer or throw, but cannot hang. A wrong answer is rejected by
+     * {@link #stateChangedOnStep} or the snapshot clock and the attempt is retried, and the snapshot machinery retries
+     * on an exception, so neither reaches a caller. Termination follows from the set's shape: {@code contains} reads
+     * the {@code key} array once and {@code mask} on each probe, and {@code rehash} assigns {@code key} last, so a
+     * reader can see a torn pair, but every such pair either indexes out of bounds (an exception) or probes a region
+     * that still holds a free slot, because a doubled table is at most three quarters full and a table is only ever
+     * halved when under a fifth full; in-place mutation never fills the table; and the iterator's position only
+     * decreases. This depends on every kernel being fastutil-backed, including the object kernel, which is why that one
+     * uses {@code ObjectOpenHashSet} rather than {@code HashSet}.
+     */
     SetInclusionKernel kernel() {
         return kernel;
+    }
+
+    /**
+     * Begin a read of {@link #kernel()}, abandoning the enclosing concurrent snapshot attempt at once if a mutation is
+     * already in progress.
+     *
+     * @return The generation to pass to {@link #failIfChangedSince(long)} during the read
+     * @throws ConstructSnapshot.SnapshotInconsistentException If a mutation is in progress during a concurrent snapshot
+     *         attempt
+     */
+    long beginRead() {
+        final long generation = this.generation;
+        if ((generation & 1) != 0) {
+            // The listener is between its two increments, so the kernel is being mutated right now.
+            abandonAttempt();
+        }
+        return generation;
+    }
+
+    /**
+     * Abandon the enclosing concurrent snapshot attempt if a mutation has begun since {@link #beginRead()}. Such a read
+     * is going to be rejected by the snapshot control regardless, so finishing it is wasted work; the check is one
+     * volatile read, so callers make it once per chunk of work rather than per key.
+     *
+     * @param generation The value returned by {@link #beginRead()}
+     * @throws ConstructSnapshot.SnapshotInconsistentException If the set changed during a concurrent snapshot attempt
+     */
+    void failIfChangedSince(final long generation) {
+        if (this.generation != generation) {
+            abandonAttempt();
+        }
+    }
+
+    private static void abandonAttempt() {
+        // Outside a concurrent snapshot attempt, a reader runs on or downstream of the update graph thread, which
+        // cannot be mutating the set at the same time; a change there is an invariant violation, not a retry.
+        Assert.neqZero(ConstructSnapshot.getConcurrentAttemptClockValue(), "concurrent snapshot attempt clock value");
+        throw new ConstructSnapshot.SnapshotInconsistentException();
     }
 
     Class<?> @NotNull [] setKeyTypes() {
@@ -387,5 +366,117 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
         return logOutput.append("SharedSetKernel(")
                 .append(MatchPair.MATCH_PAIR_ARRAY_FORMATTER, sourceToSetColumnNamePairs)
                 .append(')');
+    }
+
+    /**
+     * Maintains one snapshot attempt's kernel as the set table ticks, and asks the sharing filters to re-evaluate.
+     * <p>
+     * Each attempt builds its own listener, owning its own kernel. Removing a discarded attempt's listener does not
+     * cancel a callback already running on it, so a kernel shared across attempts could be mutated by that callback
+     * after the committed attempt read it; owning one per attempt makes that harmless.
+     */
+    private final class SetUpdateListener extends InstrumentedTableUpdateListenerAdapter {
+
+        /** The kernel this listener maintains, mutated in place; see {@link SharedSetKernel#kernel()}. */
+        private final SetInclusionKernel kernel;
+
+        private final TupleSource<?> setKeySource;
+        private final ModifiedColumnSet setColumnsMCS;
+
+        private SetUpdateListener(
+                @NotNull final String description,
+                @NotNull final QueryTable setTable,
+                @NotNull final SetInclusionKernel kernel,
+                @NotNull final TupleSource<?> setKeySource,
+                @NotNull final ModifiedColumnSet setColumnsMCS) {
+            super(description, setTable, false);
+            this.kernel = kernel;
+            this.setKeySource = setKeySource;
+            this.setColumnsMCS = setColumnsMCS;
+        }
+
+        @Override
+        public void onUpdate(final TableUpdate upstream) {
+            final boolean hasAdds = upstream.added().isNonempty();
+            final boolean hasRemoves = upstream.removed().isNonempty();
+            final boolean hasModifies = upstream.modified().isNonempty()
+                    && upstream.modifiedColumnSet().containsAny(setColumnsMCS);
+            if (!hasAdds && !hasRemoves && !hasModifies) {
+                // The kernel is unchanged, so a concurrent snapshot reading it remains consistent;
+                // deliberately do not record a state change step.
+                return;
+            }
+
+            // We are changing the set during this step. Publish the step before publishing the new
+            // kernel, never after, so that a reader which observes the change is guaranteed to
+            // observe this step and reject what it read.
+            // Note that a modifies-only update whose keys all compare equal below would over-report,
+            // failing concurrent previous-value snapshots that in fact read this set consistently.
+            // The set table is always a selectDistinct or a data index table, which produce only adds
+            // and removes for a key change, so no such update arises today.
+            lastStateChangeStep = getUpdateGraph().clock().currentStep();
+
+            // Mark a mutation in progress, so concurrent readers abandon their attempts; see kernel() for why they
+            // need no more protection than that. Incremented before mutating, and again after, so that the value
+            // is odd for exactly as long as the kernel is inconsistent.
+            ++generation;
+
+            boolean trueModification = false;
+            // Remove removed keys
+            if (hasRemoves) {
+                try (final CloseableIterator<?> removedKeysIterator = ChunkedColumnIterator.make(
+                        setKeySource.getPrevSource(), upstream.removed(),
+                        getChunkSize(upstream.removed()))) {
+                    removedKeysIterator.forEachRemaining(key -> removeKey(kernel, key));
+                }
+            }
+
+            // Update modified keys
+            if (hasModifies) {
+                try (final CloseableIterator<?> preModifiedKeysIterator =
+                        ChunkedColumnIterator.make(
+                                setKeySource.getPrevSource(), upstream.getModifiedPreShift(),
+                                getChunkSize(upstream.getModifiedPreShift()));
+                        final CloseableIterator<?> postModifiedKeysIterator =
+                                ChunkedColumnIterator.make(
+                                        setKeySource, upstream.modified(),
+                                        getChunkSize(upstream.modified()))) {
+                    while (preModifiedKeysIterator.hasNext()) {
+                        Assert.assertion(postModifiedKeysIterator.hasNext(),
+                                "Pre and post modified row sets must be the same size; post is exhausted, but pre is not");
+                        final Object oldKey = preModifiedKeysIterator.next();
+                        final Object newKey = postModifiedKeysIterator.next();
+                        if (!Objects.equals(oldKey, newKey)) {
+                            trueModification = true;
+                            removeKey(kernel, oldKey);
+                            addKey(kernel, newKey);
+                        }
+                    }
+                    Assert.assertion(!postModifiedKeysIterator.hasNext(),
+                            "Pre and post modified row sets must be the same size; pre is exhausted, but post is not");
+                }
+            }
+
+            // Add added keys
+            if (hasAdds) {
+                try (final CloseableIterator<?> addedKeysIterator = ChunkedColumnIterator.make(
+                        setKeySource, upstream.added(), getChunkSize(upstream.added()))) {
+                    addedKeysIterator.forEachRemaining(key -> addKey(kernel, key));
+                }
+            }
+            ++generation;
+
+            // Every filter sharing this set must re-evaluate against the updated keys. Each applies
+            // its own inclusion, so exclusion filters invert the requests.
+            final boolean added = hasAdds || trueModification;
+            final boolean removed = hasRemoves || trueModification;
+            filters.forEachValidReference(filter -> filter.onSetChanged(added, removed));
+        }
+
+        @Override
+        public void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
+            filters.forEachValidReference(
+                    filter -> filter.onSetError(originalException, sourceEntry));
+        }
     }
 }

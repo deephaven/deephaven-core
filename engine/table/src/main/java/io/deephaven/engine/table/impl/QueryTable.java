@@ -1347,14 +1347,8 @@ public class QueryTable extends BaseTable<QueryTable> {
          * <p>
          * The where listener is installed only after the initial filter completes, so a refreshing filter whose inputs
          * tick while the initial snapshot is still running may request a recompute before there is anything to notify.
-         * For a {@link NotificationAwareDependency} such as {@link DynamicWhereFilter}, that snapshot has necessarily
-         * read the filter's inputs inconsistently, so its
-         * {@link OperationSnapshotControlEx#snapshotCompletedConsistently snapshot control} fails it and the whole
-         * attempt is retried against a fresh result table, which makes the dropped notification irrelevant.
-         * <p>
-         * Note that this reasoning does not extend to a refreshing filter that is not notification aware, such as the
-         * release and time series filters. Nothing fails their snapshot, so the request flag set by the caller survives
-         * but its wake-up is lost until some later notification arrives.
+         * The caller records its request before notifying, so {@link #maybeDeliverPendingRefilterRequest()} delivers
+         * such a request once the listener exists.
          */
         private void notifyWhereListener() {
             if (whereListener != null) {
@@ -1364,6 +1358,20 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         private void setWhereListener(MergedListener whereListener) {
             this.whereListener = whereListener;
+        }
+
+        /**
+         * Deliver a refilter request that was made before {@link #whereListener} existed.
+         * <p>
+         * {@link #requestRecompute()} and friends set their request flags before notifying, so
+         * {@link #refilterRequested()} covers exactly those requests whose wake-up {@link #notifyWhereListener()}
+         * dropped. Call once the listener is installed and fully wired, so that the notification cannot reach a
+         * half-constructed listener.
+         */
+        private void maybeDeliverPendingRefilterRequest() {
+            if (whereListener != null && refilterRequested()) {
+                whereListener.notifyChanges();
+            }
         }
     }
 
@@ -1628,6 +1636,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                             filteredTable.setWhereListener(whereListener);
                                             filteredTable.addParentReference(whereListener);
                                         }
+                                        filteredTable.maybeDeliverPendingRefilterRequest();
                                         result.setValue(filteredTable);
                                         return true;
                                     });
