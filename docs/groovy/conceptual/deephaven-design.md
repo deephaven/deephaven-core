@@ -10,7 +10,7 @@ An in-depth look at what we’ve done, why we’ve done it, and why you should c
 </div>
 
 > [!NOTE]
-> New to Deephaven? Start with [How Deephaven works: A mental model](./deephaven-mental-model.md) for an approachable introduction before diving into this technical deep-dive.
+> New to Deephaven? Start with [How Deephaven works: A mental model](./deephaven-mental-model.md) for an approachable introduction before reading this technical deep-dive.
 
 We built Deephaven to be an incredible tool for working with tabular data — full stop. To us, tables are dynamic, powerful constructs, but we certainly care about static, batch ones too. In this piece, we explore some of the underlying technical and architectural decisions that, taken together, deliver Deephaven's value proposition.
 
@@ -245,7 +245,7 @@ This sharing model, combined with [incremental updates](./table-update-model.md)
 
 ### How operations stay live
 
-The listener attachment in step 5 of each operation is what makes Deephaven tables "live." When a parent table updates:
+The listeners that attach to refreshing tables are what makes Deephaven tables "live." When a parent table updates:
 
 1. The parent's `notifyListeners` method enqueues update notifications for all child listeners.
 2. Each listener receives a `TableUpdate` describing which rows were added, removed, modified, or shifted, along with information about which columns changed.
