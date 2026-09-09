@@ -267,14 +267,18 @@ public class ValidityBufferTest {
 
     @Test
     public void randomPatterns() {
-        final Random random = new Random(0xBA5EBA11L);
+        // A fresh seed every run widens the patterns covered over time. It is logged, and repeated in each assertion
+        // description, so a failure names the seed that produced it and can be replayed with new Random(<seed>).
+        final long seed = new Random().nextLong();
+        System.out.println("ValidityBufferTest.randomPatterns seed: " + seed);
+        final Random random = new Random(seed);
         for (final int size : SIZES) {
             for (int trial = 0; trial < 20; ++trial) {
                 final boolean[] isNull = new boolean[size];
                 for (int ii = 0; ii < size; ++ii) {
                     isNull[ii] = random.nextInt(4) == 0;
                 }
-                assertPacksTo("random size " + size + " trial " + trial, isNull);
+                assertPacksTo("seed " + seed + ", random size " + size + " trial " + trial, isNull);
             }
         }
     }

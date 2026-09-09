@@ -18,9 +18,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
-/**
- * The {@code Payload*} regions are overridden for {@code byte}, which needs no byte-order decoding.
- */
 public class CharChunkReader extends BaseChunkReader<WritableCharChunk<Values>> {
     private static final String DEBUG_NAME = "CharChunkReader";
 

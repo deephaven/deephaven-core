@@ -86,5 +86,4 @@ public class ReplicateBarrageUtils {
                 "        }"));
         FileUtils.writeLines(file, lines);
     }
-
 }
