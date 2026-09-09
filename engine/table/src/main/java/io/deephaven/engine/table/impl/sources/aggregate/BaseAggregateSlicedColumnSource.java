@@ -10,6 +10,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
@@ -230,11 +231,16 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
                 continue;
             }
             final RowSet groupRowSetPrev = rowSetChunk.get(ii);
-            final RowSet bucketRowSet = groupRowSetPrev.isTracking()
-                    ? groupRowSetPrev.trackingCast().prev()
-                    : groupRowSetPrev;
-            final long rowPos = bucketRowSet.find(keyChunk.get(ii));
-            final long bucketSize = bucketRowSet.size();
+            final long rowPos;
+            final long bucketSize;
+            if (groupRowSetPrev.isTracking()) {
+                final TrackingRowSet trackingGroupRowSet = groupRowSetPrev.trackingCast();
+                rowPos = trackingGroupRowSet.findPrev(keyChunk.get(ii));
+                bucketSize = trackingGroupRowSet.sizePrev();
+            } else {
+                rowPos = groupRowSetPrev.find(keyChunk.get(ii));
+                bucketSize = groupRowSetPrev.size();
+            }
             final long startPos = ClampUtil.clampLong(0, bucketSize, rowPos + localStartOffset);
             final long endPos = ClampUtil.clampLong(0, bucketSize, rowPos + localEndOffset);
             sizes.set(ii, endPos - startPos);

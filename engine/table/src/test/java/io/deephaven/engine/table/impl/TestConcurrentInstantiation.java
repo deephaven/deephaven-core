@@ -17,6 +17,8 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -46,6 +48,8 @@ import org.junit.experimental.categories.Category;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -185,6 +189,88 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(table, flat);
         TstUtils.assertTableEquals(table, flat2);
         TstUtils.assertTableEquals(table, flat3);
+    }
+
+    public void testUngroupRollingGroup() throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+                col("Sym", "a", "b", "a"), intCol("x", 1, 2, 3));
+        final Table grouped = table.updateBy(UpdateByOperation.RollingGroup(2, 0, "x"), "Sym");
+
+        final Table expect1 = TstUtils.testTable(col("Sym", "a", "b", "a"), intCol("x", 1, 2, 3))
+                .updateBy(UpdateByOperation.RollingGroup(2, 0, "x"), "Sym").ungroup("x");
+        final Table expect2 = TstUtils.testTable(col("Sym", "a", "b", "b", "a", "b"), intCol("x", 1, 4, 2, 3, 5))
+                .updateBy(UpdateByOperation.RollingGroup(2, 0, "x"), "Sym").ungroup("x");
+
+        final Callable<Table> callable = () -> grouped.ungroup("x");
+
+        updateGraph.startCycleForUnitTests(false);
+
+        final Table ungroup1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        assertTableEquals(expect1, ungroup1);
+
+        TstUtils.addToTable(table, i(3, 8), col("Sym", "b", "b"), intCol("x", 4, 5));
+        table.notifyListeners(i(3, 8), i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+
+        // the rolling group has not yet processed the update, so instantiation must use previous values
+        final Table ungroup2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        assertTableEquals(expect1, prevTable(ungroup1));
+        assertTableEquals(expect1, prevTable(ungroup2));
+
+        updateGraph.completeCycleForUnitTests();
+
+        assertTableEquals(expect2, ungroup1);
+        assertTableEquals(expect2, ungroup2);
+    }
+
+    public void testUngroupRollingGroupTimed() throws ExecutionException, InterruptedException, TimeoutException {
+        final Instant baseTime = DateTimeUtils.parseInstant("2025-01-01T09:30:00 NY");
+        final Duration rev = Duration.ofSeconds(15);
+        final Duration fwd = Duration.ZERO;
+
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
+                col("Sym", "a", "b", "a"),
+                instantCol("ts", baseTime, baseTime.plusSeconds(10), baseTime.plusSeconds(20)),
+                intCol("x", 1, 2, 3));
+        final Table grouped = table.updateBy(UpdateByOperation.RollingGroup("ts", rev, fwd, "x"), "Sym");
+
+        final Table expect1 = TstUtils.testTable(
+                col("Sym", "a", "b", "a"),
+                instantCol("ts", baseTime, baseTime.plusSeconds(10), baseTime.plusSeconds(20)),
+                intCol("x", 1, 2, 3))
+                .updateBy(UpdateByOperation.RollingGroup("ts", rev, fwd, "x"), "Sym").ungroup("x");
+        final Table expect2 = TstUtils.testTable(
+                col("Sym", "a", "b", "b", "a", "b"),
+                instantCol("ts", baseTime, baseTime.plusSeconds(5), baseTime.plusSeconds(10),
+                        baseTime.plusSeconds(20), baseTime.plusSeconds(30)),
+                intCol("x", 1, 4, 2, 3, 5))
+                .updateBy(UpdateByOperation.RollingGroup("ts", rev, fwd, "x"), "Sym").ungroup("x");
+
+        final Callable<Table> callable = () -> grouped.ungroup("x");
+
+        updateGraph.startCycleForUnitTests(false);
+
+        final Table ungroup1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        assertTableEquals(expect1, ungroup1);
+
+        TstUtils.addToTable(table, i(3, 8),
+                col("Sym", "b", "b"),
+                instantCol("ts", baseTime.plusSeconds(5), baseTime.plusSeconds(30)),
+                intCol("x", 4, 5));
+        table.notifyListeners(i(3, 8), i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+
+        // the rolling group has not yet processed the update, so instantiation must use previous values
+        final Table ungroup2 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        assertTableEquals(expect1, prevTable(ungroup1));
+        assertTableEquals(expect1, prevTable(ungroup2));
+
+        updateGraph.completeCycleForUnitTests();
+
+        assertTableEquals(expect2, ungroup1);
+        assertTableEquals(expect2, ungroup2);
     }
 
     public void testUpdateView() throws ExecutionException, InterruptedException, TimeoutException {
