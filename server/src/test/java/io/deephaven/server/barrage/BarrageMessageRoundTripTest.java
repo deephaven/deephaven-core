@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.barrage;
 
+import com.google.protobuf.CodedInputStream;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.api.ColumnName;
@@ -33,6 +34,7 @@ import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageMessageReaderImpl;
+import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.GrpcMarshallingException;
@@ -50,12 +52,16 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.experimental.categories.Category;
 
 import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -63,6 +69,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -170,10 +178,15 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         @ReferentialIntegrity
         private final BarrageMessageProducer barrageMessageProducer;
 
+        /** whether this is a full subscription, which {@link #viewport} does not record once it is changed */
+        private final boolean isFullSubscription;
+        /** set once the server has acknowledged a full subscription, so the replicated table is complete */
+        private boolean fullSubscriptionSatisfied;
+
         @ReferentialIntegrity
-        private final TableUpdateValidator replicatedTUV;
+        private TableUpdateValidator replicatedTUV;
         @ReferentialIntegrity
-        private final FailureListener replicatedTUVListener;
+        private FailureListener replicatedTUVListener;
 
         private boolean subscribed = false;
         private final Queue<BarrageMessage> commandQueue = new ArrayDeque<>();
@@ -199,6 +212,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             this.subscribedColumns = subscribedColumns;
             this.name = name;
             this.barrageMessageProducer = barrageMessageProducer;
+            this.isFullSubscription = viewport == null;
 
             final Map<String, Object> attributes = new HashMap<>(sourceTable.getAttributes());
             if (sourceTable.isFlat()) {
@@ -209,7 +223,25 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     sourceTable.isFlat()));
             this.barrageTable =
                     BarrageTable.make(null, updateSourceCombiner, ExecutionContext.getContext().getUpdateGraph(),
-                            null, schema, viewport == null, null);
+                            null, schema, isFullSubscription, new BarrageTable.ViewportChangedCallback() {
+                                @Override
+                                public boolean viewportChanged(
+                                        @Nullable final RowSet rowSet,
+                                        @Nullable final BitSet columns,
+                                        final boolean reverse) {
+                                    if (!isFullSubscription || rowSet != null) {
+                                        // the server is still growing this subscription toward the entire table
+                                        return true;
+                                    }
+                                    fullSubscriptionSatisfied = true;
+                                    return false;
+                                }
+
+                                @Override
+                                public void onError(@NotNull final Throwable t) {
+                                    exceptions.add(t);
+                                }
+                            });
             this.barrageTable.addSourceToRegistrar();
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
@@ -223,17 +255,10 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     schema.computeWireComponentTypes(), messageReader);
             this.dummyObserver = new DummyObserver(marshaller, commandQueue);
 
-            if (viewport == null) {
-                replicatedTUV = TableUpdateValidator.make(barrageTable);
-                replicatedTUVListener = new FailureListener("Replicated Table Update Validator");
-                replicatedTUV.getResultTable().addUpdateListener(replicatedTUVListener);
-            } else {
-                // the TUV is unaware of the viewport and gets confused about which data should be valid.
-                // instead we rely on the validation of the content in the viewport between the consumer and expected
-                // table.
-                replicatedTUV = null;
-                replicatedTUVListener = null;
-            }
+            // Note that no TableUpdateValidator is created for a viewport subscription: the TUV is unaware of the
+            // viewport and gets confused about which data should be valid. Instead we rely on the validation of the
+            // content in the viewport between the consumer and expected table. A full subscription's validator is
+            // attached by maybeAttachUpdateValidator() once the replicated table is complete.
 
             if (!deferSubscription) {
                 doSubscribe();
@@ -253,10 +278,27 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     viewport == null ? null : viewport.copy(), reverseViewport);
         }
 
+        /**
+         * Attaches the replicated table's {@link TableUpdateValidator}, but not before the server has acknowledged the
+         * full subscription. Until then the replicated table is incomplete: the server is still growing the client's
+         * viewport toward the entire table and publishes no updates for the rows it delivers, so a validator attached
+         * any earlier would be validating a table whose initial contents it was never given.
+         */
+        private void maybeAttachUpdateValidator() {
+            if (replicatedTUV != null || !fullSubscriptionSatisfied) {
+                return;
+            }
+            replicatedTUV = TableUpdateValidator.make(barrageTable);
+            replicatedTUVListener = new FailureListener("Replicated Table Update Validator");
+            replicatedTUV.getResultTable().addUpdateListener(replicatedTUVListener);
+        }
+
         public void validate(final String msg, QueryTable expected) {
             if (!subscribed) {
                 return; // no subscription implies no run implies no data -- so we're valid
             }
+
+            maybeAttachUpdateValidator();
 
             // We expect all messages from original table to have been propagated to the replicated table at this point.
 
@@ -338,6 +380,25 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 msg.close();
             }
             commandQueue.clear();
+        }
+
+        public int pendingMessageCount() {
+            return commandQueue.size();
+        }
+
+        /**
+         * Delivers at most {@code maxMessages} of the queued messages, leaving the rest for a later flush. Callers use
+         * this to spread a single server propagation across more than one consumer update graph cycle.
+         */
+        public void flushEventsToReplicatedTable(final int maxMessages) {
+            for (int ii = 0; ii < maxMessages; ++ii) {
+                final BarrageMessage msg = commandQueue.poll();
+                if (msg == null) {
+                    return;
+                }
+                barrageTable.handleBarrageMessage(msg);
+                msg.close();
+            }
         }
 
         public void setViewport(final RowSet newViewport) {
@@ -1842,6 +1903,64 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     }
 
     /**
+     * Regression test: a subscription whose initial snapshot carries <em>zero rows</em> (e.g. a freshly created,
+     * still-empty ticking table) must still emit an initial {@code isDelta=false} {@code DictionaryBatch} defining the
+     * nested dictionary's id <em>before</em> the first {@code RecordBatch} that references it. Strict Arrow consumers
+     * (such as the C++ client) fail or hang when the first RecordBatch references an undefined dictionary id, even with
+     * zero rows.
+     *
+     * <p>
+     * The Java reader is deliberately lenient here — {@code DictionaryChunkReader} skips dictionary resolution entirely
+     * for a zero-row batch — so a plain round-trip cannot detect the defect. Instead this test asserts the wire-level
+     * invariant directly, using the per-message {@link MessageHeader} types recorded by {@link DummyObserver}. Without
+     * the empty-batch dictionary-registration threading in
+     * {@code ChunkWriter.getEmptyInputStream(options, dictionaryRegistry)} (and its callers), the initial flush
+     * contains no DictionaryBatch at all and this test fails.
+     */
+    public void testReeDictionaryEncodedEmptyInitialSnapshot() {
+        final int steps = 10;
+        final int size = 100;
+        final Random random = new Random(2);
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo<?, ?>[2];
+        final QueryTable sourceTable = makeReeDictTable(0, random, columnInfo);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(null, allCols, "ree-dict-empty-initial");
+
+        // Deliver the initial snapshot; the table has no rows yet.
+        flushProducerTable();
+
+        final List<Byte> headerTypes = client.dummyObserver.observedHeaderTypes;
+        final int firstDictionaryBatch = headerTypes.indexOf(MessageHeader.DictionaryBatch);
+        final int firstRecordBatch = headerTypes.indexOf(MessageHeader.RecordBatch);
+        assertTrue("initial snapshot must contain a RecordBatch", firstRecordBatch >= 0);
+        assertTrue("initial snapshot of a dictionary-encoded subscription must emit a DictionaryBatch defining the "
+                + "dictionary id before the first RecordBatch that references it, even when the snapshot has zero "
+                + "rows; strict Arrow consumers (e.g. the C++ client) fail or hang otherwise. Observed header types: "
+                + headerTypes,
+                firstDictionaryBatch >= 0 && firstDictionaryBatch < firstRecordBatch);
+
+        // The (lenient) Java replica should also be a valid empty table at this point.
+        nugget.flushClientEvents();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("initial empty snapshot");
+
+        // Now grow the table from empty and confirm the stream stays healthy end-to-end.
+        for (int step = 0; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("step " + step);
+        }
+    }
+
+    /**
      * Builds a schema where {@code col1Name} and {@code col2Name} both carry {@link DictionaryEncoding} with the same
      * dictionary id (0). Two columns sharing a single id means a single {@code DictionaryBatch} per update covers both.
      */
@@ -2173,16 +2292,153 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    // ---- Growing full subscription tests ----
+
+    /**
+     * The server grows a large full subscription's initial snapshot over several rounds; every growth message
+     * re-declares the entire consistent key space as {@code added} while only {@code rowsIncluded} is incremental. A
+     * client that consumes those messages across more than one of its own update graph cycles must publish none of
+     * them: after the first cycle the table already contains the whole key space, so a second update would claim rows
+     * as added that are already present. That is an invalid update in general, and it trips the
+     * {@link Table#APPEND_ONLY_TABLE_ATTRIBUTE} invariant that
+     * {@link io.deephaven.engine.table.impl.BaseTable#notifyListeners} checks whether or not a listener is attached.
+     * <p>
+     * The source is then ticked so that the deltas following the growth are validated against the contents the
+     * replicated table was left holding.
+     */
+    public void testGrowingFullSubscriptionAppendOnly() {
+        // The server ships at most MIN_SNAPSHOT_CELL_COUNT cells per growth round, so a single-column table needs more
+        // rows than that for the subscription to be grown across multiple messages.
+        final int size = (int) (BarrageUtil.MIN_SNAPSHOT_CELL_COUNT * 3);
+        final int[] values = new int[size];
+        for (int ii = 0; ii < size; ++ii) {
+            values[ii] = ii;
+        }
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(size).toTracking(), TableTools.intCol("intCol", values));
+        sourceTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(null, allCols, "growing-append-only");
+
+        // let the server produce every growth message for the initial snapshot
+        flushProducerTable();
+        assertTrue("expected a growing snapshot, but the server sent " + client.pendingMessageCount() + " message(s)",
+                client.pendingMessageCount() > 1);
+
+        // deliver them one at a time, running an update graph cycle in between as a live client would
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        while (client.pendingMessageCount() > 0) {
+            client.flushEventsToReplicatedTable(1);
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        }
+
+        // a null server viewport is how the server acknowledges that the full subscription is satisfied
+        assertNull(client.barrageTable.getServerViewport());
+        nugget.validate("growing append-only full subscription");
+
+        // Tick the source now that the subscription is satisfied. The replicated table's update validator was attached
+        // by the validate() above, taking the grown contents as its initial state, so these deltas must line up with
+        // what the growth left behind.
+        for (int step = 0; step < 3; ++step) {
+            final int firstRow = size + step * 10;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final int[] newValues = new int[10];
+                for (int ii = 0; ii < newValues.length; ++ii) {
+                    newValues[ii] = firstRow + ii;
+                }
+                final RowSet added = RowSetFactory.fromRange(firstRow, firstRow + newValues.length - 1);
+                TstUtils.addToTable(sourceTable, added, TableTools.intCol("intCol", newValues));
+                sourceTable.notifyListeners(new TableUpdateImpl(added, RowSetFactory.empty(), RowSetFactory.empty(),
+                        RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+            });
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("post-growth step " + step);
+        }
+    }
+
+    /**
+     * An incomplete full subscription publishes no updates for the rows it is being given, so a listener attached
+     * before the server acknowledges the subscription would silently never hear about them. Attaching one must fail
+     * instead.
+     */
+    public void testListenToIncompleteFullSubscription() {
+        final int size = (int) (BarrageUtil.MIN_SNAPSHOT_CELL_COUNT * 3);
+        final int[] values = new int[size];
+        for (int ii = 0; ii < size; ++ii) {
+            values[ii] = ii;
+        }
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(size).toTracking(), TableTools.intCol("intCol", values));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(null, allCols, "incomplete-listen");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // Deliver only the first of the growth messages, leaving the subscription unsatisfied.
+        flushProducerTable();
+        assertTrue(client.pendingMessageCount() > 1);
+        client.flushEventsToReplicatedTable(1);
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        assertNotNull(client.barrageTable.getServerViewport());
+
+        try {
+            client.barrageTable.addUpdateListener(new FailureListener("Listener on incomplete table"));
+            TestCase.fail("expected an IllegalStateException listening to an incomplete table");
+        } catch (final IllegalStateException expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("incomplete table"));
+        }
+
+        // Once the subscription is satisfied the table may be listened to as usual.
+        while (client.pendingMessageCount() > 0) {
+            client.flushEventsToReplicatedTable(1);
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        }
+        assertNull(client.barrageTable.getServerViewport());
+        nugget.validate("satisfied full subscription");
+    }
+
     public static class DummyObserver implements StreamObserver<BarrageMessageWriter.MessageView> {
         volatile boolean completed = false;
         volatile Throwable failure = null;
 
         private final BarrageDataMarshaller marshaller;
         private final Queue<BarrageMessage> receivedCommands;
+        /**
+         * The Arrow {@link MessageHeader} type of every wire message received, in arrival order (e.g.
+         * {@link MessageHeader#DictionaryBatch}, {@link MessageHeader#RecordBatch}). Lets tests assert wire-level
+         * message-ordering invariants that a lenient reader would otherwise paper over.
+         */
+        final List<Byte> observedHeaderTypes = new ArrayList<>();
 
         DummyObserver(final BarrageDataMarshaller marshaller, final Queue<BarrageMessage> receivedCommands) {
             this.marshaller = marshaller;
             this.receivedCommands = receivedCommands;
+        }
+
+        /**
+         * Extracts the flatbuffer {@link MessageHeader} type from one FlightData-framed wire message, mirroring the
+         * header parsing in {@link BarrageMessageReaderImpl}.
+         */
+        private static byte peekHeaderType(final byte[] buf, final int len) throws IOException {
+            final CodedInputStream decoder = CodedInputStream.newInstance(buf, 0, len);
+            for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
+                if (tag == BarrageProtoUtil.DATA_HEADER_TAG) {
+                    final int size = decoder.readRawVarint32();
+                    return Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size))).headerType();
+                }
+                decoder.skipField(tag);
+            }
+            return MessageHeader.NONE;
         }
 
         @Override
@@ -2192,6 +2448,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                     try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
                         inputStream.drainTo(baos);
                         inputStream.close();
+                        observedHeaderTypes.add(peekHeaderType(baos.peekBuffer(), baos.size()));
                         final BarrageMessage message =
                                 marshaller.parse(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                         // we skip schema messages, but can't suppress without propagating something...

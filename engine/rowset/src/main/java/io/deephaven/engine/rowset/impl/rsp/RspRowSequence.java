@@ -141,6 +141,16 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
 
     @Override
     public RowSequence getRowSequenceByPosition(long startPositionInclusive, long length) {
+        if (length <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        if (startPositionInclusive < 0) {
+            length += startPositionInclusive;
+            startPositionInclusive = 0;
+            if (length <= 0) {
+                return RowSequenceFactory.EMPTY;
+            }
+        }
         final long absoluteStart = startPositionInclusive + absoluteStartPos();
         if (absoluteStart > absoluteEndPos()) {
             return RowSequenceFactory.EMPTY;
@@ -495,7 +505,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
             }
             final int savedStartIdx = currStartIdx;
             final long savedStartOffset = currStartOffset;
-            final boolean found = arr.findOrNext(currStartIdx, rsEndIdx + 1, toKey,
+            final boolean found = arr.findOrNext(currStartIdx, rsEndIdx + 1, Math.max(toKey, 0),
                     (final int index, final long offset) -> {
                         currStartIdx = index;
                         currStartOffset = offset;

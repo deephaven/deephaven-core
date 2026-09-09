@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.tuple.generated.CharLongLongTuple;
 import io.deephaven.tuple.generated.CharLongTuple;
 import io.deephaven.engine.table.impl.sort.findruns.CharFindRunsKernel;
@@ -32,13 +33,13 @@ import java.util.stream.Collectors;
 public abstract class BaseTestCharTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
     public static Comparator<CharLongTuple> getJavaComparator() {
-        return Comparator.comparing(CharLongTuple::getFirstElement);
+        return Comparator.comparing(CharLongTuple::getFirstElement, CharComparisons::compare);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
     public static Comparator<CharLongLongTuple> getJavaMultiComparator() {
-        return Comparator.comparing(CharLongLongTuple::getFirstElement).thenComparing(CharLongLongTuple::getSecondElement);
+        return Comparator.comparing(CharLongLongTuple::getFirstElement, CharComparisons::compare).thenComparing(CharLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
@@ -178,7 +179,7 @@ public abstract class BaseTestCharTimSortKernel extends TestTimSortKernel {
 
         public void run() {
             // region mergesort
-            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Character.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
+            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> CharComparisons.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
         }
     }
@@ -512,7 +513,7 @@ public abstract class BaseTestCharTimSortKernel extends TestTimSortKernel {
 
     // region comparison functions
     private static int doComparison(char lhs, char rhs) {
-        return Character.compare(lhs, rhs);
+        return CharComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

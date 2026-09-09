@@ -483,7 +483,7 @@ public interface OrderedLongSet {
 
         void appendRange(long firstKey, long lastKey);
 
-        default void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
+        default void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix) {
             ix.ixForEachLongRange((final long start, final long last) -> {
                 appendRange(start + shiftAmount, last + shiftAmount);
                 return true;

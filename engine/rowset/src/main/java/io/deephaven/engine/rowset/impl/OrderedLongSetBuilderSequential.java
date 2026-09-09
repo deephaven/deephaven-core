@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
@@ -27,18 +28,22 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
 
     @Override
     public OrderedLongSet getOrderedLongSet() {
+        checkAndMarkBuilt();
         if (pendingStart != -1) {
             if (pendingSr == null && pendingContainerKey == -1 && rb == null) {
                 final SingleRange r = SingleRange.make(pendingStart, pendingEnd);
                 rowSetCounts.sampleSingleRange(r);
+                pendingStart = -1;
                 return r;
             }
             flushPendingRange();
         }
         if (pendingSr != null) {
-            pendingSr = pendingSr.tryCompactUnsafe(4);
-            rowSetCounts.sampleSortedRanges(pendingSr);
-            return pendingSr;
+            // The result belongs to the caller, so we give up our reference to it.
+            final SortedRanges ans = pendingSr.tryCompactUnsafe(4);
+            pendingSr = null;
+            rowSetCounts.sampleSortedRanges(ans);
+            return ans;
         }
         if (pendingContainerKey != -1) {
             flushPendingContainer();
@@ -57,6 +62,7 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
 
     @TestUseOnly
     public RspBitmap getRspBitmap() {
+        checkAndMarkBuilt();
         if (pendingStart != -1) {
             flushPendingRange();
         }
@@ -77,7 +83,7 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
     }
 
     @Override
-    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix, final boolean acquire) {
+    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix) {
         if (ix.ixIsEmpty()) {
             return;
         }
@@ -97,11 +103,11 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
         if (pendingContainerKey != -1) {
             flushPendingContainer();
         }
-        if (rb.isEmpty()) {
-            rb.ixInsert(ix);
-            return;
-        }
-        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix, acquire);
+        // Every path that creates rb appends to it immediately, so rb is never empty here. That matters
+        // because appendShiftedUnsafeNoWriteCheck reads rb's last span (lastValue(), spanInfos[size - 1]),
+        // which is not valid on an empty bitmap.
+        Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
+        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix);
     }
 
     @Override

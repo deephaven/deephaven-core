@@ -2157,10 +2157,9 @@ public final class RunContainer extends Container {
         int k = 0;
         for (; (k < nbrruns) && (getValueAsInt(k) < rangeStart); ++k) {
             ans.valueslength[2 * k] = valueslength[2 * k];
-            final short len = valueslength[2 * k + 1];
-            ans.valueslength[2 * k + 1] = len;
+            ans.valueslength[2 * k + 1] = valueslength[2 * k + 1];
             ++ans.nbrruns;
-            ans.cardinality += len + 1;
+            ans.cardinality += getLengthAsInt(k) + 1;
         }
         ans.smartAppendForXor((short) rangeStart, (short) (rangeEnd - rangeStart - 1));
         for (; k < nbrruns; ++k) {
@@ -3034,6 +3033,11 @@ public final class RunContainer extends Container {
 
     @Override
     public int nextValue(final short fromValue) {
+        if (nbrruns == 0) {
+            // Nothing at or above the bound. Without this the search below lands before the first run and we would
+            // ask for a first value that does not exist.
+            return -1;
+        }
         int index = unsignedInterleavedBinarySearch(valueslength, 0, nbrruns, fromValue);
         int effectiveIndex = index >= 0 ? index : -index - 2;
         if (effectiveIndex == -1) {

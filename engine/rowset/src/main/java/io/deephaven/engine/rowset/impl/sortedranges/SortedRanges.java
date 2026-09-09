@@ -16,9 +16,7 @@ import io.deephaven.util.metrics.IntCounterMetric;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
-import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
@@ -84,9 +82,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     protected static final boolean POOL_ARRAYS = Configuration.getInstance().getBooleanForClassWithDefault(
             SortedRanges.class, "poolArrays", false);
-
-    public static final boolean USE_RANGES_ARRAY = Configuration.getInstance().getBooleanForClassWithDefault(
-            SortedRanges.class, "useRangesArray", true);
 
     // Example:
     // Sizing of a short array object in a 64 bit JVM (Hotspot) uses
@@ -918,7 +913,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
             final long packedValue = sar.pack(v);
             if (packedValue < 0) {
+                // Below every key we hold: exhausted, which hasNext() reads from nextRangeIdx as well as the range.
                 rangeCurr = rangeStart = sar.unpackedGet(0);
+                nextRangeIdx = -1;
                 close();
                 return false;
             }
@@ -995,6 +992,13 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         long iPrevData = iData;
         do {
             final long targetPos = inputPositions.nextLong();
+            if (targetPos < 0 || targetPos >= cardinality) {
+                // No key at that position, which is what the other implementations answer as well. Walking on would
+                // run past the ranges we hold and read the array's unused tail, where the entries of a range that was
+                // removed are still sitting.
+                outputKeys.accept(RowSequence.NULL_ROW_KEY);
+                continue;
+            }
             while (iPos < targetPos) {
                 ++i;
                 iData = packedGet(i);
@@ -1032,7 +1036,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             ans.cardinality = 1;
             ans.count = 1;
             if (DEBUG)
-                validate(startPosIn, endPosIn);
+                ans.validate(startPosIn, endPosIn);
             return ans;
         }
         long pos = 0;
@@ -1060,7 +1064,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 ans.cardinality = 1;
                 ans.count = 1;
                 if (DEBUG)
-                    validate(startPosIn, endPosIn);
+                    ans.validate(startPosIn, endPosIn);
                 return ans;
             }
             // we know endPos > startPos, so there is more than a single value,
@@ -1073,7 +1077,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             ans.cardinality = e - s + 1;
             ans.count = 2;
             if (DEBUG)
-                validate(startPosIn, endPosIn);
+                ans.validate(startPosIn, endPosIn);
             return ans;
         }
 
@@ -1120,12 +1124,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             ans.cardinality += deltaCard;
         }
         if (DEBUG)
-            validate(startPosIn, endPosIn);
+            ans.validate(startPosIn, endPosIn);
         return ans;
     }
 
     public final SortedRanges subRangesByKey(final long start, final long end) {
-        if (isEmpty() || end < first() || last() < start) {
+        if (end < start || isEmpty() || end < first() || last() < start) {
             return null;
         }
         final long packedStart = Math.max(pack(start), 0);
@@ -1166,29 +1170,44 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return iStart;
     }
 
+    /**
+     * Whether any of our ranges overlaps any range remaining in {@code rangeIter}.
+     * <p>
+     * <b>Takes ownership of {@code rangeIter} and closes it</b>, as {@link #subsetOf(RowSet.RangeIterator)} does. The
+     * answer is usually reached with ranges still unread, and an iterator over a reference-counted rowset holds a
+     * reference on it until closed; leaving it open marks that rowset shared for good, so every later mutation of it
+     * copies first.
+     *
+     * @param rangeIter The ranges to test against, consumed and closed by this call
+     * @return true if some range of ours overlaps some range of {@code rangeIter}
+     */
     public final boolean overlaps(final RowSet.RangeIterator rangeIter) {
-        if (isEmpty()) {
-            return false;
-        }
-        if (!rangeIter.advance(first())) {
-            return false;
-        }
-        int i = 0;
-        final long last = last();
-        while (true) {
-            final long start = rangeIter.currentRangeStart();
-            if (last < start) {
+        try {
+            if (isEmpty()) {
                 return false;
             }
-            final long end = rangeIter.currentRangeEnd();
-            i = overlapsRangeInternal(i, pack(start), pack(end));
-            if (i < 0) {
-                return true;
-            }
-            if (!rangeIter.hasNext()) {
+            if (!rangeIter.advance(first())) {
                 return false;
             }
-            rangeIter.next();
+            int i = 0;
+            final long last = last();
+            while (true) {
+                final long start = rangeIter.currentRangeStart();
+                if (last < start) {
+                    return false;
+                }
+                final long end = rangeIter.currentRangeEnd();
+                i = overlapsRangeInternal(i, pack(start), pack(end));
+                if (i < 0) {
+                    return true;
+                }
+                if (!rangeIter.hasNext()) {
+                    return false;
+                }
+                rangeIter.next();
+            }
+        } finally {
+            rangeIter.close();
         }
     }
 
@@ -1228,16 +1247,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     // Guarantee for the caller: if this method returns null, no state change has been made on the this object.
-    private SortedRanges unpackedAppend(final long unpackedData, final boolean writeCheck) {
-        SortedRanges ans = ensureCanAppend(count, unpackedData, writeCheck);
-        if (ans == null) {
-            return null;
-        }
-        ans.unpackedSet(ans.count++, unpackedData);
-        return ans;
-    }
-
-    // Guarantee for the caller: if this method returns null, no state change has been made on the this object.
     private SortedRanges packedAppend2(
             final long packedData1, final long packedData2, final long unpackedData1, final long unpackedData2,
             final boolean writeCheck) {
@@ -1253,108 +1262,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             ans.unpackedSet(ans.count++, unpackedData2);
         }
         return ans;
-    }
-
-    // required on entry: out.canWrite().
-    // sar.first() <= start && end <= sar.last()
-    // returns null if we exceed maxCapacity in the process of building the answer
-    // (which can happen if you have, say, a big single range and retain a gazillion individual elements).
-    // Writes to iStartOut an array position index into sar where to continue the intersection for ranges after
-    // the one provided.
-    private static SortedRanges intersectRangeImplStep(
-            SortedRanges out,
-            final SortedRanges sar,
-            final int iStart, final long start, final long end, final MutableInt iStartOut) {
-        if (!out.fits(start, end)) {
-            return null;
-        }
-        final long packedStart = sar.pack(start);
-        int srcIndex = sar.absRawBinarySearch(packedStart, iStart, sar.count - 1);
-        long srcData = sar.packedGet(srcIndex);
-        boolean srcNeg = srcData < 0;
-        final long packedEnd = sar.pack(end);
-        if (srcNeg) {
-            final long srcValue = -srcData;
-            if (srcValue == packedStart) {
-                out = out.unpackedAppend(start, false);
-                if (out == null) {
-                    return null;
-                }
-                ++out.cardinality;
-                if (packedEnd == packedStart) {
-                    iStartOut.set(srcIndex + 1);
-                    if (DEBUG)
-                        out.validate(start, end);
-                    return out;
-                }
-            } else {
-                // packedStart < srcValue
-                out = out.unpackedAppend(start, false);
-                if (out == null) {
-                    return null;
-                }
-                if (packedEnd <= srcValue) {
-                    if (packedStart == packedEnd) {
-                        out.cardinality += 1;
-                    } else {
-                        out = out.unpackedAppend(-end, false);
-                        if (out == null) {
-                            return null;
-                        }
-                        out.cardinality += packedEnd - packedStart + 1;
-                    }
-                    iStartOut.set((packedEnd < srcValue) ? srcIndex : srcIndex + 1);
-                    if (DEBUG)
-                        out.validate(start, end);
-                    return out;
-                }
-                out = out.unpackedAppend(sar.unpack(srcData), false);
-                if (out == null) {
-                    return null;
-                }
-                out.cardinality += srcValue - packedStart + 1;
-            }
-            ++srcIndex;
-            // srcIndex < count at this point, since we know
-            // srcValue < packedEnd and packedEnd was clamped
-            // to within our array's range.
-            srcData = sar.packedGet(srcIndex);
-            srcNeg = false;
-        }
-        long srcValue = srcData;
-        long prevStart = srcData;
-        boolean pastEnd = false;
-        while (srcValue <= packedEnd) {
-            out = out.unpackedAppend(sar.unpack(srcData), false);
-            if (out == null) {
-                return null;
-            }
-            if (srcNeg) {
-                out.cardinality += srcValue - prevStart;
-            } else {
-                ++out.cardinality;
-                prevStart = srcData;
-            }
-            ++srcIndex;
-            if (srcIndex == sar.count) {
-                pastEnd = true;
-                break;
-            }
-            srcData = sar.packedGet(srcIndex);
-            srcNeg = srcData < 0;
-            srcValue = srcNeg ? -srcData : srcData;
-        }
-        if (!pastEnd && srcNeg && prevStart < packedEnd) {
-            out = out.unpackedAppend(-end, false);
-            if (out == null) {
-                return null;
-            }
-            out.cardinality += packedEnd - prevStart;
-        }
-        iStartOut.set(srcIndex);
-        if (DEBUG)
-            out.validate(start, end);
-        return out;
     }
 
     private static ThreadLocal<SortedRangesLong> workSortedRangesLongPerThread =
@@ -1513,6 +1420,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 RowSet.RangeIterator it2 = takeComplement
                         ? new ComplementRangeIterator(tix.ixRangeIterator())
                         : tix.ixRangeIterator()) {
+            if (!it2.hasNext()) {
+                // Possible when takeComplement is true and tix covers the full key space: the complement,
+                // and therefore the intersection, is empty.
+                return res;
+            }
             it1.next();
             it2.next();
             long s1 = it1.currentRangeStart();
@@ -1634,7 +1546,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             long s2 = it2.currentRangeStart();
             long e2 = it2.currentRangeEnd();
             while (true) {
-                if (e1 + 1 < s2) {
+                // Nothing lies past a range ending at Long.MAX_VALUE, so looking one key beyond it -- which wraps to a
+                // negative key -- must not be read as a gap before the other range.
+                if (e1 != Long.MAX_VALUE && e1 + 1 < s2) {
                     if (!res.trySimpleAppend(s1, e1)) {
                         return null;
                     }
@@ -1649,7 +1563,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     e1 = it1.currentRangeEnd();
                     continue;
                 }
-                if (e2 + 1 < s1) {
+                if (e2 != Long.MAX_VALUE && e2 + 1 < s1) {
                     if (!res.trySimpleAppend(s2, e2)) {
                         return null;
                     }
@@ -1667,6 +1581,16 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 // The ranges are adjacent or overlap.
                 final long min = Math.min(s1, s2);
                 final long max = Math.max(e1, e2);
+                if (max == Long.MAX_VALUE) {
+                    // The merged range reaches the top of the key space, so there is nowhere to advance to. Whatever
+                    // either iterator still holds unread lies inside [min, MAX], so we are done: breaking here instead
+                    // would reach the leftover drains below, which would append those covered ranges after a range
+                    // ending at MAX and leave the result out of order with an overflowed cardinality.
+                    if (!res.trySimpleAppend(min, max)) {
+                        return null;
+                    }
+                    return res;
+                }
                 final boolean it1Valid = it1.advance(max + 1);
                 final boolean it2Valid = it2.advance(max + 1);
                 if (it1Valid) {
@@ -1740,72 +1664,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     final OrderedLongSet retain(final OrderedLongSet tix) {
-        if (!USE_RANGES_ARRAY) {
-            final MutableObject<SortedRanges> sarOut = new MutableObject<>(this);
-            final boolean valid = retainLegacy(sarOut, tix);
-            if (!valid) {
-                return sarOut.getValue().toRsp().ixRetain(tix);
-            }
-            final SortedRanges sr = sarOut.getValue();
-            if (sr.isEmpty()) {
-                return OrderedLongSet.EMPTY;
-            }
-            return sr;
-        }
         final SortedRangesLong sr = intersect(this, tix);
         if (sr == null) {
             return toRsp().ixRetain(tix);
         }
         return makeOrderedLongSetFromLongRangesArray(sr.data, sr.count, sr.cardinality, this);
-    }
-
-    private static boolean retainLegacy(final MutableObject<SortedRanges> sarOut, final OrderedLongSet tix) {
-        try (RowSet.RangeIterator rangeIter = tix.ixRangeIterator()) {
-            SortedRanges sar = sarOut.getValue();
-            final long first = sar.first();
-            final boolean valid = rangeIter.advance(first);
-            if (!valid) {
-                throw new IllegalStateException();
-            }
-            final long rstartFirst = rangeIter.currentRangeStart();
-            if (rstartFirst > 0) {
-                final SortedRanges ans = sar.removeRange(0, rstartFirst - 1);
-                if (ans == null) {
-                    return false;
-                }
-                sar = ans;
-                if (sar.isEmpty()) {
-                    sarOut.setValue(sar);
-                    return true;
-                }
-            }
-            long previousRangeEnd = rangeIter.currentRangeEnd();
-            final long last = sar.last();
-            while (rangeIter.hasNext()) {
-                rangeIter.next();
-                final long rstart = rangeIter.currentRangeStart();
-                if (last < rstart) {
-                    break;
-                }
-                final SortedRanges ans = sar.removeRange(previousRangeEnd + 1, rstart - 1);
-                if (ans == null) {
-                    sarOut.setValue(sar);
-                    return false;
-                }
-                sar = ans;
-                previousRangeEnd = rangeIter.currentRangeEnd();
-            }
-            if (previousRangeEnd < last) {
-                final SortedRanges ans = sar.removeRange(previousRangeEnd + 1, last);
-                if (ans == null) {
-                    sarOut.setValue(sar);
-                    return false;
-                }
-                sar = ans;
-            }
-            sarOut.setValue(sar);
-            return true;
-        }
     }
 
     // This call assumes the basic overlapping checks that
@@ -1824,6 +1687,17 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return count;
     }
 
+    /**
+     * Whether every key of ours is also covered by the ranges remaining in {@code ritOther}.
+     * <p>
+     * <b>Takes ownership of {@code ritOther} and closes it</b>, as {@link #overlaps(RowSet.RangeIterator)} does. The
+     * answer is usually reached with ranges still unread, and an iterator over a reference-counted rowset holds a
+     * reference on it until closed; leaving it open marks that rowset shared for good, so every later mutation of it
+     * copies first.
+     *
+     * @param ritOther The ranges we must be covered by, consumed and closed by this call
+     * @return true if every key of ours lies in some range of {@code ritOther}
+     */
     public final boolean subsetOf(final RowSet.RangeIterator ritOther) {
         try (final RowSet.RangeIterator rit = getRangeIterator()) {
             while (rit.hasNext()) {
@@ -1847,9 +1721,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     final OrderedLongSet minusOnNew(final OrderedLongSet other) {
-        if (!USE_RANGES_ARRAY) {
-            return minusOnNewLegacy(other.ixRangeIterator());
-        }
         final SortedRangesLong sr = intersect(this, other, true);
         if (sr == null) {
             return null;
@@ -1857,126 +1728,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return makeOrderedLongSetFromLongRangesArray(sr.data, sr.count, sr.cardinality, null);
     }
 
-    private SortedRanges minusOnNewLegacy(final RowSet.RangeIterator ritOther) {
-        SortedRanges ans = makeMyTypeAndOffset(2);
-        int i = 0;
-        long iData = unpackedGet(0);
-        boolean ritValid = ritOther.advance(iData);
-        long rStart, rEnd;
-        if (ritValid) {
-            rStart = ritOther.currentRangeStart();
-            rEnd = ritOther.currentRangeEnd();
-        } else {
-            rStart = rEnd = -1;
-        }
-        boolean iNeg = false;
-        long pendingStart = -1;
-        while (true) {
-            if (iNeg) {
-                final long iValue = -iData;
-                if (rStart != -1) {
-                    if (iValue < rStart) {
-                        ans = appendRangeUnpacked(ans, pendingStart, iValue, false);
-                        if (ans == null) {
-                            return null;
-                        }
-                    } else {
-                        if (pendingStart < rStart) {
-                            ans = appendRangeUnpacked(ans, pendingStart, rStart - 1, false);
-                            if (ans == null) {
-                                return null;
-                            }
-                        }
-                        if (rEnd < iValue) {
-                            pendingStart = Math.max(rEnd + 1, pendingStart);
-                            if (!ritOther.hasNext()) {
-                                ans = appendRangeUnpacked(ans, pendingStart, iValue, false);
-                                if (ans == null) {
-                                    return null;
-                                }
-                                rStart = -1;
-                            } else {
-                                ritValid = ritOther.advance(pendingStart);
-                                if (!ritValid) {
-                                    rStart = -1;
-                                } else {
-                                    rStart = ritOther.currentRangeStart();
-                                    rEnd = ritOther.currentRangeEnd();
-                                    if (!ans.fits(rStart, rEnd)) {
-                                        return null;
-                                    }
-                                }
-                                continue;
-                            }
-                        }
-                    }
-                } else {
-                    ans = appendRangeUnpacked(ans, pendingStart, iValue, false);
-                    if (ans == null) {
-                        return null;
-                    }
-                }
-                pendingStart = -1;
-            } else {
-                if (rStart != -1) {
-                    if (pendingStart != -1) {
-                        if (pendingStart < rStart) {
-                            ans = appendUnpacked(ans, pendingStart, false);
-                            if (ans == null) {
-                                return null;
-                            }
-                        } else if (pendingStart > rEnd) {
-                            if (!ritOther.hasNext()) {
-                                ans = appendUnpacked(ans, pendingStart, false);
-                                if (ans == null) {
-                                    return null;
-                                }
-                                rStart = -1;
-                            } else {
-                                ritOther.next();
-                                rStart = ritOther.currentRangeStart();
-                                rEnd = ritOther.currentRangeEnd();
-                                if (!ans.fits(rStart, rEnd)) {
-                                    return null;
-                                }
-                                continue;
-                            }
-                        }
-                    }
-                } else {
-                    if (pendingStart != -1) {
-                        ans = appendUnpacked(ans, pendingStart, false);
-                        if (ans == null) {
-                            return null;
-                        }
-                    }
-                }
-                pendingStart = iData;
-            }
-            ++i;
-            if (i == count) {
-                if (pendingStart != -1) {
-                    boolean append = rStart == -1 || pendingStart < rStart;
-                    if (!append && pendingStart > rEnd) {
-                        ritValid = ritOther.advance(pendingStart);
-                        append = !ritValid || ritOther.currentRangeStart() != pendingStart;
-                    }
-                    if (append) {
-                        ans = appendUnpacked(ans, pendingStart, false);
-                    }
-                }
-                return ans;
-            }
-            iData = unpackedGet(i);
-            iNeg = iData < 0;
-        }
-    }
-
     // !sar.isEmpty() && !otherSar.isEmpty() true on entry.
     public static OrderedLongSet unionOnNew(final SortedRanges sar, final SortedRanges otherSar) {
-        if (!USE_RANGES_ARRAY) {
-            return unionOnNewLegacy(sar, otherSar);
-        }
         final SortedRangesLong sr = SortedRanges.union(sar, otherSar);
         if (sr == null) {
             return null;
@@ -1984,111 +1737,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return makeOrderedLongSetFromLongRangesArray(sr.data, sr.count, sr.cardinality, null);
     }
 
-    public static SortedRanges unionOnNewLegacy(final SortedRanges sar, final SortedRanges otherSar) {
-        final long unionFirst = Math.min(sar.first(), otherSar.first());
-        final long unionLast = Math.max(sar.last(), otherSar.last());
-        final int count = sar.count();
-        final int otherCount = otherSar.count();
-        final SortedRanges out = SortedRanges.tryMakeForKnownRangeFinalCapacityLowerBound(
-                Math.max(count, otherCount),
-                count + otherCount,
-                unionFirst,
-                unionLast,
-                sar.isDense() && otherSar.isDense());
-        if (out != null) {
-            try (final RowSet.RangeIterator sarIter = sar.getRangeIterator();
-                    final RowSet.RangeIterator otherIter = otherSar.getRangeIterator()) {
-                SortedRanges.unionOnNewHelper(out, sarIter, otherIter);
-            }
-        }
-        return out;
-    }
-
-    // {riter1, riter2}.hasNext() true on entry.
-    private static void unionOnNewHelper(SortedRanges out, final RowSet.RangeIterator riter1,
-            final RowSet.RangeIterator riter2) {
-        riter1.next();
-        long start1 = riter1.currentRangeStart();
-        long end1 = riter1.currentRangeEnd();
-        riter2.next();
-        long start2 = riter2.currentRangeStart();
-        long end2 = riter2.currentRangeEnd();
-        while (true) {
-            if (end1 < start2) {
-                out = out.appendRange(start1, end1);
-                if (riter1.hasNext()) {
-                    riter1.next();
-                    start1 = riter1.currentRangeStart();
-                    end1 = riter1.currentRangeEnd();
-                    continue;
-                }
-                out.appendRange(start2, end2);
-                break;
-            }
-            if (end2 < start1) {
-                out = out.appendRange(start2, end2);
-                if (riter2.hasNext()) {
-                    riter2.next();
-                    start2 = riter2.currentRangeStart();
-                    end2 = riter2.currentRangeEnd();
-                    continue;
-                }
-                out.appendRange(start1, end1);
-                break;
-            }
-            // ranges overlap.
-            if (end1 < end2) {
-                out = out.appendRange(Math.min(start1, start2), end2);
-                final boolean valid1 = riter1.advance(end2 + 1);
-                if (!riter2.hasNext()) {
-                    if (valid1) {
-                        out = out.appendRange(riter1.currentRangeStart(), riter1.currentRangeEnd());
-                    }
-                    break;
-                }
-                if (!valid1) {
-                    break;
-                }
-                riter2.next();
-            } else {
-                out = out.appendRange(Math.min(start1, start2), end1);
-                final boolean valid2 = riter2.advance(end1 + 1);
-                if (!riter1.hasNext()) {
-                    if (valid2) {
-                        out = out.appendRange(riter2.currentRangeStart(), riter2.currentRangeEnd());
-                    }
-                    break;
-                }
-                if (!valid2) {
-                    break;
-                }
-                riter1.next();
-            }
-            start1 = riter1.currentRangeStart();
-            end1 = riter1.currentRangeEnd();
-            start2 = riter2.currentRangeStart();
-            end2 = riter2.currentRangeEnd();
-        }
-        while (riter1.hasNext()) {
-            riter1.next();
-            final long start = riter1.currentRangeStart();
-            final long end = riter1.currentRangeEnd();
-            out = out.appendRange(start, end);
-        }
-        while (riter2.hasNext()) {
-            riter2.next();
-            final long start = riter2.currentRangeStart();
-            final long end = riter2.currentRangeEnd();
-            out = out.appendRange(start, end);
-        }
-    }
-
     public final OrderedLongSet insertImpl(final SortedRanges other) {
         return insertImpl(other, true);
     }
 
-    // Returns null if the append operation can't fit on a SortedRanges object.
-    // Assumes that this.empty() == false and other.empty() == false, which should be checked by the caller.
     public final SortedRanges mergeAppend(final SortedRanges other, final boolean writeCheck) {
         // there are two cases, depending on whether we need to merge our last range with
         // other's first range.
@@ -2167,12 +1819,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             if (sr != null) {
                 return sr;
             }
-        } else if (!USE_RANGES_ARRAY) {
-            final MutableObject<SortedRanges> holder = new MutableObject<>(this);
-            boolean valid = insertInternal(holder, other, writeCheck);
-            if (valid) {
-                return holder.getValue();
-            }
         } else {
             final SortedRangesLong sr = union(this, other);
             if (sr != null) {
@@ -2184,137 +1830,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         rb.insertOrderedLongSetUnsafeNoWriteCheck(other);
         rb.finishMutations();
         return rb;
-    }
-
-    // Assumption: none of the provided SortedRanges are empty.
-    // We can't offer a guarantee of returning false means we didn't modify out;
-    // we /can/ offer the guarantee that, under a false return, the partial result
-    // left in sarHolder can be used to repeat the operation (presumably on a different OrderedLongSet type)
-    // to produce the correct result.
-    private static boolean insertInternal(final MutableObject<SortedRanges> sarHolder, final SortedRanges other,
-            final boolean writeCheckArg) {
-        int iOther = 0;
-        long pendingStart = -1;
-        SortedRanges sar = sarHolder.getValue();
-        final long otherLast = other.last();
-        if (!sar.fits(other.first(), otherLast)) {
-            return false;
-        }
-        final MutableInt iAdd = new MutableInt(0);
-        boolean writeCheck = writeCheckArg;
-        while (iOther < other.count) {
-            final long iData = other.unpackedGet(iOther);
-            final boolean iNeg = iData < 0;
-            if (iNeg) {
-                final long startPacked = sar.pack(pendingStart);
-                final long endPacked = sar.pack(-iData);
-                final long deltaCard = endPacked - startPacked + 1;
-                iAdd.set(sar.absRawBinarySearch(startPacked, iAdd.get(), sar.count - 1));
-                final SortedRanges ans = addRangePackedWithStart(
-                        sar, iAdd.get(), startPacked, endPacked, pendingStart, -iData, deltaCard, iAdd,
-                        writeCheck);
-                if (ans == null) {
-                    sarHolder.setValue(sar);
-                    return false;
-                }
-                if (sar != ans) {
-                    if (!ans.fits(otherLast)) {
-                        sarHolder.setValue(sar);
-                        return false;
-                    }
-                    sar = ans;
-                    writeCheck = false;
-                }
-                pendingStart = -1;
-            } else {
-                if (pendingStart != -1) {
-                    final long pendingStartPacked = sar.pack(pendingStart);
-                    iAdd.set(sar.absRawBinarySearch(pendingStartPacked, iAdd.get(), sar.count - 1));
-                    final SortedRanges ans = addPackedWithStart(
-                            sar, iAdd.get(), pendingStartPacked, pendingStart, iAdd, writeCheck);
-                    if (ans == null) {
-                        sarHolder.setValue(sar);
-                        return false;
-                    }
-                    if (sar != ans) {
-                        if (!ans.fits(otherLast)) {
-                            sarHolder.setValue(sar);
-                            return false;
-                        }
-                        sar = ans;
-                        writeCheck = false;
-                    }
-                }
-                pendingStart = iData;
-            }
-            ++iOther;
-        }
-        if (pendingStart != -1) {
-            final long pendingStartPacked = sar.pack(pendingStart);
-            final int iStart = sar.absRawBinarySearch(pendingStartPacked, iAdd.get(), sar.count - 1);
-            final SortedRanges ans = addPackedWithStart(
-                    sar, iStart, pendingStartPacked, pendingStart, null, writeCheck);
-            if (ans == null) {
-                sarHolder.setValue(sar);
-                return false;
-            }
-            sar = ans;
-        }
-        sarHolder.setValue(sar);
-        if (DEBUG)
-            sar.validate();
-        return true;
-    }
-
-    // We can't offer a guarantee of returning null means we didn't modify sar;
-    // we /can/ offer the guarantee that, under a false return, the partial result
-    // left in sarOut can be used to repeat the operation (presumably on a different OrderedLongSet type)
-    // to produce the correct result.
-    // !isEmpty() && rit.hasNext() true on entry.
-    static boolean removeLegacy(final MutableObject<SortedRanges> sarOut, final RowSet.RangeIterator rit) {
-        try {
-            final MutableInt iRm = new MutableInt(0);
-            SortedRanges sar = sarOut.getValue();
-            final long first = sar.first();
-            final boolean valid = rit.advance(first);
-            if (!valid) {
-                return true;
-            }
-            final long last = sar.last();
-            boolean writeCheck = true;
-            while (true) {
-                final long start = rit.currentRangeStart();
-                if (start > last) {
-                    break;
-                }
-                long end = Math.min(rit.currentRangeEnd(), last);
-                if (end > last) {
-                    end = last;
-                }
-                final long packedStart = sar.pack(start);
-                final long packedEnd = sar.pack(end);
-                int i = iRm.get();
-                i = sar.absRawBinarySearch(packedStart, i, sar.count - 1);
-                final SortedRanges ans = removeRangePackedWithStart(
-                        sar, i, packedStart, packedEnd, start, end, iRm, writeCheck);
-                if (ans == null) {
-                    sarOut.setValue(sar);
-                    return false;
-                }
-                if (ans != sar) {
-                    sar = ans;
-                    writeCheck = false;
-                }
-                if (!rit.hasNext()) {
-                    break;
-                }
-                rit.next();
-            }
-            sarOut.setValue(sar);
-            return true;
-        } finally {
-            rit.close();
-        }
     }
 
     // !isEmpty() on entry.
@@ -2380,7 +1895,20 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    // !isEmpty() && rit.hasNext() true on entry.
+    /**
+     * Append to {@code builder} the positions of the keys remaining in {@code rit}, stopping at {@code maxPosition}.
+     * <p>
+     * Unlike {@link #overlaps(RowSet.RangeIterator)} and {@link #subsetOf(RowSet.RangeIterator)}, this <b>does not take
+     * ownership of {@code rit}</b>: it can return with ranges unread, and the caller must close the iterator itself.
+     * <p>
+     * {@code !isEmpty() && rit.hasNext()} assumed on entry.
+     *
+     * @param rit The keys to invert, left open for the caller to close
+     * @param builder Receives the positions found
+     * @param maxPosition The last position to report; the walk stops once it is reached
+     * @return true if every key of {@code rit} that was examined was found; false if one was not present, in which case
+     *         {@code builder} holds an incomplete result
+     */
     public final boolean invertOnNew(
             final RowSet.RangeIterator rit,
             final OrderedLongSetBuilderSequential builder,
@@ -2476,12 +2004,19 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    public final RowSequence getRowSequenceByPosition(final long pos, long length) {
-        final long card = getCardinality();
-        if (isEmpty() || pos >= card) {
+    public final RowSequence getRowSequenceByPosition(final long posIn, long length) {
+        if (length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
-        if (pos + length >= card) {
+        final long pos = Math.max(posIn, 0);
+        if (posIn < 0) {
+            length += posIn;
+        }
+        final long card = getCardinality();
+        if (isEmpty() || pos >= card || length <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        if (length > card - pos) {
             length = card - pos;
         }
         return getRowSequenceByPositionWithStart(0, 0, pos, length);
@@ -2599,9 +2134,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (end < first) {
             return RowSequenceFactory.EMPTY;
         }
-        final long packedStart = pack(Math.max(start, first));
-        final long packedEnd = pack(Math.min(end, last));
-        return getRowSequenceByKeyRangePackedWithStart(0, 0, packedStart, packedEnd);
+        final long clampedStart = Math.max(start, first);
+        final long clampedEnd = Math.min(end, last);
+        if (clampedEnd < clampedStart) {
+            return RowSequenceFactory.EMPTY;
+        }
+        return getRowSequenceByKeyRangePackedWithStart(0, 0, pack(clampedStart), pack(clampedEnd));
     }
 
     final RowSequence getRowSequenceByKeyRangePackedWithStart(
@@ -2654,7 +2192,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         iNeg = true;
                         iData = iNextData;
                     } else {
-                        if (iNext > packedEnd) {
+                        if (iNextData > packedEnd) {
                             return new SortedRangesRowSequence(this, startPos, i, 0, i, 0, 1);
                         }
                         pendingStart = -1;
@@ -2711,8 +2249,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (isEmpty()) {
             return RowSequenceFactory.EMPTY_ITERATOR;
         }
-        return new SortedRangesRowSequence.Iterator(
-                new SortedRangesRowSequence(this));
+        // The temporary SortedRangesRowSequence holds its own reference to us, and the Iterator constructor acquires
+        // another one; close the temporary or its reference is leaked.
+        try (final SortedRangesRowSequence rs = new SortedRangesRowSequence(this)) {
+            return new SortedRangesRowSequence.Iterator(rs);
+        }
     }
 
     public final long getAverageRunLengthEstimate() {
@@ -2730,47 +2271,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         final double initialRanges = n - negs;
         final double initialFactor = n / (initialRanges * count);
         return Math.round(initialFactor * getCardinality());
-    }
-
-    private static SortedRanges intersectLegacy(
-            final SortedRanges sar, final long last, final RowSet.RangeIterator rangeIter) {
-        try {
-            // We could do better wrt offset...
-            SortedRanges out = sar.makeMyTypeAndOffset(sar.count);
-            final MutableInt iOut = new MutableInt(0);
-            int i = 0;
-            int lasti = i;
-            while (true) {
-                if (lasti != i) {
-                    final boolean valid = rangeIter.advance(sar.unpackedGet(i));
-                    if (!valid) {
-                        break;
-                    }
-                }
-                final long start = rangeIter.currentRangeStart();
-                if (last < start) {
-                    break;
-                }
-                long end = rangeIter.currentRangeEnd();
-                end = Math.min(end, last);
-                out = intersectRangeImplStep(out, sar, i, start, end, iOut);
-                if (out == null) {
-                    return null;
-                }
-                lasti = i;
-                i = iOut.get();
-                if (i >= sar.count) {
-                    break;
-                }
-                if (!rangeIter.hasNext()) {
-                    break;
-                }
-                rangeIter.next();
-            }
-            return out;
-        } finally {
-            rangeIter.close();
-        }
     }
 
     private SortedRanges subRangesByKeyPacked(final long packedStart, final long packedEnd) {
@@ -3317,14 +2817,13 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return sar;
         }
         final int iStart = sar.absRawBinarySearch(packedValue, 0, sar.count - 1);
-        return addPackedWithStart(sar, iStart, packedValue, value, null, writeCheck);
+        return addPackedWithStart(sar, iStart, packedValue, value, writeCheck);
     }
 
     // sar.count > 0 assumed on entry.
-    // if iStartOut != null, this method stores in iStartOut the position from where to continue adding later values.
     protected static SortedRanges addPackedWithStart(
             SortedRanges sar, final int iStart, final long packedValue, final long value,
-            final MutableInt iStartOut, final boolean writeCheck) {
+            final boolean writeCheck) {
         int i = iStart;
         if (i == sar.count) {
             int j = sar.count - 1;
@@ -3338,9 +2837,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     }
                     ++sar.cardinality;
                     sar.packedSet(j, -packedValue);
-                    if (iStartOut != null) {
-                        iStartOut.set(j + 1);
-                    }
                     if (DEBUG)
                         sar.validate(packedValue, packedValue);
                     return sar;
@@ -3350,9 +2846,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     return null;
                 }
                 ++sar.cardinality;
-                if (iStartOut != null) {
-                    iStartOut.set(sar.count);
-                }
                 if (DEBUG)
                     sar.validate(packedValue, packedValue);
                 return sar;
@@ -3362,9 +2855,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return null;
             }
             ++sar.cardinality;
-            if (iStartOut != null) {
-                iStartOut.set(sar.count);
-            }
             if (DEBUG)
                 sar.validate(packedValue, packedValue);
             return sar;
@@ -3417,20 +2907,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             ++sar.cardinality;
             if (mergeToRightRange) {
                 sar.close2(i - 1);
-                if (iStartOut != null) {
-                    iStartOut.set(i - 1);
-                }
             } else if (mergeToRightSingle) {
                 sar.close(i);
                 sar.packedSet(i - 1, -(packedValue + 1));
-                if (iStartOut != null) {
-                    iStartOut.set(i - 2);
-                }
             } else {
                 sar.packedSet(i - 1, -packedValue);
-                if (iStartOut != null) {
-                    iStartOut.set(i);
-                }
             }
         } else if (mergeToLeftSingle) {
             if (mergeToRightRange) {
@@ -3439,27 +2920,18 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
                 ++sar.cardinality;
                 sar.close(i);
-                if (iStartOut != null) {
-                    iStartOut.set(i);
-                }
             } else if (mergeToRightSingle) {
                 if (writeCheck) {
                     sar = sar.getWriteRef();
                 }
                 ++sar.cardinality;
                 sar.packedSet(i, -(packedValue + 1));
-                if (iStartOut != null) {
-                    iStartOut.set(i - 1);
-                }
             } else {
                 sar = sar.openNeg(i, -packedValue, writeCheck);
                 if (sar == null) {
                     return null;
                 }
                 ++sar.cardinality;
-                if (iStartOut != null) {
-                    iStartOut.set(i + 1);
-                }
             }
         } else {
             if (mergeToRightRange) {
@@ -3468,27 +2940,18 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
                 ++sar.cardinality;
                 sar.packedSet(i, packedValue);
-                if (iStartOut != null) {
-                    iStartOut.set(i + 1);
-                }
             } else if (mergeToRightSingle) {
                 sar = sar.open(i, packedValue, -(packedValue + 1), writeCheck);
                 if (sar == null) {
                     return null;
                 }
                 ++sar.cardinality;
-                if (iStartOut != null) {
-                    iStartOut.set(i);
-                }
             } else {
                 sar = sar.open(i, packedValue, writeCheck);
                 if (sar == null) {
                     return null;
                 }
                 ++sar.cardinality;
-                if (iStartOut != null) {
-                    iStartOut.set(i + 1);
-                }
             }
         }
         if (DEBUG)
@@ -3531,16 +2994,15 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
 
         final int iStart = sar.absRawBinarySearch(packedStart, 0, sar.count - 1);
-        return addRangePackedWithStart(sar, iStart, packedStart, packedEnd, start, end, deltaCard, null, writeCheck);
+        return addRangePackedWithStart(sar, iStart, packedStart, packedEnd, start, end, deltaCard, writeCheck);
     }
 
     // Assumption: sar is not empty.
     // packedStart != packedEnd assumed on entry,
-    // if iStartOut != null, this method stores in iStartOut the position from where to continue adding later ranges.
     protected static SortedRanges addRangePackedWithStart(
             SortedRanges sar, int iStart,
             long packedStart, long packedEnd, final long start, final long end,
-            long deltaCard, final MutableInt iStartOut, final boolean writeCheck) {
+            long deltaCard, final boolean writeCheck) {
         if (iStart == sar.count) {
             int j = sar.count - 1;
             long jData = sar.packedGet(j);
@@ -3553,9 +3015,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     }
                     sar.packedSet(j, -packedEnd);
                     sar.cardinality += deltaCard;
-                    if (iStartOut != null) {
-                        iStartOut.set(j + 1);
-                    }
                     if (DEBUG)
                         sar.validate(packedStart, packedEnd);
                     return sar;
@@ -3565,9 +3024,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     return null;
                 }
                 sar.cardinality += deltaCard;
-                if (iStartOut != null) {
-                    iStartOut.set(sar.count);
-                }
                 if (DEBUG)
                     sar.validate(packedStart, packedEnd);
                 return sar;
@@ -3577,9 +3033,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return null;
             }
             sar.cardinality += deltaCard;
-            if (iStartOut != null) {
-                iStartOut.set(sar.count);
-            }
             if (DEBUG)
                 sar.validate(packedStart, packedEnd);
             return sar;
@@ -3589,9 +3042,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         long iStartValue = iStartNeg ? -iStartData : iStartData;
         if (packedEnd <= iStartValue && iStartNeg) {
             // the whole [packedStart, packedEnd] range was contained in an existing range.
-            if (iStartOut != null) {
-                iStartOut.set(iStart);
-            }
             if (DEBUG)
                 sar.validate(packedStart, packedEnd);
             return sar;
@@ -3612,16 +3062,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         sar = sar.getWriteRef();
                     }
                     sar.packedSet(iStart - 1, -packedEnd);
-                    if (iStartOut != null) {
-                        iStartOut.set(sar.count);
-                    }
                 } else {
                     sar = sar.packedAppend(-packedEnd, -end, writeCheck);
                     if (sar == null) {
                         return null;
-                    }
-                    if (iStartOut != null) {
-                        iStartOut.set(sar.count);
                     }
                 }
                 sar.cardinality += deltaCard - 1;
@@ -3645,9 +3089,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 } else {
                     if (packedEnd <= -iStartData) {
                         // the whole [packedStart, packedEnd] range was contained in an existing range.
-                        if (iStartOut != null) {
-                            iStartOut.set(iStart - 1);
-                        }
                         if (DEBUG)
                             sar.validate(packedStart, packedEnd);
                         return sar;
@@ -3655,9 +3096,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     ++iStart;
                     if (iStart == sar.count) {
                         if (iStartValue >= packedEnd) {
-                            if (iStartOut != null) {
-                                iStartOut.set(sar.count - 2);
-                            }
                             if (DEBUG)
                                 sar.validate(packedStart, packedEnd);
                             return sar;
@@ -3666,9 +3104,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                             sar = sar.getWriteRef();
                         }
                         sar.packedSet(sar.count - 1, -packedEnd);
-                        if (iStartOut != null) {
-                            iStartOut.set(sar.count - 2);
-                        }
                         sar.cardinality += packedEnd - iStartValue;
                         if (DEBUG)
                             sar.validate(packedStart, packedEnd);
@@ -3688,9 +3123,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
                 sar.cardinality += packedEnd - iStartValue;
                 sar.packedSet(iStart, -packedEnd);
-                if (iStartOut != null) {
-                    iStartOut.set(iStart + 1);
-                }
                 if (DEBUG)
                     sar.validate(packedStart, packedEnd);
                 return sar;
@@ -3735,7 +3167,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     mergeToRightRange = true;
                     iEnd = i - 1;
                 } else {
-                    if (iValue <= packedEnd + 1) {
+                    if (iValue - packedEnd <= 1) {
                         if (iValue == packedEnd) {
                             --packedEnd;
                             --deltaCard;
@@ -3789,21 +3221,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
             if (mergeToRightRange) {
                 sar.collapse(iStart - 1, iEnd + 1);
-                if (iStartOut != null) {
-                    iStartOut.set(iStart - 2);
-                }
             } else if (mergeToRightSingle) {
                 sar.packedSet(iStart - 1, -(packedEnd + 1));
                 sar.collapse(iStart, iEnd + 1);
-                if (iStartOut != null) {
-                    iStartOut.set(iStart - 2);
-                }
             } else {
                 sar.packedSet(iStart - 1, -packedEnd);
                 sar.collapse(iStart, iEnd);
-                if (iStartOut != null) {
-                    iStartOut.set(iStart);
-                }
             }
         } else if (mergeToLeftSingle) {
             if (mergeToRightRange) {
@@ -3811,18 +3234,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     sar = sar.getWriteRef();
                 }
                 sar.collapse(iStart, iEnd + 1);
-                if (iStartOut != null) {
-                    iStartOut.set(iStart - 1);
-                }
             } else if (mergeToRightSingle) {
                 if (writeCheck) {
                     sar = sar.getWriteRef();
                 }
                 sar.packedSet(iStart, -(packedEnd + 1));
                 sar.collapse(iStart + 1, iEnd + 1);
-                if (iStartOut != null) {
-                    iStartOut.set(iStart - 1);
-                }
             } else {
                 if (len > 0) {
                     if (writeCheck) {
@@ -3830,16 +3247,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     }
                     sar.packedSet(iStart, -packedEnd);
                     sar.collapse(iStart + 1, iEnd);
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart + 1);
-                    }
                 } else {
                     sar = sar.openNeg(iStart, -packedEnd, writeCheck);
                     if (sar == null) {
                         return null;
-                    }
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart + 1);
                     }
                 }
             }
@@ -3850,9 +3261,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
                 sar.packedSet(iStart, packedStart);
                 sar.collapse(iStart + 1, iEnd + 1);
-                if (iStartOut != null) {
-                    iStartOut.set(iStart);
-                }
             } else if (mergeToRightSingle) {
                 if (len > 0) {
                     if (writeCheck) {
@@ -3861,16 +3269,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     sar.packedSet(iStart, packedStart);
                     sar.packedSet(iStart + 1, -(packedEnd + 1));
                     sar.collapse(iStart + 2, iEnd + 1);
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart);
-                    }
                 } else {
                     sar = sar.open(iStart, packedStart, -(packedEnd + 1), writeCheck);
                     if (sar == null) {
                         return null;
-                    }
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart);
                     }
                 }
             } else {
@@ -3879,16 +3281,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     if (sar == null) {
                         return null;
                     }
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart + 2);
-                    }
                 } else if (len == 1) {
                     sar = sar.open(iStart, packedStart, -packedEnd, writeCheck);
                     if (sar == null) {
                         return null;
-                    }
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart + 2);
                     }
                 } else {
                     if (writeCheck) {
@@ -3896,9 +3292,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     }
                     sar.packedSet(iStart, packedStart);
                     sar.packedSet(iStart + 1, -packedEnd);
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart + 2);
-                    }
                 }
                 sar.collapse(iStart + 2, iEnd);
             }
@@ -4199,20 +3592,16 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     protected static SortedRanges removeRangePacked(
             SortedRanges sar, final long packedStart, final long packedEnd, final long start, final long end) {
         final int iStart = sar.absRawBinarySearch(packedStart, 0, sar.count - 1);
-        return removeRangePackedWithStart(sar, iStart, packedStart, packedEnd, start, end, null, true);
+        return removeRangePackedWithStart(sar, iStart, packedStart, packedEnd, start, end, true);
     }
 
-    // if iStartOut != null, this method stores in iStartOut the position from where to continue removing later ranges.
     protected static SortedRanges removeRangePackedWithStart(
             SortedRanges sar, int iStart,
             final long packedStart, final long packedEnd,
             final long start, final long end,
-            final MutableInt iStartOut, final boolean writeCheck) {
+            final boolean writeCheck) {
         // iStart will be adjusted to be the start index of the positions to be eliminated from the array.
         if (iStart >= sar.count) {
-            if (iStartOut != null) {
-                iStartOut.set(sar.count);
-            }
             return sar;
         }
         long iStartData = sar.packedGet(iStart);
@@ -4237,18 +3626,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     if (truncateLeftRange) {
                         sar.packedSet(iStart, -(packedStart - 1));
                         --sar.cardinality;
-                        if (iStartOut != null) {
-                            iStartOut.set(iStart + 1);
-                        }
                         if (DEBUG)
                             sar.validate(packedStart, packedEnd);
                         return sar;
                     }
                     --sar.count;
                     --sar.cardinality;
-                    if (iStartOut != null) {
-                        iStartOut.set(sar.count);
-                    }
                     if (DEBUG)
                         sar.validate(packedStart, packedEnd);
                     return sar;
@@ -4261,9 +3644,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     }
                     --sar.count;
                     --sar.cardinality;
-                    if (iStartOut != null) {
-                        iStartOut.set(sar.count);
-                    }
                     if (DEBUG)
                         sar.validate(packedStart, packedEnd);
                     return sar;
@@ -4359,16 +3739,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     sar.packedSet(iStart, -(packedStart - 1));
                     sar.packedSet(iStart + 1, packedEnd + 1);
                     sar.collapse(iStart + 2, iEndExclusive);
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart + 1);
-                    }
                 } else { // len == 0; it can't be the case that len==1 if we are truncating at both sides.
                     sar = sar.open2Neg(iStart, -(packedStart - 1), packedEnd + 1, writeCheck);
                     if (sar == null) {
                         return null;
-                    }
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart + 1);
                     }
                 }
             } else if (truncateRightSingle) {
@@ -4379,16 +3753,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     sar.packedSet(iStart, -(packedStart - 1));
                     sar.packedSet(iStart + 1, packedEnd + 1);
                     sar.collapse(iStart + 2, iEndExclusive + 1);
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart + 1);
-                    }
                 } else { // len == 0.
                     sar = sar.openNeg(iStart, -(packedStart - 1), packedEnd + 1, writeCheck);
                     if (sar == null) {
                         return null;
-                    }
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart + 1);
                     }
                 }
             } else {
@@ -4398,9 +3766,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
                 sar.packedSet(iStart, -(packedStart - 1));
                 sar.collapse(iStart + 1, iEndExclusive);
-                if (iStartOut != null) {
-                    iStartOut.set(iStart + 1);
-                }
             }
         } else {
             if (truncateRightRange) {
@@ -4410,16 +3775,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     }
                     sar.packedSet(iStart, packedEnd + 1);
                     sar.collapse(iStart + 1, iEndExclusive);
-                    if (iStartOut != null) {
-                        iStartOut.set(iStart + 1);
-                    }
                 } else { // len == 0.
                     sar = sar.open(iEndExclusive, packedEnd + 1, writeCheck);
                     if (sar == null) {
                         return null;
-                    }
-                    if (iStartOut != null) {
-                        iStartOut.set(iEndExclusive);
                     }
                 }
             } else if (truncateRightSingle) {
@@ -4428,17 +3787,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
                 sar.packedSet(iStart, packedEnd + 1);
                 sar.collapse(iStart + 1, iEndExclusive + 1);
-                if (iStartOut != null) {
-                    iStartOut.set(iStart + 1);
-                }
             } else {
                 if (writeCheck) {
                     sar = sar.getWriteRef();
                 }
                 sar.collapse(iStart, iEndExclusive);
-                if (iStartOut != null) {
-                    iStartOut.set(iStart);
-                }
             }
         }
         sar.cardinality -= deltaCard;
@@ -4736,20 +4089,6 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     public final OrderedLongSet remove(final OrderedLongSet removed) {
-        if (!USE_RANGES_ARRAY) {
-            try (final RowSet.RangeIterator removedIter = removed.ixRangeIterator()) {
-                final MutableObject<SortedRanges> holder = new MutableObject<>(this);
-                final boolean valid = removeLegacy(holder, removedIter);
-                if (!valid) {
-                    return null;
-                }
-                final SortedRanges ans = holder.getValue();
-                if (ans.isEmpty()) {
-                    return OrderedLongSet.EMPTY;
-                }
-                return ans;
-            }
-        }
         final SortedRangesLong sr = intersect(this, removed, true);
         if (sr == null) {
             return null;
@@ -4793,7 +4132,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (toIntersect instanceof SortedRanges) {
             return retain(toIntersect);
         }
-        return ixToRspOnNew().ixRetainNoWriteCheck(toIntersect);
+        return intersectOnNew(toIntersect);
     }
 
     @Override
@@ -4833,19 +4172,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 toIntersect.ixLastKey() < first()) {
             return OrderedLongSet.EMPTY;
         }
-        if (!USE_RANGES_ARRAY) {
-            final RowSet.RangeIterator rangeIter = toIntersect.ixRangeIterator();
-            rangeIter.advance(first());
-            final long last = last();
-            final SortedRanges sr = intersectLegacy(this, last, rangeIter);
-            if (sr != null) {
-                return sr;
-            }
-        } else {
-            final OrderedLongSet ans = intersectOnNewImpl(toIntersect);
-            if (ans != null) {
-                return ans;
-            }
+        final OrderedLongSet ans = intersectOnNewImpl(toIntersect);
+        if (ans != null) {
+            return ans;
         }
         return ixToRspOnNew().ixRetainNoWriteCheck(toIntersect);
     }
@@ -5000,16 +4329,25 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             rspAns.finishMutations();
             return rspAns;
         }
+        // Shifting by zero has nothing to move, so it hands back a reference to other rather than a copy of it; that
+        // reference is ours to give back once we are done reading through it.
         if (other instanceof SortedRanges) {
-            SortedRanges sr = (SortedRanges) other;
-            sr = sr.applyShiftOnNew(shiftAmount);
-            return ixInsertImpl(sr);
+            final SortedRanges shifted = ((SortedRanges) other).applyShiftOnNew(shiftAmount);
+            try {
+                return ixInsertImpl(shifted);
+            } finally {
+                shifted.ixRelease();
+            }
         }
-        RspBitmap rsp = (RspBitmap) other;
-        rsp = rsp.applyOffsetOnNew(shiftAmount).getWriteRef();
-        rsp.insertOrderedLongSetUnsafeNoWriteCheck(this);
-        rsp.finishMutations();
-        return rsp;
+        final RspBitmap shifted = ((RspBitmap) other).applyOffsetOnNew(shiftAmount);
+        final RspBitmap ans = shifted.getWriteRef();
+        if (ans != shifted) {
+            // A shared set copies itself to be written to, leaving the reference we asked for unused.
+            shifted.ixRelease();
+        }
+        ans.insertOrderedLongSetUnsafeNoWriteCheck(this);
+        ans.finishMutations();
+        return ans;
     }
 
     private OrderedLongSet ixInsertImpl(final SortedRanges addedSar) {
@@ -5099,10 +4437,13 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return r;
             }
         } else {
-            final RowSet.RangeIterator rit = keys.ixRangeIterator();
-            final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
-            if (invertOnNew(rit, builder, maxPosition)) {
-                return builder.getOrderedLongSet();
+            // The walk stops as soon as maxPosition is reached, leaving the iterator holding a reference to keys;
+            // closing it is what gives that reference back.
+            try (final RowSet.RangeIterator rit = keys.ixRangeIterator()) {
+                final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
+                if (invertOnNew(rit, builder, maxPosition)) {
+                    return builder.getOrderedLongSet();
+                }
             }
         }
         throw new IllegalArgumentException("keys argument has elements not in the rowSet");

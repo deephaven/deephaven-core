@@ -64,6 +64,9 @@ dependencies {
         implementation(libs.httpcore5.h2) {
             because 'Keeping consistency with libs.httpcore5'
         }
+        implementation(libs.httpclient) {
+            because 'CVE-2026-64607'
+        }
     }
 }
 

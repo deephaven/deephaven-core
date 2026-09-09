@@ -3458,7 +3458,9 @@ public class RspBitmapTest {
     }
 
     private static LongOpenHashSet intersect(final LongOpenHashSet s1, LongOpenHashSet s2) {
-        final LongOpenHashSet ans = new LongOpenHashSet();
+        // Presize to s1's capacity: we iterate s1 in hash order, so inserting into a smaller table with the same
+        // hash function creates pathological collision clusters at every intermediate capacity (quadratic cost).
+        final LongOpenHashSet ans = new LongOpenHashSet(s1.size());
         s1.forEach((final long v) -> {
             if (s2.contains(v)) {
                 ans.add(v);
@@ -3869,7 +3871,7 @@ public class RspBitmapTest {
         r0 = r0.addRange(3 * BLOCK_SIZE, 3 * BLOCK_SIZE + BLOCK_LAST);
         RspBitmap r1 = RspBitmap.makeSingleRange(4 * BLOCK_SIZE, 4 * BLOCK_SIZE + BLOCK_LAST);
         final long cardBefore = r0.getCardinality();
-        final boolean worked = r0.tryAppendShiftedUnsafeNoWriteCheck(0, r1, false);
+        final boolean worked = r0.tryAppendShiftedUnsafeNoWriteCheck(0, r1);
         assertTrue(worked);
         r0.finishMutationsAndOptimize();
         r0.validate();
@@ -3886,7 +3888,7 @@ public class RspBitmapTest {
         RspBitmap r1 = RspBitmap.makeSingleRange(5 * BLOCK_SIZE, 5 * BLOCK_SIZE + BLOCK_LAST);
         r1 = r1.append(7 * BLOCK_SIZE + 3);
         final long cardBefore = r0.getCardinality();
-        final boolean worked = r0.tryAppendShiftedUnsafeNoWriteCheck(0, r1, false);
+        final boolean worked = r0.tryAppendShiftedUnsafeNoWriteCheck(0, r1);
         assertTrue(worked);
         r0.finishMutationsAndOptimize();
         r0.validate();
@@ -3898,7 +3900,7 @@ public class RspBitmapTest {
     public void testAppendShifted() {
         RspBitmap r0 = RspBitmap.makeSingleRange(20, 39);
         RspBitmap r1 = RspBitmap.makeSingleRange(21, 40);
-        r0.appendShiftedUnsafeNoWriteCheck(BLOCK_SIZE, r1, false);
+        r0.appendShiftedUnsafeNoWriteCheck(BLOCK_SIZE, r1);
         r0.finishMutationsAndOptimize();
         assertEquals(40, r0.getCardinality());
         assertTrue(r0.containsRange(20, 39));

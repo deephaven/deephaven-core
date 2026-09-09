@@ -83,11 +83,8 @@ public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements Si
 
     @Override
     public void fillRowKeyRangesChunk(final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
-        final int maxSz = chunkToFill.size();
-        if (maxSz < 2) {
-            chunkToFill.setSize(0);
-            return;
-        }
+        // The chunk's capacity is what has to hold the ranges; the size it arrives with says nothing about how much
+        // room there is, and a caller who has already zeroed it is still owed the range.
         chunkToFill.set(0, rangeStart());
         chunkToFill.set(1, rangeEnd());
         chunkToFill.setSize(2);

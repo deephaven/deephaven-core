@@ -549,14 +549,88 @@ public class BarrageUtil {
         // both cases rebuild Deephaven field metadata from the table definition so clients always
         // receive complete type information.
         final Map<String, ColumnEncoding> encodings;
-        if (table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE)) {
+        final boolean encodingsFromAttribute = table.hasAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE);
+        if (encodingsFromAttribute) {
             encodings = encodingsFromSchema((Schema) table.getAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE));
         } else if (REE_AUTO_DETECT_ENABLED || DICT_AUTO_DETECT_ENABLED) {
             encodings = inferEncodings(table);
         } else {
             encodings = Map.of();
         }
-        return makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(), encodings);
+        final Schema schema =
+                makeSchema(options, table.getDefinition(), table.getAttributes(), table.isFlat(), encodings);
+        logSchemaForTable(table, encodings, encodingsFromAttribute, schema);
+        return schema;
+    }
+
+    /**
+     * Logs the wire encodings chosen for {@code table} at DEBUG, and the complete Arrow schema at TRACE. Enable either
+     * by raising the level of this class's logger; neither the encoding summary nor the (much larger) schema text is
+     * rendered unless the corresponding level is enabled, so a quiet logger costs only the level check.
+     *
+     * @param table the table being exported
+     * @param encodings the encodings selected for {@code table}, keyed by column name
+     * @param encodingsFromAttribute whether the encodings came from an explicit {@link Table#BARRAGE_SCHEMA_ATTRIBUTE}
+     *        rather than from auto-detection
+     * @param schema the resulting schema
+     */
+    private static void logSchemaForTable(
+            @NotNull final Table table,
+            @NotNull final Map<String, ColumnEncoding> encodings,
+            final boolean encodingsFromAttribute,
+            @NotNull final Schema schema) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+
+        // Prefer the key the user already uses to name this table in the Barrage performance logs.
+        final String performanceKey = BarragePerformanceLog.getKeyFor(table);
+        final String tableKey = performanceKey == null ? table.getDescription() : performanceKey;
+
+        final String source;
+        if (encodingsFromAttribute) {
+            source = "explicit " + Table.BARRAGE_SCHEMA_ATTRIBUTE;
+        } else if (REE_AUTO_DETECT_ENABLED || DICT_AUTO_DETECT_ENABLED) {
+            source = "auto-detection";
+        } else {
+            source = "auto-detection (disabled)";
+        }
+
+        final StringBuilder encodingSummary = new StringBuilder();
+        for (final String columnName : table.getDefinition().getColumnNames()) {
+            final ColumnEncoding encoding = encodings.get(columnName);
+            if (encoding == null) {
+                continue;
+            }
+            if (encodingSummary.length() > 0) {
+                encodingSummary.append(", ");
+            }
+            encodingSummary.append(columnName).append('=');
+            if (encoding.isRunEndEncoded()) {
+                encodingSummary.append("REE(").append(encoding.runEndWidth()).append(')');
+            }
+            if (encoding.isDictionaryEncoded()) {
+                if (encoding.isRunEndEncoded()) {
+                    encodingSummary.append('+');
+                }
+                encodingSummary.append("DICT(").append(encoding.dictWidth()).append(')');
+            }
+        }
+        if (encodingSummary.length() == 0) {
+            encodingSummary.append("none");
+        }
+
+        log.debug().append("Barrage schema for ").append(tableKey)
+                .append(": ").append(table.getDefinition().numColumns())
+                .append(" columns, encodings from ").append(source)
+                .append(": ").append(encodingSummary).endl();
+
+        if (log.isTraceEnabled()) {
+            // Schema.toString() renders every field (and its encoding) on a single line; Schema.toJson() would be
+            // more detailed, but embeds newlines in the log entry.
+            log.trace().append("Barrage schema for ").append(tableKey)
+                    .append(": ").append(schema.toString()).endl();
+        }
     }
 
     private static Map<String, ColumnEncoding> encodingsFromSchema(final Schema schema) {
