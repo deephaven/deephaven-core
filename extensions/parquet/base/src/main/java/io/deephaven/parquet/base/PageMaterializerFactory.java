@@ -10,6 +10,16 @@ public interface PageMaterializerFactory {
 
     PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues);
 
+    /**
+     * Whether PLAIN-encoded BINARY pages destined for this factory should be read with
+     * {@code PlainBinaryStringValuesReader} instead of parquet's {@code BinaryPlainValuesReader}.
+     * <p>
+     * Opting in per factory keeps the {@code readBytes()} call site monomorphic for every other BINARY consumer.
+     */
+    default boolean usePlainBinaryStringDecoder() {
+        return false;
+    }
+
     PageMaterializerFactory NULL_FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
