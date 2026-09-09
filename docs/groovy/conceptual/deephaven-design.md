@@ -37,11 +37,11 @@ Deephaven is a full-stack data system that unifies live and historical data in a
 
 At the core of this stack are **Live Dataframes** — Deephaven's unique abstraction that allows data to update continuously and flow naturally through code, dashboards, and applications. When a source table changes, updates propagate through the entire stack:
 
-1. **Engine**: The UpdateGraph detects changes and propagates them through the DAG
-2. **APIs**: Barrage protocol streams incremental updates to connected clients
-3. **UI**: Components automatically refresh to reflect the latest data
+1. **Engine**: The UpdateGraph detects changes and propagates them through the DAG.
+2. **APIs**: Barrage protocol streams incremental updates to connected clients.
+3. **UI**: Components automatically refresh to reflect the latest data.
 
-This architecture means the same table can simultaneously serve a Python script, a Java application, a web dashboard, and a remote client. Clients with an active Barrage subscription receive consistent, incremental deltas as the table updates. A client that instead takes a one-time snapshot — such as `pydeephaven.Table.to_arrow()`, which uses Flight's `DoGet` — gets a static copy at that moment, not a live stream. (Remote clients receive updates via their own subscription stream, so different clients may see updates at slightly different times.)
+This architecture means the same table can simultaneously serve a Python script, a Java application, a web dashboard, and a remote client. Clients with an active Barrage subscription receive consistent, incremental deltas as the table updates. A client that instead takes a one-time snapshot — such as `pydeephaven.Table.to_arrow()`, which uses Flight's `DoGet` — gets a static copy at that moment, not a live stream. Note that remote clients receive updates via their own subscription stream, so different clients may see updates at slightly different times.
 
 **Why this matters**: Traditional systems require separate pipelines for batch and streaming, with different APIs, different mental models, and complex coordination. Deephaven's live data stack eliminates this complexity. Whether you're analyzing historical Parquet files or streaming Kafka data, you use the same code, the same operations, and the same UI — and everything stays in sync.
 
@@ -203,8 +203,8 @@ The [`where`](../reference/table-operations/filter/where.md) operation filters r
 3. **Evaluation**: The `WhereFilter` evaluates the condition against the parent's `ColumnSource` data, processing rows in [chunks](#chunk-oriented-architecture) for efficiency. Only row keys that satisfy the condition are collected.
 
 4. **Result table creation**: A new table is created with:
-   - A new `RowSet` containing only the matching row keys (a subset of the parent's `RowSet`)
-   - **Shared** `ColumnSource`s — the result table points to the same column data as the parent, with no copying
+   - A new `RowSet` containing only the matching row keys (a subset of the parent's `RowSet`).
+   - **Shared** `ColumnSource`s — the result table points to the same column data as the parent, with no copying.
 
 5. **Listener attachment**: If the parent table is [refreshing](./table-types.md), or if the filter depends on refreshing data, a listener is attached so the filtered table updates automatically. On each update cycle, the listener typically re-evaluates only the changed rows, though some filter conditions may trigger broader re-evaluation.
 
