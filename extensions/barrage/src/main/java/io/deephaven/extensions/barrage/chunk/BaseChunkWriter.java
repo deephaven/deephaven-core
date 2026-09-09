@@ -19,6 +19,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
@@ -39,6 +41,9 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
      */
     protected static final int BULK_WRITE_BUFFER_BYTES = Configuration.getInstance()
             .getIntegerForClassWithDefault(BaseChunkWriter.class, "bulkWriteBufferBytes", 4096);
+
+    /** Number of {@code int}s buffered per bulk-write window (see {@link #BULK_WRITE_BUFFER_BYTES}). */
+    private static final int BULK_WRITE_INTS = Math.max(1, BULK_WRITE_BUFFER_BYTES / Integer.BYTES);
 
     private final ChunkTransformer<SOURCE_CHUNK_TYPE> transformer;
     private final Supplier<SOURCE_CHUNK_TYPE> emptyChunkSupplier;
@@ -103,27 +108,19 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
     }
 
     /**
-     * Compute the number of nulls in the subset.
+     * Report the nullness of each row of the subset, in order, to {@code validity}.
+     * <p>
+     * This is invoked at most once per {@link BaseChunkInputStream}: the null count carried by the field node and the
+     * bytes of the validity buffer are both derived from this single traversal of the row data.
      *
      * @param context the context for the chunk
      * @param subset the subset of rows to consider
-     * @return the number of nulls in the subset
+     * @param validity the validity buffer to populate
      */
-    protected abstract int computeNullCount(
-            @NotNull Context context,
-            @NotNull RowSequence subset);
-
-    /**
-     * Update the validity buffer for the subset.
-     *
-     * @param context the context for the chunk
-     * @param subset the subset of rows to consider
-     * @param serContext the serialization context
-     */
-    protected abstract void writeValidityBufferInternal(
+    protected abstract void computeValidity(
             @NotNull Context context,
             @NotNull RowSequence subset,
-            @NotNull SerContext serContext);
+            @NotNull ValidityBuffer validity);
 
     abstract class BaseChunkInputStream<CONTEXT_TYPE extends Context> extends DrainableColumn {
         protected final CONTEXT_TYPE context;
@@ -132,6 +129,8 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
 
         protected boolean hasBeenRead = false;
         private final int nullCount;
+        /** The bitmap to drain, retained only when we will actually send a validity buffer. */
+        private final ValidityBuffer validityBuffer;
 
         BaseChunkInputStream(
                 @NotNull final CONTEXT_TYPE context,
@@ -152,10 +151,18 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
                         "Subset " + this.subset + " is out of bounds for context of size " + context.size());
             }
 
-            if (dhNullable && options.useDeephavenNulls()) {
+            // A non-nullable field never reports nulls (see nullCount()) and a dh-nullable field encodes them in the
+            // payload itself, so in both cases the traversal below would produce a bitmap nobody reads.
+            if (!fieldNullable || (dhNullable && options.useDeephavenNulls())) {
                 nullCount = 0;
+                validityBuffer = null;
             } else {
-                nullCount = computeNullCount(context, this.subset);
+                final ValidityBuffer validity = new ValidityBuffer(this.subset.intSize());
+                computeValidity(context, this.subset, validity);
+                nullCount = validity.nullCount();
+                // Retain the bitmap only if we will send it; a batch of null-free columns would otherwise hold one
+                // bitmap per column until it drains.
+                validityBuffer = nullCount == 0 ? null : validity;
             }
         }
 
@@ -205,8 +212,13 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
                 return 0;
             }
 
-            try (final SerContext serContext = new SerContext(dos)) {
-                writeValidityBufferInternal(context, subset, serContext);
+            // the bitmap was packed into little-endian bytes when it was computed; emit it with a single bulk write
+            final byte[] bytes = validityBuffer.bytes();
+            try {
+                dos.write(bytes, 0, bytes.length);
+            } catch (final IOException e) {
+                throw new UncheckedDeephavenException(
+                        "Unexpected exception while draining data to OutputStream: ", e);
             }
 
             return getValidityMapSerializationSizeFor(subset.intSize());
@@ -262,38 +274,178 @@ public abstract class BaseChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
         return ((numElements + 63) / 64);
     }
 
-    protected static final class SerContext implements SafeCloseable {
-        private final DataOutput dos;
+    /**
+     * A bit per element, packed LSB-first into little-endian 64-bit words, as Arrow encodes a validity buffer: a set
+     * bit marks a valid (non-null) element. Nulls are counted as the bits are appended, so a single traversal of the
+     * row data yields both the field node's null count and the bytes of the validity buffer.
+     * <p>
+     * {@link BooleanChunkWriter} also uses this to pack its payload, which has the same shape, via
+     * {@link #packed(int)}.
+     */
+    protected static final class ValidityBuffer {
+        private final int numElements;
 
+        /**
+         * Allocated on the first null. A column with no nulls sends no validity buffer at all, and that is the common
+         * case, so until a null appears the only state worth maintaining is {@link #count} — this keeps the traversal
+         * as cheap as the bare null count it replaced. The bits skipped along the way are all set, so the buffer can
+         * still be reconstructed exactly whenever a null does turn up.
+         */
+        private byte[] bytes;
+
+        /** Number of elements appended so far; the packed bit position when {@link #bytes} is non-null. */
+        private int count = 0;
         private long accumulator = 0;
-        private long count = 0;
+        private int byteOffset = 0;
+        private int nullCount = 0;
+        private boolean sealed = false;
 
-        public SerContext(@NotNull final DataOutput dos) {
-            this.dos = dos;
+        /**
+         * A validity bitmap, materialized only once a null is appended. A column with no nulls sends no validity buffer
+         * at all, so asking such a buffer for its {@link #bytes()} is a caller bug and throws.
+         */
+        public ValidityBuffer(final int numElements) {
+            this.numElements = numElements;
         }
 
-        public void setNextIsNull(boolean isNull) {
-            if (!isNull) {
-                accumulator |= 1L << count;
+        /**
+         * A bit-packed buffer that is materialized up front, for a caller that needs the bits whatever the values turn
+         * out to be. {@link BooleanChunkWriter} packs its payload this way, where a set bit means TRUE rather than
+         * non-null and an all-TRUE column must still emit a full buffer.
+         *
+         * @param numElements the number of elements to be appended
+         * @return a buffer whose {@link #bytes()} is always available
+         */
+        public static ValidityBuffer packed(final int numElements) {
+            final ValidityBuffer buffer = new ValidityBuffer(numElements);
+            buffer.allocate();
+            return buffer;
+        }
+
+        public void setNextIsNull(final boolean isNull) {
+            if (bytes != null) {
+                appendPacked(isNull);
+            } else if (isNull) {
+                allocate();
+                appendPacked(true);
+            } else {
+                ++count;
             }
-            if (++count == 64) {
+        }
+
+        /**
+         * Append {@code numElements} null entries; equivalent to that many {@code setNextIsNull(true)} calls, but
+         * without visiting each element.
+         *
+         * @param numElements the number of null entries to append
+         */
+        public void setNextAreNull(final int numElements) {
+            if (numElements == 0) {
+                return;
+            }
+            allocate();
+            nullCount += numElements;
+            for (int remaining = numElements; remaining > 0;) {
+                final int inThisWord = Math.min(remaining, 64 - (count & 63));
+                count += inThisWord;
+                if ((count & 63) == 0) {
+                    flushWord();
+                }
+                remaining -= inThisWord;
+            }
+        }
+
+        private void appendPacked(final boolean isNull) {
+            if (isNull) {
+                ++nullCount;
+            } else {
+                accumulator |= 1L << (count & 63);
+            }
+            if ((++count & 63) == 0) {
+                flushWord();
+            }
+        }
+
+        /**
+         * Materialize the buffer at the first null. Every element visited so far was valid, so the words already passed
+         * are all-ones, as are the bits of the word in progress.
+         */
+        private void allocate() {
+            if (bytes != null) {
+                return;
+            }
+            bytes = new byte[getValidityMapSerializationSizeFor(numElements)];
+            byteOffset = (count >>> 6) * Long.BYTES;
+            Arrays.fill(bytes, 0, byteOffset, (byte) 0xFF);
+            accumulator = (1L << (count & 63)) - 1;
+        }
+
+        public int nullCount() {
+            return nullCount;
+        }
+
+        /**
+         * Finalize and return the packed bytes; exactly {@code getValidityMapSerializationSizeFor(numElements)} of
+         * them. No element may be appended afterwards.
+         *
+         * @throws IllegalStateException if nothing was ever materialized, i.e. no null was appended and the buffer was
+         *         not created by {@link #packed(int)}
+         */
+        public byte[] bytes() {
+            if (bytes == null) {
+                throw new IllegalStateException("No bits have been packed: a validity buffer is only written when "
+                        + "nullCount() is non-zero; a caller that needs the bytes regardless must use packed()");
+            }
+            if (!sealed) {
+                sealed = true;
+                if ((count & 63) != 0) {
+                    flushWord();
+                }
+            }
+            return bytes;
+        }
+
+        private void flushWord() {
+            LittleEndianCodec.putLong(bytes, byteOffset, accumulator);
+            byteOffset += Long.BYTES;
+            accumulator = 0;
+        }
+    }
+
+    /**
+     * Buffers little-endian {@code int} values — an Arrow offset or lengths buffer — and flushes them in windows of
+     * {@link #BULK_WRITE_BUFFER_BYTES}, rather than making one {@link DataOutput} call, i.e. four individual byte
+     * writes, per value.
+     */
+    protected static final class BulkIntWriter implements SafeCloseable {
+        private final OutputStream outputStream;
+        private final byte[] buffer;
+        private int bufferPos = 0;
+
+        public BulkIntWriter(@NotNull final OutputStream outputStream) {
+            this.outputStream = outputStream;
+            this.buffer = new byte[BULK_WRITE_INTS * Integer.BYTES];
+        }
+
+        public void write(final int value) {
+            LittleEndianCodec.putInt(buffer, bufferPos, value);
+            bufferPos += Integer.BYTES;
+            if (bufferPos == buffer.length) {
                 flush();
             }
         }
 
         private void flush() {
-            if (count == 0) {
+            if (bufferPos == 0) {
                 return;
             }
-
             try {
-                dos.writeLong(accumulator);
+                outputStream.write(buffer, 0, bufferPos);
             } catch (final IOException e) {
                 throw new UncheckedDeephavenException(
                         "Unexpected exception while draining data to OutputStream: ", e);
             }
-            accumulator = 0;
-            count = 0;
+            bufferPos = 0;
         }
 
         @Override

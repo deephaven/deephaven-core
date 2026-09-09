@@ -33,6 +33,15 @@ final class LittleEndianCodec {
         return (short) ((b[o] & 0xFF) | (b[o + 1] & 0xFF) << 8);
     }
 
+    static char getChar(final byte[] b, final int o) {
+        return (char) ((b[o] & 0xFF) | (b[o + 1] & 0xFF) << 8);
+    }
+
+    /** A single byte has no byte order; present so the replicated readers/writers can share one shape. */
+    static byte getByte(final byte[] b, final int o) {
+        return b[o];
+    }
+
     static double getDouble(final byte[] b, final int o) {
         return Double.longBitsToDouble(getLong(b, o));
     }
@@ -62,6 +71,16 @@ final class LittleEndianCodec {
     static void putShort(final byte[] b, final int o, final short v) {
         b[o] = (byte) v;
         b[o + 1] = (byte) (v >> 8);
+    }
+
+    static void putChar(final byte[] b, final int o, final char v) {
+        b[o] = (byte) v;
+        b[o + 1] = (byte) (v >> 8);
+    }
+
+    /** A single byte has no byte order; present so the replicated readers/writers can share one shape. */
+    static void putByte(final byte[] b, final int o, final byte v) {
+        b[o] = v;
     }
 
     static void putDouble(final byte[] b, final int o, final double v) {
