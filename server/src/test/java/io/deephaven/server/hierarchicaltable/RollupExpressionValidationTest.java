@@ -124,4 +124,39 @@ public class RollupExpressionValidationTest extends GrpcTableOperationTestBase<R
         assertThat(response).isNotNull();
         release(ExportTicketHelper.wrapExportIdInTicket(1));
     }
+
+    /**
+     * A formula that references the engine's synthetic rollup columns ({@code __FORMULA_DEPTH__} /
+     * {@code __FORMULA_KEYS__}) must validate and build successfully. This guards the validation prototype built by
+     * {@code makeRollupFormulaPrototype}: if it omitted those columns, or gave them the wrong type, the validator would
+     * reject a legitimate request even though the engine compiles it (the engine adds them via
+     * {@code EXTRA_ROLLUP_FORMULA_DEFINITIONS}). The formulas mirror {@code TestRollupTable}.
+     */
+    @Test
+    public void rollupFormulaReferencingSyntheticColumnsSucceeds() {
+        final Ticket source = sourceTicket(TableTools.emptyTable(100).view("Key=ii % 2", "Sentinel=(int)ii"));
+        final RollupRequest request = RollupRequest.newBuilder()
+                .setResultRollupTableId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .setSourceTableId(source)
+                .addAggregations(Aggregation.newBuilder()
+                        .setFormula(AggregationFormula.newBuilder()
+                                .setSelectable(Selectable.newBuilder()
+                                        .setRaw("FSum = __FORMULA_DEPTH__ == 0 ? max(Sentinel) : 1 + sum(Sentinel)")
+                                        .build())
+                                .build())
+                        .build())
+                .addAggregations(Aggregation.newBuilder()
+                        .setFormula(AggregationFormula.newBuilder()
+                                .setSelectable(Selectable.newBuilder()
+                                        .setRaw("KeyColumns = __FORMULA_KEYS__")
+                                        .build())
+                                .build())
+                        .build())
+                .addGroupByColumns("Key")
+                .build();
+
+        final RollupResponse response = rollup(request);
+        assertThat(response).isNotNull();
+        release(ExportTicketHelper.wrapExportIdInTicket(1));
+    }
 }
