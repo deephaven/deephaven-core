@@ -267,8 +267,6 @@ public class ValidityBufferTest {
 
     @Test
     public void randomPatterns() {
-        // A fresh seed every run widens the patterns covered over time. It is logged, and repeated in each assertion
-        // description, so a failure names the seed that produced it and can be replayed with new Random(<seed>).
         final long seed = new Random().nextLong();
         System.out.println("ValidityBufferTest.randomPatterns seed: " + seed);
         final Random random = new Random(seed);
