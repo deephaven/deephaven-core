@@ -17,6 +17,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.FormulaUtil;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.validation.ColumnExpressionValidator;
@@ -295,9 +296,14 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                     TableTools.newTable(TableDefinition.of(formulaInputDefinition)).groupBy(groupByColumns);
 
             final String formulaString = spec.getRollingFormula().getFormula();
+            // Substitute the param token exactly as the engine does at runtime
+            // (BaseRollingFormulaOperator uses FormulaUtil.replaceFormulaTokens, a literal token-aware replace);
+            // String.replaceAll would treat the user-supplied token as a regex and the replacement as having
+            // group semantics, so the validator could inspect a different string than the engine compiles.
             final SelectColumn[] sc = SelectColumn.from(
                     Selectable.from(pair.output().name() + "="
-                            + formulaString.replaceAll(spec.getRollingFormula().getParamToken(), inputName)));
+                            + FormulaUtil.replaceFormulaTokens(formulaString,
+                                    spec.getRollingFormula().getParamToken(), inputName)));
 
             expressionValidator.validateColumnExpressions(sc, new String[] {formulaString},
                     formulaInputPrototype.getDefinition());
