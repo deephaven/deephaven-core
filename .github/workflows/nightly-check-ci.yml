@@ -73,7 +73,7 @@ jobs:
 
       - name: Upload Coverage Results
         if: ${{ env.COVER == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.gradle-task }}-results
           path: |
@@ -82,7 +82,7 @@ jobs:
             **/build/test-results/**/coverage/*.html
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-ci-results
@@ -91,7 +91,7 @@ jobs:
             **/build/reports/tests/**
 
       - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: nightly-${{ matrix.gradle-task }}-java${{ matrix.test-jvm-version }}-ci-jvm-err
@@ -161,7 +161,7 @@ jobs:
           ./gradlew -Pcoverage.enabled=true coverage:coverage-merge
           
       - name: Upload Combined Coverage Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: combined-coverage-results
           path: |
