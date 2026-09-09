@@ -24,6 +24,9 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable;
+import io.deephaven.engine.util.input.InputTableStatusListener;
+import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.BooleanGenerator;
@@ -1180,6 +1183,112 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // Now all the tables created in the cycle are correct
         assertTableEquals(source, filtered1);
         assertTableEquals(source, filtered2);
+    }
+
+    /** Which data index, if any, the source table carries for the filter's key columns. */
+    private enum SourceIndex {
+        NONE, PARTIAL, FULL
+    }
+
+    /** Surfaces input table write failures, which the default listener would only log. */
+    private static final InputTableStatusListener FAIL_ON_ERROR = new InputTableStatusListener() {
+        @Override
+        public void onError(final Throwable t) {
+            throw new RuntimeException("Input table update failed", t);
+        }
+    };
+
+    /**
+     * Repro for DH-23539: a {@code where} using a {@link DynamicWhereFilter} backed by a refreshing input table,
+     * applied to a live table from a thread that holds neither update graph lock and is not marked serial-safe (a gRPC
+     * request thread resolving a ticket through an ACL transform). The source table has no data index for the filter's
+     * key columns, so the filter searches for a partial index, which used to assert the lock and throw
+     * {@code IllegalStateException}.
+     */
+    public void testWhereDynamicInputTableWithoutLock() throws Exception {
+        testWhereDynamicInputTableWithoutLockInternal(SourceIndex.NONE);
+    }
+
+    public void testWhereDynamicInputTableWithoutLockPartialIndex() throws Exception {
+        testWhereDynamicInputTableWithoutLockInternal(SourceIndex.PARTIAL);
+    }
+
+    public void testWhereDynamicInputTableWithoutLockFullIndex() throws Exception {
+        testWhereDynamicInputTableWithoutLockInternal(SourceIndex.FULL);
+    }
+
+    private void testWhereDynamicInputTableWithoutLockInternal(final SourceIndex sourceIndex) throws Exception {
+        // A live source table.
+        final QueryTable source = TstUtils.testRefreshingTable(i(2, 4, 6, 8, 10).toTracking(),
+                stringCol("Sym", "A", "B", "C", "D", "E"),
+                intCol("Acct", 1, 2, 1, 2, 1),
+                intCol("Val", 10, 20, 30, 40, 50));
+        switch (sourceIndex) {
+            case PARTIAL:
+                // A strict subset of the filter's key columns, so the filter must search for a partial index.
+                DataIndexer.getOrCreateDataIndex(source, "Sym");
+                break;
+            case FULL:
+                DataIndexer.getOrCreateDataIndex(source, "Sym", "Acct");
+                break;
+            case NONE:
+                break;
+        }
+
+        // An ACL-style set table: a refreshing, keyed input table.
+        final KeyedArrayBackedInputTable setTable = KeyedArrayBackedInputTable.make(
+                newTable(stringCol("Sym", "A", "C"), intCol("Acct", 1, 1)), "Sym", "Acct");
+        final InputTableUpdater setUpdater = InputTableUpdater.from(setTable);
+
+        // The filter is built ahead of time, on a thread where serial operations are permitted, exactly as the ACL
+        // transformer builds its filters.
+        final DynamicWhereFilter filter =
+                new DynamicWhereFilter(setTable, true, MatchPairFactory.getExpressions("Sym", "Acct"));
+
+        // The worker must genuinely hold no lock and have no serial-operation permission, like a gRPC thread.
+        assertFalse(pool.submit(() -> updateGraph.serialTableOperationsSafe()
+                || updateGraph.sharedLock().isHeldByCurrentThread()
+                || updateGraph.exclusiveLock().isHeldByCurrentThread()
+                || updateGraph.currentThreadProcessesUpdates()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT));
+
+        // The update graph is idle, and the operations run on a worker thread without any lock.
+        final Table filtered = pool.submit(() -> source.where(filter)).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        // The same through the public API, with the filter also built on the worker thread.
+        final Table filteredWhereIn =
+                pool.submit(() -> source.whereIn(setTable, "Sym", "Acct")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+
+        final Table expectedStart = newTable(stringCol("Sym", "A", "C"), intCol("Acct", 1, 1), intCol("Val", 10, 30));
+        assertTableEquals(expectedStart, filtered);
+        assertTableEquals(expectedStart, filteredWhereIn);
+        assertTrue(filtered.isRefreshing());
+        assertTrue(filteredWhereIn.isRefreshing());
+
+        // The results must then track the set table: add a key to the input table.
+        setUpdater.addAsync(newTable(stringCol("Sym", "B"), intCol("Acct", 2)), FAIL_ON_ERROR);
+        updateGraph.runWithinUnitTestCycle(setTable::run);
+        final Table expectedAfterSetAdd = newTable(
+                stringCol("Sym", "A", "B", "C"), intCol("Acct", 1, 2, 1), intCol("Val", 10, 20, 30));
+        assertTableEquals(expectedAfterSetAdd, filtered);
+        assertTableEquals(expectedAfterSetAdd, filteredWhereIn);
+
+        // And the source table: add a row with a key in the set, and one with a key not in the set.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(12, 14),
+                    stringCol("Sym", "A", "A"), intCol("Acct", 1, 2), intCol("Val", 60, 70));
+            source.notifyListeners(i(12, 14), i(), i());
+        });
+        final Table expectedAfterSourceAdd = newTable(
+                stringCol("Sym", "A", "B", "C", "A"), intCol("Acct", 1, 2, 1, 1), intCol("Val", 10, 20, 30, 60));
+        assertTableEquals(expectedAfterSourceAdd, filtered);
+        assertTableEquals(expectedAfterSourceAdd, filteredWhereIn);
+
+        // Remove a key from the input table.
+        setUpdater.deleteAsync(newTable(stringCol("Sym", "A"), intCol("Acct", 1)), FAIL_ON_ERROR);
+        updateGraph.runWithinUnitTestCycle(setTable::run);
+        final Table expectedAfterSetDelete = newTable(
+                stringCol("Sym", "B", "C"), intCol("Acct", 2, 1), intCol("Val", 20, 30));
+        assertTableEquals(expectedAfterSetDelete, filtered);
+        assertTableEquals(expectedAfterSetDelete, filteredWhereIn);
     }
 
     public void testIncrementalReleaseFilter() throws ExecutionException, InterruptedException, TimeoutException {
