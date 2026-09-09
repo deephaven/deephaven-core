@@ -39,7 +39,7 @@ jobs:
 
       - name: Docker meta server
         id: docker_meta_server
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: |
             ghcr.io/${{ github.repository_owner }}/server-netty
@@ -53,7 +53,7 @@ jobs:
 
       - name: Docker meta server slim
         id: docker_meta_server_slim
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: |
             ghcr.io/${{ github.repository_owner }}/server-slim-netty
@@ -129,7 +129,7 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/web-plugin-packager
           flavor: |
