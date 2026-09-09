@@ -339,6 +339,8 @@ public class FormulaKernelAdapter extends io.deephaven.engine.table.impl.select.
             final FillContext kernelContext = partiallyBuilt.add(kernel.makeFillContext(chunkCapacity));
             final AdapterContext result =
                     new AdapterContext(iChunk, iiChunk, kChunk, sourceContexts, kernelContext);
+            // Ownership of the chunks and contexts has transferred to result, which closes them; empty the
+            // auto-close list so they survive this block.
             partiallyBuilt.clear();
             return result;
         }

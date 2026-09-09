@@ -216,9 +216,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
                         false);
             }
 
-            try (final RowSet prevRowSet = tableToValidate.getRowSet().copyPrev()) {
-                validateIndexesEqual("pre-update rowSet", rowSet, prevRowSet);
-            }
+            validateRowSetsEqual("pre-update rowSet", rowSet, tableToValidate.getRowSet().prev());
             rowSet.remove(upstream.removed());
             // ci.remove clears values through the redirection (if in use), so it must precede freeRedirections
             Arrays.stream(columnInfos).forEach((ci) -> ci.remove(upstream.removed()));
@@ -251,7 +249,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
                 });
             }
             rowSet.insert(upstream.added());
-            validateIndexesEqual("post-update rowSet", rowSet, tableToValidate.getRowSet());
+            validateRowSetsEqual("post-update rowSet", rowSet, tableToValidate.getRowSet());
             if (isRedirectionUsed()) {
                 allocateRedirections(upstream.added());
             }
@@ -345,7 +343,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
         }
     }
 
-    private void validateIndexesEqual(final String what, final RowSet expected, final RowSet actual) {
+    private void validateRowSetsEqual(final String what, final RowSet expected, final RowSet actual) {
         if (expected.equals(actual)) {
             return;
         }
