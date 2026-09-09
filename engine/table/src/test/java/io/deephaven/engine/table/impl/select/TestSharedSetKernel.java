@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.MatchOptions;
@@ -11,6 +13,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.SafeCloseable;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -113,19 +116,36 @@ public class TestSharedSetKernel {
         // A filter that has never been given a recompute listener has nothing to recompute.
         assertEquals(0, shared.registeredFilterCount());
 
-        final Table result = source.where(filter);
+        // Each result is built in its own releasable scope, which is the only thing keeping its filter copy alive,
+        // so releasing that scope must take the registration with it.
+        final LivenessScope firstScope = new LivenessScope();
+        final Table first;
+        try (final SafeCloseable ignored = LivenessScopeStack.open(firstScope, false)) {
+            first = source.where(filter.copy());
+        }
         assertEquals(1, shared.registeredFilterCount());
 
         // Additional operations register their own copies.
-        final Table second = source.where(filter.copy());
+        final LivenessScope secondScope = new LivenessScope();
+        final Table second;
+        try (final SafeCloseable ignored = LivenessScopeStack.open(secondScope, false)) {
+            second = source.where(filter.copy());
+        }
         assertEquals(2, shared.registeredFilterCount());
 
         // The results still track the set correctly.
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
         });
-        assertEquals(2, result.size());
+        assertEquals(2, first.size());
         assertEquals(2, second.size());
+
+        // Releasing a result deregisters its filter, so the shared set does not accumulate filters whose results are
+        // gone and which therefore have nothing to recompute.
+        firstScope.release();
+        assertEquals(1, shared.registeredFilterCount());
+        secondScope.release();
+        assertEquals(0, shared.registeredFilterCount());
     }
 
     /**

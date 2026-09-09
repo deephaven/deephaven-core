@@ -741,6 +741,11 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     /**
      * Let every operation that was left blocked finish, now that the cycle it was waiting on has completed. Without
      * this, a worker can still be inside a table operation, holding the update graph lock, when the test ends.
+     * <p>
+     * Each of these operations must complete successfully once its dependency is satisfied, so a failure or a further
+     * timeout is reported rather than swallowed: an operation that never unblocks, or that unblocks and then throws, is
+     * exactly what these tests exist to catch. Every future is still awaited, and a timed out one cancelled, before the
+     * first failure is reported, so a reported failure cannot leave a worker running.
      */
     private void awaitBlockedOperations() {
         final List<Future<?>> toAwait;
@@ -748,12 +753,30 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             toAwait = new ArrayList<>(blockedOperations);
             blockedOperations.clear();
         }
-        for (final Future<?> future : toAwait) {
+        AssertionError firstFailure = null;
+        for (int fi = 0; fi < toAwait.size(); ++fi) {
+            final Future<?> future = toAwait.get(fi);
+            AssertionError failure = null;
             try {
                 future.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            } catch (final Exception ignored) {
+            } catch (final ExecutionException e) {
+                failure = new AssertionError(
+                        "Blocked operation " + fi + " failed after its dependency was satisfied", e.getCause());
+            } catch (final TimeoutException e) {
                 future.cancel(true);
+                failure = new AssertionError(
+                        "Blocked operation " + fi + " never completed after its dependency was satisfied", e);
+            } catch (final InterruptedException e) {
+                future.cancel(true);
+                Thread.currentThread().interrupt();
+                failure = new AssertionError("Interrupted awaiting blocked operation " + fi, e);
             }
+            if (failure != null && firstFailure == null) {
+                firstFailure = failure;
+            }
+        }
+        if (firstFailure != null) {
+            throw firstFailure;
         }
     }
 

@@ -218,6 +218,10 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
                             // We are mutating during this step. Publish the step before changing the kernel, never
                             // after, so that a reader which observes the change is guaranteed to observe this step
                             // and reject what it read.
+                            // Note that a modifies-only update whose keys all compare equal below would over-report,
+                            // failing concurrent previous-value snapshots that in fact read this set consistently.
+                            // The set table is always a selectDistinct or a data index table, which produce only adds
+                            // and removes for a key change, so no such update arises today.
                             lastStateChangeStep = getUpdateGraph().clock().currentStep();
 
                             // Remove removed keys
