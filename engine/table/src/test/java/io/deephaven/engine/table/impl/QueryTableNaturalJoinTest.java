@@ -52,6 +52,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 @Category(OutOfBandTest.class)
 public class QueryTableNaturalJoinTest extends QueryTableTestBase {
@@ -1612,6 +1613,63 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         // Verify naturalJoin with NaturalJoinType.EXACTLY_ONE_MATCH is equivalent to exactJoin
         njTable = table2.naturalJoin(table1, "String2=String1", NaturalJoinType.EXACTLY_ONE_MATCH);
         assertTableEquals(pairMatch, njTable);
+    }
+
+    public void testExactJoinIndexedErrorMessageBuildRight() {
+        // a refreshing left table forces the build from the right side
+        // sparse left row keys, so no index-table group position is a valid left row key
+        final QueryTable leftTable = testRefreshingTable(i(10, 20, 30).toTracking(),
+                col("String", "c", "e", "g"));
+        DataIndexer.getOrCreateDataIndex(leftTable, "String");
+
+        final Table rightTable = testTable(col("String", "c", "e"), col("v", 1, 2));
+
+        // a plain natural join tolerates the unmatched key
+        assertEquals(3, leftTable.naturalJoin(rightTable, "String").size());
+
+        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+                () -> leftTable.exactJoin(rightTable, "String"));
+        assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
+    }
+
+    public void testExactJoinIndexedErrorMessageBuildLeft() {
+        // a static left table with a data index smaller than the right table builds from the left data index
+        // sparse left row keys, so no index-table group position is a valid left row key
+        final QueryTable leftTable = testTable(i(10, 20, 30).toTracking(),
+                col("String", "c", "e", "g"));
+        DataIndexer.getOrCreateDataIndex(leftTable, "String");
+
+        final Table rightTable = testTable(col("String", "c", "e", "q", "r"), col("v", 1, 2, 3, 4));
+
+        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+                () -> leftTable.exactJoin(rightTable, "String"));
+        assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
+    }
+
+    public void testExactJoinIndexedErrorMessageContiguous() {
+        // a flat static left table produces a contiguous row redirection
+        final Table leftTable = testTable(col("String", "c", "e", "g")).flatten();
+        DataIndexer.getOrCreateDataIndex(leftTable, "String");
+
+        final Table rightTable = testTable(col("String", "c", "e", "q", "r"), col("v", 1, 2, 3, 4));
+
+        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+                () -> leftTable.exactJoin(rightTable, "String"));
+        assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
+    }
+
+    public void testExactJoinIndexedErrorMessageHash() {
+        // left row keys spread across distant blocks make a sparse redirection too wasteful, producing a hashed one
+        final QueryTable leftTable = testRefreshingTable(
+                i(10, 1L << 20, 2L << 20, 3L << 20, 4L << 20).toTracking(),
+                col("String", "c", "e", "g", "h", "j"));
+        DataIndexer.getOrCreateDataIndex(leftTable, "String");
+
+        final Table rightTable = testTable(col("String", "c", "e", "h", "j"), col("v", 1, 2, 3, 4));
+
+        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+                () -> leftTable.exactJoin(rightTable, "String"));
+        assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
 
     private ColumnInfo[] createTestColumnInfos(final float nullFraction, final int maxValue) {
