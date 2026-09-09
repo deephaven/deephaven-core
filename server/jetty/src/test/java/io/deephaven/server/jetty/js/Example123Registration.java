@@ -9,6 +9,7 @@ import io.deephaven.plugin.js.Paths;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.util.Map;
 
 public final class Example123Registration implements Registration {
 
@@ -39,6 +40,7 @@ public final class Example123Registration implements Registration {
                 .version("0.1.0")
                 .main(main)
                 .path(resourcePath)
+                .loader(Map.of("foo", "bar"))
                 .build();
     }
 
