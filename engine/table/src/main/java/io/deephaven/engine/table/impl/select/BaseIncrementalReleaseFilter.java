@@ -203,6 +203,10 @@ public abstract class BaseIncrementalReleaseFilter
         final long end = System.currentTimeMillis() + timeoutMillis;
         updateGraph.exclusiveLock().doLocked(() -> {
             while (releaseAllNanos == QueryConstants.NULL_LONG) {
+                if (listener.getTable().isFailed()) {
+                    throw new IllegalStateException(
+                            "Table failed before all rows were released, cannot wait for completion");
+                }
                 // This only works because we will never actually filter out a row from the result; in the general
                 // WhereFilter case, the result table may not update if not all rows are passed through
                 if (hasTimeout) {

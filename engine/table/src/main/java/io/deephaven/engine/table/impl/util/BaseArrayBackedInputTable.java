@@ -332,6 +332,10 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
                 // We're holding the lock. currentTable had better be refreshing. Wait on its UGP condition
                 // in order to allow updates.
                 while (processedSequence < sequence) {
+                    if (BaseArrayBackedInputTable.this.isFailed()) {
+                        throw new IllegalStateException(
+                                "Input table failed before pending change " + sequence + " was processed");
+                    }
                     try {
                         BaseArrayBackedInputTable.this.awaitUpdate();
                     } catch (InterruptedException ignored) {
