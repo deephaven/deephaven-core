@@ -170,18 +170,30 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         sourceTable.getDefinition());
             } else if (agg.hasFormula()) {
                 final io.deephaven.proto.backplane.grpc.Selectable selectableGrpc = agg.getFormula().getSelectable();
-                if (selectableGrpc.getTypeCase() == io.deephaven.proto.backplane.grpc.Selectable.TypeCase.RAW) {
-                    if (formulaPrototypes == null) {
-                        formulaPrototypes = makeRollupFormulaPrototypes(sourceTable, groupByColumns);
+                switch (selectableGrpc.getTypeCase()) {
+                    case RAW: {
+                        if (formulaPrototypes == null) {
+                            formulaPrototypes = makeRollupFormulaPrototypes(sourceTable, groupByColumns);
+                        }
+                        final String raw = selectableGrpc.getRaw();
+                        for (final TableDefinition prototype : formulaPrototypes) {
+                            // A fresh SelectColumn per prototype; validateColumnExpressions initializes it against the
+                            // definition, which is stateful and must not be shared across levels.
+                            final SelectColumn selectColumn = SelectColumn.of(Selectable.parse(raw));
+                            columnExpressionValidator.validateColumnExpressions(
+                                    new SelectColumn[] {selectColumn}, new String[] {raw}, prototype);
+                        }
+                        break;
                     }
-                    final String raw = selectableGrpc.getRaw();
-                    for (final TableDefinition prototype : formulaPrototypes) {
-                        // A fresh SelectColumn per prototype; validateColumnExpressions initializes it against the
-                        // definition, which is stateful and must not be shared across levels.
-                        final SelectColumn selectColumn = SelectColumn.of(Selectable.parse(raw));
-                        columnExpressionValidator.validateColumnExpressions(
-                                new SelectColumn[] {selectColumn}, new String[] {raw}, prototype);
-                    }
+                    case TYPE_NOT_SET:
+                        // No expression is present, so there is nothing to compile or validate.
+                        break;
+                    default:
+                        // Reject unknown Selectable types rather than skipping them, so a newly added case cannot
+                        // reach the engine without passing through the validator.
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "Unsupported Selectable type (" + selectableGrpc.getTypeCase()
+                                        + ") in rollup Aggregation formula.");
                 }
             }
         }
