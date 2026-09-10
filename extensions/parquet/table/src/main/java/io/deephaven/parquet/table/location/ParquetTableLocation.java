@@ -154,7 +154,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     .orElse(TableInfo.builder().build());
             groupingColumns = tableInfo.groupingColumnMap();
             columnTypes = tableInfo.columnTypeMap();
-            sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
+            sortingColumns = translateSortingColumns(SortColumnInfo.sortColumns(tableInfo.sortingColumns()));
 
             if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
                 // We do not have the last modified time for non-file URIs
@@ -222,6 +222,51 @@ public class ParquetTableLocation extends AbstractTableLocation {
     public List<SortColumn> getSortedColumns() {
         initialize();
         return sortingColumns;
+    }
+
+    /**
+     * Translate sorting columns out of parquet name space and into table name space.
+     *
+     * <p>
+     * {@link TableInfo#sortingColumns()} records the names the <em>writer</em> saw, which are parquet-space names.
+     * Everything else this location exposes is in table name space -- {@link #makeColumnLocation} translates in the
+     * other direction -- and both consumers of {@link #getSortedColumns()} read the names as table-space:
+     * {@code SourceTable.doCoalesce} publishes them as the coalesced table's
+     * {@link io.deephaven.engine.table.impl.SortedColumnsAttribute SortedColumnsAttribute}, and the
+     * {@code ParquetColumnRegion*} pushdown handlers compare them against {@code filterColumnToManagerColumnName}'s
+     * output. Translating once here fixes both.
+     *
+     * <p>
+     * A sorting column with no table-space name is <em>dropped</em> rather than passed through: under a rename that
+     * permutes names, an untranslated parquet name can still match a table column -- a different, unsorted one -- and a
+     * sortedness claim about the wrong column silently drops rows from range and match filters. Claiming no sort order
+     * merely gives up an optimization.
+     */
+    private List<SortColumn> translateSortingColumns(@NotNull final List<SortColumn> parquetSpaceSortColumns) {
+        if (parquetSpaceSortColumns.isEmpty()) {
+            return parquetSpaceSortColumns;
+        }
+        final List<SortColumn> tableSpaceSortColumns = new ArrayList<>(parquetSpaceSortColumns.size());
+        for (final SortColumn parquetSpaceSortColumn : parquetSpaceSortColumns) {
+            final String parquetColumnName = parquetSpaceSortColumn.column().name();
+            final String columnName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);
+            if (columnName == null) {
+                // No table column reads this parquet column. Passing the parquet name through is only safe if a table
+                // column of that name would read this same parquet column; otherwise the name denotes something else.
+                if (!parquetColumnName.equals(
+                        readInstructions.getParquetColumnNameFromColumnNameOrDefault(parquetColumnName))) {
+                    continue;
+                }
+                tableSpaceSortColumns.add(parquetSpaceSortColumn);
+            } else if (columnName.equals(parquetColumnName)) {
+                tableSpaceSortColumns.add(parquetSpaceSortColumn);
+            } else {
+                tableSpaceSortColumns.add(parquetSpaceSortColumn.isAscending()
+                        ? SortColumn.asc(ColumnName.of(columnName))
+                        : SortColumn.desc(ColumnName.of(columnName)));
+            }
+        }
+        return tableSpaceSortColumns;
     }
 
     @Override
@@ -500,10 +545,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * @param columnDefinition The definition of the column (required to access dictionary chunk suppliers)
      * @return {@code true} if the column has a dictionary page, {@code false} otherwise
      */
-    private boolean hasDictionaryPage(final String parquetColumnName, final ColumnDefinition<?> columnDefinition) {
+    private boolean hasDictionaryPage(final ColumnDefinition<?> columnDefinition) {
+        // getColumnLocation takes a table-space name and translates it to parquet space itself, so the definition's
+        // own name is what it wants -- passing a parquet-space name here fetched a different physical column whenever
+        // a read-time rename permuted names.
         // noinspection unchecked
         final ParquetColumnLocation<Values> columnLocation =
-                (ParquetColumnLocation<Values>) getColumnLocation(parquetColumnName);
+                (ParquetColumnLocation<Values>) getColumnLocation(columnDefinition.getName());
         final Supplier<Chunk<Values>>[] chunkSuppliers =
                 columnLocation.getDictionaryChunkSuppliers(columnDefinition);
         final Chunk<Values> dictionaryChunk;
@@ -581,7 +629,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         } else if (action == IN_MEMORY_DATA_INDEX) {
             isApplicable = hasCachedDataIndex(estimateCtx.parquetColumnNames);
         } else if (action == PARQUET_DICTIONARY) {
-            isApplicable = hasDictionaryPage(estimateCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0));
+            isApplicable = hasDictionaryPage(filterCtx.columnDefinitions().get(0));
         } else if (action == DEFERRED_DATA_INDEX) {
             isApplicable = hasDataIndex(estimateCtx.parquetColumnNames);
         } else {
@@ -674,10 +722,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
         }
         if (action == PARQUET_DICTIONARY) {
-            if (!hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
+            if (!hasDictionaryPage(filterCtx.columnDefinitions().get(0))) {
                 return input.copy();
             }
-            return pushdownFilterDictionary(selection, filterCtx, actionCtx.parquetColumnNames, input);
+            return pushdownFilterDictionary(selection, filterCtx, input);
         }
         if (action == DEFERRED_DATA_INDEX) {
             final BasicDataIndex dataIndex =
@@ -919,7 +967,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private PushdownResult pushdownFilterDictionary(
             final RowSet selection,
             final RegionedPushdownFilterContext ctx,
-            final String[] parquetColumnNames,
             final PushdownResult result) {
 
         final BasePushdownFilterContext.FilterNullBehavior filterNullBehavior = ctx.filterNullBehavior();
@@ -936,9 +983,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         final ColumnDefinition<?> columnDefinition = ctx.columnDefinitions().get(0);
 
+        // As in hasDictionaryPage: getColumnLocation wants the table-space name, which the definition carries.
         // noinspection unchecked
         final ParquetColumnLocation<Values> columnLocation =
-                (ParquetColumnLocation<Values>) getColumnLocation(parquetColumnNames[0]);
+                (ParquetColumnLocation<Values>) getColumnLocation(columnDefinition.getName());
 
         // Get the dictionary chunks for the row groups.
         // noinspection unchecked

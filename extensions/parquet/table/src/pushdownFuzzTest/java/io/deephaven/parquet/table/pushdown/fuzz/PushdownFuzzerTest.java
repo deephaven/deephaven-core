@@ -72,6 +72,9 @@ public class PushdownFuzzerTest {
             7177646707619336702L, 273087235408284003L, 8429452456633422855L,
             8540064508133314173L, 8922140309403778699L, -4605199251911937283L,
             8576325184258344286L, 7496982466862244149L,
+            // Finding 9: parquet-space names leaked into two table-space APIs in ParquetTableLocation -- the
+            // recorded sorting column, and the dictionary path's column-location lookup.
+            -5347797226962475569L, -6688467811848818630L, -7423979211207825555L,
     };
 
     private static final String ROOT_FILENAME = PushdownFuzzerTest.class.getName() + "_root";

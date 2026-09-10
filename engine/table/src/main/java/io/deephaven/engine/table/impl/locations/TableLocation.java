@@ -89,8 +89,17 @@ public interface TableLocation
 
     /**
      * Get an ordered list of columns this location is sorted by.
-     * 
-     * @return A non-null ordered list of {@link SortColumn SortColumns}
+     *
+     * <p>
+     * The names are in <em>table</em> name space, the same space as {@link #getColumnLocation}'s argument -- not in
+     * whatever name space the underlying storage uses. An implementation whose storage records sort columns under
+     * different names must translate them, and must omit any it cannot translate: a sortedness claim naming the wrong
+     * column silently drops rows, because both consumers of this method act on it without validation. One publishes it
+     * as the coalesced table's {@link io.deephaven.engine.table.impl.SortedColumnsAttribute SortedColumnsAttribute},
+     * which drives a binary search in {@code AbstractRangeFilter} regardless of any pushdown setting; the other uses it
+     * to select a sorted-column pushdown action.
+     *
+     * @return A non-null ordered list of {@link SortColumn SortColumns}, named in table name space
      */
     @NotNull
     List<SortColumn> getSortedColumns();
