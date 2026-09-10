@@ -78,7 +78,7 @@ result = source.update("Y = (int)double_it(X)")
 
 Crossing from Java to Python adds overhead — see [Formulas run in the engine, not in Python](./deephaven-mental-model.md#formulas-run-in-the-engine-not-in-python) for when the engine can batch that crossing per chunk versus falling back to once per row. Either way, for performance-critical code, prefer built-in functions or a Java function.
 
-**Query scope makes variables available:**
+**[Query scope](../how-to-guides/query-scope.md) makes variables available:**
 
 ```python order=result
 from deephaven import empty_table
@@ -120,28 +120,29 @@ This is why Deephaven can efficiently process real-time data: it typically recom
 
 The Table API offers several ways to add columns, each with different performance characteristics:
 
-| Operation     | Stores values | Recomputes on access | Best for                                         |
-| ------------- | ------------- | -------------------- | ------------------------------------------------ |
-| `update`      | Yes           | No                   | Expensive formulas, values accessed repeatedly   |
-| `view`        | No            | Yes                  | Simple formulas, memory-constrained environments |
-| `select`      | Yes           | No                   | Creating a new table with only specific columns  |
-| `lazy_update` | Cached        | When cache misses    | Few unique input values, expensive computation   |
+| Operation                                                            | Stores values | Recomputes on access | Best for                                         |
+| -------------------------------------------------------------------- | ------------- | -------------------- | ------------------------------------------------ |
+| `update`                                                             | Yes           | No                   | Expensive formulas, values accessed repeatedly   |
+| `view`                                                               | No            | Yes                  | Simple formulas, memory-constrained environments |
+| `select`                                                             | Yes           | No                   | Creating a new table with only specific columns  |
+| [`update_view`](../reference/table-operations/select/update-view.md) | No            | Yes                  | Same as `view`, but keeping all original columns |
+| [`lazy_update`](../reference/table-operations/select/lazy-update.md) | Cached        | When cache misses    | Few unique input values, expensive computation   |
 
-**`update`** computes values once and stores them:
+**[`update`](../reference/table-operations/select/update.md)** computes values once and stores them:
 
 ```python syntax
 # Good: complex calculation, accessed many times
 result = source.update("Score = expensiveCalculation(A, B, C)")
 ```
 
-**`view`** computes on demand:
+**[`view`](../reference/table-operations/select/view.md)** computes on demand:
 
 ```python syntax
 # Good: simple formula, saves memory
 result = source.view(["X", "Doubled = X * 2"])
 ```
 
-**`select`** is like `update` but only includes specified columns:
+**[`select`](../reference/table-operations/select/select.md)** is like `update` but only includes specified columns:
 
 ```python syntax
 # Drops all columns except those listed
@@ -166,14 +167,7 @@ Inside a formula string, you have access to:
 - `ii` — Row position as `long` (for tables with more than 2 billion rows)
 - `k` — Internal row key (use cautiously; not the same as row position)
 
-`i`/`ii` and `k` are only valid on static, append-only, or blink tables — a general refreshing table rejects them because positions and keys can shift. See [special variables](../reference/query-language/variables/special-variables.md) for the full compatibility matrix.
-
-**Query scope** — Python variables from local/global scope:
-
-```python syntax
-threshold = 100
-"Filtered = Value > threshold"
-```
+`i`/`ii` are valid on static, append-only, or blink tables; `k` is valid on a slightly broader set — static, add-only (which includes append-only), or blink tables. A general refreshing table rejects whichever of these it doesn't satisfy, because positions and keys can shift. See [special variables](../reference/query-language/variables/special-variables.md) for the full compatibility matrix.
 
 **Built-in functions** — Math, string manipulation, time operations:
 
@@ -184,15 +178,7 @@ threshold = 100
 "Hour = hourOfDay(Timestamp, timeZone(`America/New_York`))"
 ```
 
-**Your own functions** — With a performance cost for crossing to Python:
-
-```python syntax
-def score(a, b):
-    return a * 0.7 + b * 0.3
-
-
-"Score = (double)score(MetricA, MetricB)"
-```
+Query scope variables and your own Python functions are also available inside formulas — see [Formulas are strings](#formulas-are-strings) above for how those work and their tradeoffs.
 
 ## Same API, different behavior
 
@@ -215,7 +201,7 @@ The code is identical. The difference:
 - `static_result` is computed once and never changes.
 - `live_result` automatically updates as new rows arrive in `live_table`.
 
-You can check whether a table is live with `is_refreshing`:
+You can check whether a table is live with [`is_refreshing`](../reference/table-operations/metadata/is_refreshing.md):
 
 ```python syntax
 print(static_table.is_refreshing)  # False

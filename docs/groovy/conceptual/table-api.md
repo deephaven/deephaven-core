@@ -67,7 +67,7 @@ result = source.update("Y = (int)doubleIt(X)")
 
 The engine calls your closure once per row — see [Calling Groovy from formulas](./deephaven-mental-model.md#calling-groovy-from-formulas) for the details. For performance-critical code, prefer built-in functions.
 
-**Query scope makes variables available:**
+**[Query scope](../how-to-guides/query-scope.md) makes variables available:**
 
 ```groovy order=result
 threshold = 10
@@ -110,28 +110,29 @@ This is why Deephaven can efficiently process real-time data: it typically recom
 
 The Table API offers several ways to add columns, each with different performance characteristics:
 
-| Operation    | Stores values | Recomputes on access | Best for                                         |
-| ------------ | ------------- | -------------------- | ------------------------------------------------ |
-| `update`     | Yes           | No                   | Expensive formulas, values accessed repeatedly   |
-| `view`       | No            | Yes                  | Simple formulas, memory-constrained environments |
-| `select`     | Yes           | No                   | Creating a new table with only specific columns  |
-| `lazyUpdate` | Cached        | When cache misses    | Few unique input values, expensive computation   |
+| Operation                                                           | Stores values | Recomputes on access | Best for                                         |
+| ------------------------------------------------------------------- | ------------- | -------------------- | ------------------------------------------------ |
+| `update`                                                            | Yes           | No                   | Expensive formulas, values accessed repeatedly   |
+| `view`                                                              | No            | Yes                  | Simple formulas, memory-constrained environments |
+| `select`                                                            | Yes           | No                   | Creating a new table with only specific columns  |
+| [`updateView`](../reference/table-operations/select/update-view.md) | No            | Yes                  | Same as `view`, but keeping all original columns |
+| [`lazyUpdate`](../reference/table-operations/select/lazy-update.md) | Cached        | When cache misses    | Few unique input values, expensive computation   |
 
-**`update`** computes values once and stores them:
+**[`update`](../reference/table-operations/select/update.md)** computes values once and stores them:
 
 ```groovy syntax
 // Good: complex calculation, accessed many times
 result = source.update("Score = expensiveCalculation(A, B, C)")
 ```
 
-**`view`** computes on demand:
+**[`view`](../reference/table-operations/select/view.md)** computes on demand:
 
 ```groovy syntax
 // Good: simple formula, saves memory
 result = source.view("X", "Doubled = X * 2")
 ```
 
-**`select`** is like `update` but only includes specified columns:
+**[`select`](../reference/table-operations/select/select.md)** is like `update` but only includes specified columns:
 
 ```groovy syntax
 // Drops all columns except those listed
@@ -156,14 +157,7 @@ Inside a formula string, you have access to:
 - `ii` — Row position as `long` (for tables with more than 2 billion rows)
 - `k` — Internal row key (use cautiously; not the same as row position)
 
-`i`/`ii` and `k` are only valid on static, append-only, or blink tables — a general refreshing table rejects them because positions and keys can shift. See [special variables](../reference/query-language/variables/special-variables.md) for the full compatibility matrix.
-
-**Query scope** — Variables from your script:
-
-```groovy syntax
-threshold = 100
-"Filtered = Value > threshold"
-```
+`i`/`ii` are valid on static, append-only, or blink tables; `k` is valid on a slightly broader set — static, add-only (which includes append-only), or blink tables. A general refreshing table rejects whichever of these it doesn't satisfy, because positions and keys can shift. See [special variables](../reference/query-language/variables/special-variables.md) for the full compatibility matrix.
 
 **Built-in functions** — Math, string manipulation, time operations:
 
@@ -173,12 +167,7 @@ threshold = 100
 "Hour = hourOfDay(Timestamp, timeZone(`America/New_York`))"
 ```
 
-**Your own closures**:
-
-```groovy syntax
-score = { a, b -> a * 0.7 + b * 0.3 }
-"Score = (double)score(MetricA, MetricB)"
-```
+Query scope variables and your own Groovy closures are also available inside formulas — see [Formulas are strings](#formulas-are-strings) above for how those work and their tradeoffs.
 
 ## Same API, different behavior
 
@@ -199,7 +188,7 @@ The code is identical. The difference:
 - `staticResult` is computed once and never changes.
 - `liveResult` automatically updates as new rows arrive in `liveTable`.
 
-You can check whether a table is live with `isRefreshing`:
+You can check whether a table is live with [`isRefreshing`](../reference/table-operations/metadata/isRefreshing.md):
 
 ```groovy syntax
 println staticTable.isRefreshing()  // false

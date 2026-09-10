@@ -21,7 +21,11 @@ For the concepts behind table operations — immutability, formulas, dependencie
 | Add columns (computed on demand) | `view("NewCol = formula")`              |
 | Keep only specific columns       | `select("Col1", "Col2")`                |
 | Sort by column                   | `sort("Column")`                        |
+| Sort in reverse order            | `sortDescending("Column")`              |
 | Join lookup data                 | `naturalJoin(other, "Key", "AddedCol")` |
+| Join requiring exactly one match | `exactJoin(other, "Key", "AddedCol")`   |
+| Cross or key-matched join        | `join(other, "Key")`                    |
+| Match on a timestamp/ordered key | `aj(other, "Key")`                      |
 | Aggregate by groups              | `aggBy([AggSum(...)], "Key")`           |
 
 ## Diving deeper: API references
@@ -40,6 +44,7 @@ The reference documentation for each operation (e.g., [`where`](../reference/tab
 - [Table types](./table-types.md)
 - [How to use filters](../how-to-guides/use-filters.md)
 - [How to use select, view, and update](../how-to-guides/use-select-view-update.md)
+- [Sort table data](../how-to-guides/sort.md)
 - [Exact and relational joins](../how-to-guides/joins-exact-relational.md)
 - [Time-series and range joins](../how-to-guides/joins-timeseries-range.md)
 - [How to use dedicated aggregations](../how-to-guides/dedicated-aggregations.md)
