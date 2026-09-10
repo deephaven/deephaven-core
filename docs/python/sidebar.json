@@ -131,6 +131,10 @@
                 "path": "conceptual/deephaven-mental-model.md"
               },
               {
+                "label": "The Table API",
+                "path": "conceptual/table-api.md"
+              },
+              {
                 "label": "Incremental update model",
                 "path": "conceptual/table-update-model.md"
               },
@@ -328,17 +332,8 @@
             "label": "Work with tables",
             "items": [
               {
-                "label": "Deephaven queries",
-                "items": [
-                  {
-                    "label": "The Table API",
-                    "path": "conceptual/table-api.md"
-                  },
-                  {
-                    "label": "Table operations overview",
-                    "path": "conceptual/table-operations-overview.md"
-                  }
-                ]
+                "label": "Table operations overview",
+                "path": "conceptual/table-operations-overview.md"
               },
               {
                 "label": "Metadata",
