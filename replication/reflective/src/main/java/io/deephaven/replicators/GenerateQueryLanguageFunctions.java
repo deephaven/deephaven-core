@@ -70,7 +70,20 @@ public class GenerateQueryLanguageFunctions {
                 "            return 1;\n" +
                 "        }\n" +
                 "\n" +
-                "        return obj1.compareTo(obj2);\n" +
+                "        try {\n" +
+                "            return obj1.compareTo(obj2);\n" +
+                "        } catch (final ClassCastException e) {\n" +
+                "            // Comparable.compareTo is specified only for mutually comparable arguments, and erasure\n"
+                +
+                "            // means an incomparable one fails inside it -- with a message naming neither operand's\n"
+                +
+                "            // role nor the comparison. Name both types instead; the ordering operators less,\n" +
+                "            // lessEquals, greater and greaterEquals all reach this method.\n" +
+                "            throw new IllegalArgumentException(\"Cannot order a \" + obj1.getClass().getCanonicalName()\n"
+                +
+                "                    + \" against a \" + obj2.getClass().getCanonicalName()\n" +
+                "                    + \"; the types are not mutually comparable\", e);\n" +
+                "        }\n" +
                 "    }\n" +
                 "\n" +
                 "    public static boolean not(boolean a) {\n" +

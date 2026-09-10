@@ -217,16 +217,21 @@ public final class FuzzFilters {
         final String hiText = column.type().literal(hi, scope);
         final String loOp = random.nextBoolean() ? ">" : ">=";
         final String hiOp = random.nextBoolean() ? "<" : "<=";
+        final String a = column.resultName() + " " + loOp + " " + loText;
+        final String b = column.resultName() + " " + hiOp + " " + hiText;
         if (random.nextBoolean()) {
             // Two separate range filters, conjoined -- flattened by ExtractInnerConjunctiveFilters
             // into two independently cost-sorted filters.
-            final String a = column.resultName() + " " + loOp + " " + loText;
-            final String b = column.resultName() + " " + hiOp + " " + hiText;
             return new FuzzFilter(Filter.and(RawString.of(a), RawString.of(b)),
                     "and(" + a + ", " + b + ")", Tier.METADATA);
         }
-        // The single-expression form, which parses to one RangeFilter.
-        final String text = loText + " " + flip(loOp) + " " + column.resultName() + " " + hiOp + " " + hiText;
+        // One expression carrying both bounds, so the pair is cost-sorted as a unit rather than
+        // separately. Note this is deliberately *not* the chained form `lo <= col <= hi`: Deephaven has
+        // no chained comparison, so Java's grammar parses that as `(lo <= col) <= hi`, which compares a
+        // boolean against `hi`. It is accepted by the parser and fails when rows are scanned -- see
+        // findings/15-chained-comparison-and-incomparable-ordering.md. It is a user error rather than a
+        // pushdown defect, so the bench does not generate it.
+        final String text = a + " && " + b;
         return new FuzzFilter(RawString.of(text), text, Tier.METADATA);
     }
 
@@ -404,7 +409,4 @@ public final class FuzzFilters {
         return random.nextBoolean() ? nonNull.get(0) : nonNull.get(nonNull.size() - 1);
     }
 
-    private static String flip(final String op) {
-        return ">".equals(op) ? "<" : "<=";
-    }
 }

@@ -43,7 +43,17 @@ public final class QueryLanguageFunctionUtils {
             return 1;
         }
 
-        return obj1.compareTo(obj2);
+        try {
+            return obj1.compareTo(obj2);
+        } catch (final ClassCastException e) {
+            // Comparable.compareTo is specified only for mutually comparable arguments, and erasure
+            // means an incomparable one fails inside it -- with a message naming neither operand's
+            // role nor the comparison. Name both types instead; the ordering operators less,
+            // lessEquals, greater and greaterEquals all reach this method.
+            throw new IllegalArgumentException("Cannot order a " + obj1.getClass().getCanonicalName()
+                    + " against a " + obj2.getClass().getCanonicalName()
+                    + "; the types are not mutually comparable", e);
+        }
     }
 
     public static boolean not(boolean a) {

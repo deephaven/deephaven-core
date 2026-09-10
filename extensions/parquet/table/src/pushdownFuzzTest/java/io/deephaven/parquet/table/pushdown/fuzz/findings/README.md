@@ -27,18 +27,15 @@ appears in both was rediscovered independently.
 
 All 19 case seeds recorded in [`../OLD_FINDINGS.md`](../OLD_FINDINGS.md) were replayed against this
 branch. **14 now pass**; `1681357320861610709` (7a) was then fixed as finding 11 and `-2281078010550439077`
-(7d) as finding 12 and `428667830982598836` (part of 3) as finding 13. The 2 that still fail are the
-root causes this campaign has not reached:
+(7d) as finding 12, `428667830982598836` (part of 3) as finding 13, and the two cross-type seeds
+(`5492728113478971232`, `6249197149364475148`, its findings 5 and 7b) as finding 15. **All 19 now
+pass.**
 
-| Old seed | `OLD_FINDINGS.md` | Still fails with |
-| --- | --- | --- |
-| `5492728113478971232` | 5 | `ClassCastException: Integer cannot be cast to Boolean` — memory throws, disk succeeds. |
-| `6249197149364475148` | 7b, 5 | `ClassCastException: String cannot be cast to Boolean` — memory throws, disk succeeds. |
 
-Everything else in that file is accounted for: its finding 1 was DH-23602, fixed before this campaign
+Everything in that file is accounted for: its finding 1 was DH-23602, fixed before this campaign
 began; findings 2, 4 and the write-path items became findings 3, 9, 1, 4 and 2 here; and its finding 3
-and 7c clusters were resolved by findings 6, 7 and 10. Its two remaining classes — cross-type
-comparison divergence, and partition values containing colons — are the two largest groups still open.
+and 7c clusters were resolved by findings 6, 7 and 10. Its two remaining classes — cross-type comparison
+divergence and partition values containing colons — became findings 15 and 12.
 
 ## How the bench is run for this campaign
 
