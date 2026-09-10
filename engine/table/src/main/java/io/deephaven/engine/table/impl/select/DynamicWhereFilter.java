@@ -352,7 +352,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
 
         final WritableRowSet filtered = inclusion ? RowSetFactory.empty() : selection.copy();
-        // An abandoned attempt must not take its result with it; the reads below routinely throw to force a retry.
+        // The kernel reads below throw SnapshotInconsistentException if, and only if, the set table mutates during
+        // this concurrent snapshot attempt; that is the normal retry path, not an error. Close the partial result on
+        // the way out so an abandoned attempt does not leak it.
         try {
             // noinspection DataFlowIssue
             final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();

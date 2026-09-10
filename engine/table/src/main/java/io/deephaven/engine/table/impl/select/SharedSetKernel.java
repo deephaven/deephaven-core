@@ -125,8 +125,10 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
             final boolean allPartitioning =
                     Arrays.stream(setColumnNames).allMatch(cn -> setDef.getColumn(cn).isPartitioning());
             if (allPartitioning) {
+                // A partition-aware source table answers this from its location table, without reading any data.
                 setTableToUse = (QueryTable) setTable.selectDistinct(setColumnNames);
             } else {
+                // Duplicates are tolerated in initial creation, no need to pre-process
                 setTableToUse = (QueryTable) setTable.coalesce();
             }
         }
@@ -189,8 +191,10 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
                 ConstructSnapshot.makeSnapshotControl(true, true, setTable),
                 (usePrev, beforeClockUnused) -> {
                     // This function is re-invoked for every snapshot attempt. An attempt that proves inconsistent
-                    // leaves behind a subscribed, managed listener, which would otherwise stay attached to the set
-                    // table for the life of this set and redundantly process every set table update.
+                    // leaves behind a subscribed, managed listener. If we don't clean it up, that listener will
+                    // stay attached to the set table and continue processing every set table update for the life
+                    // of this SharedSetKernel, causing duplicate notifications and wasted work. We remove and
+                    // unmanage any stale listener from a previous failed attempt before creating a new one.
                     final SetUpdateListener staleListener = resultListenerHolder.getValue();
                     if (staleListener != null) {
                         resultListenerHolder.setValue(null);
@@ -418,8 +422,9 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
 
             // Mark a mutation in progress, so concurrent readers abandon their attempts; see kernel() for why they
             // need no more protection than that. Incremented before mutating, and again after, so that the value
-            // is odd for exactly as long as the kernel is inconsistent.
+            // is odd for exactly as long as the kernel is inconsistent, which is what beginRead() relies on.
             ++generation;
+            Assert.neqZero(generation & 1, "generation & 1 (must be odd while mutating)");
 
             boolean trueModification = false;
             // Remove removed keys
@@ -465,6 +470,7 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
                 }
             }
             ++generation;
+            Assert.eqZero(generation & 1, "generation & 1 (must be even once mutation is complete)");
 
             // Every filter sharing this set must re-evaluate against the updated keys. Each applies
             // its own inclusion, so exclusion filters invert the requests.
