@@ -8,6 +8,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.client.impl.FilterAdapter;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -634,6 +635,26 @@ public class TestColumnExpressionValidator {
                 ise.getMessage().startsWith("User expressions are not permitted to instantiate "));
         Assert.assertTrue("Actual: " + ise.getMessage(),
                 ise.getMessage().endsWith("String"));
+    }
+
+    @Test
+    public void testMethodNameRequiresExpandedAssignmentAsOriginalExpression() {
+        // UpdateByGrpcImpl validates a rolling formula by expanding the param token into an "output=expression"
+        // assignment. MethodNameColumnExpressionValidator re-parses the original-expression argument and requires that
+        // Column=Formula form (see validateSelectColumnHelper), so the original expression passed alongside the
+        // SelectColumn must be the expanded assignment, not the bare formula body.
+        final ColumnExpressionValidator validator = new MethodNameColumnExpressionValidator();
+        final Table input = TableTools.emptyTable(1).update("Value=1");
+
+        final String expanded = "Out=Value + 1";
+        final SelectColumn[] sc = SelectColumnFactory.getExpressions(expanded);
+
+        // Passing the bare formula (no '=') fails the Column=Formula requirement.
+        Assert.assertThrows(AssertionFailure.class,
+                () -> validator.validateColumnExpressions(sc, new String[] {"Value + 1"}, input.getDefinition()));
+
+        // Passing the expanded assignment validates cleanly, as UpdateByGrpcImpl now does.
+        validator.validateColumnExpressions(sc, new String[] {expanded}, input.getDefinition());
     }
 
     @Test
