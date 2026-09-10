@@ -232,6 +232,11 @@ public class ArrayContainer extends Container {
     /**
      * Create a new container holding a copy of the values in the provided array.
      *
+     * <p>
+     * Unlike {@link #makeByWrapping(short[], int)}, the argument is plain values only: every element is a value, and
+     * there is no reserved slot in it. The container copies them into a content array of its own, allocated with the
+     * reserved last slot, and does not keep a reference to the argument.
+     *
      * @param values array with values in increasing unsigned short order, all of which the container holds.
      */
     public ArrayContainer(final short[] values) {
