@@ -154,30 +154,12 @@ they register **`TableUpdateListener`s** on upstream tables and receive `TableUp
 ### Updating the query engine
 
 The engine processes large, ticking datasets on the hot path, so data-movement code must be written
-for throughput. When adding or changing engine internals (`engine/table`, `engine/rowset`,
-`engine/chunk`, aggregation/join/update-by operators, `ColumnSource`s, kernels), follow these rules:
-
-- **Read data in bulk (chunked), not cell-by-cell.** Pull values through `ColumnSource` /
-  `RowSequence` into `Chunk`s and operate on whole chunks; do not loop calling scalar
-  `get`/`getPrev` per row key. Bulk access is the design intent of `Chunk` and the fill APIs.
-- **Avoid per-cell virtual calls.** A megamorphic call in an inner loop defeats the JIT. Dispatch
-  once per chunk to a type-specialized **kernel** rather than once per element; if no suitable kernel
-  exists, write one (see the generated single-column kernel families and their dispatchers) instead
-  of funneling per-cell calls through an interface.
-- **Allocate per operation, not per chunk.** Create a reusable *context* object (e.g.
-  `ChunkSource.FillContext` / `GetContext`, aggregation or kernel state) once, before iterating, and
-  reuse it across every chunk in the loop. Do not allocate chunks, arrays, or boxed values inside the
-  per-chunk body. Context objects are `SafeCloseable` — close them (try-with-resources).
-- **Batch `RowSet` operations.** Use range- and chunk-oriented `RowSet` / `RowSetBuilder` /
-  `WritableRowSet` APIs (`insertRange`, `insert(RowSet)`, `RowSequence` iteration, sequential/random
-  builders). Avoid per-key `get`/`find`/`insert`/`remove` in a loop; presize builders and destinations
-  to the source size (an open-hash set iterated into a default-sized destination can go
-  ~quadratic — see the `RspBitmap` intersect history).
-- **Keep `RowSet` operations O(n); never add a quadratic path.** When modifying or adding a `RowSet`
-  operation, confirm its complexity is linear in the number of rows/ranges touched. A per-element
-  `find`/`get`/`insert` inside a loop over another set is the classic quadratic trap — restructure
-  to a single linear merge/scan instead. If you cannot make an operation O(n), flag it rather than
-  shipping a quadratic path.
+for throughput. Before adding or changing engine internals (`engine/table`, `engine/rowset`,
+`engine/chunk`, aggregation/join/update-by operators, `ColumnSource`s, kernels), read
+`.github/instructions/query-engine.instructions.md` — the rules cover bulk (chunked) reads,
+dispatching to type-specialized kernels instead of per-cell virtual calls, allocating reusable
+context objects before the per-chunk loop, batching `RowSet` operations, and keeping `RowSet`
+operations O(n) with no quadratic paths.
 
 ### Server & client integration (`server/`, `py/`, `java-client/`, `proto/`)
 
@@ -214,48 +196,12 @@ Both use stable `## ` section anchors, so `grep -n '^## ' <file>` gives you a ma
 ### Reviewing / updating gRPC services
 
 Server-side gRPC handlers turn untrusted client requests into engine operations, so they are a
-security boundary. When adding or changing a handler (`server/src/.../table/ops/*GrpcImpl.java`, the
-hierarchical/partitioned/console/input-table services, or a service-loaded `TicketResolver`), check
-the following:
-
-- **Validate every user-supplied expression the engine will compile.** Any request string that
-  becomes a formula, filter, or selectable compiled as Java — `update`/`view`/`select`, `where`,
-  `AggFormula`, `AggCountWhere`, rolling formulas, `updateView`/`format` node ops, etc. — must be run
-  through `io.deephaven.engine.validation.ColumnExpressionValidator` **before** it reaches the engine.
-  Strings that are parsed into structured types instead (`ColumnName`, `JoinMatch`, `Pair`,
-  `SortColumn`, `RangeJoinMatch`) are safe by construction and enforced by `NameValidator`; a plain
-  column-name argument does not need the expression validator, a compiled expression always does.
-- **Validate the exact string the engine compiles, against the shape it compiles against.** If you
-  substitute tokens (e.g. a rolling-formula param token), use the engine's own substitution
-  (`FormulaUtil.replaceFormulaTokens`, a literal token-aware replace) — never `String.replaceAll`,
-  which treats the user token as a regex and can make the validator inspect a different string than
-  the engine runs. Build the validation prototype (`TableDefinition`) with the same column shapes the
-  engine sees: grouped vs. scalar/vector columns, and any synthetic columns the engine injects (e.g.
-  rollup `__FORMULA_DEPTH__` / `__FORMULA_KEYS__`). If the engine compiles the same expression at
-  more than one shape (e.g. a rollup compiles each formula once per grouping prefix, from the base
-  level down to the empty-key root, turning dropped keys from scalars into vectors), validate it at
-  **every** such shape, not just one.
-- **Keep validation consistent across equivalent paths.** The same proto message often reaches the
-  engine through several services (e.g. `Aggregation` is used by `Aggregate`, `AggregateAll`,
-  `RangeJoin`, and `Rollup`). Validate it identically everywhere; when a new service reuses a message,
-  mirror the existing validation rather than re-deriving a partial version.
-- **Reject unknown `oneof` / enum cases instead of silently skipping them.** Handle proto type cases
-  with a `switch` whose `default` (and `TYPE_NOT_SET`) throws `INVALID_ARGUMENT`, so a proto case
-  added later cannot slip past validation unnoticed. Prefer this over an `if (typeCase == X)` that
-  ignores everything else.
-- **Validate request shape.** In `validateRequest`, use `GrpcErrorHelper.checkHasField` /
-  `checkRepeatedFieldNonEmpty` / `checkHasNoUnknownFields` and `Common.validate(...)` on every ticket
-  reference. `checkHasNoUnknownFields` is what rejects unknown/renamed proto fields.
-- **Enforce authorization.** Every operation must call its
-  `authWiring.checkPermission<Operation>(...)` before returning a result.
-- **Surface failures as `INVALID_ARGUMENT`.** Throw via `Exceptions.statusRuntimeException` or a plain
-  `IllegalArgumentException`; work performed inside a `SessionState` export is sanitized to
-  "Details Logged w/ID" (INVALID_ARGUMENT) by the `ObfuscatingErrorTransformer`, so assert on the
-  status code, and on that message when confirming a failure came through the export/validator path.
-- **Cover it with gRPC-level tests** (extend `GrpcTableOperationTestBase`): one benign expression that
-  is accepted and one disallowed expression that must be rejected. When the change closes a bypass,
-  write the test so it fails on the pre-fix code (verify by reverting) — a test that passes either way
-  proves nothing.
+security boundary. Before adding or changing a handler (`server/src/.../table/ops/*GrpcImpl.java`,
+the hierarchical/partitioned/console/input-table services, or a service-loaded `TicketResolver`),
+read `.github/instructions/grpc-services.instructions.md` — the checklist covers validating
+every user-supplied expression through `ColumnExpressionValidator`, validating the exact string and
+column shape the engine compiles, rejecting unknown proto `oneof`/enum cases, request-shape and
+authorization checks, error mapping, and the tests to add.
 
 ### Other major areas
 
