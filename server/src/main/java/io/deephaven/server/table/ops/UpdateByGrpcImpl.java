@@ -296,10 +296,8 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                     TableTools.newTable(TableDefinition.of(formulaInputDefinition)).groupBy(groupByColumns);
 
             final String formulaString = spec.getRollingFormula().getFormula();
-            // Substitute the param token exactly as the engine does at runtime
-            // (BaseRollingFormulaOperator uses FormulaUtil.replaceFormulaTokens, a literal token-aware replace);
-            // String.replaceAll would treat the user-supplied token as a regex and the replacement as having
-            // group semantics, so the validator could inspect a different string than the engine compiles.
+            // Substitute the param token with FormulaUtil.replaceFormulaTokens, the literal token-aware replace
+            // BaseRollingFormulaOperator uses at runtime, so the validator inspects the string the engine compiles.
             final SelectColumn[] sc = SelectColumn.from(
                     Selectable.from(pair.output().name() + "="
                             + FormulaUtil.replaceFormulaTokens(formulaString,
