@@ -399,8 +399,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
                 final long start = it.currentRangeStart();
                 final long end = it.currentRangeEnd();
                 // Test the ranges with primitive comparisons; the Assert calls box their operands and concatenate
-                // message strings, which we must not pay for on the (overwhelmingly common) success path.
-                if (start < 0 || end < start || start <= lastEnd + 1) {
+                // message strings, which we must not pay for on the (overwhelmingly common) success path. The order
+                // and adjacency checks are separate so that lastEnd == Long.MAX_VALUE cannot overflow past a
+                // subsequent range: ordering fails first, and the adjacency subtraction (with start >= 0) is safe.
+                if (start < 0 || end < start || start <= lastEnd || start - 1 == lastEnd) {
                     Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
                     Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
                     Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
