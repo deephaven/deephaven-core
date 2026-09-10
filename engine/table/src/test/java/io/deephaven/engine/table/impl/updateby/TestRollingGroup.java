@@ -1086,6 +1086,43 @@ public class TestRollingGroup extends BaseUpdateByTest {
         }
     }
 
+    @Test
+    public void testUngroupTicking() {
+        doTestUngroupTicking(false);
+    }
+
+    @Test
+    public void testUngroupTickingBucketed() {
+        doTestUngroupTicking(true);
+    }
+
+    private void doTestUngroupTicking(final boolean bucketed) {
+        final int prevTicks = 100;
+        final int postTicks = 10;
+
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131);
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        final Table grouped = bucketed
+                                ? t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, columns), "Sym")
+                                : t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, columns));
+                        return grouped.ungroup(columns);
+                    }
+                }
+        };
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            TstUtils.validate("Table - step " + ii, nuggets);
+        }
+    }
+
     // endregion
 
     // region Edge cases
