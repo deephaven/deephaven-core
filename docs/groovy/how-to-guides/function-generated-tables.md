@@ -20,7 +20,7 @@ The workflow for this method is to first define a function that returns a table,
 
 If one or more source tables are used, the function will be re-run any time any of the tables tick. If a refresh interval is used, the function is re-run once per interval in milliseconds. You must only use one or the other as the trigger.
 
-The user-defined `table_generator` function can source its data from anywhere - the only limit is the user's imagination, and the requirement that the function return a valid table.
+The user-defined `tableGenerator` function can source its data from anywhere - the only limit is the user's imagination, and the requirement that the function return a valid table. A `retainingLastTableSupplier` (see [Choose a table supplier](#choose-a-table-supplier)) may instead return an empty `Optional` to keep the previous result.
 
 ### Execution context
 
@@ -28,7 +28,7 @@ The `function_generated_table` method requires an [execution context](../concept
 
 ### Define a `tableGenerator` function
 
-Next, we create a `tableGenerator` function. Transform your data any way you want - the only rule is that this function has to return a table.
+Next, we create a `tableGenerator` function. Transform your data any way you want - the only rule is that this function has to return a table (or, for a `retainingLastTableSupplier`, an empty `Optional` to keep the previous result).
 
 Here's a simple example:
 

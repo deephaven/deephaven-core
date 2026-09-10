@@ -177,11 +177,14 @@ class TableTestCase(BaseTestCase):
         append_only_input_table.add(
             new_table([string_col(name="MyStr", data=["test string"])])
         )
-        self.wait_ticking_table_update(result_table, row_count=1, timeout=30)
-        first_row_key = get_row_key(0, result_table)
-        result_str = result_table.j_table.getColumnSource("ResultStr").get(
-            first_row_key
-        )
+        # Blink rows are removed on the cycle after they are added, so the wait and the read must happen under a
+        # single exclusive-lock scope; the lock is reentrant and await_update releases it while waiting.
+        with update_graph.exclusive_lock(self.test_update_graph):
+            self.wait_ticking_table_update(result_table, row_count=1, timeout=30)
+            first_row_key = get_row_key(0, result_table)
+            result_str = result_table.j_table.getColumnSource("ResultStr").get(
+                first_row_key
+            )
         self.assertEqual(result_str, "test string")
 
     def test_generated_table_copy_data_false(self):
