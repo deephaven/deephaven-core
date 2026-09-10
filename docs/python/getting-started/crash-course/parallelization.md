@@ -157,7 +157,7 @@ The intent is for each row to get a unique ID: 1, 2, 3, and so on. On free-threa
 
 Two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
 
-### The fix: force sequential processing with `with_serial`
+## The fix: force sequential processing with `with_serial`
 
 The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method tells Deephaven to process this formula on a single core, one row at a time, in order:
 

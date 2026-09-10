@@ -130,7 +130,7 @@ The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with para
 > [!NOTE]
 > This example uses 5 million rows, which crosses the default `QueryTable.minimumParallelSelectRows` (about 4.2 million rows). With a smaller table, Deephaven would evaluate the formula serially and the race would not occur.
 
-### The fix: force sequential processing with `withSerial`
+## The fix: force sequential processing with `withSerial`
 
 The [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) method tells Deephaven to process this formula on a single core, one row at a time, in order:
 
