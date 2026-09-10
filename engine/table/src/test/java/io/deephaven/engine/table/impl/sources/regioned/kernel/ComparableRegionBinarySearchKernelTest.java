@@ -132,6 +132,41 @@ public class ComparableRegionBinarySearchKernelTest {
         }
     }
 
+    /**
+     * The run is read in slices, so a run longer than one slice, over pages smaller than one slice, exercises the
+     * arithmetic that turns a position within a slice back into a row key. Every value here compares equal, making the
+     * whole region one run, while only a third of the rows are {@code equals} to the search value -- so a slice
+     * miscounted in either direction shows up as wrong row keys rather than merely a wrong count.
+     */
+    @Test
+    public void testMatchOverRunSpanningManySlices() {
+        final BigDecimal scale1 = new BigDecimal("1.0");
+        final BigDecimal scale2 = new BigDecimal("1.00");
+        // Comfortably more than the kernel's slice size, so the run stays several slices wide even if that constant
+        // is raised; the page size stays well under it, so slices cross pages too.
+        final int size = 50_000;
+        final int smallPageSize = 1024;
+
+        final List<BigDecimal> data = new ArrayList<>(size);
+        final List<Long> expected = new ArrayList<>();
+        for (int ii = 0; ii < size; ++ii) {
+            if (ii % 3 == 0) {
+                data.add(scale1);
+                expected.add((long) ii);
+            } else {
+                data.add(scale2);
+            }
+        }
+
+        try (final RowSet matched = ComparableRegionBinarySearchKernel.binarySearchMatch(
+                makeBigDecimalRegion(data, smallPageSize), 0, size - 1,
+                SortColumn.asc(ColumnName.of("test")), new Object[] {scale1})) {
+            final List<Long> actual = new ArrayList<>();
+            matched.forAllRowKeys(actual::add);
+            assertEquals(expected, actual);
+        }
+    }
+
     /** Asserts a single-value search, per {@link #assertMatch(List, List, List)}. */
     private static void assertMatch(
             final List<BigDecimal> ascending,
@@ -174,8 +209,14 @@ public class ComparableRegionBinarySearchKernelTest {
 
     private static ColumnRegionObject<BigDecimal, Values> makeBigDecimalRegion(
             @NotNull final List<BigDecimal> values) {
+        return makeBigDecimalRegion(values, PAGE_SIZE);
+    }
+
+    private static ColumnRegionObject<BigDecimal, Values> makeBigDecimalRegion(
+            @NotNull final List<BigDecimal> values,
+            final int pageSize) {
         return new AppendOnlyFixedSizePageRegionObject<>(
-                RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, PAGE_SIZE, new AppendOnlyRegionAccessor<>() {
+                RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, pageSize, new AppendOnlyRegionAccessor<>() {
                     @Override
                     public void readChunkPage(long firstRowPosition, int minimumSize,
                             @NotNull WritableChunk<Values> destination) {

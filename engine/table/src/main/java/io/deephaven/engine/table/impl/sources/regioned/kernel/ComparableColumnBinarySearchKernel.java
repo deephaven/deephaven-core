@@ -43,7 +43,8 @@ import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearc
  */
 public class ComparableColumnBinarySearchKernel {
 
-    private static final int CHUNK_SIZE = 2048;
+    /** Rows per slice when scanning a run. Matches the other chunked scans in {@code engine/table}. */
+    private static final int CHUNK_SIZE = 1 << 12;
 
     private ComparableColumnBinarySearchKernel() {}
 
