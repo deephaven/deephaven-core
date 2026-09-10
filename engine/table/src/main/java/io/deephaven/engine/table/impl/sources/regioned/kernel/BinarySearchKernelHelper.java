@@ -32,13 +32,12 @@ public class BinarySearchKernelHelper {
 
     /**
      * Types documented to have a natural ordering consistent with equals, seeded with those the engine knows and
-     * extended by {@link #registerConsistentType(Class)}. Boxed primitives are absent deliberately: they never reach
-     * the Object kernels, since the sorted pushdown dispatches them to their primitive kernel.
+     * extended by {@link #registerConsistentType(Class)}. Boxed primitives are absent deliberately: sorted pushdown
+     * dispatches them to their primitive kernel, so they never reach the Object kernels.
      *
      * <p>
-     * Replaced wholesale rather than mutated, so a read is an ordinary lookup in an immutable set and every search that
-     * consults it pays nothing for the fact that it can change. Writes take the cost instead, which is where it
-     * belongs: registration happens a handful of times at startup, while this is read once per pushdown.
+     * Copy-on-write, so reads need no synchronization: registration happens a handful of times at startup, while this
+     * is read once per pushdown.
      */
     private static volatile Set<Class<?>> consistentTypes = Set.of(
             String.class,
@@ -56,15 +55,11 @@ public class BinarySearchKernelHelper {
      * decides.
      *
      * <p>
-     * <em>The caller warrants the property; nothing here can verify it.</em> Register a type for which
-     * {@code compare(a, b) == 0} does not imply {@code eq(a, b)} and the search will claim rows that the filter it
-     * stands in for would reject. The result is declared exact, so nothing downstream re-checks it, and the query
-     * returns wrong rows with no error -- exactly the failure {@link java.math.BigDecimal} produces.
+     * The property is not verified; registering a type that lacks it will produce incorrect filter results.
      *
      * <p>
-     * Registration is additive and idempotent, and a type cannot be withdrawn. Register during startup, before the type
-     * is queried: a search already under way keeps the set it started with, so registering alongside a running query
-     * decides nothing about which path that query takes.
+     * Registration is additive and idempotent, and a type cannot be withdrawn. Register types during startup: a search
+     * already under way keeps the set it started with.
      *
      * @param dataType the column data type to register
      * @throws IllegalArgumentException if {@code dataType} is not {@link Comparable}, since
