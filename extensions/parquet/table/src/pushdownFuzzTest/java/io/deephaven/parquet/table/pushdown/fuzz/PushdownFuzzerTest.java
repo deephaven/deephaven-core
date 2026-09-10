@@ -59,7 +59,12 @@ public class PushdownFuzzerTest {
      * Every finding this bench produces is expected to be reduced to a standalone regression test and fixed, so a seed
      * lands here once its fix is in; see {@code findings/} in this package for the per-finding write-ups.
      */
-    private static final long[] INTERESTING_SEEDS = {};
+    private static final long[] INTERESTING_SEEDS = {
+            // Finding 3: a pre-epoch LocalDateTime with a sub-second part could be written to parquet but not read
+            // back, because the materializers split the epoch offset with truncating / and %. Reaching it also
+            // required findings 1 and 2 to be fixed, so this seed exercises all three.
+            8750790217018904276L,
+    };
 
     private static final String ROOT_FILENAME = PushdownFuzzerTest.class.getName() + "_root";
 
