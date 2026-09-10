@@ -217,10 +217,10 @@ public abstract class HashMapBase implements NullableLongLongMap {
     /**
      * Compute an entry capacity at which a map can hold {@code expectedEntries} entries (including deleted slots)
      * without rehashing. The rehash check fires when the slot count reaches {@code capacity * loadFactor} after an
-     * insert, and that threshold is computed in {@code float}, which loses integer precision above 2^24 — so rather
-     * than a fixed margin, step the candidate capacity up until the threshold it produces strictly clears the expected
-     * count. Bucket-count rounding in {@link #allocateKeysAndValuesArray} only ever increases the capacity, and the
-     * float threshold is non-decreasing in the capacity, so the allocated map's threshold clears it too.
+     * insert, and that threshold is computed in {@code float}, which loses integer precision above 2^24 — so the
+     * capacity is padded by the rounding error the threshold computation can incur. Bucket-count rounding in
+     * {@link #allocateKeysAndValuesArray} only ever increases the capacity, and the float threshold is non-decreasing
+     * in the capacity, so the allocated map's threshold clears the expected count too.
      *
      * @param expectedEntries the number of slots the map must absorb without rehashing
      * @param loadFactor the map's load factor
@@ -228,9 +228,15 @@ public abstract class HashMapBase implements NullableLongLongMap {
      */
     public static int capacityForExpectedEntries(final long expectedEntries, final float loadFactor) {
         long candidate = (long) Math.ceil((expectedEntries + 1.0) / loadFactor);
-        while (candidate < Integer.MAX_VALUE && (int) (candidate * loadFactor) <= expectedEntries) {
-            candidate++;
-        }
+        // The exact product candidate * loadFactor is already at least expectedEntries + 1, but the map computes
+        // its threshold as (int) ((float) capacity * loadFactor), which can land below the exact product: the
+        // long-to-float conversion loses up to half of the capacity's ULP (scaled by loadFactor in the product),
+        // the multiply rounds by up to half the product's ULP, and the int cast truncates up to one more entry.
+        // Pad the capacity by that error over loadFactor — doubled, because the padded capacity may cross into the
+        // next binade, where both ULPs double.
+        final float ulpCandidate = Math.ulp((float) candidate);
+        final float ulpProduct = Math.ulp((float) candidate * loadFactor);
+        candidate += (long) Math.ceil((ulpCandidate * loadFactor + ulpProduct + 2) / loadFactor);
         return (int) Math.min(Integer.MAX_VALUE, candidate);
     }
 

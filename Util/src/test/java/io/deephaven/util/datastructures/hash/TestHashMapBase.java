@@ -35,6 +35,25 @@ public class TestHashMapBase {
                 TestCase.assertTrue(message, (int) ((capacity + 1) * loadFactor) >= threshold);
             }
         }
+        // The capacity padding is derived from an error analysis rather than verified by construction, so also
+        // sweep randomized counts across every float binade in the supported range.
+        final java.util.Random random = new java.util.Random(12345);
+        for (final float loadFactor : loadFactors) {
+            for (int ii = 0; ii < 100_000; ++ii) {
+                final long expected = (long) (random.nextDouble() * 1_100_000_000L);
+                final int capacity = HashMapBase.capacityForExpectedEntries(expected, loadFactor);
+                if (capacity == Integer.MAX_VALUE) {
+                    // No int capacity can promise this count at this load factor; the request saturates and the
+                    // map instead clamps to its maximum capacity, running at the nearly-full threshold.
+                    continue;
+                }
+                final int threshold = (int) (capacity * loadFactor);
+                if (threshold <= expected) {
+                    TestCase.fail(String.format("loadFactor=%f, expected=%d, capacity=%d, threshold=%d",
+                            loadFactor, expected, capacity, threshold));
+                }
+            }
+        }
     }
 
     /**
