@@ -309,9 +309,10 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             dataIndex, rowSetToSort, usePrev, ALLOW_SYMBOL_TABLE)
                     .getArrayMapping();
 
-            // The map's capacity is in entries and it rehashes at capacity * loadFactor, so we must oversize it by
-            // the inverse load factor for the initial population to complete without any rehashing.
-            final int reverseLookupCapacity = (int) Math.min(Integer.MAX_VALUE, sortedKeys.length * 4L / 3 + 1);
+            // The map's capacity is in entries and it rehashes when the slot count reaches capacity * loadFactor
+            // after an insert, so we must oversize it by the inverse load factor — with one extra entry so the
+            // final insert stays strictly below the threshold — for the population to complete without rehashing.
+            final int reverseLookupCapacity = (int) Math.min(Integer.MAX_VALUE, (sortedKeys.length + 1) * 4L / 3 + 1);
             final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(reverseLookupCapacity, .75f, -3);
             sortMapping = SortHelpers.createSortRowRedirection();
 

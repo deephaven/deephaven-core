@@ -195,8 +195,10 @@ public abstract class HashMapBase implements NullableLongLongMap {
 
     final void resetToNullImpl() {
         // nonEmptySlots (not size) drives rehashing, so it determines the capacity we would have needed to absorb
-        // this generation of entries without growing.
-        final long capacityForObservedSlots = (long) (nonEmptySlots / loadFactor) + 1;
+        // this generation of entries without growing. The rehash check fires when nonEmptySlots reaches
+        // capacity * loadFactor after an insert, so the threshold must land strictly beyond the observed count;
+        // the extra slot guards against the threshold truncating back down to it.
+        final long capacityForObservedSlots = (long) Math.ceil((nonEmptySlots + 1.0) / loadFactor) + 1;
         desiredInitialCapacity =
                 (int) Math.max(desiredInitialCapacity, Math.min(Integer.MAX_VALUE, capacityForObservedSlots));
         size = 0;

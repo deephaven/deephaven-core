@@ -357,6 +357,29 @@ public class TestLongLongMap {
     }
 
     @Test
+    public void resetPreservesObservedCapacity() {
+        // The reference fastutil implementation doesn't have resetToNull
+        if (factory == referenceFactory) {
+            return;
+        }
+        final int size = 1000;
+        final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        for (int ii = 0; ii < size; ++ii) {
+            map.put(ii * 7, ii);
+        }
+        map.resetToNull();
+
+        // The first put after a reset allocates a backing array sized from the previous generation's observed
+        // slot count, so refilling to the same size must not rehash.
+        map.put(0, 0);
+        final int refillCapacity = map.capacity();
+        for (int ii = 1; ii < size; ++ii) {
+            map.put(ii * 7, ii);
+        }
+        TestCase.assertEquals(refillCapacity, map.capacity());
+    }
+
+    @Test
     public void iteratorFromEmptyAndNullMap() {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         map.put(0, 1);
