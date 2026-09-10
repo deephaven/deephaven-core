@@ -27,7 +27,7 @@ Deephaven uses all available CPU cores to process queries faster, in three ways:
 
 ### Across tables
 
-When you create multiple tables from the same source, Deephaven computes them simultaneously. In this example, three independent tables derive from `market_data`:
+When you create multiple tables from the same source, Deephaven's update graph can update them concurrently. In this example, three independent tables derive from `market_data`:
 
 ```python ticking-table order=null
 from deephaven import time_table

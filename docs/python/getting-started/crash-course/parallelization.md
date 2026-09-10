@@ -11,12 +11,12 @@ Modern computers have multiple processors (called "cores") that can work simulta
 
 Deephaven distributes work across cores in two ways:
 
-1. **Across tables**: When multiple tables depend on the same live source, Deephaven updates them at the same time on different cores as new data arrives.
+1. **Across tables**: When multiple tables depend on the same live source, Deephaven's update graph can update them at the same time on different cores as new data arrives.
 2. **Across rows**: When computing values for a single table, Deephaven divides the rows among cores so each core handles a portion.
 
 ### Across tables
 
-When one table feeds into several downstream tables, Deephaven updates those downstream tables simultaneously as new data arrives. In this example, `trades` feeds into three separate tables using [`where`](../../reference/table-operations/filter/where.md), [`agg_by`](../../reference/table-operations/group-and-aggregate/aggBy.md), and [`tail`](../../reference/table-operations/filter/tail.md):
+When one table feeds into several downstream tables, Deephaven's update graph can update those downstream tables concurrently as new data arrives. In this example, `trades` feeds into three separate tables using [`where`](../../reference/table-operations/filter/where.md), [`agg_by`](../../reference/table-operations/group-and-aggregate/aggBy.md), and [`tail`](../../reference/table-operations/filter/tail.md):
 
 ```python test-set=parallel ticking-table order=null
 from deephaven import time_table, agg
@@ -36,7 +36,7 @@ by_symbol = trades.agg_by([agg.sum_("TotalVolume = Volume")], "Symbol")
 recent = trades.tail(100)
 ```
 
-When new data arrives in `trades`, Deephaven can update `high_value`, `by_symbol`, and `recent` at the same time, each on its own core.
+When new data arrives in `trades`, Deephaven's update graph makes `high_value`, `by_symbol`, and `recent` eligible to update concurrently — whether they actually run at the same time depends on the update graph's thread pool (sized to your CPU cores by default).
 
 ### Across rows
 
