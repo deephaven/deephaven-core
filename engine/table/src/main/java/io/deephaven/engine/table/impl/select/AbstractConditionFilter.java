@@ -350,6 +350,14 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         return formulaShiftedColumnDefinitions;
     }
 
+    /**
+     * Produce a copy of this filter with its columns renamed according to {@code renames}.
+     *
+     * @param renames Map from this filter's column name space to the target's. Need not be total: a column that is
+     *        absent is unchanged, which is how {@link #outerToInnerNames} is read throughout this class. See
+     *        {@link MatchFilter#renameFilter} for the same contract on the other filter kind
+     *        {@link io.deephaven.engine.table.impl.DeferredViewTable} pushes below a view.
+     */
     public abstract AbstractConditionFilter renameFilter(Map<String, String> renames);
 
     public interface Filter {

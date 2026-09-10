@@ -64,6 +64,9 @@ public class PushdownFuzzerTest {
             // back, because the materializers split the epoch offset with truncating / and %. Reaching it also
             // required findings 1 and 2 to be fixed, so this seed exercises all three.
             8750790217018904276L,
+            // Finding 6: or(isNotNull(renamed), isNull(unrenamed)) over a DeferredViewTable tripped
+            // MatchFilter.renameFilter's totality assertion on the partial rename map.
+            -4715342832495625892L,
     };
 
     private static final String ROOT_FILENAME = PushdownFuzzerTest.class.getName() + "_root";

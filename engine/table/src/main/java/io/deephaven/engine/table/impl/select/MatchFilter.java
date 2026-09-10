@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
@@ -108,9 +107,18 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return failoverFilter != null ? failoverFilter.getIfCached() : null;
     }
 
+    /**
+     * Produce a copy of this filter with its column renamed according to {@code renames}.
+     *
+     * @param renames Map from this filter's column name space to the target's. Need not be total: a column that is
+     *        absent is unchanged, matching how {@link AbstractConditionFilter} reads the same map with
+     *        {@code getOrDefault(name, name)}. {@link io.deephaven.engine.table.impl.DeferredViewTable} builds these
+     *        maps from only the columns that are actually renamed, and its disjunction and conjunction handling passes
+     *        one map down to every sub-filter, so a sub-filter here routinely sees a map that names only its siblings'
+     *        columns.
+     */
     public WhereFilter renameFilter(Map<String, String> renames) {
-        final String newName = renames.get(columnName);
-        Assert.neqNull(newName, "newName");
+        final String newName = renames.getOrDefault(columnName, columnName);
         if (strValues == null) {
             // when we're constructed with values then there is no failover filter
             return new MatchFilter(matchOptions, newName, values);

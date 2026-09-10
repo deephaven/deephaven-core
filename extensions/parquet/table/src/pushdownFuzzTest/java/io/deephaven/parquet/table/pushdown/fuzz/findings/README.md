@@ -17,6 +17,7 @@ appears in both was rediscovered independently.
 | 3 | [A pre-epoch `LocalDateTime` with a sub-second part cannot be read back from parquet](03-pre-epoch-local-date-time-materializers.md) | high | fixed |
 | 4 | [A key-value partitioned write with no partitions crashed inside the writer](04-empty-partitioned-write-crash.md) | medium | fixed |
 | 5 | [A partitioning column's type was inferred from its directory names, so it did not round trip](05-partitioning-column-type-not-recorded.md) | high | fixed |
+| 6 | [A disjunction mixing a renamed and an un-renamed column tripped an internal assertion](06-match-filter-partial-rename-map.md) | medium | fixed |
 
 ## How the bench is run for this campaign
 
