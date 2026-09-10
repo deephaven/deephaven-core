@@ -13,6 +13,11 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.MatchOptions;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.ByteRangeFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionByte;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -31,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.IntToLongFunction;
+import static io.deephaven.util.QueryConstants.MAX_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 import static org.junit.Assert.*;
 
@@ -626,6 +632,97 @@ public class ByteRegionBinarySearchKernelTest {
                         return values.size();
                     }
                 });
+    }
+
+    /** Ascending, engine-ordered (null sentinel first), with a repeated value so a bound can land inside a run. */
+    private static final List<Byte> DISPATCH_DATA =
+            List.of(NULL_BYTE, (byte) 1, (byte) 2, (byte) 5, (byte) 5, (byte) 9);
+
+    /**
+     * The two {@code binsearch*Filter} entry points are the region kernel's front door, and the Parquet regions are
+     * their only production callers -- nothing else in this class reaches them, so the dispatch they perform goes
+     * unchecked here even though the searches it selects are covered thoroughly.
+     *
+     * <p>
+     * Each shape is asserted to agree with the search it should dispatch to, rather than against hand-computed row
+     * keys: the question this answers is which search a filter selects, and comparing against the search itself cannot
+     * drift from the semantics the rest of this class already pins down. A two-sided range is the case worth having,
+     * since the two one-sided shortcuts each skip half the work and only the two-sided form searches both bounds.
+     */
+    @Test
+    public void testRangeFilterEntryPointDispatch() {
+        for (final boolean descending : new boolean[] {false, true}) {
+            final List<Byte> data;
+            final SortColumn sortColumn;
+            if (descending) {
+                data = new ArrayList<>(DISPATCH_DATA);
+                Collections.reverse(data);
+                sortColumn = SortColumn.desc(ColumnName.of("test"));
+            } else {
+                data = DISPATCH_DATA;
+                sortColumn = SortColumn.asc(ColumnName.of("test"));
+            }
+            final ColumnRegionByte<Values> region = makeColumnRegionByte(data);
+            final long lastKey = data.size() - 1;
+
+            // Two-sided: neither bound covers everything beyond it, so both are searched.
+            for (final boolean lowerInc : new boolean[] {false, true}) {
+                for (final boolean upperInc : new boolean[] {false, true}) {
+                    try (final RowSet viaFilter = ByteRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                            sortColumn, new ByteRangeFilter("test", (byte) 2, (byte) 5, lowerInc, upperInc));
+                            final RowSet viaSearch = ByteRegionBinarySearchKernel.binarySearchMinMax(region, 0, lastKey,
+                                    sortColumn, (byte) 2, (byte) 5, lowerInc, upperInc)) {
+                        assertEquals("descending=" + descending + " lowerInc=" + lowerInc + " upperInc=" + upperInc,
+                                viaSearch, viaFilter);
+                    }
+                }
+            }
+
+            // An inclusive null lower bound covers everything below the upper bound, so only the upper is searched.
+            try (final RowSet viaFilter = ByteRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                    sortColumn, new ByteRangeFilter("test", NULL_BYTE, (byte) 5, true, true));
+                    final RowSet viaSearch = ByteRegionBinarySearchKernel.binarySearchMax(region, 0, lastKey,
+                            sortColumn, (byte) 5, true)) {
+                assertEquals("descending=" + descending, viaSearch, viaFilter);
+            }
+
+            // An inclusive max upper bound covers everything above the lower bound, so only the lower is searched.
+            try (final RowSet viaFilter = ByteRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                    sortColumn, new ByteRangeFilter("test", (byte) 2, MAX_BYTE, true, true));
+                    final RowSet viaSearch = ByteRegionBinarySearchKernel.binarySearchMin(region, 0, lastKey,
+                            sortColumn, (byte) 2, true)) {
+                assertEquals("descending=" + descending, viaSearch, viaFilter);
+            }
+        }
+    }
+
+    /**
+     * The match entry point converts a {@link MatchFilter}'s values and hands them to the match search, except for an
+     * empty value list, which matches nothing and must not touch the region at all.
+     */
+    @Test
+    public void testMatchFilterEntryPointDispatch() {
+        final ColumnRegionByte<Values> region = makeColumnRegionByte(DISPATCH_DATA);
+        final long lastKey = DISPATCH_DATA.size() - 1;
+        final SortColumn sortColumn = SortColumn.asc(ColumnName.of("test"));
+        final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofByte("test"));
+
+        final MatchFilter matchFilter = new MatchFilter(MatchOptions.REGULAR, "test", (byte) 5, NULL_BYTE);
+        matchFilter.init(tableDefinition);
+        try (final RowSet viaFilter = ByteRegionBinarySearchKernel.binsearchMatchFilter(region, 0, lastKey, sortColumn,
+                matchFilter);
+                final RowSet viaSearch = ByteRegionBinarySearchKernel.binarySearchMatch(region, 0, lastKey, sortColumn,
+                        new Object[] {(byte) 5, NULL_BYTE})) {
+            assertEquals(viaSearch, viaFilter);
+        }
+
+        // No values to look for, so nothing matches and the search is skipped outright.
+        final MatchFilter emptyFilter = new MatchFilter(MatchOptions.REGULAR, "test");
+        emptyFilter.init(tableDefinition);
+        try (final RowSet viaFilter = ByteRegionBinarySearchKernel.binsearchMatchFilter(region, 0, lastKey, sortColumn,
+                emptyFilter)) {
+            assertTrue(viaFilter.isEmpty());
+        }
     }
 
     /**

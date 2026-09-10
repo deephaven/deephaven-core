@@ -1648,6 +1648,94 @@ public final class ParquetTableFilterTest {
     }
 
     /**
+     * The sorted region tests otherwise reach only the floating-point and {@link BigDecimal} kernels, leaving the five
+     * integral region kernels with no sorted range coverage at all. Each is exercised here with a two-sided range --
+     * both bounds carried by one filter, which is the shape that reaches {@code binarySearchMinMax} rather than one of
+     * the single-ended shortcuts -- over all four inclusivity combinations, with the two shortcuts alongside for
+     * contrast.
+     *
+     * <p>
+     * No query string produces a two-sided filter, since {@code WhereFilterFactory} builds one operator and one value
+     * per {@code RangeFilter}, so these are constructed directly. Runs of ten equal values put the bounds inside a run
+     * rather than on a clean boundary, and nulls sit at the sorted edge so a range has to exclude them. The oracle is
+     * the same filter with sorted pushdown switched off.
+     */
+    @Test
+    public void sortedFlatPartitionsIntegralRangeTest() {
+        final int tableSize = 100_000;
+
+        final String charPath = Path.of(rootFile.getPath(),
+                "ParquetTest_sortedFlatPartitionsIntegralRangeChar").toString();
+        writeSortedPartitions(charPath, TableTools.emptyTable(tableSize)
+                .update("sorted_char = ii % 997 == 0 ? NULL_CHAR : (char) (ii / 10)")
+                .sort("sorted_char"), "sorted_char");
+        for (final boolean lower : new boolean[] {false, true}) {
+            for (final boolean upper : new boolean[] {false, true}) {
+                verifyAgainstDisabledSortedPushdown(charPath,
+                        new CharRangeFilter("sorted_char", (char) 200, (char) 800, lower, upper));
+            }
+        }
+        verifyAgainstDisabledSortedPushdown(charPath, CharRangeFilter.geq("sorted_char", (char) 200));
+        verifyAgainstDisabledSortedPushdown(charPath, CharRangeFilter.leq("sorted_char", (char) 800));
+
+        final String bytePath = Path.of(rootFile.getPath(),
+                "ParquetTest_sortedFlatPartitionsIntegralRangeByte").toString();
+        writeSortedPartitions(bytePath, TableTools.emptyTable(tableSize)
+                .update("sorted_byte = ii % 997 == 0 ? NULL_BYTE : (byte) (ii % 100)")
+                .sort("sorted_byte"), "sorted_byte");
+        for (final boolean lower : new boolean[] {false, true}) {
+            for (final boolean upper : new boolean[] {false, true}) {
+                verifyAgainstDisabledSortedPushdown(bytePath,
+                        new ByteRangeFilter("sorted_byte", (byte) 20, (byte) 80, lower, upper));
+            }
+        }
+        verifyAgainstDisabledSortedPushdown(bytePath, ByteRangeFilter.geq("sorted_byte", (byte) 20));
+        verifyAgainstDisabledSortedPushdown(bytePath, ByteRangeFilter.leq("sorted_byte", (byte) 80));
+
+        final String shortPath = Path.of(rootFile.getPath(),
+                "ParquetTest_sortedFlatPartitionsIntegralRangeShort").toString();
+        writeSortedPartitions(shortPath, TableTools.emptyTable(tableSize)
+                .update("sorted_short = ii % 997 == 0 ? NULL_SHORT : (short) (ii / 10)")
+                .sort("sorted_short"), "sorted_short");
+        for (final boolean lower : new boolean[] {false, true}) {
+            for (final boolean upper : new boolean[] {false, true}) {
+                verifyAgainstDisabledSortedPushdown(shortPath,
+                        new ShortRangeFilter("sorted_short", (short) 200, (short) 800, lower, upper));
+            }
+        }
+        verifyAgainstDisabledSortedPushdown(shortPath, ShortRangeFilter.geq("sorted_short", (short) 200));
+        verifyAgainstDisabledSortedPushdown(shortPath, ShortRangeFilter.leq("sorted_short", (short) 800));
+
+        final String intPath = Path.of(rootFile.getPath(),
+                "ParquetTest_sortedFlatPartitionsIntegralRangeInt").toString();
+        writeSortedPartitions(intPath, TableTools.emptyTable(tableSize)
+                .update("sorted_int = ii % 997 == 0 ? NULL_INT : (int) (ii / 10)")
+                .sort("sorted_int"), "sorted_int");
+        for (final boolean lower : new boolean[] {false, true}) {
+            for (final boolean upper : new boolean[] {false, true}) {
+                verifyAgainstDisabledSortedPushdown(intPath,
+                        new IntRangeFilter("sorted_int", 200, 800, lower, upper));
+            }
+        }
+        verifyAgainstDisabledSortedPushdown(intPath, IntRangeFilter.geq("sorted_int", 200));
+        verifyAgainstDisabledSortedPushdown(intPath, IntRangeFilter.leq("sorted_int", 800));
+
+        final String longPath = Path.of(rootFile.getPath(),
+                "ParquetTest_sortedFlatPartitionsIntegralRangeLong").toString();
+        writeSortedPartitions(longPath, TableTools.emptyTable(tableSize)
+                .update("sorted_long = ii % 997 == 0 ? NULL_LONG : (long) (ii / 10)")
+                .sort("sorted_long"), "sorted_long");
+        for (final boolean lower : new boolean[] {false, true}) {
+            for (final boolean upper : new boolean[] {false, true}) {
+                verifyAgainstDisabledSortedPushdown(longPath,
+                        new LongRangeFilter("sorted_long", 200L, 800L, lower, upper));
+            }
+        }
+        verifyAgainstDisabledSortedPushdown(longPath, LongRangeFilter.geq("sorted_long", 200L));
+        verifyAgainstDisabledSortedPushdown(longPath, LongRangeFilter.leq("sorted_long", 800L));
+    }
+
+    /**
      * A {@link BigDecimal} column orders inconsistently with equals -- {@code 500} and {@code 500.00} compare equal
      * while {@code equals} separates them -- so {@code ObjectRegionBinarySearchKernel.binsearchMatchFilter} routes its
      * match filters to {@code ComparableRegionBinarySearchKernel} rather than answering them by ordering alone. This

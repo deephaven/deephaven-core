@@ -617,6 +617,78 @@ public class QueryTableWhereSpecialCasesTest {
     }
 
     /**
+     * A range with both bounds set on one filter reaches {@code binarySearchMinMax} in the sorted-column kernels. The
+     * single-sided cases never do: each takes a shortcut branch that searches from one end only. No query string
+     * produces such a filter -- {@code WhereFilterFactory} builds one operator and one value per {@code RangeFilter},
+     * so {@code a < x && x < b} parses to two single-sided filters -- leaving the UI quick filter and direct
+     * construction as the only routes, and direct construction is what this uses.
+     *
+     * <p>
+     * All four inclusivity combinations are covered, since the bound comparison is where an inclusive/exclusive mix-up
+     * would hide, and each runs unsorted and sorted both ways through the shared validators.
+     */
+    @Test
+    public void testRangeTwoSidedBounds() {
+        final Table source = getStaticTable();
+
+        for (final boolean lower : new boolean[] {false, true}) {
+            for (final boolean upper : new boolean[] {false, true}) {
+                validateCharFilter(
+                        source,
+                        "charCol",
+                        new CharRangeFilter("charCol", (char) 1, (char) 5, lower, upper),
+                        val -> val != NULL_CHAR
+                                && (lower ? val >= (char) 1 : val > (char) 1)
+                                && (upper ? val <= (char) 5 : val < (char) 5));
+                validateByteFilter(
+                        source,
+                        "byteCol",
+                        new ByteRangeFilter("byteCol", (byte) -1, (byte) 1, lower, upper),
+                        val -> val != NULL_BYTE
+                                && (lower ? val >= -1 : val > -1)
+                                && (upper ? val <= 1 : val < 1));
+                validateShortFilter(
+                        source,
+                        "shortCol",
+                        new ShortRangeFilter("shortCol", (short) -1, (short) 1, lower, upper),
+                        val -> val != NULL_SHORT
+                                && (lower ? val >= -1 : val > -1)
+                                && (upper ? val <= 1 : val < 1));
+                validateIntFilter(
+                        source,
+                        "intCol",
+                        new IntRangeFilter("intCol", -1, 1, lower, upper),
+                        val -> val != NULL_INT
+                                && (lower ? val >= -1 : val > -1)
+                                && (upper ? val <= 1 : val < 1));
+                validateLongFilter(
+                        source,
+                        "longCol",
+                        new LongRangeFilter("longCol", -1L, 1L, lower, upper),
+                        val -> val != NULL_LONG
+                                && (lower ? val >= -1L : val > -1L)
+                                && (upper ? val <= 1L : val < 1L));
+                // -1.0 and 1.0 are real values here, and the bounds stay off zero so that the -0.0/0.0 pair sits
+                // strictly inside the range rather than on an exclusive edge. NaN and the infinities fall outside.
+                validateFloatFilter(
+                        source,
+                        "floatCol",
+                        new FloatRangeFilter("floatCol", -1.0f, 1.0f, lower, upper),
+                        val -> val != NULL_FLOAT && !Float.isNaN(val)
+                                && (lower ? val >= -1.0f : val > -1.0f)
+                                && (upper ? val <= 1.0f : val < 1.0f));
+                validateDoubleFilter(
+                        source,
+                        "doubleCol",
+                        new DoubleRangeFilter("doubleCol", -1.0, 1.0, lower, upper),
+                        val -> val != NULL_DOUBLE && !Double.isNaN(val)
+                                && (lower ? val >= -1.0 : val > -1.0)
+                                && (upper ? val <= 1.0 : val < 1.0));
+            }
+        }
+    }
+
+    /**
      * Deephaven ordering sorts NaN above positive infinity, so an inclusive {@code +Inf} upper bound is not an
      * unbounded one: the trailing NaN block has to be located and excluded, which the sorted range pushdown can only do
      * by searching the upper bound as well as the lower. An inclusive NaN upper bound is the unbounded case, and there
