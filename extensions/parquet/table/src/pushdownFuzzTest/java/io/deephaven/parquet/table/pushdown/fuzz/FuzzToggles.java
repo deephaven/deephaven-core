@@ -85,6 +85,26 @@ public final class FuzzToggles implements SafeCloseable {
         return new FuzzToggles(random);
     }
 
+    /**
+     * Names of pushdown switches to force off for every case, from {@code PushdownFuzzer.forceDisable}.
+     *
+     * <p>
+     * A diagnostic, not part of the sampling: replaying one failing seed while forcing a single action off says which
+     * action is responsible, which is otherwise guesswork. Accepts a comma-separated list of {@code merged},
+     * {@code stats}, {@code dataIndex}, {@code dictionary}, {@code sorted}, or {@code all}.
+     */
+    private static final java.util.Set<String> FORCE_DISABLED = java.util.Arrays.stream(
+            io.deephaven.configuration.Configuration.getInstance()
+                    .getStringWithDefault("PushdownFuzzer.forceDisable", "")
+                    .split("[,\\s]+"))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
+
+    private boolean forced(final String name, final boolean drawn) {
+        return drawn || FORCE_DISABLED.contains(name) || FORCE_DISABLED.contains("all");
+    }
+
     /** Whether this is the all-pushdown-disabled control profile. */
     public boolean allDisabled() {
         return allDisabled;
@@ -110,12 +130,13 @@ public final class FuzzToggles implements SafeCloseable {
         savedDataIndexThreshold = QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD;
         applied = true;
 
-        QueryTable.USE_DATA_INDEX_FOR_WHERE = useDataIndexForWhere;
-        QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES = disableMergedTables;
-        QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA = disableRowGroupMetadata;
-        QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = disableDataIndex;
-        QueryTable.DISABLE_WHERE_PUSHDOWN_DICTIONARY = disableDictionary;
-        QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = disableSortedColumn;
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = useDataIndexForWhere && !FORCE_DISABLED.contains("dataIndex")
+                && !FORCE_DISABLED.contains("all");
+        QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES = forced("merged", disableMergedTables);
+        QueryTable.DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA = forced("stats", disableRowGroupMetadata);
+        QueryTable.DISABLE_WHERE_PUSHDOWN_DATA_INDEX = forced("dataIndex", disableDataIndex);
+        QueryTable.DISABLE_WHERE_PUSHDOWN_DICTIONARY = forced("dictionary", disableDictionary);
+        QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = forced("sorted", disableSortedColumn);
         QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = dictionaryThreshold;
         QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD = dataIndexThreshold;
         if (disableParallelWhereForThread) {

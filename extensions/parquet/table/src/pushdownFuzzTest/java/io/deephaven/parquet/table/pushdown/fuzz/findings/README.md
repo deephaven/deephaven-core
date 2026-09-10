@@ -26,11 +26,11 @@ appears in both was rediscovered independently.
 ## Carry-over from the previous round
 
 All 19 case seeds recorded in [`../OLD_FINDINGS.md`](../OLD_FINDINGS.md) were replayed against this
-branch. **14 now pass.** The 5 that still fail are the root causes this campaign did not reach:
+branch. **14 now pass**, and  (7a) was subsequently fixed as finding 11. The 4 that still
+fail are the root causes this campaign has not reached:
 
 | Old seed | `OLD_FINDINGS.md` | Still fails with |
 | --- | --- | --- |
-| `1681357320861610709` | 7a | **silent wrong results** — `or(range, !=)` over a sorted + indexed column returns an extra non-matching row. The most serious one left. |
 | `-2281078010550439077` | 7d, 6 | `URISyntaxException` — an `Instant` partitioning value formats with colons, making an invalid partition path. Same defect as the `LocalTime` case. |
 | `428667830982598836` | 3 | `IllegalArgumentException: Duplicate source column(s)`, on the disk table only. |
 | `5492728113478971232` | 5 | `ClassCastException: Integer cannot be cast to Boolean` — memory throws, disk succeeds. |

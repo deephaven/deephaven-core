@@ -79,6 +79,9 @@ public class PushdownFuzzerTest {
             // applied with view(), which is sequential, so a swap/chain/rotation produced the wrong data.
             5201278404043255708L, 2423783905725303439L, 5559549332320180280L,
             -8144732105314013200L, 5702961989472887051L,
+            // Finding 11: SourceTable published every column of a multi-column sort as independently sorted, so a
+            // composite data index's trailing column carried a false sortedness claim and over-returned rows.
+            1681357320861610709L,
     };
 
     private static final String ROOT_FILENAME = PushdownFuzzerTest.class.getName() + "_root";
