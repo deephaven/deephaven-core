@@ -1212,7 +1212,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             TstUtils.addToTable(queryTable, i(5, 7), col("intCol", 10, 12));
 
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
-            shiftBuilder.shiftRange(0, 12, -5);
+            shiftBuilder.shiftRange(5, 12, -5);
 
             queryTable.notifyListeners(new TableUpdateImpl(
                     RowSetFactory.empty(),

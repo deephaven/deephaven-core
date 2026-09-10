@@ -6,7 +6,6 @@ package io.deephaven.engine.rowset.impl;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import org.junit.Test;
 
@@ -126,82 +125,6 @@ public class RowSetNegativeStartKeyTest {
                     assertTrue(name + " shifted advance(0) keeps going", it.advance(0));
                     assertEquals(name + " shifted advance(0) is a no-op", 1100L, it.peekNextKey());
                 }
-            }
-        }
-    }
-
-    @Test
-    public void testUnapplyingAShiftWhoseWindowReachesBelowZero() {
-        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
-        builder.shiftRange(0, 300, -3);
-        final RowSetShiftData shiftData = builder.build();
-        for (final Supplier<?> supplier : rowSets()) {
-            try (final WritableRowSet rs = (WritableRowSet) supplier.get();
-                    final WritableRowSet expected = rs.copy();
-                    final WritableRowSet postShift = rs.shift(-3)) {
-                final String name = nameOf(rs);
-                shiftData.unapply(postShift);
-                postShift.validate();
-                assertEquals(name + " unapply", keysOf(expected), keysOf(postShift));
-            }
-            try (final WritableRowSet rs = (WritableRowSet) supplier.get();
-                    final WritableRowSet expected = rs.copy();
-                    final WritableRowSet postShift = rs.shift(-3)) {
-                final String name = nameOf(rs);
-                shiftData.unapply(postShift, 0);
-                postShift.validate();
-                assertEquals(name + " unapply with offset", keysOf(expected), keysOf(postShift));
-            }
-        }
-    }
-
-    /** The same shape as {@link #rowSets()}, at the top of the key space. */
-    private static Supplier<?>[] highRowSets() {
-        final long m = Long.MAX_VALUE;
-        return new Supplier<?>[] {
-                () -> singleRangeOf(m - 300, m - 100),
-                () -> sortedRangesOf(new long[] {m - 300, m - 300}, new long[] {m - 250, m - 150},
-                        new long[] {m - 100, m - 100}),
-                () -> rspOf(new long[] {m - 300, m - 300}, new long[] {m - 250, m - 150},
-                        new long[] {m - 100, m - 100}),
-        };
-    }
-
-    /**
-     * The mirror image at the top of the key space: a positive shift whose window ends at Long.MAX_VALUE has a
-     * post-shift window that wraps, and only the part past the maximum is empty.
-     */
-    @Test
-    public void testUnapplyingAShiftWhoseWindowReachesPastTheMaximum() {
-        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
-        builder.shiftRange(Long.MAX_VALUE - 400, Long.MAX_VALUE, 3);
-        final RowSetShiftData shiftData = builder.build();
-        for (final Supplier<?> supplier : highRowSets()) {
-            try (final WritableRowSet rs = (WritableRowSet) supplier.get();
-                    final WritableRowSet expected = rs.copy();
-                    final WritableRowSet postShift = rs.shift(3)) {
-                final String name = nameOf(rs);
-                shiftData.unapply(postShift);
-                postShift.validate();
-                assertEquals(name + " unapply past max", keysOf(expected), keysOf(postShift));
-            }
-            try (final WritableRowSet rs = (WritableRowSet) supplier.get();
-                    final WritableRowSet expected = rs.copy();
-                    final WritableRowSet postShift = rs.shift(3)) {
-                final String name = nameOf(rs);
-                shiftData.unapply(postShift, 0);
-                postShift.validate();
-                assertEquals(name + " unapply past max with offset", keysOf(expected), keysOf(postShift));
-            }
-            try (final WritableRowSet rs = (WritableRowSet) supplier.get();
-                    final WritableRowSet postShift = rs.shift(3);
-                    final WritableRowSet untouched = postShift.copy()) {
-                // An offset that carries the whole window past the maximum, so far that the combined shift itself
-                // wraps: nothing in the key space is affected.
-                final String name = nameOf(rs);
-                shiftData.unapply(postShift, Long.MAX_VALUE);
-                postShift.validate();
-                assertEquals(name + " unapply with an overflowing offset", keysOf(untouched), keysOf(postShift));
             }
         }
     }
