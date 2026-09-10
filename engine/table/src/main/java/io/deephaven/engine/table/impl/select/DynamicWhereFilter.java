@@ -352,38 +352,44 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
 
         final WritableRowSet filtered = inclusion ? RowSetFactory.empty() : selection.copy();
-        // noinspection DataFlowIssue
-        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
-        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
+        // An abandoned attempt must not take its result with it; the reads below routinely throw to force a retry.
+        try {
+            // noinspection DataFlowIssue
+            final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
+            final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
 
-        final long kernelGeneration = sharedSet.beginRead();
-        final Iterator<Object> values;
-        final Function<Object, Object> keyMappingFunction;
-        if (staticSetLookupKeys != null) {
-            values = staticSetLookupKeys.iterator();
-            keyMappingFunction = Function.identity();
-        } else if (sourceKeyColumns.length == 1) {
-            values = sharedSet.kernel().iterator();
-            keyMappingFunction = Function.identity();
-        } else {
-            values = sharedSet.kernel().iterator();
-            keyMappingFunction = tupleToFullKeyMappingFunction();
-        }
-
-        forEachKernelKey(values, kernelGeneration, key -> {
-            final Object mappedKey = keyMappingFunction.apply(key);
-            final long rowKey = rowKeyLookup.apply(mappedKey, usePrev);
-            final RowSet rowSet = usePrev ? rowSetColumn.getPrev(rowKey) : rowSetColumn.get(rowKey);
-            if (rowSet != null) {
-                if (inclusion) {
-                    try (final RowSet intersected = rowSet.intersect(selection)) {
-                        filtered.insert(intersected);
-                    }
-                } else {
-                    filtered.remove(rowSet);
-                }
+            final long kernelGeneration = sharedSet.beginRead();
+            final Iterator<Object> values;
+            final Function<Object, Object> keyMappingFunction;
+            if (staticSetLookupKeys != null) {
+                values = staticSetLookupKeys.iterator();
+                keyMappingFunction = Function.identity();
+            } else if (sourceKeyColumns.length == 1) {
+                values = sharedSet.kernel().iterator();
+                keyMappingFunction = Function.identity();
+            } else {
+                values = sharedSet.kernel().iterator();
+                keyMappingFunction = tupleToFullKeyMappingFunction();
             }
-        });
+
+            forEachKernelKey(values, kernelGeneration, key -> {
+                final Object mappedKey = keyMappingFunction.apply(key);
+                final long rowKey = rowKeyLookup.apply(mappedKey, usePrev);
+                final RowSet rowSet = usePrev ? rowSetColumn.getPrev(rowKey) : rowSetColumn.get(rowKey);
+                if (rowSet != null) {
+                    if (inclusion) {
+                        try (final RowSet intersected = rowSet.intersect(selection)) {
+                            filtered.insert(intersected);
+                        }
+                    } else {
+                        filtered.remove(rowSet);
+                    }
+                }
+            });
+        } catch (final Throwable t) {
+            filtered.close();
+            throw t;
+        }
         return filtered;
     }
 

@@ -100,11 +100,19 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     @Override
     public void tearDown() throws Exception {
-        awaitBlockedOperations();
-        super.tearDown();
-        pool.shutdown();
-        dualPool.shutdown();
-        largePool.shutdown();
+        // Tear the graph and the pools down even when a blocked operation failed, so that the failure is reported
+        // against this test rather than contaminating the next one.
+        try {
+            awaitBlockedOperations();
+        } finally {
+            try {
+                super.tearDown();
+            } finally {
+                pool.shutdown();
+                dualPool.shutdown();
+                largePool.shutdown();
+            }
+        }
     }
 
     public void testTreeTableFilter() throws ExecutionException, InterruptedException, TimeoutException {
