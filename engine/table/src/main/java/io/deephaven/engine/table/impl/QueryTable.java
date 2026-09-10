@@ -1104,6 +1104,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {
         private final QueryTable source;
+        // The where listener is written by the thread that instantiates this table, which may hold no update graph
+        // lock, and read by the update graph thread when a filter requests a recompute. The request methods and
+        // setWhereListener() synchronize on this table so that the update graph thread observes the write. The request
+        // flags are set and consumed (in doRefilter()) on the update graph thread alone, and so need no monitor.
         private boolean refilterMatchedRequested = false;
         private boolean refilterUnmatchedRequested = false;
         private WritableRowSet refilterRequestedRowset = null;
@@ -1123,13 +1127,13 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         @Override
-        public void requestRecompute() {
+        public synchronized void requestRecompute() {
             refilterMatchedRequested = refilterUnmatchedRequested = true;
             notifyWhereListener();
         }
 
         @Override
-        public void requestRecomputeUnmatched() {
+        public synchronized void requestRecomputeUnmatched() {
             refilterUnmatchedRequested = true;
             notifyWhereListener();
         }
@@ -1139,13 +1143,13 @@ public class QueryTable extends BaseTable<QueryTable> {
          * re-evaluated.
          */
         @Override
-        public void requestRecomputeMatched() {
+        public synchronized void requestRecomputeMatched() {
             refilterMatchedRequested = true;
             notifyWhereListener();
         }
 
         @Override
-        public void requestRecompute(RowSet rowSet) {
+        public synchronized void requestRecompute(RowSet rowSet) {
             if (refilterRequestedRowset == null) {
                 refilterRequestedRowset = rowSet.copy();
             } else {
@@ -1346,9 +1350,14 @@ public class QueryTable extends BaseTable<QueryTable> {
          * Notify the {@link WhereListener} that a refilter has been requested, if there is one yet.
          * <p>
          * The where listener is installed only after the initial filter completes, so a refreshing filter whose inputs
-         * tick while the initial snapshot is still running may request a recompute before there is anything to notify.
-         * The caller records its request before notifying, so {@link #maybeDeliverPendingRefilterRequest()} delivers
-         * such a request once the listener exists.
+         * tick while a concurrent initial snapshot is still running may request a recompute before there is anything to
+         * notify. Such a request is safe to drop, because the snapshot attempt it lands on can never commit: an attempt
+         * begun while the clock was idle fails the clock check once the cycle starts, an attempt using previous values
+         * is rejected by the filter's {@link NotificationAwareDependency#stateChangedOnStep} report, and an attempt
+         * using current values begins only after the filter is {@link NotificationQueue.Dependency#satisfied}, that is,
+         * after whatever issues its requests has finished for the step. The retry that follows sees the change
+         * directly. Callers hold this table's monitor, which is what makes the listener written by
+         * {@link #setWhereListener} visible here.
          */
         private void notifyWhereListener() {
             if (whereListener != null) {
@@ -1356,22 +1365,8 @@ public class QueryTable extends BaseTable<QueryTable> {
             }
         }
 
-        private void setWhereListener(MergedListener whereListener) {
+        private synchronized void setWhereListener(MergedListener whereListener) {
             this.whereListener = whereListener;
-        }
-
-        /**
-         * Deliver a refilter request that was made before {@link #whereListener} existed.
-         * <p>
-         * {@link #requestRecompute()} and friends set their request flags before notifying, so
-         * {@link #refilterRequested()} covers exactly those requests whose wake-up {@link #notifyWhereListener()}
-         * dropped. Call once the listener is installed and fully wired, so that the notification cannot reach a
-         * half-constructed listener.
-         */
-        private void maybeDeliverPendingRefilterRequest() {
-            if (whereListener != null && refilterRequested()) {
-                whereListener.notifyChanges();
-            }
         }
     }
 
@@ -1636,7 +1631,6 @@ public class QueryTable extends BaseTable<QueryTable> {
                                             filteredTable.setWhereListener(whereListener);
                                             filteredTable.addParentReference(whereListener);
                                         }
-                                        filteredTable.maybeDeliverPendingRefilterRequest();
                                         result.setValue(filteredTable);
                                         return true;
                                     });

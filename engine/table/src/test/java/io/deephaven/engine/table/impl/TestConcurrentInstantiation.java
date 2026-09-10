@@ -735,9 +735,11 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
      */
     private void assertAllTimeOut(final Future<?>... futures)
             throws InterruptedException, ExecutionException {
+        // Each of these is still running, and must be awaited before the update graph is torn down. Register them all
+        // before waiting on any: if an early one unexpectedly completes, fail() exits the loop below, and an
+        // unregistered later one would be left running into the next test.
+        blockedOperations.addAll(Arrays.asList(futures));
         for (int fi = 0; fi < futures.length; ++fi) {
-            // Each of these is still running, and must be awaited before the update graph is torn down.
-            blockedOperations.add(futures[fi]);
             try {
                 futures[fi].get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
                 fail("Expected operation " + fi + " to time out waiting for dependencies");
