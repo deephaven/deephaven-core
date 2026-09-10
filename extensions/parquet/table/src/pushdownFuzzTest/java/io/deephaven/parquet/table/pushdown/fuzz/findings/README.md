@@ -13,6 +13,7 @@ appears in both was rediscovered independently.
 | # | Finding | Severity | Status |
 | --- | --- | --- | --- |
 | 1 | [An explicit `RowGroupInfo.maxRows` on a zero-row table fails the write](01-empty-table-row-group-split.md) | medium | fixed |
+| 2 | [`epochNanos` decided representability from the seconds alone](02-epoch-nanos-boundary.md) | high | fixed |
 
 ## How the bench is run for this campaign
 
