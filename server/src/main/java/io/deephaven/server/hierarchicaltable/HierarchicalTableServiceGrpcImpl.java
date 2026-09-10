@@ -147,15 +147,22 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
      * Run the user-supplied expressions in a rollup's aggregations through the {@link ColumnExpressionValidator},
      * mirroring the validation {@code AggregateGrpcImpl} performs for {@code TableService/Aggregate}. Only the two
      * rollup aggregation kinds that compile user expressions need checking: {@code AggCountWhere} (filters, compiled
-     * against the source definition) and {@code AggFormula} (a formula selectable, compiled against the grouped
-     * rollup-formula prototype). {@code AggSpecFormula} is unsupported in rollups, so it never reaches compilation.
+     * against the source definition) and {@code AggFormula} (a formula selectable). {@code AggSpecFormula} is
+     * unsupported in rollups, so it never reaches compilation.
+     * <p>
+     * A rollup compiles each formula once per level: {@code RollupTableImpl.rollupFromBase} reaggregates by
+     * progressively shorter prefixes of the group-by columns (base level down to the empty-key root), and
+     * {@code AggregationProcessor.prepareFormula} exposes every non-key column as a vector. Since that changes which
+     * overload a method call resolves to (e.g. {@code String.compareTo} at a level where a key is scalar vs a vector
+     * method once that key is dropped), each formula must be validated against every grouping prefix, not just the
+     * base.
      */
     private void validateRollupAggregations(
             @NotNull final List<io.deephaven.proto.backplane.grpc.Aggregation> aggregations,
             @NotNull final Table sourceTable,
             @NotNull final Collection<ColumnName> groupByColumns) {
-        // Built lazily; only needed (and only well-defined) when a formula aggregation is present.
-        Table formulaPrototype = null;
+        // The per-level prototype definitions, shared across all formula aggregations; built lazily on first use.
+        List<TableDefinition> formulaPrototypes = null;
         for (final io.deephaven.proto.backplane.grpc.Aggregation agg : aggregations) {
             if (agg.hasCountWhere()) {
                 columnExpressionValidator.validateSelectFilters(
@@ -164,23 +171,44 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
             } else if (agg.hasFormula()) {
                 final io.deephaven.proto.backplane.grpc.Selectable selectableGrpc = agg.getFormula().getSelectable();
                 if (selectableGrpc.getTypeCase() == io.deephaven.proto.backplane.grpc.Selectable.TypeCase.RAW) {
-                    if (formulaPrototype == null) {
-                        formulaPrototype = makeRollupFormulaPrototype(sourceTable, groupByColumns);
+                    if (formulaPrototypes == null) {
+                        formulaPrototypes = makeRollupFormulaPrototypes(sourceTable, groupByColumns);
                     }
                     final String raw = selectableGrpc.getRaw();
-                    final SelectColumn selectColumn = SelectColumn.of(Selectable.parse(raw));
-                    columnExpressionValidator.validateColumnExpressions(
-                            new SelectColumn[] {selectColumn}, new String[] {raw}, formulaPrototype.getDefinition());
+                    for (final TableDefinition prototype : formulaPrototypes) {
+                        // A fresh SelectColumn per prototype; validateColumnExpressions initializes it against the
+                        // definition, which is stateful and must not be shared across levels.
+                        final SelectColumn selectColumn = SelectColumn.of(Selectable.parse(raw));
+                        columnExpressionValidator.validateColumnExpressions(
+                                new SelectColumn[] {selectColumn}, new String[] {raw}, prototype);
+                    }
                 }
             }
         }
     }
 
     /**
-     * Build the definition prototype the engine compiles a rollup formula against, matching
-     * {@code AggregationProcessor}'s rollup formula preparation: the source grouped by the group-by columns (so non-key
-     * columns are exposed as vectors), plus the engine's extra rollup formula columns ({@code __FORMULA_DEPTH__} /
-     * {@code __FORMULA_KEYS__}), which formulas are permitted to reference.
+     * Build the formula-validation prototype definition for every rollup level, from the base (grouped by all
+     * {@code groupByColumns}) down to the root (grouped by nothing). The levels mirror
+     * {@code RollupTableImpl.rollupFromBase}, which reaggregates by progressively shorter prefixes of the group-by
+     * columns.
+     */
+    private static List<TableDefinition> makeRollupFormulaPrototypes(
+            @NotNull final Table sourceTable,
+            @NotNull final Collection<ColumnName> groupByColumns) {
+        final List<ColumnName> keys = new ArrayList<>(groupByColumns);
+        final List<TableDefinition> prototypes = new ArrayList<>(keys.size() + 1);
+        for (int prefixLength = keys.size(); prefixLength >= 0; --prefixLength) {
+            prototypes.add(makeRollupFormulaPrototype(sourceTable, keys.subList(0, prefixLength)).getDefinition());
+        }
+        return prototypes;
+    }
+
+    /**
+     * Build the definition prototype the engine compiles a rollup formula against at a single level, matching
+     * {@code AggregationProcessor}'s rollup formula preparation: the source grouped by {@code groupByColumns} (so
+     * non-key columns are exposed as vectors), plus the engine's extra rollup formula columns
+     * ({@code __FORMULA_DEPTH__} / {@code __FORMULA_KEYS__}), which formulas are permitted to reference.
      */
     private static Table makeRollupFormulaPrototype(
             @NotNull final Table sourceTable,

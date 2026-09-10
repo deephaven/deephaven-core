@@ -187,4 +187,34 @@ public class RollupExpressionValidationTest extends GrpcTableOperationTestBase<R
         assertThat(response).isNotNull();
         release(ExportTicketHelper.wrapExportIdInTicket(1));
     }
+
+    /**
+     * A rollup compiles each formula once per level: {@code rollupFromBase} reaggregates by progressively shorter
+     * prefixes of the group-by columns, and the validator checks the formula against every such prefix (base down to
+     * the empty-key root). This multi-key case exercises three prototype levels ({@code [Key1, Key2]}, {@code [Key1]},
+     * {@code []}); a formula over a non-key column plus the synthetic depth column is valid at all of them and must not
+     * be over-rejected by the per-level loop.
+     */
+    @Test
+    public void rollupFormulaValidatedAtEveryLevelSucceeds() {
+        final Ticket source = sourceTicket(TableTools.emptyTable(100)
+                .view("Key1=(ii % 2 == 0) ? `a` : `b`", "Key2=(ii % 3 == 0) ? `x` : `y`", "Sentinel=(int)ii"));
+        final RollupRequest request = RollupRequest.newBuilder()
+                .setResultRollupTableId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .setSourceTableId(source)
+                .addAggregations(Aggregation.newBuilder()
+                        .setFormula(AggregationFormula.newBuilder()
+                                .setSelectable(Selectable.newBuilder()
+                                        .setRaw("FSum = __FORMULA_DEPTH__ == 0 ? max(Sentinel) : 1 + sum(Sentinel)")
+                                        .build())
+                                .build())
+                        .build())
+                .addGroupByColumns("Key1")
+                .addGroupByColumns("Key2")
+                .build();
+
+        final RollupResponse response = rollup(request);
+        assertThat(response).isNotNull();
+        release(ExportTicketHelper.wrapExportIdInTicket(1));
+    }
 }
