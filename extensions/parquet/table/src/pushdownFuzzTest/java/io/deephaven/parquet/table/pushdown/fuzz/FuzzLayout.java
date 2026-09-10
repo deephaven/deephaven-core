@@ -560,9 +560,16 @@ public final class FuzzLayout {
         // the bench, and withOrderForColumn performs no validation. (The engine reaching the same
         // false claim on its own, by propagating the attribute through merge, is a separate and real
         // finding -- see MergeSortedAttributeFindingTest.)
+        // Not for a partitioned layout either. sortForWrite sorts globally so that every *partition* is
+        // sorted, which is what the per-file metadata claims and is true. But the read-back table is the
+        // partitions concatenated in partition-key order, and that is not the sort order -- so a table-wide
+        // declaration here would be a lie by the bench, and withOrderForColumn validates nothing. (Seed
+        // -1220343102263136052 was exactly this: Col1 ascending within each Col0 partition, and the whole
+        // table claimed ascending, so a range filter binary-searched garbage and returned 39 rows of 13.)
         if ((sortMode == SortMode.ATTRIBUTE_AFTER_READ || sortMode == SortMode.BOTH)
                 && sortColumn != null
-                && postRead != PostRead.MERGE) {
+                && postRead != PostRead.MERGE
+                && fileLayout != FileLayout.PARTITIONED) {
             // Declared on the result name: the attribute lives in result space, so the region
             // sorted action has to translate it back through the rename map.
             table = SortedColumnsAttribute.withOrderForColumn(table, sortColumn.resultName(), sortOrder);
