@@ -510,15 +510,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
 
         public void init(final RspArray<?> arr, final int arrIdx) {
-            init(arr, arrIdx, arr.spanInfos[arrIdx], arr.spans[arrIdx]);
+            init(arr.spanInfos[arrIdx], arr.spans[arrIdx]);
         }
 
-        /**
-         * Load the view with a span already read from {@code arr} at {@code arrIdx}. The view keeps no reference to the
-         * array: nothing it does writes back into the array's words, so the first two parameters only say where the
-         * span came from.
-         */
-        public void init(final RspArray<?> arr, final int arrIdx, final long spanInfo, final Object span) {
+        /** Load the view with a span's word and object, already read from their array. */
+        public void init(final long spanInfo, final Object span) {
             this.spanInfo = spanInfo;
             this.span = span;
         }
@@ -1026,7 +1022,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final long card = endOffset + 1;
             final Object srcSpan = src.spans[isrc];
             if (!isSingletonSpan(srcSpan)) {
-                try (SpanView res = wd.get().borrowSpanView(src, isrc, srcSpanInfo, srcSpan)) {
+                try (SpanView res = wd.get().borrowSpanView(srcSpanInfo, srcSpan)) {
                     final Container csrc = res.getContainer();
                     // This can't be the full container or we would have copied it earlier.
                     if (endOffset == 0) {
@@ -1159,10 +1155,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
          * Releases the RspArray reference.
          */
         void release();
-
-        RspArray arr();
-
-        int arrIdx();
     }
 
     public interface SpanCursorForward extends SpanCursor {
@@ -1267,16 +1259,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             ra.release();
             ra = null;
         }
-
-        @Override
-        public RspArray arr() {
-            return ra;
-        }
-
-        @Override
-        public int arrIdx() {
-            return si;
-        }
     }
 
     public RspRangeIterator getRangeIterator() {
@@ -1358,16 +1340,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             ra.release();
             ra = null;
-        }
-
-        @Override
-        public RspArray arr() {
-            return ra;
-        }
-
-        @Override
-        public int arrIdx() {
-            return si;
         }
     }
 
@@ -1903,7 +1875,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final short[] contents = (short[]) o;
             if (contents.length < 3 || contents.length > 12) {
                 final long spanInfo = spanInfos[i];
-                try (SpanView res = workDataPerThread.get().borrowSpanView(this, i, spanInfo, contents)) {
+                try (SpanView res = workDataPerThread.get().borrowSpanView(spanInfo, contents)) {
                     final Container c = res.getContainer();
                     final Container prevContainer = c.runOptimize();
                     if (prevContainer != c) {
@@ -3043,7 +3015,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final WorkData wd) {
         final Object otherSpan = other.spans[otherIdx];
         final long otherSpanInfo = other.getSpanInfo(otherIdx) + shiftAmount;
-        try (SpanView otherView = wd.borrowSpanView(other, otherIdx, otherSpanInfo, otherSpan)) {
+        try (SpanView otherView = wd.borrowSpanView(otherSpanInfo, otherSpan)) {
             final long otherKey = otherView.getKey();
             final long otherflen = otherView.getFullBlockSpanLen();
             final int orIdx = getSpanIndex(startPos, otherKey);
@@ -3188,9 +3160,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return rspArraysBuf;
         }
 
-        public SpanView borrowSpanView(final RspArray arr, final int arrIdx, final long spanInfo, final Object span) {
+        public SpanView borrowSpanView(final long spanInfo, final Object span) {
             final SpanView sv = borrowSpanView();
-            sv.init(arr, arrIdx, spanInfo, span);
+            sv.init(spanInfo, span);
             return sv;
         }
 
@@ -4246,7 +4218,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         final int rStart = (int) (resultStart - key);
         final int rEndExclusive = (int) (resultEnd - key) + 1;
         final Container result;
-        try (SpanView view = workDataPerThread.get().borrowSpanView(this, i, spanInfo, span)) {
+        try (SpanView view = workDataPerThread.get().borrowSpanView(spanInfo, span)) {
             final Container c = view.getContainer();
             result = c.andRange(rStart, rEndExclusive);
             if (result.isEmpty()) {
@@ -4709,7 +4681,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final PendingSpanInserts pending,
             final WorkData wd) {
         final Object span = spans[i];
-        try (SpanView view = wd.borrowSpanView(this, i, spanInfo, span)) {
+        try (SpanView view = wd.borrowSpanView(spanInfo, span)) {
             final long flen = view.getFullBlockSpanLen();
             if (flen > 0) {
                 final long sLastPlusOne = key + BLOCK_SIZE * flen;
