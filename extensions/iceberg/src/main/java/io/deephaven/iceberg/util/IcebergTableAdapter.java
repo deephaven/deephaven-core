@@ -35,6 +35,10 @@ import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.exceptions.ValidationException;
+import org.apache.iceberg.expressions.Binder;
+import org.apache.iceberg.expressions.Expression;
+import org.apache.iceberg.expressions.Expressions;
 import org.apache.iceberg.mapping.NameMapping;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -443,7 +447,8 @@ public final class IcebergTableAdapter {
         final IcebergBaseLayout keyFinder = keyFinder(
                 snapshot,
                 readInstructions.dataInstructions().orElse(null),
-                readInstructions.ignoreResolvingErrors());
+                readInstructions.ignoreResolvingErrors(),
+                readInstructions.pruningExpression());
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
             return new IcebergStaticTableLocationProvider<>(
                     tableKey,
@@ -480,7 +485,8 @@ public final class IcebergTableAdapter {
     private @NotNull IcebergBaseLayout keyFinder(
             @Nullable final Snapshot snapshot,
             @Nullable final Object dataInstructions,
-            final boolean ignoreResolvingErrors) {
+            final boolean ignoreResolvingErrors,
+            @NotNull final Expression pruningExpression) {
         final Object specialInstructions = dataInstructions == null
                 ? dataInstructionsProviderLoader.load(locationUri.getScheme())
                 : dataInstructions;
@@ -490,11 +496,35 @@ public final class IcebergTableAdapter {
                 .setColumnResolverFactory(new ResolverFactory(resolver, nameMapping, ignoreResolvingErrors))
                 .setSpecialInstructions(specialInstructions)
                 .build();
+        validatePruningExpression(pruningExpression);
         final Map<String, PartitionField> partitionFields = resolver.partitionFieldMap();
         if (partitionFields.isEmpty()) {
-            return new IcebergUnpartitionedLayout(this, parquetInstructions, channelsProvider, snapshot);
+            return new IcebergUnpartitionedLayout(this, parquetInstructions, channelsProvider, snapshot,
+                    pruningExpression);
         }
-        return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, resolver);
+        return new IcebergPartitionedLayout(this, parquetInstructions, channelsProvider, snapshot, resolver,
+                pruningExpression);
+    }
+
+    /**
+     * Validate {@code pruningExpression} against the {@link Resolver#schema() resolver schema}, so that a malformed
+     * expression fails here rather than from inside location discovery, which for a refreshing table would surface as a
+     * {@link io.deephaven.engine.table.impl.locations.TableDataException} on a later refresh. The bound result is
+     * discarded; each manifest must be evaluated against the schema it carries.
+     */
+    private void validatePruningExpression(@NotNull final Expression pruningExpression) {
+        if (pruningExpression == Expressions.alwaysTrue()) {
+            // Expressions.alwaysTrue() is a singleton; nothing to validate, and nothing will be pruned.
+            return;
+        }
+        try {
+            Binder.bind(resolver.schema().asStruct(), pruningExpression, IcebergBaseLayout.PRUNING_CASE_SENSITIVE);
+        } catch (final ValidationException | IllegalStateException e) {
+            throw new IllegalArgumentException(String.format(
+                    "Invalid pruningExpression `%s` for table %s; field names and literals must resolve against the "
+                            + "Iceberg schema",
+                    pruningExpression, tableIdentifier), e);
+        }
     }
 
     SeekableChannelsProvider seekableChannelsProvider(final Object specialInstructions) {

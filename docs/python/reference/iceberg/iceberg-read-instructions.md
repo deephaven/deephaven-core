@@ -12,7 +12,9 @@ IcebergReadInstructions(
     data_instructions: S3Instructions = None,
     column_renames: Dict[str, str] = None,
     update_mode: IcebergUpdateMode = None,
-    snapshot_id: int = None
+    snapshot_id: int = None,
+    ignore_resolving_errors: bool = False,
+    pruning_expression: jpy.JType = None
 )
 ```
 
@@ -46,6 +48,21 @@ The update mode for the table. Options include:
 <Param name="snapshot_id" type="int" Optional>
 
 The snapshot ID to read. If not given, the most recent snapshot ID is used.
+
+</Param>
+<Param name="ignore_resolving_errors" type="bool" Optional>
+
+Controls whether to ignore unexpected resolving errors by silently returning `NULL` data for columns that cannot be resolved in the data files where they should be present. Such errors may indicate an incorrect resolver or name mapping, or an Iceberg metadata or data issue. The default is `False`.
+
+</Param>
+<Param name="pruning_expression" type="jpy.JType" Optional>
+
+An [`org.apache.iceberg.expressions.Expression`](https://iceberg.apache.org/javadoc/latest/org/apache/iceberg/expressions/Expression.html) that skips Iceberg data files that cannot contain matching rows. Field names resolve against the Iceberg schema rather than against Deephaven column names. The default is `Expressions.alwaysTrue`, which prunes nothing.
+
+This parameter prunes; it does not filter. Iceberg prunes using partition values and data file statistics, so a surviving data file is read in full and the result is a superset of the rows that satisfy the expression. To obtain exactly those rows, apply an equivalent Deephaven filter to the result.
+
+> [!IMPORTANT]
+> Pruning on a non-partition field relies on the per-column value bounds that Iceberg records for each data file. Deephaven's Iceberg writer does not record those statistics, so an expression over a non-partition field prunes nothing on a table that Deephaven wrote. Pruning on a partition field applies in all cases, because Iceberg records partition values regardless of statistics.
 
 </Param>
 </ParamTable>
@@ -123,6 +140,45 @@ s3_instructions = s3.S3Instructions(
 
 iceberg_instructions = iceberg.IcebergReadInstructions(
     data_instructions=s3_instructions
+)
+```
+
+The following example creates an `IcebergReadInstructions` object that prunes data files whose `region` partition cannot contain the value `EMEA`. Because pruning is not filtering, the query applies an equivalent Deephaven filter to the result to obtain exactly the matching rows:
+
+```python order=null
+import jpy
+from deephaven.experimental import iceberg
+
+Expressions = jpy.get_type("org.apache.iceberg.expressions.Expressions")
+
+pruning_instructions = iceberg.IcebergReadInstructions(
+    pruning_expression=Expressions.equal("region", "EMEA")
+)
+
+# emea_table = table_adapter.table(pruning_instructions).where("Region = `EMEA`")
+```
+
+Numeric and temporal literals require a typed [`Literal`](https://iceberg.apache.org/javadoc/latest/org/apache/iceberg/expressions/Literal.html), because jpy narrows a Python `int` to a Java `Byte` or `Short`, both of which Iceberg rejects. The following example prunes on an integer field and on a timestamp field:
+
+```python order=null
+import jpy
+from deephaven.experimental import iceberg
+
+Expressions = jpy.get_type("org.apache.iceberg.expressions.Expressions")
+Literal = jpy.get_type("org.apache.iceberg.expressions.Literal")
+Operation = jpy.get_type("org.apache.iceberg.expressions.Expression$Operation")
+
+# Literal.of accepts a primitive, so the integer width survives the call into Java.
+year_instructions = iceberg.IcebergReadInstructions(
+    pruning_expression=Expressions.predicate(Operation.GT, "year", Literal.of(2023))
+)
+
+# micros, millis, and nanos state the unit explicitly. Iceberg stores a timestamp column as
+# microseconds from the epoch unless the column is timestamp_ns.
+timestamp_instructions = iceberg.IcebergReadInstructions(
+    pruning_expression=Expressions.predicate(
+        Operation.GT_EQ, "pickup_time", Expressions.micros(1767225600000000)
+    )
 )
 ```
 

@@ -11,6 +11,7 @@ import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.expressions.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,8 +23,9 @@ final class IcebergUnpartitionedLayout extends IcebergBaseLayout {
             @NotNull IcebergTableAdapter tableAdapter,
             @NotNull ParquetInstructions parquetInstructions,
             @NotNull SeekableChannelsProvider seekableChannelsProvider,
-            @Nullable Snapshot snapshot) {
-        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot);
+            @Nullable Snapshot snapshot,
+            @NotNull Expression pruningExpression) {
+        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot, pruningExpression);
     }
 
     @Override
