@@ -9,7 +9,7 @@ How table operations work in Deephaven
 
 </div>
 
-Deephaven's Table API lets you filter, transform, join, and aggregate data using a consistent set of operations. This guide explains the core concepts behind the API — understanding these will help you write more effective queries and avoid common pitfalls.
+Deephaven's Table API lets you filter, transform, join, and aggregate data using a consistent set of operations. This guide explains the core concepts behind the API, helping you write more effective queries and avoid common pitfalls.
 
 > [!NOTE]
 > New to Deephaven? Start with [How Deephaven works: A mental model](./deephaven-mental-model.md) for the conceptual foundation this guide builds on. This page assumes you already know why tables don't copy data and why formulas run in the engine, and focuses on the API surface and tradeoffs you'll actually choose between.
@@ -52,9 +52,9 @@ These strings are parsed and executed by Deephaven's Java engine. This has sever
 
 **Syntax is Java-like**:
 
-- Use `Math.sqrt` for math functions
-- String literals use backticks: `` `hello` ``
-- Ternary expressions: `X > 0 ? X : -X`
+- Use `Math.sqrt` for math functions.
+- String literals use backticks: `` `hello` ``.
+- Ternary expressions: `X > 0 ? X : -X`.
 
 **You can call Groovy closures**, but there's a consideration:
 
@@ -80,6 +80,34 @@ result = emptyTable(5).update(
 ```
 
 Variables defined in the script are automatically available in formula strings through Deephaven's query scope.
+
+## What's available inside formulas
+
+Inside a formula string, you have access to:
+
+**Column values** — Reference by name:
+
+```groovy syntax
+"Total = Price * Quantity"
+```
+
+**Special variables**:
+
+- `i` — Row position as `int` (0, 1, 2, ...)
+- `ii` — Row position as `long` (for tables with more than 2 billion rows)
+- `k` — Internal row key (use cautiously; not the same as row position)
+
+`i`/`ii` are valid on static, append-only, or blink tables; `k` is valid on a slightly broader set — static, add-only (which includes append-only), or blink tables (see [Table types](./table-types.md) for what these mean). A general refreshing table rejects whichever of these it doesn't satisfy, because positions and keys can shift. See [special variables](../reference/query-language/variables/special-variables.md) for the full compatibility matrix.
+
+**Built-in functions** — Math, string manipulation, time operations:
+
+```groovy syntax
+"Root = Math.sqrt(X)"
+"Upper = myString.toUpperCase()"
+"Hour = hourOfDay(Timestamp, timeZone(`America/New_York`), true)"
+```
+
+Query scope variables and your own Groovy closures are also available inside formulas — see [Formulas are strings](#formulas-are-strings) above for how those work and their tradeoffs.
 
 ## Operations build a dependency graph
 
@@ -140,34 +168,6 @@ result = source.select("Symbol", "Total = Price * Quantity")
 ```
 
 For refreshing tables, this choice also affects update performance. `view` recomputes on every access, while `update` recomputes only when source data changes.
-
-## What's available inside formulas
-
-Inside a formula string, you have access to:
-
-**Column values** — Reference by name:
-
-```groovy syntax
-"Total = Price * Quantity"
-```
-
-**Special variables**:
-
-- `i` — Row position as `int` (0, 1, 2, ...)
-- `ii` — Row position as `long` (for tables with more than 2 billion rows)
-- `k` — Internal row key (use cautiously; not the same as row position)
-
-`i`/`ii` are valid on static, append-only, or blink tables; `k` is valid on a slightly broader set — static, add-only (which includes append-only), or blink tables. A general refreshing table rejects whichever of these it doesn't satisfy, because positions and keys can shift. See [special variables](../reference/query-language/variables/special-variables.md) for the full compatibility matrix.
-
-**Built-in functions** — Math, string manipulation, time operations:
-
-```groovy syntax
-"Root = Math.sqrt(X)"
-"Upper = myString.toUpperCase()"
-"Hour = hourOfDay(Timestamp, timeZone(`America/New_York`))"
-```
-
-Query scope variables and your own Groovy closures are also available inside formulas — see [Formulas are strings](#formulas-are-strings) above for how those work and their tradeoffs.
 
 ## Same API, different behavior
 
