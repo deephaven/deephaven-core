@@ -96,6 +96,9 @@ public class PushdownFuzzerTest {
             // Finding 13: filterColumnToManagerColumnName is not injective when a filter names a column and an
             // alias of it, so inverting it into renameColumns pairs gave two pairs with the same source.
             428667830982598836L, 6656699729815370963L,
+            // Finding 19: a case-insensitive match filter whose value list contained a null threw for one, two
+            // or three values and silently dropped the null for four or more.
+            -3193954278432445066L, -3417280133301762829L, -4791489248932458532L, -8415955675519703733L,
     };
 
     private static final String ROOT_FILENAME = PushdownFuzzerTest.class.getName() + "_root";
