@@ -18,7 +18,7 @@ For a quick-reference index of available operations and where to find full guide
 
 ## Tables are immutable
 
-Every table operation returns a **new** table. The original is never modified:
+Table operations never modify their source — the original is always safe to keep using. Most operations return a distinct new table; a no-op transformation may occasionally hand back the same object as an optimization, but either way the source is left untouched:
 
 ```groovy order=source,filtered
 source = emptyTable(5).update("X = ii")
@@ -28,7 +28,7 @@ filtered = source.where("X > 2")
 // filtered has 2 rows
 ```
 
-This differs from some data libraries where operations modify data in place. In Deephaven, you build up results by chaining operations, with each step producing a new table. "New table" doesn't mean a full copy, though — see [Tables are recipes, not data](./deephaven-mental-model.md#tables-are-recipes-not-data) for how the engine shares unchanged columns instead of duplicating them.
+This differs from some data libraries where operations modify data in place. In Deephaven, you build up results by chaining operations, and each step leaves its input untouched. That result usually isn't a full copy, though — see [Tables are recipes, not data](./deephaven-mental-model.md#tables-are-recipes-not-data) for how the engine shares unchanged columns instead of duplicating them.
 
 **Why immutability matters:**
 
