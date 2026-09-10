@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * {@link RefCountedCow} lets readers run concurrently with the single writer of an unshared set, discarding results the
@@ -60,6 +61,7 @@ public class RspArrayConcurrentReaderSharedFlagTest {
         final AtomicBoolean done = new AtomicBoolean(false);
         final AtomicReference<Throwable> readerFailure = new AtomicReference<>();
         final AtomicLong readerWork = new AtomicLong(); // keeps the reads from being optimized away
+        final AtomicLong readerCompleted = new AtomicLong(); // derivations that ran to completion
         final Runnable readerLoop = () -> {
             try {
                 while (!done.get()) {
@@ -72,7 +74,8 @@ public class RspArrayConcurrentReaderSharedFlagTest {
                     // A snapshot-style read: take a reference to the current set, then derive a sub range from it.
                     // Nothing the reader observes is checked: racing the writer, it may see torn sizes and keys, and
                     // the contract only promises that it can discard such a result and retry. The test's assertions
-                    // are on the writer's set.
+                    // are on the writer's set, plus a count of derivations that ran to completion, so that a reader
+                    // failing on every attempt cannot make the test pass by never sharing anything.
                     try (final RowSet c = live.copy()) {
                         if (readerDerivesSubsets) {
                             try (final RowSet sub = c.subSetByKeyRange(1 + 1, Long.MAX_VALUE - 1)) {
@@ -81,6 +84,7 @@ public class RspArrayConcurrentReaderSharedFlagTest {
                         } else {
                             readerWork.addAndGet(c.size() + c.firstRowKey());
                         }
+                        readerCompleted.incrementAndGet();
                     } catch (RuntimeException e) {
                         // A torn read is allowed by the contract; the reader would retry.
                     }
@@ -126,6 +130,8 @@ public class RspArrayConcurrentReaderSharedFlagTest {
         assertFalse("the reader did not stop within 10 seconds of being told to", reader.isAlive());
         assertNull("writer's live set was corrupted by a concurrent reader: " + writerFailure, writerFailure);
         assertNull("reader failed unexpectedly: " + readerFailure.get(), readerFailure.get());
+        assertTrue("the reader never completed a derivation, so nothing was shared with the writer's set",
+                readerCompleted.get() > 0);
         live.close();
     }
 }
