@@ -31,16 +31,19 @@ import java.util.function.LongConsumer;
  * The LongTestSource is a ColumnSource used only for testing; not in live code.
  * <p>
  * It uses a fastutil open addressed hash map from long RowSet keys to long values. Previous data is stored in a
- * completely separate map, which is copied from the primary map on the first change in a given cycle. If an
- * uninitialized key is accessed; then an IllegalStateException is thrown. The previous value map is discarded in an
- * {@link UpdateCommitter} using a {@link TerminalNotification} after the live table monitor cycle is complete.
+ * completely separate map: on the first change in a given cycle, the current map is copied into a fresh map that
+ * receives the cycle's mutations, and the prior map is retained as the previous values. A map is never mutated once it
+ * has been retained as previous, so readers access the volatile map references without locking while mutators
+ * synchronize on this source. If an uninitialized key is accessed; then an IllegalStateException is thrown. The
+ * previous value map reference is reset to the current map in an {@link UpdateCommitter} using a
+ * {@link TerminalNotification} after the live table monitor cycle is complete.
  */
 public class LongTestSource extends AbstractColumnSource<Long>
         implements MutableColumnSourceGetDefaults.ForLong, TestColumnSource<Long> {
 
     private long lastAdditionTime;
-    protected final Long2LongOpenHashMap data = new Long2LongOpenHashMap();
-    protected Long2LongOpenHashMap prevData;
+    protected volatile Long2LongOpenHashMap data = new Long2LongOpenHashMap();
+    protected volatile Long2LongOpenHashMap prevData;
 
     private final UpdateCommitter<LongTestSource> prevFlusher =
             new UpdateCommitter<>(this, updateGraph, LongTestSource::flushPrevious);
@@ -116,8 +119,10 @@ public class LongTestSource extends AbstractColumnSource<Long>
             return;
         }
         prevFlusher.maybeActivate();
-        prevData = new Long2LongOpenHashMap(this.data);
-        setDefaultReturnValue(prevData);
+        final Long2LongOpenHashMap newData = new Long2LongOpenHashMap(this.data);
+        setDefaultReturnValue(newData);
+        prevData = data;
+        data = newData;
         lastAdditionTime = currentStep;
     }
 
@@ -149,13 +154,14 @@ public class LongTestSource extends AbstractColumnSource<Long>
     // endregion boxed get
 
     @Override
-    public synchronized long getLong(long index) {
+    public long getLong(long index) {
         if (index == RowSet.NULL_ROW_KEY) {
             return QueryConstants.NULL_LONG;
         }
         // If a test asks for a non-existent positive index something is wrong.
         // We have to accept negative values, because e.g. a join may find no matching right key, in which case it
         // has an empty redirection index entry that just gets passed through to the inner column source as -1.
+        final Long2LongOpenHashMap data = this.data;
         final long retVal = data.get(index);
         if (retVal == QueryConstants.NULL_LONG && !data.containsKey(index)) {
             throw new IllegalStateException("Asking for a non-existent key: " + index);
@@ -176,15 +182,12 @@ public class LongTestSource extends AbstractColumnSource<Long>
     // endregion boxed getPrev
 
     @Override
-    public synchronized long getPrevLong(long index) {
+    public long getPrevLong(long index) {
         if (index == RowSet.NULL_ROW_KEY) {
             return QueryConstants.NULL_LONG;
         }
 
-        if (prevData == null) {
-            return getLong(index);
-        }
-
+        final Long2LongOpenHashMap prevData = this.prevData;
         final long retVal = prevData.get(index);
         if (retVal == QueryConstants.NULL_LONG && !prevData.containsKey(index)) {
             throw new IllegalStateException("Asking for a non-existent previous key: " + index);
@@ -193,7 +196,7 @@ public class LongTestSource extends AbstractColumnSource<Long>
     }
 
     public static void flushPrevious(LongTestSource source) {
-        source.prevData = null;
+        source.prevData = source.data;
     }
 
     @Override

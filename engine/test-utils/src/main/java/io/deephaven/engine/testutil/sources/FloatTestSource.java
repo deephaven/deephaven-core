@@ -31,16 +31,19 @@ import java.util.function.LongConsumer;
  * The FloatTestSource is a ColumnSource used only for testing; not in live code.
  * <p>
  * It uses a fastutil open addressed hash map from long RowSet keys to float values. Previous data is stored in a
- * completely separate map, which is copied from the primary map on the first change in a given cycle. If an
- * uninitialized key is accessed; then an IllegalStateException is thrown. The previous value map is discarded in an
- * {@link UpdateCommitter} using a {@link TerminalNotification} after the live table monitor cycle is complete.
+ * completely separate map: on the first change in a given cycle, the current map is copied into a fresh map that
+ * receives the cycle's mutations, and the prior map is retained as the previous values. A map is never mutated once it
+ * has been retained as previous, so readers access the volatile map references without locking while mutators
+ * synchronize on this source. If an uninitialized key is accessed; then an IllegalStateException is thrown. The
+ * previous value map reference is reset to the current map in an {@link UpdateCommitter} using a
+ * {@link TerminalNotification} after the live table monitor cycle is complete.
  */
 public class FloatTestSource extends AbstractColumnSource<Float>
         implements MutableColumnSourceGetDefaults.ForFloat, TestColumnSource<Float> {
 
     private long lastAdditionTime;
-    protected final Long2FloatOpenHashMap data = new Long2FloatOpenHashMap();
-    protected Long2FloatOpenHashMap prevData;
+    protected volatile Long2FloatOpenHashMap data = new Long2FloatOpenHashMap();
+    protected volatile Long2FloatOpenHashMap prevData;
 
     private final UpdateCommitter<FloatTestSource> prevFlusher =
             new UpdateCommitter<>(this, updateGraph, FloatTestSource::flushPrevious);
@@ -116,8 +119,10 @@ public class FloatTestSource extends AbstractColumnSource<Float>
             return;
         }
         prevFlusher.maybeActivate();
-        prevData = new Long2FloatOpenHashMap(this.data);
-        setDefaultReturnValue(prevData);
+        final Long2FloatOpenHashMap newData = new Long2FloatOpenHashMap(this.data);
+        setDefaultReturnValue(newData);
+        prevData = data;
+        data = newData;
         lastAdditionTime = currentStep;
     }
 
@@ -149,13 +154,14 @@ public class FloatTestSource extends AbstractColumnSource<Float>
     // endregion boxed get
 
     @Override
-    public synchronized float getFloat(long index) {
+    public float getFloat(long index) {
         if (index == RowSet.NULL_ROW_KEY) {
             return QueryConstants.NULL_FLOAT;
         }
         // If a test asks for a non-existent positive index something is wrong.
         // We have to accept negative values, because e.g. a join may find no matching right key, in which case it
         // has an empty redirection index entry that just gets passed through to the inner column source as -1.
+        final Long2FloatOpenHashMap data = this.data;
         final float retVal = data.get(index);
         if (retVal == QueryConstants.NULL_FLOAT && !data.containsKey(index)) {
             throw new IllegalStateException("Asking for a non-existent key: " + index);
@@ -176,15 +182,12 @@ public class FloatTestSource extends AbstractColumnSource<Float>
     // endregion boxed getPrev
 
     @Override
-    public synchronized float getPrevFloat(long index) {
+    public float getPrevFloat(long index) {
         if (index == RowSet.NULL_ROW_KEY) {
             return QueryConstants.NULL_FLOAT;
         }
 
-        if (prevData == null) {
-            return getFloat(index);
-        }
-
+        final Long2FloatOpenHashMap prevData = this.prevData;
         final float retVal = prevData.get(index);
         if (retVal == QueryConstants.NULL_FLOAT && !prevData.containsKey(index)) {
             throw new IllegalStateException("Asking for a non-existent previous key: " + index);
@@ -193,7 +196,7 @@ public class FloatTestSource extends AbstractColumnSource<Float>
     }
 
     public static void flushPrevious(FloatTestSource source) {
-        source.prevData = null;
+        source.prevData = source.data;
     }
 
     @Override
