@@ -185,11 +185,16 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     private static Table makeRollupFormulaPrototype(
             @NotNull final Table sourceTable,
             @NotNull final Collection<ColumnName> groupByColumns) {
+        final String depthName = AggregationProcessor.ROLLUP_FORMULA_DEPTH.name();
+        final String keysName = AggregationProcessor.ROLLUP_FORMULA_KEYS.name();
         final Table grouped = TableTools.newTable(sourceTable.getDefinition()).groupBy(groupByColumns);
-        final List<ColumnDefinition<?>> definitions = new ArrayList<>(grouped.getDefinition().getColumns());
-        definitions.add(ColumnDefinition.ofInt(AggregationProcessor.ROLLUP_FORMULA_DEPTH.name()));
-        definitions.add(ColumnDefinition.of(
-                AggregationProcessor.ROLLUP_FORMULA_KEYS.name(), ObjectVector.type(StringType.of())));
+        // Mirror the engine's putAll(extraColumns): the synthetic columns replace any same-named source columns, so
+        // drop those names before appending to avoid a duplicate-name failure in TableDefinition.of.
+        final List<ColumnDefinition<?>> definitions = grouped.getDefinition().getColumnStream()
+                .filter(cd -> !cd.getName().equals(depthName) && !cd.getName().equals(keysName))
+                .collect(Collectors.toCollection(ArrayList::new));
+        definitions.add(ColumnDefinition.ofInt(depthName));
+        definitions.add(ColumnDefinition.of(keysName, ObjectVector.type(StringType.of())));
         return TableTools.newTable(TableDefinition.of(definitions));
     }
 

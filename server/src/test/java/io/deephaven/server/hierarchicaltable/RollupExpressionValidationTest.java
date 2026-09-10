@@ -159,4 +159,32 @@ public class RollupExpressionValidationTest extends GrpcTableOperationTestBase<R
         assertThat(response).isNotNull();
         release(ExportTicketHelper.wrapExportIdInTicket(1));
     }
+
+    /**
+     * A source table may legally already contain a column named {@code __FORMULA_DEPTH__} (a valid identifier). The
+     * validation prototype must replace the same-named source column with the synthetic definition rather than append a
+     * duplicate name (which would make {@code TableDefinition.of} throw and reject every rollup formula), mirroring the
+     * engine's {@code putAll(extraColumns)}.
+     */
+    @Test
+    public void rollupFormulaWhenSourceHasSyntheticColumnNameSucceeds() {
+        final Ticket source = sourceTicket(TableTools.emptyTable(100)
+                .view("Key=ii % 2", "__FORMULA_DEPTH__=(int)ii", "Sentinel=(int)ii"));
+        final RollupRequest request = RollupRequest.newBuilder()
+                .setResultRollupTableId(ExportTicketHelper.wrapExportIdInTicket(1))
+                .setSourceTableId(source)
+                .addAggregations(Aggregation.newBuilder()
+                        .setFormula(AggregationFormula.newBuilder()
+                                .setSelectable(Selectable.newBuilder()
+                                        .setRaw("FSum = __FORMULA_DEPTH__ == 0 ? max(Sentinel) : 1 + sum(Sentinel)")
+                                        .build())
+                                .build())
+                        .build())
+                .addGroupByColumns("Key")
+                .build();
+
+        final RollupResponse response = rollup(request);
+        assertThat(response).isNotNull();
+        release(ExportTicketHelper.wrapExportIdInTicket(1));
+    }
 }

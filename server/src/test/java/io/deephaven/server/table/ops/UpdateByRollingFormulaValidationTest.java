@@ -63,16 +63,18 @@ public class UpdateByRollingFormulaValidationTest extends GrpcTableOperationTest
     }
 
     /**
-     * A param token consisting of regex metacharacters ({@code .*}) that does not appear as a literal token in the
-     * formula. With the old {@code String.replaceAll} substitution, {@code .*} matches (and replaces) the entire
-     * formula, so the validator would inspect a benign column reference and let the disallowed {@code Runtime}
-     * invocation through. With token-aware literal substitution, the token does not match, so the validator inspects
-     * the real formula and rejects it.
+     * A param token consisting of regex metacharacters ({@code .+}) that does not appear as a literal token in the
+     * formula, paired with a forbidden-but-side-effect-free method ({@code Runtime.getRuntime()}) that runs
+     * successfully if compiled. With the old {@code String.replaceAll} substitution, {@code .+} matches (and replaces)
+     * the entire formula, so the validator inspects a benign column reference ({@code Out=Value}) and admits the
+     * request; the engine then compiles and runs the untouched forbidden formula — a validation bypass. With
+     * token-aware literal substitution, the token does not match, the validator inspects the real formula, and rejects
+     * it. So this fails (the request succeeds) on the unfixed path and passes only once the bypass is closed.
      */
     @Test
     public void rollingFormulaRegexParamTokenDoesNotHideDisallowedExpression() {
         final UpdateByRequest request = rollingFormulaRequest(
-                "Runtime.getRuntime().exec(\"pwned\") == null", ".*", "Out=Value");
+                "Runtime.getRuntime().hashCode()", ".+", "Out=Value");
         // The validator runs at export time, so its rejection is sanitized to "Details Logged w/ID"; a synchronous
         // request error (e.g. a bad window scale) would surface with its raw message instead, so this also confirms
         // the failure is the deferred ColumnExpressionValidator rather than earlier request validation.
