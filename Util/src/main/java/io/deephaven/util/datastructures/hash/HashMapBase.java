@@ -228,6 +228,11 @@ public abstract class HashMapBase implements NullableLongLongMap {
      */
     public static int capacityForExpectedEntries(final long expectedEntries, final float loadFactor) {
         long candidate = (long) Math.ceil((expectedEntries + 1.0) / loadFactor);
+        if (candidate >= Integer.MAX_VALUE) {
+            // Saturate before padding: the addition below could wrap a candidate near Long.MAX_VALUE. Beyond this
+            // point candidate < 2^31, which also bounds the padding itself well within a long.
+            return Integer.MAX_VALUE;
+        }
         // The exact product candidate * loadFactor is already at least expectedEntries + 1, but the map computes
         // its threshold as (int) ((float) capacity * loadFactor), which can land below the exact product: the
         // long-to-float conversion loses up to half of the capacity's ULP (scaled by loadFactor in the product),

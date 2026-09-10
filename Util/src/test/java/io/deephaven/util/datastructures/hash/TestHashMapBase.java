@@ -57,6 +57,20 @@ public class TestHashMapBase {
     }
 
     /**
+     * Requests whose initial candidate meets or exceeds Integer.MAX_VALUE must saturate before the ULP padding is
+     * added, which would otherwise wrap a candidate near Long.MAX_VALUE.
+     */
+    @Test
+    public void hugeRequestsSaturate() {
+        for (final float loadFactor : new float[] {0.5f, 0.75f, 0.9f}) {
+            for (final long expected : new long[] {Long.MAX_VALUE, Long.MAX_VALUE - 1, 1L << 40, Integer.MAX_VALUE}) {
+                TestCase.assertEquals(Integer.MAX_VALUE,
+                        HashMapBase.capacityForExpectedEntries(expected, loadFactor));
+            }
+        }
+    }
+
+    /**
      * A saturated capacity request must round up to a positive bucket count for every bucket width; the map then clamps
      * it to its maximum capacity rather than overflowing.
      */
