@@ -32,10 +32,11 @@ import static io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearc
  * out of it by equality, which is the relation the chunk filter it stands in for uses.
  *
  * <p>
- * Each run is read through chunked row-sequence iteration rather than a position lookup and a single-row get per row,
- * because a column source's selection may be sparse, where mapping a position to a row key is far more expensive than
- * the arithmetic a flat selection needs. Its region counterpart, {@link ComparableRegionBinarySearchKernel}, reads row
- * by row, since a region is flat and addressed directly by row key.
+ * Each run is read in chunks, as {@link ComparableRegionBinarySearchKernel} reads them. The runs are located in
+ * position space here, though, and a column source's selection may be sparse, so a chunk is gathered through a
+ * {@link RowSequence} iterator advanced across the runs rather than addressed as a contiguous row-key range -- mapping
+ * a position to a row key is far more expensive than the arithmetic a flat region needs, so the iterator is advanced
+ * once and reused instead of resolving each run's start independently.
  *
  * <p>
  * Only the match search differs; the bounds it navigates by, and every range search, are
