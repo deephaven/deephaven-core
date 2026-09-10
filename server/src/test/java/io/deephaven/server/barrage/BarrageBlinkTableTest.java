@@ -193,8 +193,8 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
                     options, schema.computeWireChunkTypes(), schema.computeWireTypes(),
                     schema.computeWireComponentTypes(),
                     new BarrageMessageReaderImpl(barrageTable.getDeserializationTmConsumer()));
-            BarrageMessageRoundTripTest.DummyObserver dummyObserver =
-                    new BarrageMessageRoundTripTest.DummyObserver(marshaller, commandQueue);
+            BarrageMessageRoundTripTestBase.DummyObserver dummyObserver =
+                    new BarrageMessageRoundTripTestBase.DummyObserver(marshaller, commandQueue);
 
             if (viewport == null) {
                 replicatedTUV = TableUpdateValidator.make(barrageTable);
