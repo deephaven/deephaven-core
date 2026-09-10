@@ -107,10 +107,15 @@ guesswork into one command per action.
 
 ## Verification
 
-- `MultiColumnSortedAttributeTest`, 5 tests: the disjunction over a composite data index, and each
-  disjunct alone (both were always correct, so a regression stays localized); the same filters against
-  `select()` as the oracle throughout; and a single-column index, whose true claim must survive.
-  Reverting the fix fails `disjunctionOverACompositeDataIndex`.
+- `MultiColumnSortedAttributeTest`, 3 tests: the disjunction over a composite data index; each
+  disjunct alone, which were always correct, so a regression stays localized; and a single-column
+  index, whose claim is true and must survive. Every case is checked against the same filter applied
+  after `select()`. Reverting the fix fails `disjunctionOverACompositeDataIndex`.
+
+  A direct assertion on the index table's attribute would be the sharper test, but
+  `DataIndexer.getDataIndex(...).table()` returns a table without it — the claim is carried by the
+  location-level index that `ParquetTableLocation.readDataIndexTable` produces, which has no public
+  accessor. Worth revisiting if one appears.
 - The end-to-end tests set `DATA_INDEX_FOR_WHERE_THRESHOLD` explicitly, because
   `pushdownDataIndex` returns early unless the maybe-set exceeds `indexSize / threshold` and the
   default hides the defect on a small table. The fuzz case's toggle profile did the same thing.

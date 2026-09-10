@@ -26,7 +26,7 @@ appears in both was rediscovered independently.
 ## Carry-over from the previous round
 
 All 19 case seeds recorded in [`../OLD_FINDINGS.md`](../OLD_FINDINGS.md) were replayed against this
-branch. **14 now pass**, and  (7a) was subsequently fixed as finding 11. The 4 that still
+branch. **14 now pass**, and `1681357320861610709` (7a) was subsequently fixed as finding 11. The 4 that still
 fail are the root causes this campaign has not reached:
 
 | Old seed | `OLD_FINDINGS.md` | Still fails with |
