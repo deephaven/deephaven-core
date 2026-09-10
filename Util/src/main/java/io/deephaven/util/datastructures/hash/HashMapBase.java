@@ -195,15 +195,32 @@ public abstract class HashMapBase implements NullableLongLongMap {
 
     final void resetToNullImpl() {
         // nonEmptySlots (not size) drives rehashing, so it determines the capacity we would have needed to absorb
-        // this generation of entries without growing. The rehash check fires when nonEmptySlots reaches
-        // capacity * loadFactor after an insert, so the threshold must land strictly beyond the observed count;
-        // the extra slot guards against the threshold truncating back down to it.
-        final long capacityForObservedSlots = (long) Math.ceil((nonEmptySlots + 1.0) / loadFactor) + 1;
+        // this generation of entries without growing.
         desiredInitialCapacity =
-                (int) Math.max(desiredInitialCapacity, Math.min(Integer.MAX_VALUE, capacityForObservedSlots));
+                Math.max(desiredInitialCapacity, capacityForExpectedEntries(nonEmptySlots, loadFactor));
         size = 0;
         nonEmptySlots = 0;
         rehashThreshold = 0;
+    }
+
+    /**
+     * Compute an entry capacity at which a map can hold {@code expectedEntries} entries (including deleted slots)
+     * without rehashing. The rehash check fires when the slot count reaches {@code capacity * loadFactor} after an
+     * insert, and that threshold is computed in {@code float}, which loses integer precision above 2^24 — so rather
+     * than a fixed margin, step the candidate capacity up until the threshold it produces strictly clears the expected
+     * count. Bucket-count rounding in {@link #allocateKeysAndValuesArray} only ever increases the capacity, and the
+     * float threshold is non-decreasing in the capacity, so the allocated map's threshold clears it too.
+     *
+     * @param expectedEntries the number of slots the map must absorb without rehashing
+     * @param loadFactor the map's load factor
+     * @return an entry capacity to request, saturating at {@link Integer#MAX_VALUE}
+     */
+    public static int capacityForExpectedEntries(final long expectedEntries, final float loadFactor) {
+        long candidate = (long) Math.ceil((expectedEntries + 1.0) / loadFactor);
+        while (candidate < Integer.MAX_VALUE && (int) (candidate * loadFactor) <= expectedEntries) {
+            candidate++;
+        }
+        return (int) Math.min(Integer.MAX_VALUE, candidate);
     }
 
     @Override
