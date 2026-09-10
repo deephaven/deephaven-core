@@ -122,7 +122,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                 .map(AggregationAdapter::adapt)
                                 .collect(Collectors.toList());
                         final boolean includeConstituents = request.getIncludeConstituents();
-                        final Collection<ColumnName> groupByColumns = request.getGroupByColumnsList().stream()
+                        final List<ColumnName> groupByColumns = request.getGroupByColumnsList().stream()
                                 .map(ColumnName::of)
                                 .collect(Collectors.toList());
                         validateRollupAggregations(request.getAggregationsList(), sourceTable, groupByColumns);
@@ -160,7 +160,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
     private void validateRollupAggregations(
             @NotNull final List<io.deephaven.proto.backplane.grpc.Aggregation> aggregations,
             @NotNull final Table sourceTable,
-            @NotNull final Collection<ColumnName> groupByColumns) {
+            @NotNull final List<ColumnName> groupByColumns) {
         // The per-level prototype definitions, shared across all formula aggregations; built lazily on first use.
         List<TableDefinition> formulaPrototypes = null;
         for (final io.deephaven.proto.backplane.grpc.Aggregation agg : aggregations) {
@@ -207,11 +207,11 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
      */
     private static List<TableDefinition> makeRollupFormulaPrototypes(
             @NotNull final Table sourceTable,
-            @NotNull final Collection<ColumnName> groupByColumns) {
-        final List<ColumnName> keys = new ArrayList<>(groupByColumns);
-        final List<TableDefinition> prototypes = new ArrayList<>(keys.size() + 1);
-        for (int prefixLength = keys.size(); prefixLength >= 0; --prefixLength) {
-            prototypes.add(makeRollupFormulaPrototype(sourceTable, keys.subList(0, prefixLength)).getDefinition());
+            @NotNull final List<ColumnName> groupByColumns) {
+        final List<TableDefinition> prototypes = new ArrayList<>(groupByColumns.size() + 1);
+        for (int prefixLength = groupByColumns.size(); prefixLength >= 0; --prefixLength) {
+            prototypes.add(
+                    makeRollupFormulaPrototype(sourceTable, groupByColumns.subList(0, prefixLength)).getDefinition());
         }
         return prototypes;
     }
