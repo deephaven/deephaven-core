@@ -126,7 +126,7 @@ If you provide neither, the supplier runs exactly once at construction and the r
 
 ### How the result updates
 
-Every refresh replaces the result in full. The [table update](../conceptual/table-update-model.md) removes all of the previous rows and adds all of the newly generated rows, with no modified rows and no shifts, even when the generated data is identical to the previous cycle's. Downstream operations therefore reprocess the entire result on every refresh. This is why regular table operations, which update incrementally, are preferable when the input is already a Deephaven table.
+Every refresh in which the supplier produces a table replaces the result in full. The [table update](../conceptual/table-update-model.md) removes all of the previous rows and adds all of the newly generated rows, with no modified rows and no shifts, even when the generated data is identical to the previous cycle's. A refresh in which a `retainingLastTableSupplier` declines to produce a table fires no update, as described in [Choose a table supplier](#choose-a-table-supplier). Downstream operations therefore reprocess the entire result on every refresh that produces a table. This is why regular table operations, which update incrementally, are preferable when the input is already a Deephaven table.
 
 The `copyData` and `blinkTable` options below refine this behavior. They are independent of one another: `copyData` controls where the result's data lives and what its row keys look like, and `blinkTable` controls how downstream operations interpret each update.
 

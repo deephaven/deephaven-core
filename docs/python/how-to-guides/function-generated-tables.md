@@ -158,7 +158,7 @@ result = function_generated_table(
 
 ### How the result updates
 
-Every refresh replaces the result in full. The [table update](../conceptual/table-update-model.md) removes all of the previous rows and adds all of the newly generated rows, with no modified rows and no shifts, even when the generated data is identical to the previous cycle's. Downstream operations therefore reprocess the entire result on every refresh. This is why regular table operations, which update incrementally, are preferable when the input is already a Deephaven table.
+Every refresh in which the `table_generator` produces a table replaces the result in full. The [table update](../conceptual/table-update-model.md) removes all of the previous rows and adds all of the newly generated rows, with no modified rows and no shifts, even when the generated data is identical to the previous cycle's. A refresh in which the `table_generator` returns `None` produces no update, as described in [Retain the previous result](#retain-the-previous-result). Downstream operations therefore reprocess the entire result on every refresh that produces a table. This is why regular table operations, which update incrementally, are preferable when the input is already a Deephaven table.
 
 The `copy_data` and `blink_table` options below refine this behavior. They are independent of one another: `copy_data` controls where the result's data lives and what its row keys look like, and `blink_table` controls how downstream operations interpret each update.
 

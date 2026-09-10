@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -208,6 +209,38 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
             fail("Expected an IncompatibleTableDefinitionException");
         } catch (TableDefinition.IncompatibleTableDefinitionException expected) {
             assertTrue(expected.getMessage().contains("incompatibilities"));
+        }
+    }
+
+    public void testSpecDefinitionRejectsInvalidColumnNames() {
+        // A supplied definition may carry user-provided column names; illegal names are rejected before any column
+        // sources are created, including on the path where the supplier produces no initial table.
+        try {
+            FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                    .retainingLastTableSupplier(Optional::empty)
+                    .tableDefinition(TableDefinition.of(ColumnDefinition.of("Not Valid", Type.intType())))
+                    .build());
+            fail("Expected an InvalidNameException");
+        } catch (NameValidator.InvalidNameException expected) {
+            assertTrue(expected.getMessage().contains("Not Valid"));
+        }
+    }
+
+    public void testSpecDefinitionPreservesColumnMetadata() {
+        // The supplied definition is authoritative, so metadata it carries (such as a partitioning column type) must
+        // survive into the result rather than being re-inferred from the column sources.
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("Part").withPartitioning(),
+                ColumnDefinition.ofInt("IntCol"));
+        for (final boolean copyData : new boolean[] {true, false}) {
+            final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                    .tableSupplier(() -> newTable(intCol("Part", 1), intCol("IntCol", 2)))
+                    .tableDefinition(definition)
+                    .copyData(copyData)
+                    .build());
+            assertTrue(functionBacked.getDefinition().getColumn("Part").isPartitioning());
+            assertFalse(functionBacked.getDefinition().getColumn("IntCol").isPartitioning());
+            assertTableEquals(newTable(intCol("Part", 1), intCol("IntCol", 2)), functionBacked);
         }
     }
 

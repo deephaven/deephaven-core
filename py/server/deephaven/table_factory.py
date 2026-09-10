@@ -513,9 +513,11 @@ def function_generated_table(
     The table definition must not change between invocations of the 'table_generator' function, or an exception will
     be raised.
 
-    Every refresh replaces the result in full: the update removes all previous rows and adds all newly generated rows,
-    with no modifications or shifts, even when the generated data is identical to the previous cycle's. The 'copy_data'
-    and 'blink_table' arguments refine this behavior independently of one another.
+    Every refresh in which 'table_generator' produces a table replaces the result in full: the update removes all
+    previous rows and adds all newly generated rows, with no modifications or shifts, even when the generated data is
+    identical to the previous cycle's. A refresh in which 'table_generator' returns None retains the previous result
+    with no update (or clears a blink result). The 'copy_data' and 'blink_table' arguments refine this behavior
+    independently of one another.
 
     Note that the 'table_generator' may access data in the sourceTables but should not perform further table operations
     on them without careful handling. Table operations may be memoized, and it is possible that a table operation will

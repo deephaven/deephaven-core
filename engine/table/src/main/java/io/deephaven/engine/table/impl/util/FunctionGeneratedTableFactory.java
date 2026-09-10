@@ -30,9 +30,12 @@ import java.util.stream.Collectors;
 /**
  * An abstract table that represents the result of a function.
  * <p>
- * The table will run by regenerating the full values (using the tableGenerator Function passed in). The result table
- * takes on those new values and fires an appropriate update for a full-replacement (all previous rows removed, all new
- * rows added, with no modifications or shifts), even when the generated data is identical to the previous cycle's.
+ * The table will run by regenerating the full values (using the tableGenerator Function passed in). Whenever the
+ * generator produces a table, the result table takes on those new values and fires an appropriate update for a
+ * full-replacement (all previous rows removed, all new rows added, with no modifications or shifts), even when the
+ * generated data is identical to the previous cycle's. When a
+ * {@link FunctionGeneratedTableSpec#retainingLastTableSupplier() retaining-last supplier} declines to produce a table,
+ * a non-blink result is retained with no update.
  * <p>
  * When copying data (the default), the generated rows are copied into a flat, contiguous RowSet. When copying is
  * disabled (see {@link FunctionGeneratedTableSpec#copyData()}), the output instead delegates to the generated table's
@@ -218,6 +221,11 @@ public class FunctionGeneratedTableFactory {
                 .map(interval -> Math.toIntExact(interval.toMillis()))
                 .orElseGet(() -> spec.dependencies().isEmpty() ? -1 : 0);
         final TableDefinition specDefinition = spec.tableDefinition().orElse(null);
+        if (specDefinition != null) {
+            // A supplied definition may carry user-provided column names, which TableDefinition does not validate on
+            // construction; reject illegal names before any column sources are created from it.
+            specDefinition.checkHasValidColumnNames();
+        }
         this.executionContextForUpdates = makeExecutionContextForUpdates();
         nextRefresh = System.currentTimeMillis() + this.refreshIntervalMs;
 
@@ -313,7 +321,7 @@ public class FunctionGeneratedTableFactory {
     }
 
     private FunctionBackedTable getTable() {
-        return new FunctionBackedTable(rowSet, columns);
+        return new FunctionBackedTable(definition, rowSet, columns);
     }
 
     /**
@@ -391,9 +399,12 @@ public class FunctionGeneratedTableFactory {
         private Runnable delayedErrorReference;
 
         private FunctionBackedTable(
+                @NotNull final TableDefinition definition,
                 @NotNull final TrackingRowSet rowSet,
                 @NotNull final Map<String, ColumnSource<?>> columns) {
-            super(rowSet, columns);
+            // Construct with the result definition rather than inferring one from the column sources, so that column
+            // metadata carried by a supplied definition (for example, a partitioning column type) is preserved.
+            super(definition, rowSet, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
                 if (isUpdateSource()) {

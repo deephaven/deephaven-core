@@ -9,7 +9,7 @@ The `function_generated_table` method is useful for creating tables that are dep
 >
 > It is best to include all dependencies directly in `source_table` or only compute on-demand inputs under a `LivenessScope`.
 
-Every refresh replaces the result in full: the [table update](../../../conceptual/table-update-model.md) removes all previous rows and adds all newly generated rows, with no modified rows and no shifts, even when the generated data is unchanged. The `copy_data` and `blink_table` parameters refine this behavior independently of one another.
+Every refresh in which the `table_generator` produces a table replaces the result in full: the [table update](../../../conceptual/table-update-model.md) removes all previous rows and adds all newly generated rows, with no modified rows and no shifts, even when the generated data is unchanged. A refresh in which the `table_generator` returns `None` retains the previous result with no update (or clears a blink result). The `copy_data` and `blink_table` parameters refine this behavior independently of one another.
 
 ## Syntax
 
