@@ -406,20 +406,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * The bits of a packed ArrayContainer's word that hold its cardinality: all sixteen low bits, which an
-     * ArrayContainer's cardinality never fills. Nothing else is encoded in the word. In particular the container's
-     * shared flag is not: it is held in the reserved last slot of the {@code short[]} itself, see
-     * {@link ArrayContainer#getContent()}, so that an RspArray sharing the container from a source marks the array
-     * rather than writing into the source's words.
-     *
-     * <p>
-     * That matters because, per {@link io.deephaven.engine.rowset.impl.RefCountedCow}, a reader may derive from a
-     * source while the source's single owner mutates it in place; the reader's result is discarded once the clock shows
-     * it stale, but anything the reader wrote into the owner's arrays would be permanent. A write to the shared
-     * {@code short[]} can only affect that array: if the owner has meanwhile replaced the span, the array is orphaned
-     * and the write is harmless, and if not, the owner sees the flag on the very array it is about to edit. A word, by
-     * contrast, describes whatever span currently sits at the index, and cannot be written safely by anyone but the
-     * owner.
+     * The low bits of a packed ArrayContainer's word hold its cardinality; the high bits hold its key. Only the owner
+     * writes the word. The container's shared flag lives in the reserved last slot of the {@code short[]} itself (see
+     * {@link ArrayContainer#getContent()}), because per {@link io.deephaven.engine.rowset.impl.RefCountedCow} a reader
+     * may share the container while the owner is mutating in place, and the array the reader holds is the only thing it
+     * can mark without risk of writing over a span the owner has since replaced.
      */
     private static final long SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK = BLOCK_LAST;
 
