@@ -66,6 +66,7 @@ import static org.junit.Assert.assertArrayEquals;
 public class TestConcurrentInstantiation extends QueryTableTestBase {
     private static final int TIMEOUT_LENGTH = 10;
     private static final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;
+    private static final long BLOCKED_TIMEOUT_MILLIS = 2_000;
 
     private ExecutorService pool;
     private ExecutorService dualPool;
@@ -728,10 +729,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     /**
-     * Assert that both submitted operations block, rather than completing, because a dependency is not yet satisfied.
+     * Assert that every submitted operation blocks, rather than completing, because a dependency is not yet satisfied.
      * <p>
-     * Both futures must already be submitted: waiting on the first inline would throw {@link TimeoutException} and the
-     * second operation would never run, leaving it silently untested.
+     * All futures must already be submitted: waiting on the first inline would throw {@link TimeoutException} and the
+     * later operations would never run, leaving them silently untested. Because they were submitted together, they
+     * share one {@link #BLOCKED_TIMEOUT_MILLIS} deadline; once the first has outlasted it, the rest are checked at
+     * once.
      */
     private void assertAllTimeOut(final Future<?>... futures)
             throws InterruptedException, ExecutionException {
@@ -739,9 +742,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // before waiting on any: if an early one unexpectedly completes, fail() exits the loop below, and an
         // unregistered later one would be left running into the next test.
         blockedOperations.addAll(Arrays.asList(futures));
+        final long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(BLOCKED_TIMEOUT_MILLIS);
         for (int fi = 0; fi < futures.length; ++fi) {
             try {
-                futures[fi].get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+                futures[fi].get(Math.max(0, deadlineNanos - System.nanoTime()), TimeUnit.NANOSECONDS);
                 fail("Expected operation " + fi + " to time out waiting for dependencies");
             } catch (final TimeoutException ignored) {
             }
