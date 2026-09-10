@@ -200,8 +200,8 @@ security boundary. Before adding or changing a handler (`server/src/.../table/op
 the hierarchical/partitioned/console/input-table services, or a service-loaded `TicketResolver`),
 read `.github/instructions/grpc-services.instructions.md` — the checklist covers validating
 every user-supplied expression through `ColumnExpressionValidator`, validating the exact string and
-column shape the engine compiles, rejecting unknown proto `oneof`/enum cases, request-shape and
-authorization checks, error mapping, and the tests to add.
+column shape the engine compiles, failing closed when a validation-dispatch `switch` hits an unknown
+case, request-shape and authorization checks, error mapping, and the tests to add.
 
 ### Other major areas
 
