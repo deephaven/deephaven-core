@@ -81,5 +81,16 @@ public class TestKnVn {
         TestCase.assertTrue(String.format(
                 "Expected hashtable to reject a 'put' as it got close to being full, but it accepted %d elements", ii),
                 putFailed);
+
+        // Resetting must preserve the maximum-capacity sizing: the allocation after a reset gets the nearly-full
+        // rehash threshold (as the growth path does at the ceiling), so a refill of the entries this generation
+        // absorbed would not trigger another maximum-sized rehash.
+        final long entriesAbsorbed = ii;
+        final HashMapBase base = (HashMapBase) ht;
+        ht.resetToNull();
+        ht.put(0, 0);
+        TestCase.assertTrue(
+                String.format("rehashThreshold (%d) > entriesAbsorbed (%d)", base.rehashThreshold, entriesAbsorbed),
+                base.rehashThreshold > entriesAbsorbed);
     }
 }

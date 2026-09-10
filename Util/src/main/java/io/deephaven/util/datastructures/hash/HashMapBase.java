@@ -117,7 +117,11 @@ public abstract class HashMapBase implements NullableLongLongMap {
                 Integer.MAX_VALUE, "Integer.MAX_VALUE");
         final int entryCapacity = newBucketCapacity * entriesPerBucket;
         final int longCapacity = entryCapacity * 2;
-        rehashThreshold = (int) (entryCapacity * loadFactor);
+        // Mirror the rehash() growth path: once clamped to the maximum bucket capacity there is no larger size to
+        // grow into, so run at the nearly-full load factor rather than rehashing (at the same capacity) partway
+        // through a large fill.
+        final float loadFactorToUse = newBucketCapacity < maxBucketCapacity ? loadFactor : NEARLY_FULL_LOAD_FACTOR;
+        rehashThreshold = (int) (entryCapacity * loadFactorToUse);
         final long[] keysAndValues = new long[longCapacity];
         setKeysAndValues(keysAndValues);
         return keysAndValues;
