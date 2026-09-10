@@ -719,7 +719,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex == null) {
                 return input.copy();
             }
-            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
+            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex,
+                    filterCtx.columnDefinitions(), input);
         }
         if (action == PARQUET_DICTIONARY) {
             if (!hasDictionaryPage(filterCtx.columnDefinitions().get(0))) {
@@ -733,7 +734,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex == null) {
                 return input.copy();
             }
-            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
+            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex,
+                    filterCtx.columnDefinitions(), input);
         }
         throw new IllegalStateException("Unexpected value: " + action);
     }
@@ -1108,12 +1110,55 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * Apply the filter to the data index table and return the result.
      */
     @NotNull
+    /**
+     * Whether the data index's columns carry the same types as the columns the filter will be matched against.
+     *
+     * <p>
+     * A location's index is read by {@code readDataIndexTable} with no {@link TableDefinition}, so its column types are
+     * inferred from the index file alone and need not agree with the parent table's. A {@code BigDecimal} column whose
+     * values happen to have scale 0 is the case that showed this: the index file is a {@code DECIMAL(p, 0)}, which
+     * infers back as {@code BigInteger}, so matching a {@code BigDecimal} value against it compares
+     * {@code BigDecimal.equals(BigInteger)} -- always {@code false}. Nothing throws; the index simply reports that
+     * nothing matches, and {@link #pushdownDataIndex} returns that as an <em>exact</em> answer. Under a negation the
+     * rows then all appear to match.
+     *
+     * <p>
+     * This is the silent form of the mismatch {@code DH-19443} is about; the {@code catch} in
+     * {@link #pushdownDataIndex} cannot see it because there is no exception. Declining the index keeps the answer
+     * correct. The better fix is for {@code readDataIndexTable} to pin the index columns to the parent table's types so
+     * the optimization survives, which is left to that ticket.
+     */
+    private static boolean indexTypesMatchFilterColumns(
+            final BasicDataIndex dataIndex,
+            final List<ColumnDefinition<?>> filterColumnDefinitions,
+            final Map<String, String> renameMap) {
+        final TableDefinition indexDefinition = dataIndex.table().getDefinition();
+        for (final ColumnDefinition<?> columnDefinition : filterColumnDefinitions) {
+            final String managerName = renameMap.getOrDefault(columnDefinition.getName(), columnDefinition.getName());
+            final ColumnDefinition<?> indexColumn = indexDefinition.getColumn(managerName);
+            if (indexColumn == null) {
+                // Not a column of the index; the filter cannot be served from it anyway.
+                return false;
+            }
+            if (!columnDefinition.getDataType().equals(indexColumn.getDataType())
+                    || !java.util.Objects.equals(
+                            columnDefinition.getComponentType(), indexColumn.getComponentType())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static PushdownResult pushdownDataIndex(
             final RowSet selection,
             final WhereFilter filter,
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
+            final List<ColumnDefinition<?>> filterColumnDefinitions,
             final PushdownResult result) {
+        if (!indexTypesMatchFilterColumns(dataIndex, filterColumnDefinitions, renameMap)) {
+            return result.copy();
+        }
         final RowSetBuilderRandom matchingBuilder = RowSetFactory.builderRandom();
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final long threshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);

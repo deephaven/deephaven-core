@@ -85,6 +85,9 @@ public class PushdownFuzzerTest {
             // Finding 17: sorted-column match pushdown answered `!= NaN` with an ordering binary search, whose
             // notion of float equality differs from the filter's, dropping the NaN rows.
             -5472033891179623763L,
+            // Finding 18: a location's data index read back as BigInteger for a scale-0 BigDecimal column, so
+            // matching against it silently found nothing and the negation returned everything.
+            -7982720036514329702L,
             // Finding 16 (bench): a table-wide sort claim on a partitioned layout, which partitioning invalidates.
             -1220343102263136052L, -3258625118121555365L,
             // Finding 12: a partition value containing a colon made the partition directory's relative URI
