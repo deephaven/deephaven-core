@@ -139,7 +139,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
         // beginRange is non-negative, so beginRange + shiftDelta cannot overflow when shiftDelta is negative; endRange
         // is non-negative, so Long.MAX_VALUE - endRange cannot overflow when shiftDelta is positive.
-        return shiftDelta < 0 ? beginRange + shiftDelta >= 0 : shiftDelta <= Long.MAX_VALUE - endRange;
+        return shiftDelta < 0
+                ? beginRange + shiftDelta >= 0
+                : shiftDelta <= Long.MAX_VALUE - endRange;
     }
 
     /**
