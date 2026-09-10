@@ -1521,6 +1521,53 @@ public class QueryTableWhereSpecialCasesTest {
                 val -> val != 0.0 && !Double.isNaN(val));
     }
 
+    /**
+     * Without {@link MatchOptions#nanMatch()} a match follows IEEE 754, under which NaN is equal to nothing at all --
+     * itself included -- so a NaN among the values can never select a row. {@link MatchFilter} drops it while
+     * initializing, leaving a value set that means the same thing to a consumer matching with NaN equal to itself,
+     * which is what {@link MatchFilter#getValues()} permits and what the sorted-column binary search relies on.
+     * Dropping the NaN must leave the rest of the list intact, so a list mixing NaN with ordinary values has to select
+     * exactly what the same list without the NaN would.
+     */
+    @Test
+    public void testMatchMixedNanWithoutNanMatch() {
+        final Table source = getStaticTable();
+
+        // A NaN between two ordinary values: both of those survive, and no row matches on the NaN.
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new MatchFilter(MatchOptions.REGULAR, "floatCol", 0.0f, Float.NaN, 1.0f),
+                val -> val == 0.0f || val == 1.0f);
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new MatchFilter(MatchOptions.INVERTED, "floatCol", 0.0f, Float.NaN, 1.0f),
+                val -> val != 0.0f && val != 1.0f);
+        // Every value is NaN, so nothing is left to match on.
+        validateFloatFilter(
+                source,
+                "floatCol",
+                new MatchFilter(MatchOptions.REGULAR, "floatCol", Float.NaN),
+                val -> false);
+
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new MatchFilter(MatchOptions.REGULAR, "doubleCol", 0.0, Double.NaN, 1.0),
+                val -> val == 0.0 || val == 1.0);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new MatchFilter(MatchOptions.INVERTED, "doubleCol", 0.0, Double.NaN, 1.0),
+                val -> val != 0.0 && val != 1.0);
+        validateDoubleFilter(
+                source,
+                "doubleCol",
+                new MatchFilter(MatchOptions.REGULAR, "doubleCol", Double.NaN),
+                val -> false);
+    }
+
     @Test
     public void testConditionalGTZero() {
         final Table source = getStaticTable();

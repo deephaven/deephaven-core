@@ -8,6 +8,10 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.MatchOptions;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionObject;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.generic.region.AppendOnlyFixedSizePageRegionObject;
@@ -95,6 +99,37 @@ public class ComparableRegionBinarySearchKernelTest {
         // A later value beyond the run is still found, so consuming the run as a group keeps the search advancing.
         assertMatch(List.of(oneScale1, oneScale2, two), List.of(oneScale1, oneScale2, two), List.of(0L, 1L, 2L));
         assertMatch(List.of(oneScale1, oneScale2, two), List.of(oneScale3, two), List.of(2L));
+    }
+
+    /**
+     * {@link ObjectRegionBinarySearchKernel#binsearchMatchFilter} is the only production route to this kernel, and the
+     * dispatch it makes on the column's data type is what chooses between answering a match by ordering alone and
+     * picking the matches out of the ordering-equal run by equality. A run holding values that compare equal while
+     * being unequal separates the two: only the truly equal row may come back, where the ordering-only search would
+     * answer with the run -- or, since its bounds are themselves equality-checked, with nothing at all.
+     *
+     * <p>
+     * The run is built directly here because no Parquet column can carry one: the DECIMAL logical type stores a single
+     * scale for a whole column, so values read back from it are equal whenever they compare equal.
+     */
+    @Test
+    public void testMatchFilterDispatchesInconsistentTypeToEqualitySearch() {
+        final BigDecimal oneScale1 = new BigDecimal("1.0");
+        final BigDecimal oneScale2 = new BigDecimal("1.00");
+        final BigDecimal two = new BigDecimal("2.0");
+        final List<BigDecimal> data = List.of(oneScale1, oneScale2, two);
+
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "test", oneScale1);
+        filter.init(TableDefinition.of(ColumnDefinition.fromGenericType("test", BigDecimal.class)));
+        assertEquals(BigDecimal.class, filter.getColumnType());
+
+        try (final RowSet matched = ObjectRegionBinarySearchKernel.binsearchMatchFilter(
+                makeBigDecimalRegion(data), 0, data.size() - 1,
+                SortColumn.asc(ColumnName.of("test")), filter)) {
+            final List<Long> actual = new ArrayList<>();
+            matched.forAllRowKeys(actual::add);
+            assertEquals(List.of(0L), actual);
+        }
     }
 
     /** Asserts a single-value search, per {@link #assertMatch(List, List, List)}. */

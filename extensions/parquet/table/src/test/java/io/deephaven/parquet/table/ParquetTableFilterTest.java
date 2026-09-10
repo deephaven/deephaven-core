@@ -1647,6 +1647,57 @@ public final class ParquetTableFilterTest {
         verifyAgainstDisabledSortedPushdown(floatPath, FloatRangeFilter.geq("sorted_float", 500.0f));
     }
 
+    /**
+     * A {@link BigDecimal} column orders inconsistently with equals -- {@code 500} and {@code 500.00} compare equal
+     * while {@code equals} separates them -- so {@code ObjectRegionBinarySearchKernel.binsearchMatchFilter} routes its
+     * match filters to {@code ComparableRegionBinarySearchKernel} rather than answering them by ordering alone. This
+     * exercises that dispatch through the Parquet region, which is its only production caller.
+     *
+     * <p>
+     * What this cannot pin down is the choice the dispatch makes: Parquet's DECIMAL logical type stores a single scale
+     * for a whole column, so every value read back carries that one scale and an ordering-equal run is always an equal
+     * run, which both kernels answer alike. A run that separates them has to be built directly against a region, as
+     * {@code ComparableRegionBinarySearchKernelTest} does. What is checked here is that a sorted BigDecimal column
+     * filters correctly end to end, including for a search value whose scale no stored value shares.
+     */
+    @Test
+    public void sortedFlatPartitionsBigDecimalTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_sortedFlatPartitionsBigDecimal").toString();
+        final int tableSize = 100_000;
+
+        // Runs of ten equal values, so a match has to claim a whole run, plus nulls at the sorted edge.
+        final Table sorted = TableTools.emptyTable(tableSize)
+                .update("sorted_bd = ii % 997 == 0 ? (java.math.BigDecimal) null"
+                        + " : java.math.BigDecimal.valueOf((long) (ii / 10))")
+                .sort("sorted_bd");
+        writeSortedPartitions(destPath, sorted, "sorted_bd");
+
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        // Written at scale 0, so this value is equal to the rows of its run.
+        queryScope.putParam("sortedBd500", new BigDecimal("500"));
+        // Ordering-equal to that same run, but equal to no member of it.
+        queryScope.putParam("sortedBd500Scaled", new BigDecimal("500.00"));
+        // Ordering-equal to no run at all.
+        queryScope.putParam("sortedBdAbsent", new BigDecimal("500.5"));
+
+        // Stated outright, so the oracle comparisons below cannot pass by both sides being wrong alike: the run is
+        // ten rows, and the ordering-equal value at another scale is equal to none of them.
+        assertEquals(10, ParquetTools.readTable(destPath).where("sorted_bd == sortedBd500").size());
+        assertEquals(0, ParquetTools.readTable(destPath).where("sorted_bd == sortedBd500Scaled").size());
+
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd == sortedBd500");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd != sortedBd500");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd == sortedBd500Scaled");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd != sortedBd500Scaled");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd == sortedBdAbsent");
+        // Several search values sharing one ordering-equal run, so the run answers for all of them at once.
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd in sortedBd500, sortedBd500Scaled");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd not in sortedBd500, sortedBd500Scaled");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd in sortedBd500Scaled, sortedBdAbsent");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd == null");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd != null");
+    }
+
     @Test
     public void testEmptyMatchFilter() {
         final Table source = newTable(
