@@ -75,6 +75,23 @@ public class TestArrayContainer extends TestContainerBase {
         assertTrue(over.isShared());
     }
 
+    /**
+     * The small fixed-arity constructors, which also stand in for the singleton and two-value containers when those
+     * are disabled, allocate with room for the reserved slot like every other path.
+     */
+    @Test
+    public void testSmallConstructorsReserveTheSlot() {
+        for (final ArrayContainer ac : new ArrayContainer[] {
+                new ArrayContainer((short) 7),
+                new ArrayContainer((short) 7, (short) 9),
+                new ArrayContainer((short) 7, (short) 9, (short) 11)}) {
+            assertTrue(ac.getCardinality() <= ac.capacity());
+            assertEquals(ac.getContent().length - 1, ac.capacity());
+            assertFalse(ac.isShared());
+            ac.validate();
+        }
+    }
+
     /** An array handed to the container must leave room for the reserved slot. */
     @Test
     public void testWrappedArrayMustHaveRoomForTheReservedSlot() {
