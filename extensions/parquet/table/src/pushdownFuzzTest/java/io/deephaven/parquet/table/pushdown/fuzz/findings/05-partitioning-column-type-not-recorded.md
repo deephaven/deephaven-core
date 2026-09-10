@@ -116,3 +116,21 @@ StillInfers` pins that fallback down, `char` and all.
   explicitly supplied definition still work; and a dataset with no recorded types still infers.
 - Full `:extensions-parquet-table:test`, `:extensions-parquet-base:test` and `:engine-table:test`
   pass.
+
+### Follow-up: an existing test pinned the old behaviour
+
+`ParquetTableReadWriteTest.testAllPartitioningColumnTypes` is an `OutOfBandTest`, so it is not in the
+`test` task that was run above, and it was missed at the time. It asserted the defect:
+
+```java
+// Verify that we can read the partition values, but types like LocalDate or LocalTime will be read as
+// strings, and byte, short will be read as integers. Therefore, we cannot compare the tables directly
+assertNotEquals(fromDiskPartitioned.getDefinition(), inputData.getDefinition());
+```
+
+That is a read with an explicit `KV_PARTITIONED` layout, which bypasses the metadata files. It now
+recovers the correct types anyway, because this fix records the partitioning columns in **each data
+file's** schema metadata rather than only in `_metadata`, so the directory names are no longer the only
+evidence. The assertion was inverted to `assertEquals` and the data compared as well; the stale comment
+was replaced. This is the same situation as finding 2's `ZonedDateTimeCodecTest.testMax`, which also
+asserted the behaviour being corrected.
