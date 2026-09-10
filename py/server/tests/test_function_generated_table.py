@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
+import threading
 from typing import Any
 
 import deephaven.dtypes as dht
@@ -15,6 +16,7 @@ from deephaven.column import int_col, string_col
 from deephaven.execution_context import get_exec_ctx
 from deephaven.liveness_scope import liveness_scope
 from deephaven.table import Table, TableDefinition
+from deephaven.table_listener import TableUpdate, listen
 from tests.testbase import BaseTestCase
 
 
@@ -174,18 +176,26 @@ class TableTestCase(BaseTestCase):
         )
         self.assertTrue(result_table.is_blink)
 
-        append_only_input_table.add(
-            new_table([string_col(name="MyStr", data=["test string"])])
-        )
-        # Blink rows are removed on the cycle after they are added, so the wait and the read must happen under a
-        # single exclusive-lock scope; the lock is reentrant and await_update releases it while waiting.
-        with update_graph.exclusive_lock(self.test_update_graph):
-            self.wait_ticking_table_update(result_table, row_count=1, timeout=30)
-            first_row_key = get_row_key(0, result_table)
-            result_str = result_table.j_table.getColumnSource("ResultStr").get(
-                first_row_key
+        # Blink rows are removed on the cycle after they are added, so reading the result after the fact races the
+        # clear. Capture the added row from within the update cycle that delivers it instead.
+        captured = []
+        row_added = threading.Event()
+
+        def on_update(update: TableUpdate, is_replay: bool) -> None:
+            added = update.added(cols="ResultStr").get("ResultStr")
+            if added is not None and len(added) > 0:
+                captured.append(str(added[0]))
+                row_added.set()
+
+        listener_handle = listen(result_table, on_update)
+        try:
+            append_only_input_table.add(
+                new_table([string_col(name="MyStr", data=["test string"])])
             )
-        self.assertEqual(result_str, "test string")
+            self.assertTrue(row_added.wait(timeout=30))
+        finally:
+            listener_handle.stop()
+        self.assertEqual(captured[0], "test string")
 
     def test_generated_table_copy_data_false(self):
         append_only_input_table = input_table(col_defs={"MyStr": dht.string})
