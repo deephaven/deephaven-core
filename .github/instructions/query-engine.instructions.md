@@ -5,7 +5,7 @@ applyTo:
   - "engine/chunk/**"
 ---
 
-# Query Engine Guidelines
+# Query engine guidelines
 
 The engine processes large, ticking datasets on the hot path, so data-movement code must be written
 for throughput. When adding or changing engine internals (`engine/table`, `engine/rowset`,

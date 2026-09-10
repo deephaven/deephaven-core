@@ -1,6 +1,7 @@
 ---
 applyTo:
   - "server/src/main/java/io/deephaven/server/table/ops/**"
+  - "server/src/main/java/io/deephaven/server/table/inputtables/**"
   - "server/src/main/java/io/deephaven/server/hierarchicaltable/**"
   - "server/src/main/java/io/deephaven/server/partitionedtable/**"
   - "server/src/main/java/io/deephaven/server/console/**"
@@ -8,7 +9,7 @@ applyTo:
   - "extensions/flight-sql/src/main/java/**"
 ---
 
-# gRPC Service Guidelines
+# gRPC service guidelines
 
 Server-side gRPC handlers turn untrusted client requests into engine operations, so they are a
 security boundary. When adding or changing a handler (`server/src/.../table/ops/*GrpcImpl.java`, the
