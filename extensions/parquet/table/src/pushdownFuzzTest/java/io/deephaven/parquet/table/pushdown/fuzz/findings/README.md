@@ -22,6 +22,14 @@ appears in both was rediscovered independently.
 | 8 | [A filter naming both a column and its column-array form crashed the deferred-view filter split](08-deferred-view-duplicate-rename-key.md) | — | medium | fixed |
 | 9 | [Parquet-space names leaked into two table-space APIs, dropping rows](09-parquet-name-space-leak.md) | — | high | fixed |
 | 10 | [A deferred `renameColumns` that swaps or rotates names produced the wrong data](10-deferred-rename-not-simultaneous.md) | [DH-23611](https://deephaven.atlassian.net/browse/DH-23611) | high | fixed |
+| 11 | [Every column of a multi-column sort was claimed as independently sorted, over-returning rows](11-multi-column-sort-claimed-per-column.md) | — | high | fixed |
+| 12 | [A partition value containing a colon could not be written at all](12-colon-in-partition-value.md) | — | medium | fixed |
+| 13 | [A filter naming an indexed column and an alias of it threw on the disk table](13-duplicate-alias-data-index-rename.md) | — | medium | fixed |
+| 14 | [Building an error message with `Strings.of` discarded the real exception](14-strings-of-masks-the-real-exception.md) | — | medium | fixed |
+| 15 | [Ordering incomparable types failed with an opaque `ClassCastException`](15-chained-comparison-and-incomparable-ordering.md) | — | medium | fixed (diagnostic), plus a bench correction |
+| 16 | [**Bench defect:** a table-wide sort order was claimed on a layout that partitioning had destroyed](16-bench-partitioned-sort-claim.md) | — | high (bench) | fixed |
+| 17 | [Sorted-column match pushdown used the ordering's equality, so `!= NaN` dropped rows](17-sorted-match-nan-equality.md) | [DH-23502](https://deephaven.atlassian.net/browse/DH-23502) | high | fixed (stopgap; retire on DH-23502 merge) |
+| 18 | [A data index read back with a different column type, so matches silently found nothing](18-data-index-type-mismatch.md) | — | high | fixed |
 
 ## Carry-over from the previous round
 
@@ -30,7 +38,6 @@ branch. **14 now pass**; `1681357320861610709` (7a) was then fixed as finding 11
 (7d) as finding 12, `428667830982598836` (part of 3) as finding 13, and the two cross-type seeds
 (`5492728113478971232`, `6249197149364475148`, its findings 5 and 7b) as finding 15. **All 19 now
 pass.**
-
 
 Everything in that file is accounted for: its finding 1 was DH-23602, fixed before this campaign
 began; findings 2, 4 and the write-path items became findings 3, 9, 1, 4 and 2 here; and its finding 3
