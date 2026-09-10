@@ -1,5 +1,6 @@
 # Finding 3 — a pre-epoch `LocalDateTime` with a sub-second part cannot be read back from parquet
 
+**Jira:** [DH-23609](https://deephaven.atlassian.net/browse/DH-23609)
 **Severity:** high — data written successfully becomes permanently unreadable. Not pushdown-specific:
 `readTable(...).select()` is enough.
 **Status:** **FIXED**, with regression tests.
@@ -69,6 +70,14 @@ return LocalDateTime.ofEpochSecond(Math.floorDiv(value, 1_000L),
 is kept in both positions because the replicator rewrites it textually to `1_000_000L` and
 `1_000_000_000L`.
 
+### The pushdown path shares the same method
+
+`MinMaxFromStatistics.getMinMaxForLocalDateTimes` calls these same three `convertValue` methods on
+row-group min/max, so before the fix a `where` on such a column threw during **pruning**, before any
+page was materialized. Fixing `convertValue` fixes both paths at once; the pruning path now has its
+own test (`filterPrunesOnPreEpochStatistics`), since `MinMaxFromStatisticsTest` uses only positive
+epoch millis. Noted in DH-23609.
+
 The `LocalTimeFrom*Materializer` and `InstantNanos*Materializer` siblings were checked and do not
 share the defect: `LocalTime.ofNanoOfDay` takes a non-negative day offset, and the `Instant`
 materializers return epoch nanos as a `long` without splitting them.
@@ -86,9 +95,10 @@ it is recorded here rather than changed; it gets its own finding if a later run 
 - `PreEpochLocalDateTimeMaterializerTest`, 6 tests: the original `-1` value; pre-epoch sweeps at all
   three precisions against `Instant.ofEpochSecond` as the oracle; pre-epoch whole seconds; and the
   epoch and post-epoch controls.
-- `PreEpochLocalDateTimeRoundTripTest`, 5 tests: `writeTable`/`readTable().select()` round trips for
+- `PreEpochLocalDateTimeRoundTripTest`, 6 tests: `writeTable`/`readTable().select()` round trips for
   pre-epoch sub-second values, values interleaved with nulls, the whole-second and post-epoch
-  controls, and a `where` over a read-back pre-epoch column.
+  controls, a `where` over a read-back pre-epoch column, and a multi-row-group case whose filters
+  prune on pre-epoch statistics, covering the `MinMaxFromStatistics` path.
 - Full `:extensions-parquet-base:test` and `:extensions-parquet-table:test` pass, including the
   pre-existing `TestLocalDateTimeMaterializers`.
 - Seed `8750790217018904276L` passes.

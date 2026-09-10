@@ -116,6 +116,37 @@ public class PreEpochLocalDateTimeRoundTripTest {
                 null);
     }
 
+    /**
+     * The pushdown path shares {@code convertValue}: {@code MinMaxFromStatistics.getMinMaxForLocalDateTimes} calls the
+     * same three methods on row-group min/max, so before the fix a {@code where} on such a column threw during
+     * <em>pruning</em>, before any page was materialized. Written as several row groups so the statistics are what
+     * decide, and filtered so that some groups prune and others do not.
+     */
+    @Test
+    public void filterPrunesOnPreEpochStatistics() {
+        final Table source = TableTools.newTable(TableTools.col("Timestamp",
+                LocalDateTime.parse("1900-06-15T12:30:00.123456789"),
+                LocalDateTime.parse("1930-01-01T00:00:00.000000001"),
+                LocalDateTime.parse("1969-12-31T23:59:59.999999999"),
+                LocalDateTime.parse("1990-01-01T00:00:00.000000001"),
+                LocalDateTime.parse("2024-02-29T12:00:00.123456789"),
+                LocalDateTime.parse("2050-01-01T00:00:00.000000001")));
+        final String dest = Path.of(rootFile.getPath(), "statistics.parquet").toString();
+        ParquetTools.writeTable(source, dest, new ParquetInstructions.Builder()
+                .setRowGroupInfo(io.deephaven.parquet.table.metadata.RowGroupInfo.maxRows(2))
+                .build());
+
+        final Table disk = ParquetTools.readTable(dest);
+        // A range that prunes the later row groups entirely.
+        assertEquals(3, disk.where("Timestamp < '1970-01-01T00:00:00'").size());
+        // A range wholly inside the first, all-pre-epoch row group.
+        assertEquals(1, disk.where("Timestamp < '1920-01-01T00:00:00'").size());
+        // A match filter, which takes the same statistics path.
+        assertEquals(1, disk.where("Timestamp == '1969-12-31T23:59:59.999999999'").size());
+        // And the same answers with no pushdown available at all.
+        assertEquals(3, disk.select().where("Timestamp < '1970-01-01T00:00:00'").size());
+    }
+
     /** A filter over the read-back column, which is how the fuzzer reached it. */
     @Test
     public void filterOverPreEpochValues() {

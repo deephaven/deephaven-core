@@ -10,18 +10,36 @@ appears in both was rediscovered independently.
 
 ## Index
 
-| # | Finding | Severity | Status |
-| --- | --- | --- | --- |
-| 1 | [An explicit `RowGroupInfo.maxRows` on a zero-row table fails the write](01-empty-table-row-group-split.md) | medium | fixed |
-| 2 | [`epochNanos` decided representability from the seconds alone](02-epoch-nanos-boundary.md) | high | fixed |
-| 3 | [A pre-epoch `LocalDateTime` with a sub-second part cannot be read back from parquet](03-pre-epoch-local-date-time-materializers.md) | high | fixed |
-| 4 | [A key-value partitioned write with no partitions crashed inside the writer](04-empty-partitioned-write-crash.md) | medium | fixed |
-| 5 | [A partitioning column's type was inferred from its directory names, so it did not round trip](05-partitioning-column-type-not-recorded.md) | high | fixed |
-| 6 | [A disjunction mixing a renamed and an un-renamed column tripped an internal assertion](06-match-filter-partial-rename-map.md) | medium | fixed |
-| 7 | [A formula filter pushed through nested renaming views lost all but the last renaming](07-condition-filter-rename-not-composed.md) | medium-high | fixed |
-| 8 | [A filter naming both a column and its column-array form crashed the deferred-view filter split](08-deferred-view-duplicate-rename-key.md) | medium | fixed |
-| 9 | [Parquet-space names leaked into two table-space APIs, dropping rows](09-parquet-name-space-leak.md) | high | fixed |
-| 10 | [A deferred `renameColumns` that swaps or rotates names produced the wrong data](10-deferred-rename-not-simultaneous.md) | high | fixed |
+| # | Finding | Jira | Severity | Status |
+| --- | --- | --- | --- | --- |
+| 1 | [An explicit `RowGroupInfo.maxRows` on a zero-row table fails the write](01-empty-table-row-group-split.md) | — | medium | fixed |
+| 2 | [`epochNanos` decided representability from the seconds alone](02-epoch-nanos-boundary.md) | — | high | fixed |
+| 3 | [A pre-epoch `LocalDateTime` with a sub-second part cannot be read back from parquet](03-pre-epoch-local-date-time-materializers.md) | [DH-23609](https://deephaven.atlassian.net/browse/DH-23609) | high | fixed |
+| 4 | [A key-value partitioned write with no partitions crashed inside the writer](04-empty-partitioned-write-crash.md) | — | medium | fixed |
+| 5 | [A partitioning column's type was inferred from its directory names, so it did not round trip](05-partitioning-column-type-not-recorded.md) | — | high | fixed |
+| 6 | [A disjunction mixing a renamed and an un-renamed column tripped an internal assertion](06-match-filter-partial-rename-map.md) | — | medium | fixed |
+| 7 | [A formula filter pushed through nested renaming views lost all but the last renaming](07-condition-filter-rename-not-composed.md) | — | medium-high | fixed |
+| 8 | [A filter naming both a column and its column-array form crashed the deferred-view filter split](08-deferred-view-duplicate-rename-key.md) | — | medium | fixed |
+| 9 | [Parquet-space names leaked into two table-space APIs, dropping rows](09-parquet-name-space-leak.md) | — | high | fixed |
+| 10 | [A deferred `renameColumns` that swaps or rotates names produced the wrong data](10-deferred-rename-not-simultaneous.md) | [DH-23611](https://deephaven.atlassian.net/browse/DH-23611) | high | fixed |
+
+## Carry-over from the previous round
+
+All 19 case seeds recorded in [`../OLD_FINDINGS.md`](../OLD_FINDINGS.md) were replayed against this
+branch. **14 now pass.** The 5 that still fail are the root causes this campaign did not reach:
+
+| Old seed | `OLD_FINDINGS.md` | Still fails with |
+| --- | --- | --- |
+| `1681357320861610709` | 7a | **silent wrong results** — `or(range, !=)` over a sorted + indexed column returns an extra non-matching row. The most serious one left. |
+| `-2281078010550439077` | 7d, 6 | `URISyntaxException` — an `Instant` partitioning value formats with colons, making an invalid partition path. Same defect as the `LocalTime` case. |
+| `428667830982598836` | 3 | `IllegalArgumentException: Duplicate source column(s)`, on the disk table only. |
+| `5492728113478971232` | 5 | `ClassCastException: Integer cannot be cast to Boolean` — memory throws, disk succeeds. |
+| `6249197149364475148` | 7b, 5 | `ClassCastException: String cannot be cast to Boolean` — memory throws, disk succeeds. |
+
+Everything else in that file is accounted for: its finding 1 was DH-23602, fixed before this campaign
+began; findings 2, 4 and the write-path items became findings 3, 9, 1, 4 and 2 here; and its finding 3
+and 7c clusters were resolved by findings 6, 7 and 10. Its two remaining classes — cross-type
+comparison divergence, and partition values containing colons — are the two largest groups still open.
 
 ## How the bench is run for this campaign
 

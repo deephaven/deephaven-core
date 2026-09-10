@@ -204,15 +204,17 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 }
             }
 
-            // The hazard is a name being reassigned while another column still reads from it. Without one, sequential
-            // evaluation is already correct, which keeps this to the cases that were broken.
+            // The hazard is a name reassigned before a *later* column reads it: sequential evaluation would hand
+            // that column the new value. A collision with an earlier column is harmless, since that column read the
+            // name before it was reassigned -- so requiring cj > ci confines this to the renames that were actually
+            // broken and leaves every one view already evaluates correctly on its existing path.
             for (int ci = 0; ci < numColumns; ++ci) {
                 if (targetNames[ci].equals(sourceNames[ci])) {
                     // Keeps its name, so it defines nothing that could shadow another column's source.
                     continue;
                 }
-                for (int cj = 0; cj < numColumns; ++cj) {
-                    if (cj != ci && targetNames[ci].equals(sourceNames[cj])) {
+                for (int cj = ci + 1; cj < numColumns; ++cj) {
+                    if (targetNames[ci].equals(sourceNames[cj])) {
                         return new SimultaneousRename(targetNames, sourceNames);
                     }
                 }
