@@ -16,6 +16,7 @@ appears in both was rediscovered independently.
 | 2 | [`epochNanos` decided representability from the seconds alone](02-epoch-nanos-boundary.md) | high | fixed |
 | 3 | [A pre-epoch `LocalDateTime` with a sub-second part cannot be read back from parquet](03-pre-epoch-local-date-time-materializers.md) | high | fixed |
 | 4 | [A key-value partitioned write with no partitions crashed inside the writer](04-empty-partitioned-write-crash.md) | medium | fixed |
+| 5 | [A partitioning column's type was inferred from its directory names, so it did not round trip](05-partitioning-column-type-not-recorded.md) | high | fixed |
 
 ## How the bench is run for this campaign
 
