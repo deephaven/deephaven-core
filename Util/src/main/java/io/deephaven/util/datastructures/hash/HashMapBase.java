@@ -68,7 +68,10 @@ public abstract class HashMapBase implements NullableLongLongMap {
         Assert.eq(hs.size(), "hs.size()", 4, "4");
     }
 
-    private final int desiredInitialCapacity;
+    // The entry capacity for the next backing array allocation. Starts at the construction-time request, and is
+    // ratcheted up in resetToNullImpl() so a map that is repeatedly reset and refilled to a similar size allocates
+    // at that size directly instead of growing through successive rehashes.
+    private int desiredInitialCapacity;
     private final float loadFactor;
     private final long noEntryValue;
     // There are three kinds of slots: empty, holding a value, and deleted (formerly holding a value).
@@ -191,6 +194,11 @@ public abstract class HashMapBase implements NullableLongLongMap {
     }
 
     final void resetToNullImpl() {
+        // nonEmptySlots (not size) drives rehashing, so it determines the capacity we would have needed to absorb
+        // this generation of entries without growing.
+        final long capacityForObservedSlots = (long) (nonEmptySlots / loadFactor) + 1;
+        desiredInitialCapacity =
+                (int) Math.max(desiredInitialCapacity, Math.min(Integer.MAX_VALUE, capacityForObservedSlots));
         size = 0;
         nonEmptySlots = 0;
         rehashThreshold = 0;
