@@ -36,4 +36,18 @@ public class TestHashMapBase {
             }
         }
     }
+
+    /**
+     * A saturated capacity request must round up to a positive bucket count for every bucket width; the map then clamps
+     * it to its maximum capacity rather than overflowing.
+     */
+    @Test
+    public void desiredBucketCountDoesNotOverflow() {
+        for (final int entriesPerBucket : new int[] {1, 2, 4}) {
+            final int buckets = HashMapBase.desiredBucketCount(Integer.MAX_VALUE, entriesPerBucket);
+            final int expected = (int) (((long) Integer.MAX_VALUE + entriesPerBucket - 1) / entriesPerBucket);
+            TestCase.assertTrue("buckets > 0 for width " + entriesPerBucket, buckets > 0);
+            TestCase.assertEquals(expected, buckets);
+        }
+    }
 }

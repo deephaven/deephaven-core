@@ -105,10 +105,17 @@ public abstract class HashMapBase implements NullableLongLongMap {
         return key == SPECIAL_KEY_FOR_EMPTY_SLOT ? REDIRECTED_KEY_FOR_EMPTY_SLOT : key;
     }
 
+    /**
+     * Round an entry capacity up to a whole number of buckets, in long arithmetic so that a saturated request (near
+     * {@link Integer#MAX_VALUE}) cannot wrap negative.
+     */
+    static int desiredBucketCount(final int desiredEntryCapacity, final int entriesPerBucket) {
+        return (int) (((long) desiredEntryCapacity + entriesPerBucket - 1) / entriesPerBucket);
+    }
+
     long[] allocateKeysAndValuesArray(int entriesPerBucket) {
         // DesiredInitialCapacity is in units of 'entries'.
-        // Ceiling(desiredInitialCapacity / entriesPerBucket)
-        final int desiredNumBuckets = (desiredInitialCapacity + entriesPerBucket - 1) / entriesPerBucket;
+        final int desiredNumBuckets = desiredBucketCount(desiredInitialCapacity, entriesPerBucket);
         // Because we want the number of buckets to be prime
         final int proposedBucketCapacity = PrimeFinder.nextPrime(desiredNumBuckets);
         final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
