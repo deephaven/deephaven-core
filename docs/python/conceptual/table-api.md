@@ -14,7 +14,7 @@ Deephaven's Table API lets you filter, transform, join, and aggregate data using
 > [!NOTE]
 > New to Deephaven? Start with [How Deephaven works: A mental model](./deephaven-mental-model.md) for the conceptual foundation this guide builds on. This page assumes you already know why tables don't copy data and why formulas run in the engine, and focuses on the API surface and tradeoffs you'll actually choose between.
 
-For a practical tour of available operations, see [Table operations overview](./table-operations-overview.md).
+For a quick-reference index of available operations and where to find full guides for each, see [Table operations overview](./table-operations-overview.md).
 
 ## Tables are immutable
 
@@ -225,7 +225,7 @@ print(live_table.is_refreshing)  # True
 ## Related documentation
 
 - [How Deephaven works: A mental model](./deephaven-mental-model.md) — The conceptual foundation this guide builds on
-- [Table operations overview](./table-operations-overview.md) — Practical guide to available operations
+- [Table operations overview](./table-operations-overview.md) — Quick-reference index of available operations
 - [Deephaven's design](./deephaven-design.md) — Architecture and update model
 - [Table types](./table-types.md) — Static, streaming, blink, and ring tables
 - [Pydoc: Table](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) — Complete Python API reference
