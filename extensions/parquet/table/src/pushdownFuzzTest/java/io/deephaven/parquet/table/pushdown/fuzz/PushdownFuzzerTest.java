@@ -102,6 +102,9 @@ public class PushdownFuzzerTest {
             // Finding 20: a select aliasing an indexed column remapped a second column's data index once per
             // alias, producing the same index twice, which addDataIndex rejected.
             6547813402343559854L,
+            // Finding 21 (bench): an unguarded String method receiver, so the generated formula threw on a
+            // null row and the two paths disagreed on whether the query throws at all.
+            -9218664977068266450L, 5844000365408086213L,
     };
 
     private static final String ROOT_FILENAME = PushdownFuzzerTest.class.getName() + "_root";

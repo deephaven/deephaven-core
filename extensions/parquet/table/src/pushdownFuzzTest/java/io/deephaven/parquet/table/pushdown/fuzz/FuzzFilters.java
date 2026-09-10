@@ -253,7 +253,15 @@ public final class FuzzFilters {
         final String[] methods = {"startsWith", "endsWith", "contains", "matches"};
         final String method = methods[random.nextInt(methods.length)];
         final String arg = "matches".equals(method) ? "`" + needle + ".*`" : "`" + needle + "`";
-        final String text = column.resultName() + "." + method + "(" + arg + ")";
+        // Guard the receiver, the same way singleInputFormula already does for `length()`: a null String
+        // cannot take a method call, and an unguarded call throws on any null row. That is intended engine
+        // behaviour, but it makes the filter useless as an oracle comparison -- whether the formula is ever
+        // evaluated depends on how many rows the *other* filters pruned first, and pushdown legitimately
+        // changes that, so the disk and memory paths disagree on whether the query throws at all. Guarding
+        // costs no coverage: this parses to a ConditionFilter either way, and the tier is already
+        // CHUNK_ONLY.
+        final String text = column.resultName() + " != null && "
+                + column.resultName() + "." + method + "(" + arg + ")";
         return new FuzzFilter(RawString.of(text), text, Tier.CHUNK_ONLY);
     }
 
