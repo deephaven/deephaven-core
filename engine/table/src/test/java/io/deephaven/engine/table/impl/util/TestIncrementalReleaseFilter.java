@@ -10,7 +10,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
+import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
+import org.junit.experimental.categories.Category;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -23,6 +25,7 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
 
+@Category(OutOfBandTest.class)
 public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
     public void testSimple() {
         final Table source = TableTools.newTable(TableTools.intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));

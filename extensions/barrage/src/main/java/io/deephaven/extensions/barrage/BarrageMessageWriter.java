@@ -9,6 +9,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
+import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.util.SafeCloseable;
 import org.apache.arrow.flight.impl.Flight;
@@ -111,6 +112,37 @@ public interface BarrageMessageWriter extends SafeCloseable {
             BitSet subscribedColumns);
 
     /**
+     * Obtain a {@link MessageView} of this {@code BarrageMessageWriter} that can be sent to a single subscriber, with a
+     * persistent per-subscription {@link DictionaryWriterRegistry} that survives across multiple ticking updates.
+     * <p>
+     * Note that all passed in arguments are owned by the caller and may be modified external to this method.
+     *
+     * @param options serialization options for this specific view
+     * @param isInitialSnapshot indicates whether this is the first snapshot for the listener
+     * @param isFullSubscription whether this is a full subscription (possibly a growing viewport)
+     * @param viewport is the position-space viewport
+     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
+     * @param keyspaceViewportPrev is the key-space viewport prior to applying the update
+     * @param keyspaceViewport is the key-space viewport
+     * @param subscribedColumns are the columns subscribed for this view
+     * @param dictionaryRegistry the persistent dictionary registry for this subscription, or {@code null} if unused
+     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
+     */
+    default MessageView getSubView(
+            BarrageSubscriptionOptions options,
+            boolean isInitialSnapshot,
+            boolean isFullSubscription,
+            @Nullable RowSet viewport,
+            boolean reverseViewport,
+            @Nullable RowSet keyspaceViewportPrev,
+            @Nullable RowSet keyspaceViewport,
+            BitSet subscribedColumns,
+            @Nullable DictionaryWriterRegistry dictionaryRegistry) {
+        return getSubView(options, isInitialSnapshot, isFullSubscription, viewport, reverseViewport,
+                keyspaceViewportPrev, keyspaceViewport, subscribedColumns);
+    }
+
+    /**
      * Obtain a Full-Snapshot {@link MessageView} of this {@code BarrageMessageWriter} that can be sent to a single
      * requestor.
      *
@@ -135,6 +167,29 @@ public interface BarrageMessageWriter extends SafeCloseable {
             @Nullable RowSet viewport,
             boolean reverseViewport,
             @Nullable RowSet keyspaceViewport, BitSet snapshotColumns);
+
+    /**
+     * Obtain a {@link MessageView} of this {@code BarrageMessageWriter} that can be sent to a single requestor, with a
+     * {@link DictionaryWriterRegistry} for any dictionary-encoded columns in the snapshot.
+     * <p>
+     * Note that all passed in arguments are owned by the caller and may be modified external to this method.
+     *
+     * @param options serialization options for this specific view
+     * @param viewport is the position-space viewport
+     * @param reverseViewport is the viewport reversed (relative to end of table instead of beginning)
+     * @param snapshotColumns are the columns included for this view
+     * @param dictionaryRegistry the dictionary registry for this snapshot, or {@code null} if unused
+     * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
+     */
+    default MessageView getSnapshotView(
+            BarrageSnapshotOptions options,
+            @Nullable RowSet viewport,
+            boolean reverseViewport,
+            @Nullable RowSet keyspaceViewport,
+            BitSet snapshotColumns,
+            @Nullable DictionaryWriterRegistry dictionaryRegistry) {
+        return getSnapshotView(options, viewport, reverseViewport, keyspaceViewport, snapshotColumns);
+    }
 
     /**
      * Optional metrics API to track how many bytes a barrage message consumed, and how many nanoseconds it took to

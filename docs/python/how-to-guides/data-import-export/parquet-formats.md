@@ -39,6 +39,33 @@ Deephaven supports optional metadata files that let you specify the types of you
 Deephaven maps Parquet [logical types](https://github.com/apache/parquet-format/blob/master/LogicalTypes.md) to Deephaven column types on read. The following non-obvious mappings are supported:
 
 - **`ENUM`**: Read as `String`. The `ENUM` logical type is physically identical to `STRING` (both are `BINARY` with UTF-8 encoding) and is commonly used by tools such as Apache Spark and PyArrow to annotate columns with a finite set of string values. Deephaven reads `ENUM`-annotated columns transparently as `String`.
+- **`UINT_64`**: Read as `java.math.BigInteger`. Deephaven promotes the narrower unsigned integer types to a wider signed type that holds their full range — `UINT_8` and `UINT_16` become `char`, and `UINT_32` becomes `long` — but no Java primitive holds the full `UINT_64` range, so Deephaven reads these columns as `BigInteger` by default. Set `unsigned_long_target` on a [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) to choose a different type.
+
+### Reading `UINT_64` as a long
+
+`BigInteger` represents every `UINT_64` value exactly, at the cost of an object per value. Two alternatives read the column as a primitive `long` instead:
+
+- `UnsignedLongTarget.LONG` reads values that fit in a `long` and raises an error on any value greater than 2<sup>63</sup> - 1. Use this option when the data is known to stay within the `long` range and an unnoticed overflow is unacceptable.
+- `UnsignedLongTarget.SIGNED_LONG` reinterprets the bit pattern as signed, so values greater than 2<sup>63</sup> - 1 read as negative numbers. This option never fails, but it is imprecise in one further respect: 2<sup>63</sup> reads as `NULL_LONG`, which is indistinguishable from a null.
+
+The following example reads a `UINT_64` column as a `long`, rejecting any value that does not fit:
+
+```python skip-test
+from deephaven.parquet import ColumnInstruction, UnsignedLongTarget, read
+
+result = read(
+    "/data/unsigned.parquet",
+    col_instructions=[
+        ColumnInstruction(
+            column_name="UInt64Column",
+            parquet_column_name="UInt64Column",
+            unsigned_long_target=UnsignedLongTarget.LONG,
+        )
+    ],
+)
+```
+
+Deephaven never writes `UINT_64`, so these options apply only to reads. Deephaven applies the same default and offers the same coercions when reading Arrow data; see the notes on integral coercion in the [Arrow Flight guide](./arrow-flight.md).
 
 ## Related documentation
 

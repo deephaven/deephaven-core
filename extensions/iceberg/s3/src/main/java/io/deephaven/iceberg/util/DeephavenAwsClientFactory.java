@@ -73,7 +73,9 @@ public class DeephavenAwsClientFactory implements AwsClientFactory {
         return S3AsyncClient.builder()
                 .applyMutation(asyncHttpClientProperties::applyAsyncHttpClientConfigurations)
                 .applyMutation(awsClientProperties::applyClientRegionConfiguration)
-                .applyMutation(awsClientProperties::applyClientCredentialConfigurations)
+                .applyMutation(awsClientProperties::applyLegacyMd5Plugin)
+                .applyMutation(
+                        b -> s3FileIOProperties.applyCredentialConfigurations(awsClientProperties, b))
                 .applyMutation(s3FileIOProperties::applyEndpointConfigurations)
                 .build();
     }

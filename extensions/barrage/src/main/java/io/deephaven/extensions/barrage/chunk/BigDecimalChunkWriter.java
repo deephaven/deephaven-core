@@ -9,7 +9,6 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.util.mutable.MutableInt;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,26 +39,12 @@ public class BigDecimalChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>>
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> {
-            if (objectChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(objectChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(objectChunk.isNull((int) row)));
     }
 
     @Override

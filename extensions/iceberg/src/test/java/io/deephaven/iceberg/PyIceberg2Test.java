@@ -7,6 +7,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
@@ -19,6 +20,7 @@ import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.types.Types;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Tag("security-manager-allow")
 class PyIceberg2Test {
     private static final Namespace NAMESPACE = Namespace.of("trading");
+
+    private final EngineCleanup engineCleanup = new EngineCleanup();
     private static final TableIdentifier TRADING_DATA = TableIdentifier.of(NAMESPACE, "data");
     private static final TableIdentifier EMPTY_DATA = TableIdentifier.of(NAMESPACE, "data_empty");
 
@@ -57,8 +61,14 @@ class PyIceberg2Test {
     public static final DbResource dbResource = new DbResource();
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        engineCleanup.setUp();
         catalogAdapter = dbResource.openCatalog("pyiceberg-2");
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        engineCleanup.tearDown();
     }
 
     @Test

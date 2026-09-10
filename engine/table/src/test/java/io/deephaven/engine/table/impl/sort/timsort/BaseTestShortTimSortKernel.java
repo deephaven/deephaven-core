@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.tuple.generated.ShortLongLongTuple;
 import io.deephaven.tuple.generated.ShortLongTuple;
 import io.deephaven.engine.table.impl.sort.findruns.ShortFindRunsKernel;
@@ -35,13 +36,13 @@ import java.util.stream.Collectors;
 public abstract class BaseTestShortTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
     public static Comparator<ShortLongTuple> getJavaComparator() {
-        return Comparator.comparing(ShortLongTuple::getFirstElement);
+        return Comparator.comparing(ShortLongTuple::getFirstElement, ShortComparisons::compare);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
     public static Comparator<ShortLongLongTuple> getJavaMultiComparator() {
-        return Comparator.comparing(ShortLongLongTuple::getFirstElement).thenComparing(ShortLongLongTuple::getSecondElement);
+        return Comparator.comparing(ShortLongLongTuple::getFirstElement, ShortComparisons::compare).thenComparing(ShortLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
@@ -181,7 +182,7 @@ public abstract class BaseTestShortTimSortKernel extends TestTimSortKernel {
 
         public void run() {
             // region mergesort
-            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Short.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
+            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> ShortComparisons.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
         }
     }
@@ -515,7 +516,7 @@ public abstract class BaseTestShortTimSortKernel extends TestTimSortKernel {
 
     // region comparison functions
     private static int doComparison(short lhs, short rhs) {
-        return Short.compare(lhs, rhs);
+        return ShortComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

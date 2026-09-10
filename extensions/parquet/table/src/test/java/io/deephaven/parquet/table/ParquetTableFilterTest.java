@@ -12,6 +12,7 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownPredicateManager;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -58,6 +59,7 @@ import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.parquet.table.ParquetTools.*;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -70,6 +72,7 @@ public final class ParquetTableFilterTest {
 
     private static File rootFile;
     private boolean whereDataIndexEnabled;
+    private double configuredDictionaryThreshold;
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -83,12 +86,16 @@ public final class ParquetTableFilterTest {
         // noinspection ResultOfMethodCallIgnored
         rootFile.mkdirs();
         whereDataIndexEnabled = QueryTable.USE_DATA_INDEX_FOR_WHERE;
+
+        configuredDictionaryThreshold = QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = Double.MAX_VALUE;
     }
 
     @After
     public void tearDown() {
         FileUtils.deleteRecursively(rootFile);
         QueryTable.USE_DATA_INDEX_FOR_WHERE = whereDataIndexEnabled;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = configuredDictionaryThreshold;
     }
 
     private Table[] splitTable(final Table source, int numSplits, boolean randomSizes) {
@@ -1225,6 +1232,261 @@ public final class ParquetTableFilterTest {
         assertTableEquals(memTable, expected);
     }
 
+    /**
+     * Parquet {@code min}/{@code max} statistics summarize non-null values only, so null rows are invisible to every
+     * statistics handler. An inverted match matches nulls engine-side, so it must never exclude a row group on the
+     * strength of those statistics alone, or the null rows are silently dropped.
+     */
+    @Test
+    public void nullRowsSurviveInvertedMatchStatisticsPushdown() {
+        {
+            // Engine-side {@code NULL_INT != 5} is true, but the row group statistics are {min=5, max=5} and leave the
+            // handler no room for a non-matching value.
+            final String destPath = Path.of(rootFile.getPath(), "invertedMatchWithNullInt.parquet").toString();
+            writeTable(newTable(intCol("X", 5, NULL_INT)), destPath);
+            final Table diskTable = readTable(destPath);
+            final Table memTable = diskTable.select();
+
+            filterAndVerifyResults(diskTable, memTable, "X != 5");
+        }
+
+        {
+            // The same shape on a String column, where the values also reach the dictionary path.
+            final String destPath = Path.of(rootFile.getPath(), "invertedMatchWithNullString.parquet").toString();
+            writeTable(newTable(stringCol("Status", "OK", "OK", null)), destPath);
+            final Table diskTable = readTable(destPath);
+            final Table memTable = diskTable.select();
+
+            filterAndVerifyResults(diskTable, memTable, "Status != `OK`");
+        }
+    }
+
+    /**
+     * A null-matching range filter must also preserve null rows. {@code X < 5} is encoded as {@code [NULL_INT, 5)} and
+     * Deephaven orders null below every value, so it matches the null row, while statistics of {@code {min=10, max=10}}
+     * carry no evidence that the row exists.
+     * <p>
+     * Unlike the inverted match above, this was already correct before the null guard, for a reason that has since gone
+     * away: each range handler declined outright when either bound was the null sentinel. They no longer decline -- a
+     * sentinel lower bound is now rewritten to the bottom of the domain and the interval test runs -- so the guard in
+     * {@code pushdownRowGroupMetadata} is the only thing keeping the null row. This test pins the behaviour at the
+     * level a user observes it, independent of which layer is responsible for it.
+     */
+    @Test
+    public void nullRowsSurviveRangeFilterStatisticsPushdown() {
+        final String destPath = Path.of(rootFile.getPath(), "rangeWithNullInt.parquet").toString();
+        writeTable(newTable(intCol("X", 10, NULL_INT)), destPath);
+        final Table diskTable = readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable, "X < 5");
+        filterAndVerifyResults(diskTable, memTable, "X <= 5");
+    }
+
+    /**
+     * The converse of the two tests above: filters that cannot match null are unaffected by the null guard and still
+     * produce correct results against a row group that contains nulls. Note that this asserts results, not pruning --
+     * the guard's cost, if it were ever over-applied, would show up as lost pruning rather than wrong rows.
+     */
+    @Test
+    public void nullExcludingFiltersOverNullableColumn() {
+        final String destPath = Path.of(rootFile.getPath(), "nullExcludingFilters.parquet").toString();
+        writeTable(newTable(intCol("X", 10, NULL_INT)), destPath);
+        final Table diskTable = readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        filterAndVerifyResults(diskTable, memTable, "X > 5");
+        filterAndVerifyResults(diskTable, memTable, "X == 10");
+    }
+
+    /**
+     * A spec-conforming writer omits NaN when computing min/max, so a row group holding a NaN is indistinguishable from
+     * one that does not. Deephaven orders NaN above every other float and an inverted match accepts it
+     * ({@code NaN != 1.0} is true), so excluding such a row group on the strength of its statistics drops the NaN row.
+     * <p>
+     * Deephaven's own writer is immune: it writes NaN <i>into</i> min/max, which the read-side statistics builder then
+     * rejects, disabling statistics pushdown for the column (see {@code MinMaxFromStatisticsTest.testStatisticsWithNaN}
+     * and {@code TODO (DH-10771)}). An external writer is therefore required to reach this, which is why the fixture is
+     * checked in rather than written by the test. It was produced once with pyarrow 25.0.1 (recorded in the file as
+     * {@code parquet-cpp-arrow version 25.0.1}):
+     *
+     * <pre>
+     * import pyarrow as pa, pyarrow.parquet as pq
+     * table = pa.table({"F": pa.array([1.0, float("nan")], type=pa.float32())})
+     * pq.write_table(table, "ReferenceParquetExternalNaNStats.parquet", version="2.6", compression="none")
+     * # statistics read back as: has_min_max=True min=1.0 max=1.0 null_count=0
+     * </pre>
+     */
+    @Test
+    public void nanRowsSurviveInvertedMatchStatisticsPushdown() {
+        final String path =
+                ParquetTableFilterTest.class.getResource("/ReferenceParquetExternalNaNStats.parquet").getFile();
+        final Table diskTable = readTable(path);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+        assertEquals("fixture holds one NaN row", 1, memTable.where("isNaN(F)").size());
+
+        // The NaN row matches, and the statistics {min=1.0, max=1.0} give no hint that it exists.
+        filterAndVerifyResults(diskTable, memTable, "F != 1.0");
+        filterAndVerifyResults(diskTable, memTable, "F not in 1.0, 3.0");
+
+        // Shapes that NaN cannot match are unaffected. A regular match never matches NaN, and every range filter
+        // Deephaven builds is bounded by MAX_FLOAT, which NaN sorts above.
+        filterAndVerifyResults(diskTable, memTable, "F == 1.0");
+        filterAndVerifyResults(diskTable, memTable, "F > 0.5");
+        filterAndVerifyResults(diskTable, memTable, "F < 2.0");
+    }
+
+    /**
+     * Parquet BINARY/STRING statistics are extremes under <b>unsigned-byte (UTF-8)</b> order, but Java
+     * {@code String.compareTo} is <b>UTF-16 code-unit</b> order. The two disagree whenever a supplementary-plane
+     * character is compared against one in U+E000..U+FFFF: UTF-8 puts {@code F0 ...} above {@code EF ...}, while UTF-16
+     * puts the surrogates D800..DFFF below E000.
+     * <p>
+     * Here the row group is {@code {"\uD83D\uDE00", "\uFF41"}} (grinning face U+1F600, fullwidth a U+FF41). Parquet
+     * records min=fullwidth-a, max=emoji; in Java order the emoji is the smaller of the two, so a "max >= value" test
+     * against fullwidth-a fails for a value that is the row group's own minimum.
+     */
+    @Test
+    public void supplementaryPlaneStringsSurviveStatisticsPushdown() {
+        final String fullwidthA = "\uFF41";
+        final String emoji = "\uD83D\uDE00";
+
+        final String destPath = Path.of(rootFile.getPath(), "supplementaryPlaneStrings.parquet").toString();
+        writeTable(newTable(stringCol("X", emoji, fullwidthA)), destPath);
+        final Table diskTable = readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        assertTableEquals(diskTable, memTable);
+
+        filterAndVerifyResults(diskTable, memTable, "X = `" + fullwidthA + "`");
+        filterAndVerifyResults(diskTable, memTable, "X = `" + emoji + "`");
+        filterAndVerifyResults(diskTable, memTable, "X in `" + fullwidthA + "`, `zzz`");
+        filterAndVerifyResults(diskTable, memTable, "X != `" + emoji + "`");
+
+        // Range filters over the same data.
+        filterAndVerifyResults(diskTable, memTable, "X >= `" + fullwidthA + "`");
+        filterAndVerifyResults(diskTable, memTable, "X < `" + fullwidthA + "`");
+    }
+
+    /**
+     * Every parsed comparison becomes a single-sided filter with a sentinel planted on the open end -- {@code X < 5} is
+     * {@code [NULL_INT, 5)}, {@code X > 5} is {@code (5, MAX_INT]} -- and for floating point {@code gt}/{@code geq}
+     * plant {@code NaN} as the upper bound. Handlers used to bail the moment they saw either, so the sentinel was never
+     * read as the bound it already is, and pruning was lost for whole classes of filter.
+     * <p>
+     * The bail-out existed because such filters match null rows that statistics cannot see. That is now handled once,
+     * centrally, by the null guard in {@code pushdownRowGroupMetadata}, so the handlers can read the bound.
+     */
+    @Test
+    public void sentinelBoundedRangeFiltersStillPrune() {
+        final String destPath = Path.of(rootFile.getPath(), "sentinelBoundedRanges").toString();
+        final int tableSize = 100_000;
+        final Table source = TableTools.emptyTable(tableSize).update(
+                "val = (int) ii", "lval = (long) ii", "dval = (double) ii", "cval = (char) (ii % 60000)");
+        writeTables(destPath, splitTable(source, 10, false), EMPTY);
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        // Correctness first: every one of these must agree with the in-memory oracle.
+        for (final String expr : new String[] {
+                "val < 10000", "val <= 10000", "val > 90000", "val >= 90000",
+                "lval < 10000", "lval <= 10000", "lval > 90000",
+                "dval < 10000.0", "dval <= 10000.0", "dval > 90000.0", "dval >= 90000.0"}) {
+            filterAndVerifyResults(diskTable, memTable, expr);
+        }
+
+        // Then pruning: a selective filter must not scan the whole table. Row groups are 10k rows, so a filter
+        // selecting the first or last tenth should touch far fewer than all 100k rows.
+        assertPrunes("val < 10000", diskTable, tableSize);
+        assertPrunes("val > 90000", diskTable, tableSize);
+        assertPrunes("lval < 10000", diskTable, tableSize);
+        assertPrunes("dval < 10000.0", diskTable, tableSize);
+        assertPrunes("dval > 90000.0", diskTable, tableSize);
+    }
+
+    private static void assertPrunes(final String expr, final Table diskTable, final int tableSize) {
+        final RowSetCapturingFilter capturing = new RowSetCapturingFilter(getExpression(expr));
+        diskTable.where(capturing).coalesce();
+        Assert.assertTrue(expr + " should prune row groups, but scanned " + capturing.numRowsProcessed()
+                + " of " + tableSize + " rows",
+                capturing.numRowsProcessed() < tableSize / 2);
+    }
+
+    /**
+     * The same sentinel story for object-typed columns. {@code X < v} on a String or date column arrives as a
+     * single-sided filter with {@code isGreaterThan == false}, which the handlers used to decline outright because such
+     * a filter matches null rows. The null guard in {@code pushdownRowGroupMetadata} accounts for those rows centrally
+     * now, so the comparison is evaluated.
+     * <p>
+     * Dictionary pushdown is disabled here on purpose: it would answer these filters on its own and mask whether the
+     * statistics path did anything.
+     */
+    @Test
+    public void objectTypedLessThanFiltersPrune() {
+        final String destPath = Path.of(rootFile.getPath(), "objectLessThan").toString();
+        final int tableSize = 100_000;
+        final Table source = TableTools.emptyTable(tableSize)
+                .update("sval = `k` + String.format(`%06d`, ii)");
+        writeTables(destPath, splitTable(source, 10, false), EMPTY);
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        final double savedThreshold = QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = 0.0;
+        try {
+            filterAndVerifyResults(diskTable, memTable, "sval < `k010000`");
+            filterAndVerifyResults(diskTable, memTable, "sval > `k090000`");
+
+            assertPrunes("sval < `k010000`", diskTable, tableSize);
+            assertPrunes("sval > `k090000`", diskTable, tableSize);
+        } finally {
+            QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = savedThreshold;
+        }
+    }
+
+    /**
+     * {@code X == null} can now exclude a row group outright, where the handlers previously declined any match filter
+     * with a null among its values. It is sound only where the statistics rule out both of Deephaven's null sources: a
+     * Parquet null, which {@code min}/{@code max} never describe and {@code num_nulls} does, and -- for the primitive
+     * types, whose null is a sentinel value -- a stored value equal to that sentinel. {@link #testForExtremes} covers
+     * the second source, with a file that stores every sentinel as a real value.
+     * <p>
+     * Dictionary pushdown is disabled here on purpose: it would answer these filters on its own and mask whether the
+     * statistics path did anything.
+     */
+    @Test
+    public void isNullPrunesRowGroupsProvenFreeOfNulls() {
+        final String destPath = Path.of(rootFile.getPath(), "isNullPruning").toString();
+        final int tableSize = 100_000;
+        // A single null row, in the sixth of ten row groups. The other nine hold no nulls at all.
+        final Table source = TableTools.emptyTable(tableSize).update(
+                "ival = ii == 55_000 ? null : (int) ii",
+                "sval = ii == 55_000 ? null : `k` + String.format(`%06d`, ii)");
+        writeTables(destPath, splitTable(source, 10, false), EMPTY);
+        final Table diskTable = ParquetTools.readTable(destPath);
+        final Table memTable = diskTable.select();
+
+        final double savedThreshold = QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD;
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = 0.0;
+        try {
+            // Correctness first: the null row must survive, and no other row may.
+            filterAndVerifyResults(diskTable, memTable, "ival == null");
+            filterAndVerifyResults(diskTable, memTable, "sval == null");
+            filterAndVerifyResults(diskTable, memTable, "ival != null");
+            filterAndVerifyResults(diskTable, memTable, "sval != null");
+            filterAndVerifyResults(diskTable, memTable, "ival in 42, null");
+
+            // Then pruning: only the row groups that can hold a match need to be read.
+            assertPrunes("ival == null", diskTable, tableSize);
+            assertPrunes("sval == null", diskTable, tableSize);
+            assertPrunes("ival in 42, null", diskTable, tableSize);
+        } finally {
+            QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = savedThreshold;
+        }
+    }
+
     @Test
     public void filterArrayColumnsTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_filterArrayColumnsTest.parquet").toString();
@@ -1875,6 +2137,127 @@ public final class ParquetTableFilterTest {
         filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal = null"));
         filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal != null"));
         filterAndVerifyResults(diskTable, memTable, ConditionFilter.createConditionFilter("animal == `Cat`"));
+    }
+
+    /** The value the threshold tests filter for; {@link #writeAndReadDictionaryTable} always includes it. */
+    private static final String THRESHOLD_MATCH_VALUE = "animal_0";
+
+    /** Rows in the threshold fixtures. The dictionary sizes below are derived from it, not hard-coded. */
+    private static final int THRESHOLD_ROW_COUNT = 100;
+
+    /**
+     * The fraction the boundary tests run at, in place of the configured one. The configured value cannot be relied on
+     * to express this boundary: {@code 0} is a documented setting that disables the optimization, and any fraction
+     * outside {@code [0.02, 1.0]} asks for a dictionary that {@link #THRESHOLD_ROW_COUNT} rows cannot hold -- too few
+     * distinct entries to build a fixture at one end, more than one per row at the other. {@link #setUp} and
+     * {@link #tearDown} still save and restore whatever is configured.
+     */
+    private static final double THRESHOLD_TEST_FRACTION = 0.25;
+
+    /**
+     * The smallest dictionary {@link #THRESHOLD_TEST_FRACTION} declines to read for {@link #THRESHOLD_ROW_COUNT} rows.
+     * Pushdown is skipped once a dictionary holds at least {@code rows * fraction} entries, so this is 25 -- meaning 25
+     * entries decline and 24 proceed.
+     */
+    private static int smallestDecliningDictionarySize() {
+        return (int) (THRESHOLD_ROW_COUNT * THRESHOLD_TEST_FRACTION);
+    }
+
+    /**
+     * Write {@code rowCount} rows drawn from a dictionary of {@code distinctValues} animals as a single
+     * dictionary-encoded row group without row group statistics, and read it back. Cycling keeps the column unsorted,
+     * and omitting the statistics keeps the cheaper metadata action from resolving anything, so the dictionary action
+     * decides the outcome.
+     */
+    private static Table writeAndReadDictionaryTable(
+            final String name,
+            final int rowCount,
+            final int distinctValues) {
+        final String[] animals = new String[rowCount];
+        for (int ii = 0; ii < rowCount; ii++) {
+            animals[ii] = "animal_" + (ii % distinctValues);
+        }
+        final ParquetInstructions writeInstructions = new ParquetInstructions.Builder()
+                .setWriteRowGroupStatistics(false)
+                .build();
+        final String destPath = Path.of(rootFile.getPath(), name) + ".parquet";
+        writeTable(TableTools.newTable(stringCol("animal", animals)), destPath, writeInstructions);
+        return ParquetTools.readTable(destPath).coalesce();
+    }
+
+    /**
+     * Run the pushdown actions available at or below the dictionary action's cost against {@code diskTable} and return
+     * what they resolved.
+     */
+    private static PushdownResult runPushdownThroughDictionary(final Table diskTable, final String filterExpr) {
+        final WhereFilter filter = getExpression(filterExpr);
+        filter.init(diskTable.getDefinition());
+        Assert.assertEquals("Expected a single column in the filter: " + filterExpr, 1, filter.getColumns().size());
+
+        final ColumnSource<?> columnSource = diskTable.getColumnSource(filter.getColumns().get(0));
+        final PushdownPredicateManager ppm = PushdownPredicateManager.getSharedPPM(List.of(columnSource));
+        Assert.assertNotNull("pushdown predicate manager", ppm);
+
+        try (final PushdownFilterContext context = ppm.makePushdownFilterContext(filter, List.of(columnSource))) {
+            final CompletableFuture<PushdownResult> resultFuture = new CompletableFuture<>();
+            ppm.pushdownFilter(
+                    filter,
+                    diskTable.getRowSet(),
+                    false,
+                    context,
+                    PushdownResult.REGION_DICTIONARY_DATA_COST,
+                    new ImmediateJobScheduler(),
+                    resultFuture::complete,
+                    resultFuture::completeExceptionally);
+            return resultFuture.join();
+        }
+    }
+
+    /**
+     * Reading and filtering a whole dictionary costs O(dictionary), so it only pays off when enough rows remain that
+     * filtering them directly would cost more. This test and {@link #dictionaryPushdownThresholdProceedsTest()} sit on
+     * the two dictionary sizes either side of that boundary -- the smallest that declines and the largest that proceeds
+     * -- at {@link #THRESHOLD_TEST_FRACTION}, the heuristic that the other dictionary tests here deliberately disable.
+     */
+    @Test
+    public void dictionaryPushdownThresholdDeclinesTest() {
+        // The smallest dictionary that declines: 100 * 0.25 = 25, and 25 >= 25, so reading the dictionary does not pay
+        // for itself and every row must be left for the filter to evaluate directly.
+        final Table diskTable = writeAndReadDictionaryTable(
+                "dictionaryThresholdDeclines", THRESHOLD_ROW_COUNT, smallestDecliningDictionarySize());
+        final String filterExpr = "animal == `" + THRESHOLD_MATCH_VALUE + "`";
+        final long expectedMatches = diskTable.where(filterExpr).size();
+        assertTrue(expectedMatches > 0);
+
+        // First with the heuristic still disabled, so that the assertions below pin the threshold rather than some
+        // other reason this fixture's dictionary could not be used.
+        try (final PushdownResult pinnedOpen = runPushdownThroughDictionary(diskTable, filterExpr)) {
+            assertEquals(expectedMatches, pinnedOpen.match().size());
+            assertTrue("maybeMatch should be empty", pinnedOpen.maybeMatch().isEmpty());
+        }
+
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = THRESHOLD_TEST_FRACTION;
+        try (final PushdownResult result = runPushdownThroughDictionary(diskTable, filterExpr)) {
+            assertTrue("match should be empty", result.match().isEmpty());
+            assertEquals(diskTable.size(), result.maybeMatch().size());
+        }
+    }
+
+    @Test
+    public void dictionaryPushdownThresholdProceedsTest() {
+        QueryTable.DICTIONARY_FOR_WHERE_THRESHOLD = THRESHOLD_TEST_FRACTION;
+
+        // One entry fewer over the same hundred rows -- the largest dictionary that still proceeds: 100 * 0.25 = 25,
+        // and 24 < 25, so the dictionary is worth reading and resolves every row exactly.
+        final Table diskTable = writeAndReadDictionaryTable(
+                "dictionaryThresholdProceeds", THRESHOLD_ROW_COUNT, smallestDecliningDictionarySize() - 1);
+        final String filterExpr = "animal == `" + THRESHOLD_MATCH_VALUE + "`";
+        final long expectedMatches = diskTable.where(filterExpr).size();
+        assertTrue(expectedMatches > 0);
+        try (final PushdownResult result = runPushdownThroughDictionary(diskTable, filterExpr)) {
+            assertEquals(expectedMatches, result.match().size());
+            assertTrue("maybeMatch should be empty", result.maybeMatch().isEmpty());
+        }
     }
 
     @Test

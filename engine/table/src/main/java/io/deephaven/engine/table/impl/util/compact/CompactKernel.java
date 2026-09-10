@@ -12,7 +12,7 @@ import io.deephaven.chunk.attributes.Values;
 public interface CompactKernel {
     /**
      * Compacts values into the front of the chunk, retaining only values where the parallel retainValues chunk has a
-     * true value.
+     * true value. The chunk's size is set to the number of retained values.
      *
      * @param values a chunk of values, input and output
      * @param retainValues the values to retain

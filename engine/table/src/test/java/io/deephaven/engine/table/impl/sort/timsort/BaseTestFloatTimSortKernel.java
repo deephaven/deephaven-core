@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.tuple.generated.FloatLongLongTuple;
 import io.deephaven.tuple.generated.FloatLongTuple;
 import io.deephaven.engine.table.impl.sort.findruns.FloatFindRunsKernel;
@@ -35,13 +36,13 @@ import java.util.stream.Collectors;
 public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
     public static Comparator<FloatLongTuple> getJavaComparator() {
-        return Comparator.comparing(FloatLongTuple::getFirstElement);
+        return Comparator.comparing(FloatLongTuple::getFirstElement, FloatComparisons::compare);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
     public static Comparator<FloatLongLongTuple> getJavaMultiComparator() {
-        return Comparator.comparing(FloatLongLongTuple::getFirstElement).thenComparing(FloatLongLongTuple::getSecondElement);
+        return Comparator.comparing(FloatLongLongTuple::getFirstElement, FloatComparisons::compare).thenComparing(FloatLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
@@ -181,7 +182,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
 
         public void run() {
             // region mergesort
-            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Float.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
+            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> FloatComparisons.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
         }
     }
@@ -515,7 +516,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
 
     // region comparison functions
     private static int doComparison(float lhs, float rhs) {
-        return Float.compare(lhs, rhs);
+        return FloatComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

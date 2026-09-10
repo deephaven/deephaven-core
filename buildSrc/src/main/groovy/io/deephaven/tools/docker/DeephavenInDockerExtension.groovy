@@ -109,8 +109,9 @@ public abstract class DeephavenInDockerExtension {
         portTask = project.tasks.register('waitForPort', DockerInspectContainer) {task ->
             task.dependsOn healthyTask
             task.containerId.set containerName.get()
-            task.onNext { InspectContainerResponse inspect ->
-                getPort().set(Integer.parseInt(((InspectContainerResponse) inspect).getNetworkSettings().ports.bindings.values().first()[0].hostPortSpec))
+            task.onNext { Object obj ->
+                def inspect = (InspectContainerResponse) obj
+                getPort().set(Integer.parseInt(inspect.getNetworkSettings().ports.bindings.values().first()[0].hostPortSpec))
             }
         }
 

@@ -111,8 +111,18 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
         pendingRangeEnd = lastKey;
     }
 
+    /**
+     * Builders are single use: a second build fails instead. Only the build method checks this; adds stay unchecked to
+     * keep the hot path free of conditionals, so the effect of adding after a build is undefined rather than detected.
+     */
+    private boolean built;
+
     @Override
     public OrderedLongSet getOrderedLongSet() {
+        if (built) {
+            throw new IllegalStateException("Builder was already used to build a result; builders are single use");
+        }
+        built = true;
         final OrderedLongSet ans;
         if (innerBuilder() == null && pendingSr == null) {
             if (pendingRangeStart == -1) {
@@ -176,11 +186,24 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
 
     @Override
     public void add(final SortedRanges ix, final boolean acquire) {
+        ensureInnerBuilder();
         builder.add(ix, acquire);
     }
 
     @Override
     public void add(final RspBitmap ix, final boolean acquire) {
+        ensureInnerBuilder();
         builder.add(ix, acquire);
+    }
+
+    private void ensureInnerBuilder() {
+        flushPendingRange();
+        if (innerBuilder() == null) {
+            if (pendingSr != null) {
+                flushPendingSrToInnerBuilder();
+            } else {
+                setupInnerBuilderEmpty();
+            }
+        }
     }
 }

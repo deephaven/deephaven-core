@@ -126,6 +126,61 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     }
 
     /**
+     * Whether a shift window is a range of keys that lies within the key space both before and after the shift. Row
+     * keys are non-negative, so a window that ends before it begins, begins below zero, or whose post-shift image
+     * begins below zero or ends past {@link Long#MAX_VALUE}, does not map its whole extent onto keys: some or all of it
+     * lies where no key can be, even if the rest of it holds keys that could move. Readers of shift data rely on
+     * {@code begin + delta} and {@code end + delta} being plain in-range sums, so the builders admit no such window; a
+     * caller with keys to move in the part inside the key space describes that part.
+     */
+    private static boolean withinKeySpace(final long beginRange, final long endRange, final long shiftDelta) {
+        if (beginRange < 0 || endRange < beginRange) {
+            return false;
+        }
+        // beginRange is non-negative, so beginRange + shiftDelta cannot overflow when shiftDelta is negative; endRange
+        // is non-negative, so Long.MAX_VALUE - endRange cannot overflow when shiftDelta is positive.
+        return shiftDelta < 0 ? beginRange + shiftDelta >= 0 : shiftDelta <= Long.MAX_VALUE - endRange;
+    }
+
+    /**
+     * Rejects a shift window that is not a range of keys within the key space before and after the shift; see
+     * {@link #withinKeySpace}.
+     *
+     * @throws IllegalArgumentException if the window ends before it begins, or any part of it lies outside the key
+     *         space before or after the shift
+     */
+    private static void checkWithinKeySpace(final long beginRange, final long endRange, final long shiftDelta) {
+        if (endRange < beginRange) {
+            throw new IllegalArgumentException(
+                    "range [" + beginRange + "," + endRange + "]->" + shiftDelta + " ends before it begins");
+        }
+        if (!withinKeySpace(beginRange, endRange, shiftDelta)) {
+            throw new IllegalArgumentException("range [" + beginRange + "," + endRange + "]->" + shiftDelta
+                    + " lies outside the key space [0," + Long.MAX_VALUE + "] before or after the shift");
+        }
+    }
+
+    /**
+     * Rejects an offset that carries the window at {@code idx} outside the key space, before or after its shift. The
+     * builders keep every window inside the key space, so only the offset can carry one out, and an offset that does is
+     * the caller's error whatever rowset the shifts are being applied to.
+     *
+     * @throws IllegalArgumentException if the offset window lies outside the key space before or after the shift
+     */
+    private void checkOffsetWindow(final int idx, final long offset) {
+        final long beginRange = getBeginRange(idx);
+        final long endRange = getEndRange(idx);
+        final long offsetBegin = beginRange + offset;
+        final long offsetEnd = endRange + offset;
+        if (((beginRange ^ offsetBegin) & (offset ^ offsetBegin)) < 0
+                || ((endRange ^ offsetEnd) & (offset ^ offsetEnd)) < 0) {
+            throw new IllegalArgumentException("offset " + offset + " carries range [" + beginRange + "," + endRange
+                    + "]->" + getShiftDelta(idx) + " outside the key space");
+        }
+        checkWithinKeySpace(offsetBegin, offsetEnd, getShiftDelta(idx));
+    }
+
+    /**
      * Verify invariants of internal data structures hold.
      */
     public void validate() {
@@ -134,6 +189,8 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         for (int idx = 0; idx < size; ++idx) {
             Assert.leq(getBeginRange(idx), "getBeginRange(idx)", getEndRange(idx), "getEndRange(idx)");
             Assert.neqZero(getShiftDelta(idx), "getShiftDelta(idx)");
+            Assert.assertion(withinKeySpace(getBeginRange(idx), getEndRange(idx), getShiftDelta(idx)),
+                    "withinKeySpace(getBeginRange(idx), getEndRange(idx), getShiftDelta(idx))");
 
             if (idx == 0) {
                 continue;
@@ -325,14 +382,18 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @return the key in post-shift space
      */
     public long apply(final long keyToShift) {
-        for (int shiftIdx = 0; shiftIdx < size(); shiftIdx++) {
-            if (getBeginRange(shiftIdx) > keyToShift) {
-                // no shift applies so we are already in post-shift space
-                return keyToShift;
-            }
-            if (getEndRange(shiftIdx) >= keyToShift) {
-                // this shift applies, add the delta to get post-shift
-                return keyToShift + getShiftDelta(shiftIdx);
+        // Shift ranges are ordered and do not overlap (see validate()), so at most one contains keyToShift and it can
+        // be found by bisection; a key in a gap between ranges, or outside them all, is already in post-shift space.
+        int lo = 0;
+        int hi = size() - 1;
+        while (lo <= hi) {
+            final int mid = (lo + hi) >>> 1;
+            if (getEndRange(mid) < keyToShift) {
+                lo = mid + 1;
+            } else if (getBeginRange(mid) > keyToShift) {
+                hi = mid - 1;
+            } else {
+                return keyToShift + getShiftDelta(mid);
             }
         }
         return keyToShift;
@@ -346,9 +407,12 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param endRange end of range (inclusive)
      * @param shiftDelta amount range has moved by
      * @return Whether there was any overlap found to shift
+     * @throws IllegalArgumentException if the range ends before it begins, or any part of it lies outside the key space
+     *         before or after the shift
      */
     public static boolean applyShift(@NotNull final WritableRowSet rowSet, final long beginRange, final long endRange,
             final long shiftDelta) {
+        checkWithinKeySpace(beginRange, endRange, shiftDelta);
         try (final WritableRowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange)) {
             if (toShift.isEmpty()) {
                 return false;
@@ -372,16 +436,16 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
             final int size = size();
             for (int idx = 0; idx < size; ++idx) {
-                final long beginRange = getBeginRange(idx);
-                final long endRange = getEndRange(idx);
                 final long shiftDelta = getShiftDelta(idx);
+                final long beginRange = getBeginRange(idx) + shiftDelta;
+                final long endRange = getEndRange(idx) + shiftDelta;
 
-                if (!rsIt.advance(beginRange + shiftDelta)) {
+                if (!rsIt.advance(beginRange)) {
                     break;
                 }
 
-                toRemove.appendRange(beginRange + shiftDelta, endRange + shiftDelta);
-                rsIt.getNextRowSequenceThrough(endRange + shiftDelta)
+                toRemove.appendRange(beginRange, endRange);
+                rsIt.getNextRowSequenceThrough(endRange)
                         .forAllRowKeyRanges((s, e) -> toInsert.appendRange(s - shiftDelta, e - shiftDelta));
             }
         }
@@ -400,13 +464,48 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param rowSet The {@link WritableRowSet} to shift
      * @param offset An additional offset to apply to all shifts (such as when applying to a wrapped table)
      * @return {@code rowSet}
+     * @throws IllegalArgumentException if the offset carries a shift window outside the key space
      */
     public WritableRowSet unapply(final WritableRowSet rowSet, final long offset) {
-        // NB: This is an unapply callback, and beginRange, endRange, and shiftDelta have been adjusted so that this is
-        // a reversed shift,
-        // hence we use the applyShift helper.
-        unapply((beginRange, endRange, shiftDelta) -> applyShift(rowSet, beginRange + offset, endRange + offset,
-                shiftDelta));
+        final int size = size();
+        // Every window is checked before any of the rowset is read, so the rejection does not depend on how far into
+        // the shifts the rowset reaches.
+        for (int idx = 0; idx < size; ++idx) {
+            checkOffsetWindow(idx, offset);
+        }
+        // Accumulate what moves and put it back in two set operations, rather than one subset/remove/shift/insert per
+        // shift range: each of those touches the whole rowset, so doing them one at a time costs the number of shifts
+        // times the rowset's length. The windows are ordered and disjoint in both keyspaces (see validate()), so the
+        // builders below are appended to in ascending order, and memmove-safe ordering does not matter once the whole
+        // remove set and insert set are known up front.
+        final RowSetBuilderSequential toRemove = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential toInsert = RowSetFactory.builderSequential();
+        try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
+            for (int idx = 0; idx < size; ++idx) {
+                final long shiftDelta = getShiftDelta(idx);
+                // The window sits in the caller's key space, offset from the one the shifts were built in; what it
+                // holds moves back by the delta, which the offset does not touch.
+                final long beginRange = getBeginRange(idx) + offset + shiftDelta;
+                final long endRange = getEndRange(idx) + offset + shiftDelta;
+
+                if (!rsIt.advance(beginRange)) {
+                    break;
+                }
+                if (endRange < rsIt.peekNextKey()) {
+                    continue;
+                }
+
+                toRemove.appendRange(beginRange, endRange);
+                rsIt.getNextRowSequenceThrough(endRange)
+                        .forAllRowKeyRanges((s, e) -> toInsert.appendRange(s - shiftDelta, e - shiftDelta));
+            }
+        }
+
+        try (final RowSet remove = toRemove.build();
+                final RowSet insert = toInsert.build()) {
+            rowSet.remove(remove);
+            rowSet.insert(insert);
+        }
         return rowSet;
     }
 
@@ -418,9 +517,12 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param endRange end of range (inclusive)
      * @param shiftDelta amount range has moved by
      * @return Whether there was any overlap found to shift
+     * @throws IllegalArgumentException if the range ends before it begins, or any part of it lies outside the key space
+     *         before or after the shift
      */
     public static boolean unapplyShift(@NotNull final WritableRowSet rowSet, final long beginRange, final long endRange,
             final long shiftDelta) {
+        checkWithinKeySpace(beginRange, endRange, shiftDelta);
         try (final WritableRowSet toShift = rowSet.subSetByKeyRange(beginRange + shiftDelta, endRange + shiftDelta)) {
             if (toShift.isEmpty()) {
                 return false;
@@ -445,24 +547,25 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
 
     public void forAllInRowSet(final RowSet filterRowSet, final SingleElementShiftCallback callback) {
         boolean hasReverseShift = false;
-        RowSet.SearchIterator it = filterRowSet.reverseIterator();
-        FORWARD_SHIFT: for (int ii = size() - 1; ii >= 0; --ii) {
-            final long delta = getShiftDelta(ii);
-            if (delta < 0) {
-                hasReverseShift = true;
-                continue;
-            }
-            final long start = getBeginRange(ii);
-            final long end = getEndRange(ii);
-            if (!it.advance(end)) {
-                break;
-            }
-            while (it.currentValue() >= start) {
-                callback.shift(it.currentValue(), delta);
-                if (!it.hasNext()) {
-                    break FORWARD_SHIFT;
+        try (final RowSet.SearchIterator it = filterRowSet.reverseIterator()) {
+            FORWARD_SHIFT: for (int ii = size() - 1; ii >= 0; --ii) {
+                final long delta = getShiftDelta(ii);
+                if (delta < 0) {
+                    hasReverseShift = true;
+                    continue;
                 }
-                it.nextLong();
+                final long start = getBeginRange(ii);
+                final long end = getEndRange(ii);
+                if (!it.advance(end)) {
+                    break;
+                }
+                while (it.currentValue() >= start) {
+                    callback.shift(it.currentValue(), delta);
+                    if (!it.hasNext()) {
+                        break FORWARD_SHIFT;
+                    }
+                    it.nextLong();
+                }
             }
         }
 
@@ -470,24 +573,25 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             return;
         }
 
-        it = filterRowSet.searchIterator();
-        final int size = size();
-        REVERSE_SHIFT: for (int ii = 0; ii < size; ++ii) {
-            final long delta = getShiftDelta(ii);
-            if (delta > 0) {
-                continue;
-            }
-            final long start = getBeginRange(ii);
-            final long end = getEndRange(ii);
-            if (!it.advance(start)) {
-                break;
-            }
-            while (it.currentValue() <= end) {
-                callback.shift(it.currentValue(), delta);
-                if (!it.hasNext()) {
-                    break REVERSE_SHIFT;
+        try (final RowSet.SearchIterator it = filterRowSet.searchIterator()) {
+            final int size = size();
+            REVERSE_SHIFT: for (int ii = 0; ii < size; ++ii) {
+                final long delta = getShiftDelta(ii);
+                if (delta > 0) {
+                    continue;
                 }
-                it.nextLong();
+                final long start = getBeginRange(ii);
+                final long end = getEndRange(ii);
+                if (!it.advance(start)) {
+                    break;
+                }
+                while (it.currentValue() <= end) {
+                    callback.shift(it.currentValue(), delta);
+                    if (!it.hasNext()) {
+                        break REVERSE_SHIFT;
+                    }
+                    it.nextLong();
+                }
             }
         }
     }
@@ -654,9 +758,17 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
          * @param beginRange first key to shift (inclusive)
          * @param endRange last key to shift (inclusive)
          * @param shiftDelta offset to shift by; may be negative
+         * @throws IllegalArgumentException if the range overlaps a previous shift in either key space, or any part of
+         *         it lies outside the key space before or after the shift
          */
         public void shiftRange(final long beginRange, final long endRange, final long shiftDelta) {
-            if (shiftDelta == 0 || endRange < beginRange) {
+            if (endRange < beginRange) {
+                // An empty range holds no keys and records nothing; callers that walk sub-ranges of a table's key
+                // space produce these where two boundaries meet.
+                return;
+            }
+            checkWithinKeySpace(beginRange, endRange, shiftDelta);
+            if (shiftDelta == 0) {
                 return;
             }
 
@@ -906,9 +1018,17 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
          * @param beginRange first key to shift (inclusive)
          * @param endRange last key to shift (inclusive)
          * @param shiftDelta offset to shift by; may be negative
+         * @throws IllegalArgumentException if the range overlaps a previous shift in either key space, or any part of
+         *         it lies outside the key space before or after the shift
          */
         public void shiftRange(final long beginRange, final long endRange, final long shiftDelta) {
-            if (shiftDelta == 0 || endRange < beginRange) {
+            if (endRange < beginRange) {
+                // An empty range holds no keys and records nothing; callers that walk sub-ranges of a table's key
+                // space produce these where two boundaries meet.
+                return;
+            }
+            checkWithinKeySpace(beginRange, endRange, shiftDelta);
+            if (shiftDelta == 0) {
                 return;
             }
 
@@ -952,8 +1072,19 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                 }
             }
 
+            // A range holding no pre-shift key is dropped: nothing moves, and recording it would only prevent the
+            // coalescing of the ranges around it. The iterators are only moved past a range once it is recorded, so
+            // after a dropped range (or a gap between ranges) the next key seen may still lie on the far side of this
+            // range; it is brought up to the range before deciding whether the range holds a key.
             final long nextInterveningKey;
             if (polarityReversed) {
+                if (nextReverseKey != RowSequence.NULL_ROW_KEY && nextReverseKey > endRange) {
+                    if (preShiftKeysIteratorReverse.advance(endRange)) {
+                        nextReverseKey = preShiftKeysIteratorReverse.currentValue();
+                    } else {
+                        nextReverseKey = RowSequence.NULL_ROW_KEY;
+                    }
+                }
                 if (nextReverseKey == RowSequence.NULL_ROW_KEY || nextReverseKey < beginRange) {
                     return;
                 }
@@ -963,6 +1094,13 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                     nextInterveningKey = nextReverseKey = preShiftKeysIteratorReverse.currentValue();
                 }
             } else {
+                if (nextForwardKey != RowSequence.NULL_ROW_KEY && nextForwardKey < beginRange) {
+                    if (preShiftKeysIteratorForward.advance(beginRange)) {
+                        nextForwardKey = preShiftKeysIteratorForward.currentValue();
+                    } else {
+                        nextForwardKey = RowSequence.NULL_ROW_KEY;
+                    }
+                }
                 if (nextForwardKey == RowSequence.NULL_ROW_KEY || nextForwardKey > endRange) {
                     return;
                 }
@@ -1043,9 +1181,10 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                             + shiftData.getEndRange(currentRangeIndex) + "]->"
                             + shiftData.getShiftDelta(currentRangeIndex));
                 }
-            } else if (!reinitializeReverseIterator) {
-                // we are in the midst of a sequence of reversed polarity things, so we should be less than the previous
-                // shift
+            } else if (!reinitializeReverseIterator && rangeToReverseStart <= currentRangeIndex) {
+                // We are in the midst of a sequence of reversed polarity things, so we should be less than the previous
+                // shift. That only holds against a range of this run: when the run's earlier ranges held no keys and
+                // were never stored, the previous stored range belongs to the run before, on the other side of us.
                 if (beginRange >= shiftData.getEndRange(currentRangeIndex)) {
                     throw new IllegalArgumentException("new range [" + beginRange + "," + endRange
                             + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex)
@@ -1116,16 +1255,19 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
 
         @Override
         public void close() {
-            preShiftKeys.close();
+            // Idempotent: build() closes internally, and callers may also use try-with-resources.
+            if (preShiftKeys != null) {
+                preShiftKeys.close();
+                preShiftKeys = null;
+            }
             if (preShiftKeysIteratorForward != null) {
                 preShiftKeysIteratorForward.close();
+                preShiftKeysIteratorForward = null;
             }
             if (preShiftKeysIteratorReverse != null) {
                 preShiftKeysIteratorReverse.close();
+                preShiftKeysIteratorReverse = null;
             }
-            preShiftKeys = null;
-            preShiftKeysIteratorForward = null;
-            preShiftKeysIteratorReverse = null;
             shiftData = null;
         }
     }

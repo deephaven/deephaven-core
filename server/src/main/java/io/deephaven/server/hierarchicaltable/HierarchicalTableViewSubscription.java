@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.*;
+import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger.StatType;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -185,7 +186,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     }
 
     private void recordWriteMetrics(final long bytes, final long cpuNanos) {
-        recordMetric(stats -> stats.writeBits, bytes * 8);
+        recordMetric(stats -> stats.writeBytes, bytes);
         recordMetric(stats -> stats.writeNanos, cpuNanos);
     }
 
@@ -473,7 +474,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         private final String statsId;
         private final Histogram snapshotNanos = new Histogram(NUM_SIG_FIGS);
         private final Histogram writeNanos = new Histogram(NUM_SIG_FIGS);
-        private final Histogram writeBits = new Histogram(NUM_SIG_FIGS);
+        private final Histogram writeBytes = new Histogram(NUM_SIG_FIGS);
 
         private volatile boolean running = true;
 
@@ -498,9 +499,9 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
             synchronized (logger) {
-                flush(now, logger, snapshotNanos, "SnapshotMillis");
-                flush(now, logger, writeNanos, "WriteMillis");
-                flush(now, logger, writeBits, "WriteMegabits");
+                flush(now, logger, snapshotNanos, StatType.SNAPSHOT_NANOS);
+                flush(now, logger, writeNanos, StatType.WRITE_NANOS);
+                flush(now, logger, writeBytes, StatType.WRITE_BYTES);
             }
         }
 

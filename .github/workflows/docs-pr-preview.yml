@@ -8,6 +8,8 @@ name: Docs PR Preview
 on:
   # This should be safe since the action doesn't do any build with the PR code
   # It would not be safe to run scripts from the PR code, so we use docker directly in this action
+  # We need pull_request_target so that we can use id-token: write from the main repo (to use OIDC w/ AWS),
+  # but need to publish the docs preview from forks. GitHub does not allow id-token: write on pull_request for forks.
   pull_request_target:
     branches: [main, 'rc/**']
 
@@ -63,9 +65,10 @@ jobs:
       # This has access to secrets. If we run any code provided by the repo at this point, it could be malicious.
       # https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
       ##########
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
           sparse-checkout: /docs/
           sparse-checkout-cone-mode: false
           lfs: true

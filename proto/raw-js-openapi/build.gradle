@@ -13,7 +13,7 @@ dependencies {
     js project(path: ':proto:proto-backplane-grpc', configuration: 'js')
 }
 
-def webpackSourcesLocation = layout.buildDirectory.dir("${buildDir}/dhapi")
+def webpackSourcesLocation = layout.buildDirectory.dir("dhapi")
 
 def webpackSources = Docker.registerDockerTask(project, 'webpackSources') {
     copyIn {
@@ -51,4 +51,8 @@ artifacts {
     js(webpackSourcesLocation) {
         builtBy webpackSources
     }
+}
+
+tasks.named('assemble').configure {
+    dependsOn webpackSources
 }

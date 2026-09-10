@@ -3601,6 +3601,58 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    public void testNoKeyShiftWithSharedSortedFirstInputColumn() {
+        final QueryTable table = testRefreshingTable(i(0, 1).toTracking(), intCol("Value", 10, 11));
+
+        // AggSum does not require row keys, so it owns the input slot for Value but is absent from the shift
+        // pass; AggSortedFirst requires row keys and shares that slot.
+        final Table result = table.aggBy(List.of(
+                AggSum("Sum=Value"),
+                AggSortedFirst("Value", "First=Value")));
+
+        assertTableEquals(newTable(longCol("Sum", 21), intCol("First", 10)), result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // Move both keys up by 100, reported purely as a shift: the values are unchanged, only their keys moved.
+            addToTable(table, i(100, 101), intCol("Value", 10, 11));
+            removeRows(table, i(0, 1));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(0, 1, 100);
+            table.notifyListeners(
+                    new TableUpdateImpl(i(), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        assertTableEquals(newTable(longCol("Sum", 21), intCol("First", 10)), result);
+    }
+
+    @Test
+    public void testNoKeyShiftWithMultipleOperatorsSharingInputColumn() {
+        final QueryTable table = testRefreshingTable(i(0, 1).toTracking(), intCol("Value", 10, 11));
+
+        // Three operators share the input slot for Value: AggSum owns it but does not require row keys, while
+        // both sorted operators do. This exercises reuse of the shared chunk after it has been fetched once.
+        final Table result = table.aggBy(List.of(
+                AggSum("Sum=Value"),
+                AggSortedFirst("Value", "First=Value"),
+                AggSortedLast("Value", "Last=Value")));
+
+        assertTableEquals(newTable(longCol("Sum", 21), intCol("First", 10), intCol("Last", 11)), result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(100, 101), intCol("Value", 10, 11));
+            removeRows(table, i(0, 1));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(0, 1, 100);
+            table.notifyListeners(
+                    new TableUpdateImpl(i(), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        assertTableEquals(newTable(longCol("Sum", 21), intCol("First", 10), intCol("Last", 11)), result);
+    }
+
+    @Test
     public void testFirstByShift() {
         final QueryTable table = testRefreshingTable(i(1, 2, 4097).toTracking(),
                 intCol("Sentinel", 1, 2, 4097),

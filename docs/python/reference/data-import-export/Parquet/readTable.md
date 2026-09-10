@@ -28,7 +28,7 @@ The file to load into a table. The file should exist and end with the `.parquet`
 </Param>
 <Param name="col_instructions" type="list[ColumnInstruction]" optional>
 
-One or more optional [`ColumnInstruction`](./ColumnInstruction.md) objects that provide instructions for how to read particular columns in the file.
+One or more optional [`ColumnInstruction`](./ColumnInstruction.md) objects that provide instructions for how to read particular columns in the file. Set `unsigned_long_target` on a `ColumnInstruction` to choose the Deephaven type for an unsigned 64-bit integer (`UINT_64`) column.
 
 </Param>
 <Param name="is_legacy_parquet" type="bool" optional>
@@ -232,6 +232,7 @@ Additionally, the `S3.maxFragmentSize` [configuration property](../../../how-to-
 ## Related documentation
 
 - [Import Parquet files](../../../how-to-guides/data-import-export/parquet-import.md)
+- [Parquet formats](../../../how-to-guides/data-import-export/parquet-formats.md)
 - [Export Parquet files](../../../how-to-guides/data-import-export/parquet-export.md)
 - [`write_table`](./writeTable.md)
 - [Docker data volumes](../../../conceptual/docker-data-volumes.md)

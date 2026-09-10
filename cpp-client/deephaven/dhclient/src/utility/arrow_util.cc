@@ -141,6 +141,11 @@ struct ArrowToElementTypeId final : public arrow::TypeVisitor {
     return type.value_type()->Accept(this);
   }
 
+  // The logical element type of a dictionary-encoded column is the value type, not the index type.
+  arrow::Status Visit(const arrow::DictionaryType &type) final {
+    return type.value_type()->Accept(this);
+  }
+
   arrow::Status Visit(const arrow::Time64Type &/*type*/) final {
     element_type_ = ElementType::Of(ElementTypeId::kLocalTime);
     return arrow::Status::OK();

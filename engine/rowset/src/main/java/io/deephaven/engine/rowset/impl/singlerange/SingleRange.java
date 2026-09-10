@@ -59,6 +59,9 @@ public abstract class SingleRange implements OrderedLongSet {
     }
 
     public static SingleRange make(final long start, final long end) {
+        if (end < start) {
+            throw new IllegalArgumentException("start=" + start + " > end=" + end);
+        }
         final long delta = end - start;
         if (delta == 0) {
             final int unsignedIntStart = lowBitsAsUnsignedInt(start);
@@ -105,9 +108,15 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final boolean ixForEachLong(final LongAbortableConsumer lc) {
-        for (long v = rangeStart(); v <= rangeEnd(); ++v) {
+        final long end = rangeEnd();
+        for (long v = rangeStart(); v <= end; ++v) {
             if (!lc.accept(v)) {
                 return false;
+            }
+            if (v == end) {
+                // Stepping past the end would wrap when it is the last key of the key space, and the wrapped value
+                // compares as still inside the range.
+                break;
             }
         }
         return true;
@@ -143,13 +152,14 @@ public abstract class SingleRange implements OrderedLongSet {
         if (rangeStart() <= key && key <= rangeEnd()) {
             return this;
         }
-        if (key + 1 < rangeStart()) {
+        // Note subtractions rather than key + 1 comparisons: key + 1 overflows for key == Long.MAX_VALUE.
+        if (key < rangeStart()) {
+            if (rangeStart() - key == 1) {
+                return make(key, rangeEnd());
+            }
             return OrderedLongSet.twoRanges(key, key, rangeStart(), rangeEnd());
         }
-        if (key + 1 == rangeStart()) {
-            return make(key, rangeEnd());
-        }
-        if (rangeEnd() + 1 == key) {
+        if (key - rangeEnd() == 1) {
             return make(rangeStart(), key);
         }
         return OrderedLongSet.twoRanges(rangeStart(), rangeEnd(), key, key);
@@ -185,10 +195,12 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixAppendRange(final long startKey, final long endKey) {
-        if (rangeEnd() + 1 < startKey) {
+        // Note subtractions rather than rangeEnd() + 1 comparisons: rangeEnd() + 1 overflows for
+        // rangeEnd() == Long.MAX_VALUE.
+        if (startKey - rangeEnd() > 1) {
             return OrderedLongSet.twoRanges(rangeStart(), rangeEnd(), startKey, endKey);
         }
-        if (rangeEnd() + 1 == startKey) {
+        if (startKey - rangeEnd() == 1) {
             return make(rangeStart(), endKey);
         }
         throw new IllegalStateException("startKey(=" + startKey + ") < rangeEnd(=" + rangeEnd() + ")");
@@ -221,7 +233,8 @@ public abstract class SingleRange implements OrderedLongSet {
     }
 
     @Override
-    public final OrderedLongSet ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
+    public final OrderedLongSet ixSubindexByPosOnNew(final long startPosIn, final long endPosExclusive) {
+        final long startPos = Math.max(startPosIn, 0); // positions below zero hold no keys.
         final long endPos = endPosExclusive - 1; // make inclusive.
         if (endPos < startPos || endPos < 0) {
             return OrderedLongSet.EMPTY;
@@ -241,7 +254,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixSubindexByKeyOnNew(final long startKey, final long endKey) {
-        if (startKey > rangeEnd() || endKey < rangeStart()) {
+        if (endKey < startKey || startKey > rangeEnd() || endKey < rangeStart()) {
             return OrderedLongSet.EMPTY;
         }
         if (startKey == rangeStart() && endKey == rangeEnd()) {
@@ -366,10 +379,17 @@ public abstract class SingleRange implements OrderedLongSet {
         private final long end;
         private long curr;
 
+        /**
+         * Whether the walk has yet to produce anything. Held as a flag rather than by parking {@code curr} one past the
+         * end: that would wrap for a range ending at the last key of the key space, leaving the position below the
+         * range's start and nothing to iterate.
+         */
+        private boolean beforeFirst = true;
+
         public ReverseIter(final long rangeStart, final long rangeEnd) {
             start = rangeStart;
             end = rangeEnd;
-            curr = rangeEnd + 1;
+            curr = rangeEnd;
         }
 
         @Override
@@ -377,7 +397,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
         @Override
         public boolean hasNext() {
-            return start < curr;
+            return beforeFirst ? start <= end : start < curr;
         }
 
         @Override
@@ -387,16 +407,23 @@ public abstract class SingleRange implements OrderedLongSet {
 
         @Override
         public long nextLong() {
-            return --curr;
+            if (beforeFirst) {
+                beforeFirst = false;
+            } else {
+                --curr;
+            }
+            return curr;
         }
 
         @Override
         public boolean advance(long v) {
             if (v < start) {
                 curr = start;
+                beforeFirst = false;
                 return false;
             }
-            curr = Math.min(v, Math.min(curr, end)); // it might not have been started yet.
+            curr = Math.min(v, curr);
+            beforeFirst = false;
             return true;
         }
 
@@ -542,7 +569,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixRemoveRange(final long startKey, final long endKey) {
-        if (endKey < rangeStart() || startKey > rangeEnd()) {
+        if (endKey < startKey || endKey < rangeStart() || startKey > rangeEnd()) {
             return this;
         }
         if (startKey <= rangeStart() && rangeEnd() <= endKey) {
@@ -583,7 +610,7 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixRetainRange(final long start, final long end) {
-        if (rangeEnd() < start) {
+        if (end < start || rangeEnd() < start) {
             return OrderedLongSet.EMPTY;
         }
         if (end < rangeStart()) {
@@ -672,7 +699,15 @@ public abstract class SingleRange implements OrderedLongSet {
 
     @Override
     public final OrderedLongSet ixShiftOnNew(final long shiftAmount) {
-        return make(rangeStart() + shiftAmount, rangeEnd() + shiftAmount);
+        final long start = rangeStart() + shiftAmount;
+        final long end = rangeEnd() + shiftAmount;
+        // Row keys are non-negative; a shift may neither push the start below zero nor carry the end past
+        // Long.MAX_VALUE (where it wraps negative).
+        if (shiftAmount < 0 ? start < 0 : end < 0) {
+            throw new IllegalArgumentException(
+                    "shiftAmount=" + shiftAmount + " when first=" + rangeStart() + ", last=" + rangeEnd());
+        }
+        return make(start, end);
     }
 
     @Override
@@ -690,7 +725,19 @@ public abstract class SingleRange implements OrderedLongSet {
             return ixInsertRange(added.ixFirstKey(), added.ixLastKey());
         }
         final OrderedLongSet ix = added.ixCowRef();
-        return ix.ixInsertRange(rangeStart(), rangeEnd());
+        return insertOurRangeInto(ix);
+    }
+
+    /**
+     * Insert our own range into {@code ix}, a reference we own, releasing it if the insert answered with a different
+     * set.
+     */
+    private OrderedLongSet insertOurRangeInto(final OrderedLongSet ix) {
+        final OrderedLongSet ans = ix.ixInsertRange(rangeStart(), rangeEnd());
+        if (ans != ix) {
+            ix.ixRelease();
+        }
+        return ans;
     }
 
     @Override
@@ -706,16 +753,24 @@ public abstract class SingleRange implements OrderedLongSet {
         if (other instanceof SingleRange) {
             return ixInsertRange(ansFirst, ansLast);
         }
-        return other.ixShiftOnNew(shiftAmount).ixInsertRange(rangeStart(), rangeEnd());
+        return insertOurRangeInto(other.ixShiftOnNew(shiftAmount));
     }
 
     @Override
-    public final RowSequence ixGetRowSequenceByPosition(final long startPositionInclusive, final long length) {
-        if (startPositionInclusive >= ixCardinality() || length == 0) {
+    public final RowSequence ixGetRowSequenceByPosition(final long startPositionInclusiveIn, final long lengthIn) {
+        if (lengthIn <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        final long startPositionInclusive = Math.max(startPositionInclusiveIn, 0);
+        final long length = startPositionInclusiveIn < 0 ? startPositionInclusiveIn + lengthIn : lengthIn;
+        // A length of zero or less asks for nothing. Falling through with a negative one would build a row sequence
+        // whose end lies before its start, reporting a negative size rather than an empty one.
+        if (startPositionInclusive >= ixCardinality() || length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
         final long s = rangeStart() + startPositionInclusive;
-        final long e = Math.min(s + length - 1, rangeEnd());
+        final long remaining = ixCardinality() - startPositionInclusive;
+        final long e = s + Math.min(length, remaining) - 1;
         return new SingleRangeRowSequence(s, e);
     }
 
@@ -749,31 +804,32 @@ public abstract class SingleRange implements OrderedLongSet {
     @Override
     public final OrderedLongSet ixInvertOnNew(final OrderedLongSet keys, final long maximumPosition) {
         final BuilderSequential b = new OrderedLongSetBuilderSequential();
-        final RowSet.RangeIterator it = keys.ixRangeIterator();
         final String exStr = "invert for non-existing key:";
-        while (it.hasNext()) {
-            it.next();
-            final long start = it.currentRangeStart();
-            final long end = it.currentRangeEnd();
-            final long startPos = start - rangeStart();
-            if (startPos < 0) {
-                throw new IllegalArgumentException(exStr + start);
-            }
-            if (startPos > maximumPosition) {
-                break;
-            }
-            long endPos = startPos;
-            if (start != end) {
-                endPos = end - rangeStart();
-                if (endPos < 0) {
+        // The walk stops as soon as maximumPosition is reached, leaving the iterator holding a reference to keys;
+        // closing it is what gives that reference back.
+        try (final RowSet.RangeIterator it = keys.ixRangeIterator()) {
+            while (it.hasNext()) {
+                it.next();
+                final long start = it.currentRangeStart();
+                final long end = it.currentRangeEnd();
+                // Every key must be present, on either side of our range; only then does the position limit apply.
+                if (start < rangeStart() || start > rangeEnd()) {
+                    throw new IllegalArgumentException(exStr + start);
+                }
+                if (end > rangeEnd()) {
                     throw new IllegalArgumentException(exStr + end);
                 }
+                final long startPos = start - rangeStart();
+                if (startPos > maximumPosition) {
+                    break;
+                }
+                final long endPos = end - rangeStart();
+                if (endPos > maximumPosition) {
+                    b.appendRange(startPos, maximumPosition);
+                    break;
+                }
+                b.appendRange(startPos, endPos);
             }
-            if (endPos > maximumPosition) {
-                b.appendRange(startPos, maximumPosition);
-                break;
-            }
-            b.appendRange(startPos, endPos);
         }
         return b.getOrderedLongSet();
     }

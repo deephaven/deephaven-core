@@ -29,10 +29,15 @@ import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger;
+import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger.StatType;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.BarrageCopyKernel;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
+import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry;
+import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistryImpl;
+import io.deephaven.extensions.barrage.chunk.SharedWriterDictionary;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.BarrageMessageReader;
@@ -327,6 +332,14 @@ public class BarrageMessageProducer extends LivenessArtifact
     private List<Subscription> pendingSubscriptions = new ArrayList<>();
     private final ArrayList<Subscription> activeSubscriptions = new ArrayList<>();
 
+    /**
+     * Shared dictionary states for full subscriptions, keyed by Arrow dictionary id. Lives for the lifetime of this
+     * producer; all full subscribers and growing-toward-full subscribers share these states so their index assignments
+     * are consistent and new subscribers can bootstrap the full current dictionary as an isDelta=false batch.
+     */
+    private final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaryStates =
+            new Long2ObjectOpenHashMap<>();
+
     private Runnable onGetSnapshot;
     private boolean onGetSnapshotIsPreSnap;
 
@@ -530,6 +543,14 @@ public class BarrageMessageProducer extends LivenessArtifact
         private WritableRowSet growingIncrementalViewport = null;
         /** is this the first snapshot after a change to a subscriptions */
         private boolean isFirstSnapshot;
+
+        /**
+         * Persistent dictionary registry for this subscription, carried across all ticking updates. Full subscriptions
+         * and growing-toward-full subscriptions use a shared-backed registry; viewport subscriptions use a local
+         * registry. Null until the first time this subscription starts growing.
+         */
+        @Nullable
+        private DictionaryWriterRegistry dictionaryRegistry = null;
 
         private Subscription(final StreamObserver<BarrageMessageWriter.MessageView> listener,
                 final BarrageSubscriptionOptions options,
@@ -1255,6 +1276,16 @@ public class BarrageMessageProducer extends LivenessArtifact
 
                     subscription.targetReverseViewport = subscription.pendingReverseViewport;
 
+                    // (Re-)assign dictionary registry based on the final subscription type.
+                    // Growing-toward-full and pure full subscriptions share the producer-level states; viewports get a
+                    // private local registry. A new registry is always created on each subscription change so that the
+                    // per-subscriber flushed offset resets and the client receives a fresh isDelta=false batch.
+                    if (subscription.targetViewport == null) {
+                        subscription.dictionaryRegistry = new DictionaryWriterRegistryImpl(sharedDictionaryStates);
+                    } else {
+                        subscription.dictionaryRegistry = new DictionaryWriterRegistryImpl();
+                    }
+
                     subscription.isFirstSnapshot = true;
 
                     // get the set of remaining rows for this subscription
@@ -1598,6 +1629,17 @@ public class BarrageMessageProducer extends LivenessArtifact
             final BarrageMessage message,
             final RowSet propRowSetForMessagePrev,
             final RowSet propRowSetForMessage) {
+        // Check shared dictionary states for overflow before building any batches. When the cumulative dictionary size
+        // exceeds the current live row count, the dictionary has grown larger than the data it encodes; reset it so
+        // the next DictionaryBatch is isDelta=false with a compacted set of values. FullSubscriptionDictionaryState
+        // instances detect the reset lazily via the SharedWriterDictionary generation counter.
+        final long fullTableRowCount = propRowSetForMessage.size();
+        for (final SharedWriterDictionary sharedState : sharedDictionaryStates.values()) {
+            if (sharedState.getTotalSize() > fullTableRowCount) {
+                sharedState.reset();
+            }
+        }
+
         // message is released via transfer to stream generator (as it must live until all views are closed)
         try (final BarrageMessageWriter bmw = streamGeneratorFactory.newMessageWriter(
                 message, chunkWriters, this::recordWriteMetrics)) {
@@ -1625,9 +1667,16 @@ public class BarrageMessageProducer extends LivenessArtifact
                         vp != null ? propRowSetForMessagePrev.subSetForPositions(vp, isReversed) : null;
                         final RowSet clientView =
                                 vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
+                    // For viewport subscriptions, check their private local dictionary registries for overflow.
+                    // Full subscriptions are handled above via the shared dictionary reset.
+                    if (subscription.dictionaryRegistry != null && subscription.targetViewport != null) {
+                        final long viewportRowCount = clientView != null ? clientView.size() : 0;
+                        subscription.dictionaryRegistry.resetOverflowedEntries(viewportRowCount);
+                    }
                     subscription.listener.onNext(bmw.getSubView(
                             effectiveOptions(subscription.options), false, subscription.isFullSubscription(), vp,
-                            subscription.reverseViewport, clientViewPrev, clientView, cols));
+                            subscription.reverseViewport, clientViewPrev, clientView, cols,
+                            subscription.dictionaryRegistry));
                 } catch (final Exception e) {
                     try {
                         subscription.listener.onError(errorTransformer.transform(e));
@@ -1694,7 +1743,8 @@ public class BarrageMessageProducer extends LivenessArtifact
                         .onNext(snapshotGenerator.getSubView(effectiveOptions(subscription.options),
                                 subscription.pendingInitialSnapshot,
                                 fullSubscription, subscription.viewport, subscription.reverseViewport,
-                                keySpaceViewportPrev, keySpaceViewport, subscription.subscribedColumns));
+                                keySpaceViewportPrev, keySpaceViewport, subscription.subscribedColumns,
+                                subscription.dictionaryRegistry));
 
             } catch (final Exception e) {
                 GrpcUtil.safelyError(subscription.listener, errorTransformer.transform(e));
@@ -2378,7 +2428,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     private void recordWriteMetrics(final long bytes, final long cpuNanos) {
-        recordMetric(stats -> stats.writeBits, bytes * 8);
+        recordMetric(stats -> stats.writeBytes, bytes);
         recordMetric(stats -> stats.writeTime, cpuNanos);
     }
 
@@ -2402,7 +2452,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         public final Histogram snapshot = new Histogram(NUM_SIG_FIGS);
         public final Histogram updateJob = new Histogram(NUM_SIG_FIGS);
         public final Histogram writeTime = new Histogram(NUM_SIG_FIGS);
-        public final Histogram writeBits = new Histogram(NUM_SIG_FIGS);
+        public final Histogram writeBytes = new Histogram(NUM_SIG_FIGS);
 
         private volatile boolean running = true;
 
@@ -2425,13 +2475,13 @@ public class BarrageMessageProducer extends LivenessArtifact
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
             synchronized (logger) {
-                flush(now, logger, enqueue, "EnqueueMillis");
-                flush(now, logger, aggregate, "AggregateMillis");
-                flush(now, logger, propagate, "PropagateMillis");
-                flush(now, logger, snapshot, "SnapshotMillis");
-                flush(now, logger, updateJob, "UpdateJobMillis");
-                flush(now, logger, writeTime, "WriteMillis");
-                flush(now, logger, writeBits, "WriteMegabits");
+                flush(now, logger, enqueue, StatType.ENQUEUE_NANOS);
+                flush(now, logger, aggregate, StatType.AGGREGATE_NANOS);
+                flush(now, logger, propagate, StatType.PROPAGATE_NANOS);
+                flush(now, logger, snapshot, StatType.SNAPSHOT_NANOS);
+                flush(now, logger, updateJob, StatType.UPDATE_JOB_NANOS);
+                flush(now, logger, writeTime, StatType.WRITE_NANOS);
+                flush(now, logger, writeBytes, StatType.WRITE_BYTES);
             }
         }
 

@@ -22,6 +22,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -38,6 +39,7 @@ import io.deephaven.vector.CharVector;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
 import junit.framework.TestCase;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -85,6 +87,101 @@ public class TestAggBy extends RefreshingTableTestCase {
         show(minMax);
 
         assertEquals(2, minMax.size());
+    }
+
+    /**
+     * An {@code AggFormula} names its formula column in the {@link ModifiedColumnSet} it reports whenever churn in a
+     * group makes it recompute that column.
+     *
+     * <p>
+     * The non-rollup counterpart to {@code TestRollupTable.testRollupFormulaReportsModifiedFormulaColumn}. The
+     * {@code AggGroup} here registers the shared group operator, which leaves the formula operator non-delegating --
+     * the same condition every rollup level meets, reached through a plain {@code aggBy}. Two keys puts this on the
+     * bucketed path, where the rollup's zero-key root covers the singleton one.
+     *
+     * <p>
+     * Reporting holds for every kind of churn, hence the add, remove, and modify cycles, and reaches no further: a
+     * plain {@code aggBy} exposes no group RowSet column, so the leading shift owes nothing downstream at all.
+     */
+    @Test
+    public void testAggFormulaReportsModifiedFormulaColumn() {
+        final QueryTable source = testRefreshingTable(
+                i(0, 1, 2, 3).toTracking(),
+                stringCol("Sym", "a", "a", "b", "b"),
+                intCol("Value", 10, 11, 20, 21));
+
+        final QueryTable agged = (QueryTable) source.aggBy(
+                List.of(AggGroup("Grp=Value"), AggFormula("FSum=sum(Value)")), "Sym");
+
+        // A direct read, correct whether or not the column is advertised, and one gated on the reported MCS.
+        final Table direct = agged.select("Sym", "FSum");
+        final Table mcsGated = agged.sort("Sym").select("Sym", "FSum");
+
+        final Table initial = newTable(stringCol("Sym", "a", "b"), longCol("FSum", 21, 41));
+        assertTableEquals(initial, direct);
+        assertTableEquals(initial, mcsGated);
+
+        final SimpleListener listener = new SimpleListener(agged);
+        agged.addUpdateListener(listener);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+
+        // A pure shift of the "b" rows: their keys move but their values do not, so the formula cannot change, and with
+        // no group RowSet column exposed nothing is owed downstream. The cycles after it run against shifted keys.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(102, 103), stringCol("Sym", "b", "b"), intCol("Value", 20, 21));
+            removeRows(source, i(2, 3));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(2, 3, 100);
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(0, listener.getCount());
+        assertTableEquals(initial, direct);
+        assertTableEquals(initial, mcsGated);
+
+        // A row joins the "b" group.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(4), stringCol("Sym", "b"), intCol("Value", 22));
+            source.notifyListeners(i(4), i(), i());
+        });
+        assertFormulaReported(agged, listener, direct, mcsGated,
+                newTable(stringCol("Sym", "a", "b"), longCol("FSum", 21, 63)));
+
+        // A row leaves the "a" group.
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(0));
+            source.notifyListeners(i(), i(0), i());
+        });
+        assertFormulaReported(agged, listener, direct, mcsGated,
+                newTable(stringCol("Sym", "a", "b"), longCol("FSum", 11, 63)));
+
+        // A row keeps its group but changes value, so the group's membership is untouched.
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(1), stringCol("Sym", "a"), intCol("Value", 111));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    source.newModifiedColumnSet("Value")));
+        });
+        assertFormulaReported(agged, listener, direct, mcsGated,
+                newTable(stringCol("Sym", "a", "b"), longCol("FSum", 111, 63)));
+
+        agged.removeUpdateListener(listener);
+        listener.close();
+    }
+
+    /**
+     * Assert that the update {@code listener} just captured off {@code agged} marks rows modified and names
+     * {@code FSum} in its {@link ModifiedColumnSet}, and that the result reads as {@code expected} both directly and
+     * through the gated consumer.
+     */
+    private static void assertFormulaReported(final QueryTable agged, final SimpleListener listener,
+            final Table direct, final Table mcsGated, final Table expected) {
+        final TableUpdate update = listener.getUpdate();
+        assertTrue(update.modified().isNonempty());
+        assertTrue("modifiedColumnSet " + update.modifiedColumnSet() + " should contain FSum",
+                update.modifiedColumnSet().containsAny(agged.newModifiedColumnSet("FSum")));
+
+        assertTableEquals(expected, direct);
+        assertTableEquals(expected, mcsGated);
     }
 
     @Test
@@ -814,6 +911,61 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new char[] {'n', 'r'}, cs.get(1).toArray());
         assertArrayEquals(new char[] {'k', 'o', 's'}, cs.get(2).toArray());
         assertArrayEquals(new char[] {'l', 'p', 't'}, cs.get(3).toArray());
+    }
+
+    /**
+     * An AggDistinct result column hands the live SSM to formulas as the column value, so a query that indexes or
+     * slices such a column lands directly on the SSM's Vector implementation -- {@code Let[-1]} parses to
+     * {@code Let.get(-1)}. Offsets outside {@code [0, size())} must read as null there, exactly as they do for any
+     * other Vector, and a slice must be exclusive at its end.
+     */
+    @Test
+    public void testComboByDistinctVectorContract() {
+        final Instant firstTime = DateTimeUtils.epochNanosToInstant(1_600_000_000_000_000_000L);
+        final Instant secondTime = DateTimeUtils.plus(firstTime, 1_000_000_000L);
+        final Instant thirdTime = DateTimeUtils.plus(firstTime, 2_000_000_000L);
+
+        final QueryTable dataTable = TstUtils.testRefreshingTable(
+                intCol("Grp", 1, 1, 1, 2),
+                charCol("Let", 'a', 'b', 'c', 'z'),
+                col("Timestamp", firstTime, secondTime, thirdTime, firstTime));
+
+        // Grp 1 holds three distinct values, Grp 2 exactly one -- the SSM's singleton representation
+        final Table result = dataTable
+                .aggBy(List.of(AggDistinct("Let"), AggDistinct("Timestamp")), "Grp")
+                .update("Before = Let[-1]",
+                        "First = Let[0]",
+                        "After = Let[3]",
+                        "Whole = Let.subVector(0, Let.size())",
+                        "Overrun = Let.subVector(0, Let.size() + 2)",
+                        "BeforeTime = Timestamp[-1]",
+                        "AfterTime = Timestamp[3]",
+                        "WholeTimes = Timestamp.subVector(0, Timestamp.size())");
+
+        assertEquals(2, result.size());
+
+        // an offset before the first element, or at/after the last, reads as null instead of throwing or handing back
+        // a stale value from a leaf's unused slots
+        assertArrayEquals(new char[] {NULL_CHAR, NULL_CHAR}, ColumnVectors.ofChar(result, "Before").toArray());
+        assertArrayEquals(new char[] {'a', 'z'}, ColumnVectors.ofChar(result, "First").toArray());
+        assertArrayEquals(new char[] {NULL_CHAR, NULL_CHAR}, ColumnVectors.ofChar(result, "After").toArray());
+        assertArrayEquals(new Object[] {null, null}, ColumnVectors.ofObject(result, "BeforeTime", Object.class)
+                .toArray());
+        assertArrayEquals(new Object[] {null, null}, ColumnVectors.ofObject(result, "AfterTime", Object.class)
+                .toArray());
+
+        // subVector is exclusive at its end, and pads whatever it is asked for beyond the end with nulls
+        final ColumnSource<CharVector> whole = result.getColumnSource("Whole");
+        assertArrayEquals(new char[] {'a', 'b', 'c'}, whole.get(0).toArray());
+        assertArrayEquals(new char[] {'z'}, whole.get(1).toArray());
+
+        final ColumnSource<CharVector> overrun = result.getColumnSource("Overrun");
+        assertArrayEquals(new char[] {'a', 'b', 'c', NULL_CHAR, NULL_CHAR}, overrun.get(0).toArray());
+        assertArrayEquals(new char[] {'z', NULL_CHAR, NULL_CHAR}, overrun.get(1).toArray());
+
+        final ColumnSource<ObjectVector<Instant>> wholeTimes = result.getColumnSource("WholeTimes");
+        assertArrayEquals(new Instant[] {firstTime, secondTime, thirdTime}, wholeTimes.get(0).toArray());
+        assertArrayEquals(new Instant[] {firstTime}, wholeTimes.get(1).toArray());
     }
 
     @Test

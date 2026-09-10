@@ -26,7 +26,7 @@ public class BasicRowSetBuilderSequential extends OrderedLongSetBuilderSequentia
     @Override
     public void appendRowSequenceWithOffset(final RowSequence rowSequence, final long shiftAmount) {
         if (rowSequence instanceof WritableRowSetImpl) {
-            appendOrderedLongSet(shiftAmount, ((WritableRowSetImpl) rowSequence).getInnerSet(), false);
+            appendOrderedLongSet(shiftAmount, ((WritableRowSetImpl) rowSequence).getInnerSet());
             return;
         }
         rowSequence.forAllRowKeyRanges((start, end) -> {

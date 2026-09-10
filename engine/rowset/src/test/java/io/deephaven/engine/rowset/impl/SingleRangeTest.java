@@ -475,4 +475,67 @@ public class SingleRangeTest {
         assertEquals(last - 1, res.ixFirstKey());
         assertEquals(last, res.ixLastKey());
     }
+
+    @Test
+    public void testInsertAndAppendRangeNearMaxValue() {
+        // Adjacency at Long.MAX_VALUE must merge, not wrap.
+        final SingleRange sr = SingleRange.make(10, Long.MAX_VALUE - 1);
+        final OrderedLongSet merged = sr.ixInsert(Long.MAX_VALUE);
+        assertTrue(merged instanceof SingleRange);
+        assertEquals(10, merged.ixFirstKey());
+        assertEquals(Long.MAX_VALUE, merged.ixLastKey());
+        // Non-adjacent: the result must be an ordered two-range set.
+        final SingleRange sr2 = SingleRange.make(10, 20);
+        final OrderedLongSet two = sr2.ixInsert(Long.MAX_VALUE);
+        assertEquals(12, two.ixCardinality());
+        assertEquals(10, two.ixFirstKey());
+        assertEquals(Long.MAX_VALUE, two.ixLastKey());
+        two.ixValidate();
+        // Append of an adjacent range ending at Long.MAX_VALUE must merge as well.
+        final SingleRange sr3 = SingleRange.make(10, Long.MAX_VALUE - 5);
+        final OrderedLongSet appended = sr3.ixAppendRange(Long.MAX_VALUE - 4, Long.MAX_VALUE);
+        assertTrue(appended instanceof SingleRange);
+        assertEquals(10, appended.ixFirstKey());
+        assertEquals(Long.MAX_VALUE, appended.ixLastKey());
+    }
+
+    @Test
+    public void testRowSequenceIteratorAdvanceIntoConsumedRegionIsNoOp() {
+        final SingleRange sr = SingleRange.make(10, 30);
+        try (final RowSequence.Iterator it = sr.ixGetRowSequenceIterator()) {
+            final RowSequence rs = it.getNextRowSequenceWithLength(5); // consumes 10..14
+            assertEquals(5, rs.size());
+            final long posBefore = it.getRelativePosition();
+            // Advance into the already-consumed region: must be a no-op.
+            assertTrue(it.advance(12));
+            assertEquals(posBefore, it.getRelativePosition());
+            assertEquals(15, it.peekNextKey());
+            // Advance to exactly the next unconsumed key: position unchanged.
+            assertTrue(it.advance(15));
+            assertEquals(posBefore, it.getRelativePosition());
+            assertEquals(15, it.peekNextKey());
+            // A genuine forward advance still works.
+            assertTrue(it.advance(20));
+            assertEquals(20, it.peekNextKey());
+            final RowSequence rs2 = it.getNextRowSequenceThrough(30);
+            assertEquals(11, rs2.size());
+            assertEquals(20, rs2.firstRowKey());
+            assertEquals(30, rs2.lastRowKey());
+            assertFalse(it.hasMore());
+        }
+    }
+
+    @Test
+    public void testSubindexByKeyOnNewInvertedWindow() {
+        // An inverted window overlapping the range must yield EMPTY, not a SingleRange with start > end.
+        final SingleRange sr = SingleRange.make(0, 3 * 65536 + 100);
+        assertEquals(OrderedLongSet.EMPTY, sr.ixSubindexByKeyOnNew(50, 10));
+        assertEquals(OrderedLongSet.EMPTY, sr.ixSubindexByKeyOnNew(100, 0));
+        // Degenerate-but-valid windows still work.
+        final OrderedLongSet single = sr.ixSubindexByKeyOnNew(50, 50);
+        assertEquals(1, single.ixCardinality());
+        assertEquals(50, single.ixFirstKey());
+        final OrderedLongSet span = sr.ixSubindexByKeyOnNew(10, 50);
+        assertEquals(41, span.ixCardinality());
+    }
 }

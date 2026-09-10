@@ -62,26 +62,12 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final ChunkWriter.Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> {
-            if (objectChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final ChunkWriter.Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(objectChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(objectChunk.isNull((int) row)));
     }
 
     public final class Context extends ChunkWriter.Context {
@@ -97,8 +83,24 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
             @NotNull final ChunkWriter.Context context,
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options) throws IOException {
+        return getInputStream(context, subset, options, null);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Forwards {@code dictionaryRegistry} to each child writer so that a dictionary-encoded member (a
+     * {@code Union<..., Dictionary<...>, ...>} column) can resolve and register its dictionary state.
+     */
+    @Override
+    public DrainableColumn getInputStream(
+            @NotNull final ChunkWriter.Context context,
+            @Nullable final RowSet subset,
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
         // noinspection unchecked
-        return new UnionChunkInputStream((Context) context, subset, options);
+        return new UnionChunkInputStream((Context) context, subset, options, dictionaryRegistry);
     }
 
     private class UnionChunkInputStream extends BaseChunkInputStream<Context> {
@@ -111,7 +113,8 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
         private UnionChunkInputStream(
                 @NotNull final Context context,
                 @Nullable final RowSet mySubset,
-                @NotNull final BarrageOptions options) throws IOException {
+                @NotNull final BarrageOptions options,
+                @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
             super(context, mySubset, options);
             final int numColumns = classMatchers.size();
             final ObjectChunk<T, Values> chunk = context.getChunk().asObjectChunk();
@@ -209,7 +212,7 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
                     chunkToWrite = innerChunk;
                 }
                 try (ChunkWriter.Context innerContext = writer.makeContext(chunkToWrite, 0)) {
-                    innerColumns[ii] = writer.getInputStream(innerContext, null, options);
+                    innerColumns[ii] = writer.getInputStream(innerContext, null, options, dictionaryRegistry);
                 }
             }
         }

@@ -311,11 +311,13 @@ public class TypedHasherFactory {
                     true, true, TypedNaturalJoinFactory::incrementalLeftFoundUpdate,
                     TypedNaturalJoinFactory::incrementalLeftInsertUpdate,
                     ParameterSpec.builder(LongArraySource.class, "leftRedirections").build(),
-                    ParameterSpec.builder(long.class, "leftRedirectionOffset").build()));
+                    ParameterSpec.builder(long.class, "leftRedirectionOffset").build(),
+                    modifiedSlotTrackerParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", "rightState", true,
                     TypedNaturalJoinFactory::incrementalRemoveLeftFound,
-                    TypedNaturalJoinFactory::incrementalRemoveLeftMissing));
+                    TypedNaturalJoinFactory::incrementalRemoveLeftMissing,
+                    modifiedSlotTrackerParam));
 
             builder.addProbe(new HasherConfig.ProbeSpec("applyLeftShift", null, true,
                     TypedNaturalJoinFactory::incrementalShiftLeftFound,

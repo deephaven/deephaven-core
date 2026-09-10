@@ -425,6 +425,33 @@ public abstract class ArrayBackedColumnSource<T>
         return (WritableColumnSource<T>) result;
     }
 
+    /**
+     * Produces an empty ArrayBackedColumnSource for the given {@link ChunkType}.
+     *
+     * @param chunkType the chunk type
+     * @return an in-memory column source of the appropriate primitive or Object type
+     */
+    public static WritableColumnSource<?> getMemoryColumnSource(@NotNull final ChunkType chunkType) {
+        switch (chunkType) {
+            case Byte:
+                return getMemoryColumnSource(byte.class, null);
+            case Char:
+                return getMemoryColumnSource(char.class, null);
+            case Short:
+                return getMemoryColumnSource(short.class, null);
+            case Int:
+                return getMemoryColumnSource(int.class, null);
+            case Long:
+                return getMemoryColumnSource(long.class, null);
+            case Float:
+                return getMemoryColumnSource(float.class, null);
+            case Double:
+                return getMemoryColumnSource(double.class, null);
+            default:
+                return getMemoryColumnSource(Object.class, null);
+        }
+    }
+
     @Override
     public abstract void ensureCapacity(long size, boolean nullFill);
 

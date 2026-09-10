@@ -508,6 +508,30 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.join(right_table, joins="e")
             self.assertTrue(result_table.size > left_table.size)
 
+    def test_cross_join_with_reserve_bits(self):
+        left_table = self.test_table.drop_columns(cols=["e"])
+        right_table = self.test_table.where(["a % 2 > 0 && b % 3 == 1"]).drop_columns(
+            cols=["b", "c", "d"]
+        )
+        with self.subTest("with some join keys"):
+            result_table = left_table.join(
+                right_table, on=["a"], joins=["e"], reserve_bits=2
+            )
+            self.assertTrue(result_table.size < left_table.size)
+        with self.subTest("with some join keys"):
+            result_table = left_table.join(
+                right_table, on="a", joins="e", reserve_bits=2
+            )
+            self.assertTrue(result_table.size < left_table.size)
+        with self.subTest("with no join keys"):
+            result_table = left_table.join(
+                right_table, on=[], joins=["e"], reserve_bits=2
+            )
+            self.assertTrue(result_table.size > left_table.size)
+        with self.subTest("with no join keys"):
+            result_table = left_table.join(right_table, joins="e", reserve_bits=2)
+            self.assertTrue(result_table.size > left_table.size)
+
     def test_as_of_join(self):
         left_table = self.test_table.drop_columns(["d", "e"])
         right_table = self.test_table.where(["a % 2 > 0"]).drop_columns(
@@ -1239,6 +1263,34 @@ class TableTestCase(BaseTestCase):
         rt_attrs = rt.attributes()
         self.assertEqual(len(attrs), len(rt_attrs) + 1)
         self.assertIn("BlinkTable", set(attrs.keys()) - set(rt_attrs.keys()))
+
+    def test_with_keys(self):
+        rt = self.test_table.with_keys("a")
+        self.assertEqual({"keyColumns": "a"}, rt.attributes())
+        self.assertEqual({}, self.test_table.attributes())
+
+        rt = self.test_table.with_keys(["a", "b"])
+        self.assertEqual({"keyColumns": "a,b"}, rt.attributes())
+
+        with self.assertRaises(DHError):
+            self.test_table.with_keys([])
+
+        with self.assertRaises(DHError):
+            self.test_table.with_keys("NotAColumn")
+
+    def test_with_unique_keys(self):
+        rt = self.test_table.with_unique_keys("a")
+        self.assertEqual({"keyColumns": "a", "uniqueKeys": True}, rt.attributes())
+        self.assertEqual({}, self.test_table.attributes())
+
+        rt = self.test_table.with_unique_keys(["a", "b"])
+        self.assertEqual({"keyColumns": "a,b", "uniqueKeys": True}, rt.attributes())
+
+        with self.assertRaises(DHError):
+            self.test_table.with_unique_keys([])
+
+        with self.assertRaises(DHError):
+            self.test_table.with_unique_keys("NotAColumn")
 
     def test_remove_blink(self):
         t_blink = time_table("PT1s", blink_table=True)

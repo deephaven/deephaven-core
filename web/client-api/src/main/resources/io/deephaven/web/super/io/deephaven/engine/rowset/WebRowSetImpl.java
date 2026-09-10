@@ -65,10 +65,7 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
         if (this.isEmpty() || rowSet.isEmpty()) {
             return RowSetFactory.empty();
         }
-        if (rowSet.equals(this)) {
-            return copy();
-        }
-        throw new UnsupportedOperationException("intersect");
+        return new WebRowSetImpl(rangeSet.intersect(((WebRowSetImpl) rowSet).rangeSet));
     }
 
     @Override

@@ -3397,4 +3397,37 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(ix3, ix4);
         assertEquals(ix1.size() + ix2.size(), ix4.size());
     }
+
+    public void testSubSetForPositionsDoesNotLeakInnerSetRefCount() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.addRange(65536, 65556);
+        rb = rb.add(3 * 65536 + 7);
+        final WritableRowSetImpl rowSet = new WritableRowSetImpl(rb);
+        final int before = rowSet.refCount();
+        // Non-contiguous positions, to avoid the contiguous fast path that never creates an iterator.
+        try (final WritableRowSet positions = RowSetFactory.fromKeys(0, 2, 5);
+                final WritableRowSet result = rowSet.subSetForPositions(positions)) {
+            assertEquals(3, result.size());
+            assertEquals(10, result.firstRowKey());
+        }
+        assertEquals(before, rowSet.refCount());
+        rowSet.close();
+    }
+
+    public void testSelfAliasedMutators() {
+        final WritableRowSet rowSet = RowSetFactory.fromKeys(1, 5, 9);
+        rowSet.insert(rowSet);
+        assertEquals(3, rowSet.size());
+        rowSet.retain(rowSet);
+        assertEquals(3, rowSet.size());
+        try (final WritableRowSet other = RowSetFactory.fromKeys(100)) {
+            rowSet.update(other, rowSet); // remove everything, then add {100}
+            assertEquals(1, rowSet.size());
+            assertEquals(100, rowSet.firstRowKey());
+        }
+        rowSet.remove(rowSet);
+        assertTrue(rowSet.isEmpty());
+        rowSet.close();
+    }
 }

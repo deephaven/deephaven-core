@@ -62,7 +62,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
     private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
 
     private RowSetBuilderRandom stepDestinationsModified;
-    private boolean rowsetsModified = false;
+    private boolean someKeyHasAddsOrRemoves;
 
     private boolean initialized;
 
@@ -219,6 +219,8 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
         if (length == 0) {
             return;
         }
+        // A whole child RowSet joining this destination changes the union's contents, not just its keys.
+        someKeyHasAddsOrRemoves = true;
         accumulateToBuilderRandom(addedBuilders, rowSets, start, length, destination, false);
         if (stepDestinationsModified != null) {
             stepDestinationsModified.addKey(destination);
@@ -231,6 +233,8 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
         if (length == 0) {
             return;
         }
+        // A whole child RowSet leaving this destination changes the union's contents, not just its keys.
+        someKeyHasAddsOrRemoves = true;
         accumulateToBuilderRandom(removedBuilders, rowSets, start, length, destination, true);
         stepDestinationsModified.addKey(destination);
     }
@@ -332,7 +336,8 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
 
     @Override
     public boolean hasModifications(boolean columnsModified) {
-        return columnsModified || rowsetsModified;
+        // Deliberately excludes shifts.
+        return columnsModified || someKeyHasAddsOrRemoves;
     }
 
     private class InputToResultModifiedColumnSetFactory implements UnaryOperator<ModifiedColumnSet> {
@@ -353,14 +358,17 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             for (int ci = 0; ci < inputColumnNames.length; ++ci) {
                 affectedColumns[ci] = resultTable.newModifiedColumnSet(resultAggregatedColumnNames[ci]);
             }
-            affectedColumns[allInputs.length - 1] = allOutputColumns = resultTable.newModifiedColumnSet(allInputs);
+            // A dirty RowSet column should dirty only our RowSet column here, not allOutputColumns (everything).
+            // Grouped-value dirtiness is a separate signal, already carried by the parallel entries above.
+            affectedColumns[allInputs.length - 1] = resultTable.newModifiedColumnSet(exposeRowSetsAs);
+            allOutputColumns = resultTable.newModifiedColumnSet(allInputs);
 
             aggregatedColumnsTransformer = inputTable.newModifiedColumnSetTransformer(allInputs, affectedColumns);
         }
 
         @Override
         public ModifiedColumnSet apply(@NotNull final ModifiedColumnSet upstreamModifiedColumnSet) {
-            if (rowsetsModified) {
+            if (someKeyHasAddsOrRemoves) {
                 return allOutputColumns;
             }
             aggregatedColumnsTransformer.clearAndTransform(upstreamModifiedColumnSet, updateModifiedColumnSet);
@@ -371,7 +379,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
     @Override
     public boolean resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         stepDestinationsModified = new BitmapRandomBuilder(startingDestinationsCount);
-        rowsetsModified = false;
+        someKeyHasAddsOrRemoves = false;
         return upstream.modifiedColumnSet().containsAny(inputAggregatedColumnsModifiedColumnSet);
     }
 
@@ -424,6 +432,7 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             stepDestinations.insert(newDestinations);
 
             if (stepDestinations.isEmpty()) {
+                someKeyHasAddsOrRemoves = false;
                 return;
             }
 
@@ -466,9 +475,6 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
                             // use the addRowSet as the new rowset
                             final WritableRowSet addRowSet = nullToEmpty(
                                     extractAndClearBuilderRandom(addedBuildersBackingChunk, backingChunkOffset));
-                            if (!addRowSet.isEmpty()) {
-                                rowsetsModified = true;
-                            }
                             rowSetBackingChunk.set(backingChunkOffset, live ? addRowSet.toTracking() : addRowSet);
                         } else {
                             try (final WritableRowSet addRowSet =
@@ -479,9 +485,6 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
                                                     backingChunkOffset))) {
                                 workingRowSet.remove(removeRowSet);
                                 workingRowSet.insert(addRowSet);
-                                if (!addRowSet.isEmpty() || !removeRowSet.isEmpty()) {
-                                    rowsetsModified = true;
-                                }
                             }
                         }
                     });

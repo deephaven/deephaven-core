@@ -6,6 +6,7 @@ package io.deephaven.web.client.api.barrage;
 import elemental2.core.JsDate;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.BarrageTypeInfo;
@@ -15,6 +16,8 @@ import io.deephaven.extensions.barrage.chunk.ByteChunkReader;
 import io.deephaven.extensions.barrage.chunk.CharChunkReader;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
+import io.deephaven.extensions.barrage.chunk.DictionaryChunkReader;
+import io.deephaven.extensions.barrage.chunk.DictionaryReaderRegistry;
 import io.deephaven.extensions.barrage.chunk.DoubleChunkReader;
 import io.deephaven.extensions.barrage.chunk.ExpansionKernel;
 import io.deephaven.extensions.barrage.chunk.FloatChunkReader;
@@ -37,6 +40,7 @@ import io.deephaven.web.client.api.LongWrapper;
 import jsinterop.base.Js;
 import org.apache.arrow.flatbuf.Date;
 import org.apache.arrow.flatbuf.DateUnit;
+import org.apache.arrow.flatbuf.DictionaryEncoding;
 import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.FloatingPoint;
 import org.apache.arrow.flatbuf.Int;
@@ -65,9 +69,30 @@ import java.util.function.LongFunction;
  * Includes some specific workarounds to handle nullability that will make more sense for the browser.
  */
 public class WebChunkReaderFactory implements ChunkReader.Factory {
+    private final DictionaryReaderRegistry dictRegistry;
+
+    public WebChunkReaderFactory(DictionaryReaderRegistry dictRegistry) {
+        this.dictRegistry = dictRegistry;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T extends WritableChunk<Values>> ChunkReader<T> newReader(
+            @NotNull final BarrageTypeInfo<Field> typeInfo,
+            @NotNull final BarrageOptions options) {
+        if (typeInfo.arrowField().dictionary() != null) {
+            final DictionaryEncoding dictEncoding = typeInfo.arrowField().dictionary();
+            final long dictId = dictEncoding.id();
+            final Int indexTypeInfo = dictEncoding.indexType();
+            final int indexBitWidth = indexTypeInfo != null ? indexTypeInfo.bitWidth() : 32;
+            return (ChunkReader<T>) new DictionaryChunkReader(dictId,
+                    newDictIndexReader(indexBitWidth, options), ChunkType.Object, dictRegistry);
+        }
+        return newValueTypeReader(typeInfo, options);
+    }
+
+    @SuppressWarnings("unchecked")
+    <T extends WritableChunk<Values>> ChunkReader<T> newValueTypeReader(
             @NotNull final BarrageTypeInfo<Field> typeInfo,
             @NotNull final BarrageOptions options) {
         switch (typeInfo.arrowField().typeType()) {
@@ -429,6 +454,23 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
             default:
                 throw new IllegalArgumentException(
                         "run_ends Int bitWidth must be 16, 32, or 64; got " + t.bitWidth());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends WritableChunk<Values>> ChunkReader<T> newDictIndexReader(
+            final int bitWidth, @NotNull final BarrageOptions options) {
+        switch (bitWidth) {
+            case 8:
+                return (ChunkReader<T>) new ByteChunkReader(options);
+            case 16:
+                return (ChunkReader<T>) new ShortChunkReader(options);
+            case 32:
+                return (ChunkReader<T>) new IntChunkReader(options);
+            case 64:
+                return (ChunkReader<T>) new LongChunkReader(options);
+            default:
+                throw new IllegalArgumentException("Unsupported dictionary index bitWidth: " + bitWidth);
         }
     }
 

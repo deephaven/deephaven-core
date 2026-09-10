@@ -162,6 +162,15 @@ func (th *TableHandle) NumRows() (numRows int64, ok bool) {
 
 // Snapshot downloads the current state of the table from the server and returns it as an Arrow Record.
 //
+// The Record is returned as native Arrow, preserving any column encodings the server applied (via a
+// BarrageSchema attribute): run-end-encoded columns arrive as *array.RunEndEncoded, dictionary-encoded
+// columns as *array.Dictionary, and doubly-encoded columns as an *array.RunEndEncoded whose Values() is
+// itself an *array.Dictionary. Unlike the C++ and R clients, the Go client does not decode these to plain
+// columns; the caller resolves them using the standard Arrow-Go accessors. For a run-end-encoded column,
+// RunEndEncoded.GetPhysicalIndex(i) maps a logical row to its run; for a dictionary column,
+// Dictionary.Dictionary().Value(Dictionary.Indices()...) resolves a value. See TestReeDictionaryEncoding
+// in encoding_test.go for the doubly-encoded resolution pattern.
+//
 // If a Record is returned successfully, it must be freed later with arrow.record.Release().
 func (th *TableHandle) Snapshot(ctx context.Context) (arrow.Record, error) {
 	if !th.rLockIfValid() {

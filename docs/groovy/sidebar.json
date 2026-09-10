@@ -102,6 +102,10 @@
                 "path": "conceptual/deephaven-design.md"
               },
               {
+                "label": "Patterns of use",
+                "path": "conceptual/deephaven-mental-model.md"
+              },
+              {
                 "label": "Incremental update model",
                 "path": "conceptual/table-update-model.md"
               },
@@ -859,6 +863,10 @@
                   {
                     "label": "Formulas and threads",
                     "path": "how-to-guides/performance/formula-threads.md"
+                  },
+                  {
+                    "label": "Track processing time",
+                    "path": "how-to-guides/performance/track-processing-time.md"
                   },
                   {
                     "label": "Barrage metrics",

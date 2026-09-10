@@ -32,6 +32,7 @@ using deephaven::client::server::Server;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::OkOrThrow;
+using deephaven::client::utility::ArrowUtil;
 using deephaven::client::utility::ValueOrThrow;
 using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::clienttable::Schema;
@@ -540,14 +541,23 @@ std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::GetFlightStreamR
   return GetManager().CreateFlightWrapper().GetFlightStreamReader(*this);
 }
 
-std::shared_ptr<arrow::Table> TableHandle::ToArrowTable() const {
+std::shared_ptr<ClientTable> TableHandle::ToClientTable() const {
   auto res = GetFlightStreamReader()->ToTable();
-  return ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(std::move(res)));
+  auto raw_at = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(std::move(res)));
+  return ArrowClientTable::Create(std::move(raw_at));
 }
 
-std::shared_ptr<ClientTable> TableHandle::ToClientTable() const {
-  auto at = ToArrowTable();
-  return ArrowClientTable::Create(std::move(at));
+std::shared_ptr<arrow::Table> TableHandle::ToArrowTable(bool cooked) const {
+  if (cooked) {
+    // Roundtrip through ClientTable to remove RunEndEncoded and Dictionary arrow
+    // types, if any.
+    // TODO(kosak): could optimize by checking for these types first and passing
+    // straight through if there aren't any.
+    auto ct = ToClientTable();
+    return ArrowUtil::MakeArrowTable(*ct);
+  }
+  auto res = GetFlightStreamReader()->ToTable();
+  return ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(std::move(res)));
 }
 
 std::shared_ptr<SubscriptionHandle> TableHandle::Subscribe(

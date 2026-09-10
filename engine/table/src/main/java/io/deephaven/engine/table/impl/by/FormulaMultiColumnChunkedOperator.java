@@ -325,7 +325,10 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         }
         updateUpstreamModifiedColumnSet =
                 upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet();
-        return false;
+        // Without delegation our chunk callbacks are no-ops, so nothing would ever mark us modified and our result MCS
+        // factory would never be consulted. Claim the step and let the factory decide; it gates on the same condition
+        // propagateUpdates recomputes on, so we report the column exactly when we rewrite it.
+        return !delegateToBy;
     }
 
     @Override
