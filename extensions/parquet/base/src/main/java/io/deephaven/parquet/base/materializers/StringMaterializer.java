@@ -11,10 +11,10 @@ import org.apache.parquet.column.values.ValuesReader;
 public class StringMaterializer extends ObjectMaterializerBase<String> implements PageMaterializer {
 
     /**
-     * Enables {@link PlainBinaryStringValuesReader}. Read per page rather than cached, so it can be flipped in a
-     * running JVM to A/B the two decoders without a restart.
+     * Escape hatch: set to {@code false} to fall back to parquet's {@code BinaryPlainValuesReader}. Read per page
+     * rather than cached, so it can be flipped in a running JVM without a restart.
      */
-    public static final String USE_PLAIN_BINARY_STRING_DECODER_PROP = "deephaven.parquet.plainBinaryStringDecoder";
+    public static final String ALLOW_PLAIN_BINARY_STRING_DECODER_PROP = "deephaven.parquet.plainBinaryStringDecoder";
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
@@ -28,14 +28,17 @@ public class StringMaterializer extends ObjectMaterializerBase<String> implement
         }
 
         @Override
-        public boolean usePlainBinaryStringDecoder() {
+        public boolean allowPlainBinaryStringDecoder() {
             return Configuration.getInstance()
-                    .getBooleanWithDefault(USE_PLAIN_BINARY_STRING_DECODER_PROP, false);
+                    .getBooleanWithDefault(ALLOW_PLAIN_BINARY_STRING_DECODER_PROP, true);
         }
     };
 
     private final ValuesReader dataReader;
-    /** Non-null when {@link #dataReader} supports bulk decoding; resolved once to keep {@link #fillValues} simple. */
+    /**
+     * {@link #dataReader} when it can bulk-decode, else null; typed here because {@link #fillValues} runs per null-free
+     * run.
+     */
     private final PlainBinaryStringValuesReader bulkReader;
 
     private StringMaterializer(ValuesReader dataReader, int numValues) {

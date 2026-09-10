@@ -27,40 +27,46 @@ class TestPlainBinaryStringReaderSelection {
 
     private void setEnabled(final boolean enabled) {
         Configuration.getInstance()
-                .setProperty(StringMaterializer.USE_PLAIN_BINARY_STRING_DECODER_PROP, Boolean.toString(enabled));
+                .setProperty(StringMaterializer.ALLOW_PLAIN_BINARY_STRING_DECODER_PROP, Boolean.toString(enabled));
     }
 
+    /** Removes the property entirely, so {@link #onByDefault} sees the unset state rather than an explicit value. */
     @AfterEach
     void clearProperty() {
-        setEnabled(false);
+        Configuration.getInstance().setProperty(StringMaterializer.ALLOW_PLAIN_BINARY_STRING_DECODER_PROP, null);
     }
 
+    /** With the property unset, the decoder is selected -- this is the shipped behaviour. */
     @Test
-    void selectedForPlainBinaryStringsWhenEnabled() {
-        setEnabled(true);
+    void onByDefault() {
         assertThat(usePlainBinaryStringReader(
                 Encoding.PLAIN, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, HEAP)).isTrue();
     }
 
+    /** The escape hatch back to parquet's BinaryPlainValuesReader. */
     @Test
-    void offByDefault() {
+    void disabledByProperty() {
         setEnabled(false);
         assertThat(usePlainBinaryStringReader(
                 Encoding.PLAIN, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, HEAP)).isFalse();
     }
 
+    /**
+     * Encoding is per data page, not per column, so a chunk that also has a dictionary page still reaches this
+     * predicate with PLAIN pages. Dictionary-encoded pages themselves must never take the fast path.
+     */
     @Test
     void notSelectedForDictionaryEncoding() {
-        setEnabled(true);
         assertThat(usePlainBinaryStringReader(
                 Encoding.RLE_DICTIONARY, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, HEAP)).isFalse();
+        // noinspection deprecation
         assertThat(usePlainBinaryStringReader(
                 Encoding.PLAIN_DICTIONARY, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, HEAP)).isFalse();
     }
 
+    /** Every other primitive type is excluded, so the decoder can only ever see BINARY pages. */
     @Test
     void notSelectedForNonBinaryTypes() {
-        setEnabled(true);
         for (final PrimitiveTypeName type : PrimitiveTypeName.values()) {
             if (type == PrimitiveTypeName.BINARY) {
                 continue;
@@ -74,28 +80,27 @@ class TestPlainBinaryStringReaderSelection {
     /** The narrowing that keeps other BINARY consumers' readBytes() call site monomorphic. */
     @Test
     void notSelectedForOtherBinaryMaterializers() {
-        setEnabled(true);
         assertThat(usePlainBinaryStringReader(
                 Encoding.PLAIN, PrimitiveTypeName.BINARY, BlobMaterializer.FACTORY, HEAP)).isFalse();
         assertThat(usePlainBinaryStringReader(
                 Encoding.PLAIN, PrimitiveTypeName.BINARY, PageMaterializerFactory.NULL_FACTORY, HEAP)).isFalse();
     }
 
+    /** A direct page buffer has no backing array, so the predicate must fall back to the stock reader. */
     @Test
     void notSelectedForDirectBuffers() {
-        setEnabled(true);
         assertThat(usePlainBinaryStringReader(
                 Encoding.PLAIN, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, DIRECT)).isFalse();
     }
 
-    /** The property is read per page, so flipping it at runtime must take effect without a restart. */
+    /** The property is read per page, so the escape hatch must take effect without a restart, and be reversible. */
     @Test
     void respondsToRuntimeChanges() {
-        setEnabled(true);
-        assertThat(usePlainBinaryStringReader(
-                Encoding.PLAIN, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, HEAP)).isTrue();
         setEnabled(false);
         assertThat(usePlainBinaryStringReader(
                 Encoding.PLAIN, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, HEAP)).isFalse();
+        setEnabled(true);
+        assertThat(usePlainBinaryStringReader(
+                Encoding.PLAIN, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, HEAP)).isTrue();
     }
 }

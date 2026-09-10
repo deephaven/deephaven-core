@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
  * <p>
  * The stock {@code BinaryPlainValuesReader} allocates a {@link ByteBuffer} slice and a {@link Binary} wrapper per
  * value, both of which {@code toStringUsingUTF8()} immediately discards. Decoding from the array skips them, leaving
- * only the {@code String} and its {@code byte[]}.
+ * only the {@code String} and its {@code byte[]}, and reducing GC.
  *
  * @see StringMaterializer
  */
@@ -119,6 +119,8 @@ public final class PlainBinaryStringValuesReader extends ValuesReader {
             throw new ParquetDecodingException(
                     "Ran out of page data reading a PLAIN BINARY length prefix; " + (limit - pos) + " bytes remain");
         }
+        // Duplicates BytesUtils.readIntLittleEndian, which declares an IOException it cannot throw. Copying the math
+        // avoids a catch block that can never run.
         final int length = (array[pos] & 0xFF)
                 | (array[pos + 1] & 0xFF) << 8
                 | (array[pos + 2] & 0xFF) << 16

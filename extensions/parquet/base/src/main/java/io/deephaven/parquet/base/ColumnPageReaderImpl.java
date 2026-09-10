@@ -648,8 +648,13 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     /**
-     * Whether this page should be read with {@link PlainBinaryStringValuesReader}. Package-private so the selection
-     * rule can be tested without standing up a parquet file.
+     * Whether this page should be read with {@link PlainBinaryStringValuesReader}.
+     *
+     * @param dataEncoding this page's encoding; encodings vary within a column chunk
+     * @param primitiveTypeName the column's parquet primitive type
+     * @param pageMaterializerFactory this column's factory; only {@code StringMaterializer.FACTORY} opts in
+     * @param in the page buffer, positioned past the repetition and definition levels
+     * @return whether every condition holds
      */
     static boolean usePlainBinaryStringReader(
             final Encoding dataEncoding,
@@ -658,7 +663,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final ByteBuffer in) {
         return dataEncoding == Encoding.PLAIN
                 && primitiveTypeName == PrimitiveTypeName.BINARY
-                && pageMaterializerFactory.usePlainBinaryStringDecoder()
+                && pageMaterializerFactory.allowPlainBinaryStringDecoder()
                 && PlainBinaryStringValuesReader.isSupported(in);
     }
 
