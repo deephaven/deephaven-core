@@ -25,10 +25,6 @@ public class ShortFromBooleanMaterializer extends ShortMaterializerBase implemen
         }
     };
 
-    public static short convertValue(boolean value) {
-        return (short) (value ? 1 : 0);
-    }
-
     private final PageValueReader dataReader;
 
     private ShortFromBooleanMaterializer(PageValueReader dataReader, int numValues) {
@@ -43,7 +39,7 @@ public class ShortFromBooleanMaterializer extends ShortMaterializerBase implemen
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readBoolean());
+            data[ii] = PageValueConversions.shortFromBoolean(dataReader.readBoolean());
         }
     }
 }

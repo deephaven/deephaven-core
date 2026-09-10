@@ -25,10 +25,6 @@ public class IntFromBooleanMaterializer extends IntMaterializerBase implements P
         }
     };
 
-    public static int convertValue(boolean value) {
-        return value ? 1 : 0;
-    }
-
     private final PageValueReader dataReader;
 
     private IntFromBooleanMaterializer(PageValueReader dataReader, int numValues) {
@@ -43,7 +39,7 @@ public class IntFromBooleanMaterializer extends IntMaterializerBase implements P
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readBoolean());
+            data[ii] = PageValueConversions.intFromBoolean(dataReader.readBoolean());
         }
     }
 }

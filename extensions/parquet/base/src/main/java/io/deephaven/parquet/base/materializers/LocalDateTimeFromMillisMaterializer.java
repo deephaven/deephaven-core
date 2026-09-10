@@ -8,9 +8,6 @@ import io.deephaven.parquet.base.PageMaterializerFactory;
 import io.deephaven.parquet.base.PageValueReader;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-
-import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MILLI;
 
 public class LocalDateTimeFromMillisMaterializer extends ObjectMaterializerBase<LocalDateTime>
         implements PageMaterializer {
@@ -27,17 +24,6 @@ public class LocalDateTimeFromMillisMaterializer extends ObjectMaterializerBase<
         }
     };
 
-    /**
-     * Converts milliseconds from the Epoch to a {@link LocalDateTime} in UTC timezone.
-     *
-     * @param value milliseconds since Epoch
-     * @return The input milliseconds from the Epoch converted to a {@link LocalDateTime} in UTC timezone
-     */
-    public static LocalDateTime convertValue(long value) {
-        return LocalDateTime.ofEpochSecond(value / 1_000L, (int) ((value % 1_000L) * MILLI),
-                ZoneOffset.UTC);
-    }
-
     private final PageValueReader dataReader;
 
     private LocalDateTimeFromMillisMaterializer(PageValueReader dataReader, int numValues) {
@@ -53,7 +39,7 @@ public class LocalDateTimeFromMillisMaterializer extends ObjectMaterializerBase<
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readLong());
+            data[ii] = PageValueConversions.localDateTimeFromEpochMillis(dataReader.readLong());
         }
     }
 }

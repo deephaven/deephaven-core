@@ -21,10 +21,6 @@ public class ShortFromUnsignedByteMaterializer extends ShortMaterializerBase imp
         }
     };
 
-    public static short convertValue(int value) {
-        return (short) Byte.toUnsignedInt((byte) value);
-    }
-
     private final PageValueReader dataReader;
 
     private ShortFromUnsignedByteMaterializer(PageValueReader dataReader, int numValues) {
@@ -39,7 +35,7 @@ public class ShortFromUnsignedByteMaterializer extends ShortMaterializerBase imp
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readInteger());
+            data[ii] = PageValueConversions.shortFromUnsignedByte(dataReader.readInteger());
         }
     }
 }

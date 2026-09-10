@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.base;
 
+import io.deephaven.parquet.base.materializers.PageValueConversions;
 import org.apache.parquet.io.api.Binary;
 
 /**
@@ -15,6 +16,18 @@ public interface PageValueReader {
 
     default int readInteger() {
         throw new UnsupportedOperationException();
+    }
+
+    default byte readByte() {
+        return PageValueConversions.byteFromInt(readInteger());
+    }
+
+    default short readShort() {
+        return PageValueConversions.shortFromInt(readInteger());
+    }
+
+    default char readChar() {
+        return PageValueConversions.charFromInt(readInteger());
     }
 
     default long readLong() {

@@ -28,14 +28,6 @@ public class BigIntegerFromUnsignedLongMaterializer extends ObjectMaterializerBa
         }
     };
 
-    /**
-     * Mirrors {@code com.google.common.primitives.UnsignedLong}.
-     */
-    public static BigInteger convertValue(long value) {
-        final BigInteger magnitude = BigInteger.valueOf(value & Long.MAX_VALUE);
-        return value < 0 ? magnitude.setBit(Long.SIZE - 1) : magnitude;
-    }
-
     private final PageValueReader dataReader;
 
     private BigIntegerFromUnsignedLongMaterializer(PageValueReader dataReader, int numValues) {
@@ -50,7 +42,7 @@ public class BigIntegerFromUnsignedLongMaterializer extends ObjectMaterializerBa
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readLong());
+            data[ii] = PageValueConversions.bigIntegerFromUnsignedLong(dataReader.readLong());
         }
     }
 }

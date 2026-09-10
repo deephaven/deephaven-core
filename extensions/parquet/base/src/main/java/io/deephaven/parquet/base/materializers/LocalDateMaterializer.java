@@ -23,10 +23,6 @@ public class LocalDateMaterializer extends ObjectMaterializerBase<LocalDate> imp
         }
     };
 
-    public static LocalDate convertValue(int value) {
-        return LocalDate.ofEpochDay(value);
-    }
-
     private final PageValueReader dataReader;
 
     private LocalDateMaterializer(PageValueReader dataReader, int numValues) {
@@ -41,7 +37,7 @@ public class LocalDateMaterializer extends ObjectMaterializerBase<LocalDate> imp
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readInteger());
+            data[ii] = PageValueConversions.localDateFromEpochDay(dataReader.readInteger());
         }
     }
 }

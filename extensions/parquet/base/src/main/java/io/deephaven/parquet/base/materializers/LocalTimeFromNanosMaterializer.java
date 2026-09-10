@@ -13,8 +13,6 @@ import io.deephaven.parquet.base.PageValueReader;
 
 import java.time.LocalTime;
 
-import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.NANO;
-
 public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<LocalTime> implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
@@ -28,10 +26,6 @@ public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<Local
             return new LocalTimeFromNanosMaterializer(dataReader, numValues);
         }
     };
-
-    public static LocalTime convertValue(long value) {
-        return LocalTime.ofNanoOfDay(value * NANO);
-    }
 
     private final PageValueReader dataReader;
 
@@ -47,7 +41,7 @@ public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<Local
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readLong());
+            data[ii] = PageValueConversions.localTimeFromNanosOfDay(dataReader.readLong());
         }
     }
 }

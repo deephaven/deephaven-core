@@ -7,13 +7,9 @@
 // @formatter:off
 package io.deephaven.parquet.base.materializers;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import io.deephaven.parquet.base.PageValueReader;
-
-import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MAX_CONVERTIBLE_MILLIS;
-import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MILLI;
 
 public class InstantNanosFromMillisMaterializer extends LongMaterializerBase implements PageMaterializer {
 
@@ -29,13 +25,6 @@ public class InstantNanosFromMillisMaterializer extends LongMaterializerBase imp
         }
     };
 
-    public static long convertValue(long value) {
-        if (value > MAX_CONVERTIBLE_MILLIS || value < -MAX_CONVERTIBLE_MILLIS) {
-            throw new UncheckedDeephavenException("Converting " + value + " millis to nanos would overflow");
-        }
-        return value * MILLI;
-    }
-
     private final PageValueReader dataReader;
 
     private InstantNanosFromMillisMaterializer(PageValueReader dataReader, int numValues) {
@@ -50,7 +39,7 @@ public class InstantNanosFromMillisMaterializer extends LongMaterializerBase imp
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readLong());
+            data[ii] = PageValueConversions.instantNanosFromEpochMillis(dataReader.readLong());
         }
     }
 }

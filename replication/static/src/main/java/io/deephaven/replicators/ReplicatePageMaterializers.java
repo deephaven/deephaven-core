@@ -60,9 +60,7 @@ public class ReplicatePageMaterializers {
         // Int -> IntFromBoolean
         pairs = new String[][] {
                 {"IntMaterializer", "IntFromBooleanMaterializer"},
-                {"readInteger\\(\\)", "readBoolean()"},
-                {"int value", "boolean value"},
-                {"return value", "return value ? 1 : 0"}
+                {"dataReader.readInteger\\(\\)", "PageValueConversions.intFromBoolean(dataReader.readBoolean())"}
         };
         replaceAll(TASK, INT_MATERIALIZER_PATH, null, new String[] {"IntMaterializerBase"}, pairs);
 
@@ -75,9 +73,7 @@ public class ReplicatePageMaterializers {
 
         // Long -> Short
         pairs = new String[][] {
-                {"dataReader.readLong", "dataReader.readInteger"},
-                {"long value", "int value"},
-                {"return value", "return (short) value"},
+                {"dataReader.readLong", "dataReader.readShort"},
                 {"dataReader, 0, numValues", "dataReader, (short) 0, numValues"},
                 {"Long", "Short"},
                 {"long", "short"}
@@ -87,8 +83,7 @@ public class ReplicatePageMaterializers {
         // Long -> LongFromInt
         pairs = new String[][] {
                 {"LongMaterializer", "LongFromIntMaterializer"},
-                {"readLong", "readInteger"},
-                {"long value", "int value"}
+                {"readLong", "readInteger"}
         };
         replaceAll(TASK, LONG_MATERIALIZER_PATH, LONG_FROM_INT_MATERIALIZER_PATH, null,
                 new String[] {"LongMaterializerBase"}, pairs);
@@ -96,9 +91,7 @@ public class ReplicatePageMaterializers {
         // Long -> LongFromBoolean
         pairs = new String[][] {
                 {"LongMaterializer", "LongFromBooleanMaterializer"},
-                {"readLong\\(\\)", "readBoolean()"},
-                {"long value", "boolean value"},
-                {"return value", "return value ? 1 : 0"}
+                {"dataReader.readLong\\(\\)", "PageValueConversions.longFromBoolean(dataReader.readBoolean())"}
         };
         replaceAll(TASK, LONG_MATERIALIZER_PATH, null, new String[] {"LongMaterializerBase"}, pairs);
 
@@ -111,7 +104,6 @@ public class ReplicatePageMaterializers {
 
         // LongFromUnsignedShort -> LongFromUnsignedInt
         pairs = new String[][] {
-                {"Short.toUnsignedLong", "Integer.toUnsignedLong"},
                 {"Short", "Int"},
                 {"short", "int"}
         };
@@ -152,7 +144,6 @@ public class ReplicatePageMaterializers {
         // Double -> DoubleFromFloat
         pairs = new String[][] {
                 {"DoubleMaterializer", "DoubleFromFloatMaterializer"},
-                {"double value", "float value"},
                 {"Double", "Float"}
         };
         replaceAll(TASK, DOUBLE_MATERIALIZER_PATH, null, new String[] {"DoubleMaterializerBase"}, pairs);
@@ -160,9 +151,7 @@ public class ReplicatePageMaterializers {
         // Short -> ShortFromBoolean
         pairs = new String[][] {
                 {"ShortMaterializer", "ShortFromBooleanMaterializer"},
-                {"readInteger", "readBoolean"},
-                {"int value", "boolean value"},
-                {"return \\(short\\) value", "return \\(short\\) (value ? 1 : 0)"}
+                {"dataReader.readShort\\(\\)", "PageValueConversions.shortFromBoolean(dataReader.readBoolean())"}
         };
         replaceAll(TASK, SHORT_MATERIALIZER_PATH, null, new String[] {"ShortMaterializerBase"}, pairs);
 
@@ -171,44 +160,31 @@ public class ReplicatePageMaterializers {
         // exceptions than the other way around.
         pairs = new String[][] {
                 {"Micros", "Millis"},
-                {"MICRO", "MILLI"},
-                {"micros", "millis"},
-                {"readLong", "readInteger"},
-                {"long value", "int value"}
+                {"readLong", "readInteger"}
         };
         replaceAll(TASK, LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // LocalTimeFromMicros -> LocalTimeFromNanos
         pairs = new String[][] {
-                {"MICRO", "NANO"},
                 {"Micros", "Nanos"},
-                {"micros", "nanos"},
         };
         replaceAll(TASK, LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // LocalDateTimeFromMillis -> LocalDateTimeFromMicros
         pairs = new String[][] {
-                {"Milli", "Micro"},
-                {"milli", "micro"},
-                {"MILLI", "MICRO"},
-                {"1_000L", "1_000_000L"},
+                {"Millis", "Micros"},
         };
         replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // LocalDateTimeFromMillis -> LocalDateTimeFromNanos
         pairs = new String[][] {
                 {"Millis", "Nanos"},
-                {"millis", "nanos"},
-                {"MILLI", "NANO"},
-                {"1_000L", "1_000_000_000L"},
         };
         replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // InstantNanosFromMicros -> InstantNanosFromMillis
         pairs = new String[][] {
                 {"Micros", "Millis"},
-                {"micros", "millis"},
-                {"MICRO", "MILLI"}
         };
         replaceAll(TASK, INSTANT_NANOS_FROM_MICROS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 

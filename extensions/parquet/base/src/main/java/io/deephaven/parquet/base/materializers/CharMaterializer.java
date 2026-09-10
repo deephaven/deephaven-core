@@ -23,10 +23,6 @@ public class CharMaterializer implements PageMaterializer {
         }
     };
 
-    public static char convertValue(int value) {
-        return (char) value;
-    }
-
     private final PageValueReader dataReader;
 
     private final char nullValue;
@@ -50,7 +46,7 @@ public class CharMaterializer implements PageMaterializer {
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readInteger());
+            data[ii] = dataReader.readChar();
         }
     }
 

@@ -3,7 +3,6 @@
 //
 package io.deephaven.parquet.base.materializers;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import io.deephaven.parquet.base.PageValueReader;
@@ -26,17 +25,6 @@ public class LongFromUnsignedLongMaterializer extends LongMaterializerBase imple
         }
     };
 
-    /**
-     * An unsigned value exceeds {@link Long#MAX_VALUE} exactly when its signed bit pattern is negative.
-     */
-    public static long convertValue(long value) {
-        if (value < 0) {
-            throw new UncheckedDeephavenException("Unsigned long value " + Long.toUnsignedString(value)
-                    + " is too large to be represented as a long");
-        }
-        return value;
-    }
-
     private final PageValueReader dataReader;
 
     private LongFromUnsignedLongMaterializer(PageValueReader dataReader, int numValues) {
@@ -51,7 +39,7 @@ public class LongFromUnsignedLongMaterializer extends LongMaterializerBase imple
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readLong());
+            data[ii] = PageValueConversions.longFromUnsignedLong(dataReader.readLong());
         }
     }
 }

@@ -46,7 +46,7 @@ public class BooleanAsByteMaterializer implements PageMaterializer {
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = (byte) (dataReader.readBoolean() ? 1 : 0);
+            data[ii] = PageValueConversions.byteFromBoolean(dataReader.readBoolean());
         }
     }
 

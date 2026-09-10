@@ -27,10 +27,6 @@ public class ByteMaterializer implements PageMaterializer {
         }
     };
 
-    public static byte convertValue(int value) {
-        return (byte) value;
-    }
-
     private final PageValueReader dataReader;
 
     private final byte nullValue;
@@ -54,7 +50,7 @@ public class ByteMaterializer implements PageMaterializer {
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readInteger());
+            data[ii] = dataReader.readByte();
         }
     }
 

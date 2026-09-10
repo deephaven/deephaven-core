@@ -23,10 +23,6 @@ public class FloatMaterializer implements PageMaterializer {
         }
     };
 
-    public static float convertValue(float value) {
-        return value;
-    }
-
     private final PageValueReader dataReader;
 
     private final float nullValue;
@@ -50,7 +46,7 @@ public class FloatMaterializer implements PageMaterializer {
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readFloat());
+            data[ii] = dataReader.readFloat();
         }
     }
 

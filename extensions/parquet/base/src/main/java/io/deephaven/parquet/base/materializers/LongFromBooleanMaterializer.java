@@ -25,10 +25,6 @@ public class LongFromBooleanMaterializer extends LongMaterializerBase implements
         }
     };
 
-    public static long convertValue(boolean value) {
-        return value ? 1 : 0;
-    }
-
     private final PageValueReader dataReader;
 
     private LongFromBooleanMaterializer(PageValueReader dataReader, int numValues) {
@@ -43,7 +39,7 @@ public class LongFromBooleanMaterializer extends LongMaterializerBase implements
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readBoolean());
+            data[ii] = PageValueConversions.longFromBoolean(dataReader.readBoolean());
         }
     }
 }
