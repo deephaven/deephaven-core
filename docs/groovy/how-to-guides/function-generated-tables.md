@@ -138,7 +138,7 @@ With `copyData(false)`, the result skips the copy and delegates directly to the 
 
 ### Present the result as a blink table
 
-Set `blinkTable(true)` to present the result as a [blink table](../conceptual/table-types.md#specialization-3-blink), so downstream operations see only the rows generated during the current cycle. Each update is still the same full replacement described above; the blink attribute changes how downstream operations interpret it, not how the rows are copied or delegated. A blink table requires a refresh trigger. On a cycle where a `retainingLastTableSupplier` declines to produce a table, the blink result is cleared.
+Set `blinkTable(true)` to present the result as a [blink table](../conceptual/table-types.md#specialization-3-blink), so downstream operations see only the rows generated during the current cycle. Each update is still the same full replacement described above; the blink attribute changes how downstream operations interpret it, not how the rows are copied or delegated. Rows generated in one update cycle are removed on the next cycle whether or not the supplier runs again, so with a refresh interval longer than one cycle the result is empty between refreshes. A blink table requires a refresh trigger. On a cycle where a `retainingLastTableSupplier` declines to produce a table, the blink result is cleared.
 
 ### Specify the table definition
 

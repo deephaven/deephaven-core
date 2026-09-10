@@ -84,9 +84,10 @@ public abstract class FunctionGeneratedTableSpec {
     }
 
     /**
-     * When {@code true}, the result is presented as a {@link Table#BLINK_TABLE_ATTRIBUTE blink table}: each cycle
+     * When {@code true}, the result is presented as a {@link Table#BLINK_TABLE_ATTRIBUTE blink table}: each refresh
      * removes the previous rows and adds the newly generated rows, and downstream operations treat the result as
-     * retaining only the current cycle's rows. Defaults to {@code false}. Requires a refresh trigger (a
+     * retaining only the current cycle's rows. Rows generated in one update cycle are removed on the next cycle whether
+     * or not the generator runs again. Defaults to {@code false}. Requires a refresh trigger (a
      * {@link #refreshInterval()} or {@link #dependencies()}).
      *
      * @return whether to present the result as a blink table
@@ -125,6 +126,11 @@ public abstract class FunctionGeneratedTableSpec {
             // The interval is truncated to whole milliseconds later, so anything shorter would silently become zero.
             if (interval.toMillis() < 1) {
                 throw new IllegalArgumentException("refreshInterval must be at least one millisecond");
+            }
+            // The factory schedules refreshes using an int millisecond interval.
+            if (interval.toMillis() > Integer.MAX_VALUE) {
+                throw new IllegalArgumentException(
+                        "refreshInterval must not exceed " + Integer.MAX_VALUE + " milliseconds");
             }
         });
     }

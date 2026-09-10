@@ -41,8 +41,10 @@ import java.util.stream.Collectors;
  * table's RowSet and ColumnSources are used directly, a refreshing generated table's column sources must be immutable.
  * <p>
  * When {@link FunctionGeneratedTableSpec#blinkTable()} is set, the result is presented as a
- * {@link Table#BLINK_TABLE_ATTRIBUTE blink table}: each cycle removes the previous rows and adds the newly generated
- * rows (also a full replacement), and a cycle that produces no rows clears the result.
+ * {@link Table#BLINK_TABLE_ATTRIBUTE blink table}: each refresh removes the previous rows and adds the newly generated
+ * rows (also a full replacement), and a cycle that produces no rows clears the result. Rows generated in one update
+ * cycle are removed on the next cycle whether or not the generator runs again, so the result honors the blink contract
+ * that rows are visible for exactly one cycle.
  * <p>
  * The generator function must produce a V2 table, and the table definition must not change between invocations.
  * <p>
@@ -172,7 +174,23 @@ public class FunctionGeneratedTableFactory {
                     functionBackedTableResult) {
                 @Override
                 protected void process() {
-                    functionBackedTableResult.doRefresh();
+                    // A blink result enqueues this listener from its per-cycle run so that rows added in the previous
+                    // cycle are removed even when no dependency ticks. When a dependency did tick, the refresh (a full
+                    // replacement) already removes those rows, so only one update is fired per cycle either way.
+                    final boolean dependencyTicked =
+                            listenerRecorders.stream().anyMatch(ListenerRecorder::recordedVariablesAreValid);
+                    if (dependencyTicked) {
+                        functionBackedTableResult.doRefresh();
+                    } else {
+                        functionBackedTableResult.clearForBlink();
+                    }
+                }
+
+                @Override
+                protected boolean canExecute(final long step) {
+                    // When enqueued from the result's run, a dependency may still tick later in this cycle's source
+                    // refresh; wait for all sources so that tick is folded into this notification.
+                    return getUpdateGraph().satisfied(step) && super.canExecute(step);
                 }
             };
 
@@ -378,13 +396,22 @@ public class FunctionGeneratedTableFactory {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
-                if (refreshIntervalMs > 0) {
+                if (isUpdateSource()) {
                     updateGraph.addSource(this);
                 }
             }
             if (blink) {
                 setAttribute(Table.BLINK_TABLE_ATTRIBUTE, Boolean.TRUE);
             }
+        }
+
+        /**
+         * Interval-driven results run every cycle to check whether the interval has elapsed. Dependency-driven blink
+         * results also run every cycle, so that rows added in the previous cycle can be removed on cycles where no
+         * dependency ticks. Static results and dependency-driven non-blink results are not update sources.
+         */
+        private boolean isUpdateSource() {
+            return refreshIntervalMs > 0 || (blink && refreshIntervalMs == 0);
         }
 
         private void setParentListener(@NotNull final MergedListener parentListener) {
@@ -396,12 +423,26 @@ public class FunctionGeneratedTableFactory {
 
         @Override
         public void run() {
-            if (System.currentTimeMillis() < nextRefresh) {
+            if (refreshIntervalMs > 0) {
+                if (System.currentTimeMillis() < nextRefresh) {
+                    // Blink rows are visible for exactly one cycle, so they are removed even though the interval has
+                    // not elapsed and the generator is not run.
+                    if (blink) {
+                        clearForBlink();
+                    }
+                    return;
+                }
+                nextRefresh = System.currentTimeMillis() + refreshIntervalMs;
+                doRefresh();
                 return;
             }
-            nextRefresh = System.currentTimeMillis() + refreshIntervalMs;
 
-            doRefresh();
+            // Dependency-driven blink result: rows added in the previous cycle must be removed this cycle. Rather than
+            // notifying directly, enqueue the merged listener so that a dependency that also ticks this cycle results
+            // in a single combined update.
+            if (parentListener != null && rowSet.isNonempty()) {
+                parentListener.notifyChanges();
+            }
         }
 
         private void doRefresh() {
@@ -422,7 +463,7 @@ public class FunctionGeneratedTableFactory {
                 }
             } catch (Exception e) {
                 // Remove this failed table from the update graph.
-                if (refreshIntervalMs > 0) {
+                if (isUpdateSource()) {
                     updateGraph.removeSource(this);
                 }
 
@@ -470,8 +511,8 @@ public class FunctionGeneratedTableFactory {
         }
 
         /**
-         * Clear the result, firing a full removal of the current rows. Used to empty a blink result on a cycle that
-         * produced no new table.
+         * Clear the result, firing a full removal of the current rows. Used to empty a blink result on a cycle where
+         * the generator did not run or produced no new table.
          */
         private void clearForBlink() {
             if (rowSet.isEmpty()) {
@@ -532,7 +573,7 @@ public class FunctionGeneratedTableFactory {
         @Override
         public void destroy() {
             super.destroy();
-            if (refreshIntervalMs > 0) {
+            if (isUpdateSource()) {
                 updateGraph.removeSource(this);
             }
             if (parentListener != null) {

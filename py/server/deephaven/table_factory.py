@@ -491,7 +491,7 @@ def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
 
 
 def function_generated_table(
-    table_generator: Callable[..., Table],
+    table_generator: Callable[..., Optional[Table]],
     source_tables: Optional[Union[Table, Sequence[Table]]] = None,
     refresh_interval_ms: Optional[int] = None,
     exec_ctx: Optional[ExecutionContext] = None,
@@ -527,7 +527,7 @@ def function_generated_table(
     a LivenessScope.
 
     Args:
-        table_generator (Callable[..., Table]): The table generator function. This function must return a Table, or None
+        table_generator (Callable[..., Optional[Table]]): The table generator function. This function must return a Table, or None
             to decline producing a new table, in which case the previous cycle's result is retained (or, for a blink
             table, cleared). If the very first invocation returns None, 'table_definition' must be provided so the
             result's columns are known.
@@ -546,9 +546,10 @@ def function_generated_table(
             values in place is rejected. Defaults to True.
         blink_table (bool): When True, the result is presented as a blink table, retaining only the rows generated
             during the current cycle. Each update is still a full replacement; the blink attribute changes how
-            downstream operations interpret it and is independent of 'copy_data'. On a cycle where 'table_generator'
-            returns None, the blink result is cleared. Requires a refresh trigger ('refresh_interval_ms' or
-            'source_tables'). Defaults to False.
+            downstream operations interpret it and is independent of 'copy_data'. Rows generated in one update cycle
+            are removed on the next cycle whether or not 'table_generator' runs again. On a cycle where
+            'table_generator' returns None, the blink result is cleared. Requires a refresh trigger
+            ('refresh_interval_ms' or 'source_tables'). Defaults to False.
         table_definition (Optional[TableDefinitionLike]): When provided, it is authoritative: it defines the result's
             columns and their order, and every table the 'table_generator' produces must be compatible with it. Defaults
             to None, in which case the generated table's definition is used.

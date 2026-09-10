@@ -134,7 +134,7 @@ Beyond the trigger, [`function_generated_table`](../reference/table-operations/c
 
 The `table_generator` function can return `None` to decline producing a new table on a given cycle. When it does, the previous cycle's result is retained instead of being regenerated. This is useful when new data is not always available. When the first invocation returns `None`, supply a `table_definition` so the result's columns are known before the first table exists.
 
-```python order=null
+```python ticking-table order=null
 from deephaven import function_generated_table, time_table, new_table
 from deephaven.column import int_col
 import deephaven.dtypes as dht
@@ -170,7 +170,7 @@ With `copy_data=False`, the result skips the copy and delegates directly to the 
 
 ### Present the result as a blink table
 
-Set `blink_table=True` to present the result as a [blink table](../conceptual/table-types.md#specialization-3-blink), so downstream operations see only the rows generated during the current cycle. Each update is still the same full replacement described above; the blink attribute changes how downstream operations interpret it, not how the rows are copied or delegated. A blink table requires a refresh trigger. On a cycle where the `table_generator` returns `None`, the blink result is cleared.
+Set `blink_table=True` to present the result as a [blink table](../conceptual/table-types.md#specialization-3-blink), so downstream operations see only the rows generated during the current cycle. Each update is still the same full replacement described above; the blink attribute changes how downstream operations interpret it, not how the rows are copied or delegated. Rows generated in one update cycle are removed on the next cycle whether or not the `table_generator` runs again, so with a refresh interval longer than one cycle the result is empty between refreshes. A blink table requires a refresh trigger. On a cycle where the `table_generator` returns `None`, the blink result is cleared.
 
 ### Specify the table definition
 

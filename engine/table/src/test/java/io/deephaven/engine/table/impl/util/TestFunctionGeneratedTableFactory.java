@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.QueryTableTest;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter;
+import io.deephaven.engine.table.impl.SimpleListener;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -326,6 +327,88 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertTableEquals(newTable(longCol("Size", 2L, 3L)), functionBacked);
     }
 
+    public void testBlinkIntervalClearsBetweenRefreshes() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // The interval is far in the future, so the generator never runs again; the blink rows must nevertheless be
+        // removed on the next cycle, since blink rows are visible for exactly one cycle.
+        final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                .tableSupplier(() -> newTable(intCol("V", 9)))
+                .refreshInterval(java.time.Duration.ofHours(1))
+                .blinkTable(true)
+                .build());
+        assertTrue(BlinkTableTools.isBlink(functionBacked));
+        assertTableEquals(newTable(intCol("V", 9)), functionBacked);
+
+        final SimpleListener listener = new SimpleListener(functionBacked);
+        functionBacked.addUpdateListener(listener);
+
+        updateGraph.runWithinUnitTestCycle(
+                () -> updateGraph.refreshUpdateSourceForUnitTests((Runnable) functionBacked));
+        assertEquals(0, functionBacked.size());
+        assertEquals(1, listener.getCount());
+        assertEquals(1, listener.getUpdate().removed().size());
+        assertTrue(listener.getUpdate().added().isEmpty());
+
+        // Once empty, subsequent cycles before the interval elapses fire nothing.
+        updateGraph.runWithinUnitTestCycle(
+                () -> updateGraph.refreshUpdateSourceForUnitTests((Runnable) functionBacked));
+        assertEquals(0, functionBacked.size());
+        assertEquals(1, listener.getCount());
+        listener.close();
+    }
+
+    public void testBlinkDependencyClearsWithoutTick() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final QueryTable source = testRefreshingTable(i(0).toTracking(), intCol("IntCol", 1));
+
+        final MutableObject<Table> nextResult = new MutableObject<>(newTable(longCol("Size", 1L)));
+        final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                .tableSupplier(nextResult::getValue)
+                .addDependencies(source)
+                .blinkTable(true)
+                .build());
+        assertTableEquals(newTable(longCol("Size", 1L)), functionBacked);
+
+        final SimpleListener listener = new SimpleListener(functionBacked);
+        functionBacked.addUpdateListener(listener);
+
+        // A cycle where the dependency does not tick must still remove the previous cycle's rows.
+        updateGraph.runWithinUnitTestCycle(
+                () -> updateGraph.refreshUpdateSourceForUnitTests((Runnable) functionBacked));
+        assertEquals(0, functionBacked.size());
+        assertEquals(1, listener.getCount());
+        assertEquals(1, listener.getUpdate().removed().size());
+        assertTrue(listener.getUpdate().added().isEmpty());
+
+        // Once empty, a quiet cycle fires nothing.
+        updateGraph.runWithinUnitTestCycle(
+                () -> updateGraph.refreshUpdateSourceForUnitTests((Runnable) functionBacked));
+        assertEquals(1, listener.getCount());
+
+        // A dependency tick repopulates the result.
+        nextResult.setValue(newTable(longCol("Size", 2L, 3L)));
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(1), intCol("IntCol", 2));
+            source.notifyListeners(i(1), i(), i());
+        });
+        assertTableEquals(newTable(longCol("Size", 2L, 3L)), functionBacked);
+        assertEquals(2, listener.getCount());
+
+        // When the per-cycle run and a dependency tick coincide, exactly one update replaces the rows.
+        nextResult.setValue(newTable(longCol("Size", 4L)));
+        updateGraph.runWithinUnitTestCycle(() -> {
+            updateGraph.refreshUpdateSourceForUnitTests((Runnable) functionBacked);
+            addToTable(source, i(2), intCol("IntCol", 3));
+            source.notifyListeners(i(2), i(), i());
+        });
+        assertTableEquals(newTable(longCol("Size", 4L)), functionBacked);
+        assertEquals(3, listener.getCount());
+        assertEquals(2, listener.getUpdate().removed().size());
+        assertEquals(1, listener.getUpdate().added().size());
+        listener.close();
+    }
+
     public void testCopyShrinkAndGrow() throws Exception {
         final AppendOnlyArrayBackedInputTable source = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("IntCol", Type.intType())));
@@ -414,6 +497,19 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
             fail("Expected an IllegalArgumentException");
         } catch (IllegalArgumentException expected) {
             assertTrue(expected.getMessage().contains("at least one millisecond"));
+        }
+    }
+
+    public void testOversizedIntervalFails() {
+        // The factory schedules with an int millisecond interval, so longer durations are rejected up front.
+        try {
+            FunctionGeneratedTableSpec.builder()
+                    .tableSupplier(() -> newTable(intCol("V", 1)))
+                    .refreshInterval(java.time.Duration.ofMillis(Integer.MAX_VALUE + 1L))
+                    .build();
+            fail("Expected an oversized refresh interval to be rejected");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("must not exceed"));
         }
     }
 

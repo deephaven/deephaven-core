@@ -15,7 +15,7 @@ Every refresh replaces the result in full: the [table update](../../../conceptua
 
 ```python syntax
 function_generated_table(
-  table_generator: Callable[[], Table],
+  table_generator: Callable[..., Optional[Table]],
   source_tables: Union[Table, List[Table]] = None,
   refresh_interval_ms: int = None,
   exec_ctx: ExecutionContext = None,
@@ -30,7 +30,7 @@ function_generated_table(
 ## Parameters
 
 <ParamTable>
-<Param name="table_generator" type="Callable[[], Table]">
+<Param name="table_generator" type="Callable[..., Optional[Table]]">
 
 The table generator function. This function must return a table, or `None` to decline producing a new table, in which case the previous cycle's result is retained (or, for a blink table, cleared). If the first invocation returns `None`, `table_definition` must be provided so that the result's columns are known.
 
@@ -71,7 +71,7 @@ When `True` (the default), the generated data is copied into the result's own co
 </Param>
 <Param name="blink_table" type="bool" optional>
 
-When `True`, the result is presented as a [blink table](../../../conceptual/table-types.md#specialization-3-blink), retaining only the rows generated during the current cycle. Each update is still a full replacement; the blink attribute changes how downstream operations interpret it and is independent of `copy_data`. On a cycle where the `table_generator` returns `None`, the blink result is cleared. Requires a refresh trigger (`refresh_interval_ms` or `source_tables`). Defaults to `False`.
+When `True`, the result is presented as a [blink table](../../../conceptual/table-types.md#specialization-3-blink), retaining only the rows generated during the current cycle. Each update is still a full replacement; the blink attribute changes how downstream operations interpret it and is independent of `copy_data`. Rows generated in one update cycle are removed on the next cycle whether or not the `table_generator` runs again. On a cycle where the `table_generator` returns `None`, the blink result is cleared. Requires a refresh trigger (`refresh_interval_ms` or `source_tables`). Defaults to `False`.
 
 </Param>
 <Param name="table_definition" type="TableDefinitionLike" optional>
