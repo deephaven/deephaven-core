@@ -19,6 +19,7 @@ appears in both was rediscovered independently.
 | 5 | [A partitioning column's type was inferred from its directory names, so it did not round trip](05-partitioning-column-type-not-recorded.md) | high | fixed |
 | 6 | [A disjunction mixing a renamed and an un-renamed column tripped an internal assertion](06-match-filter-partial-rename-map.md) | medium | fixed |
 | 7 | [A formula filter pushed through nested renaming views lost all but the last renaming](07-condition-filter-rename-not-composed.md) | medium-high | fixed |
+| 8 | [A filter naming both a column and its column-array form crashed the deferred-view filter split](08-deferred-view-duplicate-rename-key.md) | medium | fixed |
 
 ## How the bench is run for this campaign
 

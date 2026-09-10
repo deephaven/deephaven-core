@@ -201,9 +201,14 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 continue;
             }
 
+            // distinct() because a filter that names both a column and its column-array form -- "Col == Col_[0]"
+            // -- reports that column in getColumns() and again in getColumnArrays(), and Collectors.toMap has no
+            // merge function. Both entries would map it to the same inner name, so the duplicate was only ever a
+            // crash: IllegalStateException: Duplicate key Col.
             final Map<String, String> myRenames = Stream.of(filter.getColumns(), filter.getColumnArrays())
                     .flatMap(Collection::stream)
                     .filter(renames::containsKey)
+                    .distinct()
                     .collect(Collectors.toMap(Function.identity(), renames::get));
 
             if (myRenames.isEmpty()) {
