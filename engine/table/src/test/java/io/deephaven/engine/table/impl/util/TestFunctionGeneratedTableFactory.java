@@ -12,12 +12,14 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.QueryTableTest;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter;
+import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.table.impl.SimpleListener;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -326,6 +328,45 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         handleDelayedRefresh(() -> updater.addAsync(newTable(intCol("IntCol", 2)), t -> {
         }), source);
         assertTableEquals(newTable(longCol("Size", 2L, 3L)), functionBacked);
+    }
+
+    public void testBlinkSwitchClearReleasesDelegates() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // On the switch path, clearing a blink result must stop delegating to the previously generated column sources,
+        // otherwise the logically empty result retains the entire previous batch. The previous delegate must still
+        // serve previous values for the removal cycle.
+        final Table functionBacked = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                .tableSupplier(() -> newTable(stringCol("S", "a", "b")))
+                .refreshInterval(java.time.Duration.ofHours(1))
+                .blinkTable(true)
+                .copyData(false)
+                .build());
+        assertTableEquals(newTable(stringCol("S", "a", "b")), functionBacked);
+        final ColumnSource<String> column = functionBacked.getColumnSource("S", String.class);
+        assertTrue(column instanceof SwitchColumnSource);
+
+        final MutableObject<String> prevDuringClear = new MutableObject<>();
+        final ShiftObliviousInstrumentedListenerAdapter prevReader =
+                new ShiftObliviousInstrumentedListenerAdapter((QueryTable) functionBacked, false) {
+                    @Override
+                    public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
+                        assertEquals(2, removed.size());
+                        prevDuringClear
+                                .setValue(column.getPrev(removed.firstRowKey()) + column.getPrev(removed.lastRowKey()));
+                    }
+                };
+        functionBacked.addUpdateListener(prevReader);
+
+        updateGraph.runWithinUnitTestCycle(
+                () -> updateGraph.refreshUpdateSourceForUnitTests((Runnable) functionBacked));
+        assertEquals(0, functionBacked.size());
+        assertEquals("ab", prevDuringClear.getValue());
+
+        // After the clear commits, the switch sources delegate to null sources rather than the generated data.
+        assertNull(column.get(0));
+        assertNull(column.get(1));
+        assertNull(column.getPrev(0));
     }
 
     public void testBlinkRetainingLastClears() throws Exception {

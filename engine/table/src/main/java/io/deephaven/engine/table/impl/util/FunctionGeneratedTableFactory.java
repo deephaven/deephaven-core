@@ -292,11 +292,7 @@ public class FunctionGeneratedTableFactory {
                 rowSet = initialTable.getRowSet().copy().toTracking();
             } else {
                 for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-                    final ColumnSource<?> nullSource = NullValueColumnSource.getInstance(
-                            columnDefinition.getDataType(), columnDefinition.getComponentType());
-                    // noinspection unchecked
-                    final SwitchColumnSource<?> switchSource =
-                            new SwitchColumnSource<>((ColumnSource<Object>) nullSource);
+                    final SwitchColumnSource<?> switchSource = new SwitchColumnSource<>(nullSource(columnDefinition));
                     columns.put(columnDefinition.getName(), switchSource);
                     switchSources.put(columnDefinition.getName(), switchSource);
                 }
@@ -318,6 +314,16 @@ public class FunctionGeneratedTableFactory {
         } else {
             return ExecutionContext.newBuilder().build();
         }
+    }
+
+    /**
+     * A type-compatible {@link NullValueColumnSource} for the given column, used as the switch delegate whenever the
+     * result holds no generated data.
+     */
+    private static ColumnSource<Object> nullSource(@NotNull final ColumnDefinition<?> columnDefinition) {
+        // noinspection unchecked
+        return (ColumnSource<Object>) NullValueColumnSource.getInstance(
+                columnDefinition.getDataType(), columnDefinition.getComponentType());
     }
 
     private FunctionBackedTable getTable() {
@@ -531,6 +537,7 @@ public class FunctionGeneratedTableFactory {
             }
             final WritableRowSet removed = rowSet.copy();
             clearRemovedObjectData(removed);
+            releaseSwitchDelegates();
             rowSet.clear();
             notifyListeners(new TableUpdateImpl(RowSetFactory.empty(), removed, RowSetFactory.empty(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
@@ -539,12 +546,29 @@ public class FunctionGeneratedTableFactory {
         /**
          * Null out the given keys in our {@link ObjectArraySource}s so removed data is not retained. Only the writable
          * object array sources of the copy path can leak references; primitive sources cannot, and the switch sources
-         * hold no data of their own, so this is a no-op when not copying data.
+         * hold no data of their own (see {@link #releaseSwitchDelegates()}), so this is a no-op when not copying data.
          */
         private void clearRemovedObjectData(@NotNull final RowSet removedKeys) {
             for (final WritableColumnSource<?> source : writableSources.values()) {
                 if (source instanceof ObjectArraySource) {
                     ChunkUtils.fillWithNullValue(source, removedKeys);
+                }
+            }
+        }
+
+        /**
+         * Point every {@link SwitchColumnSource} at a {@link NullValueColumnSource} so that an emptied result does not
+         * retain the previously generated column sources (and, through them, the previous batch of data). The previous
+         * delegate remains available as the switch source's previous value for the remainder of this cycle, so
+         * listeners can still read the removed rows, and is dropped when the cycle commits. This is a no-op when
+         * copying data.
+         */
+        private void releaseSwitchDelegates() {
+            for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
+                final SwitchColumnSource<?> switchSource = switchSources.get(columnDefinition.getName());
+                if (switchSource != null) {
+                    // noinspection unchecked,rawtypes
+                    ((SwitchColumnSource) switchSource).setNewCurrent(nullSource(columnDefinition));
                 }
             }
         }
