@@ -35,6 +35,52 @@ appears in both was rediscovered independently.
 | 21 | [**Bench defect:** an unguarded String method receiver made the oracle comparison meaningless](21-unguarded-string-method-receiver.md) | — | medium (bench) | fixed |
 | 22 | [With a `_metadata` file, every location pruned against the first file's statistics](22-metadata-file-row-group-statistics.md) | — | high | fixed |
 
+## Suggested PR grouping
+
+Grouped by the production files each fix actually touches, rather than by topic, so that findings which
+edit one file travel together. No group exceeds 10 findings; the binding constraint here is file
+overlap, not size.
+
+| PR | Findings | Code touched | Why together |
+| --- | --- | --- | --- |
+| **A — parquet write path** | 1, 4, 5, 12 | `ParquetTools`, `ParquetTableWriter`, `ParquetKeyValuePartitionedLayout`, `PartitioningColumnInfo` (new), `TableInfo`, `ParquetUtils`, `RowGroupTableIteratorVisitor`, `URIStreamKeyValuePartitionLayout` | All are "a dataset that cannot be written, or cannot be read back as written". 4 and 5 both edit `ParquetTools`; 5 and 12 are both partition-value encoding |
+| **B — temporal round trip** | 2, 3 | `DateTimeUtils`, `ZonedDateTimeCodec`, the three `LocalDateTime*Materializer`s | Both are epoch-offset arithmetic losing pre-epoch and boundary values. The smallest and most self-contained group |
+| **C — filter pushdown through renaming views** | 6, 7, 8, 10 | `MatchFilter`, `ConditionFilter`, `AbstractConditionFilter`, `DeferredViewTable` | 6 and 7 both edit `AbstractConditionFilter`; 8 and 10 both edit `DeferredViewTable`. One story: pushing a filter below a view that renames columns |
+| **D — what a location claims about its data** | 9, 11, 13, 18, 22 | `ParquetTableLocation` (9, 13, 18, 22), `TableLocation`, `SourceTable` | **Four of the five edit `ParquetTableLocation`**, so splitting them guarantees conflicts. 11 belongs with them as the same question one layer up: 9 documents `TableLocation.getSortedColumns`' name space, 11 fixes what `SourceTable` publishes from it |
+| **E — engine data indexes** | 14, 20 | `DataIndexPushdownManager`, `QueryTable.propagateDataIndexes` | Both are data-index lifecycle. 14 is diagnostic-only and rides cheaply |
+| **F — value comparison semantics** | 15, 19 | `QueryLanguageFunctionUtils` (via `GenerateQueryLanguageFunctions`), `StringChunkMatchFilterFactory` | Both are "how a filter compares a value". Split 15 out if the generated-file/replicator review is awkward to combine |
+
+### Deliberately excluded
+
+- **Finding 17** — superseded by [DH-23502](https://deephaven.atlassian.net/browse/DH-23502). Its files
+  (`SortedColumnPushdownManager`, seven binary-search kernels, seven `ParquetColumnRegion*` variants)
+  are exactly what that ticket rewrites, so a PR would conflict head-on. Retire the stopgap instead;
+  see [17-sorted-match-nan-equality.md](17-sorted-match-nan-equality.md).
+- **Findings 16 and 21** — bench defects, entirely inside this source set (`FuzzLayout`, `FuzzFilters`).
+  Nothing to upstream separately.
+
+### Split the seed list out first
+
+Every finding commit also adds its regression seeds to `PushdownFuzzerTest.INTERESTING_SEEDS`, and this
+source set is not upstream yet. Split as-is, all six PRs conflict on that one file. Either:
+
+1. **Land the bench as PR 0** — the `pushdownFuzzTest` source set and `findings/`, carrying the complete
+   seed list — so the six fix PRs contain no bench changes at all. This is the simpler option.
+2. Strip the seed additions from each fix PR and add them together in a final bench PR.
+
+## Sweep history
+
+Each sweep is a fixed 10-minute wall-clock budget at `maxTableSize=1000`, with `failFast=false` so one
+run reports every failure it finds. Findings from each sweep were fixed before the next began.
+
+| Sweep | Cases | Failures | Rate | Findings produced |
+| --- | --- | --- | --- | --- |
+| A | 12,470 | 7 | 0.056% | 19, 20, 21 |
+| B | 10,734 | 1 | 0.009% | 22 |
+| C | 12,043 | **0** | 0 | — |
+
+Sweep C is the campaign's exit criterion: ten minutes of generated cases with no failure.
+
 ## Carry-over from the previous round
 
 All 19 case seeds recorded in [`../OLD_FINDINGS.md`](../OLD_FINDINGS.md) were replayed against this
@@ -54,8 +100,8 @@ divergence and partition values containing colons — became findings 15 and 12.
 ./gradlew :extensions-parquet-table:pushdownFuzzTest -PforceTest=true \
     --tests '*PushdownFuzzerTest.testFuzzer' \
     -DPushdownFuzzer.baseSeed=<n> -DPushdownFuzzer.cases=-1 \
-    -DPushdownFuzzer.maxMinutes=1 -DPushdownFuzzer.maxTableSize=1000 \
-    -DPushdownFuzzer.failFast=false -DPushdownFuzzer.maxFailures=100
+    -DPushdownFuzzer.maxMinutes=10 -DPushdownFuzzer.maxTableSize=1000 \
+    -DPushdownFuzzer.failFast=false -DPushdownFuzzer.maxFailures=200
 ```
 
 Replay a single case seed (never as a `baseSeed` — case seeds come from
