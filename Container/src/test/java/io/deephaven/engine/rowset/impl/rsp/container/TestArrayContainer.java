@@ -96,11 +96,9 @@ public class TestArrayContainer extends TestContainerBase {
     @Test
     public void testWrappedArrayMustHaveRoomForTheReservedSlot() {
         final short[] full = {1, 2, 3};
-        try {
-            ArrayContainer.makeByWrapping(full, full.length);
-            fail("expected IllegalArgumentException");
-        } catch (IllegalArgumentException expected) {
-        }
+        final IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> ArrayContainer.makeByWrapping(full, full.length));
+        assertEquals(IllegalArgumentException.class, e.getClass());
         final short[] withRoom = {1, 2, 3, 0};
         final ArrayContainer ac = ArrayContainer.makeByWrapping(withRoom, 3);
         assertEquals(3, ac.getCardinality());
