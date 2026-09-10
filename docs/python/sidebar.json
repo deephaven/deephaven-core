@@ -328,6 +328,19 @@
             "label": "Work with tables",
             "items": [
               {
+                "label": "Deephaven queries",
+                "items": [
+                  {
+                    "label": "The Table API",
+                    "path": "conceptual/table-api.md"
+                  },
+                  {
+                    "label": "Table operations overview",
+                    "path": "conceptual/table-operations-overview.md"
+                  }
+                ]
+              },
+              {
                 "label": "Metadata",
                 "path": "how-to-guides/metadata.md"
               },
