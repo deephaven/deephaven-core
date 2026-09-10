@@ -99,6 +99,9 @@ public class PushdownFuzzerTest {
             // Finding 19: a case-insensitive match filter whose value list contained a null threw for one, two
             // or three values and silently dropped the null for four or more.
             -3193954278432445066L, -3417280133301762829L, -4791489248932458532L, -8415955675519703733L,
+            // Finding 20: a select aliasing an indexed column remapped a second column's data index once per
+            // alias, producing the same index twice, which addDataIndex rejected.
+            6547813402343559854L,
     };
 
     private static final String ROOT_FILENAME = PushdownFuzzerTest.class.getName() + "_root";

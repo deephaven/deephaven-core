@@ -1938,19 +1938,30 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         // Add new DataIndex entries to the DataIndexer with the remapped column sources.
         for (final DataIndex dataIndex : dataIndexes) {
-            // Create a new data index for each unique mapping.
-            oldToNewMaps.forEach(map -> {
-                if (Collections.disjoint(dataIndex.keyColumnNamesByIndexedColumn().keySet(), map.keySet())) {
-                    // The index contains no remapped original sources, no work needed.
-                    return;
+            final Set<ColumnSource<?>> indexedKeySources = dataIndex.keyColumnNamesByIndexedColumn().keySet();
+
+            // A remapped index is determined by the mappings for its own key columns: RemappedDataIndex ignores
+            // entries for any other column. Two of the maps above can therefore describe the same remapped index,
+            // when they differ only in columns this index does not key on -- which happens whenever one indexed
+            // column has several aliases (producing more than one map) and another indexed column has a single
+            // alias (mapped identically in all of them). Adding both would be rejected as a duplicate, so restrict
+            // each map to this index's key columns and keep only the distinct restrictions. An empty restriction
+            // means none of this index's key columns were remapped, and there is no work to do.
+            final Set<Map<ColumnSource<?>, ColumnSource<?>>> distinctKeyColumnMaps = new LinkedHashSet<>();
+            for (final Map<ColumnSource<?>, ColumnSource<?>> map : oldToNewMaps) {
+                final Map<ColumnSource<?>, ColumnSource<?>> keyColumnMap = new HashMap<>();
+                map.forEach((oldSource, newSource) -> {
+                    if (indexedKeySources.contains(oldSource)) {
+                        keyColumnMap.put(oldSource, newSource);
+                    }
+                });
+                if (!keyColumnMap.isEmpty()) {
+                    distinctKeyColumnMaps.add(keyColumnMap);
                 }
+            }
 
-                // Create a new DataIndex using the new column sources as keys.
-                final DataIndex remappedIndex = dataIndex.remapKeyColumns(map);
-
-                // Add the new index to the DataIndexer.
-                dataIndexer.addDataIndex(remappedIndex);
-            });
+            // Create a new data index for each unique mapping.
+            distinctKeyColumnMaps.forEach(map -> dataIndexer.addDataIndex(dataIndex.remapKeyColumns(map)));
         }
     }
 
