@@ -22,7 +22,7 @@ These methods control how Deephaven executes the column calculation. By default,
 
 ### `with_serial`
 
-Forces the column calculation to execute sequentially on a single core, processing rows one at a time in order. Use this when the formula has side effects or depends on row order. With default settings, sources larger than about 4.2 million rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `with_serial` to protect calculations that can't tolerate that. A formula backed by a Python callback, like the one below, is only eligible for that parallel evaluation on a free-threaded Python build — on the standard GIL-enabled build, it always runs serially regardless of row count. The example below uses 10 rows for clarity — well below that threshold, so it demonstrates correctness rather than an observable speedup difference.
+Forces the column calculation to execute sequentially on a single core, processing rows one at a time in order. Use this when the formula has side effects or depends on row order. With default settings, sources larger than about 4.2 million rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `with_serial` to protect calculations that can't tolerate that. A formula backed by a Python callback, like the one below, is only eligible for that parallel (concurrent) evaluation on a free-threaded Python build — on the standard GIL-enabled build, it's never invoked concurrently. However, that alone doesn't guarantee row-set order or exactly-once evaluation the way `with_serial` does: use `with_serial` for any formula with order- or evaluation-dependent side effects, regardless of Python build. The example below uses 10 rows for clarity — well below the parallelization threshold, so it demonstrates correctness rather than an observable speedup difference.
 
 ```python order=result
 from deephaven.table import Selectable
@@ -31,7 +31,7 @@ from deephaven import empty_table
 counter = 0
 
 
-def get_next_id():
+def get_next_id() -> int:
     global counter
     counter += 1
     return counter

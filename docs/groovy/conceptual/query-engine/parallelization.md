@@ -43,7 +43,7 @@ highVolume = marketData.where("Volume > 1000000")
 recentTrades = marketData.tail(10)
 ```
 
-When new data arrives in `marketData`, Deephaven updates `withMetrics`, `highVolume`, and `recentTrades` simultaneously on different cores.
+When new data arrives in `marketData`, the update graph schedules `withMetrics`, `highVolume`, and `recentTrades` as independent notifications, which can run concurrently on different cores. (This depends on `PeriodicUpdateGraph.updateThreads` being greater than 1, which is the default — see [Thread pools](#query-phases-and-thread-pools) below.)
 
 Deephaven tracks which tables depend on which through an internal structure called the [update graph](../dag.md). Independent tables (those that don't depend on each other) run in parallel automatically.
 

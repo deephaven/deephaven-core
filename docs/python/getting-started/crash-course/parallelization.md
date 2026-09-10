@@ -30,13 +30,13 @@ trades = time_table("PT1s").update(
     ]
 )
 
-# These three tables update simultaneously on different cores as new data arrives
+# These three tables can update at the same time, on different cores, as new data arrives
 high_value = trades.where("Price * Volume > 500000")
 by_symbol = trades.agg_by([agg.sum_("TotalVolume = Volume")], "Symbol")
 recent = trades.tail(100)
 ```
 
-When new data arrives in `trades`, Deephaven updates `high_value`, `by_symbol`, and `recent` at the same time, each on its own core.
+When new data arrives in `trades`, Deephaven can update `high_value`, `by_symbol`, and `recent` at the same time, each on its own core.
 
 ### Across rows
 
@@ -130,7 +130,7 @@ Consider a function that counts how many times it has been called:
 counter = 0
 
 
-def get_next_id():
+def get_next_id() -> int:
     global counter
     counter += 1
     return counter
@@ -168,7 +168,7 @@ from deephaven.table import Selectable
 counter = 0
 
 
-def get_next_id():
+def get_next_id() -> int:
     global counter
     counter += 1
     return counter
@@ -180,7 +180,7 @@ result = empty_table(100).update(col)
 ```
 
 > [!NOTE]
-> `with_serial` is needed for larger tables that Deephaven would otherwise parallelize. With only 100 rows, the formula is already evaluated serially by default, so the result is correct even without `with_serial`.
+> This example uses only 100 rows, well below the threshold where Deephaven would actually parallelize it, so it wouldn't show the race from the broken version above even without `with_serial`. Use `with_serial` any time your formula depends on shared state or row order, regardless of table size — parallelization isn't the only way execution order can vary, and `with_serial` is the only thing that guarantees rows are processed one at a time, in order.
 
 **Trade-off**: Sequential processing uses only one core, so it's slower than parallel processing. Only use `with_serial` when your formula requires it for correctness.
 

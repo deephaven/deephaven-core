@@ -66,7 +66,7 @@ from deephaven import empty_table
 counter = 0
 
 
-def get_next_id():
+def get_next_id() -> int:
     global counter
     counter += 1
     return counter

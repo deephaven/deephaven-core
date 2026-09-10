@@ -28,13 +28,13 @@ trades = timeTable("PT1s").update(
     "Volume = randomInt(100, 10000)"
 )
 
-// These three tables update simultaneously on different cores as new data arrives
+// These three tables can update at the same time, on different cores, as new data arrives
 highValue = trades.where("Price * Volume > 500000")
 bySymbol = trades.aggBy([AggSum("TotalVolume = Volume")], "Symbol")
 recent = trades.tail(100)
 ```
 
-When new data arrives in `trades`, Deephaven updates `highValue`, `bySymbol`, and `recent` at the same time, each on its own core.
+When new data arrives in `trades`, Deephaven can update `highValue`, `bySymbol`, and `recent` at the same time, each on its own core.
 
 ### Across rows
 
@@ -146,7 +146,7 @@ result = emptyTable(100).update([col])
 ```
 
 > [!NOTE]
-> `withSerial` is needed for larger tables that Deephaven would otherwise parallelize. With only 100 rows, the formula is already evaluated serially by default, so the result is correct even without `withSerial`.
+> This example uses only 100 rows, well below the threshold where Deephaven would actually parallelize it, so it wouldn't show the race from the broken version above even without `withSerial`. Use `withSerial` any time your formula depends on shared state or row order, regardless of table size — parallelization isn't the only way execution order can vary, and `withSerial` is the only thing that guarantees rows are processed one at a time, in order.
 
 **Trade-off**: Sequential processing uses only one core, so it's slower than parallel processing. Only use `withSerial` when your formula requires it for correctness.
 

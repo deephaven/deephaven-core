@@ -47,7 +47,7 @@ high_volume = market_data.where("Volume > 1000000")
 recent_trades = market_data.tail(10)
 ```
 
-When new data arrives in `market_data`, Deephaven updates `with_metrics`, `high_volume`, and `recent_trades` simultaneously on different cores.
+When new data arrives in `market_data`, the update graph schedules `with_metrics`, `high_volume`, and `recent_trades` as independent notifications, which can run concurrently on different cores. (This depends on `PeriodicUpdateGraph.updateThreads` being greater than 1, which is the default — see [Thread pools](#query-phases-and-thread-pools) below.)
 
 Deephaven tracks which tables depend on which through an internal structure called the [update graph](../dag.md). Independent tables (those that don't depend on each other) run in parallel automatically.
 
@@ -71,7 +71,9 @@ Deephaven also parallelizes calculations within a single table, in two ways:
 - Operations waiting for dependencies (automatic in the update graph).
 
 > [!CAUTION]
-> **Python GIL limitation**: Most Python builds use the GIL (global interpreter lock), which prevents true parallel execution of Python code. Deephaven only parallelizes Python-backed filters and selectables on a [free-threaded Python build](https://docs.python.org/3/howto/free-threading-python.html). On a standard (GIL-enabled) build, these operations always run sequentially, even when stateless. To get parallel execution of Python-backed formulas and filters, switch to a free-threaded Python build; no other Deephaven configuration is required.
+> **Python GIL limitation**: Most Python builds use the GIL (global interpreter lock), which prevents concurrent execution of Python code across threads. Deephaven only considers Python-backed filters and selectables for parallel execution on a [free-threaded Python build](https://docs.python.org/3/howto/free-threading-python.html) — on a standard (GIL-enabled) build, they're never run concurrently. To get parallel execution of Python-backed formulas and filters, switch to a free-threaded Python build; no other Deephaven configuration is required.
+>
+> **This is not the same guarantee `with_serial` provides.** Not running concurrently isn't the same as running in row-set order, exactly once per row — the engine may still evaluate a non-parallelizable column out of order, or without evaluating every row through its own individual call. If your formula or filter has side effects that depend on row order or exactly-once evaluation, use `with_serial` regardless of which Python build you're running.
 
 ### Query phases and thread pools
 
