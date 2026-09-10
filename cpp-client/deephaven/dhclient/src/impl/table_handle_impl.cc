@@ -605,14 +605,8 @@ void TableHandleImpl::Unsubscribe(const std::shared_ptr<SubscriptionHandle> &han
 }
 
 void TableHandleImpl::BindToVariable(std::string variable) {
-  const auto &console_id = managerImpl_->ConsoleId();
-  if (!console_id.has_value()) {
-    auto message = DEEPHAVEN_LOCATION_STR(
-        "Client was created without specifying a script language");
-    throw std::runtime_error(message);
-  }
   BindTableToVariableRequest req;
-  *req.mutable_console_id() = *console_id;
+  *req.mutable_console_id() = managerImpl_->EnsureConsoleId();
   req.set_variable_name(std::move(variable));
   *req.mutable_table_id() = ticket_;
 
