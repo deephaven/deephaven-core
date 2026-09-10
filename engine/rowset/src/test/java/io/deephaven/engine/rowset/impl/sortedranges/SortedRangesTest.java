@@ -3457,4 +3457,17 @@ public class SortedRangesTest {
         testInsertAppendHelper(new long[] {10, -20, 30, 40}, new long[] {41, -43, 51, 60, -62});
         testInsertAppendHelper(new long[] {10, -20, 30, 40}, new long[] {42, 51, 60, -62});
     }
+
+    @Test(timeout = 60000)
+    public void testMinusFullUniverseTerminates() {
+        // A full-universe operand makes the complement iterator empty; the intersect merge used to call
+        // next() without hasNext() and loop forever when the LHS contains key 0.
+        SortedRanges lhs = SortedRanges.makeSingleRange(0, 0);
+        lhs = lhs.add(5);
+        lhs = lhs.add(10);
+        final SortedRanges fullUniverse = SortedRanges.makeSingleRange(0, Long.MAX_VALUE);
+        final OrderedLongSet result = lhs.ixMinusOnNew(fullUniverse);
+        assertEquals(OrderedLongSet.EMPTY, result);
+    }
+
 }

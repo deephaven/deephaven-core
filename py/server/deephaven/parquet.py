@@ -35,6 +35,23 @@ _JParquetFileLayout = jpy.get_type(
 )
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JRowGroupInfo = jpy.get_type("io.deephaven.parquet.table.metadata.RowGroupInfo")
+_JUnsignedLongTarget = jpy.get_type(
+    "io.deephaven.parquet.table.ParquetInstructions$UnsignedLongTarget"
+)
+
+
+class UnsignedLongTarget(Enum):
+    """The Deephaven type to read a parquet UINT_64 column as; such values have no  Java primitive."""
+
+    BIG_INTEGER = _JUnsignedLongTarget.BIG_INTEGER
+    """ Read as a Java BigInteger, representing every value exactly. The default. """
+
+    LONG = _JUnsignedLongTarget.LONG
+    """ Read as a  Java long; values exceeding 2**63 - 1 raise an error when the page containing them is read. """
+
+    SIGNED_LONG = _JUnsignedLongTarget.SIGNED_LONG
+    """ Read as a Java long, reinterpreting the bits as signed, so values exceeding 2**63 - 1 read as negative. Note that
+    2**63 reads as Deephaven's null long, indistinguishable from an actual null. """
 
 
 @dataclass
@@ -42,10 +59,21 @@ class ColumnInstruction:
     """This class specifies the instructions for reading/writing a Parquet column."""
 
     column_name: Optional[str] = None
+    """ The Deephaven column name. Required when writing. """
     parquet_column_name: Optional[str] = None
+    """ The corresponding column name in the Parquet file. Required when reading. """
     codec_name: Optional[str] = None
+    """ The fully qualified name of an ObjectCodec class that serializes this column's values to and from bytes, for
+    types with no language-agnostic Parquet representation. This is not the compression codec, which is set per file
+    with the compression_codec_name argument. """
     codec_args: Optional[str] = None
+    """ An implementation-specific argument string passed to codec_name. """
     use_dictionary: bool = False
+    """ Whether the writer should use dictionary-based encoding for this column; never evaluated for non-String
+    columns. """
+    unsigned_long_target: Optional[UnsignedLongTarget] = None
+    """ Applies only to reads, and only to columns with a UINT_64 logical type; it is ignored when writing, since
+    Deephaven never writes UINT_64. """
 
 
 class ParquetFileLayout(Enum):
@@ -189,6 +217,10 @@ def _build_parquet_instructions(
                 if ci.codec_name:
                     builder.addColumnCodec(ci.column_name, ci.codec_name, ci.codec_args)
                 builder.useDictionary(ci.column_name, ci.use_dictionary)
+                if ci.unsigned_long_target is not None:
+                    builder.setUnsignedLongTarget(
+                        ci.column_name, ci.unsigned_long_target.value
+                    )
 
     if compression_codec_name:
         builder.setCompressionCodecName(compression_codec_name)
@@ -260,7 +292,7 @@ def read(
     Args:
         path (str): the file or directory to examine
         col_instructions (Optional[list[ColumnInstruction]]): instructions for customizations while reading particular
-            columns, default is None, which means no specialization for any column
+            columns, default is None, which means no specialization for any column.
         is_legacy_parquet (bool): if the parquet data is legacy
         is_refreshing (bool): if the parquet data represents a refreshing source
         file_layout (Optional[ParquetFileLayout]): the parquet file layout, by default None. When None, the layout is

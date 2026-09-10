@@ -21,6 +21,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import java.util.stream.IntStream;
 

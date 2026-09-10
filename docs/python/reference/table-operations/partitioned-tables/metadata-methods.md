@@ -44,10 +44,10 @@ print(partitioned_table.constituent_column)
 
 ## `constituent_tables`
 
-The `constituent_tables` method returns a `PartitionedTable`'s constituent tables as a list of strings.
+The `constituent_tables` property returns a `PartitionedTable`'s current constituent tables as a list of `Table` objects.
 
 ```python syntax
-PartitionedTable.constituent_tables -> List[str]
+PartitionedTable.constituent_tables -> List[Table]
 ```
 
 Here is an example:
@@ -71,6 +71,23 @@ Here is an example:
 
 ```python test-set=1 order=:log
 print(partitioned_table.constituent_table_columns)
+```
+
+## `constituent_table_definition`
+
+The `constituent_table_definition` property returns a table definition that is either shared by, or mutually compatible with, all constituent tables of a `PartitionedTable`.
+
+> [!NOTE]
+> Mutual compatibility means the returned definition's columns match each constituent's columns by name, data type, and component type — it does not guarantee identical storage or derivation details.
+
+```python syntax
+PartitionedTable.constituent_table_definition -> TableDefinition
+```
+
+Here is an example:
+
+```python test-set=1 order=:log
+print(partitioned_table.constituent_table_definition)
 ```
 
 ## `is_refreshing`
@@ -99,6 +116,20 @@ Here is an example:
 
 ```python test-set=1 order=:log
 print(partitioned_table.key_columns)
+```
+
+## `table`
+
+The `table` property returns the underlying `Table` of a `PartitionedTable`, whose rows contain the constituent tables and key values.
+
+```python syntax
+PartitionedTable.table -> Table
+```
+
+Here is an example:
+
+```python test-set=1 order=:log
+print(partitioned_table.table)
 ```
 
 ## `unique_keys`

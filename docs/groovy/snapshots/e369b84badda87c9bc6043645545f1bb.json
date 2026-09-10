@@ -1,0 +1,1 @@
+{"file":"how-to-guides/table-listeners-groovy.md","objects":{"t":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"int"}],"rows":[]}},":log":{"type":"Log","data":"Adding listener\n"}}}

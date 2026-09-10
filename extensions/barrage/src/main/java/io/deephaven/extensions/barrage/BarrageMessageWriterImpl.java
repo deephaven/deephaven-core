@@ -1300,8 +1300,12 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             final ChunkWriter.FieldNodeListener fieldNodeListener,
             final ChunkWriter.BufferListener bufferListener,
             final ColumnChunksWriter<Chunk<Values>> chunkListWriter) throws IOException {
-        // use an empty writer to publish the column data
-        final ChunkWriter.DrainableColumn drainableColumn = chunkListWriter.empty(view.options());
+        // use an empty writer to publish the column data. Forward the registry so a dictionary-encoded writer nested
+        // inside a composite writer (e.g. the values child of a run-end-encoded column) still registers its
+        // dictionary state -- and gets its initial isDelta=false DictionaryBatch emitted -- even when this column's
+        // very first batch carries no rows (e.g. a freshly-created ticking table's initial, still-empty snapshot).
+        final ChunkWriter.DrainableColumn drainableColumn =
+                chunkListWriter.empty(view.options(), view.dictionaryRegistry());
         drainableColumn.visitFieldNodes(fieldNodeListener);
         drainableColumn.visitBuffers(bufferListener);
         return drainableColumn;

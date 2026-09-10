@@ -109,6 +109,16 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
         // This sort operation might leverage a data index.
         dataIndex = optimalIndex(parent);
+
+        if (QueryTable.USE_INDIRECT_SORT_KERNELS) {
+            // Resolve (compiling on demand if necessary) the multi-column sort kernel for this sort now, while we
+            // are on a thread whose ExecutionContext has a QueryCompiler; the sort listener may otherwise be the
+            // first to need it, on an update graph thread that cannot compile. This is required even when this sort
+            // has a data index: the index accelerates the initial sort, but the listener's incremental sorts of
+            // added and modified rows do not use it. For an initially empty table (a refreshing blink table, for
+            // instance) the listener is always first.
+            SortHelpers.prepareSortKernel(sortOrder, sortColumns, comparators, comparatorsRespectEquality);
+        }
     }
 
     @Override

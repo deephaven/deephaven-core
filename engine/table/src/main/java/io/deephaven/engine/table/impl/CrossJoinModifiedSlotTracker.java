@@ -507,20 +507,21 @@ class CrossJoinModifiedSlotTracker {
                 continue;
             }
 
-            final RowSet leftRemoved = slotState.indexBuilder.build();
-            slotState.leftRowSet.remove(leftRemoved);
-            slotState.indexBuilder = RowSetFactory.builderRandom();
-            long sizePrev = slotState.rightRowSet.sizePrev();
-            if (sizePrev > 0) {
-                leftRemoved.forAllRowKeys(ii -> {
-                    final long prevOffset = ii << jsm.getPrevNumShiftBits();
-                    builder.addRange(prevOffset, prevOffset + sizePrev - 1);
-                });
-            } else if (jsm.leftOuterJoin()) {
-                leftRemoved.forAllRowKeys(ii -> {
-                    final long prevOffset = ii << jsm.getPrevNumShiftBits();
-                    builder.addKey(prevOffset);
-                });
+            final long sizePrev = slotState.rightRowSet.sizePrev();
+            try (final RowSet slotLeftRemoved = slotState.indexBuilder.build()) {
+                slotState.leftRowSet.remove(slotLeftRemoved);
+                slotState.indexBuilder = RowSetFactory.builderRandom();
+                if (sizePrev > 0) {
+                    slotLeftRemoved.forAllRowKeys(ii -> {
+                        final long prevOffset = ii << jsm.getPrevNumShiftBits();
+                        builder.addRange(prevOffset, prevOffset + sizePrev - 1);
+                    });
+                } else if (jsm.leftOuterJoin()) {
+                    slotLeftRemoved.forAllRowKeys(ii -> {
+                        final long prevOffset = ii << jsm.getPrevNumShiftBits();
+                        builder.addKey(prevOffset);
+                    });
+                }
             }
         }
         leftRemoved = builder.build();
@@ -534,22 +535,23 @@ class CrossJoinModifiedSlotTracker {
                 continue;
             }
 
-            final RowSet leftAdded = slotState.indexBuilder.build();
-            slotState.leftRowSet.insert(leftAdded);
-            jsm.updateLeftRowRedirection(leftAdded, slotState.slotLocation);
+            final long size = slotState.rightRowSet.size();
+            try (final RowSet slotLeftAdded = slotState.indexBuilder.build()) {
+                slotState.leftRowSet.insert(slotLeftAdded);
+                jsm.updateLeftRowRedirection(slotLeftAdded, slotState.slotLocation);
 
-            slotState.indexBuilder = null;
-            long size = slotState.rightRowSet.size();
-            if (size > 0) {
-                leftAdded.forAllRowKeys(ii -> {
-                    final long currOffset = ii << jsm.getNumShiftBits();
-                    downstreamAdds.addRange(currOffset, currOffset + size - 1);
-                });
-            } else if (jsm.leftOuterJoin()) {
-                leftAdded.forAllRowKeys(ii -> {
-                    final long currOffset = ii << jsm.getNumShiftBits();
-                    downstreamAdds.addKey(currOffset);
-                });
+                slotState.indexBuilder = null;
+                if (size > 0) {
+                    slotLeftAdded.forAllRowKeys(ii -> {
+                        final long currOffset = ii << jsm.getNumShiftBits();
+                        downstreamAdds.addRange(currOffset, currOffset + size - 1);
+                    });
+                } else if (jsm.leftOuterJoin()) {
+                    slotLeftAdded.forAllRowKeys(ii -> {
+                        final long currOffset = ii << jsm.getNumShiftBits();
+                        downstreamAdds.addKey(currOffset);
+                    });
+                }
             }
 
             final RowSetBuilderRandom modifiedAdds = RowSetFactory.builderRandom();
@@ -598,21 +600,22 @@ class CrossJoinModifiedSlotTracker {
             if (slotState == null) {
                 continue;
             }
-            final RowSet leftRemoved = slotState.indexBuilder.build();
-            slotState.leftRowSet.remove(leftRemoved);
-            jsm.updateLeftRowRedirection(leftRemoved, RowSequence.NULL_ROW_KEY);
-            slotState.indexBuilder = RowSetFactory.builderRandom();
             final long sizePrev = slotState.rightRowSet.sizePrev();
-            if (sizePrev > 0) {
-                leftRemoved.forAllRowKeys(ii -> {
-                    final long prevOffset = ii << jsm.getPrevNumShiftBits();
-                    rmBuilder.addRange(prevOffset, prevOffset + sizePrev - 1);
-                });
-            } else if (jsm.leftOuterJoin()) {
-                leftRemoved.forAllRowKeys(ii -> {
-                    final long prevOffset = ii << jsm.getPrevNumShiftBits();
-                    rmBuilder.addKey(prevOffset);
-                });
+            try (final RowSet slotLeftRemoved = slotState.indexBuilder.build()) {
+                slotState.leftRowSet.remove(slotLeftRemoved);
+                jsm.updateLeftRowRedirection(slotLeftRemoved, RowSequence.NULL_ROW_KEY);
+                slotState.indexBuilder = RowSetFactory.builderRandom();
+                if (sizePrev > 0) {
+                    slotLeftRemoved.forAllRowKeys(ii -> {
+                        final long prevOffset = ii << jsm.getPrevNumShiftBits();
+                        rmBuilder.addRange(prevOffset, prevOffset + sizePrev - 1);
+                    });
+                } else if (jsm.leftOuterJoin()) {
+                    slotLeftRemoved.forAllRowKeys(ii -> {
+                        final long prevOffset = ii << jsm.getPrevNumShiftBits();
+                        rmBuilder.addKey(prevOffset);
+                    });
+                }
             }
             final long size = slotState.rightRowSet.size();
             if (sizePrev > 0 && size > 0) {

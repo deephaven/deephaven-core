@@ -61,6 +61,9 @@ import requests
 
 2. Create the [DynamicTableWriter](../how-to-guides/table-publisher.md#dynamictablewriter) that will be used to ingest ticking data.
 
+> [!TIP]
+> For streaming data directly from a Java client, you can also use [input tables](./java-client-input-tables.md), which allow the client to upload data without running code on the server.
+
 ```python skip-test
 # First, let's create a table to manage the relevant cities to monitor
 dynamic_table_writer_columns = {
@@ -479,5 +482,6 @@ With that final step, the Deephaven Table is subscribed, and will receive live u
 
 ## Related documentation
 
+- [Java client input tables](./java-client-input-tables.md) - Stream data from a Java client using input tables
 - [Arrow Flight](./data-import-export/arrow-flight.md)
 - [Servers and clients](../conceptual/client-server-model.md)

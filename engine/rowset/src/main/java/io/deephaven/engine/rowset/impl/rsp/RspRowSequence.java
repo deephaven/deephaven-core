@@ -27,6 +27,10 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
     private long endOffset; // position offset inside the end span where our view ends (inclusive).
     private long cardBeforeStartIdx; // total cardinality in spans before startIdx.
     private long cardBeforeEndIdx; // total cardinality in spans before endIdx.
+    // Ranks within one span's container across calls. Only the RspRowSequence an Iterator reuses for every slice it
+    // hands out has one: successive slices in the same span then resume where the previous one left off. A standalone
+    // RspRowSequence answers each query once, gains nothing from a cursor, and leaves this null.
+    private final RspArray.SpanRankCursor rankCursor;
 
     // Potentially useful for testing.
     private static RspArray wrapRspArray(final RspArray arr) {
@@ -55,6 +59,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
         this.cardBeforeEndIdx = cardBeforeEndIdx;
         firstKey = -1;
         lastKey = -1;
+        rankCursor = null;
     }
 
     @Override
@@ -67,15 +72,23 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
         super.close();
     }
 
+    /**
+     * Makes the reusable sequence an {@link Iterator} hands out for every slice, reset to each slice in turn. Only an
+     * Iterator may use this constructor: the sequence it makes carries a {@link RspArray.SpanRankCursor}, which
+     * remembers the rank reached within the current span between calls and is not thread safe, so it must stay confined
+     * to the single thread driving that Iterator. A standalone sequence uses the other constructor and carries no
+     * cursor.
+     */
     private RspRowSequence(final RspArray arr) {
         this.arr = wrapRspArray(arr);
         startIdx = -1;
+        rankCursor = new RspArray.SpanRankCursor();
     }
 
     @Override
     public long firstRowKey() {
         if (firstKey == -1) {
-            firstKey = arr.get(startIdx, startOffset);
+            firstKey = arr.get(startIdx, startOffset, rankCursor);
         }
         return firstKey;
     }
@@ -83,7 +96,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
     @Override
     public long lastRowKey() {
         if (lastKey == -1) {
-            lastKey = arr.get(endIdx, endOffset);
+            lastKey = arr.get(endIdx, endOffset, rankCursor);
         }
         return lastKey;
     }
@@ -141,6 +154,16 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
 
     @Override
     public RowSequence getRowSequenceByPosition(long startPositionInclusive, long length) {
+        if (length <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        if (startPositionInclusive < 0) {
+            length += startPositionInclusive;
+            startPositionInclusive = 0;
+            if (length <= 0) {
+                return RowSequenceFactory.EMPTY;
+            }
+        }
         final long absoluteStart = startPositionInclusive + absoluteStartPos();
         if (absoluteStart > absoluteEndPos()) {
             return RowSequenceFactory.EMPTY;
@@ -151,7 +174,14 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
 
     @Override
     public RowSequence getRowSequenceByKeyRange(long startRowKeyInclusive, long endRowKeyInclusive) {
-        return arr.getRowSequenceByKeyRangeConstrainedToIndexAndOffsetRange(startRowKeyInclusive, endRowKeyInclusive,
+        // The constrained lookup below searches from our start, which handles the start side; the end side must be
+        // clamped to our own last key or the result may include keys past the end of this sequence.
+        final long lastKey = lastRowKey();
+        if (startRowKeyInclusive > lastKey || endRowKeyInclusive < firstRowKey()) {
+            return RowSequenceFactory.EMPTY;
+        }
+        return arr.getRowSequenceByKeyRangeConstrainedToIndexAndOffsetRange(
+                startRowKeyInclusive, Math.min(endRowKeyInclusive, lastKey),
                 startIdx, startOffset, cardBeforeStartIdx, endIdx, endOffset);
     }
 
@@ -163,9 +193,11 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
 
     @Override
     public void fillRowKeyChunk(final WritableLongChunk<? super OrderedRowKeys> chunkToFill) {
-        final RspIterator it = new RspIterator(new RspArray.SpanCursorForwardImpl(arr, startIdx), startOffset);
-        int n = it.copyTo(chunkToFill, 0, intSize());
-        chunkToFill.setSize(n);
+        // The iterator's span cursor holds a reference to arr; close it or the reference is leaked.
+        try (final RspIterator it = new RspIterator(new RspArray.SpanCursorForwardImpl(arr, startIdx), startOffset)) {
+            final int n = it.copyTo(chunkToFill, 0, intSize());
+            chunkToFill.setSize(n);
+        }
     }
 
     @Override
@@ -222,12 +254,19 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
     public boolean forEachRowKeyRange(final LongRangeAbortableConsumer lrac) {
         if (startIdx == endIdx) {
             final long remaining = endOffset - startOffset + 1;
-            return arr.forEachLongRangeInSpanWithOffsetAndMaxCardinality(startIdx, startOffset, remaining, lrac);
+            if (rankCursor == null) {
+                return arr.forEachLongRangeInSpanWithOffsetAndMaxCardinality(startIdx, startOffset, remaining, lrac);
+            }
+            return arr.forEachLongRangeInSpanWithOffsetAndMaxCardinality(startIdx, startOffset, remaining, lrac,
+                    rankCursor);
         }
 
         final long[] pendingRange = new long[2];
         final LongRangeAbortableConsumer wrapper = RspArray.makeAdjacentRangesCollapsingWrapper(pendingRange, lrac);
-        if (!arr.forEachLongRangeInSpanWithOffset(startIdx, startOffset, wrapper)) {
+        final boolean startSpanDone = rankCursor == null
+                ? arr.forEachLongRangeInSpanWithOffset(startIdx, startOffset, wrapper)
+                : arr.forEachLongRangeInSpanWithOffset(startIdx, startOffset, wrapper, rankCursor);
+        if (!startSpanDone) {
             return false;
         }
         for (int i = startIdx + 1; i < endIdx; ++i) {
@@ -290,6 +329,10 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
         // cached value for the first key on the call to any getNext* method, or -1 if cache has not been populated yet.
         private long nextKey;
 
+        // Ranks keys and positions within the span the iterator is working through; advances and peeks over one span
+        // arrive in ascending order, so each resumes from the previous one instead of counting from the start of the
+        // span's container.
+        private final RspArray.SpanRankCursor rankCursor = new RspArray.SpanRankCursor();
 
         public Iterator(final RspRowSequence rs) {
             rs.arr.acquire();
@@ -343,7 +386,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
                         nextStartOffset = 0;
                     }
                 }
-                nextKey = arr.get(nextStartIdx, nextStartOffset);
+                nextKey = arr.get(nextStartIdx, nextStartOffset, rankCursor);
             }
             return nextKey;
         }
@@ -486,18 +529,21 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
             }
             final int savedStartIdx = currStartIdx;
             final long savedStartOffset = currStartOffset;
-            final boolean found = arr.findOrNext(currStartIdx, rsEndIdx + 1, toKey,
+            final boolean found = arr.findOrNext(currStartIdx, rsEndIdx + 1, Math.max(toKey, 0),
                     (final int index, final long offset) -> {
                         currStartIdx = index;
                         currStartOffset = offset;
-                    });
+                    }, rankCursor);
             final boolean revert;
             if (!found) {
                 revert = true;
             } else if (currEndIdx == -1) {
                 revert = savedStartIdx == currStartIdx && currStartOffset < savedStartOffset;
             } else {
-                revert = currEndIdx == currStartIdx && currStartOffset < currEndOffset;
+                // Anything at or before the previously returned end position was already consumed; the found
+                // position must be strictly after it or the advance is a no-op.
+                revert = currStartIdx < currEndIdx
+                        || (currStartIdx == currEndIdx && currStartOffset <= currEndOffset);
             }
             if (revert) {
                 currStartIdx = savedStartIdx;
@@ -554,7 +600,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
                     (final int index, final long offset) -> {
                         currEndIdx = index;
                         currEndOffset = offset;
-                    });
+                    }, rankCursor);
             if (!found || (currEndIdx == currStartIdx && currEndOffset < currStartOffset)) {
                 currStartIdx = savedStartIdx;
                 currStartOffset = savedStartOffset;

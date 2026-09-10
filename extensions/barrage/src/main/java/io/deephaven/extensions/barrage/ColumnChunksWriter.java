@@ -6,8 +6,10 @@ package io.deephaven.extensions.barrage;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
+import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.List;
@@ -45,6 +47,18 @@ public class ColumnChunksWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> impleme
 
     public ChunkWriter.DrainableColumn empty(@NotNull final BarrageOptions options) throws IOException {
         return writer.getEmptyInputStream(options);
+    }
+
+    /**
+     * Like {@link #empty(BarrageOptions)}, but threads {@code dictionaryRegistry} down to a dictionary-encoded writer
+     * nested within this column's writer (e.g. the {@code values} child of a run-end-encoded column), so it still
+     * registers its state -- and emits its initial isDelta=false DictionaryBatch -- even when this column's very first
+     * batch carries no rows.
+     */
+    public ChunkWriter.DrainableColumn empty(
+            @NotNull final BarrageOptions options,
+            @Nullable final DictionaryWriterRegistry dictionaryRegistry) throws IOException {
+        return writer.getEmptyInputStream(options, dictionaryRegistry);
     }
 
     @Override

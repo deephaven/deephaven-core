@@ -106,6 +106,26 @@ public interface ChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> {
             @NotNull BarrageOptions options) throws IOException;
 
     /**
+     * Get an input stream representing the empty wire payload for this writer, threading a
+     * {@link DictionaryWriterRegistry} down to any dictionary-encoded writer nested within this writer, mirroring
+     * {@link #getInputStream(Context, RowSet, BarrageOptions, DictionaryWriterRegistry)}. This matters even for an
+     * empty payload: a dictionary-encoded column whose very first batch carries no rows (e.g. a freshly-created ticking
+     * table's initial, still-empty snapshot) must still register its id and emit an initial isDelta=false
+     * DictionaryBatch before any RecordBatch references it. Writers that contain no dictionary encoding ignore the
+     * registry and behave identically to {@link #getEmptyInputStream(BarrageOptions)}.
+     *
+     * @param options options for writing to the stream
+     * @param dictionaryRegistry the per-stream dictionary registry; may be {@code null} when the caller does not
+     *        support dictionary encoding (a nested dictionary-encoded writer will then throw)
+     * @return a single-use DrainableColumn ready to be drained via grpc
+     */
+    default DrainableColumn getEmptyInputStream(
+            @NotNull BarrageOptions options,
+            @Nullable DictionaryWriterRegistry dictionaryRegistry) throws IOException {
+        return getEmptyInputStream(options);
+    }
+
+    /**
      * @return whether the wire format for this writer might include a validity buffer
      */
     boolean isFieldNullable();

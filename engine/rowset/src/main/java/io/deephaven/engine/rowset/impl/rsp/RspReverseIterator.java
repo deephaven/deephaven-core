@@ -85,8 +85,10 @@ public class RspReverseIterator implements SafeCloseable {
     }
 
     private void computeNextFromFullSpan() {
-        --next;
-        if (Long.compareUnsigned(next, fullBlockSpanKey) >= 0) {
+        // Checked before stepping, not after: a span starting at key 0 would underflow, and an unsigned comparison
+        // reads the result as an enormous value rather than as having gone past the span's start.
+        if (Long.compareUnsigned(next, fullBlockSpanKey) > 0) {
+            --next;
             nextValid = true;
             return;
         }

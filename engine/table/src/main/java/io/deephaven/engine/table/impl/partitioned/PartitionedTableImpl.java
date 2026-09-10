@@ -210,12 +210,14 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         }
 
         boolean anyPreviousTableIsRefreshing = false;
+        boolean multipleConstituents = false;
 
         Table constituent = constituents.next();
         boolean currentTableIsRefreshing = constituent.isRefreshing();
         final Map<String, Object> candidates = new HashMap<>(constituent.getAttributes());
 
         while (constituents.hasNext()) {
+            multipleConstituents = true;
             anyPreviousTableIsRefreshing |= currentTableIsRefreshing;
             constituent = constituents.next();
             currentTableIsRefreshing = constituent.isRefreshing();
@@ -232,6 +234,12 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     }
                 }
             }
+        }
+
+        if (multipleConstituents) {
+            // The concatenation of two or more sorted tables is not guaranteed to be sorted, even when the
+            // constituents agree on their sort order. Propagating the claim is incorrect.
+            candidates.remove(Table.SORTED_COLUMNS_ATTRIBUTE);
         }
 
         if (anyPreviousTableIsRefreshing) {

@@ -35,6 +35,9 @@ class JsPluginFromNpmPackage {
                 .main(main)
                 .path(packageRoot)
                 .paths(paths);
+        if (packageJson.loader() != null) {
+            builder.loader(packageJson.loader());
+        }
         return builder.build();
     }
 }
