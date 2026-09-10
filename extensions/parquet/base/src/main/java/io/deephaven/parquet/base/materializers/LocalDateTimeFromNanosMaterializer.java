@@ -9,7 +9,7 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -21,12 +21,12 @@ public class LocalDateTimeFromNanosMaterializer extends ObjectMaterializerBase<L
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new LocalDateTimeFromNanosMaterializer(dataReader, (LocalDateTime) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new LocalDateTimeFromNanosMaterializer(dataReader, numValues);
         }
     };
@@ -42,13 +42,13 @@ public class LocalDateTimeFromNanosMaterializer extends ObjectMaterializerBase<L
                 ZoneOffset.UTC);
     }
 
-    private final ValuesReader dataReader;
+    private final PageValueReader dataReader;
 
-    private LocalDateTimeFromNanosMaterializer(ValuesReader dataReader, int numValues) {
+    private LocalDateTimeFromNanosMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, null, numValues);
     }
 
-    private LocalDateTimeFromNanosMaterializer(ValuesReader dataReader, LocalDateTime nullValue,
+    private LocalDateTimeFromNanosMaterializer(PageValueReader dataReader, LocalDateTime nullValue,
             int numValues) {
         super(nullValue, new LocalDateTime[numValues]);
         this.dataReader = dataReader;

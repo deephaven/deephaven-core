@@ -9,18 +9,18 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 public class IntFromBooleanMaterializer extends IntMaterializerBase implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new IntFromBooleanMaterializer(dataReader, (int) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new IntFromBooleanMaterializer(dataReader, numValues);
         }
     };
@@ -29,13 +29,13 @@ public class IntFromBooleanMaterializer extends IntMaterializerBase implements P
         return value ? 1 : 0;
     }
 
-    private final ValuesReader dataReader;
+    private final PageValueReader dataReader;
 
-    private IntFromBooleanMaterializer(ValuesReader dataReader, int numValues) {
+    private IntFromBooleanMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, 0, numValues);
     }
 
-    private IntFromBooleanMaterializer(ValuesReader dataReader, int nullValue, int numValues) {
+    private IntFromBooleanMaterializer(PageValueReader dataReader, int nullValue, int numValues) {
         super(nullValue, numValues);
         this.dataReader = dataReader;
     }

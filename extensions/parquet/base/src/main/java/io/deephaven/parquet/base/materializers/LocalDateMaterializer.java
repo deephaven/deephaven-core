@@ -5,7 +5,7 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 import java.time.LocalDate;
 
@@ -13,12 +13,12 @@ public class LocalDateMaterializer extends ObjectMaterializerBase<LocalDate> imp
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new LocalDateMaterializer(dataReader, (LocalDate) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new LocalDateMaterializer(dataReader, numValues);
         }
     };
@@ -27,13 +27,13 @@ public class LocalDateMaterializer extends ObjectMaterializerBase<LocalDate> imp
         return LocalDate.ofEpochDay(value);
     }
 
-    private final ValuesReader dataReader;
+    private final PageValueReader dataReader;
 
-    private LocalDateMaterializer(ValuesReader dataReader, int numValues) {
+    private LocalDateMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, null, numValues);
     }
 
-    private LocalDateMaterializer(ValuesReader dataReader, LocalDate nullValue, int numValues) {
+    private LocalDateMaterializer(PageValueReader dataReader, LocalDate nullValue, int numValues) {
         super(nullValue, new LocalDate[numValues]);
         this.dataReader = dataReader;
     }

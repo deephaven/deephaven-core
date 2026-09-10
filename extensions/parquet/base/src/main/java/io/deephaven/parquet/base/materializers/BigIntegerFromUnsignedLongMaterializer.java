@@ -5,7 +5,7 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 import java.math.BigInteger;
 
@@ -18,12 +18,12 @@ public class BigIntegerFromUnsignedLongMaterializer extends ObjectMaterializerBa
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new BigIntegerFromUnsignedLongMaterializer(dataReader, (BigInteger) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new BigIntegerFromUnsignedLongMaterializer(dataReader, numValues);
         }
     };
@@ -36,13 +36,13 @@ public class BigIntegerFromUnsignedLongMaterializer extends ObjectMaterializerBa
         return value < 0 ? magnitude.setBit(Long.SIZE - 1) : magnitude;
     }
 
-    private final ValuesReader dataReader;
+    private final PageValueReader dataReader;
 
-    private BigIntegerFromUnsignedLongMaterializer(ValuesReader dataReader, int numValues) {
+    private BigIntegerFromUnsignedLongMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, null, numValues);
     }
 
-    private BigIntegerFromUnsignedLongMaterializer(ValuesReader dataReader, BigInteger nullValue, int numValues) {
+    private BigIntegerFromUnsignedLongMaterializer(PageValueReader dataReader, BigInteger nullValue, int numValues) {
         super(nullValue, new BigInteger[numValues]);
         this.dataReader = dataReader;
     }

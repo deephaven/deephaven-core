@@ -5,7 +5,7 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -17,12 +17,12 @@ public class LocalDateTimeFromMillisMaterializer extends ObjectMaterializerBase<
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new LocalDateTimeFromMillisMaterializer(dataReader, (LocalDateTime) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new LocalDateTimeFromMillisMaterializer(dataReader, numValues);
         }
     };
@@ -38,13 +38,13 @@ public class LocalDateTimeFromMillisMaterializer extends ObjectMaterializerBase<
                 ZoneOffset.UTC);
     }
 
-    private final ValuesReader dataReader;
+    private final PageValueReader dataReader;
 
-    private LocalDateTimeFromMillisMaterializer(ValuesReader dataReader, int numValues) {
+    private LocalDateTimeFromMillisMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, null, numValues);
     }
 
-    private LocalDateTimeFromMillisMaterializer(ValuesReader dataReader, LocalDateTime nullValue,
+    private LocalDateTimeFromMillisMaterializer(PageValueReader dataReader, LocalDateTime nullValue,
             int numValues) {
         super(nullValue, new LocalDateTime[numValues]);
         this.dataReader = dataReader;
