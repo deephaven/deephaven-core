@@ -1,8 +1,10 @@
 # Finding 17 — sorted-column match pushdown used the ordering's equality, so `!= NaN` dropped rows
 
+**Jira:** [DH-23502](https://deephaven.atlassian.net/browse/DH-23502) — **supersedes this finding**; see
+*Superseded by DH-23502* below.
 **Severity:** high — silent wrong results from `sort` plus `where`, with no parquet and no pushdown
 switch involved. Rows are both dropped and invented depending on direction.
-**Status:** **FIXED**, with regression test.
+**Status:** **FIXED here as a stopgap.** Retire this fix when DH-23502 merges.
 **Repro test:** `extensions/parquet/table/src/test/java/io/deephaven/parquet/table/SortedFloatNanMatchTest.java`
 **Fuzzer seed:** `-5472033891179623763L`
 
@@ -81,6 +83,56 @@ here: `select()` inherits the sortedness claim, and the in-memory sorted path ha
 defect, so `disk.select()` would have cheerfully agreed with the wrong answer. The fuzzer escaped this
 only because its case reached the region path while its oracle did not. It is a good reminder that an
 oracle built by transforming the same table can share the table's bugs.
+
+## Superseded by DH-23502
+
+DH-23502 ("Pushdown - Core: Sorted-column pushdown errors; binary-search kernels (T-01)", *Ready to
+review* as of 2026-09-10) covers this defect as **PD-026**, P0:
+
+> Gating ignores `nanMatch`; kernel `eq` treats `NaN==NaN` while residual follows IEEE →
+> `sort().where("X == NaN")`/`!= NaN` wrong vs unsorted. Reproduced (`TestPD026`). *Confirmed and
+> fixed.*
+
+Same defect, same two sites, independently reproduced. **Its fix is better than the one here**: it
+consults `MatchFilter`'s existing `nanMatch` option, so the optimization survives where it is
+correct, whereas this stopgap declines the sorted action outright for any `NaN` or `±0.0` match
+value. Take DH-23502's version.
+
+### What to retire, once DH-23502 is merged
+
+1. `SortedColumnPushdownManager.sortedSearchAgreesWithEquality(Object[])` — delete the method and the
+   `&& sortedSearchAgreesWithEquality(matchFilter.getValues())` clause added to `supportedMatchFilter`
+   in `wrap(...)`.
+2. `ParquetColumnRegionChar` — delete the two guard calls (in `estimatePushdownAction` and
+   `performPushdownAction`) and its `SortedColumnPushdownManager` import, then re-run
+   `./gradlew replicateRegionsAndRegionedSources` so the eight replicated variants follow.
+3. Mark this file **CLOSED — superseded by DH-23502** and set the index row's status accordingly.
+
+Expect a **merge conflict** in both of those files: DH-23502 edits the same gate and the same
+template. Resolve in favour of DH-23502.
+
+### Two things to re-verify at merge, not assume
+
+- **`SortedFloatNanMatchTest` should be kept**, not deleted with the fix: it asserts the user-visible
+  property end to end (`sort().where()` and the parquet path together), which DH-23502's own tests
+  approach from the kernel and chunk-filter side. It should pass unchanged under either fix — but
+  **`inAndNotInAreUnchanged` is the one to watch.** It pins today's behaviour that `F in NaN` matches
+  the `NaN` rows while `F == NaN` matches none. If DH-23502's `nanMatch` handling unifies those, that
+  assertion will fail and should be updated to the new intended semantics rather than "fixed" back.
+- DH-23502's **PD-027** covers a case this finding's tests do not: an `upper == +Infinity && inclusive`
+  range shortcut wrongly including `NaN` rows as an exact match. `rangeFiltersAgree` here checks
+  `< NaN` and `>= NaN` but not `<= +Infinity`, and it passed — so that is a genuine gap here, covered
+  there.
+
+### Not superseded
+
+DH-23502's **PD-028** (`Object*BinarySearchKernel` breaking on compare-equal/equals-unequal types,
+e.g. `BigDecimal` `1.0` vs `1.00`) is *adjacent to* but **not the same as** finding 18, which is about
+a location's index file being read back as `BigInteger` for a scale-0 `BigDecimal` column — a schema
+inference mismatch, not a kernel navigation one. Do not assume finding 18 is closed by this ticket.
+Its **PD-031** ("sorted pushdown results always exact — as designed") is useful context for findings
+11 and 18: the empty `maybeMatch` is the declared contract, so the correct remedy for an unanswerable
+input is the decline path, which is what both of those fixes use.
 
 ## Verification
 
