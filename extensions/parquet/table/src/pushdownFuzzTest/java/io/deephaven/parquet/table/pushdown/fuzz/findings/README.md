@@ -30,6 +30,10 @@ appears in both was rediscovered independently.
 | 16 | [**Bench defect:** a table-wide sort order was claimed on a layout that partitioning had destroyed](16-bench-partitioned-sort-claim.md) | — | high (bench) | fixed |
 | 17 | [Sorted-column match pushdown used the ordering's equality, so `!= NaN` dropped rows](17-sorted-match-nan-equality.md) | [DH-23502](https://deephaven.atlassian.net/browse/DH-23502) | high | fixed (stopgap; retire on DH-23502 merge) |
 | 18 | [A data index read back with a different column type, so matches silently found nothing](18-data-index-type-mismatch.md) | — | high | fixed |
+| 19 | [A case-insensitive match filter mishandled a null match value at every arity](19-icase-match-filter-null-value.md) | — | high | fixed |
+| 20 | [Aliasing an indexed column threw when a second column was also indexed](20-duplicate-remapped-data-index.md) | — | medium-high | fixed |
+| 21 | [**Bench defect:** an unguarded String method receiver made the oracle comparison meaningless](21-unguarded-string-method-receiver.md) | — | medium (bench) | fixed |
+| 22 | [With a `_metadata` file, every location pruned against the first file's statistics](22-metadata-file-row-group-statistics.md) | — | high | fixed |
 
 ## Carry-over from the previous round
 

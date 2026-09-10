@@ -105,6 +105,9 @@ public class PushdownFuzzerTest {
             // Finding 21 (bench): an unguarded String method receiver, so the generated formula threw on a
             // null row and the two paths disagreed on whether the query throws at all.
             -9218664977068266450L, 5844000365408086213L,
+            // Finding 22: with a _metadata file, every location read its row group statistics from the first
+            // file in the dataset, so filters were pruned against another file's data.
+            3109160350218645036L,
     };
 
     private static final String ROOT_FILENAME = PushdownFuzzerTest.class.getName() + "_root";

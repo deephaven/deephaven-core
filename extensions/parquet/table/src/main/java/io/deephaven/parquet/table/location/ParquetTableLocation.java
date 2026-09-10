@@ -98,6 +98,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private ParquetFileReader parquetFileReader;
     private ParquetMetadata parquetMetadata;
     private int[] rowGroupIndices;
+    /**
+     * Position of each of this location's row groups within {@link #parquetMetadata}'s block list, in the order
+     * {@link #getRowGroupReaders()} presents them. Unlike {@link #rowGroupIndices}, which is discarded once the row
+     * group readers are built, this is retained: the pushdown path addresses row groups by position within the location
+     * and needs the translation for the lifetime of the location.
+     */
+    private int[] rowGroupBlockIndices;
     private MessageType parquetSchema;
     // -----------------------------------------------------------------------
 
@@ -136,6 +143,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
                     .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
                     .toArray(RowGroup[]::new);
+            // parquetMetadata may describe more than this location: read through a _metadata file, it covers every
+            // row group in the dataset and this location owns only some of them. Row groups are addressed elsewhere
+            // by position within the location -- the ordinal order getRowGroupReaders() produces -- so record the
+            // translation into the shared block list, which is what carries the statistics.
+            rowGroupBlockIndices = IntStream.of(rowGroupIndices)
+                    .boxed()
+                    .sorted(Comparator.comparingInt(
+                            rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi).getOrdinal()))
+                    .mapToInt(Integer::intValue)
+                    .toArray();
             final long maxRowCount = Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
             regionParameters = new RegionedPageStore.Parameters(
                     RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
@@ -940,7 +957,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
-            final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
+            // rgIdx is this location's own row group position; blocks is indexed over the whole of
+            // parquetMetadata, which spans the dataset when a _metadata file is in use.
+            final Statistics<?> statistics =
+                    blocks.get(rowGroupBlockIndices[rgIdx]).getColumns().get(columnIndex).getStatistics();
             // TODO (DH-19666) Right now, the pushdown logic only returns maybeMatch for row group. For the future, we
             // can return "match" for scenarios like filter of {X == 3}, and statistics of {min=3, max=3, num_nulls=0}.
             // Similarly, if filter is {X == null}, and statistics is {hasNonNullValue=false, num_nulls=<row-group
