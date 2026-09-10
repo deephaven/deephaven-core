@@ -85,6 +85,9 @@ public class PushdownFuzzerTest {
             // Finding 12: a partition value containing a colon made the partition directory's relative URI
             // unparseable, so LocalTime and Instant partitioning columns could not be written at all.
             -2281078010550439077L, -1767017146706312469L, 3579704455286775782L,
+            // Finding 13: filterColumnToManagerColumnName is not injective when a filter names a column and an
+            // alias of it, so inverting it into renameColumns pairs gave two pairs with the same source.
+            428667830982598836L, 6656699729815370963L,
     };
 
     private static final String ROOT_FILENAME = PushdownFuzzerTest.class.getName() + "_root";

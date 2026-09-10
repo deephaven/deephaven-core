@@ -4,7 +4,7 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Pair;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -1124,11 +1124,28 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
             final Table toFilter;
             if (!renameMap.isEmpty()) {
-                final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                        .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
-                                ColumnName.of(entry.getKey())))
-                        .collect(Collectors.toList());
-                toFilter = dataIndex.table().renameColumns(renamePairs);
+                // renameMap is filter name -> manager name, and the index table's columns carry manager names, so
+                // the index table has to present each filter name. renameColumns cannot express this: when a filter
+                // references a column *and* a duplicate alias of it -- "Col1 != null && dup0_Col1 == Col1", from an
+                // updateView alias -- both names map to the same manager column, and inverting that gives two pairs
+                // with the same source, which renameColumns rejects outright ("Duplicate source column(s)"). A view
+                // can name one source twice.
+                final List<Selectable> projection = new ArrayList<>(renameMap.size() + 1);
+                renameMap.forEach((filterName, managerName) -> projection
+                        .add(Selectable.of(ColumnName.of(filterName), ColumnName.of(managerName))));
+                projection.add(ColumnName.of(dataIndex.rowSetColumnName()));
+
+                // view() evaluates its columns in order, so a target that shadows another entry's source would make
+                // the later entry read the wrong column. That cannot be expressed safely here, and the index is only
+                // an optimization, so decline it rather than risk a wrong answer.
+                final Set<String> sources = new HashSet<>(renameMap.values());
+                final boolean shadows = renameMap.entrySet().stream()
+                        .anyMatch(entry -> !entry.getKey().equals(entry.getValue())
+                                && sources.contains(entry.getKey()));
+                if (shadows) {
+                    return result.copy();
+                }
+                toFilter = dataIndex.table().view(projection);
             } else {
                 toFilter = dataIndex.table();
             }

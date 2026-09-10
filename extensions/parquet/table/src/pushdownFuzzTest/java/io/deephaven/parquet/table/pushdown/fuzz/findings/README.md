@@ -27,11 +27,11 @@ appears in both was rediscovered independently.
 
 All 19 case seeds recorded in [`../OLD_FINDINGS.md`](../OLD_FINDINGS.md) were replayed against this
 branch. **14 now pass**; `1681357320861610709` (7a) was then fixed as finding 11 and `-2281078010550439077`
-(7d) as finding 12. The 3 that still fail are the root causes this campaign has not reached:
+(7d) as finding 12 and `428667830982598836` (part of 3) as finding 13. The 2 that still fail are the
+root causes this campaign has not reached:
 
 | Old seed | `OLD_FINDINGS.md` | Still fails with |
 | --- | --- | --- |
-| `428667830982598836` | 3 | `IllegalArgumentException: Duplicate source column(s)`, on the disk table only. |
 | `5492728113478971232` | 5 | `ClassCastException: Integer cannot be cast to Boolean` — memory throws, disk succeeds. |
 | `6249197149364475148` | 7b, 5 | `ClassCastException: String cannot be cast to Boolean` — memory throws, disk succeeds. |
 
