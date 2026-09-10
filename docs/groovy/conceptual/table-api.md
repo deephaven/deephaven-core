@@ -103,7 +103,7 @@ Inside a formula string, you have access to:
 
 ```groovy syntax
 "Root = Math.sqrt(X)"
-"Upper = myString.toUpperCase()"
+"Upper = Text.toUpperCase()"
 "Hour = hourOfDay(Timestamp, timeZone(`America/New_York`), true)"
 ```
 
@@ -173,7 +173,7 @@ For refreshing tables, this choice also affects update performance. `view` recom
 
 The same operations work on both static and live tables — see [Static vs. live: understanding mutability](./deephaven-mental-model.md#static-vs-live-understanding-mutability) for the underlying concept. In practice, this means:
 
-```groovy order=staticResult,liveResult ticking-table
+```groovy order=null ticking-table
 // Static table
 staticTable = emptyTable(100).update("X = ii")
 staticResult = staticTable.where("X > 50").update("Y = X * 2")

@@ -17,10 +17,10 @@ For the concepts behind table operations — immutability, formulas, dependencie
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | Keep rows matching a condition                        | [`where("condition")`](../reference/table-operations/filter/where.md)                                                 |
 | Get first/last N rows                                 | [`head(n)`](../reference/table-operations/filter/head.md) / [`tail(n)`](../reference/table-operations/filter/tail.md) |
-| Add columns (stored)                                  | [`update(["NewCol = formula"])`](../reference/table-operations/select/update.md)                                      |
-| Add columns (computed on demand)                      | [`update_view(["NewCol = formula"])`](../reference/table-operations/select/update-view.md)                            |
-| Keep only specific columns                            | [`select(["Col1", "Col2"])`](../reference/table-operations/select/select.md)                                          |
-| Compute specific columns on demand, dropping the rest | [`view(["Col1", "NewCol = formula"])`](../reference/table-operations/select/view.md)                                  |
+| Add columns (stored)                                  | [`update(["NewColumn = formula"])`](../reference/table-operations/select/update.md)                                   |
+| Add columns (computed on demand)                      | [`update_view(["NewColumn = formula"])`](../reference/table-operations/select/update-view.md)                         |
+| Keep only specific columns                            | [`select(["Column1", "Column2"])`](../reference/table-operations/select/select.md)                                    |
+| Compute specific columns on demand, dropping the rest | [`view(["Column1", "NewColumn = formula"])`](../reference/table-operations/select/view.md)                            |
 | Sort by column                                        | [`sort("Column")`](../reference/table-operations/sort/sort.md)                                                        |
 | Sort in reverse order                                 | [`sort_descending("Column")`](../reference/table-operations/sort/sort-descending.md)                                  |
 | Join lookup data                                      | [`natural_join(other, on=["Key"])`](../reference/table-operations/join/natural-join.md)                               |

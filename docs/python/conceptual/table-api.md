@@ -114,7 +114,7 @@ Inside a formula string, you have access to:
 ```python syntax
 "Root = Math.sqrt(X)"
 
-"Upper = myString.toUpperCase()"
+"Upper = Text.toUpperCase()"
 "Hour = hourOfDay(Timestamp, timeZone(`America/New_York`), true)"
 ```
 
@@ -184,7 +184,7 @@ For refreshing tables, this choice also affects update performance. `view` recom
 
 The same operations work on both static and live tables — see [Static vs. live: understanding mutability](./deephaven-mental-model.md#static-vs-live-understanding-mutability) for the underlying concept. In practice, this means:
 
-```python order=static_result,live_result ticking-table
+```python order=null ticking-table
 from deephaven import empty_table, time_table
 
 # Static table
