@@ -3007,11 +3007,12 @@ public class WritableRowSetImplTest extends TestCase {
             if (block % 2 == 0) {
                 b.appendRange(blockKey + 11, blockKey + 20);
             } else {
+                // Five values: with the reserved slot, six shorts fill the 24 bytes the allocator rounds the array
+                // to, so a compact container has nothing to spare.
                 b.appendKey(blockKey + 12);
                 b.appendKey(blockKey + 14);
                 b.appendKey(blockKey + 16);
                 b.appendKey(blockKey + 18);
-                b.appendKey(blockKey + 20);
             }
         }
         final OrderedLongSet impl = b.getOrderedLongSet();

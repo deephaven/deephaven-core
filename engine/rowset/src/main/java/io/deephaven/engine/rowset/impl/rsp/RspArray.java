@@ -329,17 +329,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         modifiedSpan(i);
     }
 
-    public static long getPackedInfoLowBits(final ArrayContainer ac) {
-        final long sharedBit = ac.isShared() ? SPANINFO_ARRAYCONTAINER_SHARED_BITMASK : 0L;
-        final long cardinalityBits = SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK & (long) ac.getCardinality();
-        return sharedBit | cardinalityBits;
-    }
-
     protected static void setContainerSpanRaw(
             final long[] spanInfos, final Object[] spans, final int i, final long key, final Container container) {
         if (container instanceof ArrayContainer) {
+            // An ArrayContainer is packed: its short[] alone is the span, and the word carries its cardinality. The
+            // container's shared flag needs no room in the word because it lives in the array's reserved last slot.
             final ArrayContainer ac = (ArrayContainer) container;
-            spanInfos[i] = key | getPackedInfoLowBits(ac);
+            spanInfos[i] = key | (SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK & (long) ac.getCardinality());
             spans[i] = ac.getContent();
             return;
         }
@@ -372,10 +368,18 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         ++size;
     }
 
+    /**
+     * Store at {@code i} a share of the container span the caller observed at {@code srcIdx} of {@code src}.
+     *
+     * @param srcSpanInfo the source's word for the span as observed: for a packed ArrayContainer, its key and
+     *        cardinality, which the copy stores as is; for a Container, its key
+     * @param srcContainer the source's span as observed, a {@code short[]} or a {@link Container}
+     */
     protected void setSharedContainerMaybePackedRaw(
             final int i, final RspArray src, final int srcIdx, final long srcSpanInfo, final Object srcContainer) {
         if (srcContainer instanceof short[]) {
-            spanInfos[i] = (src.spanInfos[srcIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK);
+            ArrayContainer.markContentShared((short[]) srcContainer);
+            spanInfos[i] = srcSpanInfo;
             spans[i] = srcContainer;
             return;
         }
@@ -401,9 +405,23 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         dstSpans[dstIdx] = srcSpans[srcIdx];
     }
 
-    private static final long SPANINFO_ARRAYCONTAINER_SHARED_BITMASK = (1L << 15);
-    private static final long SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK =
-            ~SPANINFO_ARRAYCONTAINER_SHARED_BITMASK & (long) BLOCK_LAST;
+    /**
+     * The bits of a packed ArrayContainer's word that hold its cardinality: all sixteen low bits, which an
+     * ArrayContainer's cardinality never fills. Nothing else is encoded in the word. In particular the container's
+     * shared flag is not: it is held in the reserved last slot of the {@code short[]} itself, see
+     * {@link ArrayContainer#getContent()}, so that an RspArray sharing the container from a source marks the array
+     * rather than writing into the source's words.
+     *
+     * <p>
+     * That matters because, per {@link io.deephaven.engine.rowset.impl.RefCountedCow}, a reader may derive from a
+     * source while the source's single owner mutates it in place; the reader's result is discarded once the clock shows
+     * it stale, but anything the reader wrote into the owner's arrays would be permanent. A write to the shared
+     * {@code short[]} can only affect that array: if the owner has meanwhile replaced the span, the array is orphaned
+     * and the write is harmless, and if not, the owner sees the flag on the very array it is about to edit. A word, by
+     * contrast, describes whatever span currently sits at the index, and cannot be written safely by anyone but the
+     * owner.
+     */
+    private static final long SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK = BLOCK_LAST;
 
     // shiftAmount is a multiple of BLOCK_SIZE.
     protected void copyKeyAndSpanMaybeSharing(
@@ -411,10 +429,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final RspArray src, final int srcIdx,
             final long[] dstSpanInfos, final Object[] dstSpans, final int dstIdx,
             final boolean tryShare) {
-        Object span = src.spans[srcIdx];
+        final Object span = src.spans[srcIdx];
         if (tryShare && src.shareContainers()) {
             if (span instanceof short[]) {
-                src.spanInfos[srcIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+                ArrayContainer.markContentShared((short[]) span);
             } else if (span instanceof Container) {
                 final Container c = (Container) span;
                 c.setCopyOnWrite();
@@ -453,28 +471,24 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     protected static final class SpanView extends ArrayContainer
             implements AutoCloseable {
         private final SpanViewRecycler recycler;
-        // The original array and index for which we loaded; we need to keep the reference
-        // for the cases where we need to update it (eg, setting a copy on write shared flag for an ArrayContainer
-        // stored as short[]).
-        private RspArray<?> arr;
-        private int arrIdx;
         private long spanInfo;
         private Object span;
 
         public SpanView(final SpanViewRecycler recycler) {
-            super(null, 0, false);
+            super(null, 0);
             this.recycler = recycler;
         }
 
         // The returned container is guaranteed to be valid until the next init() or close().
         public Container getContainer() {
             if (span instanceof short[]) {
-                shared = (spanInfo & SPANINFO_ARRAYCONTAINER_SHARED_BITMASK) != 0;
+                // The view is the packed ArrayContainer itself, over the span's short[]: its cardinality comes from
+                // the word, and its shared flag, as for any ArrayContainer, from the array's reserved last slot.
+                // Marking the view shared through setCopyOnWrite thus marks the span's array itself.
                 cardinality = (int) (spanInfo & SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK);
                 content = (short[]) span;
                 return this;
             }
-            shared = false;
             cardinality = 0;
             content = null;
             return (Container) span;
@@ -508,21 +522,18 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             init(arr, arrIdx, arr.spanInfos[arrIdx], arr.spans[arrIdx]);
         }
 
+        /**
+         * Load the view with a span already read from {@code arr} at {@code arrIdx}. The view keeps no reference to the
+         * array: nothing it does writes back into the array's words, so the first two parameters only say where the
+         * span came from.
+         */
         public void init(final RspArray<?> arr, final int arrIdx, final long spanInfo, final Object span) {
-            this.arr = arr;
-            this.arrIdx = arrIdx;
             this.spanInfo = spanInfo;
             this.span = span;
         }
 
-        @Override
-        protected void onCopyOnWrite() {
-            arr.spanInfos[arrIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
-        }
-
         public void reset() {
             content = null;
-            arr = null;
             span = null;
         }
 
@@ -748,11 +759,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 continue;
             }
             if (span instanceof short[]) {
-                // A packed ArrayContainer's shared flag lives in its owner's spanInfo word, so unlike a Container --
-                // whose flag travels with the object -- marking only this copy would leave the source believing it
-                // still owns the short[] exclusively, free to edit it in place underneath us.
-                spanInfos[i] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
-                src.spanInfos[isrc] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+                // A packed ArrayContainer's shared flag lives in the short[] itself, so as for a Container, whose flag
+                // travels with the object, marking it once covers both sides: the source, which must no longer edit
+                // the short[] in place, and this copy.
+                ArrayContainer.markContentShared((short[]) span);
                 continue;
             }
             // span instanceof Container
@@ -4237,7 +4247,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             resultEnd = end;
         } else {
             if (resultStart == key) {
-                r.appendSharedContainerMaybePacked(this, i, key, span);
+                r.appendSharedContainerMaybePacked(this, i, spanInfo, span);
                 return;
             }
             resultEnd = blockLast;
@@ -5060,6 +5070,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                             }
                             return false;
                         }
+                        if (s instanceof short[] && ((short[]) s).length <= c.getCardinality()) {
+                            if (doAssert) {
+                                final String m = str + ": packed ArrayContainer short[] has no reserved slot i=" + i
+                                        + ", length=" + ((short[]) s).length + ", cardinality=" + c.getCardinality();
+                                Assert.assertion(false, m);
+                            }
+                            return false;
+                        }
                         if (c.isAllOnes()) {
                             if (doAssert) {
                                 final String m = str + ": full RB container found i=" + i + ", size=" + size;
@@ -5436,8 +5454,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         for (int i = 0; i < size; ++i) {
             final Object o = spans[i];
             if (o instanceof short[]) {
+                // The array's reserved last slot can never hold a value, so it is not capacity going spare.
                 used += spanInfos[i] & SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK;
-                allocated += ((short[]) o).length;
+                allocated += ((short[]) o).length - 1;
                 continue;
             }
             if (!(o instanceof Container)) {
@@ -5490,7 +5509,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 arrayContainersCardinality.accept(card);
                 final long allocated = ((short[]) o).length;
                 arrayContainersBytesAllocated.accept(allocated);
-                arrayContainersBytesUnused.accept(allocated - card);
+                // Unused is spare value capacity, which excludes the array's reserved last slot.
+                arrayContainersBytesUnused.accept(allocated - 1 - card);
                 continue;
             }
             if (!(o instanceof Container)) { // full block span

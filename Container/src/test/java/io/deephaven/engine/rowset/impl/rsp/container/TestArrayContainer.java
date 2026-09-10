@@ -28,6 +28,79 @@ public class TestArrayContainer extends TestContainerBase {
         assertSameContents(ac1, ac2);
     }
 
+    /**
+     * The last element of the content array is reserved for the shared flag: filling the container to its capacity,
+     * and growing it, never writes a value there.
+     */
+    @Test
+    public void testReservedSlotIsNeverAValue() {
+        final ArrayContainer ac = new ArrayContainer();
+        assertEquals(ac.getContent().length - 1, ac.capacity());
+        // Enough values to grow the array a couple of times, while staying far too few for a different container type.
+        final int values = 3 * ac.capacity() + 2;
+        Container c = ac;
+        for (int v = 0; v < 3 * values; v += 3) {
+            c = c.iset((short) v);
+            assertSame("stays an ArrayContainer while small", ac, c);
+            final short[] content = ac.getContent();
+            assertEquals(content.length - 1, ac.capacity());
+            assertTrue("cardinality never reaches the reserved slot", ac.getCardinality() <= ac.capacity());
+            assertEquals("the reserved slot is untouched", 0, content[content.length - 1]);
+            assertFalse(ArrayContainer.isContentShared(content));
+        }
+        ac.validate();
+    }
+
+    /** Marking a container shared marks its array, which is where anyone holding the array reads the flag. */
+    @Test
+    public void testSetCopyOnWriteMarksTheContentArray() {
+        final ArrayContainer ac = new ArrayContainer(5, 15);
+        final short[] content = ac.getContent();
+        assertFalse(ac.isShared());
+        assertFalse(ArrayContainer.isContentShared(content));
+
+        ac.setCopyOnWrite();
+        assertTrue(ac.isShared());
+        assertTrue(ArrayContainer.isContentShared(content));
+
+        final Container r = ac.iset((short) 20);
+        assertNotSame("a shared container is copied, not edited in place", ac, r);
+        assertSame("the shared container keeps its array", content, ac.getContent());
+        assertEquals(10, ac.getCardinality());
+        assertEquals(11, r.getCardinality());
+        assertFalse("the copy is the caller's own", r.isShared());
+
+        // The flag is a property of the array: a container over a marked array is shared.
+        final ArrayContainer over = ArrayContainer.makeByWrapping(content, ac.getCardinality());
+        assertTrue(over.isShared());
+    }
+
+    /** An array handed to the container must leave room for the reserved slot. */
+    @Test
+    public void testWrappedArrayMustHaveRoomForTheReservedSlot() {
+        final short[] full = {1, 2, 3};
+        try {
+            ArrayContainer.makeByWrapping(full, full.length);
+            fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+        }
+        final short[] withRoom = {1, 2, 3, 0};
+        final ArrayContainer ac = ArrayContainer.makeByWrapping(withRoom, 3);
+        assertEquals(3, ac.getCardinality());
+        assertEquals(3, ac.capacity());
+        assertSame(withRoom, ac.getContent());
+        ac.validate();
+    }
+
+    /** DEFAULT_MAX_SIZE is chosen so that the largest ArrayContainer's array is exactly the size of a bitmap. */
+    @Test
+    public void testMaxSizeContentArrayIsABitmapsSize() {
+        final ArrayContainer ac = new ArrayContainer(ArrayContainer.DEFAULT_MAX_SIZE);
+        assertEquals(ArrayContainer.DEFAULT_MAX_SIZE, ac.capacity());
+        final int arrayHeaderBytes = 12;
+        assertEquals(BitmapContainer.BITMAP_SIZE_IN_BYTES, arrayHeaderBytes + Short.BYTES * ac.getContent().length);
+    }
+
     @Test
     public void testIandNot() {
         ArrayContainer ac1 = new ArrayContainer(5, 15);
