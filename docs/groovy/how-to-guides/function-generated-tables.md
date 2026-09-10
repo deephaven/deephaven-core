@@ -124,15 +124,21 @@ Provide at most one trigger:
 
 If you provide neither, the supplier runs exactly once at construction and the result is static.
 
+### How the result updates
+
+Every refresh replaces the result in full. The [table update](../conceptual/table-update-model.md) removes all of the previous rows and adds all of the newly generated rows, with no modified rows and no shifts, even when the generated data is identical to the previous cycle's. Downstream operations therefore reprocess the entire result on every refresh. This is why regular table operations, which update incrementally, are preferable when the input is already a Deephaven table.
+
+The `copyData` and `blinkTable` options below refine this behavior. They are independent of one another: `copyData` controls where the result's data lives and what its row keys look like, and `blinkTable` controls how downstream operations interpret each update.
+
 ### Copy data or delegate to the generated table
 
-By default (`copyData(true)`), so the generated rows are copied into the result's own contiguous columns. Each refresh replaces the result entirely — all previous rows are removed, and all new rows are added.
+By default (`copyData(true)`), the generated rows are copied into the result's own ColumnSources, and the result uses a flat, contiguous RowSet with row keys `0` through `size - 1`. The generated table itself is not retained.
 
-With `copyData(false)`, the result delegates directly to the generated table's column sources instead of copying, which avoids the copy and adopts the generated table's row set. Because the result holds the generated column sources across cycles, a refreshing generated table must expose immutable column sources; a generated table that changes values in place would corrupt the result's previous values and is rejected. A static table produced fresh on each refresh — for example, via [`snapshot`](../reference/table-operations/snapshot/snapshot.md) — always satisfies this requirement.
+With `copyData(false)`, the result skips the copy and delegates directly to the generated table's ColumnSources, adopting the generated table's RowSet as-is. The added rows of each update are exactly the generated table's RowSet, and the removed rows are the previous cycle's RowSet. Because the result holds the generated ColumnSources across cycles, a refreshing generated table must expose immutable ColumnSources; a generated table that changes values in place would corrupt the result's previous values and is rejected. A static table produced fresh on each refresh — for example, via [`snapshot`](../reference/table-operations/snapshot/snapshot.md) — always satisfies this requirement.
 
 ### Present the result as a blink table
 
-Set `blinkTable(true)` to present the result as a [blink table](../conceptual/table-types.md#specialization-3-blink), so downstream operations see only the rows generated during the current cycle. A blink table requires a refresh trigger. On a cycle where a `retainingLastTableSupplier` declines to produce a table, the blink result is cleared.
+Set `blinkTable(true)` to present the result as a [blink table](../conceptual/table-types.md#specialization-3-blink), so downstream operations see only the rows generated during the current cycle. Each update is still the same full replacement described above; the blink attribute changes how downstream operations interpret it, not how the rows are copied or delegated. A blink table requires a refresh trigger. On a cycle where a `retainingLastTableSupplier` declines to produce a table, the blink result is cleared.
 
 ### Specify the table definition
 

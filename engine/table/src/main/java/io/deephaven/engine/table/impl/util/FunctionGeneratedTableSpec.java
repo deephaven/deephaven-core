@@ -72,7 +72,9 @@ public abstract class FunctionGeneratedTableSpec {
      * {@link io.deephaven.engine.rowset.RowSet}, exactly as the legacy {@link FunctionGeneratedTableFactory} does. When
      * {@code false}, the result delegates directly to the generated table's column sources via
      * {@link io.deephaven.engine.table.impl.sources.SwitchColumnSource}, avoiding the copy and adopting the generated
-     * table's own {@link io.deephaven.engine.rowset.RowSet} shape.
+     * table's own {@link io.deephaven.engine.rowset.RowSet} shape. In either case, each refresh is a full replacement
+     * (all previous rows removed, all new rows added). Because the generated column sources are retained across cycles
+     * when not copying, a refreshing generated table must expose immutable column sources.
      *
      * @return whether to copy the generated data into the result
      */

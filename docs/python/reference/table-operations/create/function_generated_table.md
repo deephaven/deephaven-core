@@ -9,6 +9,8 @@ The `function_generated_table` method is useful for creating tables that are dep
 >
 > It is best to include all dependencies directly in `source_table` or only compute on-demand inputs under a `LivenessScope`.
 
+Every refresh replaces the result in full: the [table update](../../../conceptual/table-update-model.md) removes all previous rows and adds all newly generated rows, with no modified rows and no shifts, even when the generated data is unchanged. The `copy_data` and `blink_table` parameters refine this behavior independently of one another.
+
 ## Syntax
 
 ```python syntax
@@ -64,12 +66,12 @@ Dictionary of keyword arguments to pass to `table_generator`. Defaults to `{}`.
 </Param>
 <Param name="copy_data" type="bool" optional>
 
-When `True` (the default), the generated data is copied into the result. When `False`, the result delegates directly to the generated table's column sources, avoiding the copy and adopting the generated table's row set. In that case, a refreshing generated table must expose immutable column sources; a generated table that changes values in place is rejected. A static table produced fresh on each refresh — for example, via [`snapshot`](../snapshot/snapshot.md) — always satisfies this requirement.
+When `True` (the default), the generated data is copied into the result's own column sources, and the result uses a flat, contiguous row set. When `False`, the result delegates directly to the generated table's column sources, avoiding the copy and adopting the generated table's row set as-is: the added rows of each update are the generated table's row set, and the removed rows are the previous cycle's row set. In that case, a refreshing generated table must expose immutable column sources; a generated table that changes values in place is rejected. A static table produced fresh on each refresh — for example, via [`snapshot`](../snapshot/snapshot.md) — always satisfies this requirement.
 
 </Param>
 <Param name="blink_table" type="bool" optional>
 
-When `True`, the result is presented as a [blink table](../../../conceptual/table-types.md#specialization-3-blink), retaining only the rows generated during the current cycle. Requires a refresh trigger (`refresh_interval_ms` or `source_tables`). Defaults to `False`.
+When `True`, the result is presented as a [blink table](../../../conceptual/table-types.md#specialization-3-blink), retaining only the rows generated during the current cycle. Each update is still a full replacement; the blink attribute changes how downstream operations interpret it and is independent of `copy_data`. On a cycle where the `table_generator` returns `None`, the blink result is cleared. Requires a refresh trigger (`refresh_interval_ms` or `source_tables`). Defaults to `False`.
 
 </Param>
 <Param name="table_definition" type="TableDefinitionLike" optional>

@@ -513,6 +513,10 @@ def function_generated_table(
     The table definition must not change between invocations of the 'table_generator' function, or an exception will
     be raised.
 
+    Every refresh replaces the result in full: the update removes all previous rows and adds all newly generated rows,
+    with no modifications or shifts, even when the generated data is identical to the previous cycle's. The 'copy_data'
+    and 'blink_table' arguments refine this behavior independently of one another.
+
     Note that the 'table_generator' may access data in the sourceTables but should not perform further table operations
     on them without careful handling. Table operations may be memoized, and it is possible that a table operation will
     return a table created by a previous invocation of the same operation. Since that result will not have been included
@@ -534,13 +538,17 @@ def function_generated_table(
             execution context is used. If there is no current execution context, a ValueError is raised.
         args (tuple): Optional tuple of positional arguments to pass to table_generator. Defaults to ()
         kwargs (dict): Optional dictionary of keyword arguments to pass to table_generator. Defaults to {}
-        copy_data (bool): When True (the default), the generated data is copied into the result. When False, the result
-            delegates directly to the generated table's column sources, avoiding the copy and adopting the generated
-            table's row set; in that case a refreshing generated table must expose immutable column sources. Defaults to
-            True.
+        copy_data (bool): When True (the default), the generated data is copied into the result's own column sources
+            and the result uses a flat, contiguous row set. When False, the result delegates directly to the generated
+            table's column sources, avoiding the copy and adopting the generated table's row set as-is: the added rows
+            of each update are the generated table's row set, and the removed rows are the previous cycle's row set. In
+            that case a refreshing generated table must expose immutable column sources; a generated table that changes
+            values in place is rejected. Defaults to True.
         blink_table (bool): When True, the result is presented as a blink table, retaining only the rows generated
-            during the current cycle. Requires a refresh trigger ('refresh_interval_ms' or 'source_tables'). Defaults to
-            False.
+            during the current cycle. Each update is still a full replacement; the blink attribute changes how
+            downstream operations interpret it and is independent of 'copy_data'. On a cycle where 'table_generator'
+            returns None, the blink result is cleared. Requires a refresh trigger ('refresh_interval_ms' or
+            'source_tables'). Defaults to False.
         table_definition (Optional[TableDefinitionLike]): When provided, it is authoritative: it defines the result's
             columns and their order, and every table the 'table_generator' produces must be compatible with it. Defaults
             to None, in which case the generated table's definition is used.

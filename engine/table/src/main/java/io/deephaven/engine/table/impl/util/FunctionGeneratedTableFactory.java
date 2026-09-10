@@ -30,14 +30,15 @@ import java.util.stream.Collectors;
 /**
  * An abstract table that represents the result of a function.
  * <p>
- * The table will run by regenerating the full values (using the tableGenerator Function passed in). The resultant
- * table's values are copied into the result table and appropriate listener notifications are fired.
+ * The table will run by regenerating the full values (using the tableGenerator Function passed in). The result table
+ * takes on those new values and fires an appropriate update for a full-replacement (all previous rows removed, all new
+ * rows added, with no modifications or shifts), even when the generated data is identical to the previous cycle's.
  * <p>
- * When copying data (the default), the generated rows are copied into a contiguous RowSet and each cycle fires a
- * full-replacement update (all previous rows removed, all new rows added, with no modifications or shifts). When
- * copying is disabled (see {@link FunctionGeneratedTableSpec#copyData()}), the output instead delegates to the
- * generated table's column sources via {@link SwitchColumnSource}, adopting the generated table's RowSet and firing the
- * same full-replacement update each cycle.
+ * When copying data (the default), the generated rows are copied into a flat, contiguous RowSet. When copying is
+ * disabled (see {@link FunctionGeneratedTableSpec#copyData()}), the output instead delegates to the generated table's
+ * column sources via {@link SwitchColumnSource}, adopting the generated table's RowSet: the added rows of each update
+ * are exactly the generated table's RowSet, and the removed rows are the previous cycle's RowSet. Because the generated
+ * table's RowSet and ColumnSources are used directly, a refreshing generated table's column sources must be immutable.
  * <p>
  * When {@link FunctionGeneratedTableSpec#blinkTable()} is set, the result is presented as a
  * {@link Table#BLINK_TABLE_ATTRIBUTE blink table}: each cycle removes the previous rows and adds the newly generated
