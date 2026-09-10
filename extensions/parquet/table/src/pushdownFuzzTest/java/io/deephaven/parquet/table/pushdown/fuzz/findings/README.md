@@ -15,6 +15,7 @@ appears in both was rediscovered independently.
 | 1 | [An explicit `RowGroupInfo.maxRows` on a zero-row table fails the write](01-empty-table-row-group-split.md) | medium | fixed |
 | 2 | [`epochNanos` decided representability from the seconds alone](02-epoch-nanos-boundary.md) | high | fixed |
 | 3 | [A pre-epoch `LocalDateTime` with a sub-second part cannot be read back from parquet](03-pre-epoch-local-date-time-materializers.md) | high | fixed |
+| 4 | [A key-value partitioned write with no partitions crashed inside the writer](04-empty-partitioned-write-crash.md) | medium | fixed |
 
 ## How the bench is run for this campaign
 

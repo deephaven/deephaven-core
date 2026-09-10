@@ -627,6 +627,17 @@ public class ParquetTools {
         if (definition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
+        final boolean generateMetadataFiles = writeInstructions.generateMetadataFiles();
+        if (generateMetadataFiles && metadataRootDir == null) {
+            throw new IllegalArgumentException("Metadata root directory must be set when writing metadata files");
+        }
+        if (destinations.length == 0) {
+            // Nothing to write. A key-value partitioned write of a table with no partitions lands here, and the
+            // metadata files have nothing to describe -- ParquetMetadataFileWriterImpl.writeMetadataFiles rejects an
+            // empty file list. Returning also keeps the scheme lookup below off an empty array, which used to fail
+            // with ArrayIndexOutOfBoundsException.
+            return;
+        }
         // Assuming all destination URIs have the same scheme, and will use the same channels provider instance
         final SeekableChannelsProvider channelsProvider =
                 writeInstructions.getSeekableChannelsProviderForWriting()
@@ -634,10 +645,7 @@ public class ParquetTools {
                                 .load(destinations[0].getScheme(), writeInstructions.getSpecialInstructions()));
 
         final ParquetMetadataFileWriter metadataFileWriter;
-        if (writeInstructions.generateMetadataFiles()) {
-            if (metadataRootDir == null) {
-                throw new IllegalArgumentException("Metadata root directory must be set when writing metadata files");
-            }
+        if (generateMetadataFiles) {
             metadataFileWriter =
                     new ParquetMetadataFileWriterImpl(metadataRootDir, destinations, partitioningColumnsSchema);
         } else {
@@ -688,7 +696,7 @@ public class ParquetTools {
                     }
                 }
 
-                if (writeInstructions.generateMetadataFiles()) {
+                if (generateMetadataFiles) {
                     final URI metadataDest = metadataRootDir.resolve(METADATA_FILE_NAME);
                     final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
                             writeContext, metadataDest, PARQUET_OUTPUT_BUFFER_SIZE);

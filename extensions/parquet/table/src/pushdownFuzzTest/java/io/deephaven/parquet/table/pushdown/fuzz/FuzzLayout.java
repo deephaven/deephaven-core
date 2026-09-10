@@ -167,10 +167,16 @@ public final class FuzzLayout {
                 partitionable.add(column);
             }
         }
-        // A partitioned write requires at least one non-partitioning column, so a single-column case
-        // can never be partitioned ("Cannot write a partitioned parquet table without any
-        // non-partitioning columns").
-        if (!partitionable.isEmpty() && columns.size() >= 2
+        // Two API preconditions of a key-value partitioned write, neither of which hides a defect:
+        // - it requires at least one non-partitioning column, so a single-column case can never be
+        // partitioned ("Cannot write a partitioned parquet table without any non-partitioning columns");
+        // - an empty table has no partitions, so the write produces an empty directory, and the key-value
+        // layout records the schema only in its data files -- readTable then reports "Unable to infer
+        // schema for a partitioned parquet table when there are no initial parquet files". Asserted in
+        // EmptyPartitionedTableWriteTest. (The write used to crash with ArrayIndexOutOfBoundsException
+        // instead; that was finding 4 and is fixed.)
+        final boolean anyRows = columns.stream().anyMatch(c -> c.size() > 0);
+        if (!partitionable.isEmpty() && columns.size() >= 2 && anyRows
                 && random.nextDouble() < partitionedProbability) {
             fileLayout = FileLayout.PARTITIONED;
             partitionable.get(random.nextInt(partitionable.size())).setPartitioning(true);
