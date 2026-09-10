@@ -16,8 +16,9 @@ Output:
 """
 
 import os
+import subprocess
 
-os.system("pip install beautifulsoup4 requests")
+subprocess.check_call(["pip", "install", "beautifulsoup4", "requests"])
 
 from deephaven.pandas import to_pandas
 from deephaven import empty_table
@@ -51,6 +52,7 @@ CATEGORY_FILTERS = {
         "io.deephaven.util.type.TypeUtils",
         "io.deephaven.util.type.ArrayTypeUtils",
         "io.deephaven.base.string.cache.CompressedString",
+        "io.deephaven.engine.table.impl.verify.TableAssertions",
     ],
     "parse": [
         "io.deephaven.function.Parse",
@@ -172,7 +174,8 @@ def categorize(s: str) -> str:
 def get_url_data(url: str) -> str:
     """Download HTML from a URL."""
     print(f"Downloading: {url}")
-    r = requests.get(url)
+    r = requests.get(url, timeout=30)
+    r.raise_for_status()
     return r.text
 
 
