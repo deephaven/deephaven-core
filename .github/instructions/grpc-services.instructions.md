@@ -39,15 +39,6 @@ the following:
   (the same `AggSpec` used inside an `Aggregation`'s column aggregations). Reuse the validator at the
   layer where the expression actually lives (e.g. the `AggSpec`/`Selectable`) so every service that
   embeds it is covered, rather than re-deriving a partial check per service.
-- **Fail closed when a `switch` that decides how to validate an expression hits an unknown case.**
-  When a `switch` over a `oneof`/enum picks *how to validate* a user expression, its `default` (and
-  `TYPE_NOT_SET`) must reject with `INVALID_ARGUMENT` rather than fall through — an unhandled case
-  there means an expression would reach the engine unvalidated, which is a security bypass. Prefer
-  this over an `if (typeCase == X)` that silently ignores everything else. This is a narrow,
-  fail-closed rule for validation-dispatch switches only; it is **not** a blanket policy to throw on
-  every unknown proto value. Fields that do not carry compiled expressions must still follow normal
-  proto compatibility — tolerate unknown enum/`oneof` values and deprecate rather than remove old
-  ones — so older and newer clients and servers keep interoperating.
 - **Validate request shape.** In `validateRequest`, use `GrpcErrorHelper.checkHasField` /
   `checkRepeatedFieldNonEmpty` / `checkHasNoUnknownFields` and `Common.validate(...)` on every ticket
   reference. `checkHasNoUnknownFields` is what rejects unknown/renamed proto fields.
