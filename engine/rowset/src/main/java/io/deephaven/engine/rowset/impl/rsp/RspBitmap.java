@@ -364,11 +364,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     private static Container makeValuesContainer(final LongChunk<OrderedRowKeys> values,
             final int offset, final int length) {
         if (length <= ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD) {
-            final short[] valuesArray = new short[length];
+            // Fill an array the container can take over as is, rather than one it would have to copy.
+            final short[] valuesArray = ArrayContainer.allocateContent(length);
             for (int vi = 0; vi < length; ++vi) {
                 valuesArray[vi] = lowBitsAsShort(values.get(vi + offset));
             }
-            return new ArrayContainer(valuesArray);
+            return ArrayContainer.makeByWrapping(valuesArray, length);
         }
         final BitmapContainer bitmapContainer = new BitmapContainer();
         for (int vi = 0; vi < length; ++vi) {

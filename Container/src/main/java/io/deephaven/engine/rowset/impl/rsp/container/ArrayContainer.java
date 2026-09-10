@@ -101,9 +101,21 @@ public class ArrayContainer extends Container {
         return shortArraySizeRounding(capacity + 1);
     }
 
+    /**
+     * A fresh, unshared content array able to hold {@code capacity} values, for a caller that fills it and then hands
+     * it to {@link #makeByWrapping(short[], int)}: the values go at indices {@code [0, capacity)}, and the array's
+     * reserved last slot and any rounding padding beyond them are already in place.
+     *
+     * @param capacity the number of values the array must be able to hold
+     * @return a new array, sized as this container would size its own
+     */
+    public static short[] allocateContent(final int capacity) {
+        return new short[contentLength(capacity)];
+    }
+
     /** A fresh, unshared content array able to hold {@code capacity} values. */
     private static short[] newContent(final int capacity) {
-        return new short[contentLength(capacity)];
+        return allocateContent(capacity);
     }
 
     /** The number of values the content array can hold. */
@@ -230,16 +242,18 @@ public class ArrayContainer extends Container {
     }
 
     /**
-     * Create a new container holding a copy of the values in the provided array.
+     * Create a new container holding a copy of the values in the provided array. A convenience for tests; production
+     * code fills an array from {@link #allocateContent(int)} and hands it to {@link #makeByWrapping(short[], int)}
+     * instead, which allocates once.
      *
      * <p>
-     * Unlike {@link #makeByWrapping(short[], int)}, the argument is plain values only: every element is a value, and
-     * there is no reserved slot in it. The container copies them into a content array of its own, allocated with the
-     * reserved last slot, and does not keep a reference to the argument.
+     * Unlike {@code makeByWrapping}, the argument is plain values only: every element is a value, and there is no
+     * reserved slot in it. The container copies them into a content array of its own, allocated with the reserved last
+     * slot, and does not keep a reference to the argument.
      *
      * @param values array with values in increasing unsigned short order, all of which the container holds.
      */
-    public ArrayContainer(final short[] values) {
+    ArrayContainer(final short[] values) {
         this(values.length, values, 0, values.length);
     }
 
@@ -1514,10 +1528,12 @@ public class ArrayContainer extends Container {
     }
 
     private void compact() {
-        if (isShared() || capacity() == cardinality || (cardinality == 0 && capacity() == DEFAULT_INIT_CAPACITY)) {
+        final int compactCapacity = cardinality == 0 ? DEFAULT_INIT_CAPACITY : cardinality;
+        // Nothing to gain when the array is already the length the allocator would round a compact one up to.
+        if (isShared() || content.length == contentLength(compactCapacity)) {
             return;
         }
-        final short[] newContent = newContent(cardinality == 0 ? DEFAULT_INIT_CAPACITY : cardinality);
+        final short[] newContent = newContent(compactCapacity);
         System.arraycopy(content, 0, newContent, 0, cardinality);
         content = newContent;
     }
