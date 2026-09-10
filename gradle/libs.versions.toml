@@ -93,7 +93,7 @@ undercouch = "2.18.0"
 univocity = "2.9.1"
 vertispan-nio = "1.0-alpha-2"
 vertispan-flatbuffers-gwt = "25.2.10-1"
-vertispan-ts-defs = "1.0.0-RC4"
+vertispan-ts-defs = "HEAD-SNAPSHOT"
 xerial = "3.53.2.1"
 
 # test versions

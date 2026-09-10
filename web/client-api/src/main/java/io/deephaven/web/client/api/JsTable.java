@@ -10,6 +10,7 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
+import elemental2.core.ReadonlyArray;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
@@ -489,19 +490,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(cts -> Promise.resolve(new JsTable(workerConnection, cts)));
     }
 
-    // TODO: make these use Promise, so that if the tables list is only partially resolved,
-    // we can force the calling client to wait appropriately (that or we throw errors / log warnings
-    // when attempting to read columns / size / etc before the tables list is fully resolved)
-
     /**
      * The columns that are present on this table. This is always all possible columns. If you specify fewer columns in
      * {@link #setViewport(double, double, JsArray)}, you will get only those columns in your
-     * {@link io.deephaven.web.client.api.subscription.ViewportData ViewportData}. {@code size} is the total count of
-     * rows in the table. The size can and will change; see the {@link #EVENT_SIZECHANGED} event for details. Size will
-     * be negative in exceptional cases (eg. the table is uncoalesced, see the {@link #isUncoalesced()} property for
-     * details).
+     * {@link io.deephaven.web.client.api.subscription.ViewportData ViewportData}.
      * 
-     * @return {@link Column} array
+     * @return the columns in this table
      */
     @JsProperty
     public JsArray<Column> getColumns() {
@@ -660,6 +654,49 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @TsUnion
     @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
+    public interface MatchPairUnion {
+        @JsOverlay
+        static Column.ColumnOrName of(@DoNotAutobox Object value) {
+            return Js.cast(value);
+        }
+
+        @JsOverlay
+        static List<String> toStringArray(ReadonlyArray<MatchPairUnion> arr) {
+            return arr.asList().stream()
+                    .map(o -> ((MatchPairUnion) Js.cast(o)).columnName())
+                    .collect(Collectors.toList());
+        }
+
+        @JsOverlay
+        default String columnName() {
+            return isString() ? asString() : asColumn().getName();
+        }
+
+        @JsOverlay
+        default boolean isString() {
+            return (Object) this instanceof String;
+        }
+
+        @JsOverlay
+        default boolean isColumn() {
+            return (Object) this instanceof Column;
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default String asString() {
+            return Js.asString(this);
+        }
+
+        @JsOverlay
+        @TsUnionMember
+        default Column asColumn() {
+            return Js.cast(this);
+        }
+    }
+
+    @TsUnion
+    @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
     public interface CustomColumnArgUnionType {
         @JsOverlay
         static CustomColumnArgUnionType of(@DoNotAutobox Object value) {
@@ -686,6 +723,16 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         @TsUnionMember
         default CustomColumn asCustomColumn() {
             return Js.cast(this);
+        }
+
+        @JsOverlay
+        default String makeColumnSpec() {
+            if (isString()) {
+                return asString();
+            } else if (isCustomColumn()) {
+                return asCustomColumn().toString();
+            }
+            throw new IllegalStateException("Unexpected type for CustomColumnArgUnionType");
         }
     }
 
@@ -848,7 +895,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
         options.previewOptions = new DataOptions.PreviewOptions();
         options.previewOptions.convertArrayToString = true;
-        options.columns = columns;
+        options.columns = Js.cast(columns);
         options.updateIntervalMs = updateIntervalMs;
         return TableSubscription.createTableSubscription(options, this);
     }
@@ -906,7 +953,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsMethod
     public Promise<TableData> createSnapshot(@TsTypeRef(DataOptions.SnapshotOptions.class) Object options) {
         DataOptions.SnapshotOptions snapshotOptions = DataOptions.SnapshotOptions.of(options);
-        JsArray<Column> columns = snapshotOptions.columns;
+        ReadonlyArray<Column.ColumnOrName> columns = snapshotOptions.columns;
         RangeSet rows = snapshotOptions.rows.asRangeSet().getRange();
 
         // TODO #1039 slice rows and drop columns
@@ -1375,7 +1422,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @Override
     @JsMethod
     public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
-            @JsOptional @JsNullable String[] stampColumns) {
+            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> stampColumns) {
         Objects.requireNonNull(baseTable, "Snapshot base table");
         final boolean realDoInitialSnapshot;
         if (doInitialSnapshot != null) {
@@ -1384,7 +1431,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             realDoInitialSnapshot = true;
         }
         final String fetchSummary =
-                "snapshot(" + baseTable + ", " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")";
+                "snapshot(" + baseTable + ", " + doInitialSnapshot + ", " + stampColumns + ")";
         return workerConnection.newState((c, state) -> {
             SnapshotWhenTableRequest.Builder request = SnapshotWhenTableRequest.newBuilder()
                     .setBaseId(baseTable.state().getHandle().makeTableReference())
@@ -1393,7 +1440,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     .setInitial(realDoInitialSnapshot);
 
             if (stampColumns != null) {
-                request.addAllStampColumns(Arrays.asList(stampColumns));
+                request.addAllStampColumns(MatchPairUnion.toStringArray(stampColumns));
             }
 
             workerConnection.tableServiceClient().snapshotWhen(request.build(), c);
@@ -1408,8 +1455,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @Override
     @JsMethod
     @Deprecated
-    public Promise<JsTable> join(String joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
+    public Promise<JsTable> join(String joinType, JoinableTable rightTable,
+            ReadonlyArray<MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
+            @JsOptional @JsNullable String asOfMatchRule) {
         if (joinType.equals("AJ") || joinType.equals("RAJ") || joinType.equals("ReverseAJ")) {
             return asOfJoin(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
         } else if (joinType.equals("CROSS_JOIN") || joinType.equals("Join")) {
@@ -1425,8 +1474,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     @JsMethod
-    public Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
+    public Promise<JsTable> asOfJoin(JoinableTable rightTable,
+            ReadonlyArray<MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
+            @JsOptional @JsNullable String asOfMatchRule) {
         if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
@@ -1436,9 +1487,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             request.setLeftId(state().getHandle().makeTableReference());
             request.setRightId(rightTable.state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
-            request.addAllColumnsToMatch(columnsToMatch.asList());
+            request.addAllColumnsToMatch(MatchPairUnion.toStringArray(columnsToMatch));
             if (columnsToAdd != null) {
-                request.addAllColumnsToAdd(columnsToAdd.asList());
+                request.addAllColumnsToAdd(MatchPairUnion.toStringArray(columnsToAdd));
             }
             if (asOfMatchRule != null) {
                 request.setAsOfMatchRule(AsOfJoinTablesRequest.MatchRule.valueOf(asOfMatchRule));
@@ -1451,8 +1502,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     @JsMethod
-    public Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable Double reserveBits) {
+    public Promise<JsTable> crossJoin(JoinableTable rightTable,
+            ReadonlyArray<MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
+            @JsOptional @JsNullable Double reserveBits) {
         if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
@@ -1462,9 +1515,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             request.setLeftId(state().getHandle().makeTableReference());
             request.setRightId(rightTable.state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
-            request.addAllColumnsToMatch(columnsToMatch.asList());
+            request.addAllColumnsToMatch(MatchPairUnion.toStringArray(columnsToMatch));
             if (columnsToAdd != null) {
-                request.addAllColumnsToAdd(columnsToAdd.asList());
+                request.addAllColumnsToAdd(MatchPairUnion.toStringArray(columnsToAdd));
             }
             if (reserveBits != null) {
                 request.setReserveBits((int) (double) reserveBits);
@@ -1477,8 +1530,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     @JsMethod
-    public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd) {
+    public Promise<JsTable> exactJoin(JoinableTable rightTable,
+            ReadonlyArray<MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd) {
         if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
@@ -1488,9 +1542,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     .setLeftId(state().getHandle().makeTableReference())
                     .setRightId(rightTable.state().getHandle().makeTableReference())
                     .setResultId(state.getHandle().makeTicket())
-                    .addAllColumnsToMatch(columnsToMatch.asList());
+                    .addAllColumnsToMatch(MatchPairUnion.toStringArray(columnsToMatch));
             if (columnsToAdd != null) {
-                request.addAllColumnsToAdd(columnsToAdd.asList());
+                request.addAllColumnsToAdd(MatchPairUnion.toStringArray(columnsToAdd));
             }
             workerConnection.tableServiceClient().exactJoinTables(request.build(), c);
         }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
@@ -1500,8 +1554,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     @JsMethod
-    public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd) {
+    public Promise<JsTable> naturalJoin(JoinableTable rightTable,
+            ReadonlyArray<MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd) {
         if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
@@ -1511,9 +1566,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     .setLeftId(state().getHandle().makeTableReference())
                     .setRightId(rightTable.state().getHandle().makeTableReference())
                     .setResultId(state.getHandle().makeTicket())
-                    .addAllColumnsToMatch(columnsToMatch.asList());
+                    .addAllColumnsToMatch(MatchPairUnion.toStringArray(columnsToMatch));
             if (columnsToAdd != null) {
-                request.addAllColumnsToAdd(columnsToAdd.asList());
+                request.addAllColumnsToAdd(MatchPairUnion.toStringArray(columnsToAdd));
             }
             workerConnection.tableServiceClient().naturalJoinTables(request.build(), c);
         }, "naturalJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
@@ -1605,7 +1660,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     toRelease.add(table::close);
                     DataOptions.SnapshotOptions options = new DataOptions.SnapshotOptions();
                     options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 0));
-                    options.columns = table.getColumns();
+                    options.columns = Js.cast(table.getColumns());
                     return table.createSnapshot(options);
                 })
                 .then(tableData -> Promise.resolve(new JsColumnStatistics(tableData)))

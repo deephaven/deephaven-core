@@ -60,6 +60,14 @@ public interface TableData {
         default int asInt() {
             return Js.asInt(this);
         }
+
+        @JsOverlay
+        default long getLongValue() {
+            if (isInt()) {
+                return asInt();
+            }
+            return asLongWrapper().getWrapped();
+        }
     }
 
     @JsProperty

@@ -5,6 +5,7 @@ package io.deephaven.web.client.api.subscription;
 
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.ConfigValue;
 import io.deephaven.proto.backplane.grpc.FlattenRequest;
@@ -219,10 +220,12 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     /**
      * Changes the rows and columns set on this viewport. This cannot be used to change the update interval.
      * 
-     * @param firstRow
-     * @param lastRow
-     * @param columns
-     * @param updateIntervalMs
+     * @param firstRow the first row to be visible in the viewport
+     * @param lastRow the last row to be visible in the viewport
+     * @param columns the columns to show in the viewport
+     * @param updateIntervalMs has no effect
+     * @param isReverseViewport true to start the viewport offset from the end of the table, such as to pin the scroll
+     *        to the bottom of a ticking table
      * @deprecated use {@link #update(Object)} instead
      */
     @JsMethod
@@ -290,9 +293,11 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             // CTS has resolved. Only supported for legacy setViewport calls, not createViewportSubscription()/update().
             options.columns = Js.uncheckedCast(state().getColumns());
         } else {
-            // If columns were provided, copy and sort by index to ensure a consistent order
-            options.columns = options.columns.slice();
-            options.columns.sort(Comparator.comparing(Column::getIndex)::compare);
+            // If columns were provided, resolve any names to Column instances and sort by index to ensure a
+            // consistent order with the original table.
+            JsArray<Column> columns = state().mapToColumns(options.columns);
+            columns.sort(Comparator.comparing(Column::getIndex)::compare);
+            options.columns = Js.cast(columns);
         }
         if (options.updateIntervalMs != null && refresh != options.updateIntervalMs) {
             throw new IllegalArgumentException(
@@ -302,7 +307,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             options.isReverseViewport = false;
         }
         try {
-            this.sendBarrageSubscriptionRequest(options.rows.asRangeSet().getRange(), options.columns,
+            this.sendBarrageSubscriptionRequest(options.rows.asRangeSet().getRange(),
+                    Js.uncheckedCast(options.columns),
                     options.updateIntervalMs, options.isReverseViewport, previewListLengthLimit);
         } catch (Exception e) {
             fireEvent(JsTable.EVENT_REQUEST_FAILED, e.getMessage());
