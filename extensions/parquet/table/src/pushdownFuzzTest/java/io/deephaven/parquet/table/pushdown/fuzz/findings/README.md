@@ -21,6 +21,7 @@ appears in both was rediscovered independently.
 | 7 | [A formula filter pushed through nested renaming views lost all but the last renaming](07-condition-filter-rename-not-composed.md) | medium-high | fixed |
 | 8 | [A filter naming both a column and its column-array form crashed the deferred-view filter split](08-deferred-view-duplicate-rename-key.md) | medium | fixed |
 | 9 | [Parquet-space names leaked into two table-space APIs, dropping rows](09-parquet-name-space-leak.md) | high | fixed |
+| 10 | [A deferred `renameColumns` that swaps or rotates names produced the wrong data](10-deferred-rename-not-simultaneous.md) | high | fixed |
 
 ## How the bench is run for this campaign
 

@@ -75,6 +75,10 @@ public class PushdownFuzzerTest {
             // Finding 9: parquet-space names leaked into two table-space APIs in ParquetTableLocation -- the
             // recorded sorting column, and the dictionary path's column-location lookup.
             -5347797226962475569L, -6688467811848818630L, -7423979211207825555L,
+            // Finding 10: a deferred renameColumns that reassigns a name another of its columns reads from was
+            // applied with view(), which is sequential, so a swap/chain/rotation produced the wrong data.
+            5201278404043255708L, 2423783905725303439L, 5559549332320180280L,
+            -8144732105314013200L, 5702961989472887051L,
     };
 
     private static final String ROOT_FILENAME = PushdownFuzzerTest.class.getName() + "_root";
