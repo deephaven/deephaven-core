@@ -151,6 +151,16 @@ they register **`TableUpdateListener`s** on upstream tables and receive `TableUp
   (`SelectOrUpdateListener`, `SortListener`, the `By` aggregation suite, join helpers like
   `CrossJoinHelper`/`AsOfJoinHelper`, filter execution).
 
+### Updating the query engine
+
+The engine processes large, ticking datasets on the hot path, so data-movement code must be written
+for throughput. Before adding or changing engine internals (`engine/table`, `engine/rowset`,
+`engine/chunk`, aggregation/join/update-by operators, `ColumnSource`s, kernels), read
+`.github/instructions/query-engine.instructions.md` — the rules cover bulk (chunked) reads,
+dispatching to type-specialized kernels instead of per-cell virtual calls, allocating reusable
+context objects before the per-chunk loop, batching `RowSet` operations, and keeping `RowSet`
+operations O(n) with no quadratic paths.
+
 ### Server & client integration (`server/`, `py/`, `java-client/`, `proto/`)
 
 - **`server`** exposes tables over **gRPC + Arrow Flight**; ticking data streams via the
@@ -182,6 +192,16 @@ this purpose and will save you a lot of exploration:
   (`R/README.md` indexes the rest; `R/rdeephaven/BUILDING.md` is the build guide.)
 
 Both use stable `## ` section anchors, so `grep -n '^## ' <file>` gives you a map to read selectively.
+
+### Reviewing / updating gRPC services
+
+Server-side gRPC handlers turn untrusted client requests into engine operations, so they are a
+security boundary. Before adding or changing a handler (`server/src/.../table/ops/*GrpcImpl.java`,
+the hierarchical/partitioned/console/input-table services, or a service-loaded `TicketResolver`),
+read `.github/instructions/grpc-services.instructions.md` — the checklist covers validating
+every user-supplied expression through `ColumnExpressionValidator`, validating the exact string and
+column shape the engine compiles, request-shape and authorization checks, error mapping, and the
+tests to add.
 
 ### Other major areas
 

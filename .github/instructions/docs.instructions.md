@@ -1,6 +1,5 @@
 ---
-applyTo:
-  - "docs/**/*.md"
+applyTo: "docs/**/*.md"
 ---
 
 # Documentation Style Guidelines
