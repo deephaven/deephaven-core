@@ -18,6 +18,7 @@ appears in both was rediscovered independently.
 | 4 | [A key-value partitioned write with no partitions crashed inside the writer](04-empty-partitioned-write-crash.md) | medium | fixed |
 | 5 | [A partitioning column's type was inferred from its directory names, so it did not round trip](05-partitioning-column-type-not-recorded.md) | high | fixed |
 | 6 | [A disjunction mixing a renamed and an un-renamed column tripped an internal assertion](06-match-filter-partial-rename-map.md) | medium | fixed |
+| 7 | [A formula filter pushed through nested renaming views lost all but the last renaming](07-condition-filter-rename-not-composed.md) | medium-high | fixed |
 
 ## How the bench is run for this campaign
 

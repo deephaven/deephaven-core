@@ -67,6 +67,11 @@ public class PushdownFuzzerTest {
             // Finding 6: or(isNotNull(renamed), isNull(unrenamed)) over a DeferredViewTable tripped
             // MatchFilter.renameFilter's totality assertion on the partial rename map.
             -4715342832495625892L,
+            // Finding 7: a formula filter pushed through nested renaming deferred views lost every renaming but
+            // the last, because ConditionFilter.renameFilter replaced its name map instead of composing it.
+            7177646707619336702L, 273087235408284003L, 8429452456633422855L,
+            8540064508133314173L, 8922140309403778699L, -4605199251911937283L,
+            8576325184258344286L, 7496982466862244149L,
     };
 
     private static final String ROOT_FILENAME = PushdownFuzzerTest.class.getName() + "_root";
