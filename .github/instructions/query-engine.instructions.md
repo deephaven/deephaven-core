@@ -22,11 +22,16 @@ for throughput. When adding or changing engine internals (`engine/table`, `engin
   `ChunkSource.FillContext` / `GetContext`, aggregation or kernel state) once, before iterating, and
   reuse it across every chunk in the loop. Do not allocate chunks, arrays, or boxed values inside the
   per-chunk body. Context objects are `SafeCloseable` — close them (try-with-resources).
-- **Batch `RowSet` operations.** Use range- and chunk-oriented `RowSet` / `RowSetBuilder` /
-  `WritableRowSet` APIs (`insertRange`, `insert(RowSet)`, `RowSequence` iteration, sequential/random
-  builders). Avoid per-key `get`/`find`/`insert`/`remove` in a loop; presize builders and destinations
-  to the source size (an open-hash set iterated into a default-sized destination can go
-  ~quadratic — see the `RspBitmap` intersect history).
+- **Batch `RowSet` operations.** Use range- and chunk-oriented `RowSet` / `WritableRowSet` /
+  `RowSetBuilderSequential` / `RowSetBuilderRandom` APIs (`insertRange`, `insert(RowSet)`,
+  `appendRange`/`addRange`, `RowSequence` iteration) instead of per-key `get`/`find`/`insert`/`remove`
+  in a loop. The row-set builders take no capacity hint (`RowSetBuilderSequential` only exposes
+  `setDomain`), so there is nothing to pre-size on the builder itself — prefer the sequential builder
+  when keys are already ordered.
+- **Pre-size capacity-configurable staging collections and destinations to the source cardinality.**
+  For the containers that *do* accept a capacity — fastutil sets/maps, arrays, chunk-backed staging
+  — size them from the known input size rather than a default; iterating an open-hash set into a
+  default-sized destination can go ~quadratic (see the `RspBitmap` intersect history).
 - **Keep `RowSet` operations O(n); never add a quadratic path.** When modifying or adding a `RowSet`
   operation, confirm its complexity is linear in the number of rows/ranges touched. A per-element
   `find`/`get`/`insert` inside a loop over another set is the classic quadratic trap — restructure

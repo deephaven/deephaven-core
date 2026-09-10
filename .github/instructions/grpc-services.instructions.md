@@ -32,10 +32,12 @@ the following:
   more than one shape (e.g. a rollup compiles each formula once per grouping prefix, from the base
   level down to the empty-key root, turning dropped keys from scalars into vectors), validate it at
   **every** such shape, not just one.
-- **Keep validation consistent across equivalent paths.** The same proto message often reaches the
-  engine through several services (e.g. `Aggregation` is used by `Aggregate`, `AggregateAll`,
-  `RangeJoin`, and `Rollup`). Validate it identically everywhere; when a new service reuses a message,
-  mirror the existing validation rather than re-deriving a partial version.
+- **Keep validation consistent across equivalent paths, at the layer the expression lives.** The same
+  proto message often reaches the engine through several services — the `Aggregation` message is
+  shared by `Aggregate`, `RangeJoin`, and `Rollup`, while `AggregateAll` carries a nested `AggSpec`
+  (the same `AggSpec` used inside an `Aggregation`'s column aggregations). Reuse the validator at the
+  layer where the expression actually lives (e.g. the `AggSpec`/`Selectable`) so every service that
+  embeds it is covered, rather than re-deriving a partial check per service.
 - **Fail closed when a `switch` that decides how to validate an expression hits an unknown case.**
   When a `switch` over a `oneof`/enum picks *how to validate* a user expression, its `default` (and
   `TYPE_NOT_SET`) must reject with `INVALID_ARGUMENT` rather than fall through — an unhandled case
@@ -48,8 +50,11 @@ the following:
 - **Validate request shape.** In `validateRequest`, use `GrpcErrorHelper.checkHasField` /
   `checkRepeatedFieldNonEmpty` / `checkHasNoUnknownFields` and `Common.validate(...)` on every ticket
   reference. `checkHasNoUnknownFields` is what rejects unknown/renamed proto fields.
-- **Enforce authorization.** Every operation must call its
-  `authWiring.checkPermission<Operation>(...)` before returning a result.
+- **Enforce authorization on the right path.** Table-service operations must call their
+  `authWiring.checkPermission<Operation>(...)` before returning a result. Service-loaded
+  `TicketResolver`s have no service `authWiring`; they authorize through `TicketResolver.Authorization`
+  instead — `transform` (to apply ACLs when resolving a ticket) and `authorizePublishRequest` (when
+  publishing to a ticket).
 - **Surface failures as `INVALID_ARGUMENT`.** Throw via `Exceptions.statusRuntimeException` or a plain
   `IllegalArgumentException`; work performed inside a `SessionState` export is sanitized to
   "Details Logged w/ID" (INVALID_ARGUMENT) by the `ObfuscatingErrorTransformer`, so assert on the
