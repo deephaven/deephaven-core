@@ -92,7 +92,7 @@ class OperationControl(JObjectWrapper):
                 (Java BigDecimal/BigInteger), default is DECIMAL128.
 
         Raises:
-            DHError
+            DHError: If unable to build an OperationControl object.
         """
         try:
             j_builder = _JOperationControl.builder()
@@ -144,7 +144,7 @@ def ema_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a tick-decay EMA UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -191,7 +191,7 @@ def ema_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a time-decay EMA UpdateByOperation.
     """
     try:
         decay_time = (
@@ -239,7 +239,7 @@ def ems_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a tick-decay EMS UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -286,7 +286,7 @@ def ems_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a time-decay EMS UpdateByOperation.
     """
     try:
         decay_time = (
@@ -334,7 +334,7 @@ def emmin_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a tick-decay EM Min UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -383,7 +383,7 @@ def emmin_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a time-decay EM Min UpdateByOperation.
     """
     try:
         decay_time = (
@@ -433,7 +433,7 @@ def emmax_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a tick-decay EM Max UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -482,7 +482,7 @@ def emmax_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a time-decay EM Max UpdateByOperation.
     """
     try:
         decay_time = (
@@ -532,7 +532,7 @@ def emstd_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a tick-decay EM Std UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -582,7 +582,7 @@ def emstd_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a time-decay EM Std UpdateByOperation.
     """
     try:
         decay_time = (
@@ -620,7 +620,7 @@ def cum_sum(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a cumulative sum UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -641,7 +641,7 @@ def cum_prod(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a cumulative product UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -664,7 +664,7 @@ def cum_min(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a cumulative minimum UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -687,7 +687,7 @@ def cum_max(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a cumulative maximum UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -713,7 +713,7 @@ def cum_count_where(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a cumulative count_where UpdateByOperation.
     """
     if not isinstance(col, str):
         raise DHError(
@@ -743,7 +743,7 @@ def forward_fill(cols: Union[str, Sequence[str]]) -> UpdateByOperation:
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a forward fill UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -776,7 +776,7 @@ def delta(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a delta UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -818,7 +818,7 @@ def rolling_sum_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling sum (tick) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -869,7 +869,7 @@ def rolling_sum_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling sum (time) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -924,7 +924,7 @@ def rolling_group_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling group (tick) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -975,7 +975,7 @@ def rolling_group_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling group (time) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1030,7 +1030,7 @@ def rolling_avg_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling average (tick) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1081,7 +1081,7 @@ def rolling_avg_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling average (time) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1136,7 +1136,7 @@ def rolling_min_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling minimum (tick) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1187,7 +1187,7 @@ def rolling_min_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling minimum (time) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1242,7 +1242,7 @@ def rolling_max_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling maximum (tick) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1293,7 +1293,7 @@ def rolling_max_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling maximum (time) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1348,7 +1348,7 @@ def rolling_prod_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling product (tick) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1401,7 +1401,7 @@ def rolling_prod_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling product (time) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1456,7 +1456,7 @@ def rolling_count_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling count (tick) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1507,7 +1507,7 @@ def rolling_count_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling count (time) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1565,7 +1565,7 @@ def rolling_std_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling standard deviation (tick) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1619,7 +1619,7 @@ def rolling_std_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling standard deviation (time) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1675,7 +1675,7 @@ def rolling_wavg_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling weighted average (tick) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1730,7 +1730,7 @@ def rolling_wavg_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling weighted average (time) UpdateByOperation.
     """
     try:
         cols = to_sequence(cols)
@@ -1812,7 +1812,7 @@ def rolling_formula_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling formula (tick) UpdateByOperation.
     """
     try:
         if formula_param is None:
@@ -1897,7 +1897,7 @@ def rolling_formula_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling formula (time) UpdateByOperation.
     """
     try:
         rev_time = (
@@ -1965,7 +1965,7 @@ def rolling_count_where_tick(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling count_where UpdateByOperation.
     """
     if not isinstance(col, str):
         raise DHError(
@@ -2025,7 +2025,7 @@ def rolling_count_where_time(
         an UpdateByOperation
 
     Raises:
-        DHError
+        DHError: If unable to create a rolling count_where UpdateByOperation.
     """
     if not isinstance(col, str):
         raise DHError(

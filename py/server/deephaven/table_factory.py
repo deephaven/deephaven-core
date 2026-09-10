@@ -71,7 +71,7 @@ def empty_table(size: int) -> Table:
          a Table
 
     Raises:
-        DHError
+        DHError: If unable to create an empty table.
     """
     try:
         return Table(j_table=_JTableTools.emptyTable(size))
@@ -99,7 +99,7 @@ def time_table(
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to create a time table.
     """
     try:
         builder = _JTableTools.timeTableBuilder()
@@ -136,7 +136,7 @@ def new_table(cols: Union[Sequence[InputColumn], Mapping[str, Sequence]]) -> Tab
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to create a new table.
     """
     try:
         if isinstance(cols, Mapping):
@@ -163,7 +163,7 @@ def merge(tables: Sequence[Table]) -> Table:
         a Table
 
     Raises:
-        DHError
+        DHError: If merging the tables fails.
     """
     try:
         with auto_locking_ctx(*tables):
@@ -185,7 +185,7 @@ def merge_sorted(tables: Sequence[Table], order_by: str) -> Table:
          a Table
 
     Raises:
-        DHError
+        DHError: If merging the sorted tables fails.
     """
     try:
         with auto_locking_ctx(*tables):
@@ -211,7 +211,7 @@ class DynamicTableWriter(JObjectWrapper):
             col_defs(dict[str, DTypes]): a map of column names and types of the new table
 
         Raises:
-            DHError
+            DHError: If unable to create a DynamicTableWriter.
         """
         col_names = list(col_defs.keys())
         col_dtypes = list(col_defs.values())
@@ -237,7 +237,7 @@ class DynamicTableWriter(JObjectWrapper):
         """Closes the writer.
 
         Raises:
-            DHError
+            DHError: If unable to close the writer.
         """
         try:
             self._j_table_writer.close()
@@ -255,7 +255,7 @@ class DynamicTableWriter(JObjectWrapper):
                 of the table
 
         Raises:
-            DHError
+            DHError: If unable to write a row.
         """
         try:
             values = tuple(to_sequence(values))
@@ -289,7 +289,7 @@ class InputTable(Table):
             table (Table): the table that provides the rows to write
 
         Raises:
-            DHError
+            DHError: If adding to the InputTable fails.
         """
         try:
             self.j_input_table.add(table.j_table)
@@ -304,7 +304,7 @@ class InputTable(Table):
             table (Table): the table with the keys to delete
 
         Raises:
-            DHError
+            DHError: If deleting data from the InputTable fails.
         """
         try:
             self.j_input_table.delete(table.j_table)
@@ -335,7 +335,7 @@ class InputTable(Table):
                 will not be further processed by the server.
 
         Raises:
-            DHError
+            DHError: If asynchronously adding to the InputTable fails.
         """
         try:
             if on_error:
@@ -380,7 +380,7 @@ class InputTable(Table):
                 will not be further processed by the server.
 
         Raises:
-            DHError
+            DHError: If asynchronously deleting data from the InputTable fails.
         """
         try:
             if on_error:
@@ -434,7 +434,7 @@ def input_table(
         an InputTable
 
     Raises:
-        DHError
+        DHError: If unable to create an in-memory InputTable.
     """
 
     try:
@@ -477,7 +477,7 @@ def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
         a Table
 
     Raises:
-        DHError
+        DHError: If unable to create a ring table.
     """
     try:
         return Table(j_table=_JRingTableTools.of(parent.j_table, capacity, initialize))
@@ -528,7 +528,7 @@ def function_generated_table(
         a new table
 
     Raises:
-        DHError
+        DHError: If neither refresh_interval_ms nor source_tables is provided.
     """
     if refresh_interval_ms is None and source_tables is None:
         raise DHError("Either refresh_interval_ms or source_tables must be provided!")

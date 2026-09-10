@@ -42,7 +42,7 @@ def evaluate(
         a new Table, or a java TableSpec if dry_run is True
 
     Raises:
-        DHError
+        DHError: If unable to execute SQL.
     """
     try:
         callers_frame_info = inspect.stack()[1]

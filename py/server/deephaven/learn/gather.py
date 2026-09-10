@@ -65,7 +65,7 @@ def table_to_numpy_2d(
         a np.ndarray
 
     Raises:
-        DHError
+        DHError: If unable to convert rows: and cols: to a 2D NumPy array.
     """
 
     try:
