@@ -1,12 +1,5 @@
 ---
-applyTo:
-  - "server/src/main/java/io/deephaven/server/table/ops/**"
-  - "server/src/main/java/io/deephaven/server/table/inputtables/**"
-  - "server/src/main/java/io/deephaven/server/hierarchicaltable/**"
-  - "server/src/main/java/io/deephaven/server/partitionedtable/**"
-  - "server/src/main/java/io/deephaven/server/console/**"
-  - "server/src/main/java/io/deephaven/server/session/**"
-  - "extensions/flight-sql/src/main/java/**"
+applyTo: "server/src/main/java/io/deephaven/server/table/ops/**,server/src/main/java/io/deephaven/server/table/inputtables/**,server/src/main/java/io/deephaven/server/hierarchicaltable/**,server/src/main/java/io/deephaven/server/partitionedtable/**,server/src/main/java/io/deephaven/server/console/**,server/src/main/java/io/deephaven/server/session/**,extensions/flight-sql/src/main/java/**"
 ---
 
 # gRPC service guidelines

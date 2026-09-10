@@ -1,8 +1,5 @@
 ---
-applyTo:
-  - "engine/table/**"
-  - "engine/rowset/**"
-  - "engine/chunk/**"
+applyTo: "engine/table/**,engine/rowset/**,engine/chunk/**"
 ---
 
 # Query engine guidelines
