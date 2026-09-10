@@ -73,19 +73,35 @@ public class FloatChunkMatchFilterFactoryTest {
 
     /**
      * With NaN among the values, NaN matching is exactly what separates the two forms: it holds NaN equal to itself,
-     * while without it NaN matches nothing.
+     * while without it NaN matches nothing. NaN has to be the <em>only</em> probe they answer differently, so the
+     * ordinary values are checked alongside it: dropping the NaN must leave the rest of the value set matching as it
+     * did, and must not draw in a value that was never listed.
      */
     @Test
     public void nanMatchDistinguishesNaNValues() {
         final float[] allValues = {Float.NaN, 1.0f, 2.0f, 3.0f};
+        final float nonMember = 4.0f;
         for (int count = 1; count <= allValues.length; ++count) {
             final float[] values = Arrays.copyOf(allValues, count);
-            final FloatChunkFilter nanMatching = FloatChunkMatchFilterFactory.makeFilter(
-                    MatchOptions.builder().nanMatch(true).build(), values);
-            final FloatChunkFilter plain = FloatChunkMatchFilterFactory.makeFilter(
-                    MatchOptions.builder().nanMatch(false).build(), values);
-            assertTrue("count=" + count, nanMatching.matches(Float.NaN));
-            assertFalse("count=" + count, plain.matches(Float.NaN));
+            for (final boolean inverted : new boolean[] {false, true}) {
+                final FloatChunkFilter nanMatching = FloatChunkMatchFilterFactory.makeFilter(
+                        MatchOptions.builder().nanMatch(true).inverted(inverted).build(), values);
+                final FloatChunkFilter plain = FloatChunkMatchFilterFactory.makeFilter(
+                        MatchOptions.builder().nanMatch(false).inverted(inverted).build(), values);
+                final String message = "count=" + count + " inverted=" + inverted;
+                // NaN is listed, so NaN matching selects it and the plain form does not.
+                assertEquals(message, !inverted, nanMatching.matches(Float.NaN));
+                assertEquals(message, inverted, plain.matches(Float.NaN));
+                // Every listed value other than NaN is selected by both forms alike.
+                for (int ii = 1; ii < count; ++ii) {
+                    final String valueMessage = message + " value=" + allValues[ii];
+                    assertEquals(valueMessage, !inverted, nanMatching.matches(allValues[ii]));
+                    assertEquals(valueMessage, !inverted, plain.matches(allValues[ii]));
+                }
+                // A value that was never listed is selected by neither.
+                assertEquals(message, inverted, nanMatching.matches(nonMember));
+                assertEquals(message, inverted, plain.matches(nonMember));
+            }
         }
     }
 }
