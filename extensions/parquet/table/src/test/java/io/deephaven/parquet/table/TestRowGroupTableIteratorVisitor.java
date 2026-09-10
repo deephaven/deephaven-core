@@ -74,7 +74,9 @@ public class TestRowGroupTableIteratorVisitor {
     private static List<Table> getRowGroups(final @NotNull Table input, final @NotNull RowGroupInfo rgi) {
         final List<Table> rowGroups = new ArrayList<>();
         RowGroupTableIteratorVisitor.of(rgi, input).forEachRemaining(rowGroups::add);
-        assertEquals("Sum of RowGroups equals Table.size()", input.size(), merge(rowGroups).size());
+        // `merge` rejects an empty list
+        final long totalRows = rowGroups.isEmpty() ? 0 : merge(rowGroups).size();
+        assertEquals("Sum of RowGroups equals Table.size()", input.size(), totalRows);
         return rowGroups;
     }
 
@@ -245,6 +247,32 @@ public class TestRowGroupTableIteratorVisitor {
 
         assertDistinctValues(rowGroups, groupCol);
         assertRowGroupSizes(rowGroups, maxRows);
+    }
+
+    /**
+     * DH-23627: every {@link RowGroupInfo} must accept an empty table; {@code maxRows} used to throw. The number of
+     * RowGroups produced is immaterial, since the writer skips zero-row RowGroups.
+     */
+    @Test
+    public void testEmptyTable() {
+        final Table emptyTable = TableTools.newTable(TableTools.intCol("Value"), TableTools.stringCol("Key"));
+
+        // `maxRows` behaves as `singleGroup` does
+        final List<Table> maxRowsGroups = getRowGroups(emptyTable, RowGroupInfo.maxRows(3));
+        assertEquals("maxRows(3) returns a single RowGroup", 1, maxRowsGroups.size());
+        assertTrue("the single RowGroup is empty", maxRowsGroups.get(0).isEmpty());
+
+        final List<Table> singleGroups = getRowGroups(emptyTable, RowGroupInfo.singleGroup());
+        assertEquals("singleGroup() returns a single RowGroup", 1, singleGroups.size());
+        assertTrue("the single RowGroup is empty", singleGroups.get(0).isEmpty());
+
+        // `maxGroups` and `byGroups` define no RowGroups at all
+        assertEquals("maxGroups(4) returns no RowGroups", 0,
+                getRowGroups(emptyTable, RowGroupInfo.maxGroups(4)).size());
+        assertEquals("byGroups(Key) returns no RowGroups", 0,
+                getRowGroups(emptyTable, RowGroupInfo.byGroups("Key")).size());
+        assertEquals("byGroups(3, Key) returns no RowGroups", 0,
+                getRowGroups(emptyTable, RowGroupInfo.byGroups(3, "Key")).size());
     }
 
     /**

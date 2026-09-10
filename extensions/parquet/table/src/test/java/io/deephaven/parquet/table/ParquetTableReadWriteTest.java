@@ -349,6 +349,53 @@ public final class ParquetTableReadWriteTest {
         assertEquals(t.getDefinition(), fromDisk.getDefinition());
     }
 
+    /**
+     * DH-23627: writing an empty table must succeed for every {@link RowGroupInfo}; {@code maxRows} used to fail.
+     */
+    @Test
+    public void emptyTableWithRowGroupInfo() {
+        final Table t = newTable(intCol("Value"), stringCol("Key"));
+        final List<RowGroupInfo> rowGroupInfos = List.of(
+                RowGroupInfo.singleGroup(),
+                RowGroupInfo.maxRows(3),
+                RowGroupInfo.maxGroups(4),
+                RowGroupInfo.byGroups("Key"),
+                RowGroupInfo.byGroups(3, "Key"));
+
+        for (int ii = 0; ii < rowGroupInfos.size(); ii++) {
+            final RowGroupInfo rowGroupInfo = rowGroupInfos.get(ii);
+            final File dest = new File(rootFile, "ParquetTest_emptyRowGroupInfo_" + ii + "_test.parquet");
+            writeTable(t, dest.getPath(),
+                    new ParquetInstructions.Builder().setRowGroupInfo(rowGroupInfo).build());
+            final Table fromDisk = checkSingleTable(t, dest);
+            assertEquals(rowGroupInfo.toString(), t.getDefinition(), fromDisk.getDefinition());
+            assertEquals(rowGroupInfo.toString(), 0, fromDisk.size());
+        }
+    }
+
+    /**
+     * DH-23627 as originally reported: an empty table written beside populated ones in a flat-partitioned layout.
+     */
+    @Test
+    public void emptyTableBesidePopulatedTablesWithRowGroupInfo() {
+        final File destDir = new File(rootFile, "ParquetTest_emptyBesidePopulated_test");
+        assertTrue(destDir.mkdirs());
+        final ParquetInstructions instructions =
+                new ParquetInstructions.Builder().setRowGroupInfo(RowGroupInfo.maxRows(3)).build();
+
+        final Table first = newTable(intCol("Value", 1, 2, 3, 4, 5), stringCol("Key", "a", "a", "b", "b", "c"));
+        final Table empty = newTable(intCol("Value"), stringCol("Key"));
+        final Table last = newTable(intCol("Value", 6, 7), stringCol("Key", "d", "d"));
+
+        writeTable(first, new File(destDir, "table_00000.parquet").getPath(), instructions);
+        writeTable(empty, new File(destDir, "table_00001.parquet").getPath(), instructions);
+        writeTable(last, new File(destDir, "table_00002.parquet").getPath(), instructions);
+
+        final Table fromDisk = readTable(destDir.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
+        assertTableEquals(merge(first, last), fromDisk);
+    }
+
     @Test
     public void flatParquetFormat() {
         flatTable("emptyFlatParquet", 0, true);
