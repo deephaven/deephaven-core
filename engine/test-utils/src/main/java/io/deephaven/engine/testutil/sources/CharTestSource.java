@@ -115,8 +115,7 @@ public class CharTestSource extends AbstractColumnSource<Character>
             return;
         }
         prevFlusher.maybeActivate();
-        final Long2CharOpenHashMap newData = new Long2CharOpenHashMap(this.data);
-        setDefaultReturnValue(newData);
+        final Long2CharOpenHashMap newData = this.data.clone();
         prevData = data;
         data = newData;
         lastAdditionTime = currentStep;

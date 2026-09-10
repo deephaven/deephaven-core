@@ -119,8 +119,7 @@ public class LongTestSource extends AbstractColumnSource<Long>
             return;
         }
         prevFlusher.maybeActivate();
-        final Long2LongOpenHashMap newData = new Long2LongOpenHashMap(this.data);
-        setDefaultReturnValue(newData);
+        final Long2LongOpenHashMap newData = this.data.clone();
         prevData = data;
         data = newData;
         lastAdditionTime = currentStep;

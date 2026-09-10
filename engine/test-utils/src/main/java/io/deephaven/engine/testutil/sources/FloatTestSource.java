@@ -119,8 +119,7 @@ public class FloatTestSource extends AbstractColumnSource<Float>
             return;
         }
         prevFlusher.maybeActivate();
-        final Long2FloatOpenHashMap newData = new Long2FloatOpenHashMap(this.data);
-        setDefaultReturnValue(newData);
+        final Long2FloatOpenHashMap newData = this.data.clone();
         prevData = data;
         data = newData;
         lastAdditionTime = currentStep;

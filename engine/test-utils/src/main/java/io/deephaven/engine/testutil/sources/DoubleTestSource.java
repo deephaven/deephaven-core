@@ -119,8 +119,7 @@ public class DoubleTestSource extends AbstractColumnSource<Double>
             return;
         }
         prevFlusher.maybeActivate();
-        final Long2DoubleOpenHashMap newData = new Long2DoubleOpenHashMap(this.data);
-        setDefaultReturnValue(newData);
+        final Long2DoubleOpenHashMap newData = this.data.clone();
         prevData = data;
         data = newData;
         lastAdditionTime = currentStep;

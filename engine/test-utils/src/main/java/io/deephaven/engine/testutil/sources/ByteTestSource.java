@@ -119,8 +119,7 @@ public class ByteTestSource extends AbstractColumnSource<Byte>
             return;
         }
         prevFlusher.maybeActivate();
-        final Long2ByteOpenHashMap newData = new Long2ByteOpenHashMap(this.data);
-        setDefaultReturnValue(newData);
+        final Long2ByteOpenHashMap newData = this.data.clone();
         prevData = data;
         data = newData;
         lastAdditionTime = currentStep;

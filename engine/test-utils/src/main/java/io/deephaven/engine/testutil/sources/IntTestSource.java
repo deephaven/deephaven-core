@@ -119,8 +119,7 @@ public class IntTestSource extends AbstractColumnSource<Integer>
             return;
         }
         prevFlusher.maybeActivate();
-        final Long2IntOpenHashMap newData = new Long2IntOpenHashMap(this.data);
-        setDefaultReturnValue(newData);
+        final Long2IntOpenHashMap newData = this.data.clone();
         prevData = data;
         data = newData;
         lastAdditionTime = currentStep;

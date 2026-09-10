@@ -119,8 +119,7 @@ public class ShortTestSource extends AbstractColumnSource<Short>
             return;
         }
         prevFlusher.maybeActivate();
-        final Long2ShortOpenHashMap newData = new Long2ShortOpenHashMap(this.data);
-        setDefaultReturnValue(newData);
+        final Long2ShortOpenHashMap newData = this.data.clone();
         prevData = data;
         data = newData;
         lastAdditionTime = currentStep;

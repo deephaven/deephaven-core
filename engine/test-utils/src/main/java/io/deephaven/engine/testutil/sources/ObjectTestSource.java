@@ -102,8 +102,7 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
             return;
         }
         prevFlusher.maybeActivate();
-        final Long2ObjectOpenHashMap<T> newData = new Long2ObjectOpenHashMap<T>(this.data);
-        setDefaultReturnValue(newData);
+        final Long2ObjectOpenHashMap<T> newData = this.data.clone();
         prevData = data;
         data = newData;
         lastAdditionTime = currentStep;
