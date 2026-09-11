@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/apache/arrow/go/v17 v17.0.0
 	google.golang.org/grpc v1.82.1
-	google.golang.org/protobuf v1.36.11
+	google.golang.org/protobuf v1.36.12
 )
 
 require (
