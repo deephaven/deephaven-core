@@ -41,14 +41,34 @@ Grouped by the production files each fix actually touches, rather than by topic,
 edit one file travel together. No group exceeds 10 findings; the binding constraint here is file
 overlap, not size.
 
+**Last revalidated against upstream `3ed1d774b` (2026-09-11).** A grouping is only useful while the
+files it names are still the files these fixes touch, so re-check this table on every upstream pull --
+see [Revalidating against upstream](#revalidating-against-upstream), whose step 4 already computes the
+overlap this table depends on.
+
 | PR | Findings | Code touched | Why together |
 | --- | --- | --- | --- |
 | **A — parquet write path** | 1, 4, 5, 12 | `ParquetTools`, `ParquetTableWriter`, `ParquetKeyValuePartitionedLayout`, `PartitioningColumnInfo` (new), `TableInfo`, `ParquetUtils`, `RowGroupTableIteratorVisitor`, `URIStreamKeyValuePartitionLayout` | All are "a dataset that cannot be written, or cannot be read back as written". 4 and 5 both edit `ParquetTools`; 5 and 12 are both partition-value encoding |
 | **B — temporal round trip** | 2, 3 | `DateTimeUtils`, `ZonedDateTimeCodec`, the three `LocalDateTime*Materializer`s | Both are epoch-offset arithmetic losing pre-epoch and boundary values. The smallest and most self-contained group |
-| **C — filter pushdown through renaming views** | 6, 7, 8, 10 | `MatchFilter`, `ConditionFilter`, `AbstractConditionFilter`, `DeferredViewTable` | 6 and 7 both edit `AbstractConditionFilter`; 8 and 10 both edit `DeferredViewTable`. One story: pushing a filter below a view that renames columns |
+| **C — filter pushdown through renaming views** | 6, 7, 8, 10 | `MatchFilter`, `ConditionFilter`, `AbstractConditionFilter`, `DeferredViewTable` | 6 and 7 both edit `AbstractConditionFilter`; 8 and 10 both edit `DeferredViewTable`. One story: pushing a filter below a view that renames columns. **Cut this one against post-DH-23502 `main`** — see the note below |
 | **D — what a location claims about its data** | 9, 11, 13, 18, 22 | `ParquetTableLocation` (9, 13, 18, 22), `TableLocation`, `SourceTable` | **Four of the five edit `ParquetTableLocation`**, so splitting them guarantees conflicts. 11 belongs with them as the same question one layer up: 9 documents `TableLocation.getSortedColumns`' name space, 11 fixes what `SourceTable` publishes from it |
 | **E — engine data indexes** | 14, 20 | `DataIndexPushdownManager`, `QueryTable.propagateDataIndexes` | Both are data-index lifecycle. 14 is diagnostic-only and rides cheaply |
 | **F — value comparison semantics** | 15, 19 | `QueryLanguageFunctionUtils` (via `GenerateQueryLanguageFunctions`), `StringChunkMatchFilterFactory` | Both are "how a filter compares a value". Split 15 out if the generated-file/replicator review is awkward to combine |
+
+### Group C sits on top of DH-23502
+
+`MatchFilter` is the one file in this table that upstream has touched since the grouping was written.
+[DH-23502](https://deephaven.atlassian.net/browse/DH-23502) (#8452) added a private `maybeDropNaN` and
+its call sites in `init`; finding 6 relaxes `renameFilter` to accept a partial rename map. Different
+methods, and the rebase merged them without a conflict — `maybeDropNaN` simply landed immediately after
+`renameFilter`, so the two changes are adjacent in the file but independent in meaning.
+
+Nothing to reconcile, but two consequences for whoever cuts group C:
+
+- Branch it from a `main` that already contains #8452, so the PR's `MatchFilter` diff shows only
+  finding 6's change. Branching from anything older re-proposes DH-23502's hunks.
+- A reviewer reading `MatchFilter` will see it freshly rewritten for unrelated reasons. Finding 6's
+  write-up is about the rename map and says nothing about NaN; that is correct, not an omission.
 
 ### Deliberately excluded
 
@@ -135,6 +155,14 @@ means a conflicting second fix for a defect that no longer exists.
 
    Upstream cannot have fixed a finding without touching a file that finding's fix touches.
 
+5. **Fold the result back into the index and the grouping.** Mark any finding upstream has fixed as
+   closed and drop its production changes; then re-check
+   [Suggested PR grouping](#suggested-pr-grouping) against step 4's output. Every file the intersection
+   names belongs to some group, and that group now has to be cut from a `main` containing the upstream
+   change — which is a fact about how to land the PR, so it belongs in the table rather than in a
+   reviewer's memory. Update the "Last revalidated against upstream" line even when nothing else moved,
+   so a stale grouping is distinguishable from a confirmed one.
+
 ### The bench corrections are not part of "our fixes"
 
 Findings 16 and 21 are **bench** defects — the fuzzer was asserting something false, or generating an
@@ -173,8 +201,9 @@ The structural check agrees: of the 25 production files this branch touches, the
 15 new upstream commits also touches is `MatchFilter.java`, and that is DH-23502's change.
 
 **Conclusion: exactly one finding — 17 — can be marked fixed upstream.** Its stopgap was dropped;
-findings 1–16 and 18–22 remain this branch's to land. The PR grouping above is unchanged except that
-group C's `MatchFilter` edit now sits on top of DH-23502's.
+findings 1–16 and 18–22 remain this branch's to land. The PR grouping is unchanged in membership; its
+only consequence is for group C, recorded in
+[Group C sits on top of DH-23502](#group-c-sits-on-top-of-dh-23502).
 
 ## Carry-over from the previous round
 
