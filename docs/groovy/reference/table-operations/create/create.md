@@ -9,6 +9,8 @@ The method creates a table by running the user-defined `tableGenerator` function
 > The `tableGenerator` may access data in the `sourceTables`, but should not perform any further operations on them without careful handling. Since table operations may be memoized, a table operation may return a table created by a previous invocation of the same operation. Since that result will not have been included in the `sourceTables`, it is not automatically treated as a dependency for purposes of determining when it is safe to invoke `tableGenerator`.
 > This allows race conditions to exist between accessing the operation result and that result's own update processing. It is best to include all dependencies directly in `sourceTables` or only compute on-demand inputs under a `LivenessScope`.
 
+Every refresh in which the supplier produces a table replaces the result in full: the [table update](../../../conceptual/table-update-model.md) removes all previous rows and adds all newly generated rows, with no modified rows and no shifts, even when the generated data is unchanged. A `FunctionGeneratedTableSpec` with a retaining-last supplier may decline to produce a table on a refresh, in which case the previous result is retained with no update. By default, the generated data is copied into the result, which uses a flat, contiguous RowSet. The `FunctionGeneratedTableSpec` form can instead delegate to the generated table's ColumnSources and RowSet, or present the result as a blink table; see [Control the result with `FunctionGeneratedTableSpec`](../../../how-to-guides/function-generated-tables.md#control-the-result-with-functiongeneratedtablespec).
+
 When transforming a table, users should generally prefer to use regular table operations instead of this factory because they can perform some operations incrementally. However, `create` might require less development effort for small tables.
 
 ## Syntax
@@ -16,6 +18,7 @@ When transforming a table, users should generally prefer to use regular table op
 ```groovy syntax
 create(tableGenerator, refreshIntervalMs)
 create(tableGenerator, sourceTables...)
+create(spec)
 ```
 
 ## Parameters
@@ -34,6 +37,11 @@ The interval (in milliseconds) at which the `tableGenerator` function is re-run.
 <Param name="sourceTables" type="Table...">
 
 If the `tableGenerator` function is dependent on one or more ticking tables, the tables must be specified here. This will cause the generated table to be recomputed on each tick.
+
+</Param>
+<Param name="spec" type="FunctionGeneratedTableSpec">
+
+A specification describing how the table is generated and refreshed. It combines a table supplier, an optional refresh trigger (dependency tables or a refresh interval), and the `copyData`, `blinkTable`, and `tableDefinition` options. See the [how-to guide](../../../how-to-guides/function-generated-tables.md#control-the-result-with-functiongeneratedtablespec) for details.
 
 </Param>
 </ParamTable>
@@ -102,4 +110,7 @@ result = FunctionGeneratedTableFactory.create(tableGenerator, timeTable1)
 ## Related documentation
 
 - [Execution Context](../../../conceptual/execution-context.md)
+- [Generate tables with Groovy functions](../../../how-to-guides/function-generated-tables.md)
+- [Table types](../../../conceptual/table-types.md)
 - [Javadoc](/core/javadoc/io/deephaven/engine/table/impl/util/FunctionGeneratedTableFactory.html)
+- [Javadoc: `FunctionGeneratedTableSpec`](/core/javadoc/io/deephaven/engine/table/impl/util/FunctionGeneratedTableSpec.html)

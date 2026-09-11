@@ -14,15 +14,15 @@ This guide covers [function-generated tables](../reference/table-operations/crea
 - Define a Python function that returns a table.
 - Define one or more trigger tables or a refresh interval.
 - Create a function-generated table by calling `function_generated_table`.
-  - A function-generated table can use one or both of the following to trigger the function call:
-    - A trigger table.
+  - A function-generated table uses exactly one of the following to trigger the function call:
+    - One or more trigger tables.
     - A refresh interval.
 
-A [function-generated table](../reference/table-operations/create/function_generated_table.md) is designed to ingest data from external sources into ticking tables. The only requirement is that the Python function that ingests this data returns a table.
+A [function-generated table](../reference/table-operations/create/function_generated_table.md) is designed to ingest data from external sources into ticking tables. The only requirement is that the Python function that ingests this data returns a table, or returns `None` to [retain the previous result](#retain-the-previous-result).
 
 ### Table generator function
 
-You can define your function in the normal Pythonic way. The only requirement is that the function must return a table.
+You can define your function in the normal Pythonic way. The only requirement is that the function must return a table, or `None` to keep the previous result.
 
 Here's an example:
 
@@ -126,10 +126,61 @@ denver_weather = function_generated_table(
 
 [Function-generated tables](../reference/table-operations/create/function_generated_table.md) require an [execution context](../conceptual/execution-context.md) to run in. If you don't specify an execution context, the method will use the systemic [execution context](../conceptual/execution-context.md). The example above does not specify an execution context, so the systemic execution context is used.
 
+## Additional options
+
+Beyond the trigger, [`function_generated_table`](../reference/table-operations/create/function_generated_table.md) accepts several optional parameters that control how the result is produced and shaped.
+
+### Retain the previous result
+
+The `table_generator` function can return `None` to decline producing a new table on a given cycle. When it does, the previous cycle's result is retained instead of being regenerated. This is useful when new data is not always available. When the first invocation returns `None`, supply a `table_definition` so the result's columns are known before the first table exists.
+
+```python ticking-table order=null
+from deephaven import function_generated_table, time_table, new_table
+from deephaven.column import int_col
+import deephaven.dtypes as dht
+
+tt = time_table("PT1S")
+
+
+def make_table():
+    # Only produce a table once the trigger has rows; otherwise retain the previous result.
+    if tt.size == 0:
+        return None
+    return new_table([int_col("Count", [tt.size])])
+
+
+result = function_generated_table(
+    table_generator=make_table,
+    source_tables=tt,
+    table_definition={"Count": dht.int32},
+)
+```
+
+### How the result updates
+
+Every refresh in which the `table_generator` produces a table replaces the result in full. The [table update](../conceptual/table-update-model.md) removes all of the previous rows and adds all of the newly generated rows, with no modified rows and no shifts, even when the generated data is identical to the previous cycle's. A refresh in which the `table_generator` returns `None` produces no update, as described in [Retain the previous result](#retain-the-previous-result). Downstream operations therefore reprocess the entire result on every refresh that produces a table. This is why regular table operations, which update incrementally, are preferable when the input is already a Deephaven table.
+
+The `copy_data` and `blink_table` options below refine this behavior. They are independent of one another: `copy_data` controls where the result's data lives and what its row keys look like, and `blink_table` controls how downstream operations interpret each update.
+
+### Copy data or delegate to the generated table
+
+By default (`copy_data=True`), the generated rows are copied into the result's own column sources, and the result uses a flat, contiguous row set with row keys `0` through `size - 1`. The generated table itself is not retained.
+
+With `copy_data=False`, the result skips the copy and delegates directly to the generated table's column sources, adopting the generated table's row set as-is. The added rows of each update are exactly the generated table's row set, and the removed rows are the previous cycle's row set. Because the result holds the generated column sources across cycles, a refreshing generated table must expose immutable column sources; a generated table that changes values in place is rejected. A static table produced fresh on each refresh — for example, via [`snapshot`](../reference/table-operations/snapshot/snapshot.md) — always satisfies this requirement.
+
+### Present the result as a blink table
+
+Set `blink_table=True` to present the result as a [blink table](../conceptual/table-types.md#specialization-3-blink), so downstream operations see only the rows generated during the current cycle. Each update is still the same full replacement described above; the blink attribute changes how downstream operations interpret it, not how the rows are copied or delegated. Rows generated in one update cycle are removed on the next cycle whether or not the `table_generator` runs again, so with a refresh interval longer than one cycle the result is empty between refreshes. A blink table requires a refresh trigger. On a cycle where the `table_generator` returns `None`, the blink result is cleared.
+
+### Specify the table definition
+
+When you supply a `table_definition`, it is authoritative: it defines the result's columns and their order, and every table the `table_generator` produces must be compatible with it. A definition is required when the first invocation returns `None`, since the columns must be known before the first table exists.
+
 ## Related documentation
 
 - [Install Python packages](./install-and-use-python-packages.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`function_generated_table`](../reference/table-operations/create/function_generated_table.md)
 - [`time_table`](../reference/table-operations/create/timeTable.md)
+- [Table types](../conceptual/table-types.md)
 - [Execution Context](../conceptual/execution-context.md)

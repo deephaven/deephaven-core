@@ -9,25 +9,30 @@ The `function_generated_table` method is useful for creating tables that are dep
 >
 > It is best to include all dependencies directly in `source_table` or only compute on-demand inputs under a `LivenessScope`.
 
+Every refresh in which the `table_generator` produces a table replaces the result in full: the [table update](../../../conceptual/table-update-model.md) removes all previous rows and adds all newly generated rows, with no modified rows and no shifts, even when the generated data is unchanged. A refresh in which the `table_generator` returns `None` retains the previous result with no update (or clears a blink result). The `copy_data` and `blink_table` parameters refine this behavior independently of one another.
+
 ## Syntax
 
 ```python syntax
 function_generated_table(
-  table_generator: Callable[[], Table],
+  table_generator: Callable[..., Optional[Table]],
   source_tables: Union[Table, List[Table]] = None,
   refresh_interval_ms: int = None,
   exec_ctx: ExecutionContext = None,
   args: Tuple = None,
-  kwargs: Dict = None
+  kwargs: Dict = None,
+  copy_data: bool = True,
+  blink_table: bool = False,
+  table_definition: TableDefinitionLike = None,
 ) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="table_generator" type="Callable[[], Table]">
+<Param name="table_generator" type="Callable[..., Optional[Table]]">
 
-The table generator function. This function must return a table.
+The table generator function. This function must return a table, or `None` to decline producing a new table, in which case the previous cycle's result is retained (or, for a blink table, cleared). If the first invocation returns `None`, `table_definition` must be provided so that the result's columns are known.
 
 </Param>
 <Param name="source_tables" type="Union[Table, List[Table]]" optional>
@@ -57,6 +62,21 @@ A Tuple of positional arguments to pass to `table_generator`. Defaults to `()`.
 <Param name="kwargs" type="Dict" optional>
 
 Dictionary of keyword arguments to pass to `table_generator`. Defaults to `{}`.
+
+</Param>
+<Param name="copy_data" type="bool" optional>
+
+When `True` (the default), the generated data is copied into the result's own column sources, and the result uses a flat, contiguous row set. When `False`, the result delegates directly to the generated table's column sources, avoiding the copy and adopting the generated table's row set as-is: the added rows of each update are the generated table's row set, and the removed rows are the previous cycle's row set. In that case, a refreshing generated table must expose immutable column sources; a generated table that changes values in place is rejected. A static table produced fresh on each refresh — for example, via [`snapshot`](../snapshot/snapshot.md) — always satisfies this requirement.
+
+</Param>
+<Param name="blink_table" type="bool" optional>
+
+When `True`, the result is presented as a [blink table](../../../conceptual/table-types.md#specialization-3-blink), retaining only the rows generated during the current cycle. Each update is still a full replacement; the blink attribute changes how downstream operations interpret it and is independent of `copy_data`. Rows generated in one update cycle are removed on the next cycle whether or not the `table_generator` runs again. On a cycle where the `table_generator` returns `None`, the blink result is cleared. Requires a refresh trigger (`refresh_interval_ms` or `source_tables`). Defaults to `False`.
+
+</Param>
+<Param name="table_definition" type="TableDefinitionLike" optional>
+
+When provided, it is authoritative: it defines the result's columns and their order, and every table the `table_generator` produces must be compatible with it. Defaults to `None`, in which case the generated table's definition is used.
 
 </Param>
 </ParamTable>
