@@ -12,12 +12,22 @@ public class StringMaterializer extends ObjectMaterializerBase<String> implement
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new StringMaterializer(dataReader, (String) nullValue, numValues);
+            return dataReader instanceof PlainBinaryStringValuesReader
+                    ? new PlainBinaryStringMaterializer(
+                            (PlainBinaryStringValuesReader) dataReader, (String) nullValue, numValues)
+                    : new StringMaterializer(dataReader, (String) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new StringMaterializer(dataReader, numValues);
+            return dataReader instanceof PlainBinaryStringValuesReader
+                    ? new PlainBinaryStringMaterializer((PlainBinaryStringValuesReader) dataReader, numValues)
+                    : new StringMaterializer(dataReader, numValues);
+        }
+
+        @Override
+        public boolean allowPlainBinaryStringDecoder() {
+            return true;
         }
     };
 
