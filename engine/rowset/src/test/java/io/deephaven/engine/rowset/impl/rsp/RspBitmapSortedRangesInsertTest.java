@@ -68,7 +68,8 @@ public class RspBitmapSortedRangesInsertTest {
     private static void checkInsertOnce(final RspBitmap receiver, final SortedRanges sr, final String what) {
         // Compared as ranges: the fixtures hold whole blocks, far too many keys to enumerate.
         final String expected = render(unionRanges(RowSetTestCommon.rangesOf(receiver), rangesOf(sr)));
-        final RspBitmap w = receiver.writeCheck();
+        // A copy, so the receiver is still the fixture when it is inserted into again in another form.
+        final RspBitmap w = receiver.deepCopy();
         w.insertOrderedLongSetUnsafeNoWriteCheck(sr);
         w.finishMutations();
         w.validate("after insert, " + what);
