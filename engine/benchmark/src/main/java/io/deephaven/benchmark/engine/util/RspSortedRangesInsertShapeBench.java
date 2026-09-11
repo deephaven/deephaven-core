@@ -109,25 +109,26 @@ public class RspSortedRangesInsertShapeBench {
     }
 
     // Neither insert finishes its mutations: rebuilding the cardinality cache costs the same on both paths and, being
-    // linear in the span count, would swamp a small insert into a long array.
+    // linear in the span count, would swamp a small insert into a long array. Each method returns the bitmap it
+    // mutated so that every update to it, including those inside existing spans, is observable.
 
     @Benchmark
-    public int copyOnly() {
-        return target.deepCopy().size();
+    public RspBitmap copyOnly() {
+        return target.deepCopy();
     }
 
     @Benchmark
-    public int prePassInsert() {
+    public RspBitmap prePassInsert() {
         final RspBitmap copy = target.deepCopy();
         copy.insertOrderedLongSetUnsafeNoWriteCheck(incoming);
-        return copy.size();
+        return copy;
     }
 
     @Benchmark
-    public int addRangesDirect() {
+    public RspBitmap addRangesDirect() {
         final RspBitmap copy = target.deepCopy();
         copy.addRangesUnsafeNoWriteCheck(incoming.getRangeIterator());
-        return copy.size();
+        return copy;
     }
 
     public static void main(String[] args) throws RunnerException {
