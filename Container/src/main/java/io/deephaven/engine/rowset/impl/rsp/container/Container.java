@@ -74,9 +74,7 @@ public abstract class Container {
 
     public static Container singleton(final short v) {
         if (smallContainersDisabled()) {
-            final short[] vs = new short[shortArraySizeRounding(1)];
-            vs[0] = v;
-            return new ArrayContainer(vs, 1);
+            return new ArrayContainer(v);
         }
         return new SingletonContainer(v);
     }
@@ -129,10 +127,7 @@ public abstract class Container {
             }
         }
         if (smallContainersDisabled()) {
-            final short[] vs = new short[shortArraySizeRounding(2)];
-            vs[0] = v1;
-            vs[1] = v2;
-            return new ArrayContainer(vs, 2);
+            return new ArrayContainer(v1, v2);
         }
         if (iv2 - 1 == iv1) {
             return Container.singleRange(iv1, iv2 + 1);

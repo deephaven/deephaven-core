@@ -22,13 +22,13 @@ public class TestContainerEmptyRangeOps {
     public void testArrayContainerInotOverAnEmptyRange() {
         final List<Integer> expected = List.of(10, 20, 30);
         for (final int at : new int[] {0, 1, 10, 20, 65535}) {
-            final ArrayContainer c = new ArrayContainer(new short[] {10, 20, 30}, 3);
+            final ArrayContainer c = new ArrayContainer(new short[] {10, 20, 30});
             final Container after = c.inot(at, at);
             assertEquals("inot(" + at + ", " + at + ")", expected, valuesOf(after));
             assertEquals("inot(" + at + ", " + at + ") cardinality", 3, after.getCardinality());
         }
         // not already handles this; keep the two in step.
-        final ArrayContainer c = new ArrayContainer(new short[] {10, 20, 30}, 3);
+        final ArrayContainer c = new ArrayContainer(new short[] {10, 20, 30});
         assertEquals("not(0, 0)", expected, valuesOf(c.not(0, 0)));
     }
 
@@ -113,7 +113,7 @@ public class TestContainerEmptyRangeOps {
     @Test
     public void testOtherImplementationsAgreeOnDegenerateRanges() {
         for (final Container c : new Container[] {
-                new ArrayContainer(new short[] {10, 20, 30}, 3),
+                new ArrayContainer(new short[] {10, 20, 30}),
                 new RunContainer(10, 11, 20, 21).iset((short) 30),
                 new BitmapContainer().iset((short) 10).iset((short) 20).iset((short) 30),
         }) {

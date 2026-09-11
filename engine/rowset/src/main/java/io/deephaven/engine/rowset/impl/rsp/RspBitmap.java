@@ -185,7 +185,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                     if (getFullBlockSpanLen(existingSpanInfo, existingSpan) >= 1) {
                         continue;
                     }
-                    ourView.init(this, spanIndex, existingSpanInfo, existingSpan);
+                    ourView.init(existingSpanInfo, existingSpan);
                     container = ourView.getContainer();
                     existing = true;
                 }
@@ -364,11 +364,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     private static Container makeValuesContainer(final LongChunk<OrderedRowKeys> values,
             final int offset, final int length) {
         if (length <= ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD) {
-            final short[] valuesArray = new short[length];
+            // Fill an array the container can take over as is, rather than one it would have to copy.
+            final short[] valuesArray = ArrayContainer.allocateContent(length);
             for (int vi = 0; vi < length; ++vi) {
                 valuesArray[vi] = lowBitsAsShort(values.get(vi + offset));
             }
-            return new ArrayContainer(valuesArray);
+            return ArrayContainer.makeByWrapping(valuesArray, length);
         }
         final BitmapContainer bitmapContainer = new BitmapContainer();
         for (int vi = 0; vi < length; ++vi) {
@@ -633,7 +634,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 result = Container.singleRange(startLowBits, endExclusive);
             }
         } else {
-            view = workDataPerThread.get().borrowSpanView(this, i, spanInfos[i], span);
+            view = workDataPerThread.get().borrowSpanView(spanInfos[i], span);
             container = view.getContainer();
             result = container.iadd(startLowBits, endExclusive);
             if (result.isAllOnes()) {
@@ -679,7 +680,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             if (!RspArray.isFullBlockSpan(span)) { // if it is a full block span, we already have the range.
                 final Container result;
                 Container container = null;
-                try (SpanView view = workDataPerThread.get().borrowSpanView(this, pos, spanInfos[pos], span)) {
+                try (SpanView view = workDataPerThread.get().borrowSpanView(spanInfos[pos], span)) {
                     if (view.isSingletonSpan()) {
                         final long single = view.getSingletonSpanValue();
                         result = containerForLowValueAndRange(lowBitsAsInt(single), start, end);
@@ -846,7 +847,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         if (RspArray.isFullBlockSpan(span)) {
             return true;
         }
-        try (SpanView view = workDataPerThread.get().borrowSpanView(this, i, spanInfos[i], span)) {
+        try (SpanView view = workDataPerThread.get().borrowSpanView(spanInfos[i], span)) {
             if (view.isSingletonSpan()) {
                 return view.getSingletonSpanValue() == val;
             }
@@ -891,7 +892,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                     removeSpanAtIndex(i);
                 }
             } else {
-                try (SpanView view = workDataPerThread.get().borrowSpanView(this, i, spanInfo, s)) {
+                try (SpanView view = workDataPerThread.get().borrowSpanView(spanInfo, s)) {
                     final Container orig = view.getContainer();
                     final Container result = orig.iunset(lowBitsAsShort(val));
                     if (result.isSingleElement()) {
@@ -1428,7 +1429,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                     final long v = spanInfoToSingletonSpanValue(spanInfo);
                     c = Container.singleton(lowBitsAsShort(v));
                 } else {
-                    view.init(this, i, spanInfo, span);
+                    view.init(spanInfo, span);
                     c = view.getContainer();
                 }
                 final RangeConsumer rc = (final int rs, final int re) -> {
