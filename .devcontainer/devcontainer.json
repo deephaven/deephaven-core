@@ -45,7 +45,7 @@
     // on rootful daemons — `id` still says uid 1000 on a Mac.
     "ghcr.io/devc-tools/features/rootless-remap:0": {},
 
-    // Nested containers via podman, with no capability granted to this devcontainer (0.2.0).
+    // Nested containers via podman, with no capability granted to this devcontainer.
     // slirp4netns gives nested containers their own networks with name DNS, which the gradle
     // deephaven-in-docker tests (:py-client, :go, :R, :cpp-client, web/client-api) rely on to
     // reach the server container by name. Requires the tun device and the seccomp profile in
@@ -62,7 +62,8 @@
   //    README for what it does open.
   //  - /dev/net/tun: slirp4netns opens it, and it is not in the container's /dev by default.
   "runArgs": [
-    "--security-opt", "seccomp=${localWorkspaceFolder}/.devcontainer/seccomp-podman.json",
+    "--security-opt",
+    "seccomp=${localWorkspaceFolder}/.devcontainer/seccomp-podman.json",
     "--device=/dev/net/tun"
   ],
 
@@ -97,14 +98,15 @@
     // Docker creates the mount point root-owned; post-create.sh chowns it.
     "type=volume,source=gradle-cache-${devcontainerId},target=/home/vscode/.gradle",
 
-    // Your Claude Code config, read-only and live. The agents Feature links every file here
-    // into ~/.claude. Put CLAUDE.md, settings.json, statusline.sh in ~/.config/devc/.claude.
-    "type=bind,source=${localEnv:HOME}/.config/devc/.claude,target=/usr/local/share/devc-features/agents/claude-seed,consistency=cached,readonly",
+    // Bind mount devcontainer ~/.claude directory on host so that it can be shared across containers
+    "type=bind,source=${localEnv:HOME}/.config/devc/.claude,target=/home/vscode/.claude,consistency=cached",
 
     // Your git name and email, extracted from the host by initialize-command.sh.
     "type=bind,source=${localEnv:HOME}/.config/devc/gitconfig-identity,target=/usr/local/share/devc-features/git-container-config/identity/gitconfig,consistency=cached,readonly",
 
-    "type=volume,source=node-modules-types-${devcontainerId},target=${containerWorkspaceFolder}/web/client-api/types/node_modules"
+    // Volume mount node_modules folders to avoid host and container fighting over contents
+    "type=volume,source=node-modules-${devcontainerId}-proto-openapi,target=${containerWorkspaceFolder}/proto/raw-js-openapi/node_modules",
+    "type=volume,source=node-modules-${devcontainerId}-types,target=${containerWorkspaceFolder}/web/client-api/types/node_modules"
   ],
   "customizations": {
     "vscode": {
