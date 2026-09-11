@@ -1,0 +1,11 @@
+# devenv.sh config for deephaven-core -- see devenv.nix for the actual
+# environment definition and its header comment for usage/rationale.
+#
+# Deliberately using devenv's own default nixpkgs input (the
+# devenv-maintained "rolling" branch, tested against devenv releases)
+# rather than pinning a raw nixos-unstable ourselves -- less likely to hit
+# devenv/nixpkgs interop breakage than an arbitrary pin, and this is the
+# input devenv would pick anyway if this file only declared `inputs: {}`.
+inputs:
+  nixpkgs:
+    url: github:cachix/devenv-nixpkgs/rolling
