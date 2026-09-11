@@ -1778,9 +1778,13 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * @param sr the ranges about to be inserted
      */
     private void makeRoomForPartiallyCoveredBlocks(final long shiftAmount, final SortedRanges sr) {
-        if (size < PARTIAL_BLOCK_PREPASS_MIN_SPANS || sr.isEmpty()) {
+        if (size == 0 || sr.isEmpty()) {
+            // Nothing to make room in, or nothing to make room for; an insert into no spans takes its append path.
+            return;
+        }
+        if (size < PARTIAL_BLOCK_PREPASS_MIN_SPANS) {
             // Shifting a short spans array once per new span costs less than this pass over the ranges, even when
-            // every range starts a new span; with no spans at all the insert takes its append path.
+            // every range starts a new span.
             return;
         }
         if (hasSpanForEveryBlockBetween(sr.first() + shiftAmount, sr.last() + shiftAmount)) {
