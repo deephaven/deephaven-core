@@ -3,7 +3,6 @@
 //
 package io.deephaven.parquet.base;
 
-import io.deephaven.configuration.Configuration;
 import io.deephaven.parquet.base.materializers.BlobMaterializer;
 import io.deephaven.parquet.base.materializers.PlainBinaryStringMaterializer;
 import io.deephaven.parquet.base.materializers.PlainBinaryStringValuesReader;
@@ -11,7 +10,6 @@ import io.deephaven.parquet.base.materializers.StringMaterializer;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.values.plain.BinaryPlainValuesReader;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
@@ -28,30 +26,11 @@ class TestPlainBinaryStringReaderSelection {
     private static final ByteBuffer HEAP = ByteBuffer.allocate(64);
     private static final ByteBuffer DIRECT = ByteBuffer.allocateDirect(64);
 
-    private void setEnabled(final boolean enabled) {
-        Configuration.getInstance()
-                .setProperty(StringMaterializer.ALLOW_PLAIN_BINARY_STRING_DECODER_PROP, Boolean.toString(enabled));
-    }
-
-    /** Removes the property entirely, so {@link #onByDefault} sees the unset state rather than an explicit value. */
-    @AfterEach
-    void clearProperty() {
-        Configuration.getInstance().setProperty(StringMaterializer.ALLOW_PLAIN_BINARY_STRING_DECODER_PROP, null);
-    }
-
-    /** With the property unset, the decoder is selected -- this is the shipped behaviour. */
+    /** The case the decoder exists for: a PLAIN-encoded BINARY page, heap-backed, destined for Strings. */
     @Test
-    void onByDefault() {
+    void selectedForPlainBinaryStrings() {
         assertThat(usePlainBinaryStringReader(
                 Encoding.PLAIN, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, HEAP)).isTrue();
-    }
-
-    /** The escape hatch back to parquet's BinaryPlainValuesReader. */
-    @Test
-    void disabledByProperty() {
-        setEnabled(false);
-        assertThat(usePlainBinaryStringReader(
-                Encoding.PLAIN, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, HEAP)).isFalse();
     }
 
     /**
@@ -80,7 +59,10 @@ class TestPlainBinaryStringReaderSelection {
         }
     }
 
-    /** The narrowing that keeps other BINARY consumers' readBytes() call site monomorphic. */
+    /**
+     * The narrowing is a correctness requirement, not a tuning choice: PlainBinaryStringValuesReader implements only
+     * bulk String decoding, so any other BINARY consumer handed one would throw from readBytes().
+     */
     @Test
     void notSelectedForOtherBinaryMaterializers() {
         assertThat(usePlainBinaryStringReader(
@@ -114,16 +96,5 @@ class TestPlainBinaryStringReaderSelection {
                 .isInstanceOf(StringMaterializer.class);
         assertThat(StringMaterializer.FACTORY.makeMaterializerWithNulls(stock, null, 1))
                 .isInstanceOf(StringMaterializer.class);
-    }
-
-    /** The property is read per page, so the escape hatch must take effect without a restart, and be reversible. */
-    @Test
-    void respondsToRuntimeChanges() {
-        setEnabled(false);
-        assertThat(usePlainBinaryStringReader(
-                Encoding.PLAIN, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, HEAP)).isFalse();
-        setEnabled(true);
-        assertThat(usePlainBinaryStringReader(
-                Encoding.PLAIN, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, HEAP)).isTrue();
     }
 }

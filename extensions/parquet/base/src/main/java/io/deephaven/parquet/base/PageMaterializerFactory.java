@@ -13,6 +13,9 @@ public interface PageMaterializerFactory {
     /**
      * Whether PLAIN-encoded BINARY pages destined for this factory may be read with
      * {@code PlainBinaryStringValuesReader} instead of parquet's {@code BinaryPlainValuesReader}.
+     * <p>
+     * Only {@code StringMaterializer.FACTORY} may opt in. That reader implements bulk String decoding and nothing else,
+     * so any other BINARY consumer handed one would throw from {@code readBytes()}.
      */
     default boolean allowPlainBinaryStringDecoder() {
         return false;

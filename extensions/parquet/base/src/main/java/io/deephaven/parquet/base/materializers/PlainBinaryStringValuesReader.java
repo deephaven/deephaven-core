@@ -20,11 +20,11 @@ import java.nio.charset.StandardCharsets;
  */
 public final class PlainBinaryStringValuesReader extends ValuesReader {
 
-    private byte[] array;
+    final private byte[] array;
     /** Index into {@link #array} of the next value's length prefix. */
     private int position;
     /** Index into {@link #array} one past the last readable byte of this page. */
-    private int limit;
+    final private int limit;
 
     /**
      * @param in A heap-backed buffer positioned at the first value and limited to the end of the page

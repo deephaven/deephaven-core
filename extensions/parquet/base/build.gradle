@@ -29,12 +29,6 @@ dependencies {
     testImplementation libs.junit.jupiter
     testRuntimeOnly libs.junit.jupiter.engine
     testRuntimeOnly libs.junit.platform.launcher
-
-    // Required by any test that touches Configuration; without these its static initializer fails.
-    testRuntimeOnly project(':log-to-slf4j')
-    testRuntimeOnly project(':configs')
-    testRuntimeOnly project(':test-configs')
-    testRuntimeOnly libs.slf4j.simple
 }
 
 tasks.withType(Test).configureEach {

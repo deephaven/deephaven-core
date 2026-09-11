@@ -3,18 +3,11 @@
 //
 package io.deephaven.parquet.base.materializers;
 
-import io.deephaven.configuration.Configuration;
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import org.apache.parquet.column.values.ValuesReader;
 
 public class StringMaterializer extends ObjectMaterializerBase<String> implements PageMaterializer {
-
-    /**
-     * Escape hatch: set to {@code false} to fall back to parquet's {@code BinaryPlainValuesReader}. Read per page
-     * rather than cached, so it can be flipped in a running JVM without a restart.
-     */
-    public static final String ALLOW_PLAIN_BINARY_STRING_DECODER_PROP = "deephaven.parquet.plainBinaryStringDecoder";
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
@@ -34,8 +27,7 @@ public class StringMaterializer extends ObjectMaterializerBase<String> implement
 
         @Override
         public boolean allowPlainBinaryStringDecoder() {
-            return Configuration.getInstance()
-                    .getBooleanWithDefault(ALLOW_PLAIN_BINARY_STRING_DECODER_PROP, true);
+            return true;
         }
     };
 
