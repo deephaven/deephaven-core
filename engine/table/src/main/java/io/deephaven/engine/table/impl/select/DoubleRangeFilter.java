@@ -74,6 +74,12 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
     }
 
     static WhereFilter makeDoubleRangeFilter(String columnName, Condition condition, double value) {
+        if (Double.isNaN(value)) {
+            // Under IEEE 754 every ordered comparison against NaN is false, NaN itself included, so no row matches.
+            // Deephaven ordering would instead sort NaN above every other value, which is not what these operators
+            // ask for.
+            return WhereNoneFilter.INSTANCE;
+        }
         switch (condition) {
             case LESS_THAN:
                 return lt(columnName, value);

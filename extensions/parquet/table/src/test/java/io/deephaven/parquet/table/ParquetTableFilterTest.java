@@ -15,6 +15,8 @@ import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownPredicateManager;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -1779,6 +1781,265 @@ public final class ParquetTableFilterTest {
         }
 
         testFilteringNanImpl(readTable(dest));
+    }
+
+    /**
+     * A sorted region answers a match filter with a binary search whose equality holds NaN equal to itself, while
+     * {@code ==} and {@code !=} follow IEEE 754, where NaN equals nothing at all. A NaN among the search values of such
+     * a filter can therefore never match a row, so {@link MatchFilter} drops it, and a filter left with no values is
+     * answered as the empty set -- or, inverted, the whole selection -- without a search. An {@code in} filter opts
+     * into NaN matching itself, which is what the search already does, so it keeps its NaN and is answered by the
+     * search.
+     *
+     * <p>
+     * Every file here is written sorted and tagged, so the filters reach the per-region sorted action rather than the
+     * table-level one; the oracle is the same query with sorted pushdown switched off.
+     */
+    @Test
+    public void sortedFlatPartitionsNaNTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_sortedFlatPartitionsNaN").toString();
+        final int tableSize = 100_000;
+
+        // Deephaven ordering puts nulls first, then +Inf, then NaN, so a sorted file carries all three at its edges.
+        final Table sorted = TableTools.emptyTable(tableSize)
+                .update("sorted_double = ii % 997 == 0 ? NULL_DOUBLE : (ii % 991 == 0 ? Double.NaN"
+                        + " : (ii % 983 == 0 ? Double.POSITIVE_INFINITY : (double) ii))")
+                .sort("sorted_double");
+        writeSortedPartitions(destPath, sorted, "sorted_double");
+
+        // IEEE 754: nothing equals NaN, and NaN differs from itself.
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double == NaN");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double != NaN");
+        // "in" opts into NaN matching itself, which the binary search can answer.
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double in NaN");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double not in NaN");
+        // Ordinary comparisons keep their pushdown and must be unaffected.
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double == 500.0");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double != 500.0");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double == null");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double != null");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_double >= 500.0");
+    }
+
+    /**
+     * Asserts that the table at {@code destPath} answers {@code filters} identically with sorted-column pushdown
+     * enabled and disabled. The table is re-read for each side so that neither result is served from the other's
+     * memoized {@code where}.
+     */
+    private static void verifyAgainstDisabledSortedPushdown(final String destPath, final String... filters) {
+        final Table expected;
+        final boolean originalSetting = QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION;
+        QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = true;
+        try {
+            expected = ParquetTools.readTable(destPath).where(filters).coalesce();
+        } finally {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = originalSetting;
+        }
+        assertTableEquals(expected, ParquetTools.readTable(destPath).where(filters).coalesce());
+    }
+
+    /**
+     * Asserts that the table at {@code destPath} answers {@code filter} identically with sorted-column pushdown enabled
+     * and disabled.
+     */
+    private static void verifyAgainstDisabledSortedPushdown(final String destPath, final WhereFilter filter) {
+        final Table expected;
+        final boolean originalSetting = QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION;
+        QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = true;
+        try {
+            expected = ParquetTools.readTable(destPath).where(filter.copy()).coalesce();
+        } finally {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION = originalSetting;
+        }
+        assertTableEquals(expected, ParquetTools.readTable(destPath).where(filter.copy()).coalesce());
+    }
+
+    /** Splits {@code sorted} into flat partitions, tags each as sorted by {@code columnName}, and writes them. */
+    private void writeSortedPartitions(
+            final String destPath, final Table sorted, final String columnName) {
+        final Table[] partitions = splitTable(sorted, 7, false);
+        for (int ii = 0; ii < partitions.length; ii++) {
+            partitions[ii] = SortedColumnsAttribute.withOrderForColumn(
+                    partitions[ii], columnName, SortingOrder.Ascending);
+        }
+        writeTables(destPath, partitions, EMPTY);
+    }
+
+    /**
+     * Deephaven ordering sorts NaN above positive infinity, so a sorted region's range search cannot treat an inclusive
+     * {@code +Inf} upper bound as unbounded -- it has to locate and exclude the trailing NaN block. An inclusive NaN
+     * upper bound is the genuinely unbounded case, where the upper-bound search can be skipped. Neither shape is
+     * produced by {@code geq()}, whose NaN upper bound is exclusive, so both are built directly. The oracle is the same
+     * filter with sorted pushdown switched off.
+     */
+    @Test
+    public void sortedFlatPartitionsInfiniteBoundsTest() {
+        final int tableSize = 100_000;
+
+        final String doublePath =
+                Path.of(rootFile.getPath(), "ParquetTest_sortedFlatPartitionsInfiniteBoundsDouble").toString();
+        writeSortedPartitions(doublePath, TableTools.emptyTable(tableSize)
+                .update("sorted_double = ii % 997 == 0 ? NULL_DOUBLE : (ii % 991 == 0 ? Double.NaN"
+                        + " : (ii % 983 == 0 ? Double.POSITIVE_INFINITY : (double) ii))")
+                .sort("sorted_double"), "sorted_double");
+
+        verifyAgainstDisabledSortedPushdown(doublePath,
+                new DoubleRangeFilter("sorted_double", 500.0, Double.POSITIVE_INFINITY, true, true));
+        verifyAgainstDisabledSortedPushdown(doublePath,
+                new DoubleRangeFilter("sorted_double", 500.0, Double.NaN, true, true));
+        verifyAgainstDisabledSortedPushdown(doublePath, DoubleRangeFilter.geq("sorted_double", 500.0));
+
+        final String floatPath =
+                Path.of(rootFile.getPath(), "ParquetTest_sortedFlatPartitionsInfiniteBoundsFloat").toString();
+        writeSortedPartitions(floatPath, TableTools.emptyTable(tableSize)
+                .update("sorted_float = ii % 997 == 0 ? NULL_FLOAT : (ii % 991 == 0 ? Float.NaN"
+                        + " : (ii % 983 == 0 ? Float.POSITIVE_INFINITY : (float) ii))")
+                .sort("sorted_float"), "sorted_float");
+
+        verifyAgainstDisabledSortedPushdown(floatPath,
+                new FloatRangeFilter("sorted_float", 500.0f, Float.POSITIVE_INFINITY, true, true));
+        verifyAgainstDisabledSortedPushdown(floatPath,
+                new FloatRangeFilter("sorted_float", 500.0f, Float.NaN, true, true));
+        verifyAgainstDisabledSortedPushdown(floatPath, FloatRangeFilter.geq("sorted_float", 500.0f));
+    }
+
+    /**
+     * The sorted region tests otherwise reach only the floating-point and {@link BigDecimal} kernels, leaving the five
+     * integral region kernels with no sorted range coverage at all. Each is exercised here with a two-sided range --
+     * both bounds carried by one filter, which is the shape that reaches {@code binarySearchMinMax} rather than one of
+     * the single-ended shortcuts -- over all four inclusivity combinations, with the two shortcuts alongside for
+     * contrast.
+     *
+     * <p>
+     * No query string produces a two-sided filter, since {@code WhereFilterFactory} builds one operator and one value
+     * per {@code RangeFilter}, so these are constructed directly. Runs of ten equal values put the bounds inside a run
+     * rather than on a clean boundary, and nulls sit at the sorted edge so a range has to exclude them. The oracle is
+     * the same filter with sorted pushdown switched off.
+     */
+    @Test
+    public void sortedFlatPartitionsIntegralRangeTest() {
+        final int tableSize = 100_000;
+
+        final String charPath = Path.of(rootFile.getPath(),
+                "ParquetTest_sortedFlatPartitionsIntegralRangeChar").toString();
+        writeSortedPartitions(charPath, TableTools.emptyTable(tableSize)
+                .update("sorted_char = ii % 997 == 0 ? NULL_CHAR : (char) (ii / 10)")
+                .sort("sorted_char"), "sorted_char");
+        for (final boolean lower : new boolean[] {false, true}) {
+            for (final boolean upper : new boolean[] {false, true}) {
+                verifyAgainstDisabledSortedPushdown(charPath,
+                        new CharRangeFilter("sorted_char", (char) 200, (char) 800, lower, upper));
+            }
+        }
+        verifyAgainstDisabledSortedPushdown(charPath, CharRangeFilter.geq("sorted_char", (char) 200));
+        verifyAgainstDisabledSortedPushdown(charPath, CharRangeFilter.leq("sorted_char", (char) 800));
+
+        final String bytePath = Path.of(rootFile.getPath(),
+                "ParquetTest_sortedFlatPartitionsIntegralRangeByte").toString();
+        writeSortedPartitions(bytePath, TableTools.emptyTable(tableSize)
+                .update("sorted_byte = ii % 997 == 0 ? NULL_BYTE : (byte) (ii % 100)")
+                .sort("sorted_byte"), "sorted_byte");
+        for (final boolean lower : new boolean[] {false, true}) {
+            for (final boolean upper : new boolean[] {false, true}) {
+                verifyAgainstDisabledSortedPushdown(bytePath,
+                        new ByteRangeFilter("sorted_byte", (byte) 20, (byte) 80, lower, upper));
+            }
+        }
+        verifyAgainstDisabledSortedPushdown(bytePath, ByteRangeFilter.geq("sorted_byte", (byte) 20));
+        verifyAgainstDisabledSortedPushdown(bytePath, ByteRangeFilter.leq("sorted_byte", (byte) 80));
+
+        final String shortPath = Path.of(rootFile.getPath(),
+                "ParquetTest_sortedFlatPartitionsIntegralRangeShort").toString();
+        writeSortedPartitions(shortPath, TableTools.emptyTable(tableSize)
+                .update("sorted_short = ii % 997 == 0 ? NULL_SHORT : (short) (ii / 10)")
+                .sort("sorted_short"), "sorted_short");
+        for (final boolean lower : new boolean[] {false, true}) {
+            for (final boolean upper : new boolean[] {false, true}) {
+                verifyAgainstDisabledSortedPushdown(shortPath,
+                        new ShortRangeFilter("sorted_short", (short) 200, (short) 800, lower, upper));
+            }
+        }
+        verifyAgainstDisabledSortedPushdown(shortPath, ShortRangeFilter.geq("sorted_short", (short) 200));
+        verifyAgainstDisabledSortedPushdown(shortPath, ShortRangeFilter.leq("sorted_short", (short) 800));
+
+        final String intPath = Path.of(rootFile.getPath(),
+                "ParquetTest_sortedFlatPartitionsIntegralRangeInt").toString();
+        writeSortedPartitions(intPath, TableTools.emptyTable(tableSize)
+                .update("sorted_int = ii % 997 == 0 ? NULL_INT : (int) (ii / 10)")
+                .sort("sorted_int"), "sorted_int");
+        for (final boolean lower : new boolean[] {false, true}) {
+            for (final boolean upper : new boolean[] {false, true}) {
+                verifyAgainstDisabledSortedPushdown(intPath,
+                        new IntRangeFilter("sorted_int", 200, 800, lower, upper));
+            }
+        }
+        verifyAgainstDisabledSortedPushdown(intPath, IntRangeFilter.geq("sorted_int", 200));
+        verifyAgainstDisabledSortedPushdown(intPath, IntRangeFilter.leq("sorted_int", 800));
+
+        final String longPath = Path.of(rootFile.getPath(),
+                "ParquetTest_sortedFlatPartitionsIntegralRangeLong").toString();
+        writeSortedPartitions(longPath, TableTools.emptyTable(tableSize)
+                .update("sorted_long = ii % 997 == 0 ? NULL_LONG : (long) (ii / 10)")
+                .sort("sorted_long"), "sorted_long");
+        for (final boolean lower : new boolean[] {false, true}) {
+            for (final boolean upper : new boolean[] {false, true}) {
+                verifyAgainstDisabledSortedPushdown(longPath,
+                        new LongRangeFilter("sorted_long", 200L, 800L, lower, upper));
+            }
+        }
+        verifyAgainstDisabledSortedPushdown(longPath, LongRangeFilter.geq("sorted_long", 200L));
+        verifyAgainstDisabledSortedPushdown(longPath, LongRangeFilter.leq("sorted_long", 800L));
+    }
+
+    /**
+     * A {@link BigDecimal} column orders inconsistently with equals -- {@code 500} and {@code 500.00} compare equal
+     * while {@code equals} separates them -- so {@code ObjectRegionBinarySearchKernel.binsearchMatchFilter} routes its
+     * match filters to {@code ComparableRegionBinarySearchKernel} rather than answering them by ordering alone. This
+     * exercises that dispatch through the Parquet region, which is its only production caller.
+     *
+     * <p>
+     * What this cannot pin down is the choice the dispatch makes: Parquet's DECIMAL logical type stores a single scale
+     * for a whole column, so every value read back carries that one scale and an ordering-equal run is always an equal
+     * run, which both kernels answer alike. A run that separates them has to be built directly against a region, as
+     * {@code ComparableRegionBinarySearchKernelTest} does. What is checked here is that a sorted BigDecimal column
+     * filters correctly end to end, including for a search value whose scale no stored value shares.
+     */
+    @Test
+    public void sortedFlatPartitionsBigDecimalTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_sortedFlatPartitionsBigDecimal").toString();
+        final int tableSize = 100_000;
+
+        // Runs of ten equal values, so a match has to claim a whole run, plus nulls at the sorted edge.
+        final Table sorted = TableTools.emptyTable(tableSize)
+                .update("sorted_bd = ii % 997 == 0 ? (java.math.BigDecimal) null"
+                        + " : java.math.BigDecimal.valueOf((long) (ii / 10))")
+                .sort("sorted_bd");
+        writeSortedPartitions(destPath, sorted, "sorted_bd");
+
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        // Written at scale 0, so this value is equal to the rows of its run.
+        queryScope.putParam("sortedBd500", new BigDecimal("500"));
+        // Ordering-equal to that same run, but equal to no member of it.
+        queryScope.putParam("sortedBd500Scaled", new BigDecimal("500.00"));
+        // Ordering-equal to no run at all.
+        queryScope.putParam("sortedBdAbsent", new BigDecimal("500.5"));
+
+        // Stated outright, so the oracle comparisons below cannot pass by both sides being wrong alike: the run is
+        // ten rows, and the ordering-equal value at another scale is equal to none of them.
+        assertEquals(10, ParquetTools.readTable(destPath).where("sorted_bd == sortedBd500").size());
+        assertEquals(0, ParquetTools.readTable(destPath).where("sorted_bd == sortedBd500Scaled").size());
+
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd == sortedBd500");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd != sortedBd500");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd == sortedBd500Scaled");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd != sortedBd500Scaled");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd == sortedBdAbsent");
+        // Several search values sharing one ordering-equal run, so the run answers for all of them at once.
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd in sortedBd500, sortedBd500Scaled");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd not in sortedBd500, sortedBd500Scaled");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd in sortedBd500Scaled, sortedBdAbsent");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd == null");
+        verifyAgainstDisabledSortedPushdown(destPath, "sorted_bd != null");
     }
 
     @Test
