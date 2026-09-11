@@ -28,3 +28,16 @@ updates:
     assignees:
       - "devinrsmith"
       - "rcaudy"
+  - package-ecosystem: "gomod"
+    directory: "/go"
+    open-pull-requests-limit: 99
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(gomod)"
+    labels:
+      - "NoDocumentationNeeded"
+      - "NoReleaseNotesNeeded"
+      - "version-bump"
+    assignees:
+      - "cpwright"
