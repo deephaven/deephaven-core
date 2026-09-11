@@ -405,7 +405,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             readNBytes(decompressedInput, bytes.array(), bytes.arrayOffset(), uncompressedSize);
             final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV1(bytes);
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV1(bytes);
-            final ValuesReader dataReader =
+            final PageValueReader dataReader =
                     new KeyIndexReader((DictionaryValuesReader) getDataReader(getEncoding(header.getEncoding()),
                             bytes, header.getNum_values(), channelContext));
             return readKeysFromPageCommon(keyDest, nullPlaceholder, rlDecoder, dlDecoder, dataReader);
@@ -421,7 +421,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final int nullPlaceholder,
             final RunLengthBitPackingHybridBufferDecoder rlDecoder,
             final RunLengthBitPackingHybridBufferDecoder dlDecoder,
-            final ValuesReader dataReader) throws IOException {
+            final PageValueReader dataReader) throws IOException {
         final Object result = materialize(IntMaterializer.FACTORY, dlDecoder, rlDecoder, dataReader, nullPlaceholder);
         if (result instanceof DataWithOffsets) {
             keyDest.put((int[]) ((DataWithOffsets) result).materializeResult);
@@ -463,8 +463,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             readNBytes(decompressedInput, bytes.array(), bytes.arrayOffset(), uncompressedSize);
             final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV1(bytes);
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV1(bytes);
-            final ValuesReader dataReader =
-                    getDataReader(getEncoding(header.getEncoding()), bytes, header.getNum_values(), channelContext);
+            final PageValueReader dataReader = new PageValueReaderImpl(
+                    getDataReader(getEncoding(header.getEncoding()), bytes, header.getNum_values(), channelContext));
             return materialize(pageMaterializerFactory, dlDecoder, rlDecoder, dataReader, nullValue);
         } catch (final IOException e) {
             throw new ParquetDecodingException("Failed to read parquet V1 page for column: " + columnName +
@@ -476,7 +476,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final PageMaterializerFactory factory,
             final RunLengthBitPackingHybridBufferDecoder dlDecoder,
             final RunLengthBitPackingHybridBufferDecoder rlDecoder,
-            final ValuesReader dataReader,
+            final PageValueReader dataReader,
             final Object nullValue) throws IOException {
         if (dlDecoder == null) {
             return materializeNonNull(factory, numValues, dataReader);
@@ -513,7 +513,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV2(page);
             final ByteBuffer bytes = getCachedBuffer(channelContext, PAGE_BUFFER_KEY, page.uncompressedSize);
             readNBytes(page.decompressedStream, bytes.array(), bytes.arrayOffset(), page.uncompressedSize);
-            final ValuesReader dataReader =
+            final PageValueReader dataReader =
                     new KeyIndexReader((DictionaryValuesReader) getDataReader(getEncoding(header.getEncoding()),
                             bytes, header.getNum_values(), channelContext));
             return readKeysFromPageCommon(keyDest, nullPlaceholder, rlDecoder, dlDecoder, dataReader);
@@ -533,8 +533,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV2(page);
             final ByteBuffer bytes = getCachedBuffer(channelContext, PAGE_BUFFER_KEY, page.uncompressedSize);
             readNBytes(page.decompressedStream, bytes.array(), bytes.arrayOffset(), page.uncompressedSize);
-            final ValuesReader dataReader = getDataReader(getEncoding(header.getEncoding()),
-                    bytes, header.getNum_values(), channelContext);
+            final PageValueReader dataReader = new PageValueReaderImpl(getDataReader(
+                    getEncoding(header.getEncoding()), bytes, header.getNum_values(), channelContext));
             return materialize(pageMaterializerFactory, dlDecoder, rlDecoder, dataReader, nullValue);
         } catch (final IOException e) {
             throw new ParquetDecodingException("Failed to read parquet V2 page for column: " + columnName +
@@ -546,7 +546,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final PageMaterializerFactory factory,
             final int numberOfValues,
             final IntBuffer nullOffsets,
-            final ValuesReader dataReader,
+            final PageValueReader dataReader,
             final Object nullValue) {
         final PageMaterializer materializer = factory.makeMaterializerWithNulls(dataReader, nullValue, numberOfValues);
         int startIndex = 0;
@@ -596,7 +596,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final PageMaterializerFactory factory,
             final RunLengthBitPackingHybridBufferDecoder dlDecoder,
             final RunLengthBitPackingHybridBufferDecoder rlDecoder,
-            final ValuesReader dataReader,
+            final PageValueReader dataReader,
             final Object nullValue) throws IOException {
         final Pair<Pair<Type.Repetition, IntBuffer>[], Integer> offsetsAndCount =
                 getOffsetsAndNulls(dlDecoder, rlDecoder);
@@ -641,7 +641,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     private static Object materializeNonNull(
             final PageMaterializerFactory factory,
             final int numberOfValues,
-            final ValuesReader dataReader) {
+            final PageValueReader dataReader) {
         return factory.makeMaterializerNonNull(dataReader, numberOfValues).fillAll();
     }
 

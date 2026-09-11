@@ -3,21 +3,20 @@
 //
 package io.deephaven.parquet.base;
 
-import org.apache.parquet.column.values.ValuesReader;
-
 public interface PageMaterializerFactory {
-    PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues);
+    PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues);
 
-    PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues);
+    PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues);
 
     PageMaterializerFactory NULL_FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue,
+                int numValues) {
             throw new UnsupportedOperationException("Does not support materializing pages");
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             throw new UnsupportedOperationException("Does not support materializing pages");
         }
     };

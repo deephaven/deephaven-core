@@ -9,7 +9,7 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 import java.util.Arrays;
 
@@ -17,30 +17,26 @@ public class ByteMaterializer implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new ByteMaterializer(dataReader, (byte) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new ByteMaterializer(dataReader, numValues);
         }
     };
 
-    public static byte convertValue(int value) {
-        return (byte) value;
-    }
-
-    private final ValuesReader dataReader;
+    private final PageValueReader dataReader;
 
     private final byte nullValue;
     private final byte[] data;
 
-    private ByteMaterializer(ValuesReader dataReader, int numValues) {
+    private ByteMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, (byte) 0, numValues);
     }
 
-    private ByteMaterializer(ValuesReader dataReader, byte nullValue, int numValues) {
+    private ByteMaterializer(PageValueReader dataReader, byte nullValue, int numValues) {
         this.dataReader = dataReader;
         this.nullValue = nullValue;
         this.data = new byte[numValues];
@@ -54,7 +50,7 @@ public class ByteMaterializer implements PageMaterializer {
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readInteger());
+            data[ii] = dataReader.readByte();
         }
     }
 

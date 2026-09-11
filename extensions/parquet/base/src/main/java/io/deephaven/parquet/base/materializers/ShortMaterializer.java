@@ -9,33 +9,29 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 public class ShortMaterializer extends ShortMaterializerBase implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new ShortMaterializer(dataReader, (short) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new ShortMaterializer(dataReader, numValues);
         }
     };
 
-    public static short convertValue(int value) {
-        return (short) value;
-    }
+    private final PageValueReader dataReader;
 
-    private final ValuesReader dataReader;
-
-    private ShortMaterializer(ValuesReader dataReader, int numValues) {
+    private ShortMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, (short) 0, numValues);
     }
 
-    private ShortMaterializer(ValuesReader dataReader, short nullValue, int numValues) {
+    private ShortMaterializer(PageValueReader dataReader, short nullValue, int numValues) {
         super(nullValue, numValues);
         this.dataReader = dataReader;
     }
@@ -43,7 +39,7 @@ public class ShortMaterializer extends ShortMaterializerBase implements PageMate
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readInteger());
+            data[ii] = dataReader.readShort();
         }
     }
 }

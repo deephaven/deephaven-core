@@ -5,7 +5,7 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 import java.math.BigDecimal;
 
@@ -19,24 +19,24 @@ public class BigDecimalFromLongMaterializer extends ObjectMaterializerBase<BigDe
         }
 
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new BigDecimalFromLongMaterializer(dataReader, (BigDecimal) nullValue, numValues, scale);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new BigDecimalFromLongMaterializer(dataReader, numValues, scale);
         }
     };
 
-    private final ValuesReader dataReader;
+    private final PageValueReader dataReader;
     private final int scale;
 
-    private BigDecimalFromLongMaterializer(ValuesReader dataReader, int numValues, int scale) {
+    private BigDecimalFromLongMaterializer(PageValueReader dataReader, int numValues, int scale) {
         this(dataReader, null, numValues, scale);
     }
 
-    private BigDecimalFromLongMaterializer(ValuesReader dataReader, BigDecimal nullValue, int numValues, int scale) {
+    private BigDecimalFromLongMaterializer(PageValueReader dataReader, BigDecimal nullValue, int numValues, int scale) {
         super(nullValue, new BigDecimal[numValues]);
         this.dataReader = dataReader;
         this.scale = scale;
