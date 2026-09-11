@@ -8,6 +8,11 @@ import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLongLongMapTestAccessors {
     private volatile long[] keysAndValues;
 
+    public static HashMapLockFreeK1V1 ofExpectedSize(int expectedSize, double loadFactor, long noEntryValue) {
+        final int desiredInitialCapacity = capacityForExpectedEntries(expectedSize, loadFactor);
+        return new HashMapLockFreeK1V1(desiredInitialCapacity, loadFactor, noEntryValue);
+    }
+
     public HashMapLockFreeK1V1() {
         this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
     }
@@ -16,17 +21,17 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
         this(desiredInitialCapacity, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
     }
 
-    HashMapLockFreeK1V1(int desiredInitialCapacity, float loadFactor) {
+    HashMapLockFreeK1V1(int desiredInitialCapacity, double loadFactor) {
         this(desiredInitialCapacity, loadFactor, DEFAULT_NO_ENTRY_VALUE);
     }
 
-    public HashMapLockFreeK1V1(int desiredInitialCapacity, float loadFactor, long noEntryValue) {
+    public HashMapLockFreeK1V1(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
         this.keysAndValues = null;
     }
 
     @Override
-    protected void setKeysAndValues(long[] keysAndValues) {
+    void setKeysAndValues(long[] keysAndValues) {
         this.keysAndValues = keysAndValues;
     }
 
@@ -63,6 +68,11 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
     public void resetToNull() {
         resetToNullImpl();
         keysAndValues = null;
+    }
+
+    @Override
+    public void clearToNewArray() {
+        clearToNewArrayImpl(keysAndValues);
     }
 
     @Override
