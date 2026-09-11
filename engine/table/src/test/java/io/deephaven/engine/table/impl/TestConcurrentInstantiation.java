@@ -1040,6 +1040,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         updateGraph.completeCycleForUnitTests();
 
+        // The operations left blocked above unblock now that the cycle is over. Wait for them here, so that they finish
+        // against this sub-test's tables rather than inside the next sub-test's cycle.
+        awaitBlockedOperations();
+
         // Now all the tables created in the cycle are correct
         assertTableEquals(source, prevFiltered1);
         assertTableEquals(source, prevFiltered2);
@@ -1147,6 +1151,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         updateGraph.completeCycleForUnitTests();
 
+        // The operations left blocked above unblock now that the cycle is over. Wait for them here, so that they finish
+        // against this sub-test's tables rather than inside the next sub-test's cycle.
+        awaitBlockedOperations();
+
         // Now all the tables created in the cycle are correct
         assertTableEquals(source, prevFiltered1);
         assertTableEquals(source, prevFiltered2);
@@ -1216,6 +1224,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(source, filtered2);
 
         updateGraph.completeCycleForUnitTests();
+
+        // The operations left blocked above unblock now that the cycle is over. Wait for them here, so that they finish
+        // against this sub-test's tables rather than inside the next sub-test's cycle.
+        awaitBlockedOperations();
 
         // Now all the tables created in the cycle are correct
         assertTableEquals(source, filtered1);

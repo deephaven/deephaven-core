@@ -132,6 +132,12 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     @Override
+    public boolean snapshotNeeded(@NotNull final QueryTable parent) {
+        // Snapshot control is needed if the parent is refreshing or any filter has refreshing dependencies.
+        return parent.isRefreshing() || !WhereListener.extractDependencies(whereFilters).isEmpty();
+    }
+
+    @Override
     public OperationSnapshotControl newSnapshotControl(@NotNull final QueryTable queryTable) {
         final List<NotificationQueue.Dependency> dependencies = WhereListener.extractDependencies(whereFilters);
         if (dependencies.isEmpty()) {
@@ -141,7 +147,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     @Override
-    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
+    public Result<QueryTable> initialize(final boolean prevRequested, final long beforeClock) {
+        // A static parent has no previous values; its snapshot control exists only for refreshing filter dependencies.
+        final boolean usePrev = prevRequested && parent.isRefreshing();
         MutableBoolean anyRefreshing = new MutableBoolean(false);
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {

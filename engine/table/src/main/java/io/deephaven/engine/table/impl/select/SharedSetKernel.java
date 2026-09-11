@@ -40,6 +40,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.LongStream;
@@ -198,6 +199,8 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
                     final SetUpdateListener staleListener = resultListenerHolder.getValue();
                     if (staleListener != null) {
                         resultListenerHolder.setValue(null);
+                        // A notification already queued for it still runs; make that run a no-op.
+                        staleListener.superseded = true;
                         unmanage(staleListener);
                         setTable.removeUpdateListener(staleListener);
                     }
@@ -289,15 +292,17 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
      * @throws ConstructSnapshot.SnapshotInconsistentException If the set changed during a concurrent snapshot attempt
      */
     void failIfChangedSince(final long generation) {
+        // Guarantees that the kernel reads *precede* the generation check.
+        VarHandle.loadLoadFence();
         if (this.generation != generation) {
             abandonAttempt();
         }
     }
 
-    private static void abandonAttempt() {
-        // Outside a concurrent snapshot attempt, a reader runs on or downstream of the update graph thread, which
-        // cannot be mutating the set at the same time; a change there is an invariant violation, not a retry.
-        Assert.neqZero(ConstructSnapshot.getConcurrentAttemptClockValue(), "concurrent snapshot attempt clock value");
+    private void abandonAttempt() {
+        // Only a concurrent snapshot attempt can race setUpdateListener's mutation; a reader on the update graph
+        // thread runs after it, so a change observed there would be a bug.
+        Assert.eqFalse(updateGraph.currentThreadProcessesUpdates(), "updateGraph.currentThreadProcessesUpdates()");
         throw new ConstructSnapshot.SnapshotInconsistentException();
     }
 
@@ -387,6 +392,11 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
         private final TupleSource<?> setKeySource;
         private final ModifiedColumnSet setColumnsMCS;
 
+        /**
+         * Set when a later snapshot attempt replaced this listener; a notification already queued for it then no-ops.
+         */
+        private volatile boolean superseded;
+
         private SetUpdateListener(
                 @NotNull final String description,
                 @NotNull final QueryTable setTable,
@@ -401,6 +411,9 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
 
         @Override
         public void onUpdate(final TableUpdate upstream) {
+            if (superseded) {
+                return;
+            }
             final boolean hasAdds = upstream.added().isNonempty();
             final boolean hasRemoves = upstream.removed().isNonempty();
             final boolean hasModifies = upstream.modified().isNonempty()
@@ -425,6 +438,8 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
             // is odd for exactly as long as the kernel is inconsistent, which is what beginRead() relies on.
             ++generation;
             Assert.neqZero(generation & 1, "generation & 1 (must be odd while mutating)");
+            // Guarantees that the kernel mutation *follows* the generation increment.
+            VarHandle.storeStoreFence();
 
             boolean trueModification = false;
             // Remove removed keys
@@ -481,6 +496,9 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
 
         @Override
         public void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
+            if (superseded) {
+                return;
+            }
             filters.forEachValidReference(
                     filter -> filter.onSetError(originalException, sourceEntry));
         }

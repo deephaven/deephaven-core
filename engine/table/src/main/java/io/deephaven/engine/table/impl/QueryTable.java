@@ -95,8 +95,16 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public interface Operation<T extends DynamicNode & NotificationStepReceiver> {
 
-        default boolean snapshotNeeded() {
-            return true;
+        /**
+         * Whether this operation must initialize under a snapshot control. By default, that is whenever the parent is
+         * refreshing. An operation with other inputs that may tick, such as a filter over a refreshing set table, needs
+         * one for a static parent as well.
+         *
+         * @param parent The parent table for the operation
+         * @return Whether a snapshot control is needed
+         */
+        default boolean snapshotNeeded(@NotNull final QueryTable parent) {
+            return parent.isRefreshing();
         }
 
         /**
@@ -3306,12 +3314,8 @@ public class QueryTable extends BaseTable<QueryTable> {
             final Mutable<T> resultTable = new MutableObject<>();
 
             try (final SafeCloseable ignored = operation.beginOperation(this)) {
-                final OperationSnapshotControl snapshotControl;
-                if (isRefreshing() && operation.snapshotNeeded()) {
-                    snapshotControl = operation.newSnapshotControl(this);
-                } else {
-                    snapshotControl = null;
-                }
+                final OperationSnapshotControl snapshotControl =
+                        operation.snapshotNeeded(this) ? operation.newSnapshotControl(this) : null;
 
                 initializeWithSnapshot(operation.getLogPrefix(), snapshotControl, (usePrev, beforeClockValue) -> {
                     final Operation.Result<T> result = operation.initialize(usePrev, beforeClockValue);

@@ -523,22 +523,32 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
      */
     void onSetChanged(final boolean added, final boolean removed) {
         final RecomputeListener localListener = listener;
-        if (localListener == null) {
+        final QueryTable localResult = resultTable;
+        if (localListener == null || localResult == null) {
             return;
         }
-        if (added) {
-            if (inclusion) {
-                localListener.requestRecomputeUnmatched();
-            } else {
-                localListener.requestRecomputeMatched();
-            }
+        // The result may already be dead: released by a discarded snapshot attempt whose retry will supersede it, or
+        // released by its consumers. Either way, do not request a recompute for it.
+        if (!localResult.tryRetainReference()) {
+            return;
         }
-        if (removed) {
-            if (inclusion) {
-                localListener.requestRecomputeMatched();
-            } else {
-                localListener.requestRecomputeUnmatched();
+        try {
+            if (added) {
+                if (inclusion) {
+                    localListener.requestRecomputeUnmatched();
+                } else {
+                    localListener.requestRecomputeMatched();
+                }
             }
+            if (removed) {
+                if (inclusion) {
+                    localListener.requestRecomputeMatched();
+                } else {
+                    localListener.requestRecomputeUnmatched();
+                }
+            }
+        } finally {
+            localResult.dropReference();
         }
     }
 
