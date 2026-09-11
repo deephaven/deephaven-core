@@ -82,6 +82,11 @@ public class PushdownFuzzerTest {
             // Finding 11: SourceTable published every column of a multi-column sort as independently sorted, so a
             // composite data index's trailing column carried a false sortedness claim and over-returned rows.
             1681357320861610709L,
+            // Finding 17: sorted-column match pushdown answered `!= NaN` with an ordering binary search, whose
+            // notion of float equality differs from the filter's, dropping the NaN rows.
+            -5472033891179623763L,
+            // Finding 16 (bench): a table-wide sort claim on a partitioned layout, which partitioning invalidates.
+            -1220343102263136052L, -3258625118121555365L,
             // Finding 12: a partition value containing a colon made the partition directory's relative URI
             // unparseable, so LocalTime and Instant partitioning columns could not be written at all.
             -2281078010550439077L, -1767017146706312469L, 3579704455286775782L,
