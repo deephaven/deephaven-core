@@ -7,15 +7,17 @@ import org.apache.parquet.column.values.ValuesReader;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
  * Adapts a {@link ValuesReader} to the narrower {@link PageValueReader} interface.
  */
-final class ValuesReaderPageValueReader implements PageValueReader {
+final class PageValueReaderImpl implements PageValueReader {
 
     private final ValuesReader valuesReader;
 
-    ValuesReaderPageValueReader(@NotNull final ValuesReader valuesReader) {
-        this.valuesReader = valuesReader;
+    PageValueReaderImpl(@NotNull final ValuesReader valuesReader) {
+        this.valuesReader = Objects.requireNonNull(valuesReader);
     }
 
     @Override

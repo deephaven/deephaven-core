@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Adapter to expose dictionary key indexes.
  */
-class KeyIndexReader implements PageValueReader {
+final class KeyIndexReader implements PageValueReader {
 
     private final DictionaryValuesReader dictionaryValuesReader;
 

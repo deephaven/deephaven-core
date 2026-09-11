@@ -463,7 +463,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             readNBytes(decompressedInput, bytes.array(), bytes.arrayOffset(), uncompressedSize);
             final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV1(bytes);
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV1(bytes);
-            final PageValueReader dataReader = new ValuesReaderPageValueReader(
+            final PageValueReader dataReader = new PageValueReaderImpl(
                     getDataReader(getEncoding(header.getEncoding()), bytes, header.getNum_values(), channelContext));
             return materialize(pageMaterializerFactory, dlDecoder, rlDecoder, dataReader, nullValue);
         } catch (final IOException e) {
@@ -533,7 +533,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV2(page);
             final ByteBuffer bytes = getCachedBuffer(channelContext, PAGE_BUFFER_KEY, page.uncompressedSize);
             readNBytes(page.decompressedStream, bytes.array(), bytes.arrayOffset(), page.uncompressedSize);
-            final PageValueReader dataReader = new ValuesReaderPageValueReader(getDataReader(
+            final PageValueReader dataReader = new PageValueReaderImpl(getDataReader(
                     getEncoding(header.getEncoding()), bytes, header.getNum_values(), channelContext));
             return materialize(pageMaterializerFactory, dlDecoder, rlDecoder, dataReader, nullValue);
         } catch (final IOException e) {

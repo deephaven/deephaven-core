@@ -4,6 +4,7 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.materializers.PageValueConversions;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.apache.parquet.io.api.Binary;
 
 /**
@@ -12,6 +13,7 @@ import org.apache.parquet.io.api.Binary;
  * {@code ValuesReader}, throws {@link UnsupportedOperationException} by default for values the implementation does not
  * support reading.
  */
+@InternalUseOnly
 public interface PageValueReader {
 
     default int readInteger() {
