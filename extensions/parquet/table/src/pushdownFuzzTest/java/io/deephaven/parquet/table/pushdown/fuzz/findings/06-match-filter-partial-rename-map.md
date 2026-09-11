@@ -1,5 +1,6 @@
 # Finding 6 — a disjunction mixing a renamed and an un-renamed column tripped an internal assertion
 
+**Jira:** [DH-23637](https://deephaven.atlassian.net/browse/DH-23637) — filed for findings 6, 7 and 8 together
 **Severity:** medium — an ordinary query fails with an internal assertion, and only on the deferred
 (uncoalesced) path, so the same filter works in memory and throws against a parquet-backed table.
 **Status:** **FIXED**, with regression test.

@@ -1,5 +1,6 @@
 # Finding 7 — a formula filter pushed through nested renaming views lost all but the last renaming
 
+**Jira:** [DH-23637](https://deephaven.atlassian.net/browse/DH-23637) — filed for findings 6, 7 and 8 together
 **Severity:** medium-high — a query that works in memory fails to compile against the same data on
 disk, for a shape as ordinary as a rename followed by a duplicating `updateView`.
 **Status:** **FIXED**, with regression test.

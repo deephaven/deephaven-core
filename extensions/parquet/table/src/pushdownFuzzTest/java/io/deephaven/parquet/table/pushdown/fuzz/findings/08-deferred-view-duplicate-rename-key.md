@@ -1,5 +1,6 @@
 # Finding 8 — a filter naming both a column and its column-array form crashed the deferred-view filter split
 
+**Jira:** [DH-23637](https://deephaven.atlassian.net/browse/DH-23637) — filed for findings 6, 7 and 8 together
 **Severity:** medium — a legal filter fails outright with an internal `IllegalStateException`, and only
 against a deferred (uncoalesced) table, so it works in memory and throws on disk.
 **Status:** **FIXED**, with regression test.
