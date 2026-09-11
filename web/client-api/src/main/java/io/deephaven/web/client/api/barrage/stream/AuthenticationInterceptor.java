@@ -79,7 +79,8 @@ public class AuthenticationInterceptor implements ClientInterceptor {
      * not.
      */
     private Context handleMetadata(@Nullable Status status, Metadata metadata) {
-        String authHeader = metadata.get(AUTHORIZATION_HEADER);
+        // metadata may be null when a stream closes before any headers/trailers arrive
+        String authHeader = metadata == null ? null : metadata.get(AUTHORIZATION_HEADER);
         if (authHeader == null && status == null) {
             // No useful response, ignore - probably looking at initial headers.
             return Context.current();
