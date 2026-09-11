@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.RowSetUtils;
@@ -1752,7 +1753,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * nanoseconds per range; below this many spans, shifting the tail of the arrays once per new span costs less than
      * that, even when every range starts a new span.
      */
-    private static final int PARTIAL_BLOCK_PREPASS_MIN_SPANS = 256;
+    static final int PARTIAL_BLOCK_PREPASS_MIN_SPANS = Configuration.getInstance().getIntegerForClassWithDefault(
+            RspBitmap.class, "partialBlockPrePassMinSpans", 256);
 
     public void insertOrderedLongSetUnsafeNoWriteCheck(final SortedRanges sr) {
         makeRoomForPartiallyCoveredBlocks(0, sr);
