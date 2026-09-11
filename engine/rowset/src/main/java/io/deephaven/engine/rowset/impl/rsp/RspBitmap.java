@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.RowSetUtils;
@@ -1748,6 +1749,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         addRangeUnsafeNoWriteCheck(0, ix.ixFirstKey(), ix.ixLastKey());
     }
 
+    /**
+     * Fewest spans for which {@link #makeRoomForPartiallyCoveredBlocks} can pay for itself. The pass costs a few
+     * nanoseconds per range; below this many spans, shifting the tail of the arrays once per new span costs less than
+     * that, even when every range starts a new span.
+     */
+    static final int PARTIAL_BLOCK_PREPASS_MIN_SPANS = Configuration.getInstance().getIntegerForClassWithDefault(
+            RspBitmap.class, "partialBlockPrePassMinSpans", 256);
+
     public void insertOrderedLongSetUnsafeNoWriteCheck(final SortedRanges sr) {
         makeRoomForPartiallyCoveredBlocks(0, sr);
         addRangesUnsafeNoWriteCheck(sr.getRangeIterator());
@@ -1770,8 +1779,18 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * @param sr the ranges about to be inserted
      */
     private void makeRoomForPartiallyCoveredBlocks(final long shiftAmount, final SortedRanges sr) {
-        if (size == 0) {
-            // Nothing to make room in; the insert takes its append path.
+        if (size == 0 || sr.isEmpty()) {
+            // Nothing to make room in, or nothing to make room for; an insert into no spans takes its append path.
+            return;
+        }
+        if (size < PARTIAL_BLOCK_PREPASS_MIN_SPANS) {
+            // Shifting a short spans array once per new span costs less than this pass over the ranges, even when
+            // every range starts a new span.
+            return;
+        }
+        if (hasSpanForEveryBlockBetween(sr.first() + shiftAmount, sr.last() + shiftAmount)) {
+            // Every block the ranges touch has a span already, so there is no room to make. Two searches settle that,
+            // where the pass below would search once per range to find the same thing.
             return;
         }
         final WorkData wd = workDataPerThread.get();

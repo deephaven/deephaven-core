@@ -40,14 +40,40 @@ public class RspBitmapSortedRangesInsertTest {
         return out;
     }
 
+    /**
+     * The block the padding spans start at; every fixture and range in these tests sits well below it, so padding
+     * changes nothing about how the ranges relate to the fixture, only how many spans the receiver has.
+     */
+    private static final long PADDING_FIRST_BLOCK = 100_000;
+
+    /**
+     * The receiver with enough singleton spans appended, far past anything the tests touch, to take it over
+     * {@link RspBitmap#PARTIAL_BLOCK_PREPASS_MIN_SPANS}. The insert only makes room ahead of time above that many
+     * spans, so this is what exercises that pass; the unpadded fixtures exercise the insert without it.
+     */
+    private static RspBitmap padded(final RspBitmap receiver) {
+        RspBitmap rb = receiver.deepCopy();
+        for (int i = 0; i <= RspBitmap.PARTIAL_BLOCK_PREPASS_MIN_SPANS; ++i) {
+            rb = rb.appendUnsafe((PADDING_FIRST_BLOCK + i) * BS + 7);
+        }
+        rb.finishMutations();
+        return rb;
+    }
+
     private static void checkInsert(final RspBitmap receiver, final SortedRanges sr) {
+        checkInsertOnce(receiver, sr, "unpadded");
+        checkInsertOnce(padded(receiver), sr, "padded");
+    }
+
+    private static void checkInsertOnce(final RspBitmap receiver, final SortedRanges sr, final String what) {
         // Compared as ranges: the fixtures hold whole blocks, far too many keys to enumerate.
         final String expected = render(unionRanges(RowSetTestCommon.rangesOf(receiver), rangesOf(sr)));
-        final RspBitmap w = receiver.writeCheck();
+        // A copy, so the receiver is still the fixture when it is inserted into again in another form.
+        final RspBitmap w = receiver.deepCopy();
         w.insertOrderedLongSetUnsafeNoWriteCheck(sr);
         w.finishMutations();
-        w.validate("after insert");
-        assertEquals(expected, render(RowSetTestCommon.rangesOf(w)));
+        w.validate("after insert, " + what);
+        assertEquals(what, expected, render(RowSetTestCommon.rangesOf(w)));
     }
 
     private static RspBitmap containersAtEvenBlocks(final int blocks) {
@@ -305,19 +331,21 @@ public class RspBitmapSortedRangesInsertTest {
         for (int j = 1; j < 12; ++j) {
             sr = sr.addRange(3L * j * BS, (3L * j + 2) * BS - 1);
         }
-        for (final long shift : new long[] {0, BS, 100, BS + 100}) {
-            final String expected =
-                    render(unionRanges(RowSetTestCommon.rangesOf(receiver), shiftRanges(rangesOf(sr), shift)));
-            final RspBitmap w = receiver.deepCopy();
-            final OrderedLongSet result = w.ixInsertWithShift(shift, sr);
-            final List<long[]> got = new ArrayList<>();
-            result.ixForEachLongRange((s, e) -> {
-                got.add(new long[] {s, e});
-                return true;
-            });
-            assertEquals("shift " + shift, expected, render(got));
-            if (result instanceof RspBitmap) {
-                ((RspBitmap) result).validate("shift " + shift);
+        for (final RspBitmap target : new RspBitmap[] {receiver, padded(receiver)}) {
+            for (final long shift : new long[] {0, BS, 100, BS + 100}) {
+                final String expected =
+                        render(unionRanges(RowSetTestCommon.rangesOf(target), shiftRanges(rangesOf(sr), shift)));
+                final RspBitmap w = target.deepCopy();
+                final OrderedLongSet result = w.ixInsertWithShift(shift, sr);
+                final List<long[]> got = new ArrayList<>();
+                result.ixForEachLongRange((s, e) -> {
+                    got.add(new long[] {s, e});
+                    return true;
+                });
+                assertEquals("shift " + shift, expected, render(got));
+                if (result instanceof RspBitmap) {
+                    ((RspBitmap) result).validate("shift " + shift);
+                }
             }
         }
     }
