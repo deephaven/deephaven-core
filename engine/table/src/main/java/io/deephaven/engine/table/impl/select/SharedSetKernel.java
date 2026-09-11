@@ -187,6 +187,9 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
             @NotNull final QueryTable setTable,
             @NotNull final TupleSource<?> setKeySource,
             final Mutable<SetUpdateListener> resultListenerHolder) {
+        final String[] setColumnNames = MatchPair.getRightColumns(sourceToSetColumnNamePairs);
+        final ModifiedColumnSet setColumnsMCS = setTable.newModifiedColumnSet(setColumnNames);
+        final String humanReadablePrefix = "DynamicWhereFilter(" + Arrays.toString(sourceToSetColumnNamePairs) + ")";
 
         ConstructSnapshot.callDataSnapshotFunction("SharedSetKernel-createKernel",
                 ConstructSnapshot.makeSnapshotControl(true, true, setTable),
@@ -205,12 +208,6 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
                         setTable.removeUpdateListener(staleListener);
                     }
 
-                    final String[] setColumnNames = Arrays.stream(sourceToSetColumnNamePairs)
-                            .map(MatchPair::rightColumn).toArray(String[]::new);
-                    final ModifiedColumnSet setColumnsMCS = setTable.newModifiedColumnSet(setColumnNames);
-
-                    final String humanReadablePrefix =
-                            "DynamicWhereFilter(" + Arrays.toString(sourceToSetColumnNamePairs) + ")";
                     final SetUpdateListener localListener = new SetUpdateListener(humanReadablePrefix, setTable,
                             createKernel(setTable, setKeySource, usePrev), setKeySource, setColumnsMCS);
                     resultListenerHolder.setValue(localListener);

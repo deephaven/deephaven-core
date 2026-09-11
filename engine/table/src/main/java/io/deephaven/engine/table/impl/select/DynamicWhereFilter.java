@@ -177,7 +177,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
         final Set<ColumnSource<?>> columnSources = Arrays.stream(keyColumnNames)
                 .map(inputTable::getColumnSource)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         // Find a full index if one exists
         final DataIndex fullIndex = indexer.getDataIndex(columnSources);
@@ -352,9 +352,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
 
         final WritableRowSet filtered = inclusion ? RowSetFactory.empty() : selection.copy();
-        // The kernel reads below throw SnapshotInconsistentException if, and only if, the set table mutates during
-        // this concurrent snapshot attempt; that is the normal retry path, not an error. Close the partial result on
-        // the way out so an abandoned attempt does not leak it.
+        // The kernel reads below throw SnapshotInconsistentException when the set table mutates during this concurrent
+        // snapshot attempt; that is the normal retry path, not an error. Close the partial result on the way out so an
+        // abandoned attempt does not leak it.
         try {
             // noinspection DataFlowIssue
             final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();

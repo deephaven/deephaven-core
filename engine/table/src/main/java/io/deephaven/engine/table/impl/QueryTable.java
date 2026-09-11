@@ -1357,15 +1357,14 @@ public class QueryTable extends BaseTable<QueryTable> {
         /**
          * Notify the {@link WhereListener} that a refilter has been requested, if there is one yet.
          * <p>
-         * The where listener is installed only after the initial filter completes, so a refreshing filter whose inputs
-         * tick while a concurrent initial snapshot is still running may request a recompute before there is anything to
-         * notify. Such a request is safe to drop, because the snapshot attempt it lands on can never commit: an attempt
-         * begun while the clock was idle fails the clock check once the cycle starts, an attempt using previous values
-         * is rejected by the filter's {@link NotificationAwareDependency#stateChangedOnStep} report, and an attempt
-         * using current values begins only after the filter is {@link NotificationQueue.Dependency#satisfied}, that is,
-         * after whatever issues its requests has finished for the step. The retry that follows sees the change
-         * directly. Callers hold this table's monitor, which is what makes the listener written by
-         * {@link #setWhereListener} visible here.
+         * The where listener is installed only after the initial filter completes. A request can precede it in two ways
+         * only, and neither attempt can commit, so the request is safe to drop: an attempt begun while the clock was
+         * idle fails the clock check once the cycle starts, and a previous-values attempt during which the filter's
+         * inputs tick is rejected by the filter's {@link NotificationAwareDependency#stateChangedOnStep} report. A
+         * current-values attempt cannot receive one, because it begins only after the filter is
+         * {@link NotificationQueue.Dependency#satisfied} for the step. The retry that follows sees the change directly.
+         * Callers hold this table's monitor, which is what makes the listener written by {@link #setWhereListener}
+         * visible here.
          */
         private void notifyWhereListener() {
             if (whereListener != null) {
