@@ -19,8 +19,8 @@ table.withKeys(columns...)
 
 ### Parameters
 
-| Parameter | Type     | Description                                   |
-| --------- | -------- | --------------------------------------------- |
+| Parameter | Type     | Description                                     |
+| --------- | -------- | ----------------------------------------------- |
 | `columns` | `String` | One or more column names to use as key columns. |
 
 ### Returns
@@ -52,8 +52,8 @@ table.withUniqueKeys(columns...)
 
 ### Parameters
 
-| Parameter | Type     | Description                                        |
-| --------- | -------- | -------------------------------------------------- |
+| Parameter | Type     | Description                                            |
+| --------- | -------- | ------------------------------------------------------ |
 | `columns` | `String` | One or more column names to use as unique key columns. |
 
 ### Returns

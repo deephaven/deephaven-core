@@ -19,8 +19,8 @@ table.with_keys(cols)
 
 ### Parameters
 
-| Parameter | Type                       | Description                                             |
-| --------- | -------------------------- | ------------------------------------------------------- |
+| Parameter | Type                        | Description                                     |
+| --------- | --------------------------- | ----------------------------------------------- |
 | `cols`    | `Union[str, Sequence[str]]` | One or more column names to use as key columns. |
 
 ### Returns
@@ -54,8 +54,8 @@ table.with_unique_keys(cols)
 
 ### Parameters
 
-| Parameter | Type                       | Description                                                  |
-| --------- | -------------------------- | ------------------------------------------------------------ |
+| Parameter | Type                        | Description                                            |
+| --------- | --------------------------- | ------------------------------------------------------ |
 | `cols`    | `Union[str, Sequence[str]]` | One or more column names to use as unique key columns. |
 
 ### Returns
