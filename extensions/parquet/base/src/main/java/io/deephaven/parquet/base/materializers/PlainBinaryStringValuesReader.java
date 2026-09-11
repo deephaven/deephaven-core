@@ -3,23 +3,20 @@
 //
 package io.deephaven.parquet.base.materializers;
 
-import org.apache.parquet.bytes.ByteBufferInputStream;
 import org.apache.parquet.column.values.ValuesReader;
 import org.apache.parquet.io.ParquetDecodingException;
-import org.apache.parquet.io.api.Binary;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 /**
  * Reads PLAIN-encoded BINARY values directly out of the heap array behind the page buffer.
  * <p>
- * The stock {@code BinaryPlainValuesReader} allocates a {@link ByteBuffer} slice and a {@link Binary} wrapper per
+ * The stock {@code BinaryPlainValuesReader} allocates a {@link ByteBuffer} slice and a {@code Binary} wrapper per
  * value, both of which {@code toStringUsingUTF8()} immediately discards. Decoding from the array skips them, leaving
  * only the {@code String} and its {@code byte[]}, and reducing GC.
  *
- * @see StringMaterializer
+ * @see PlainBinaryStringMaterializer
  */
 public final class PlainBinaryStringValuesReader extends ValuesReader {
 
@@ -33,17 +30,6 @@ public final class PlainBinaryStringValuesReader extends ValuesReader {
      * @param in A heap-backed buffer positioned at the first value and limited to the end of the page
      */
     public PlainBinaryStringValuesReader(final ByteBuffer in) {
-        reset(in);
-    }
-
-    public PlainBinaryStringValuesReader() {}
-
-    /** Whether {@code in} exposes a backing array, which is the whole point of this reader. */
-    public static boolean isSupported(final ByteBuffer in) {
-        return in.hasArray();
-    }
-
-    private void reset(final ByteBuffer in) {
         if (!isSupported(in)) {
             throw new IllegalArgumentException("Page buffer is not heap-backed");
         }
@@ -52,9 +38,9 @@ public final class PlainBinaryStringValuesReader extends ValuesReader {
         limit = in.arrayOffset() + in.limit();
     }
 
-    @Override
-    public void initFromPage(final int valueCount, final ByteBufferInputStream stream) throws IOException {
-        reset(stream.slice(stream.available()));
+    /** Whether {@code in} exposes a backing array, which is the whole point of this reader. */
+    public static boolean isSupported(final ByteBuffer in) {
+        return in.hasArray();
     }
 
     /**
@@ -78,35 +64,13 @@ public final class PlainBinaryStringValuesReader extends ValuesReader {
         position = pos;
     }
 
-    @Override
-    public Binary readBytes() {
-        final int length = readLength(array, position, limit);
-        position += Integer.BYTES;
-        if (length > limit - position) {
-            throw overrun(length, limit - position);
-        }
-        // A view, not a copy, matching BinaryPlainValuesReader: its Binary also aliases the page buffer and so is
-        // valid only until that buffer is reused for the next page.
-        final Binary value = Binary.fromConstantByteArray(array, position, length);
-        position += length;
-        return value;
-    }
-
+    /**
+     * Unsupported: Deephaven materializes whole pages, and nulls consume no page bytes, so nothing skips. Every other
+     * {@link ValuesReader} accessor is left to the base class, which throws for the same reason.
+     */
     @Override
     public void skip() {
-        skip(1);
-    }
-
-    @Override
-    public void skip(final int n) {
-        for (int ii = 0; ii < n; ++ii) {
-            final int length = readLength(array, position, limit);
-            position += Integer.BYTES;
-            if (length > limit - position) {
-                throw overrun(length, limit - position);
-            }
-            position += length;
-        }
+        throw new UnsupportedOperationException("PlainBinaryStringValuesReader supports only readStrings");
     }
 
     /**

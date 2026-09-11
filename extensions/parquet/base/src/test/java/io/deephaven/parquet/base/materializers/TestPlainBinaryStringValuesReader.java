@@ -172,34 +172,6 @@ class TestPlainBinaryStringValuesReader {
     }
 
     /**
-     * {@code readStrings} is the bulk path {@code StringMaterializer} uses; {@code readBytes} is the
-     * {@link ValuesReader} contract any other consumer would reach for. The two must agree.
-     */
-    @Test
-    void readStringsAndReadBytesAgree() {
-        final byte[] encoded = encode(AWKWARD);
-        final PlainBinaryStringValuesReader reader = new PlainBinaryStringValuesReader(pageBuffer(encoded));
-        for (final String expected : AWKWARD) {
-            assertThat(reader.readBytes().toStringUsingUTF8()).isEqualTo(expected);
-        }
-    }
-
-    /**
-     * {@code skip} must walk the length prefixes exactly as a read would, so that a subsequent read lands on the
-     * correct value.
-     */
-    @Test
-    void skipAdvancesLikeRead() {
-        final byte[] encoded = encode(AWKWARD);
-        final PlainBinaryStringValuesReader reader = new PlainBinaryStringValuesReader(pageBuffer(encoded));
-        reader.skip(3);
-        final String[] actual = new String[AWKWARD.size()];
-        reader.readStrings(actual, 3, AWKWARD.size());
-        assertThat(actual[3]).isEqualTo(AWKWARD.get(3));
-        assertThat(actual[AWKWARD.size() - 1]).isEqualTo(AWKWARD.get(AWKWARD.size() - 1));
-    }
-
-    /**
      * The real page buffer is oversized and reused, with the values somewhere in the middle. Bytes outside
      * {@code [position, limit)} belong to another page and must never be read.
      */
@@ -256,20 +228,5 @@ class TestPlainBinaryStringValuesReader {
         assertThat(PlainBinaryStringValuesReader.isSupported(direct)).isFalse();
         assertThatThrownBy(() -> new PlainBinaryStringValuesReader(direct))
                 .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    /**
-     * {@code initFromPage} is the {@link ValuesReader} lifecycle entry point; a reader initialized that way must decode
-     * identically to one built from a buffer directly.
-     */
-    @Test
-    void initFromPageMatchesConstructor() throws IOException {
-        final byte[] encoded = encode(AWKWARD);
-        final PlainBinaryStringValuesReader reader = new PlainBinaryStringValuesReader();
-        reader.initFromPage(AWKWARD.size(), ByteBufferInputStream.wrap(pageBuffer(encoded)));
-
-        final String[] actual = new String[AWKWARD.size()];
-        reader.readStrings(actual, 0, actual.length);
-        assertThat(actual).containsExactlyElementsOf(AWKWARD);
     }
 }

@@ -5,8 +5,11 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.parquet.base.materializers.BlobMaterializer;
+import io.deephaven.parquet.base.materializers.PlainBinaryStringMaterializer;
+import io.deephaven.parquet.base.materializers.PlainBinaryStringValuesReader;
 import io.deephaven.parquet.base.materializers.StringMaterializer;
 import org.apache.parquet.column.Encoding;
+import org.apache.parquet.column.values.plain.BinaryPlainValuesReader;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -91,6 +94,26 @@ class TestPlainBinaryStringReaderSelection {
     void notSelectedForDirectBuffers() {
         assertThat(usePlainBinaryStringReader(
                 Encoding.PLAIN, PrimitiveTypeName.BINARY, StringMaterializer.FACTORY, DIRECT)).isFalse();
+    }
+
+    /**
+     * The factory, not the materializer, picks the decode strategy. Falling through to {@link StringMaterializer} would
+     * still produce correct values, just slower, so only a type assertion catches it.
+     */
+    @Test
+    void factoryDispatchesOnReaderType() {
+        final PlainBinaryStringValuesReader fast = new PlainBinaryStringValuesReader(HEAP);
+        final BinaryPlainValuesReader stock = new BinaryPlainValuesReader();
+
+        assertThat(StringMaterializer.FACTORY.makeMaterializerNonNull(fast, 1))
+                .isInstanceOf(PlainBinaryStringMaterializer.class);
+        assertThat(StringMaterializer.FACTORY.makeMaterializerWithNulls(fast, null, 1))
+                .isInstanceOf(PlainBinaryStringMaterializer.class);
+
+        assertThat(StringMaterializer.FACTORY.makeMaterializerNonNull(stock, 1))
+                .isInstanceOf(StringMaterializer.class);
+        assertThat(StringMaterializer.FACTORY.makeMaterializerWithNulls(stock, null, 1))
+                .isInstanceOf(StringMaterializer.class);
     }
 
     /** The property is read per page, so the escape hatch must take effect without a restart, and be reversible. */
