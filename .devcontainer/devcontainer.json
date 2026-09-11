@@ -1,0 +1,142 @@
+{
+  "name": "Default",
+  "image": "mcr.microsoft.com/devcontainers/base:noble",
+  "features": {
+    "ghcr.io/devcontainers/features/git-lfs:1": {
+      "autoPull": false
+    },
+    "ghcr.io/devcontainers/features/java:1": {
+      "installGradle": true,
+      "version": "21",
+      // 17 & 25 Used for certain CI tests. TBD whether we need in devcontainer
+      // "additionalVersions": "17,25",
+      "jdkDistro": "tem",
+      "gradleVersion": "latest",
+      "mavenVersion": "latest",
+      "antVersion": "latest",
+      "groovyVersion": "latest"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "nodeGypDependencies": true,
+      "version": "latest",
+      "pnpmVersion": "none",
+      "nvmVersion": "latest"
+    },
+    // enableShared is required, not a preference: jpy dlopen()s libpython at startup, so
+    // CPython has to be built shared or `./gradlew server-jetty-app:run` dies on launch.
+    "ghcr.io/devcontainers/features/python:1": {
+      "installTools": true,
+      "version": "3.12",
+      "enableShared": true
+    },
+    "ghcr.io/devc-tools/features/agents:0": {
+      "installClaudeCli": true,
+      "installCopilotCli": true,
+      "installHerdr": true,
+      "installPiCli": true,
+      "piPackages": "npm:@andrewjacop/pi-herdr"
+    },
+    "ghcr.io/devc-tools/features/git-container-config:0": {},
+    "ghcr.io/devc-tools/features/node-nvmrc:0": {
+      "projectDir": "web/client-api/types"
+    },
+    // On a rootless Linux Docker host the workspace bind mount is owned by container uid 0, so
+    // this makes `vscode` uid 0 there (same name, same home). A no-op on Docker Desktop and
+    // on rootful daemons — `id` still says uid 1000 on a Mac.
+    "ghcr.io/devc-tools/features/rootless-remap:0": {},
+
+    // Nested containers via podman, with no capability granted to this devcontainer.
+    // slirp4netns gives nested containers their own networks with name DNS, which the gradle
+    // deephaven-in-docker tests (:py-client, :go, :R, :cpp-client, web/client-api) rely on to
+    // reach the server container by name. Requires the tun device and the seccomp profile in
+    // runArgs below.
+    "ghcr.io/devc-tools/features/podman-as-docker:0": {
+      "rootlessNetworkCmd": "slirp4netns"
+    }
+  },
+
+  // Both required by podman-as-docker, and both things a Feature cannot declare:
+  //  - the seccomp profile: Docker's default profile with one added rule allowing the namespace
+  //    and mount syscalls inside user namespaces the container owns. It is read by the Docker
+  //    CLI on the *host*, hence a file in this repo. Grants no capability; see the Feature's
+  //    README for what it does open.
+  //  - /dev/net/tun: slirp4netns opens it, and it is not in the container's /dev by default.
+  "runArgs": [
+    "--security-opt",
+    "seccomp=${localWorkspaceFolder}/.devcontainer/seccomp-podman.json",
+    "--device=/dev/net/tun"
+  ],
+
+  // The venv post-create.sh creates, exported rather than `activate`d so every process gets
+  // it: lifecycle scripts, terminals, gradle/node subprocesses, VS Code, coding agents.
+  //
+  // Must be remoteEnv, not containerEnv — ${containerEnv:PATH} only resolves here. In
+  // containerEnv it is passed through literally, which breaks PATH and the container fails
+  // to start. Verify with `which python3` after a rebuild.
+  "remoteEnv": {
+    "LANG": "en_US.utf8",
+    "PATH": "/usr/local/share/deephaven-core/venv/bin:${containerEnv:PATH}",
+    "PROJECT_PATH": "${containerWorkspaceFolder}",
+    "SHELL": "/bin/bash",
+    // Provided by host $TZ, or defaults to America/New_York if not set.
+    "TZ": "${localEnv:TZ:America/New_York}",
+    "VIRTUAL_ENV": "/usr/local/share/deephaven-core/venv"
+  },
+  "initializeCommand": "bash \"${localWorkspaceFolder}/.devcontainer/initialize-command.sh\"",
+
+  // Creates the venv remoteEnv points at, and fixes ownership of the gradle cache volume.
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  // Builds and installs the Deephaven Python wheels so `./gradlew server-jetty-app:run`
+  // works without a manual setup step. postStart, not postCreate: the wheel builds inside a
+  // container and needs the podman socket, which the podman-as-docker Feature starts in its
+  // own postStartCommand. Install-once, so later starts cost one `pip show`.
+  "postStartCommand": "bash .devcontainer/post-start.sh",
+  "mounts": [
+    // Gradle's dependency cache (~1GB), which otherwise re-downloads on every rebuild. Keyed
+    // by devcontainerId so sibling worktrees get their own. Pure cache: safe to delete.
+    // Docker creates the mount point root-owned; post-create.sh chowns it.
+    "type=volume,source=gradle-cache-${devcontainerId},target=/home/vscode/.gradle",
+
+    // Bind mount devcontainer ~/.claude directory on host so that it can be shared across containers
+    "type=bind,source=${localEnv:HOME}/.config/devc/.claude,target=/home/vscode/.claude,consistency=cached",
+
+    // Your git name and email, extracted from the host by initialize-command.sh.
+    "type=bind,source=${localEnv:HOME}/.config/devc/gitconfig-identity,target=/usr/local/share/devc-features/git-container-config/identity/gitconfig,consistency=cached,readonly",
+
+    // Volume mount node_modules folders to avoid host and container fighting over contents
+    "type=volume,source=node-modules-${devcontainerId}-proto-openapi,target=${containerWorkspaceFolder}/proto/raw-js-openapi/node_modules",
+    "type=volume,source=node-modules-${devcontainerId}-types,target=${containerWorkspaceFolder}/web/client-api/types/node_modules"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "claudeCode.allowDangerouslySkipPermissions": true,
+        "claudeCode.initialPermissionMode": "bypassPermissions",
+        "chat.agent.maxRequests": 50,
+        "chat.tools.terminal.autoApprove": { "/.*/": true },
+        "chat.tools.terminal.ignoreDefaultAutoApproveRules": true,
+        "editor.formatOnSave": true,
+        // Auto-discovery only scans the workspace root, and the venv lives outside it — so
+        // point Pylance and the test explorer at it explicitly.
+        "python.defaultInterpreterPath": "/usr/local/share/deephaven-core/venv/bin/python",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "workbench.colorCustomizations": {
+          "statusBar.background": "#7c3aed",
+          "statusBar.foreground": "#ffffff",
+          "titleBar.activeBackground": "#7c3aed",
+          "titleBar.activeForeground": "#ffffff",
+          "titleBar.inactiveBackground": "#5b21b6",
+          "titleBar.inactiveForeground": "#ffffff",
+          "chat.requestBorder": "#e21010",
+          "statusBarItem.remoteBackground": "#e21010"
+        }
+      }
+    }
+  }
+}

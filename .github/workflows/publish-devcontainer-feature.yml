@@ -1,0 +1,100 @@
+# Publish the deephaven-core devcontainer Feature to GHCR.
+#
+# EXPERIMENTAL, fork-scoped for now. Manual trigger only — there is no push, tag, or
+# schedule trigger, so this never runs on its own.
+#
+# Auth is the ephemeral Actions GITHUB_TOKEN, whose permissions are limited to the
+# repository containing this workflow. That constraint is the reason this runs in CI at
+# all: GHCR accepts only a classic PAT or GITHUB_TOKEN, and `write:packages` on a classic
+# PAT is account-wide with no way to narrow it to one repo, so publishing from a laptop
+# would mean holding a credential that can also write packages in every other org the
+# operator belongs to.
+#
+# Before this goes upstream: settle the namespace (the default below derives from the repo
+# owner, so it follows the fork automatically), and decide whether publishing should be
+# driven by a version bump in devcontainer-feature.json rather than a manual click.
+name: Publish devcontainer Feature
+
+on:
+  workflow_dispatch:
+    inputs:
+      namespace:
+        description: "OCI namespace. Blank uses <repo owner>/devcontainer-features."
+        required: false
+        default: ""
+      dry_run:
+        description: "Package only — validate without pushing to GHCR"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+  packages: write # scoped to this repository only
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Inputs are passed through env rather than interpolated into the script body, so a
+      # crafted namespace cannot break out into shell.
+      - name: Resolve namespace
+        id: ns
+        env:
+          INPUT_NS: ${{ inputs.namespace }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          ns="${INPUT_NS}"
+          [ -n "$ns" ] || ns="${OWNER}/devcontainer-features"
+          echo "namespace=$ns" >> "$GITHUB_OUTPUT"
+          echo "Publishing under namespace: $ns"
+
+      # Runs on both paths: a dry run stops here, and a real publish gets the same
+      # validation before anything is pushed.
+      - name: Package (validate)
+        run: |
+          npx -y @devcontainers/cli features package \
+            .devcontainer/features/deephaven-core \
+            --output-folder /tmp/feature-pkg
+          cat /tmp/feature-pkg/devcontainer-collection.json
+
+      - name: Publish
+        if: ${{ !inputs.dry_run }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NAMESPACE: ${{ steps.ns.outputs.namespace }}
+        run: |
+          npx -y @devcontainers/cli features publish \
+            --namespace "$NAMESPACE" \
+            .devcontainer/features/deephaven-core
+
+      - name: Summary
+        if: ${{ always() }}
+        env:
+          NAMESPACE: ${{ steps.ns.outputs.namespace }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          # Read the version from the collection manifest the CLI generated, never from
+          # devcontainer-feature.json directly: the source file is JSONC (it carries
+          # comments), and strict parsers — `require()` included — reject it.
+          collection=/tmp/feature-pkg/devcontainer-collection.json
+          if [ ! -f "$collection" ]; then
+            echo "Packaging did not complete — no summary to report." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          version="$(node -p "require('$collection').features[0].version")"
+          {
+            echo "### deephaven-core devcontainer Feature"
+            echo
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "Dry run: packaged version \`$version\`. Nothing was pushed."
+            else
+              echo "Published \`ghcr.io/$NAMESPACE/deephaven-core:$version\`"
+              echo "(also tagged with the matching major/minor and \`latest\`)"
+              echo
+              echo "> New GHCR packages are **private** by default. Set this one to public in its"
+              echo "> package settings, or container creates elsewhere will fail with a 401."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
