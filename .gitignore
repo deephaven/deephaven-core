@@ -63,5 +63,3 @@ node_modules
 
 # devenv.sh local state (see devenv.nix)
 .devenv/
-.direnv/
-devenv.local.nix
