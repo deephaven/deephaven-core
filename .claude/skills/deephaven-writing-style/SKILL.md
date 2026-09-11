@@ -1,6 +1,6 @@
 ---
 name: deephaven-writing-style
-description: Deephaven's documentation style guide for deephaven-core — proper noun capitalization, Python/Groovy code formatting conventions, backtick usage, code example tags, and prose quality standards (active voice, clarity, jargon/audience calibration). Applies to deephaven-core (Community) documentation specifically. Use this whenever drafting, writing, editing, or reviewing any deephaven-core documentation, tutorial, how-to guide, README, or API reference — not just when explicitly asked about "style." Also consult this alongside deephaven-core-accuracy-check when reviewing existing docs.
+description: Deephaven's documentation style guide for deephaven-core — proper noun capitalization, Python/Groovy code formatting conventions, backtick usage, code example tags, and prose quality standards (active voice, clarity, jargon/audience calibration). Applies to deephaven-core (Community) documentation specifically. Use this whenever drafting, writing, editing, or reviewing any deephaven-core documentation, tutorial, how-to guide, README, or API reference — not just when explicitly asked about "style." Also consult this alongside deephaven-core-accuracy-check and deephaven-doc-structure-review when reviewing existing docs; see ref-deephaven-doc-categories for the Tutorial/How-to/Concept/Reference categories this guide's tone rules are calibrated to.
 ---
 
 # Deephaven documentation style guide (Community/Core)
@@ -9,19 +9,16 @@ These standards apply to deephaven-core documentation.
 
 ## Documentation categories
 
-**Tutorial:** A learning resource that guides a reader step-by-step to a specific outcome. All users will achieve the same outcome. Tutorials are lessons.
-
-**How-to guide:** A follow-along resource that guides a reader step-by-step. These usually show new users how to solve a specific problem. Similar to a recipe, when following along with a how-to guide, all users will learn the same information, but they can use their own ingredients, so outcomes may differ. Advice or general recommendations on how to use a feature/method may be offered.
-
-**Concept guide:** A resource to study. It is intended to broaden understanding of higher concepts and to explain how or why with contextual explanations. Overview pages may be considered concept guides.
-
-**Reference guide:** A study resource. It is purely informative; its purpose is to describe without extraneous information — very pointed, without advice or general tips. JavaDocs, PyDocs, and other API documentation are reference guides.
+See `ref-deephaven-doc-categories` for the four categories (Tutorial — Crash Course only,
+How-to guide, Concept guide, Reference guide), which directory each lives in, and the
+misclassification trap ("tutorial" is not a synonym for "step-by-step"). Identify the doc's
+category before applying the tone rules below — they're calibrated per category.
 
 ## Prose quality
 
 - **Prefer present, active voice.** Avoid future-tense "will". Flag passive constructions and suggest an active rewrite unless the actor is genuinely unknown or irrelevant (e.g., "the file is created" only when who/what creates it doesn't matter to the reader).
 - **Define jargon and internal terms on first use.** Terms like "ticking," "blink table," "live table," or internal service/component names should be defined in plain language or linked to a reference page the first time they appear in a doc — don't assume the reader already knows them.
-- **Calibrate to the audience.** External-facing docs (deephaven.io, public tutorials) should avoid unexplained internal-only vocabulary (internal service names, internal abbreviations, implementation details that don't matter to the reader). Internal/contributor-facing docs can assume more shared context, but still define anything genuinely obscure.
+- **Calibrate to the audience.** All `docs/` content is external-facing (deephaven.io) — none of it is an internal-only tier — but how much you can lean on internal vocabulary once it's defined still varies by category (see `ref-deephaven-doc-categories`): the Crash Course assumes zero prior context, Concept/Reference pages can assume more. Avoid unexplained internal-only vocabulary (internal service names, internal abbreviations, implementation details that don't matter to the reader) regardless of category.
 - **Avoid egregious jargon and hedging.** Prefer concrete, direct sentences over vague qualifiers ("may potentially," "in some cases could") unless the uncertainty is real and worth flagging.
 - **Tone.** Tutorials and how-tos can be conversational, first-person narrative while remaining professional. Reference material is dry and formal — third-person narrative without contractions.
 - **Sentence case in headings** — not Title Case. Don't include links in headers.
@@ -33,7 +30,7 @@ These standards apply to deephaven-core documentation.
 
 ## Page structure
 
-- Every page (except landing pages, overviews, or blog articles) should include a "Related documentation" section at the end.
+- Every page (except landing pages, overviews, blog articles, or a Crash Course tutorial chapter — see `ref-deephaven-doc-categories` — none of which carry one today) should include a "Related documentation" section at the end.
 - When a method is referenced in narrative text, link it to the appropriate reference page if one exists.
 
 ## Deephaven proper nouns
