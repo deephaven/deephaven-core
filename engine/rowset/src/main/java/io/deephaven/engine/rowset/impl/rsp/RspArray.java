@@ -1432,7 +1432,37 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (endPosExclusive == 0 || getKey(endPosExclusive - 1) == blockKey) {
             return endPosExclusive - 1;
         }
+        if (startPos < endPosExclusive && getKey(startPos) == blockKey) {
+            // Callers walking ascending keys start from the span they last found, and the next key is often in it.
+            return startPos;
+        }
         return unsignedBinarySearch(this::getKey, startPos, endPosExclusive, blockKey);
+    }
+
+    /**
+     * Whether every block from {@code firstKey}'s through {@code lastKey}'s has a span here.
+     *
+     * <p>
+     * Spans start in distinct, ascending blocks and each covers at least one block, so once the spans holding the two
+     * end blocks are found, the spans between them start in distinct blocks strictly between the ends. If there are as
+     * many of them as there are blocks between the ends, they start in every one, and no block is missing.
+     *
+     * @param firstKey a key in the first block, {@code firstKey <= lastKey}
+     * @param lastKey a key in the last block
+     */
+    protected boolean hasSpanForEveryBlockBetween(final long firstKey, final long lastKey) {
+        final long firstBlockKey = highBits(firstKey);
+        final long lastBlockKey = highBits(lastKey);
+        final int firstIdx = getSpanIndex(firstBlockKey);
+        if (firstIdx < 0) {
+            return false;
+        }
+        final int lastIdx = getSpanIndex(firstIdx, lastBlockKey);
+        if (lastIdx < 0) {
+            return false;
+        }
+        // One span holding both end blocks covers everything between them.
+        return lastIdx == firstIdx || lastIdx - firstIdx == distanceInBlocks(firstBlockKey, lastBlockKey);
     }
 
     public static boolean isFullBlockSpan(final Object s) {
