@@ -28,7 +28,7 @@ appears in both was rediscovered independently.
 | 14 | [Building an error message with `Strings.of` discarded the real exception](14-strings-of-masks-the-real-exception.md) | — | medium | fixed |
 | 15 | [Ordering incomparable types failed with an opaque `ClassCastException`](15-chained-comparison-and-incomparable-ordering.md) | — | medium | fixed (diagnostic), plus a bench correction |
 | 16 | [**Bench defect:** a table-wide sort order was claimed on a layout that partitioning had destroyed](16-bench-partitioned-sort-claim.md) | — | high (bench) | fixed |
-| 17 | [Sorted-column match pushdown used the ordering's equality, so `!= NaN` dropped rows](17-sorted-match-nan-equality.md) | [DH-23502](https://deephaven.atlassian.net/browse/DH-23502) | high | fixed (stopgap; retire on DH-23502 merge) |
+| 17 | [Sorted-column match pushdown used the ordering's equality, so `!= NaN` dropped rows](17-sorted-match-nan-equality.md) | [DH-23502](https://deephaven.atlassian.net/browse/DH-23502) | high | **closed — fixed upstream**, stopgap retired |
 | 18 | [A data index read back with a different column type, so matches silently found nothing](18-data-index-type-mismatch.md) | — | high | fixed |
 | 19 | [A case-insensitive match filter mishandled a null match value at every arity](19-icase-match-filter-null-value.md) | — | high | fixed |
 | 20 | [Aliasing an indexed column threw when a second column was also indexed](20-duplicate-remapped-data-index.md) | — | medium-high | fixed |
@@ -52,10 +52,12 @@ overlap, not size.
 
 ### Deliberately excluded
 
-- **Finding 17** — superseded by [DH-23502](https://deephaven.atlassian.net/browse/DH-23502). Its files
-  (`SortedColumnPushdownManager`, seven binary-search kernels, seven `ParquetColumnRegion*` variants)
-  are exactly what that ticket rewrites, so a PR would conflict head-on. Retire the stopgap instead;
-  see [17-sorted-match-nan-equality.md](17-sorted-match-nan-equality.md).
+- **Finding 17** — **nothing left to upstream.** [DH-23502](https://deephaven.atlassian.net/browse/DH-23502)
+  merged as [#8452](https://github.com/deephaven/deephaven-core/pull/8452) and fixes the defect at the
+  source; this branch's stopgap was dropped when that was pulled in. What remains is the write-up, the
+  regression test `SortedFloatNanMatchTest` (10/10 against upstream, unchanged), and the fuzzer seed —
+  all of which ride along with the bench. See
+  [17-sorted-match-nan-equality.md](17-sorted-match-nan-equality.md).
 - **Findings 16 and 21** — bench defects, entirely inside this source set (`FuzzLayout`, `FuzzFilters`).
   Nothing to upstream separately.
 
@@ -80,6 +82,99 @@ run reports every failure it finds. Findings from each sweep were fixed before t
 | C | 12,043 | **0** | 0 | — |
 
 Sweep C is the campaign's exit criterion: ten minutes of generated cases with no failure.
+
+## Revalidating against upstream
+
+This branch is long-lived, so upstream `main` moves under it. Each time upstream is pulled in, every
+finding is re-checked against the new base before the fixes are proposed for merge. A finding that
+upstream has since fixed on its own must be **dropped from this branch**, not shipped: carrying it
+means a conflicting second fix for a defect that no longer exists.
+
+### The procedure
+
+1. **Rebase onto upstream.** `git rebase --onto upstream/main <old-base>`. This branch has always been
+   integrated by rebase, not merge; keep it that way so the DH-23557 commits stay a reviewable stack.
+2. **Build a bench-on-upstream tree.** Branch from the rebased tip and restore every file under
+   `src/main/` that this branch touches to its upstream version — reverting modifications and deleting
+   files this branch added:
+
+   ```bash
+   git switch -c experiment/bench-on-upstream
+   for f in $(git diff --name-only upstream/main..HEAD | grep '/src/main/'); do
+       if git cat-file -e upstream/main:$f 2>/dev/null; then
+           git checkout upstream/main -- "$f"
+       else
+           git rm -q "$f"
+       fi
+   done
+   git diff --stat upstream/main -- '*/src/main/*'   # must be empty
+   ```
+
+   **Keep everything else** — in particular `extensions/parquet/table/build.gradle`, which is what
+   wires the `pushdownFuzzTest` source set, and the whole source set itself. The bench compiles
+   against public API only, so it builds against plain upstream unchanged.
+
+3. **Replay every regression seed** on that tree:
+
+   ```bash
+   ./gradlew :extensions-parquet-table:pushdownFuzzTest -PforceTest=true \
+       --tests '*PushdownFuzzerTest.testInterestingSeeds' \
+       -DPushdownFuzzer.maxTableSize=1000 -DPushdownFuzzer.failFast=false \
+       -DPushdownFuzzer.maxFailures=200
+   ```
+
+   `failFast=false` matters: one run then reports every seed that failed rather than stopping at the
+   first.
+
+4. **Cross-check structurally.** A seed result is evidence; the file list is proof:
+
+   ```bash
+   comm -12 <(git diff --name-only upstream/main..HEAD | grep '/src/main/' | sort) \
+            <(git diff --name-only <old-base>..upstream/main | grep '/src/main/' | sort)
+   ```
+
+   Upstream cannot have fixed a finding without touching a file that finding's fix touches.
+
+### The bench corrections are not part of "our fixes"
+
+Findings 16 and 21 are **bench** defects — the fuzzer was asserting something false, or generating an
+invalid case. Their corrections live in the `pushdownFuzzTest` source set and are **always kept**,
+including in the bench-on-upstream tree. Reverting them would make the bench report failures against
+upstream that are the bench's own fault, and would silently undo a correction that nothing else
+re-derives. The same goes for the bench half of finding 15. Only `src/main/` is reverted, which is
+exactly the line between "a fix we are proposing" and "a correction to the instrument".
+
+### Reading the results
+
+- **A seed that passes** on the bench-on-upstream tree is a real positive: with no local fix of any
+  kind, upstream handles the case. Either the finding is fixed upstream, or the seed stopped
+  reproducing.
+- **A seed that fails proves nothing about its own finding.** With every fix reverted at once, an
+  earlier defect can mask a later one. Measured on 2026-09-11: finding 19's seed
+  `-8415955675519703733` failed on finding 2's `DateTimeOverflowException`, and finding 11's seed
+  `1681357320861610709` failed on finding 3's `Invalid value for NanoOfSecond (... ): -1` while reading
+  a pre-epoch `LocalDateTime` back — neither reached the defect it was recorded for. Resolve these with
+  step 4, or by reverting that one finding's commit in isolation.
+
+### 2026-09-11 — rebase onto upstream `3ed1d774b`
+
+15 new upstream commits. All 28 branch commits replayed; one conflicted.
+
+Of 36 regression seeds, **6 passed** on the bench-on-upstream tree:
+
+| Seed(s) | Finding | Reading |
+| --- | --- | --- |
+| `-5472033891179623763` | 17 | **Genuinely fixed upstream** by DH-23502 (#8452) |
+| `-1220343102263136052`, `-3258625118121555365` | 16 | Bench defect; passes because the bench correction is kept. Expected |
+| `-9218664977068266450`, `5844000365408086213` | 21 | Bench defect; same. Expected |
+| `-7423979211207825555` | 9 | Stopped reproducing, but finding 9 is **not** fixed — its sibling seed `-6688467811848818630` still drops rows on upstream |
+
+The structural check agrees: of the 25 production files this branch touches, the only one any of the
+15 new upstream commits also touches is `MatchFilter.java`, and that is DH-23502's change.
+
+**Conclusion: exactly one finding — 17 — can be marked fixed upstream.** Its stopgap was dropped;
+findings 1–16 and 18–22 remain this branch's to land. The PR grouping above is unchanged except that
+group C's `MatchFilter` edit now sits on top of DH-23502's.
 
 ## Carry-over from the previous round
 

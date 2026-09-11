@@ -4,7 +4,9 @@
 *Superseded by DH-23502* below.
 **Severity:** high — silent wrong results from `sort` plus `where`, with no parquet and no pushdown
 switch involved. Rows are both dropped and invented depending on direction.
-**Status:** **FIXED here as a stopgap.** Retire this fix when DH-23502 merges.
+**Status:** **CLOSED — superseded by [DH-23502](https://deephaven.atlassian.net/browse/DH-23502)**, merged
+upstream as [#8452](https://github.com/deephaven/deephaven-core/pull/8452) on 2026-09-11. The stopgap this
+branch carried was retired when upstream was pulled in; see *Retirement* below.
 **Repro test:** `extensions/parquet/table/src/test/java/io/deephaven/parquet/table/SortedFloatNanMatchTest.java`
 **Fuzzer seed:** `-5472033891179623763L`
 
@@ -98,31 +100,37 @@ consults `MatchFilter`'s existing `nanMatch` option, so the optimization survive
 correct, whereas this stopgap declines the sorted action outright for any `NaN` or `±0.0` match
 value. Take DH-23502's version.
 
-### What to retire, once DH-23502 is merged
+### Retirement — done
 
-1. `SortedColumnPushdownManager.sortedSearchAgreesWithEquality(Object[])` — delete the method and the
-   `&& sortedSearchAgreesWithEquality(matchFilter.getValues())` clause added to `supportedMatchFilter`
-   in `wrap(...)`.
-2. `ParquetColumnRegionChar` — delete the two guard calls (in `estimatePushdownAction` and
-   `performPushdownAction`) and its `SortedColumnPushdownManager` import, then re-run
-   `./gradlew replicateRegionsAndRegionedSources` so the eight replicated variants follow.
-3. Mark this file **CLOSED — superseded by DH-23502** and set the index row's status accordingly.
+DH-23502 merged upstream on 2026-09-11 (#8452) and this branch was rebased onto it. Its fix is at the
+source rather than at the two consumers: `MatchFilter.init` now removes an inert `NaN` from its values,
+so every consumer sees one reduced set and the binary search can no longer be asked a question it would
+answer differently from the filter. The parquet sorted region action is corrected by that change with no
+code of its own.
 
-Expect a **merge conflict** in both of those files: DH-23502 edits the same gate and the same
-template. Resolve in favour of DH-23502.
+The stopgap's production changes were dropped in the rebase, exactly as planned above:
 
-### Two things to re-verify at merge, not assume
+1. `SortedColumnPushdownManager.sortedSearchAgreesWithEquality(Object[])` and its clause in
+   `supportedMatchFilter` — gone.
+2. The seven `*ColumnBinarySearchKernel` variants and the seven `ParquetColumnRegion*` guards — gone;
+   DH-23502 rewrites those files wholesale.
 
-- **`SortedFloatNanMatchTest` should be kept**, not deleted with the fix: it asserts the user-visible
-  property end to end (`sort().where()` and the parquet path together), which DH-23502's own tests
-  approach from the kernel and chunk-filter side. It should pass unchanged under either fix — but
-  **`inAndNotInAreUnchanged` is the one to watch.** It pins today's behaviour that `F in NaN` matches
-  the `NaN` rows while `F == NaN` matches none. If DH-23502's `nanMatch` handling unifies those, that
-  assertion will fail and should be updated to the new intended semantics rather than "fixed" back.
-- DH-23502's **PD-027** covers a case this finding's tests do not: an `upper == +Infinity && inclusive`
-  range shortcut wrongly including `NaN` rows as an exact match. `rangeFiltersAgree` here checks
-  `< NaN` and `>= NaN` but not `<= +Infinity`, and it passed — so that is a genuine gap here, covered
-  there.
+The merge conflict this section predicted did occur, in all seven `ParquetColumnRegion*` files, and was
+resolved in favour of DH-23502 as directed. Kept from the stopgap commit: this write-up, the regression
+test, and the fuzzer seed.
+
+### The two things to re-verify — both now measured
+
+- **`SortedFloatNanMatchTest` was kept, and all 10 tests pass unchanged** against DH-23502, with no
+  edit to any assertion. In particular `inAndNotInAreUnchanged` still holds: DH-23502's `nanMatch`
+  handling did *not* unify `in` with `==`, so `F in NaN` still matches the `NaN` rows while
+  `F == NaN` matches none. The test also still covers `±0.0` — `equalsZeroMatchesNegativeZero` and
+  `notEqualsZeroExcludesBothZeros` pass — so upstream's narrower fix reaches the zero case too, which
+  was worth checking rather than assuming: the stopgap declined for `±0.0` explicitly and DH-23502
+  does not mention it.
+- **PD-027 (the inclusive `+Infinity` upper bound) is covered upstream.** DH-23502 replaces the
+  `MAX_FLOAT`/`MAX_DOUBLE` test with `isNaN(upper) && upperInclusive`, since Deephaven ordering sorts
+  `NaN` above positive infinity. The gap this finding's `rangeFiltersAgree` left open is closed there.
 
 ### Not superseded
 
@@ -144,3 +152,7 @@ input is the decline path, which is what both of those fixes use.
 - Full `:engine-table:test`, `:extensions-parquet-table:test` and `:extensions-parquet-base:test`
   pass.
 - Seed `-5472033891179623763L` passes and joins `INTERESTING_SEEDS`.
+- **Re-verified against upstream after the stopgap was dropped (2026-09-11):** with production code at
+  upstream/main verbatim and no local fix of any kind, seed `-5472033891179623763L` passes, and
+  `SortedFloatNanMatchTest` passes 10/10. This is the only one of this campaign's 22 findings that
+  upstream fixed independently.
