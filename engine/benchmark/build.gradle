@@ -75,6 +75,8 @@ createJmhTask('jmhRunMatchHistorical',
         ['MatchFilterHistoricalBenchmark',
          '-prof=io.deephaven.benchmark.db.ResultSizeProfiler'])
 createJmhTask('jmhRunRowSetGetFind', 'RowSetGetFindBench', ['-DMetricsManager.enabled=true'])
+createJmhTask('jmhRunRowSetIncrementalInsert', 'RowSetIncrementalInsertBench')
+createJmhTask('jmhRunRspSortedRangesInsertShape', 'RspSortedRangesInsertShapeBench')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
