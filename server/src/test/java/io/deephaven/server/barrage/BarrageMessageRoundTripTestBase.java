@@ -135,6 +135,12 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
         super.tearDown();
     }
 
+    /**
+     * Called on every producer a test creates, before any client subscribes. Subclasses override it to change producer
+     * settings, e.g. to force compaction of the pending queue after every few update graph cycles.
+     */
+    protected void configureProducer(final BarrageMessageProducer producer) {}
+
     void flushProducerTable() {
         scheduler.runUntilQueueEmpty();
     }
@@ -455,6 +461,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
             this.barrageMessageProducer = originalTable.getResult(new BarrageMessageProducer.Operation(scheduler,
                     new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
                     originalTable, UPDATE_INTERVAL, this::onGetSnapshot));
+            configureProducer(barrageMessageProducer);
 
             originalTUV = TableUpdateValidator.make(originalTable);
             originalTUVListener = new FailureListener("Original Table Update Validator");

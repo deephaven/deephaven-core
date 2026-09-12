@@ -36,6 +36,18 @@ public interface BarrageSubscriptionPerformanceLogger {
         public static final String WRITE_NANOS = "WriteNanos";
         /** Payload size of an update written to a single subscriber, in bytes. */
         public static final String WRITE_BYTES = "WriteBytes";
+        /**
+         * Number of per-cycle updates a producer is holding, un-propagated, at the end of one update graph cycle. It
+         * rises with the number of update graph cycles that elapse per subscriber update interval.
+         */
+        public static final String PENDING_DELTA_COUNT = "PendingDeltaCount";
+        /**
+         * Approximate heap footprint, in bytes, of the chunk storage those pending updates own. This is the memory a
+         * producer holds on behalf of subscribers that have not yet been served.
+         */
+        public static final String PENDING_DELTA_BYTES = "PendingDeltaBytes";
+        /** Time to compact the pending updates into one, off the update graph thread, ahead of the next propagation. */
+        public static final String COMPACTION_NANOS = "CompactionNanos";
         /** Time to read and deserialize an update from the wire. */
         public static final String DESERIALIZATION_NANOS = "DeserializationNanos";
         /** Time to apply a single update during the update graph cycle. */

@@ -7,11 +7,14 @@ description 'Barrage Benchmark: Benchmarks for Barrage message serialization/des
 dependencies {
     implementation project(':extensions-barrage')
     implementation project(':engine-table')
+    implementation project(':server')
+    implementation project(':server-test-utils')
     implementation project(':BenchmarkSupport')
     implementation libs.arrow.vector
     implementation libs.flatbuffers.java
     implementation platform(libs.grpc.bom)
     implementation libs.grpc.api
+    implementation libs.grpc.stub
     implementation TestTools.projectDependency(project, 'engine-rowset')
     implementation TestTools.projectDependency(project, 'engine-table')
 
@@ -23,7 +26,8 @@ dependencies {
 }
 
 def createJmhTask = {
-    taskName, cliArgs, jvmAddArgs=[], heapSize='8g' -> tasks.create(taskName, JavaExec, { JavaExec task ->
+    // Heap defaults to 8g; override for a run with -PjmhHeapSize=32g (an accumulate arm holds every pending delta).
+    taskName, cliArgs, jvmAddArgs=[], heapSize=(project.findProperty('jmhHeapSize') ?: '8g') -> tasks.create(taskName, JavaExec, { JavaExec task ->
         new File("$rootDir/tmp/workspace").mkdirs()
         new File("$rootDir/tmp/logs").mkdirs()
 
@@ -54,3 +58,11 @@ createJmhTask('jmhRunBarrageRoundTrip', 'BarrageMessageRoundTripBenchmark')
 // them split the snapshot across record batches, which the single-batch reader in this benchmark cannot parse.
 createJmhTask('jmhRunBarrageRoundTripStrings',
         ['BarrageMessageRoundTripBenchmark', '-p', 'columnType=String', '-p', 'numColumns=1000'])
+
+// DH-21949: how much a BarrageMessageProducer holds when many update graph cycles elapse per propagation.
+createJmhTask('jmhRunBarrageProducerPendingDeltas', 'BarrageProducerPendingDeltaBenchmark')
+
+// Same, with writable-chunk pooling disabled so released delta chunks become garbage and the heapGrowthKiB counter
+// reflects only what the producer itself still holds.
+createJmhTask('jmhRunBarrageProducerPendingDeltasNoPool', 'BarrageProducerPendingDeltaBenchmark',
+        ['-DChunkPoolConstants.poolWritableChunks=false'])
