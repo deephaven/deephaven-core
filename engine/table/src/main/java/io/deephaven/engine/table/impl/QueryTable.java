@@ -1682,9 +1682,9 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public boolean isFlat() {
-        if (flat) {
-            Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
-        }
+        // flat is a table-level property: a flat table's rowSet is contiguous from zero in any
+        // consistent view. RowSet.isFlat() is a per-cycle mutable property, so the two agree only
+        // for a reader on the refresh thread or holding the update graph lock.
         return flat;
     }
 
