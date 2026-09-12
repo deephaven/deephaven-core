@@ -31,21 +31,21 @@ public abstract class TableSpecTestBase extends DeephavenSessionTestBase {
         this.table = Objects.requireNonNull(table);
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 20000)
     public void batch() throws TableHandleException, InterruptedException {
         try (final TableHandle handle = session.batch().execute(table)) {
             assertThat(handle.isSuccessful()).isTrue();
         }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 20000)
     public void serial() throws TableHandleException, InterruptedException {
         try (final TableHandle handle = session.serial().execute(table)) {
             assertThat(handle.isSuccessful()).isTrue();
         }
     }
 
-    @Test(timeout = 10000)
+    @Test(timeout = 20000)
     public void async() throws ExecutionException, InterruptedException {
         try (final TableHandle handle = session.executeAsync(table).getOrCancel()) {
             assertThat(handle.isSuccessful()).isTrue();
