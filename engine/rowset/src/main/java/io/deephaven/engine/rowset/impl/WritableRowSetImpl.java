@@ -398,13 +398,19 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
                 it.next();
                 final long start = it.currentRangeStart();
                 final long end = it.currentRangeEnd();
-                Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
-                Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
-                Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
-                        "rowSet");
-                Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd, "lastEnd",
-                        this,
-                        "rowSet");
+                // Test the ranges with primitive comparisons; the Assert calls box their operands and concatenate
+                // message strings, which we must not pay for on the (overwhelmingly common) success path. The order
+                // and adjacency checks are separate so that lastEnd == Long.MAX_VALUE cannot overflow past a
+                // subsequent range: ordering fails first, and the adjacency subtraction (with start >= 0) is safe.
+                if (start < 0 || end < start || start <= lastEnd || start - 1 == lastEnd) {
+                    Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
+                    Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
+                    Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
+                            "rowSet");
+                    Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd,
+                            "lastEnd", this,
+                            "rowSet");
+                }
                 lastEnd = end;
 
                 totalSize += ((end - start) + 1);

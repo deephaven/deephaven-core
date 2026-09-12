@@ -68,7 +68,10 @@ public abstract class HashMapBase implements NullableLongLongMap {
         Assert.eq(hs.size(), "hs.size()", 4, "4");
     }
 
-    private final int desiredInitialCapacity;
+    // The entry capacity for the next backing array allocation. Starts at the construction-time request, and is
+    // ratcheted up in resetToNullImpl() so a map that is repeatedly reset and refilled to a similar size allocates
+    // at that size directly instead of growing through successive rehashes.
+    private int desiredInitialCapacity;
     private final float loadFactor;
     private final long noEntryValue;
     // There are three kinds of slots: empty, holding a value, and deleted (formerly holding a value).
@@ -102,10 +105,17 @@ public abstract class HashMapBase implements NullableLongLongMap {
         return key == SPECIAL_KEY_FOR_EMPTY_SLOT ? REDIRECTED_KEY_FOR_EMPTY_SLOT : key;
     }
 
+    /**
+     * Round an entry capacity up to a whole number of buckets, in long arithmetic so that a saturated request (near
+     * {@link Integer#MAX_VALUE}) cannot wrap negative.
+     */
+    static int desiredBucketCount(final int desiredEntryCapacity, final int entriesPerBucket) {
+        return (int) (((long) desiredEntryCapacity + entriesPerBucket - 1) / entriesPerBucket);
+    }
+
     long[] allocateKeysAndValuesArray(int entriesPerBucket) {
         // DesiredInitialCapacity is in units of 'entries'.
-        // Ceiling(desiredInitialCapacity / entriesPerBucket)
-        final int desiredNumBuckets = (desiredInitialCapacity + entriesPerBucket - 1) / entriesPerBucket;
+        final int desiredNumBuckets = desiredBucketCount(desiredInitialCapacity, entriesPerBucket);
         // Because we want the number of buckets to be prime
         final int proposedBucketCapacity = PrimeFinder.nextPrime(desiredNumBuckets);
         final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
@@ -114,7 +124,11 @@ public abstract class HashMapBase implements NullableLongLongMap {
                 Integer.MAX_VALUE, "Integer.MAX_VALUE");
         final int entryCapacity = newBucketCapacity * entriesPerBucket;
         final int longCapacity = entryCapacity * 2;
-        rehashThreshold = (int) (entryCapacity * loadFactor);
+        // Mirror the rehash() growth path: once clamped to the maximum bucket capacity there is no larger size to
+        // grow into, so run at the nearly-full load factor rather than rehashing (at the same capacity) partway
+        // through a large fill.
+        final float loadFactorToUse = newBucketCapacity < maxBucketCapacity ? loadFactor : NEARLY_FULL_LOAD_FACTOR;
+        rehashThreshold = (int) (entryCapacity * loadFactorToUse);
         final long[] keysAndValues = new long[longCapacity];
         setKeysAndValues(keysAndValues);
         return keysAndValues;
@@ -191,9 +205,44 @@ public abstract class HashMapBase implements NullableLongLongMap {
     }
 
     final void resetToNullImpl() {
+        // nonEmptySlots (not size) drives rehashing, so it determines the capacity we would have needed to absorb
+        // this generation of entries without growing.
+        desiredInitialCapacity =
+                Math.max(desiredInitialCapacity, capacityForExpectedEntries(nonEmptySlots, loadFactor));
         size = 0;
         nonEmptySlots = 0;
         rehashThreshold = 0;
+    }
+
+    /**
+     * Compute an entry capacity at which a map can hold {@code expectedEntries} entries (including deleted slots)
+     * without rehashing. The rehash check fires when the slot count reaches {@code capacity * loadFactor} after an
+     * insert, and that threshold is computed in {@code float}, which loses integer precision above 2^24 — so the
+     * capacity is padded by the rounding error the threshold computation can incur. Bucket-count rounding in
+     * {@link #allocateKeysAndValuesArray} only ever increases the capacity, and the float threshold is non-decreasing
+     * in the capacity, so the allocated map's threshold clears the expected count too.
+     *
+     * @param expectedEntries the number of slots the map must absorb without rehashing
+     * @param loadFactor the map's load factor
+     * @return an entry capacity to request, saturating at {@link Integer#MAX_VALUE}
+     */
+    public static int capacityForExpectedEntries(final long expectedEntries, final float loadFactor) {
+        long candidate = (long) Math.ceil((expectedEntries + 1.0) / loadFactor);
+        if (candidate >= Integer.MAX_VALUE) {
+            // Saturate before padding: the addition below could wrap a candidate near Long.MAX_VALUE. Beyond this
+            // point candidate < 2^31, which also bounds the padding itself well within a long.
+            return Integer.MAX_VALUE;
+        }
+        // The exact product candidate * loadFactor is already at least expectedEntries + 1, but the map computes
+        // its threshold as (int) ((float) capacity * loadFactor), which can land below the exact product: the
+        // long-to-float conversion loses up to half of the capacity's ULP (scaled by loadFactor in the product),
+        // the multiply rounds by up to half the product's ULP, and the int cast truncates up to one more entry.
+        // Pad the capacity by that error over loadFactor — doubled, because the padded capacity may cross into the
+        // next binade, where both ULPs double.
+        final float ulpCandidate = Math.ulp((float) candidate);
+        final float ulpProduct = Math.ulp((float) candidate * loadFactor);
+        candidate += (long) Math.ceil((ulpCandidate * loadFactor + ulpProduct + 2) / loadFactor);
+        return (int) Math.min(Integer.MAX_VALUE, candidate);
     }
 
     @Override

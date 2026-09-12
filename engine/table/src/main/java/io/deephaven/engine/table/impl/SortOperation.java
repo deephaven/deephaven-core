@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.util.SafeCloseableList;
+import io.deephaven.util.datastructures.hash.HashMapBase;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -309,7 +310,12 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             dataIndex, rowSetToSort, usePrev, ALLOW_SYMBOL_TABLE)
                     .getArrayMapping();
 
-            final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortedKeys.length, .75f, -3);
+            // Size the map so the initial population completes without any rehashing.
+            final float reverseLookupLoadFactor = .75f;
+            final int reverseLookupCapacity =
+                    HashMapBase.capacityForExpectedEntries(sortedKeys.length, reverseLookupLoadFactor);
+            final HashMapK4V4 reverseLookup =
+                    new HashMapLockFreeK4V4(reverseLookupCapacity, reverseLookupLoadFactor, -3);
             sortMapping = SortHelpers.createSortRowRedirection();
 
             // Center the keys around middleKeyToUse
