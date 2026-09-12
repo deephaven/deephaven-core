@@ -11,7 +11,7 @@ aws-s3-tables-catalog-for-iceberg = "0.1.8"
 calcite = "1.41.0"
 json-smart = "2.5.2"
 httpcore5 = "5.4.3"
-httpclient = "5.6.3"
+httpclient = "5.6.4"
 
 classgraph = "4.8.180"
 commons-compress = "1.28.0"
