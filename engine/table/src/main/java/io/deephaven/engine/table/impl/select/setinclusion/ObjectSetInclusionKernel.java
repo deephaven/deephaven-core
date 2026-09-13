@@ -6,24 +6,25 @@ package io.deephaven.engine.table.impl.select.setinclusion;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 
 public class ObjectSetInclusionKernel implements SetInclusionKernel {
 
-    private final Collection<Object> liveValues;
+    private final ObjectSet<Object> liveValues;
     private final boolean inclusion;
 
     public ObjectSetInclusionKernel(@NotNull final Collection<Object> liveValues, final boolean inclusion) {
-        this.liveValues = new HashSet<>(liveValues);
+        this.liveValues = new ObjectOpenHashSet<>(liveValues);
         this.inclusion = inclusion;
     }
 
     ObjectSetInclusionKernel(final boolean inclusion) {
-        this.liveValues = new HashSet<>();
+        this.liveValues = new ObjectOpenHashSet<>();
         this.inclusion = inclusion;
     }
 

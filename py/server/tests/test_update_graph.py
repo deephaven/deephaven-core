@@ -122,22 +122,19 @@ class UpdateGraphTestCase(BaseTestCase):
             with self.subTest(op=op):
                 result_table = op(test_table, "X = i % 11")
 
-    def test_auto_locking_wherein(self):
+    def test_no_locking_wherein(self):
+        # where_in and where_not_in take consistent snapshots and need no update graph lock (DH-20753), for a
+        # refreshing source and a refreshing set table alike. Compare test_auto_locking_joins, which still does.
         with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
-        unique_table = test_table.head(num_rows=50).select_distinct(formulas=["X", "Y"])
+            unique_table = test_table.head(num_rows=50).select_distinct(formulas=["Y"])
+        self.assertTrue(unique_table.is_refreshing)
 
-        with self.assertRaises(DHError) as cm:
-            result_table = test_table.where_in(unique_table, cols=["Y"])
-        self.assertRegex(str(cm.exception), r"IllegalStateException")
-
-        with self.assertRaises(DHError) as cm:
-            result_table = test_table.where_not_in(unique_table, cols=["Y"])
-        self.assertRegex(str(cm.exception), r"IllegalStateException")
-
-        ug.auto_locking = True
+        # auto_locking is off (see setUp) and no lock is held; on main both calls raised IllegalStateException.
         result_table = test_table.where_in(unique_table, cols=["Y"])
+        self.assertTrue(result_table.is_refreshing)
         result_table = test_table.where_not_in(unique_table, cols=["Y"])
+        self.assertTrue(result_table.is_refreshing)
 
     def test_auto_locking_joins(self):
         with ug.shared_lock(self.test_update_graph):
