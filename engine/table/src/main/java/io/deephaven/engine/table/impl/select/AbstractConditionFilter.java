@@ -350,7 +350,47 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         return formulaShiftedColumnDefinitions;
     }
 
+    /**
+     * Produce a copy of this filter with its columns renamed according to {@code renames}.
+     *
+     * @param renames Map from this filter's column name space to the target's. Need not be total: a column that is
+     *        absent is unchanged, which is how {@link #outerToInnerNames} is read throughout this class. See
+     *        {@link MatchFilter#renameFilter} for the same contract on the other filter kind
+     *        {@link io.deephaven.engine.table.impl.DeferredViewTable} pushes below a view.
+     */
     public abstract AbstractConditionFilter renameFilter(Map<String, String> renames);
+
+    /**
+     * Compose this filter's existing outer-to-inner name mapping with a further one.
+     *
+     * <p>
+     * {@link #renameFilter} leaves {@link #formula} untouched and carries the renaming in {@link #outerToInnerNames},
+     * resolved when the filter is initialized. A filter can be renamed more than once --
+     * {@link io.deephaven.engine.table.impl.DeferredViewTable} pushes a filter through each nested deferred view in
+     * turn, renaming at every hop -- so an implementation must fold the new mapping into the one it already carries.
+     * Replacing it instead drops every earlier hop's mapping, leaving formula variables that name no column at the
+     * level the filter finally initializes against.
+     *
+     * @param renames Mapping from this filter's current inner name space to the next one out; need not be total
+     * @return The composed mapping, to hand to the renamed copy
+     */
+    protected final Map<String, String> composeRenames(@NotNull final Map<String, String> renames) {
+        if (outerToInnerNames.isEmpty()) {
+            return renames;
+        }
+        final Map<String, String> composed = new HashMap<>(outerToInnerNames.size() + renames.size());
+        // Follow each name this filter already maps through the new mapping.
+        for (final Map.Entry<String, String> entry : outerToInnerNames.entrySet()) {
+            final String intermediateName = entry.getValue();
+            composed.put(entry.getKey(), renames.getOrDefault(intermediateName, intermediateName));
+        }
+        // Names this filter does not map are still subject to the new mapping. putIfAbsent because a name this filter
+        // already maps refers to its own outer name space, which wins.
+        for (final Map.Entry<String, String> entry : renames.entrySet()) {
+            composed.putIfAbsent(entry.getKey(), entry.getValue());
+        }
+        return composed;
+    }
 
     public interface Filter {
         /**

@@ -68,7 +68,21 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
      */
     protected final void findKeys(@NotNull final Stream<URI> uriStream,
             @NotNull final Consumer<TLK> locationKeyObserver) {
-        final LocationTableBuilder locationTableBuilder = locationTableBuilderFactory.get();
+        findKeys(uriStream, locationTableBuilderFactory.get(), locationKeyObserver);
+    }
+
+    /**
+     * As {@link #findKeys(Stream, Consumer)}, but with the {@link LocationTableBuilder} supplied by the caller rather
+     * than drawn from the factory.
+     *
+     * <p>
+     * A subclass needs this when the choice of builder depends on the data being traversed -- for instance when the
+     * partitioning columns' types are recorded in the files themselves and are preferable to inferring them from the
+     * directory names. Builders are stateful, so the instance passed must be fresh, exactly as the factory's would be.
+     */
+    protected final void findKeys(@NotNull final Stream<URI> uriStream,
+            @NotNull final LocationTableBuilder locationTableBuilder,
+            @NotNull final Consumer<TLK> locationKeyObserver) {
         final Queue<URI> targetURIs = new ArrayDeque<>();
         final Set<String> partitionKeys = new LinkedHashSet<>(); // Preserve order of insertion
         final Int2ObjectMap<ColumnNameInfo> partitionColInfo = new Int2ObjectOpenHashMap<>();

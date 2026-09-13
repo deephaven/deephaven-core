@@ -517,7 +517,7 @@ public class ParquetTools {
             // Store hard reference to prevent indexes from being garbage collected
             final List<DataIndex> dataIndexes = addIndexesToTables(partitionedDataArray, indexColumns);
             writeTablesImpl(partitionedDataArray, leafDefinition, writeInstructions,
-                    destinations.toArray(URI[]::new), indexColumns, partitioningColumnsSchema,
+                    destinations.toArray(URI[]::new), indexColumns, partitioningColumnsSchema, keyTableDefinition,
                     convertToURI(destinationRoot, true), computedCache);
             if (dataIndexes != null) {
                 dataIndexes.clear();
@@ -617,6 +617,7 @@ public class ParquetTools {
             @NotNull final URI[] destinations,
             @NotNull final Collection<List<String>> indexColumns,
             @Nullable final MessageType partitioningColumnsSchema,
+            @Nullable final TableDefinition partitioningColumnDefinition,
             @Nullable final URI metadataRootDir,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
@@ -627,6 +628,17 @@ public class ParquetTools {
         if (definition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
+        final boolean generateMetadataFiles = writeInstructions.generateMetadataFiles();
+        if (generateMetadataFiles && metadataRootDir == null) {
+            throw new IllegalArgumentException("Metadata root directory must be set when writing metadata files");
+        }
+        if (destinations.length == 0) {
+            // Nothing to write. A key-value partitioned write of a table with no partitions lands here, and the
+            // metadata files have nothing to describe -- ParquetMetadataFileWriterImpl.writeMetadataFiles rejects an
+            // empty file list. Returning also keeps the scheme lookup below off an empty array, which used to fail
+            // with ArrayIndexOutOfBoundsException.
+            return;
+        }
         // Assuming all destination URIs have the same scheme, and will use the same channels provider instance
         final SeekableChannelsProvider channelsProvider =
                 writeInstructions.getSeekableChannelsProviderForWriting()
@@ -634,10 +646,7 @@ public class ParquetTools {
                                 .load(destinations[0].getScheme(), writeInstructions.getSpecialInstructions()));
 
         final ParquetMetadataFileWriter metadataFileWriter;
-        if (writeInstructions.generateMetadataFiles()) {
-            if (metadataRootDir == null) {
-                throw new IllegalArgumentException("Metadata root directory must be set when writing metadata files");
-            }
+        if (generateMetadataFiles) {
             metadataFileWriter =
                     new ParquetMetadataFileWriterImpl(metadataRootDir, destinations, partitioningColumnsSchema);
         } else {
@@ -661,7 +670,7 @@ public class ParquetTools {
                         outputStreams.add(outputStream);
                         ParquetTableWriter.write(source, definition, writeInstructions, tableDestination, outputStream,
                                 Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null,
-                                metadataFileWriter, computedCache);
+                                partitioningColumnDefinition, metadataFileWriter, computedCache);
                     }
                 } else {
                     // Shared parquet column names across all tables
@@ -684,11 +693,12 @@ public class ParquetTools {
                         }
                         final Table source = sources[tableIdx];
                         ParquetTableWriter.write(source, definition, writeInstructions, tableDestination, outputStream,
-                                Collections.emptyMap(), indexInfoList, metadataFileWriter, computedCache);
+                                Collections.emptyMap(), indexInfoList, partitioningColumnDefinition,
+                                metadataFileWriter, computedCache);
                     }
                 }
 
-                if (writeInstructions.generateMetadataFiles()) {
+                if (generateMetadataFiles) {
                     final URI metadataDest = metadataRootDir.resolve(METADATA_FILE_NAME);
                     final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
                             writeContext, metadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
@@ -850,7 +860,8 @@ public class ParquetTools {
                 buildComputedCache(() -> PartitionedTableFactory.ofTables(definition, sources).merge(), definition);
         // We do not have any additional schema for partitioning columns in this case. Schema for all columns will be
         // generated at the time of writing the parquet files and merged to generate the metadata files.
-        writeTablesImpl(sources, definition, writeInstructions, destinationUris, indexColumns, null, metadataRootDir,
+        writeTablesImpl(sources, definition, writeInstructions, destinationUris, indexColumns, null, null,
+                metadataRootDir,
                 computedCache);
     }
 

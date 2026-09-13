@@ -44,6 +44,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.nio.IntBuffer;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
 
@@ -120,6 +121,7 @@ public class ParquetTableWriter {
             @NotNull final CompletableOutputStream destOutputStream,
             @NotNull final Map<String, String> incomingMeta,
             @Nullable final List<ParquetTableWriter.IndexWritingInfo> indexInfoList,
+            @Nullable final TableDefinition partitioningColumnDefinition,
             @NotNull final ParquetMetadataFileWriter metadataFileWriter,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) throws IOException {
         if (t.isRefreshing()) {
@@ -165,6 +167,7 @@ public class ParquetTableWriter {
                     write(indexTable, indexTable.getDefinition(), writeInstructionsForIndex, info.dest,
                             info.destOutputStream, Collections.emptyMap(), indexTableInfoBuilder,
                             NullParquetMetadataFileWriter.INSTANCE, computedCache);
+                    // Note: an index table is not itself partitioned, so it records no partitioning columns.
                 }
             }
         }
@@ -175,6 +178,15 @@ public class ParquetTableWriter {
         final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(t);
         if (!sortedColumns.isEmpty()) {
             tableInfoBuilder.addSortingColumns(SortColumnInfo.of(sortedColumns.get(0)));
+        }
+
+        // Record the partitioning columns' types. Their values live in the directory path rather than in this file's
+        // schema, so a reader that is given no TableDefinition would otherwise have to infer them from the key text,
+        // which does not round trip.
+        if (partitioningColumnDefinition != null) {
+            tableInfoBuilder.addAllPartitioningColumns(partitioningColumnDefinition.getColumns().stream()
+                    .map(PartitioningColumnInfo::of)
+                    .collect(Collectors.toList()));
         }
         final long numBytes = write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
                 tableInfoBuilder, metadataFileWriter, computedCache);

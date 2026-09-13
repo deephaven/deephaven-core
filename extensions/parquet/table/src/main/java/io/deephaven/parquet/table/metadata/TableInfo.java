@@ -103,6 +103,19 @@ public abstract class TableInfo {
      */
     public abstract List<SortColumnInfo> sortingColumns();
 
+    /**
+     * The key-value partitioning columns this file sits under, with their data types.
+     *
+     * <p>
+     * Empty for a file that is not part of a key-value partitioned dataset, and for one written before this field
+     * existed. A partitioning column's values are carried in the directory path rather than in the parquet schema, so
+     * without this record a reader has to infer the type from the key text, which does not round trip -- see
+     * {@link PartitioningColumnInfo}.
+     *
+     * @return List of {@link PartitioningColumnInfo partitioning columns}, in partitioning order
+     */
+    public abstract List<PartitioningColumnInfo> partitioningColumns();
+
     @Check
     final void checkVersion() {
         if (version().isEmpty()) {
@@ -135,6 +148,12 @@ public abstract class TableInfo {
         Builder addColumnTypes(ColumnTypeInfo... columnTypes);
 
         Builder addAllColumnTypes(Iterable<? extends ColumnTypeInfo> columnTypes);
+
+        Builder addPartitioningColumns(PartitioningColumnInfo partitioningColumn);
+
+        Builder addPartitioningColumns(PartitioningColumnInfo... partitioningColumns);
+
+        Builder addAllPartitioningColumns(Iterable<? extends PartitioningColumnInfo> partitioningColumns);
 
         Builder addSortingColumns(SortColumnInfo sortColumns);
 

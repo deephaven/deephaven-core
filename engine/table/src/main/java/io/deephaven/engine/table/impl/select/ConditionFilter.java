@@ -770,7 +770,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public ConditionFilter renameFilter(Map<String, String> renames) {
-        return new ConditionFilter(formula, renames);
+        return new ConditionFilter(formula, composeRenames(renames));
     }
 
     @Override

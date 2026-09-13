@@ -94,6 +94,91 @@ if (Architecture.fromHost() == Architecture.AMD64) {
     })
 }
 
+// DH-23557: pushdown fuzzer bench. Deliberately NOT wired into `check` or `nightly` -- the root
+// `nightly` task matches tasks by name (check/testOutOfBand/testSerial/testParallel), so this
+// task runs only on explicit request. We do hook its *compilation* into `check` so it cannot rot.
+testing {
+    suites {
+        pushdownFuzzTest(JvmTestSuite) {
+            useJUnit(libs.versions.junit4.get())
+            sources {
+                java {
+                    srcDirs = ['src/pushdownFuzzTest/java']
+                }
+            }
+            dependencies {
+                implementation project(':extensions-parquet-table')
+                implementation project(':engine-api')
+                implementation project(':engine-table')
+                implementation project(':table-api')
+                implementation project(':engine-test-utils')
+                implementation project(':base-test-utils')
+                implementation project(':engine-rowset')
+                implementation project(':engine-chunk')
+                implementation project(':engine-query-constants')
+                implementation project(':engine-time')
+                implementation project(':Configuration')
+                implementation project(':Util')
+                implementation project(':Base')
+                runtimeOnly project(':log-to-slf4j')
+                runtimeOnly project(':configs')
+                runtimeOnly project(':test-configs')
+                runtimeOnly project(':extensions-trackedfile')
+            }
+        }
+    }
+}
+
+tasks.named('pushdownFuzzTest', Test) {
+    group = '~Deephaven Test'
+    description = 'DH-23557 pushdown fuzzer. Not run by check or nightly; run on demand.'
+    maxHeapSize = (findProperty('maxHeapSize') ?: '6g').toString()
+    maxParallelForks = 1
+    testLogging.showStandardStreams = true
+
+    // Forward -DPushdownFuzzer.* knobs from the gradle JVM into the test JVM.
+    System.properties.each { k, v ->
+        if (k.toString().startsWith('PushdownFuzzer.')) {
+            systemProperty k.toString(), v.toString()
+        }
+    }
+
+    // QueryTable.FORCE_PARALLEL_WHERE and friends are package-private to io.deephaven.engine.table.impl,
+    // so the bench cannot set them directly; drive them through their config properties instead.
+    def parallelWhere = (findProperty('fuzzParallelWhere') ?: 'default').toString()
+    if (parallelWhere == 'force') {
+        systemProperty 'QueryTable.forceParallelWhere', 'true'
+        systemProperty 'QueryTable.disableParallelWhere', 'false'
+        // Small segments so even a modest table splits into many parallel where segments.
+        systemProperty 'QueryTable.parallelWhereRowsPerSegment', '64'
+    } else if (parallelWhere == 'disable') {
+        systemProperty 'QueryTable.forceParallelWhere', 'false'
+        systemProperty 'QueryTable.disableParallelWhere', 'true'
+    } else if (parallelWhere != 'default') {
+        throw new GradleException("Unknown -PfuzzParallelWhere=$parallelWhere (default|force|disable)")
+    }
+
+    // The PredicatePushdown.*Cost constants are `static final`, read once at class-init, so a cost
+    // ordering is a per-JVM choice rather than a per-case one. -PfuzzCostProfile permutes it.
+    def profile = (findProperty('fuzzCostProfile') ?: 'default').toString()
+    def costNames = ['tableSingleValueColumnCost', 'tableSortedDataCost', 'tableInMemoryDataIndexCost',
+                     'regionSingleValueCost', 'locationInMemoryDataIndexCost', 'regionMetadataStatsCost',
+                     'regionBloomFilterCost', 'locationDeferredDataIndexCost', 'regionSortedDataCost',
+                     'regionDictionaryDataCost']
+    if (profile == 'inverted') {
+        costNames.eachWithIndex { name, i ->
+            systemProperty "PredicatePushdown.$name", ((costNames.size() - i) * 5000).toString()
+        }
+    } else if (profile == 'allEqual') {
+        costNames.each { systemProperty "PredicatePushdown.$it", '10000' }
+    } else if (profile != 'default') {
+        throw new GradleException("Unknown -PfuzzCostProfile=$profile (default|inverted|allEqual)")
+    }
+}
+
+// Compile-only in CI so the bench cannot rot; the tests themselves never run there.
+tasks.named('check') { dependsOn tasks.named('compilePushdownFuzzTestJava') }
+
 TestTools.addEngineOutOfBandTest(project)
 
 testOutOfBand.dependsOn Docker.registryTask(project, 'localstack')

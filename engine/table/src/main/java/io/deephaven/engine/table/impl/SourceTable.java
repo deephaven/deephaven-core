@@ -32,6 +32,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -330,7 +331,15 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 // Its attributes may already have been published and frozen.
                 final Collection<TableLocation> includedLocations = columnSourceManager.includedLocations();
                 if (includedLocations.size() == 1) {
-                    for (final SortColumn sc : includedLocations.iterator().next().getSortedColumns()) {
+                    // Only the first. TableLocation.getSortedColumns() is "ordered by precedence, representing a
+                    // multi-column sort", and a multi-column sort orders each subsequent column only within ties of
+                    // the ones before it -- so only the leading column is sorted on its own. Publishing the rest as
+                    // independent SortedColumnsAttribute entries asserts something false, and the claim is acted on
+                    // without validation: AbstractRangeFilter binary-searches on it, with no pushdown flag gating it,
+                    // and silently returns wrong rows.
+                    final List<SortColumn> sortedColumns = includedLocations.iterator().next().getSortedColumns();
+                    if (!sortedColumns.isEmpty()) {
+                        final SortColumn sc = sortedColumns.get(0);
                         final SortingOrder order = sc.order() == SortColumn.Order.ASCENDING
                                 ? SortingOrder.Ascending
                                 : SortingOrder.Descending;
