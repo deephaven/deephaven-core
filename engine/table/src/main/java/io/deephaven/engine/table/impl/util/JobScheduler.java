@@ -222,11 +222,9 @@ public interface JobScheduler {
                 invokeOnError(e);
                 return;
             } catch (Error e) {
-                // Delivered rather than rethrown, for the same reasons as in TaskInvoker.execute(): this is the
-                // operation's only notification that the iteration failed, and rethrowing would take down the
-                // scheduler thread we are running on.
+                // Deliver before rethrowing; this is the operation's only notification that the iteration failed.
                 invokeOnError(asDeliverableException(e));
-                return;
+                throw e;
             }
             try {
                 cleanup.run();
@@ -305,13 +303,13 @@ public interface JobScheduler {
                         deliverTaskFailure(e);
                         return;
                     } catch (Error e) {
-                        // An Error -- an OutOfMemoryError, in practice -- is delivered rather than rethrown. Letting
-                        // it escape would skip close(), so this TaskInvoker's reference to the IterationManager would
-                        // stay outstanding, the reference count would never reach zero, and neither onComplete nor
-                        // onError would ever run; rethrowing would additionally take down the scheduler thread running
-                        // this job. Delivering it fails the waiting operation with the Error as the cause instead.
+                        // An Error -- an OutOfMemoryError, in practice -- has to be delivered before it propagates.
+                        // Letting it escape undelivered would skip close(), leaving this TaskInvoker's reference to
+                        // the IterationManager outstanding, so that the reference count never reaches zero and
+                        // neither onComplete nor onError ever runs. Rethrow once it has been delivered, so that the
+                        // scheduler still reports it as fatal and it reaches the thread running this job.
                         deliverTaskFailure(asDeliverableException(e));
-                        return;
+                        throw e;
                     } finally {
                         running = false;
                     }

@@ -13,6 +13,7 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.util.function.ThrowingRunnable;
 import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
@@ -424,7 +425,7 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
-        updateGraph.runWithinUnitTestCycle(() -> {
+        runExpectingUpdateGraphTermination(updateGraph, () -> {
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
@@ -451,6 +452,9 @@ public final class TestJobScheduler {
         assertTestErrorDelivered(observer);
         observer.assertNoOpenContexts();
         Assert.eqFalse(completed[10], "completed[10]");
+
+        // The terminated cycle left its exclusive lock held; reset so that teardown gets a usable update graph back.
+        updateGraph.resetForUnitTests(false);
     }
 
     @Test
@@ -460,7 +464,7 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
-        updateGraph.runWithinUnitTestCycle(() -> {
+        runExpectingUpdateGraphTermination(updateGraph, () -> {
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
@@ -494,6 +498,9 @@ public final class TestJobScheduler {
                 Assert.eqFalse(completed[i], "completed[i]");
             }
         }
+
+        // The terminated cycle left its exclusive lock held; reset so that teardown gets a usable update graph back.
+        updateGraph.resetForUnitTests(false);
     }
 
     @Test
@@ -504,7 +511,7 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
-        updateGraph.runWithinUnitTestCycle(() -> {
+        runExpectingUpdateGraphTermination(updateGraph, () -> {
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
@@ -520,6 +527,9 @@ public final class TestJobScheduler {
         observer.awaitFinished(Duration.ofSeconds(10));
         assertTestErrorDelivered(observer);
         observer.assertNoOpenContexts();
+
+        // The terminated cycle left its exclusive lock held; reset so that teardown gets a usable update graph back.
+        updateGraph.resetForUnitTests(false);
     }
 
     /**
@@ -562,6 +572,21 @@ public final class TestJobScheduler {
         final Exception error = delivered.get();
         Assert.neqNull(error, "delivered.get()");
         assertTrue("TestError cause, but was " + error.getCause(), error.getCause() instanceof TestError);
+    }
+
+    /**
+     * An Error thrown by a job is delivered to the iteration's error handler and then rethrown, which takes down the
+     * notification processor running it; the update graph reports that when the cycle completes. That termination is
+     * the intended policy for an Error -- what these tests are about is that the failure was delivered first.
+     */
+    private static <T extends Exception> void runExpectingUpdateGraphTermination(
+            final ControlledUpdateGraph updateGraph,
+            final ThrowingRunnable<T> runnable) throws T {
+        try {
+            updateGraph.runWithinUnitTestCycle(runnable);
+            TestCase.fail("Expected the update graph to terminate");
+        } catch (UncheckedDeephavenException expected) {
+        }
     }
 
     /**
