@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.util;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
@@ -519,6 +520,48 @@ public final class TestJobScheduler {
         observer.awaitFinished(Duration.ofSeconds(10));
         assertTestErrorDelivered(observer);
         observer.assertNoOpenContexts();
+    }
+
+    /**
+     * {@link JobScheduler#submit} is also used directly, without the iteration machinery -- for example by a select
+     * column small enough to evaluate in one job. Its Error handling is the scheduler's own: deliver the failure to the
+     * error consumer, then report it as fatal and rethrow.
+     */
+    @Test
+    public void testSubmitThrownError() {
+        final AtomicReference<Exception> delivered = new AtomicReference<>();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false);
+        updateGraph.startCycleForUnitTests();
+        try {
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            scheduler.submit(
+                    ExecutionContext.getContext(),
+                    () -> {
+                        throw new TestError("Test error");
+                    },
+                    logOutput -> logOutput.append("TestSubmitThrownError"),
+                    delivered::set);
+
+            // Flushing the notification here runs the job and surfaces what the scheduler does after delivering: the
+            // fatal report, which the unit test error reporter turns into a FakeFatalException.
+            try {
+                updateGraph.flushOneNotificationForUnitTests();
+                TestCase.fail("Expected exception");
+            } catch (UncheckedDeephavenException expected) {
+                assertTrue("FakeFatalException, but was " + expected.getCause().getCause(),
+                        expected.getCause().getCause() instanceof FakeProcessEnvironment.FakeFatalException);
+            }
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
+
+        // The failure has to reach the error consumer first; nothing waiting on this job has any other way to learn
+        // that it failed.
+        final Exception error = delivered.get();
+        Assert.neqNull(error, "delivered.get()");
+        assertTrue("TestError cause, but was " + error.getCause(), error.getCause() instanceof TestError);
     }
 
     /**
