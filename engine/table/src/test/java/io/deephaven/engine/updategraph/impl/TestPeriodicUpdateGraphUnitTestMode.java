@@ -34,9 +34,13 @@ public class TestPeriodicUpdateGraphUnitTestMode {
         final Set<Thread> preExisting = Thread.getAllStackTraces().keySet();
 
         updateGraph.resetForUnitTests(false);
-        assertEquals(UPDATE_THREADS, ownUpdateExecutorThreads(preExisting).size());
+        try {
+            assertEquals(UPDATE_THREADS, ownUpdateExecutorThreads(preExisting).size());
+        } finally {
+            // Even on failure, leave no notification processing threads behind for the tests that follow.
+            updateGraph.resetForUnitTests(true);
+        }
 
-        updateGraph.resetForUnitTests(true);
         final List<Thread> leaked = ownUpdateExecutorThreads(preExisting);
         assertTrue("Leaked notification processing threads: " + leaked, leaked.isEmpty());
     }
