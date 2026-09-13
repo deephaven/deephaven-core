@@ -357,8 +357,8 @@ public class TestLongLongMap {
     }
 
     @Test
-    public void clearToNewArrayPreservesCapacity() {
-        // The reference fastutil implementation doesn't have clearToNewArray
+    public void resetToNullRetainingCapacityRemembersCapacity() {
+        // The reference fastutil implementation doesn't have resetToNullRetainingCapacity
         if (factory == referenceFactory) {
             return;
         }
@@ -366,8 +366,8 @@ public class TestLongLongMap {
         final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         final long noEntryValue = map.defaultReturnValue();
 
-        // Clearing a never-allocated map is a no-op.
-        map.clearToNewArray();
+        // Resetting a never-allocated map is a no-op.
+        map.resetToNullRetainingCapacity();
         TestCase.assertEquals(0, map.capacity());
         TestCase.assertEquals(noEntryValue, map.get(0));
 
@@ -375,21 +375,24 @@ public class TestLongLongMap {
             map.put(ii * 7, ii);
         }
         final int filledCapacity = map.capacity();
-        map.clearToNewArray();
+        map.resetToNullRetainingCapacity();
 
+        // The array is released, so the map holds no storage while it sits empty.
         TestCase.assertEquals(0, map.size());
         TestCase.assertTrue(map.isEmpty());
-        TestCase.assertEquals(filledCapacity, map.capacity());
+        TestCase.assertEquals(0, map.capacity());
         for (int ii = 0; ii < size; ++ii) {
             TestCase.assertEquals(noEntryValue, map.get(ii * 7));
         }
 
-        // Refilling to the same size must not rehash, because the capacity was retained.
-        for (int ii = 0; ii < size; ++ii) {
+        // The remembered capacity is restored by the next allocation, so refilling to the same size never rehashes.
+        map.put(0, 1);
+        TestCase.assertEquals(filledCapacity, map.capacity());
+        for (int ii = 1; ii < size; ++ii) {
             map.put(ii * 7, ii + 1);
         }
         TestCase.assertEquals(filledCapacity, map.capacity());
-        for (int ii = 0; ii < size; ++ii) {
+        for (int ii = 1; ii < size; ++ii) {
             TestCase.assertEquals(ii + 1, map.get(ii * 7));
         }
     }
@@ -514,7 +517,7 @@ public class TestLongLongMap {
         }
 
         @Override
-        public void clearToNewArray() {
+        public void resetToNullRetainingCapacity() {
             throw new UnsupportedOperationException();
         }
 

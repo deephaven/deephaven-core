@@ -71,8 +71,9 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
     }
 
     @Override
-    public void clearToNewArray() {
-        clearToNewArrayImpl(keysAndValues);
+    public void resetToNullRetainingCapacity() {
+        resetToNullRetainingCapacityImpl(keysAndValues);
+        keysAndValues = null;
     }
 
     @Override

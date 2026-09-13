@@ -15,12 +15,12 @@ public interface NullableLongLongMap {
     void resetToNull();
 
     /**
-     * Empty the map by replacing its backing array with a freshly-allocated one of the same capacity. Unlike
-     * {@link #clear()}, this never writes into the array a concurrent reader might be probing, so it is safe to call
-     * while unsynchronized readers are active (they see the old array, null, or the new empty array). Unlike
-     * {@link #resetToNull()}, the capacity is retained, so refilling to a similar size does not rehash.
+     * Empty the map and release its backing array, as {@link #resetToNull()} does, but remember the capacity the map
+     * had reached so that the next allocation is made at that size instead of regrowing from the initial capacity
+     * through successive rehashes. Like {@link #resetToNull()} and unlike {@link #clear()}, this never writes into the
+     * array a concurrent reader might be probing, so it is safe to call while unsynchronized readers are active.
      */
-    void clearToNewArray();
+    void resetToNullRetainingCapacity();
 
     int capacity();
 

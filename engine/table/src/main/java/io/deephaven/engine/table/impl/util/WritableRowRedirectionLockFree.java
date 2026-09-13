@@ -78,14 +78,13 @@ import org.jetbrains.annotations.NotNull;
  * Reader will skip over it as it does its probe. Because NEWKEY != key, the Reader's logic is the same whether it seems
  * NEWKEY or deletedSlot. c) If NEWKEY replaces an 'emptySlot', then the Reader will probe further than it otherwise
  * would have, but this search will be ultimately futile, because it will eventually reach an emptySlot. 3. When it is
- * finally done copying values over, the Writer will write null to the keysAndValues array inside 'updates' and then
- * replace it with a fresh, empty array of the same length (both are volatile writes). Writer's last write to 'baseline'
- * happened before it wrote the null. When Reader consults 'updates' and finds either the null or the new (empty) array
- * there, it will also see all the writes made to 'baseline' (acquire semantics). Note that the Writer never writes into
- * an 'updates' array that a Reader might still be probing; it only ever publishes a new one. 4. Writer may need to do a
- * rehash. If it does, it will prepare the hashed array off to the side and then write it to 'baseline.keysAndValues'
- * with a volatile write. When reader reads 'baseline.keysAndValues' (volatile read) it will either see the old array or
- * the fully-populated new one.
+ * finally done copying values over, the Writer will write null to the keysAndValues array inside 'updates' (this is a
+ * volatile write). Writer's last write to 'baseline' happened before it wrote that null. When Reader consults 'updates'
+ * and finds a null there, it will also see all the writes made to 'baseline' (acquire semantics). Note that the Writer
+ * never writes into an 'updates' array that a Reader might still be probing; it only ever releases it. 4. Writer may
+ * need to do a rehash. If it does, it will prepare the hashed array off to the side and then write it to
+ * 'baseline.keysAndValues' with a volatile write. When reader reads 'baseline.keysAndValues' (volatile read) it will
+ * either see the old array or the fully-populated new one.
  *
  * Section II: The perspective of the Writer:
  *
@@ -100,18 +99,17 @@ import org.jetbrains.annotations.NotNull;
  * populate the new array off to the side and do a volatile write to store its reference. The Reader's next read of it
  * is a volatile read, and it will pick it up then.
  *
- * When commitUpdates() is done, it writes a null to 'updates.keysAndValues' and then replaces it with a fresh, empty
- * array of the same length (both volatile writes; the null comes first so the garbage collector may reclaim the old
- * array before the new one is allocated). At this point all writes to the 'baseline' hashtable are finished as of the
- * time of the null write. Next time the Reader reads this reference and finds the null or the new array, this will be
- * an acquire and all the values in 'baseline' will be visible. Retaining the capacity (rather than resetting to null
- * and regrowing from the initial capacity through successive rehashes) means a map that once absorbed a very large
- * update cycle keeps an array of that size until it is discarded; we consider one right-sized allocation per cycle a
- * good trade for that.
+ * When commitUpdates() is done, it writes a null to the 'updates.keysAndValues'. At this point all writes to the
+ * 'baseline' hashtable are finished as of the time of the write of the null. Next time the Reader reads this reference
+ * and finds it null, this will be an acquire and all the values in 'baseline' will be visible.
+ *
+ * The 'updates' map remembers the capacity it reached, so the array allocated for the next generation is sized for the
+ * previous one rather than regrowing from the initial capacity through successive rehashes. Only the size is
+ * remembered, not the array, so the storage of a large update cycle is reclaimable while the map sits empty.
  *
  * That takes care of the transition from Update to Idle. Regarding the transition from Idle to Update, the caller does
- * not have any special responsibility: put() calls inside an Update generation write into the array published at the
- * end of the previous commitUpdates(), and Readers@Update do not consult 'updates'.
+ * not have any special responsibility, but the first call to put() inside an Update generation causes a new
+ * 'keysAndValues' array to be generated, which the Reader will start to see next time it looks.
  */
 public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     private static final double LOAD_FACTOR =
@@ -165,9 +163,9 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
                 baseline.put(key, value);
             }
         });
-        // Publish null and then a fresh, empty array of the same capacity (volatile writes, see the class comment). We
+        // Publish null (a volatile write, see the class comment), retaining the capacity for the next allocation. We
         // do not clear the old array in place, because a Reader@Idle may still be probing it.
-        updates.clearToNewArray();
+        updates.resetToNullRetainingCapacity();
     }
 
     /**

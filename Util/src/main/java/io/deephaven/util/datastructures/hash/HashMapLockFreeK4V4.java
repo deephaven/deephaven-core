@@ -70,8 +70,9 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
     }
 
     @Override
-    public void clearToNewArray() {
-        clearToNewArrayImpl(keysAndValues);
+    public void resetToNullRetainingCapacity() {
+        resetToNullRetainingCapacityImpl(keysAndValues);
+        keysAndValues = null;
     }
 
     @Override

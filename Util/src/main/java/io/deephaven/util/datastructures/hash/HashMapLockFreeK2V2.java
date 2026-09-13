@@ -70,8 +70,9 @@ public final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLo
     }
 
     @Override
-    public void clearToNewArray() {
-        clearToNewArrayImpl(keysAndValues);
+    public void resetToNullRetainingCapacity() {
+        resetToNullRetainingCapacityImpl(keysAndValues);
+        keysAndValues = null;
     }
 
     @Override

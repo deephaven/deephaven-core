@@ -68,7 +68,9 @@ public abstract class HashMapBase implements NullableLongLongMap {
         Assert.eq(hs.size(), "hs.size()", 4, "4");
     }
 
-    private final int desiredInitialCapacity;
+    // The entry capacity for the next backing array allocation. Starts at the construction-time request, and is
+    // raised by resetToNullRetainingCapacityImpl() to the capacity the map had reached.
+    private int desiredInitialCapacity;
     private final double loadFactor;
     private final long noEntryValue;
     // There are three kinds of slots: empty, holding a value, and deleted (formerly holding a value).
@@ -200,20 +202,14 @@ public abstract class HashMapBase implements NullableLongLongMap {
         rehashThreshold = 0;
     }
 
-    final void clearToNewArrayImpl(long[] keysAndValues) {
-        size = 0;
-        nonEmptySlots = 0;
-        if (keysAndValues == null) {
-            // Never allocated (or reset to null): rehashThreshold is already 0 and the next put will allocate.
-            return;
+    final void resetToNullRetainingCapacityImpl(long[] keysAndValues) {
+        if (keysAndValues != null) {
+            // Remember the capacity, in entries, so that the next allocation lands back at this size directly rather
+            // than regrowing from the construction-time capacity through successive rehashes. We remember the size
+            // rather than holding the array itself so that the storage is reclaimable while the map sits empty.
+            desiredInitialCapacity = Math.max(desiredInitialCapacity, keysAndValues.length / 2);
         }
-        // rehashThreshold is unchanged because the capacity isn't changing. We replace the array rather than zeroing it
-        // in place so that a concurrent reader still probing the old array never sees a partially-cleared one.
-        final int length = keysAndValues.length;
-        // Drop the old array before allocating the new one so the GC is free to collect it first.
-        keysAndValues = null; // optimizer probably already knows this
-        setKeysAndValues(null);
-        setKeysAndValues(new long[length]);
+        resetToNullImpl();
     }
 
     /**

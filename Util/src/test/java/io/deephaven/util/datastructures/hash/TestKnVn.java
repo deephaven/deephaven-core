@@ -82,12 +82,15 @@ public class TestKnVn {
                 "Expected hashtable to reject a 'put' as it got close to being full, but it accepted %d elements", ii),
                 putFailed);
 
-        // clearToNewArray must preserve the maximum-capacity sizing and its nearly-full rehash threshold, so a refill
-        // of the entries this generation absorbed would not trigger another maximum-sized rehash.
+        // resetToNullRetainingCapacity must remember the maximum-capacity sizing, so that the next allocation comes
+        // back at that capacity with its nearly-full rehash threshold and a refill of the entries this generation
+        // absorbed would not trigger another maximum-sized rehash.
         final long entriesAbsorbed = ii;
         final HashMapBase base = (HashMapBase) ht;
         final int capacityAtMax = ht.capacity();
-        ht.clearToNewArray();
+        ht.resetToNullRetainingCapacity();
+        TestCase.assertEquals(0, ht.capacity());
+        ht.put(0, 0);
         TestCase.assertEquals(capacityAtMax, ht.capacity());
         TestCase.assertTrue(
                 String.format("rehashThreshold (%d) > entriesAbsorbed (%d)", base.rehashThreshold, entriesAbsorbed),
