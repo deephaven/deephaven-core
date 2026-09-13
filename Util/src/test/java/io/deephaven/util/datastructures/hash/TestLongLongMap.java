@@ -357,26 +357,41 @@ public class TestLongLongMap {
     }
 
     @Test
-    public void resetPreservesObservedCapacity() {
-        // The reference fastutil implementation doesn't have resetToNull
+    public void clearToNewArrayPreservesCapacity() {
+        // The reference fastutil implementation doesn't have clearToNewArray
         if (factory == referenceFactory) {
             return;
         }
         final int size = 1000;
         final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        final long noEntryValue = map.defaultReturnValue();
+
+        // Clearing a never-allocated map is a no-op.
+        map.clearToNewArray();
+        TestCase.assertEquals(0, map.capacity());
+        TestCase.assertEquals(noEntryValue, map.get(0));
+
         for (int ii = 0; ii < size; ++ii) {
             map.put(ii * 7, ii);
         }
-        map.resetToNull();
+        final int filledCapacity = map.capacity();
+        map.clearToNewArray();
 
-        // The first put after a reset allocates a backing array sized from the previous generation's observed
-        // slot count, so refilling to the same size must not rehash.
-        map.put(0, 0);
-        final int refillCapacity = map.capacity();
-        for (int ii = 1; ii < size; ++ii) {
-            map.put(ii * 7, ii);
+        TestCase.assertEquals(0, map.size());
+        TestCase.assertTrue(map.isEmpty());
+        TestCase.assertEquals(filledCapacity, map.capacity());
+        for (int ii = 0; ii < size; ++ii) {
+            TestCase.assertEquals(noEntryValue, map.get(ii * 7));
         }
-        TestCase.assertEquals(refillCapacity, map.capacity());
+
+        // Refilling to the same size must not rehash, because the capacity was retained.
+        for (int ii = 0; ii < size; ++ii) {
+            map.put(ii * 7, ii + 1);
+        }
+        TestCase.assertEquals(filledCapacity, map.capacity());
+        for (int ii = 0; ii < size; ++ii) {
+            TestCase.assertEquals(ii + 1, map.get(ii * 7));
+        }
     }
 
     @Test
@@ -495,6 +510,11 @@ public class TestLongLongMap {
 
         @Override
         public void resetToNull() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void clearToNewArray() {
             throw new UnsupportedOperationException();
         }
 

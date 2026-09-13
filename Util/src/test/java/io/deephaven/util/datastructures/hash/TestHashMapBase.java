@@ -6,64 +6,87 @@ package io.deephaven.util.datastructures.hash;
 import junit.framework.TestCase;
 import org.junit.Test;
 
+import java.util.Random;
+
 public class TestHashMapBase {
+    private static final double[] LOAD_FACTORS = {0.5, 0.75, 0.9};
+
     /**
-     * The rehash check fires when the slot count reaches the threshold {@code (int) (entryCapacity * loadFactor)},
-     * computed in float. Verify that {@link HashMapBase#capacityForExpectedEntries(long, float)} always produces a
-     * capacity whose threshold strictly clears the expected count, including above float's exact-integer range (2^24)
-     * where a fixed margin can be swallowed by rounding.
+     * A put rehashes when the slot count reaches the threshold {@code (int) (entryCapacity * loadFactor)}. Verify that
+     * {@link HashMapBase#capacityForExpectedEntries(int, double)} always produces a capacity whose threshold strictly
+     * clears the expected count, and that it is the smallest such capacity (so we are not over-allocating).
      */
     @Test
-    public void capacityForExpectedEntriesClearsFloatThreshold() {
-        final float[] loadFactors = {0.5f, 0.75f, 0.9f};
-        final long[] expectedCounts = {
-                0, 1, 2, 10, 1000,
+    public void capacityForExpectedEntriesClearsThreshold() {
+        final int[] expectedCounts = {
+                0, 1, 2, 3, 10, 1000,
                 (1 << 24) - 1, 1 << 24, (1 << 24) + 1,
-                150_014_371, // requests a capacity whose 0.75f threshold rounds back below it with a fixed +1 margin
-                200_000_000, 500_000_000
+                150_014_371, 200_000_000, 500_000_000, 1_000_000_000
         };
-        for (final float loadFactor : loadFactors) {
-            for (final long expected : expectedCounts) {
-                final int capacity = HashMapBase.capacityForExpectedEntries(expected, loadFactor);
-                final int threshold = (int) (capacity * loadFactor);
-                final String message =
-                        String.format("loadFactor=%f, expected=%d, capacity=%d, threshold=%d",
-                                loadFactor, expected, capacity, threshold);
-                TestCase.assertTrue(message, threshold > expected);
-                // The map rounds the requested capacity up through bucket-count and prime selection; the float
-                // threshold must be non-decreasing in the capacity for that rounding to preserve the guarantee.
-                TestCase.assertTrue(message, (int) ((capacity + 1) * loadFactor) >= threshold);
+        for (final double loadFactor : LOAD_FACTORS) {
+            for (final int expected : expectedCounts) {
+                checkCapacity(expected, loadFactor);
             }
         }
-        // The capacity padding is derived from an error analysis rather than verified by construction, so also
-        // sweep randomized counts across every float binade in the supported range.
-        final java.util.Random random = new java.util.Random(12345);
-        for (final float loadFactor : loadFactors) {
+        final Random random = new Random(12345);
+        for (final double loadFactor : LOAD_FACTORS) {
             for (int ii = 0; ii < 100_000; ++ii) {
-                final long expected = (long) (random.nextDouble() * 1_100_000_000L);
-                final int capacity = HashMapBase.capacityForExpectedEntries(expected, loadFactor);
-                if (capacity == Integer.MAX_VALUE) {
-                    // No int capacity can promise this count at this load factor; the request saturates and the
-                    // map instead clamps to its maximum capacity, running at the nearly-full threshold.
-                    continue;
-                }
-                final int threshold = (int) (capacity * loadFactor);
-                if (threshold <= expected) {
-                    TestCase.fail(String.format("loadFactor=%f, expected=%d, capacity=%d, threshold=%d",
-                            loadFactor, expected, capacity, threshold));
-                }
+                checkCapacity(random.nextInt(Integer.MAX_VALUE), loadFactor);
             }
         }
     }
 
+    private static void checkCapacity(final int expected, final double loadFactor) {
+        final int capacity = HashMapBase.capacityForExpectedEntries(expected, loadFactor);
+        final String message = String.format("loadFactor=%f, expected=%d, capacity=%d", loadFactor, expected, capacity);
+        if (capacity == Integer.MAX_VALUE) {
+            // No int capacity can promise this count at this load factor; the request saturates and the map instead
+            // clamps to its maximum capacity, running at the nearly-full threshold.
+            TestCase.assertTrue(message, (int) ((Integer.MAX_VALUE - 1) * loadFactor) <= expected);
+            return;
+        }
+        final int threshold = (int) (capacity * loadFactor);
+        TestCase.assertTrue(message + ", threshold=" + threshold, threshold > expected);
+        // Minimality: one entry less would not have sufficed.
+        TestCase.assertTrue(message, (int) ((capacity - 1) * loadFactor) <= expected);
+    }
+
     /**
-     * Requests whose initial candidate meets or exceeds Integer.MAX_VALUE must saturate before the ULP padding is
-     * added, which would otherwise wrap a candidate near Long.MAX_VALUE.
+     * The presized map must actually absorb the expected number of entries without rehashing.
+     */
+    @Test
+    public void presizedMapDoesNotRehash() {
+        final int[] expectedCounts = {1, 2, 10, 1000, 12345};
+        for (final double loadFactor : LOAD_FACTORS) {
+            for (final int expected : expectedCounts) {
+                checkPresizedMapDoesNotRehash("K1V1", HashMapLockFreeK1V1.ofExpectedSize(expected, loadFactor, -1),
+                        expected, loadFactor);
+                checkPresizedMapDoesNotRehash("K2V2", HashMapLockFreeK2V2.ofExpectedSize(expected, loadFactor, -1),
+                        expected, loadFactor);
+                checkPresizedMapDoesNotRehash("K4V4", HashMapLockFreeK4V4.ofExpectedSize(expected, loadFactor, -1),
+                        expected, loadFactor);
+            }
+        }
+    }
+
+    private static void checkPresizedMapDoesNotRehash(final String name, final NullableLongLongMap map,
+            final int expected, final double loadFactor) {
+        map.put(1, 1);
+        final int initialCapacity = map.capacity();
+        for (int ii = 2; ii <= expected; ++ii) {
+            map.put(ii, ii);
+        }
+        TestCase.assertEquals(String.format("%s: loadFactor=%f, expected=%d", name, loadFactor, expected),
+                initialCapacity, map.capacity());
+    }
+
+    /**
+     * Requests that no int capacity can satisfy must saturate rather than overflow or throw.
      */
     @Test
     public void hugeRequestsSaturate() {
-        for (final float loadFactor : new float[] {0.5f, 0.75f, 0.9f}) {
-            for (final long expected : new long[] {Long.MAX_VALUE, Long.MAX_VALUE - 1, 1L << 40, Integer.MAX_VALUE}) {
+        for (final double loadFactor : LOAD_FACTORS) {
+            for (final int expected : new int[] {Integer.MAX_VALUE, Integer.MAX_VALUE - 1, 2_000_000_000}) {
                 TestCase.assertEquals(Integer.MAX_VALUE,
                         HashMapBase.capacityForExpectedEntries(expected, loadFactor));
             }
