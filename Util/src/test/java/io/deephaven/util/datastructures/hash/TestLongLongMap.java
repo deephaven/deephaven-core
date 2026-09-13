@@ -357,6 +357,47 @@ public class TestLongLongMap {
     }
 
     @Test
+    public void resetToNullRetainingCapacityRemembersCapacity() {
+        // The reference fastutil implementation doesn't have resetToNullRetainingCapacity
+        if (factory == referenceFactory) {
+            return;
+        }
+        final int size = 1000;
+        final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        final long noEntryValue = map.defaultReturnValue();
+
+        // Resetting a never-allocated map is a no-op.
+        map.resetToNullRetainingCapacity();
+        TestCase.assertEquals(0, map.capacity());
+        TestCase.assertEquals(noEntryValue, map.get(0));
+
+        for (int ii = 0; ii < size; ++ii) {
+            map.put(ii * 7, ii);
+        }
+        final int filledCapacity = map.capacity();
+        map.resetToNullRetainingCapacity();
+
+        // The array is released, so the map holds no storage while it sits empty.
+        TestCase.assertEquals(0, map.size());
+        TestCase.assertTrue(map.isEmpty());
+        TestCase.assertEquals(0, map.capacity());
+        for (int ii = 0; ii < size; ++ii) {
+            TestCase.assertEquals(noEntryValue, map.get(ii * 7));
+        }
+
+        // The remembered capacity is restored by the next allocation, so refilling to the same size never rehashes.
+        map.put(0, 1);
+        TestCase.assertEquals(filledCapacity, map.capacity());
+        for (int ii = 1; ii < size; ++ii) {
+            map.put(ii * 7, ii + 1);
+        }
+        TestCase.assertEquals(filledCapacity, map.capacity());
+        for (int ii = 1; ii < size; ++ii) {
+            TestCase.assertEquals(ii + 1, map.get(ii * 7));
+        }
+    }
+
+    @Test
     public void iteratorFromEmptyAndNullMap() {
         NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
         map.put(0, 1);
@@ -472,6 +513,11 @@ public class TestLongLongMap {
 
         @Override
         public void resetToNull() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void resetToNullRetainingCapacity() {
             throw new UnsupportedOperationException();
         }
 

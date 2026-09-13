@@ -15,7 +15,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public abstract class HashMapBase implements NullableLongLongMap {
     static final int DEFAULT_INITIAL_CAPACITY = 10;
     static final long DEFAULT_NO_ENTRY_VALUE = -1;
-    static final float DEFAULT_LOAD_FACTOR = 0.5f;
+    static final double DEFAULT_LOAD_FACTOR = 0.5;
 
     // There are three "special keys" removed from the range of valid keys that are used to represent various slot
     // states:
@@ -38,7 +38,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
      * This is the load factor we use as the hashtable nears its maximum size, in order to try to keep functioning
      * (albeit with reduced performance) rather than failing.
      */
-    private static final float NEARLY_FULL_LOAD_FACTOR = 0.9f;
+    private static final double NEARLY_FULL_LOAD_FACTOR = 0.9;
 
     /**
      * This is the fraction of the maximum possible size at which we just give up and throw an exception. It is kept
@@ -47,9 +47,9 @@ public abstract class HashMapBase implements NullableLongLongMap {
      * gets very slow as it approaches the max). For this reason, until we figure it out, we maintain individual size
      * factors for each KnVn.
      */
-    private static final float SIZE_LIMIT_FACTOR1 = 0.85f;
-    private static final float SIZE_LIMIT_FACTOR2 = 0.75f;
-    private static final float SIZE_LIMIT_FACTOR4 = 0.85f;
+    private static final double SIZE_LIMIT_FACTOR1 = 0.85;
+    private static final double SIZE_LIMIT_FACTOR2 = 0.75;
+    private static final double SIZE_LIMIT_FACTOR4 = 0.85;
     /**
      * This is the size at which we just give up and throw an exception rather than do a new put. It is number of
      * entries (aka number of longs / 2) * SIZE_LIMIT_FACTORn.
@@ -68,8 +68,10 @@ public abstract class HashMapBase implements NullableLongLongMap {
         Assert.eq(hs.size(), "hs.size()", 4, "4");
     }
 
-    private final int desiredInitialCapacity;
-    private final float loadFactor;
+    // The entry capacity for the next backing array allocation. Starts at the construction-time request, and is
+    // raised by resetToNullRetainingCapacityImpl() to the capacity the map had reached.
+    private int desiredInitialCapacity;
+    private final double loadFactor;
     private final long noEntryValue;
     // There are three kinds of slots: empty, holding a value, and deleted (formerly holding a value).
     // 'size' is the number of slots holding a value.
@@ -87,7 +89,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
     // - How many longs in the array (at 2 longs per entry (key and value), this is numEntries * 2)
     // The actual array of longs (with length (numBuckets * 4 * 2)) is stored in our child.
 
-    HashMapBase(int desiredInitialCapacity, float loadFactor, long noEntryValue) {
+    HashMapBase(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         this.desiredInitialCapacity = desiredInitialCapacity;
         this.loadFactor = loadFactor;
         this.noEntryValue = noEntryValue;
@@ -102,19 +104,17 @@ public abstract class HashMapBase implements NullableLongLongMap {
         return key == SPECIAL_KEY_FOR_EMPTY_SLOT ? REDIRECTED_KEY_FOR_EMPTY_SLOT : key;
     }
 
+    /**
+     * Round an entry capacity up to a whole number of buckets, in long arithmetic so that a saturated request (near
+     * {@link Integer#MAX_VALUE}) cannot wrap negative.
+     */
+    static int desiredBucketCount(final int desiredEntryCapacity, final int entriesPerBucket) {
+        return (int) (((long) desiredEntryCapacity + entriesPerBucket - 1) / entriesPerBucket);
+    }
+
     long[] allocateKeysAndValuesArray(int entriesPerBucket) {
-        // DesiredInitialCapacity is in units of 'entries'.
-        // Ceiling(desiredInitialCapacity / entriesPerBucket)
-        final int desiredNumBuckets = (desiredInitialCapacity + entriesPerBucket - 1) / entriesPerBucket;
-        // Because we want the number of buckets to be prime
-        final int proposedBucketCapacity = PrimeFinder.nextPrime(desiredNumBuckets);
-        final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
-        final int newBucketCapacity = Math.min(proposedBucketCapacity, maxBucketCapacity);
-        Assert.leq((long) newBucketCapacity * entriesPerBucket * 2, "(long)newBucketCapacity * entriesPerBucket * 2",
-                Integer.MAX_VALUE, "Integer.MAX_VALUE");
-        final int entryCapacity = newBucketCapacity * entriesPerBucket;
-        final int longCapacity = entryCapacity * 2;
-        rehashThreshold = (int) (entryCapacity * loadFactor);
+        final int desiredNumBuckets = desiredBucketCount(desiredInitialCapacity, entriesPerBucket);
+        final int longCapacity = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         final long[] keysAndValues = new long[longCapacity];
         setKeysAndValues(keysAndValues);
         return keysAndValues;
@@ -126,18 +126,8 @@ public abstract class HashMapBase implements NullableLongLongMap {
         final int newNumLongs;
         if (wantResize) {
             final int oldBucketCapacity = oldNumLongs / (entriesPerBucket * 2);
-            final int proposedBucketCapacity = PrimeFinder.nextPrime(oldBucketCapacity * 2);
-            final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
-            final int newBucketCapacity = Math.min(proposedBucketCapacity, maxBucketCapacity);
-            Assert.leq((long) newBucketCapacity * entriesPerBucket * 2,
-                    "(long)newBucketCapacity * entriesPerBucket * 2",
-                    Integer.MAX_VALUE, "Integer.MAX_VALUE");
-            final int newEntryCapacity = newBucketCapacity * entriesPerBucket;
-            newNumLongs = newEntryCapacity * 2;
-
-            // If we reach the max bucket capacity, then force the rehash threshold to a high number like 90%.
-            final float loadFactorToUse = newBucketCapacity < maxBucketCapacity ? loadFactor : NEARLY_FULL_LOAD_FACTOR;
-            rehashThreshold = (int) (newEntryCapacity * loadFactorToUse);
+            final int desiredNumBuckets = oldBucketCapacity * 2;
+            newNumLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         } else {
             newNumLongs = oldNumLongs;
         }
@@ -157,6 +147,22 @@ public abstract class HashMapBase implements NullableLongLongMap {
         setKeysAndValues(newKvs);
     }
 
+    private int setRehashThresholdAndCalcLongCapacity(int desiredNumBuckets, int entriesPerBucket) {
+        // Because we want the number of buckets to be prime
+        final int proposedBucketCapacity = PrimeFinder.nextPrime(desiredNumBuckets);
+        final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
+        final int newBucketCapacity = Math.min(proposedBucketCapacity, maxBucketCapacity);
+        Assert.leq((long) newBucketCapacity * entriesPerBucket * 2, "(long)newBucketCapacity * entriesPerBucket * 2",
+                Integer.MAX_VALUE, "Integer.MAX_VALUE");
+        final int entryCapacity = newBucketCapacity * entriesPerBucket;
+        final int longCapacity = entryCapacity * 2;
+        // Once clamped to the maximum bucket capacity there is no larger size to grow into, so run at the
+        // nearly-full load factor rather than rehashing (at the same capacity) partway through a large fill.
+        final double loadFactorToUse = newBucketCapacity < maxBucketCapacity ? loadFactor : NEARLY_FULL_LOAD_FACTOR;
+        rehashThreshold = (int) (entryCapacity * loadFactorToUse);
+        return longCapacity;
+    }
+
     void checkSize(int sizeLimit) {
         // If the size reaches the max allowed value, then throw an exception.
         if (size >= sizeLimit) {
@@ -165,9 +171,9 @@ public abstract class HashMapBase implements NullableLongLongMap {
         }
     }
 
-    protected abstract long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly);
+    abstract long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly);
 
-    protected abstract void setKeysAndValues(long[] keysAndValues);
+    abstract void setKeysAndValues(long[] keysAndValues);
 
     @Override
     public final int size() {
@@ -194,6 +200,43 @@ public abstract class HashMapBase implements NullableLongLongMap {
         size = 0;
         nonEmptySlots = 0;
         rehashThreshold = 0;
+    }
+
+    final void resetToNullRetainingCapacityImpl(long[] keysAndValues) {
+        if (keysAndValues != null) {
+            // Remember the capacity, in entries, so that the next allocation lands back at this size directly rather
+            // than regrowing from the construction-time capacity through successive rehashes. We remember the size
+            // rather than holding the array itself so that the storage is reclaimable while the map sits empty.
+            desiredInitialCapacity = Math.max(desiredInitialCapacity, keysAndValues.length / 2);
+        }
+        resetToNullImpl();
+    }
+
+    /**
+     * Compute an entry capacity to request at construction so that the map can absorb {@code expectedEntries} entries
+     * (including deleted slots) without rehashing.
+     *
+     * <p>
+     * A put rehashes when nonEmptySlots reaches rehashThreshold, which is {@code (int) (entryCapacity * loadFactor)}.
+     * So we need the smallest capacity whose threshold is strictly greater than {@code expectedEntries}. We compute it
+     * directly, then check it against the same expression the map uses and bump by one if rounding left us short.
+     * Bucket-count rounding and prime selection in {@link #allocateKeysAndValuesArray} only ever increase the capacity,
+     * and the threshold is non-decreasing in the capacity, so the allocated map's threshold clears the expected count
+     * too.
+     *
+     * @param expectedEntries the number of slots the map must absorb without rehashing
+     * @param loadFactor the map's load factor
+     * @return an entry capacity to request, saturating at {@link Integer#MAX_VALUE} (at which point the map clamps to
+     *         its maximum capacity and runs at the nearly-full load factor)
+     */
+    static int capacityForExpectedEntries(final int expectedEntries, final double loadFactor) {
+        final long neededThreshold = (long) expectedEntries + 1;
+        long candidate = (long) Math.ceil(neededThreshold / loadFactor);
+        if (candidate < Integer.MAX_VALUE && (long) (candidate * loadFactor) < neededThreshold) {
+            // Because the arithmetic is in double and candidate fits in an int, one bump is always enough.
+            ++candidate;
+        }
+        return (int) Math.min(candidate, Integer.MAX_VALUE);
     }
 
     @Override

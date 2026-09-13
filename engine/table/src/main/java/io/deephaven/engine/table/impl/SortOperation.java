@@ -309,7 +309,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             dataIndex, rowSetToSort, usePrev, ALLOW_SYMBOL_TABLE)
                     .getArrayMapping();
 
-            final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortedKeys.length, .75f, -3);
+            // Size the map so the initial population completes without any rehashing.
+            final HashMapK4V4 reverseLookup = HashMapLockFreeK4V4.ofExpectedSize(sortedKeys.length, 0.75, -3);
+
             sortMapping = SortHelpers.createSortRowRedirection();
 
             // Center the keys around middleKeyToUse
@@ -431,7 +433,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortRedirection == null) {
             return null;
         }
-        final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortResult.intSize(), .75f, RowSequence.NULL_ROW_KEY);
+        // Size the map so the population below completes without any rehashing.
+        final HashMapK4V4 reverseLookup =
+                HashMapLockFreeK4V4.ofExpectedSize(sortResult.intSize(), 0.75, RowSequence.NULL_ROW_KEY);
         try (final LongColumnIterator innerRowKeys =
                 new ChunkedLongColumnIterator(sortRedirection, sortResult.getRowSet());
                 final RowSet.Iterator outerRowKeys = sortResult.getRowSet().iterator()) {
