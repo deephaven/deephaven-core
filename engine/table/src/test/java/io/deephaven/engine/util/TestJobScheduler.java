@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public final class TestJobScheduler {
 
@@ -412,6 +413,128 @@ public final class TestJobScheduler {
             } else {
                 Assert.eqFalse(completed[i], "completed[i]");
             }
+        }
+    }
+
+    @Test
+    public void testParallelThrownError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(null, null, null);
+        final boolean[] completed = new boolean[50];
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            scheduler.iterateParallel(
+                    ExecutionContext.getContext(),
+                    null,
+                    observer,
+                    0,
+                    50,
+                    (context, idx, nec) -> {
+                        assertNotNull(context);
+
+                        // throw before "doing work" to make verification easy
+                        if (idx == 10) {
+                            throw new TestError("Test error");
+                        }
+
+                        completed[idx] = true;
+                    },
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
+        });
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertDidNotCallComplete();
+        assertTestErrorDelivered(observer);
+        observer.assertNoOpenContexts();
+        Assert.eqFalse(completed[10], "completed[10]");
+    }
+
+    @Test
+    public void testSerialThrownError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(null, null, null);
+        final boolean[] completed = new boolean[100];
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            scheduler.iterateSerial(
+                    ExecutionContext.getContext(),
+                    null,
+                    observer,
+                    0,
+                    50,
+                    (context, idx, nec, resume) -> {
+                        assertNotNull(context);
+
+                        completed[idx] = true;
+
+                        // throw after this is set to make verification easy
+                        if (idx == 10) {
+                            throw new TestError("Test error");
+                        }
+                        resume.run();
+                    },
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
+        });
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertDidNotCallComplete();
+        assertTestErrorDelivered(observer);
+        observer.assertNoOpenContexts();
+        for (int i = 0; i < 100; ++i) {
+            if (i <= 10) {
+                Assert.eqTrue(completed[i], "completed[i]");
+            } else {
+                Assert.eqFalse(completed[i], "completed[i]");
+            }
+        }
+    }
+
+    @Test
+    public void testParallelOnCompleteThrownError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(() -> {
+            throw new TestError("Test error");
+        }, null, null);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            scheduler.iterateParallel(
+                    ExecutionContext.getContext(),
+                    null,
+                    observer,
+                    0,
+                    50,
+                    (context, idx, nec) -> assertNotNull(context),
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
+        });
+        observer.awaitFinished(Duration.ofSeconds(10));
+        assertTestErrorDelivered(observer);
+        observer.assertNoOpenContexts();
+    }
+
+    /**
+     * An Error cannot be handed to a {@code Consumer<Exception>}, so the scheduler wraps it; what matters is that the
+     * failure arrives at all, with the original Error intact.
+     */
+    private static void assertTestErrorDelivered(final Observer observer) {
+        final Exception error = observer.error();
+        Assert.neqNull(error, "observer.error()");
+        assertTrue("TestError cause, but was " + error.getCause(), error.getCause() instanceof TestError);
+    }
+
+    private static final class TestError extends Error {
+
+        private TestError(final String message) {
+            super(message);
         }
     }
 

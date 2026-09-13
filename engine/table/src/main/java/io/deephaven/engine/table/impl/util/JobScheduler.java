@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
@@ -39,6 +40,21 @@ public interface JobScheduler {
 
     JobThreadContext DEFAULT_CONTEXT = new JobThreadContext() {};
     Supplier<JobThreadContext> DEFAULT_CONTEXT_FACTORY = () -> DEFAULT_CONTEXT;
+
+    /**
+     * Convert a Throwable that escaped a scheduled job into something the {@code Consumer<Exception>} error handlers
+     * used throughout the scheduler can accept. Exceptions pass through unchanged; an {@link Error} — an
+     * {@link OutOfMemoryError}, in practice — is wrapped, so that the thread waiting on the job's completion fails with
+     * a diagnostic instead of waiting forever for a completion that cannot happen.
+     *
+     * @param throwable the Throwable that escaped the job
+     * @return {@code throwable} itself if it is an Exception, otherwise a wrapper holding it as its cause
+     */
+    static Exception asDeliverableException(@NotNull final Throwable throwable) {
+        return throwable instanceof Exception
+                ? (Exception) throwable
+                : new UncheckedDeephavenException("Error thrown by scheduled job", throwable);
+    }
 
     /**
      * Cause runnable to be executed.
@@ -205,6 +221,12 @@ public interface JobScheduler {
             } catch (Exception e) {
                 invokeOnError(e);
                 return;
+            } catch (Error e) {
+                // Delivered rather than rethrown, for the same reasons as in TaskInvoker.execute(): this is the
+                // operation's only notification that the iteration failed, and rethrowing would take down the
+                // scheduler thread we are running on.
+                invokeOnError(asDeliverableException(e));
+                return;
             }
             try {
                 cleanup.run();
@@ -280,20 +302,32 @@ public interface JobScheduler {
                                 this::reportError,
                                 this::reportTaskCompleteAndResumeIteration);
                     } catch (Exception e) {
-                        if (closed) {
-                            // The task threw an error while trying to deliver another error or complete the iteration.
-                            // We cannot safely deliver this error, but we don't want to allow incorrect operation, so
-                            // we report it to the global error reporter.
-                            onUnexpectedJobError(e);
-                        } else {
-                            // Something went wrong, but no completion or error was delivered yet. Report the error.
-                            reportError(e);
-                        }
+                        deliverTaskFailure(e);
+                        return;
+                    } catch (Error e) {
+                        // An Error -- an OutOfMemoryError, in practice -- is delivered rather than rethrown. Letting
+                        // it escape would skip close(), so this TaskInvoker's reference to the IterationManager would
+                        // stay outstanding, the reference count would never reach zero, and neither onComplete nor
+                        // onError would ever run; rethrowing would additionally take down the scheduler thread running
+                        // this job. Delivering it fails the waiting operation with the Error as the cause instead.
+                        deliverTaskFailure(asDeliverableException(e));
                         return;
                     } finally {
                         running = false;
                     }
                 } while (runningTaskIndex != acquiredTaskIndex && !closed);
+            }
+
+            private void deliverTaskFailure(@NotNull final Exception e) {
+                if (closed) {
+                    // The task threw an error while trying to deliver another error or complete the iteration.
+                    // We cannot safely deliver this error, but we don't want to allow incorrect operation, so
+                    // we report it to the global error reporter.
+                    onUnexpectedJobError(e);
+                } else {
+                    // Something went wrong, but no completion or error was delivered yet. Report the error.
+                    reportError(e);
+                }
             }
 
             private synchronized void reportTaskCompleteAndResumeIteration() {
