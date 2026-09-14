@@ -653,7 +653,9 @@ public class QueryTableWhereInTest {
         final int distinctSourceKeys = 100;
         final Table source = TableTools.emptyTable(10_000).update("Z = (int) (ii % " + distinctSourceKeys + ")");
         final Table sourceIndexTable = DataIndexer.getOrCreateDataIndex(source, "Z").table();
-        final Table setTable = TableTools.emptyTable(setSize).update("Z = (int) ii");
+        // Only the even keys, so that half of the source's keys are in the set and half are not. A set that covered
+        // every source key would pass even if the filter ignored the keys entirely.
+        final Table setTable = TableTools.emptyTable(setSize).update("Z = (int) (ii * 2)");
 
         final boolean oldUseDataIndex = QueryTable.USE_DATA_INDEX_FOR_WHERE;
         final double oldThreshold = QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD;
@@ -664,11 +666,17 @@ public class QueryTableWhereInTest {
                     source.size() > sourceIndexTable.size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
             assertTrue("the set must be larger than one kernel chunk", setTable.size() > (1 << 16));
 
+            final Table expectedIncluded = source.where("Z % 2 == 0");
+            final Table expectedExcluded = source.where("Z % 2 != 0");
+            assertEquals(source.size(), expectedIncluded.size() + expectedExcluded.size());
+            assertTrue("both sides must be non-empty for this to test anything",
+                    expectedIncluded.size() > 0 && expectedExcluded.size() > 0);
+
             final Table included = source.whereIn(setTable, "Z");
-            assertTableEquals(source, included);
+            assertTableEquals(expectedIncluded, included);
 
             final Table excluded = source.whereNotIn(setTable, "Z");
-            assertEquals(0, excluded.size());
+            assertTableEquals(expectedExcluded, excluded);
         } finally {
             QueryTable.USE_DATA_INDEX_FOR_WHERE = oldUseDataIndex;
             QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD = oldThreshold;
