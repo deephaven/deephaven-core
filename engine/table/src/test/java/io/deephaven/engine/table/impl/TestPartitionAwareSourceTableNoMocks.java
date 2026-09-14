@@ -36,7 +36,6 @@ import io.deephaven.util.SafeCloseable;
 import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1008,20 +1007,30 @@ public class TestPartitionAwareSourceTableNoMocks {
 
     /**
      * The same location discovery, with a <em>refreshing</em> set table behind the partitioning column filter, hangs
-     * the update graph thread.
+     * the thread that drives it.
      * <p>
      * {@code filterLocationKeys} applies the partitioning column filters by running {@code where} against an in-memory
-     * table of the newly discovered keys, and every discovery after the first runs on the update graph thread. That
-     * {@code where} now builds an {@link OperationSnapshotControlEx}, because a static source with refreshing filter
-     * dependencies needs snapshot control, and {@link ConstructSnapshot} takes its locked path on the update graph
-     * thread: it calls {@code usePreviousValues}, which finds the static source satisfied and the filter not, and waits
-     * for the filter to be satisfied. The thread it is waiting on is itself, so the wait never ends.
+     * table of the newly discovered keys, and it runs once per discovery pass, on the thread refreshing the location
+     * provider. That {@code where} builds an {@link OperationSnapshotControlEx}, because a static source with
+     * refreshing filter dependencies needs snapshot control, and {@link ConstructSnapshot}'s concurrent attempt calls
+     * {@code usePreviousValues}, which finds the static source satisfied and the filter not. Partially satisfied means
+     * wait, so it parks in {@code WaitNotification.waitForSatisfaction} for the set listener's notification — work only
+     * the waiting thread could have run, so the wait never ends.
      * <p>
-     * Enable this once {@code where} no longer waits for filter dependencies on the update graph thread.
+     * This does not reproduce on {@code main}: there the same {@code where} gets no snapshot control at all, because
+     * the source is static, and the run completes.
+     * <p>
+     * The timeout bounds the failure: without it this test hangs rather than fails. It also runs the body on another
+     * thread, which is why the execution context is opened here rather than relying on {@link #setUp}.
      */
-    @Ignore("DH-20753: deadlocks the update graph thread; see the comment above")
-    @Test
+    @Test(timeout = 60_000)
     public void testRefreshingPartitioningFilterAcrossLocationDiscovery() {
+        try (final SafeCloseable ignoredContext = updateGraph.getContext().open()) {
+            refreshingPartitioningFilterAcrossLocationDiscovery();
+        }
+    }
+
+    private void refreshingPartitioningFilterAcrossLocationDiscovery() {
         final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
         final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
                 locationProvider(tds, "A", "B");
