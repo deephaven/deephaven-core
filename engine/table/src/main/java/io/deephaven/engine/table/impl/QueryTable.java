@@ -1848,7 +1848,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             propagateDataIndexes(processedColumns, resultTable);
                         }
                     }
-                    propagateFlatness(resultTable);
+                    propagateFlatness(resultTable, false);
                     copySortableColumns(resultTable, processedColumns);
                     if (publishTheseSources) {
                         maybeCopyColumnDescriptions(resultTable, processedColumns);
@@ -2135,7 +2135,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             addUpdateListener(new ListenerImpl(
                                     "lazyUpdate(" + Arrays.deepToString(processedColumns) + ')', this, result));
                         }
-                        propagateFlatness(result);
+                        propagateFlatness(result, false);
                         copyAttributes(result, CopyAttributeOperation.UpdateView);
                         copySortableColumns(result, processedColumns);
                         maybeCopyColumnDescriptions(result, processedColumns);
@@ -3035,15 +3035,6 @@ public class QueryTable extends BaseTable<QueryTable> {
                         });
                     });
         }
-    }
-
-    /**
-     * Equivalent to {@code propagateFlatness(result, false)}, for callers that are working with current values.
-     *
-     * @param result the table derived from this table
-     */
-    public void propagateFlatness(QueryTable result) {
-        propagateFlatness(result, false);
     }
 
     /**
