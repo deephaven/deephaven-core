@@ -122,11 +122,26 @@
         "esbenp.prettier-vscode"
       ],
       "settings": {
+        // No permission mode is pinned here. With claudeCode.initialPermissionMode unset the
+        // extension passes no mode to the CLI, which resolves it from ~/.claude/settings.json
+        // (permissions.defaultMode) — the same mode you get in a terminal. One source of
+        // truth, and changeable without a container rebuild.
+        //
+        // allowDangerouslySkipPermissions does not select bypass; it only keeps the bypass
+        // toggle reachable from the UI. The CLI can reach bypass too, so this is parity with
+        // the CLI rather than a widening.
         "claudeCode.allowDangerouslySkipPermissions": true,
-        "claudeCode.initialPermissionMode": "bypassPermissions",
+
+        // Copilot Chat (GitHub.copilot-chat) ships built-in with the VS Code server and
+        // cannot be removed from here, so the chat.* settings below are live whether or not
+        // it is listed in "extensions".
         "chat.agent.maxRequests": 50,
         "chat.tools.terminal.autoApprove": { "/.*/": true },
-        "chat.tools.terminal.ignoreDefaultAutoApproveRules": true,
+        // VS Code's built-in rules take precedence over the autoApprove /.*/ rule. They
+        // downgrade a command to a confirmation prompt rather than blocking it, so nothing
+        // becomes unreachable — approve it in chat, or loosen the rules further in
+        // "Preferences: Open Remote Settings (JSON)".
+        "chat.tools.terminal.ignoreDefaultAutoApproveRules": false,
         "editor.formatOnSave": true,
         // Auto-discovery only scans the workspace root, and the venv lives outside it — so
         // point Pylance and the test explorer at it explicitly.
