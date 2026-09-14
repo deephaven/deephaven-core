@@ -639,6 +639,29 @@ public class QueryTableWhereInTest {
         assertEquals(0, uncoalesced.selectDistinctColumns.size());
     }
 
+    /**
+     * When filtering through a data index, the set keys are iterated rather than the source rows, and the kernel's
+     * generation is checked once per chunk of those keys rather than once per key. A set larger than that chunk
+     * therefore exercises the mid-iteration check as well as the final one.
+     */
+    @Test
+    public void testWhereInSetLargerThanOneKernelChunk() {
+        // More set keys than the 1 << 16 the filter checks the kernel's generation at.
+        final int setSize = (1 << 16) + 100;
+        // Few enough distinct source keys that the source is more than 1 / DATA_INDEX_FOR_WHERE_THRESHOLD times the
+        // size of its index table, so that the filter uses the index rather than filtering linearly.
+        final int distinctSourceKeys = 100;
+        final Table source = TableTools.emptyTable(10_000).update("Z = (int) (ii % " + distinctSourceKeys + ")");
+        DataIndexer.getOrCreateDataIndex(source, "Z");
+        final Table setTable = TableTools.emptyTable(setSize).update("Z = (int) ii");
+
+        final Table included = source.whereIn(setTable, "Z");
+        assertTableEquals(source, included);
+
+        final Table excluded = source.whereNotIn(setTable, "Z");
+        assertEquals(0, excluded.size());
+    }
+
     @Test
     public void testWhereNotInEmpty() {
         final Table x = newTable(intCol("X", 1, 2, 3));

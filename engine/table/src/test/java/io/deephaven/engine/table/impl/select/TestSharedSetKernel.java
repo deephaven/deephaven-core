@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,6 +21,10 @@ import org.junit.Test;
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 
@@ -146,6 +151,45 @@ public class TestSharedSetKernel {
         assertEquals(1, shared.registeredFilterCount());
         secondScope.release();
         assertEquals(0, shared.registeredFilterCount());
+    }
+
+    /**
+     * A filter that has already been applied to a table holds that table's key sources, so applying it again must fail
+     * rather than filter the second table through the first one's columns. Callers that reuse a filter, as a
+     * {@code PartitionedTable} proxy and a partition-aware source table do, must copy it.
+     */
+    @Test
+    public void testReusingAnInitializedFilterFails() {
+        final QueryTable source = TstUtils.testRefreshingTable(i(0, 1, 2).toTracking(), intCol("Z", 1, 2, 3));
+        final DynamicWhereFilter filter = new DynamicWhereFilter(refreshingSet(), true, pairs());
+
+        assertEquals(2, source.where(filter).size());
+        try {
+            source.where(filter);
+            fail("Expected re-using an initialized filter to fail");
+        } catch (final IllegalStateException expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("use copy()"));
+        }
+
+        // A copy carries none of the original's per-operation state.
+        assertEquals(2, source.where(filter.copy()).size());
+    }
+
+    /**
+     * The shared set reports the table it maintains, which is the distinct values derived from the caller's set table
+     * rather than that table itself. A static set needs no maintenance, so there is nothing to report.
+     */
+    @Test
+    public void testSetTableReportsTheMaintainedTable() {
+        final DynamicWhereFilter refreshingFilter = new DynamicWhereFilter(refreshingSet(), true, pairs());
+        final Table maintained = refreshingFilter.sharedSet().setTable();
+        assertNotNull(maintained);
+        assertTrue(maintained.isRefreshing());
+        assertEquals(2, maintained.size());
+
+        final DynamicWhereFilter staticFilter =
+                new DynamicWhereFilter(TableTools.newTable(intCol("Z", 1, 2)), true, pairs());
+        assertNull(staticFilter.sharedSet().setTable());
     }
 
     /**

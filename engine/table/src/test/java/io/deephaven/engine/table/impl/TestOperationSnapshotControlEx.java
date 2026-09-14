@@ -24,6 +24,7 @@ import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
@@ -168,6 +169,39 @@ public class TestOperationSnapshotControlEx {
             // Notifying on the step being snapshotted must change nothing for an oblivious extra.
             oblivious.recordedStep = LogicalClock.getStep(clockValue);
             assertTrue(control.snapshotConsistent(clockValue, true));
+        } finally {
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
+
+    /**
+     * When only some dependencies are satisfied, the control waits for the rest. A wait that cannot be made, because
+     * the cycle it would have waited on has already finished, falls back on the clock: the same step means current
+     * values are consistent, a later step means the attempt cannot be judged at all and must be abandoned.
+     */
+    @Test
+    public void testPartiallySatisfiedDependenciesAfterTheCycleEnds() {
+        final QueryTable source = refreshingSource();
+        final TestAwareDependency neverSatisfied = new TestAwareDependency();
+        final OperationSnapshotControlEx control = new OperationSnapshotControlEx(source, neverSatisfied);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(false);
+        final long clockValue = updateGraph.clock().currentValue();
+        // The source is satisfied for this step and the extra never is, so the control has something to wait for.
+        source.setLastNotificationStep(LogicalClock.getStep(clockValue));
+        updateGraph.markSourcesRefreshedForUnitTests();
+        updateGraph.completeCycleForUnitTests();
+
+        // The updating phase is over, so there is nothing to wait on, but the clock has not moved past the step the
+        // snapshot began on.
+        assertEquals(Boolean.FALSE, control.usePreviousValues(clockValue));
+
+        // Once the clock has moved on, neither current nor previous values can be read consistently.
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            assertNull(control.usePreviousValues(clockValue));
         } finally {
             updateGraph.markSourcesRefreshedForUnitTests();
             updateGraph.completeCycleForUnitTests();

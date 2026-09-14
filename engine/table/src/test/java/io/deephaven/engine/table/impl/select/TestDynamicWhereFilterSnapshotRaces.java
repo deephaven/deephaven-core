@@ -9,6 +9,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndexOptions;
@@ -17,12 +18,14 @@ import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.sources.IntTestSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.test.types.OutOfBandTest;
@@ -37,6 +40,7 @@ import org.junit.experimental.categories.Category;
 
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -312,6 +316,161 @@ public class TestDynamicWhereFilterSnapshotRaces {
     }
 
     /**
+     * An int column whose chunk reads pass through a {@link Gate}, and which {@link TstUtils#addToTable} can write to.
+     * This is the key column of a set index table, so it parks the set listener midway through a kernel mutation.
+     */
+    private static final class GatedIntTestSource extends IntTestSource {
+        private final Gate gate;
+
+        GatedIntTestSource(final Gate gate) {
+            this.gate = gate;
+        }
+
+        @Override
+        public Chunk<? extends Values> getChunk(
+                @NotNull final GetContext context,
+                @NotNull final RowSequence rowSequence) {
+            gate.passThrough();
+            return super.getChunk(context, rowSequence);
+        }
+    }
+
+    /**
+     * Register a data index for {@code setTable}'s key column, holding the single key {@code 1}, whose index table
+     * reads that key column through {@code keyReadGate}. The {@link SharedSetKernel} builds its kernel from, and
+     * subscribes its set listener to, that table, so an armed gate parks the set listener midway through a kernel
+     * mutation.
+     *
+     * @return The index table, which the caller ticks to change the set
+     */
+    private static QueryTable registerSetIndex(final QueryTable setTable, final Gate keyReadGate) {
+        final QueryTable rowSetColumnTable = TstUtils.testRefreshingTable(i(0).toTracking(),
+                col(ROW_SET_COLUMN, (RowSet) RowSetFactory.fromKeys(0)));
+        final GatedIntTestSource keySource = new GatedIntTestSource(keyReadGate);
+        try (final RowSet initialKeyRows = RowSetFactory.fromKeys(0)) {
+            keySource.add(initialKeyRows, intCol(KEY, 1).getChunk());
+        }
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
+        columns.put(KEY, keySource);
+        columns.put(ROW_SET_COLUMN, rowSetColumnTable.getColumnSource(ROW_SET_COLUMN));
+        final QueryTable indexTable = new QueryTable(rowSetColumnTable.getRowSet(), columns);
+        indexTable.setRefreshing(true);
+        final TestSetIndex index = new TestSetIndex(setTable, indexTable);
+        assertEquals(ROW_SET_COLUMN, index.rowSetColumnName());
+        DataIndexer.of(setTable.getRowSet()).addDataIndex(index);
+        return indexTable;
+    }
+
+    /**
+     * A {@link DynamicWhereFilter} that passes through a {@link Gate} once it has been given its recompute listener.
+     * That parks a lock-free {@code where} between the moment a set change can reach its result and the moment that
+     * result has a {@code WhereListener} to notify.
+     */
+    private static final class GateAfterRecomputeListenerFilter extends DynamicWhereFilter {
+
+        private final Gate gate;
+
+        private GateAfterRecomputeListenerFilter(@NotNull final Table setTable, final Gate gate) {
+            super(setTable, true, pairs());
+            this.gate = gate;
+        }
+
+        @Override
+        public void setRecomputeListener(final RecomputeListener listener) {
+            super.setRecomputeListener(listener);
+            gate.passThrough();
+        }
+    }
+
+    /**
+     * A full data index over a source table's key column whose row key lookup passes through a {@link Gate}, parking a
+     * {@code where} inside {@link DynamicWhereFilter}'s index filtering rather than its linear filtering.
+     */
+    private static final class GatedSourceIndex extends AbstractDataIndex {
+
+        private final ColumnSource<?> indexedColumn;
+        private final QueryTable indexTable;
+        private final Map<Object, Long> indexRowKeyByKey;
+        private final Gate gate;
+        final AtomicInteger lookups = new AtomicInteger();
+
+        private GatedSourceIndex(
+                @NotNull final QueryTable sourceTable,
+                @NotNull final QueryTable indexTable,
+                @NotNull final Map<Object, Long> indexRowKeyByKey,
+                @NotNull final Gate gate) {
+            this.indexedColumn = sourceTable.getColumnSource(KEY);
+            this.indexTable = indexTable;
+            this.indexRowKeyByKey = indexRowKeyByKey;
+            this.gate = gate;
+        }
+
+        @Override
+        public boolean isValid() {
+            return true;
+        }
+
+        @Override
+        public @NotNull List<String> keyColumnNames() {
+            return List.of(KEY);
+        }
+
+        @Override
+        public @NotNull Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn() {
+            return Map.of(indexedColumn, KEY);
+        }
+
+        @Override
+        public boolean tableIsCached() {
+            return true;
+        }
+
+        @Override
+        public @NotNull Table table(final DataIndexOptions options) {
+            return indexTable;
+        }
+
+        @Override
+        public @NotNull RowKeyLookup rowKeyLookup(final DataIndexOptions options) {
+            return (final Object key, final boolean usePrev) -> {
+                gate.passThrough();
+                lookups.incrementAndGet();
+                final Long indexRowKey = indexRowKeyByKey.get(key);
+                return indexRowKey == null ? RowSequence.NULL_ROW_KEY : indexRowKey;
+            };
+        }
+
+        @Override
+        public boolean isRefreshing() {
+            return false;
+        }
+    }
+
+    /**
+     * A source table of {@code 5} rows for each of the keys {@code 1} and {@code 2}, with a {@link GatedSourceIndex}
+     * over its key column. The row count is deliberately more than
+     * {@value io.deephaven.engine.table.impl.QueryTable#DATA_INDEX_FOR_WHERE_THRESHOLD} times the index table's size,
+     * so that {@link DynamicWhereFilter} filters through the index rather than linearly.
+     */
+    private static QueryTable indexedSourceTable(final GatedSourceIndex[] indexOut, final Gate lookupGate) {
+        final int[] values = new int[10];
+        for (int ii = 0; ii < values.length; ++ii) {
+            values[ii] = ii < 5 ? 1 : 2;
+        }
+        final QueryTable source = sourceTable(new GatedIntegerArraySource(new Gate()), true, values);
+        final QueryTable indexTable = TstUtils.testTable(i(0, 1).toTracking(), intCol(KEY, 1, 2),
+                col(ROW_SET_COLUMN,
+                        (RowSet) RowSetFactory.fromRange(0, 4),
+                        (RowSet) RowSetFactory.fromRange(5, 9)));
+        final GatedSourceIndex index =
+                new GatedSourceIndex(source, indexTable, Map.of(1, 0L, 2, 1L), lookupGate);
+        assertEquals(ROW_SET_COLUMN, index.rowSetColumnName());
+        DataIndexer.of(source.getRowSet()).addDataIndex(index);
+        indexOut[0] = index;
+        return source;
+    }
+
+    /**
      * Construct a {@link DynamicWhereFilter} over {@code setTable} on a worker thread, mid-cycle and lock-free, and
      * fail its first {@link SharedSetKernel} snapshot attempt by ticking the index table after the attempt has
      * subscribed its set listener. The attempt's listener therefore has a notification queued when it is discarded, and
@@ -576,5 +735,232 @@ public class TestDynamicWhereFilterSnapshotRaces {
         } finally {
             endCycleIfOpen();
         }
+    }
+
+    /**
+     * A {@code where} that reads previous values while its set ticks must be retried, because the set kernel keeps no
+     * previous values for it to have read. This is what {@link NotificationAwareDependency} exists for, and the only
+     * thing that rejects the attempt: the kernel read itself can complete before the mutation begins and still be
+     * inconsistent with the previous-value source rows it was combined with.
+     * <p>
+     * The same interleaving delivers a recompute request to a result that has no where listener yet, which must be
+     * dropped rather than fail on the update graph thread.
+     */
+    @Test
+    public void testSetChangeDuringAPreviousValuesWhereForcesARetry() throws Exception {
+        final Gate recomputeGate = new Gate();
+        // Never armed; this source only counts reads, so that the retry can be asserted.
+        final GatedIntegerArraySource sourceKey = new GatedIntegerArraySource(new Gate());
+        final QueryTable source = sourceTable(sourceKey, true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final GateAfterRecomputeListenerFilter filter =
+                new GateAfterRecomputeListenerFilter(setTable, recomputeGate);
+
+        updateGraph.startCycleForUnitTests(false);
+        final long step = updateGraph.clock().currentStep();
+        try {
+            // Nothing is satisfied yet, so this attempt reads previous values.
+            recomputeGate.arm();
+            final Future<Table> whereFuture = pool.submit(() -> source.where(filter));
+            assertTrue("where finished its previous-values read and registered its filter",
+                    recomputeGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+            assertEquals("the attempt has read the source exactly once", 1, sourceKey.chunkReads.get());
+
+            // Change the set while the attempt is parked. The filter is registered against a result that has no
+            // where listener yet, so the recompute request this produces has nothing to notify.
+            TstUtils.addToTable(setTable, i(1), intCol(KEY, 2));
+            setTable.notifyListeners(i(1), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+            while (!filter.satisfied(step)) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+            assertTrue("the set changed on this step", filter.stateChangedOnStep(step));
+
+            recomputeGate.release();
+
+            final Table result;
+            try {
+                result = whereFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            } catch (ExecutionException e) {
+                throw new AssertionError("where failed when its set ticked mid-attempt: " + e.getCause(),
+                        e.getCause());
+            }
+
+            // The rejected attempt was retried against current values, so the result reflects the new set.
+            assertEquals("the previous-values attempt must be rejected and retried", 2, sourceKey.chunkReads.get());
+            assertTableEquals(newTable(intCol(KEY, 1, 2)), result);
+            updateGraph.completeCycleForUnitTests();
+            assertTableEquals(newTable(intCol(KEY, 1, 2)), result);
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A reader that arrives while the set listener is midway through mutating the kernel abandons its attempt at once,
+     * rather than reading a half-rewritten set. This is the window that the kernel's odd generation marks, and the only
+     * one that {@link SharedSetKernel#beginRead()} can detect by itself.
+     */
+    @Test
+    public void testKernelReadDuringASetMutationAbandonsTheAttempt() throws Exception {
+        final Gate setReadGate = new Gate();
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final QueryTable indexTable = registerSetIndex(setTable, setReadGate);
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, pairs());
+        final SharedSetKernel shared = filter.sharedSet();
+
+        updateGraph.startCycleForUnitTests(false);
+        final long step = updateGraph.clock().currentStep();
+        try {
+            TstUtils.addToTable(indexTable, i(1), intCol(KEY, 2),
+                    col(ROW_SET_COLUMN, (RowSet) RowSetFactory.fromKeys(1)));
+            indexTable.notifyListeners(i(1), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+
+            // Read the kernel from another thread once the set listener has parked between its two generation
+            // increments, then let the listener finish.
+            setReadGate.arm();
+            final MutableObject<Throwable> readFailure = new MutableObject<>();
+            final Future<?> readerFuture = pool.submit(() -> {
+                try {
+                    assertTrue("the set listener parked mid-mutation",
+                            setReadGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+                    try {
+                        shared.beginRead();
+                    } catch (final Throwable t) {
+                        readFailure.setValue(t);
+                    }
+                } finally {
+                    setReadGate.release();
+                }
+                return null;
+            });
+
+            while (!filter.satisfied(step)) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+            readerFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+            assertTrue("a read begun during the mutation must abandon its attempt: " + readFailure.getValue(),
+                    readFailure.getValue() instanceof ConstructSnapshot.SnapshotInconsistentException);
+
+            // The mutation is complete, so the generation is even again and a read proceeds normally.
+            shared.beginRead();
+            updateGraph.completeCycleForUnitTests();
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A set change that arrives while a {@code where} is filtering through a data index abandons that attempt too. The
+     * index paths build their result incrementally, so the abandoned attempt must close what it built rather than leak
+     * it, and the retry must produce the answer the new set implies.
+     */
+    @Test
+    public void testSetChangeDuringIndexFilteringAbandonsTheAttempt() throws Exception {
+        final Gate lookupGate = new Gate();
+        final GatedSourceIndex[] indexOut = new GatedSourceIndex[1];
+        final QueryTable source = indexedSourceTable(indexOut, lookupGate);
+        final GatedSourceIndex index = indexOut[0];
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, pairs());
+
+        updateGraph.startCycleForUnitTests(false);
+        final long step = updateGraph.clock().currentStep();
+        try {
+            // Nothing is satisfied yet, so this attempt reads previous values through the index.
+            lookupGate.arm();
+            final Future<Table> whereFuture = pool.submit(() -> source.where(filter));
+            assertTrue("where began looking keys up in the index",
+                    lookupGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+
+            TstUtils.addToTable(setTable, i(1), intCol(KEY, 2));
+            setTable.notifyListeners(i(1), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+            while (!filter.satisfied(step)) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+            lookupGate.release();
+
+            final Table result;
+            try {
+                result = whereFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            } catch (ExecutionException e) {
+                throw new AssertionError("where failed when its set ticked during index filtering: " + e.getCause(),
+                        e.getCause());
+            }
+
+            assertTrue("the abandoned attempt and the retry must both look keys up", index.lookups.get() >= 2);
+            assertEquals("every row matches the retried set", source.size(), result.size());
+            updateGraph.completeCycleForUnitTests();
+            assertTableEquals(source, result);
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A failure of the set table fails every result sharing that set, not just the first. One listener now maintains
+     * the set for all of them, so a failure has to be fanned back out to each filter.
+     */
+    @Test
+    public void testSetTableFailureReachesEverySharingResult() {
+        final QueryTable source = sourceTable(new GatedIntegerArraySource(new Gate()), true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final QueryTable indexTable = registerSetIndex(setTable, new Gate());
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, pairs());
+
+        final Table first = source.where(filter.copy());
+        final Table second = source.where(filter.copy());
+        assertEquals(2, filter.sharedSet().registeredFilterCount());
+        assertFalse(first.isFailed());
+        assertFalse(second.isFailed());
+
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> indexTable.notifyListenersOnError(
+                    new RuntimeException("set table failure"), null));
+        }
+
+        assertTrue("the first result must fail with its set", first.isFailed());
+        assertTrue("the second result must fail with its set", second.isFailed());
+    }
+
+    /**
+     * A modified set key is removed and re-added, and the results refilter accordingly. An update that leaves the keys
+     * alone must instead report no state change at all, so that concurrent previous-value snapshots are not retried for
+     * a kernel that did not move.
+     */
+    @Test
+    public void testSetModifyRewritesKeysAndAnIrrelevantSetUpdateDoesNot() {
+        final QueryTable source = sourceTable(new GatedIntegerArraySource(new Gate()), true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final QueryTable indexTable = registerSetIndex(setTable, new Gate());
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, pairs());
+
+        final Table result = source.where(filter);
+        assertTableEquals(newTable(intCol(KEY, 1)), result);
+
+        // Modifying the key replaces it in the kernel: the old key's rows leave and the new key's arrive.
+        final long[] modifyStep = new long[1];
+        updateGraph.runWithinUnitTestCycle(() -> {
+            modifyStep[0] = updateGraph.clock().currentStep();
+            TstUtils.addToTable(indexTable, i(0), intCol(KEY, 3),
+                    col(ROW_SET_COLUMN, (RowSet) RowSetFactory.fromKeys(0)));
+            indexTable.notifyListeners(i(), i(), i(0));
+        });
+        assertTrue("a key change is a kernel change", filter.stateChangedOnStep(modifyStep[0]));
+        assertTableEquals(newTable(intCol(KEY, 3)), result);
+
+        // An update that touches only the row set column leaves the keys alone.
+        final long[] quietStep = new long[1];
+        updateGraph.runWithinUnitTestCycle(() -> {
+            quietStep[0] = updateGraph.clock().currentStep();
+            indexTable.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                    indexTable.newModifiedColumnSet(ROW_SET_COLUMN)));
+        });
+        assertFalse("a modify that leaves every key alone must not report a kernel change",
+                filter.stateChangedOnStep(quietStep[0]));
+        assertTableEquals(newTable(intCol(KEY, 3)), result);
     }
 }
