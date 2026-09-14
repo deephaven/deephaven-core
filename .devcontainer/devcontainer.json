@@ -98,8 +98,14 @@
     // Docker creates the mount point root-owned; post-create.sh chowns it.
     "type=volume,source=gradle-cache-${devcontainerId},target=/home/vscode/.gradle",
 
-    // Bind mount devcontainer ~/.claude directory on host so that it can be shared across containers
+    // Bind mount agent feature config directories on host so that they can be shared across containers
     "type=bind,source=${localEnv:HOME}/.config/devc/.claude,target=/home/vscode/.claude,consistency=cached",
+    "type=bind,source=${localEnv:HOME}/.config/devc/.copilot,target=/home/vscode/.copilot,consistency=cached",
+    "type=bind,source=${localEnv:HOME}/.config/devc/.pi,target=/home/vscode/.pi,consistency=cached",
+
+    // Herdr config folder contains session state related files that would not be good to share cross container, so
+    // we only bind mount the config.toml file.
+    "type=bind,source=${localEnv:HOME}/.config/devc/herdr/config.toml,target=/home/vscode/.config/herdr/config.toml,consistency=cached",
 
     // Your git name and email, extracted from the host by initialize-command.sh.
     "type=bind,source=${localEnv:HOME}/.config/devc/gitconfig-identity,target=/usr/local/share/devc-features/git-container-config/identity/gitconfig,consistency=cached,readonly",

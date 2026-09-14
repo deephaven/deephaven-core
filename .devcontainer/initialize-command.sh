@@ -2,7 +2,18 @@
 # devc host-side init (devcontainer "initializeCommand"). Runs on the HOST,
 # before the container is created — the only lifecycle hook that does.
 set -e
+
 mkdir -p "$HOME/.config/devc/.claude"
+mkdir -p "$HOME/.config/devc/.copilot"
+mkdir -p "$HOME/.config/devc/.pi"
+mkdir -p "$HOME/.config/devc/herdr"
+
+# config.toml is bind-mounted into the container as a *file*, and Docker creates a directory
+# at the source path when it does not exist — leaving herdr with a dir where it wants a file.
+# So it has to exist before creation. Seeded with the setting
+# worth having by default; never overwritten, so later edits (host or container) survive.
+herdr_config="$HOME/.config/devc/herdr/config.toml"
+[ -f "$herdr_config" ] || printf '%s\n' "onboarding = false" > "$herdr_config"
 
 # Git identity for the container. ~/.gitconfig is container-local and wiped on every
 # rebuild, so the container has no idea who you are. Rather than bind the whole host
