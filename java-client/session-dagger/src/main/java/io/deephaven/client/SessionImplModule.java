@@ -9,7 +9,6 @@ import dagger.Provides;
 import io.deephaven.client.impl.SessionImpl;
 import io.deephaven.client.impl.SessionImplConfig;
 import io.deephaven.proto.DeephavenChannel;
-import io.deephaven.proto.DeephavenChannelImpl;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 
@@ -23,8 +22,10 @@ public interface SessionImplModule {
     @Binds
     Channel bindsManagedChannel(ManagedChannel managedChannel);
 
-    @Binds
-    DeephavenChannel bindsDeephavenChannelImpl(DeephavenChannelImpl deephavenChannelImpl);
+    @Provides
+    static DeephavenChannel bindsDeephavenChannel(Channel channel) {
+        return new DeephavenChannel(channel);
+    }
 
     @Provides
     static SessionImplConfig providesSessionImplConfig(
