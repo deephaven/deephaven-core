@@ -7,6 +7,8 @@ import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import org.apache.parquet.column.values.ValuesReader;
 
+import java.nio.ByteBuffer;
+
 public class StringMaterializer extends ObjectMaterializerBase<String> implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
@@ -26,8 +28,8 @@ public class StringMaterializer extends ObjectMaterializerBase<String> implement
         }
 
         @Override
-        public boolean allowPlainBinaryStringDecoder() {
-            return true;
+        public ValuesReader maybeMakePlainBinaryValuesReader(final ByteBuffer in) {
+            return PlainBinaryStringValuesReader.isSupported(in) ? new PlainBinaryStringValuesReader(in) : null;
         }
     };
 

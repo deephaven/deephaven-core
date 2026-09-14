@@ -10,7 +10,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.sized.SizedByteChunk;
 import io.deephaven.parquet.base.materializers.IntMaterializer;
-import io.deephaven.parquet.base.materializers.PlainBinaryStringValuesReader;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.channel.SeekableChannelContext;
@@ -648,23 +647,14 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     /**
-     * Whether this page should be read with {@link PlainBinaryStringValuesReader}.
+     * Whether a factory may be offered this page. Encoding is per page, not per column, and offering a dictionary page
+     * would be a correctness bug rather than a missed optimization.
      *
-     * @param dataEncoding this page's encoding; encodings vary within a column chunk
+     * @param dataEncoding this page's encoding
      * @param primitiveTypeName the column's parquet primitive type
-     * @param pageMaterializerFactory this column's factory; only {@code StringMaterializer.FACTORY} opts in
-     * @param in the page buffer, positioned past the repetition and definition levels
-     * @return whether every condition holds
      */
-    static boolean usePlainBinaryStringReader(
-            final Encoding dataEncoding,
-            final PrimitiveTypeName primitiveTypeName,
-            final PageMaterializerFactory pageMaterializerFactory,
-            final ByteBuffer in) {
-        return dataEncoding == Encoding.PLAIN
-                && primitiveTypeName == PrimitiveTypeName.BINARY
-                && pageMaterializerFactory.allowPlainBinaryStringDecoder()
-                && PlainBinaryStringValuesReader.isSupported(in);
+    static boolean isPlainBinaryPage(final Encoding dataEncoding, final PrimitiveTypeName primitiveTypeName) {
+        return dataEncoding == Encoding.PLAIN && primitiveTypeName == PrimitiveTypeName.BINARY;
     }
 
     private ValuesReader getDataReader(
@@ -675,10 +665,12 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         if (dataEncoding == Encoding.DELTA_BYTE_ARRAY) {
             throw new RuntimeException("DELTA_BYTE_ARRAY encoding not supported");
         }
-        if (usePlainBinaryStringReader(dataEncoding, path.getPrimitiveType().getPrimitiveTypeName(),
-                pageMaterializerFactory, in)) {
+        if (isPlainBinaryPage(dataEncoding, path.getPrimitiveType().getPrimitiveTypeName())) {
             // `in` is already positioned past the repetition and definition levels.
-            return new PlainBinaryStringValuesReader(in);
+            final ValuesReader preferred = pageMaterializerFactory.maybeMakePlainBinaryValuesReader(in);
+            if (preferred != null) {
+                return preferred;
+            }
         }
         final ValuesReader dataReader;
         if (dataEncoding.usesDictionary()) {

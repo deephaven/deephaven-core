@@ -4,6 +4,9 @@
 package io.deephaven.parquet.base;
 
 import org.apache.parquet.column.values.ValuesReader;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.ByteBuffer;
 
 public interface PageMaterializerFactory {
     PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues);
@@ -11,14 +14,14 @@ public interface PageMaterializerFactory {
     PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues);
 
     /**
-     * Whether PLAIN-encoded BINARY pages destined for this factory may be read with
-     * {@code PlainBinaryStringValuesReader} instead of parquet's {@code BinaryPlainValuesReader}.
-     * <p>
-     * Only {@code StringMaterializer.FACTORY} may opt in. That reader implements bulk String decoding and nothing else,
-     * so any other BINARY consumer handed one would throw from {@code readBytes()}.
+     * A reader for a PLAIN-encoded BINARY page, or {@code null} to use parquet's. Only return one the materializer this
+     * factory builds can consume.
+     *
+     * @param in the page buffer, positioned past the repetition and definition levels
      */
-    default boolean allowPlainBinaryStringDecoder() {
-        return false;
+    @Nullable
+    default ValuesReader maybeMakePlainBinaryValuesReader(final ByteBuffer in) {
+        return null;
     }
 
     PageMaterializerFactory NULL_FACTORY = new PageMaterializerFactory() {
