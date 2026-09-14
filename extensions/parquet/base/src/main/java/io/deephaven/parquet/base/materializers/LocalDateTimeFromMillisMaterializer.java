@@ -34,8 +34,10 @@ public class LocalDateTimeFromMillisMaterializer extends ObjectMaterializerBase<
      * @return The input milliseconds from the Epoch converted to a {@link LocalDateTime} in UTC timezone
      */
     public static LocalDateTime convertValue(long value) {
-        return LocalDateTime.ofEpochSecond(value / 1_000L, (int) ((value % 1_000L) * MILLI),
-                ZoneOffset.UTC);
+        // floorDiv/floorMod rather than / and %: for a pre-epoch value the truncating operators produce a negative
+        // remainder, and LocalDateTime.ofEpochSecond rejects a negative nano-of-second outright.
+        return LocalDateTime.ofEpochSecond(Math.floorDiv(value, 1_000L),
+                (int) (Math.floorMod(value, 1_000L) * MILLI), ZoneOffset.UTC);
     }
 
     private final ValuesReader dataReader;

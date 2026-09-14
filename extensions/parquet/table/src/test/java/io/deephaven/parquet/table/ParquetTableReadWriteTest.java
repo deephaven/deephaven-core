@@ -1839,17 +1839,22 @@ public final class ParquetTableReadWriteTest {
                 .build();
         writeKeyValuePartitionedTable(inputData, parentDir.getPath(), writeInstructions);
 
-        // Verify that we can read the partition values, but types like LocalDate or LocalTime will be read as strings,
-        // and byte, short will be read as integers. Therefore, we cannot compare the tables directly
+        final String[] partitioningColumns = definition.getPartitioningColumns().stream()
+                .map(ColumnDefinition::getName).toArray(String[]::new);
+
+        // An explicit KV_PARTITIONED layout bypasses the metadata files, but each data file records the
+        // partitioning columns and their types in its own schema metadata, so the types are recovered from there
+        // rather than inferred from the directory names. This previously asserted the definitions *differed*:
+        // LocalDate and LocalTime came back as String, and byte and short as int, because the only evidence was
+        // the directory names. See DH-23557 finding 5.
         final Table fromDiskPartitioned = readTable(parentDir.getPath(),
                 EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
-        assertNotEquals(fromDiskPartitioned.getDefinition(), inputData.getDefinition());
+        assertEquals(inputData.getDefinition(), fromDiskPartitioned.getDefinition());
+        assertTableEquals(inputData.sort(partitioningColumns), fromDiskPartitioned.sort(partitioningColumns));
 
         // Reading the directory directly should correctly detect the metadata files and deduce the correct types
         final Table fromDiskWithMetadata = readTable(parentDir.getPath());
         assertEquals(fromDiskWithMetadata.getDefinition(), inputData.getDefinition());
-        final String[] partitioningColumns = definition.getPartitioningColumns().stream()
-                .map(ColumnDefinition::getName).toArray(String[]::new);
         assertTableEquals(inputData.sort(partitioningColumns), fromDiskWithMetadata.sort(partitioningColumns));
     }
 

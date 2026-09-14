@@ -283,13 +283,33 @@ public class DateTimeUtils {
         return l1 - l2;
     }
 
+    /**
+     * Combines a second-and-nano-of-second pair into nanoseconds from the epoch, rejecting the pairs that are not
+     * representable as a {@code long}.
+     *
+     * <p>
+     * Representability cannot be decided from {@code epochSecond} alone. Two's-complement arithmetic is modular, so
+     * {@code epochSecond * 1_000_000_000L + nanoOfSecond} yields the exact value whenever the mathematical result fits
+     * in a {@code long} -- including when the multiplication on its own overflows, which it does for the bottom second
+     * of the range ({@code epochSecond == -9223372037}). Conversely, a large negative {@code epochSecond} that does not
+     * fit still multiplies and adds without complaint, wrapping to an unrelated value. So the check has to be made
+     * against the combined result, which is what dividing it back out does: the pair is representable exactly when it
+     * can be recovered from the total.
+     *
+     * @param epochSecond seconds from the epoch
+     * @param nanoOfSecond nano-of-second, which must be in {@code [0, 1_000_000_000)} as {@link Instant#getNano()} and
+     *        {@link ZonedDateTime#getNano()} both guarantee
+     * @return nanoseconds from the epoch
+     * @throws DateTimeOverflowException if the pair is not representable as a {@code long} of nanoseconds
+     */
     private static long safeComputeNanos(final long epochSecond, final long nanoOfSecond) {
-        if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
+        final long nanos = epochSecond * 1_000_000_000L + nanoOfSecond;
+        if (Math.floorDiv(nanos, 1_000_000_000L) != epochSecond
+                || Math.floorMod(nanos, 1_000_000_000L) != nanoOfSecond) {
             throw new DateTimeOverflowException("Numeric overflow detected during conversion of " + epochSecond
-                    + " to nanoseconds");
+                    + " seconds and " + nanoOfSecond + " nanoseconds to nanoseconds");
         }
-
-        return epochSecond * 1_000_000_000L + nanoOfSecond;
+        return nanos;
     }
 
     // endregion

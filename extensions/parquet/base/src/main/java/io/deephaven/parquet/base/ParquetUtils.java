@@ -96,12 +96,29 @@ public final class ParquetUtils {
      */
     public static URI resolve(final URI base, final String relativePath) {
         final URI relativeURI;
+        // Sanitize the relative path before resolving it to avoid issues with separators and special characters
+        final String sanitizedPath = relativePath.replace(WINDOWS_FILE_SEPARATOR, URI_SEPARATOR);
         try {
-            // Sanitize the relative path before resolving it to avoid issues with separators and special characters
-            relativeURI = new URI(null, null, relativePath.replace(WINDOWS_FILE_SEPARATOR, URI_SEPARATOR), null);
+            relativeURI = new URI(null, null, dotPrefixIfFirstSegmentHasColon(sanitizedPath), null);
         } catch (final URISyntaxException e) {
             throw new UncheckedDeephavenException("Failed to create URI from relative path: " + relativePath, e);
         }
         return base.resolve(relativeURI);
+    }
+
+    /**
+     * Prefix {@code "./"} when the first path segment contains a colon.
+     *
+     * <p>
+     * Per RFC 3986 section 4.2, such a segment "cannot be used as the first segment of a relative-path reference, as it
+     * would be mistaken for a scheme name. Such a segment must be preceded by a dot-segment". Without the prefix the
+     * URI parser reads the text before the colon as a scheme and rejects the rest, so a key-value partition directory
+     * for a time-like value -- {@code Col0=00:00:02/}, {@code Col0=2023-11-14T22:13:21Z/} -- failed to resolve at all.
+     * {@link URI#resolve} removes the dot-segment again, so the resolved URI is unchanged.
+     */
+    private static String dotPrefixIfFirstSegmentHasColon(final String relativePath) {
+        final int firstSeparator = relativePath.indexOf(URI_SEPARATOR);
+        final String firstSegment = firstSeparator < 0 ? relativePath : relativePath.substring(0, firstSeparator);
+        return firstSegment.indexOf(':') < 0 ? relativePath : "." + URI_SEPARATOR + relativePath;
     }
 }

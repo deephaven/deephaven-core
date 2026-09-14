@@ -4,7 +4,7 @@
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Pair;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -98,6 +98,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private ParquetFileReader parquetFileReader;
     private ParquetMetadata parquetMetadata;
     private int[] rowGroupIndices;
+    /**
+     * Position of each of this location's row groups within {@link #parquetMetadata}'s block list, in the order
+     * {@link #getRowGroupReaders()} presents them. Unlike {@link #rowGroupIndices}, which is discarded once the row
+     * group readers are built, this is retained: the pushdown path addresses row groups by position within the location
+     * and needs the translation for the lifetime of the location.
+     */
+    private int[] rowGroupBlockIndices;
     private MessageType parquetSchema;
     // -----------------------------------------------------------------------
 
@@ -136,6 +143,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
                     .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
                     .toArray(RowGroup[]::new);
+            // parquetMetadata may describe more than this location: read through a _metadata file, it covers every
+            // row group in the dataset and this location owns only some of them. Row groups are addressed elsewhere
+            // by position within the location -- the ordinal order getRowGroupReaders() produces -- so record the
+            // translation into the shared block list, which is what carries the statistics.
+            rowGroupBlockIndices = IntStream.of(rowGroupIndices)
+                    .boxed()
+                    .sorted(Comparator.comparingInt(
+                            rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi).getOrdinal()))
+                    .mapToInt(Integer::intValue)
+                    .toArray();
             final long maxRowCount = Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
             regionParameters = new RegionedPageStore.Parameters(
                     RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
@@ -154,7 +171,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     .orElse(TableInfo.builder().build());
             groupingColumns = tableInfo.groupingColumnMap();
             columnTypes = tableInfo.columnTypeMap();
-            sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
+            sortingColumns = translateSortingColumns(SortColumnInfo.sortColumns(tableInfo.sortingColumns()));
 
             if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
                 // We do not have the last modified time for non-file URIs
@@ -222,6 +239,51 @@ public class ParquetTableLocation extends AbstractTableLocation {
     public List<SortColumn> getSortedColumns() {
         initialize();
         return sortingColumns;
+    }
+
+    /**
+     * Translate sorting columns out of parquet name space and into table name space.
+     *
+     * <p>
+     * {@link TableInfo#sortingColumns()} records the names the <em>writer</em> saw, which are parquet-space names.
+     * Everything else this location exposes is in table name space -- {@link #makeColumnLocation} translates in the
+     * other direction -- and both consumers of {@link #getSortedColumns()} read the names as table-space:
+     * {@code SourceTable.doCoalesce} publishes them as the coalesced table's
+     * {@link io.deephaven.engine.table.impl.SortedColumnsAttribute SortedColumnsAttribute}, and the
+     * {@code ParquetColumnRegion*} pushdown handlers compare them against {@code filterColumnToManagerColumnName}'s
+     * output. Translating once here fixes both.
+     *
+     * <p>
+     * A sorting column with no table-space name is <em>dropped</em> rather than passed through: under a rename that
+     * permutes names, an untranslated parquet name can still match a table column -- a different, unsorted one -- and a
+     * sortedness claim about the wrong column silently drops rows from range and match filters. Claiming no sort order
+     * merely gives up an optimization.
+     */
+    private List<SortColumn> translateSortingColumns(@NotNull final List<SortColumn> parquetSpaceSortColumns) {
+        if (parquetSpaceSortColumns.isEmpty()) {
+            return parquetSpaceSortColumns;
+        }
+        final List<SortColumn> tableSpaceSortColumns = new ArrayList<>(parquetSpaceSortColumns.size());
+        for (final SortColumn parquetSpaceSortColumn : parquetSpaceSortColumns) {
+            final String parquetColumnName = parquetSpaceSortColumn.column().name();
+            final String columnName = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);
+            if (columnName == null) {
+                // No table column reads this parquet column. Passing the parquet name through is only safe if a table
+                // column of that name would read this same parquet column; otherwise the name denotes something else.
+                if (!parquetColumnName.equals(
+                        readInstructions.getParquetColumnNameFromColumnNameOrDefault(parquetColumnName))) {
+                    continue;
+                }
+                tableSpaceSortColumns.add(parquetSpaceSortColumn);
+            } else if (columnName.equals(parquetColumnName)) {
+                tableSpaceSortColumns.add(parquetSpaceSortColumn);
+            } else {
+                tableSpaceSortColumns.add(parquetSpaceSortColumn.isAscending()
+                        ? SortColumn.asc(ColumnName.of(columnName))
+                        : SortColumn.desc(ColumnName.of(columnName)));
+            }
+        }
+        return tableSpaceSortColumns;
     }
 
     @Override
@@ -500,10 +562,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * @param columnDefinition The definition of the column (required to access dictionary chunk suppliers)
      * @return {@code true} if the column has a dictionary page, {@code false} otherwise
      */
-    private boolean hasDictionaryPage(final String parquetColumnName, final ColumnDefinition<?> columnDefinition) {
+    private boolean hasDictionaryPage(final ColumnDefinition<?> columnDefinition) {
+        // getColumnLocation takes a table-space name and translates it to parquet space itself, so the definition's
+        // own name is what it wants -- passing a parquet-space name here fetched a different physical column whenever
+        // a read-time rename permuted names.
         // noinspection unchecked
         final ParquetColumnLocation<Values> columnLocation =
-                (ParquetColumnLocation<Values>) getColumnLocation(parquetColumnName);
+                (ParquetColumnLocation<Values>) getColumnLocation(columnDefinition.getName());
         final Supplier<Chunk<Values>>[] chunkSuppliers =
                 columnLocation.getDictionaryChunkSuppliers(columnDefinition);
         final Chunk<Values> dictionaryChunk;
@@ -581,7 +646,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         } else if (action == IN_MEMORY_DATA_INDEX) {
             isApplicable = hasCachedDataIndex(estimateCtx.parquetColumnNames);
         } else if (action == PARQUET_DICTIONARY) {
-            isApplicable = hasDictionaryPage(estimateCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0));
+            isApplicable = hasDictionaryPage(filterCtx.columnDefinitions().get(0));
         } else if (action == DEFERRED_DATA_INDEX) {
             isApplicable = hasDataIndex(estimateCtx.parquetColumnNames);
         } else {
@@ -671,13 +736,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex == null) {
                 return input.copy();
             }
-            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
+            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex,
+                    filterCtx.columnDefinitions(), input);
         }
         if (action == PARQUET_DICTIONARY) {
-            if (!hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
+            if (!hasDictionaryPage(filterCtx.columnDefinitions().get(0))) {
                 return input.copy();
             }
-            return pushdownFilterDictionary(selection, filterCtx, actionCtx.parquetColumnNames, input);
+            return pushdownFilterDictionary(selection, filterCtx, input);
         }
         if (action == DEFERRED_DATA_INDEX) {
             final BasicDataIndex dataIndex =
@@ -685,7 +751,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (dataIndex == null) {
                 return input.copy();
             }
-            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
+            return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex,
+                    filterCtx.columnDefinitions(), input);
         }
         throw new IllegalStateException("Unexpected value: " + action);
     }
@@ -890,7 +957,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         final List<BlockMetaData> blocks = parquetMetadata.getBlocks();
         iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
-            final Statistics<?> statistics = blocks.get(rgIdx).getColumns().get(columnIndex).getStatistics();
+            // rgIdx is this location's own row group position; blocks is indexed over the whole of
+            // parquetMetadata, which spans the dataset when a _metadata file is in use.
+            final Statistics<?> statistics =
+                    blocks.get(rowGroupBlockIndices[rgIdx]).getColumns().get(columnIndex).getStatistics();
             // TODO (DH-19666) Right now, the pushdown logic only returns maybeMatch for row group. For the future, we
             // can return "match" for scenarios like filter of {X == 3}, and statistics of {min=3, max=3, num_nulls=0}.
             // Similarly, if filter is {X == null}, and statistics is {hasNonNullValue=false, num_nulls=<row-group
@@ -919,7 +989,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private PushdownResult pushdownFilterDictionary(
             final RowSet selection,
             final RegionedPushdownFilterContext ctx,
-            final String[] parquetColumnNames,
             final PushdownResult result) {
 
         final BasePushdownFilterContext.FilterNullBehavior filterNullBehavior = ctx.filterNullBehavior();
@@ -936,9 +1005,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         final ColumnDefinition<?> columnDefinition = ctx.columnDefinitions().get(0);
 
+        // As in hasDictionaryPage: getColumnLocation wants the table-space name, which the definition carries.
         // noinspection unchecked
         final ParquetColumnLocation<Values> columnLocation =
-                (ParquetColumnLocation<Values>) getColumnLocation(parquetColumnNames[0]);
+                (ParquetColumnLocation<Values>) getColumnLocation(columnDefinition.getName());
 
         // Get the dictionary chunks for the row groups.
         // noinspection unchecked
@@ -1060,12 +1130,55 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * Apply the filter to the data index table and return the result.
      */
     @NotNull
+    /**
+     * Whether the data index's columns carry the same types as the columns the filter will be matched against.
+     *
+     * <p>
+     * A location's index is read by {@code readDataIndexTable} with no {@link TableDefinition}, so its column types are
+     * inferred from the index file alone and need not agree with the parent table's. A {@code BigDecimal} column whose
+     * values happen to have scale 0 is the case that showed this: the index file is a {@code DECIMAL(p, 0)}, which
+     * infers back as {@code BigInteger}, so matching a {@code BigDecimal} value against it compares
+     * {@code BigDecimal.equals(BigInteger)} -- always {@code false}. Nothing throws; the index simply reports that
+     * nothing matches, and {@link #pushdownDataIndex} returns that as an <em>exact</em> answer. Under a negation the
+     * rows then all appear to match.
+     *
+     * <p>
+     * This is the silent form of the mismatch {@code DH-19443} is about; the {@code catch} in
+     * {@link #pushdownDataIndex} cannot see it because there is no exception. Declining the index keeps the answer
+     * correct. The better fix is for {@code readDataIndexTable} to pin the index columns to the parent table's types so
+     * the optimization survives, which is left to that ticket.
+     */
+    private static boolean indexTypesMatchFilterColumns(
+            final BasicDataIndex dataIndex,
+            final List<ColumnDefinition<?>> filterColumnDefinitions,
+            final Map<String, String> renameMap) {
+        final TableDefinition indexDefinition = dataIndex.table().getDefinition();
+        for (final ColumnDefinition<?> columnDefinition : filterColumnDefinitions) {
+            final String managerName = renameMap.getOrDefault(columnDefinition.getName(), columnDefinition.getName());
+            final ColumnDefinition<?> indexColumn = indexDefinition.getColumn(managerName);
+            if (indexColumn == null) {
+                // Not a column of the index; the filter cannot be served from it anyway.
+                return false;
+            }
+            if (!columnDefinition.getDataType().equals(indexColumn.getDataType())
+                    || !java.util.Objects.equals(
+                            columnDefinition.getComponentType(), indexColumn.getComponentType())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static PushdownResult pushdownDataIndex(
             final RowSet selection,
             final WhereFilter filter,
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
+            final List<ColumnDefinition<?>> filterColumnDefinitions,
             final PushdownResult result) {
+        if (!indexTypesMatchFilterColumns(dataIndex, filterColumnDefinitions, renameMap)) {
+            return result.copy();
+        }
         final RowSetBuilderRandom matchingBuilder = RowSetFactory.builderRandom();
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final long threshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
@@ -1076,11 +1189,28 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
             final Table toFilter;
             if (!renameMap.isEmpty()) {
-                final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                        .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
-                                ColumnName.of(entry.getKey())))
-                        .collect(Collectors.toList());
-                toFilter = dataIndex.table().renameColumns(renamePairs);
+                // renameMap is filter name -> manager name, and the index table's columns carry manager names, so
+                // the index table has to present each filter name. renameColumns cannot express this: when a filter
+                // references a column *and* a duplicate alias of it -- "Col1 != null && dup0_Col1 == Col1", from an
+                // updateView alias -- both names map to the same manager column, and inverting that gives two pairs
+                // with the same source, which renameColumns rejects outright ("Duplicate source column(s)"). A view
+                // can name one source twice.
+                final List<Selectable> projection = new ArrayList<>(renameMap.size() + 1);
+                renameMap.forEach((filterName, managerName) -> projection
+                        .add(Selectable.of(ColumnName.of(filterName), ColumnName.of(managerName))));
+                projection.add(ColumnName.of(dataIndex.rowSetColumnName()));
+
+                // view() evaluates its columns in order, so a target that shadows another entry's source would make
+                // the later entry read the wrong column. That cannot be expressed safely here, and the index is only
+                // an optimization, so decline it rather than risk a wrong answer.
+                final Set<String> sources = new HashSet<>(renameMap.values());
+                final boolean shadows = renameMap.entrySet().stream()
+                        .anyMatch(entry -> !entry.getKey().equals(entry.getValue())
+                                && sources.contains(entry.getKey()));
+                if (shadows) {
+                    return result.copy();
+                }
+                toFilter = dataIndex.table().view(projection);
             } else {
                 toFilter = dataIndex.table();
             }

@@ -32,6 +32,48 @@ class StringChunkMatchFilterFactory {
     private StringChunkMatchFilterFactory() {} // static use only
 
     /**
+     * Case-insensitive equality where either side may be null.
+     *
+     * <p>
+     * The receiver is the <em>filter's</em> value, so {@code filterValue.equalsIgnoreCase(columnValue)} throws when the
+     * filter is given a null to match -- for every row, whatever the column holds. Null matches only null, which is
+     * both what {@link CIStringKey#equalKey} does and what case-sensitive {@code in} does; case folding cannot
+     * distinguish null from anything else, so {@code icase} must agree with {@code in} on that input.
+     */
+    private static boolean equalsIgnoreCaseNullSafe(final String filterValue, final String columnValue) {
+        return filterValue == null ? columnValue == null : filterValue.equalsIgnoreCase(columnValue);
+    }
+
+    /**
+     * A case-insensitive set of match values, for the arities with too many values to specialize.
+     *
+     * <p>
+     * {@link KeyedObjectHashSet} cannot hold a null, and adding one is dropped rather than refused, so null membership
+     * is tracked separately instead of being silently lost.
+     */
+    private final static class CaseInsensitiveValueSet {
+        private final KeyedObjectHashSet<String, String> values =
+                new KeyedObjectHashSet<>(CASE_INSENSITIVE_KEY_INSTANCE);
+        private final boolean matchesNull;
+
+        private CaseInsensitiveValueSet(final Object... values) {
+            boolean matchesNull = false;
+            for (final Object value : values) {
+                if (value == null) {
+                    matchesNull = true;
+                } else {
+                    this.values.add((String) value);
+                }
+            }
+            this.matchesNull = matchesNull;
+        }
+
+        private boolean contains(final String columnValue) {
+            return columnValue == null ? matchesNull : values.containsKey(columnValue);
+        }
+    }
+
+    /**
      * Create a case-insensitive filter for the provided values. Assumes that matchOptions.caseInsensitive() is true and
      * all provided values are {@link String}.
      */
@@ -73,7 +115,7 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return this.value.equalsIgnoreCase(value);
+            return equalsIgnoreCaseNullSafe(this.value, value);
         }
     }
 
@@ -86,7 +128,7 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return !this.value.equalsIgnoreCase(value);
+            return !equalsIgnoreCaseNullSafe(this.value, value);
         }
     }
 
@@ -101,7 +143,7 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return value1.equalsIgnoreCase(value) || value2.equalsIgnoreCase(value);
+            return equalsIgnoreCaseNullSafe(value1, value) || equalsIgnoreCaseNullSafe(value2, value);
         }
     }
 
@@ -116,7 +158,7 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return !value1.equalsIgnoreCase(value) && !value2.equalsIgnoreCase(value);
+            return !equalsIgnoreCaseNullSafe(value1, value) && !equalsIgnoreCaseNullSafe(value2, value);
         }
     }
 
@@ -133,7 +175,8 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return value1.equalsIgnoreCase(value) || value2.equalsIgnoreCase(value) || value3.equalsIgnoreCase(value);
+            return equalsIgnoreCaseNullSafe(value1, value) || equalsIgnoreCaseNullSafe(value2, value)
+                    || equalsIgnoreCaseNullSafe(value3, value);
         }
     }
 
@@ -150,40 +193,34 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return !value1.equalsIgnoreCase(value) && !value2.equalsIgnoreCase(value)
-                    && !value3.equalsIgnoreCase(value);
+            return !equalsIgnoreCaseNullSafe(value1, value) && !equalsIgnoreCaseNullSafe(value2, value)
+                    && !equalsIgnoreCaseNullSafe(value3, value);
         }
     }
 
     private static class MultiValueStringChunkFilter extends ObjectChunkFilter<String> {
-        private final KeyedObjectHashSet<String, String> values;
+        private final CaseInsensitiveValueSet values;
 
         private MultiValueStringChunkFilter(Object... values) {
-            this.values = new KeyedObjectHashSet<>(CASE_INSENSITIVE_KEY_INSTANCE);
-            for (Object value : values) {
-                this.values.add((String) value);
-            }
+            this.values = new CaseInsensitiveValueSet(values);
         }
 
         @Override
         public boolean matches(String value) {
-            return this.values.containsKey(value);
+            return this.values.contains(value);
         }
     }
 
     private static class InverseMultiValueStringChunkFilter extends ObjectChunkFilter<String> {
-        private final KeyedObjectHashSet<String, String> values;
+        private final CaseInsensitiveValueSet values;
 
         private InverseMultiValueStringChunkFilter(Object... values) {
-            this.values = new KeyedObjectHashSet<>(CASE_INSENSITIVE_KEY_INSTANCE);
-            for (Object value : values) {
-                this.values.add((String) value);
-            }
+            this.values = new CaseInsensitiveValueSet(values);
         }
 
         @Override
         public boolean matches(String value) {
-            return !this.values.containsKey(value);
+            return !this.values.contains(value);
         }
     }
 }

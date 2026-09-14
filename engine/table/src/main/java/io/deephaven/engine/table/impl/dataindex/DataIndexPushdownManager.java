@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
-import io.deephaven.api.Strings;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -242,8 +241,13 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                     });
                 }
             } catch (final Exception e) {
+                // Not Strings.of: that renders the declarative io.deephaven.api.Filter API through
+                // Filter.Visitor, which WhereFilter does not implement -- it throws
+                // "WhereFilters do not implement walk". Building the message would then replace the real
+                // exception with an unrelated UnsupportedOperationException, discarding the cause entirely.
+                // WhereFilter.toString() is the engine-side rendering.
                 throw new TableInitializationException(
-                        "Error applying filter " + Strings.of(copiedFilter) + " to data index table", e);
+                        "Error applying filter " + copiedFilter + " to data index table", e);
             }
         }
         // Retain only the maybe rows and add the previously found matches.

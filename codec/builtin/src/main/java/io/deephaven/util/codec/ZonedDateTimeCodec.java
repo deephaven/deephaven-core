@@ -14,7 +14,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 public class ZonedDateTimeCodec implements ObjectCodec<ZonedDateTime> {
-    static final long MAX_CONVERTIBLE_SECONDS = (Long.MAX_VALUE / 1_000_000_000L) - 1;
 
     public ZonedDateTimeCodec(String args) {}
 
@@ -87,12 +86,21 @@ public class ZonedDateTimeCodec implements ObjectCodec<ZonedDateTime> {
         return safeComputeNanos(value.toEpochSecond(), value.getNano());
     }
 
-    private static long safeComputeNanos(long epochSecond, long nanoOfSecond) {
-        if (epochSecond > MAX_CONVERTIBLE_SECONDS) {
-            throw new IllegalArgumentException(
-                    "Numeric overflow detected during conversion of " + epochSecond + " to nanoseconds");
+    /**
+     * Representability cannot be decided from {@code epochSecond} alone. Two's-complement arithmetic is modular, so
+     * {@code epochSecond * 1_000_000_000L + nanoOfSecond} is exact whenever the mathematical result fits in a
+     * {@code long}, including when the multiplication alone overflows -- as it does for the bottom second of the range
+     * ({@code epochSecond == -9223372037}), which the old bound plus {@code Math.addExact} rejected with an
+     * {@link ArithmeticException}. Conversely a large negative {@code epochSecond} passed the bound and wrapped
+     * silently to an unrelated value. Checking the combined result by dividing it back out is exact in both directions.
+     */
+    private static long safeComputeNanos(final long epochSecond, final long nanoOfSecond) {
+        final long nanos = epochSecond * 1_000_000_000L + nanoOfSecond;
+        if (Math.floorDiv(nanos, 1_000_000_000L) != epochSecond
+                || Math.floorMod(nanos, 1_000_000_000L) != nanoOfSecond) {
+            throw new IllegalArgumentException("Numeric overflow detected during conversion of " + epochSecond
+                    + " seconds and " + nanoOfSecond + " nanoseconds to nanoseconds");
         }
-
-        return Math.addExact(epochSecond * 1_000_000_000L, nanoOfSecond);
+        return nanos;
     }
 }
