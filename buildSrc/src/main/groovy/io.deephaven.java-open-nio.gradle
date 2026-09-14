@@ -30,3 +30,28 @@ if (testRuntimeVersion > 8) {
     jvmArgs += ['--add-opens', 'java.base/java.nio=ALL-UNNAMED']
   }
 }
+
+// netty 4.2 sets io.netty.noUnsafe=true by default on Java 25+, so PooledByteBufAllocator hands back
+// PooledDirectByteBuf instead of PooledUnsafeDirectByteBuf. arrow-memory-netty-buffer-patch's PooledByteBufAllocatorL
+// unconditionally casts to PooledUnsafeDirectByteBuf, throwing:
+//     class io.netty.buffer.PooledDirectByteBuf cannot be cast to class io.netty.buffer.PooledUnsafeDirectByteBuf
+//     at io.netty.buffer.PooledByteBufAllocatorL$InnerAllocator.newDirectBufferL(PooledByteBufAllocatorL.java:185)
+//     at org.apache.arrow.memory.netty.NettyAllocationManager.<init>(NettyAllocationManager.java:74)
+// Passing --sun-misc-unsafe-memory-access=allow re-enables netty's use of sun.misc.Unsafe (netty reads the resulting
+// sun.misc.unsafe.memory.access system property) and silences the JDK's terminally-deprecated-method warnings. The flag
+// only exists on Java 23+, so it is version-gated to avoid "Unrecognized option" failures on Java <= 21.
+if (runtimeVersion >= 23) {
+  tasks.withType(JavaExec).configureEach {
+    jvmArgs += ['--sun-misc-unsafe-memory-access=allow']
+  }
+
+  tasks.withType(CreateStartScripts).configureEach {
+    defaultJvmOpts += ['--sun-misc-unsafe-memory-access=allow']
+  }
+}
+
+if (testRuntimeVersion >= 23) {
+  tasks.withType(Test).configureEach {
+    jvmArgs += ['--sun-misc-unsafe-memory-access=allow']
+  }
+}
