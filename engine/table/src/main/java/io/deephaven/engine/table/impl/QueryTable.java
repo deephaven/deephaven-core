@@ -1676,15 +1676,20 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
+    /**
+     * Mark this table as flat, meaning that its {@link #getRowSet() row set} is contiguous from zero now, and will
+     * remain so after every update it propagates.
+     * <p>
+     * Must be called from the thread constructing this table while its row set is quiescent, because the assertion
+     * reads {@code rowSet} without a consistent view of it.
+     */
     public void setFlat() {
+        Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
         flat = true;
     }
 
     @Override
     public boolean isFlat() {
-        // flat is a table-level property: a flat table's rowSet is contiguous from zero in any
-        // consistent view. RowSet.isFlat() is a per-cycle mutable property, so the two agree only
-        // for a reader on the refresh thread or holding the update graph lock.
         return flat;
     }
 
