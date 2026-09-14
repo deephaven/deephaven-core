@@ -6,6 +6,8 @@ package io.deephaven.iceberg.util;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.ManifestFile;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.expressions.Expression;
+import org.apache.iceberg.expressions.Expressions;
 import org.apache.iceberg.io.FileIO;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +30,69 @@ class IcebergReadInstructionsTest {
             assertThat(e)
                     .hasMessageContaining("If both snapshotID and snapshot are provided, the snapshot Ids must match");
         }
+    }
+
+    /**
+     * {@link IcebergReadInstructions#DEFAULT} and a bare builder both return the {@code alwaysTrue()} <i>singleton</i>
+     * ({@code isSameAs}, not {@code isEqualTo}). Pins the {@code @Value.Default} decision over
+     * {@code Optional<Expression>}, and the singleton identity that lets "is pruning on?" be a reference compare.
+     */
+    @Test
+    void pruningExpressionDefaultsToAlwaysTrue() {
+        assertThat(IcebergReadInstructions.DEFAULT.pruningExpression()).isSameAs(Expressions.alwaysTrue());
+        assertThat(IcebergReadInstructions.builder().build().pruningExpression())
+                .isSameAs(Expressions.alwaysTrue());
+    }
+
+    /**
+     * Builder round-trip asserting {@code isSameAs}: the {@link Expression} is stored as given, not copied or
+     * normalized. Cheap, but Immutables could plausibly interpose on an interface-typed attribute, so it is worth
+     * stating.
+     */
+    @Test
+    void pruningExpression() {
+        final Expression expression = Expressions.equal("Foo", "bar");
+        final IcebergReadInstructions instructions = IcebergReadInstructions.builder()
+                .pruningExpression(expression)
+                .build();
+        assertThat(instructions.pruningExpression()).isSameAs(expression);
+    }
+
+    /**
+     * The wither sets the new value <i>and</i> carries over unrelated attributes ({@code updateMode},
+     * {@code ignoreResolvingErrors}). This is the shape of bug that silently drops fields, so asserting the carry-over
+     * matters more than asserting the set.
+     */
+    @Test
+    void withPruningExpression() {
+        final Expression expression = Expressions.greaterThan("Foo", 42);
+        final IcebergReadInstructions instructions = IcebergReadInstructions.DEFAULT
+                .withPruningExpression(expression);
+        assertThat(instructions.pruningExpression()).isSameAs(expression);
+        // Unrelated attributes must be carried over
+        assertThat(instructions.updateMode()).isEqualTo(IcebergReadInstructions.DEFAULT.updateMode());
+        assertThat(instructions.ignoreResolvingErrors())
+                .isEqualTo(IcebergReadInstructions.DEFAULT.ignoreResolvingErrors());
+    }
+
+    /**
+     * Iceberg {@link Expression}s do not implement {@code equals}. Pinned deliberately: excluding the attribute from
+     * equality instead would let instructions with different pruning expressions compare equal, which is far worse than
+     * the redundant inequality it causes.
+     */
+    @Test
+    void pruningExpressionEqualityIsReferenceBased() {
+        final Expression expression = Expressions.equal("Foo", "bar");
+        assertThat(IcebergReadInstructions.builder().pruningExpression(expression).build())
+                .isEqualTo(IcebergReadInstructions.builder().pruningExpression(expression).build());
+
+        // Structurally identical, but distinct instances
+        assertThat(IcebergReadInstructions.builder().pruningExpression(Expressions.equal("Foo", "bar")).build())
+                .isNotEqualTo(IcebergReadInstructions.builder().pruningExpression(Expressions.equal("Foo", "bar"))
+                        .build());
+
+        // The default is a singleton, so defaulted instructions still compare equal
+        assertThat(IcebergReadInstructions.builder().build()).isEqualTo(IcebergReadInstructions.DEFAULT);
     }
 
     enum MockSnapshot implements Snapshot {
