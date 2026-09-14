@@ -33,27 +33,68 @@ import static org.junit.Assert.assertTrue;
  * to thousands of runs.
  *
  * <p>
- * Each test times a single bulk call at P and 4P elements inside one block and takes the best of several runs; linear
- * cost predicts a ratio near 4, quadratic near 16. The bound leaves room for timing noise while staying well clear of
- * quadratic.
+ * Each test compares one bulk call at P elements with one at 4P elements inside one block; linear cost predicts a ratio
+ * near 4, quadratic near 16, and the bound sits between them. The timing is arranged to survive a shared, busy machine:
+ * each timed block repeats its call for at least {@link #BLOCK_NANOS}, so one scheduler slice cannot swallow it, and
+ * the small and big blocks alternate for {@link #ROUNDS} rounds with each size keeping its best per-call time, so a
+ * burst of contention lands on both sizes rather than on whichever ran second.
  */
 @Category(OutOfBandTest.class)
 public class RspRankCursorLinearityTest {
 
-    private static final int REPS = 7;
+    private static final long BLOCK_NANOS = 100_000_000L;
+    private static final int ROUNDS = 5;
     private static final double MAX_RATIO = 8.0;
 
-    private static long minNanos(final Runnable r) {
-        for (int i = 0; i < 3; ++i) {
-            r.run(); // warm up
-        }
-        long best = Long.MAX_VALUE;
-        for (int i = 0; i < REPS; ++i) {
-            final long t0 = System.nanoTime();
+    /**
+     * Runs {@code r} back to back at least {@code minCalls} times and until at least {@link #BLOCK_NANOS} have elapsed,
+     * whichever takes longer, and returns the average nanoseconds per call. The time bound keeps a block from ending
+     * early when the calibration that produced {@code minCalls} ran slowly; the call floor keeps a block from doing
+     * less work than the calibration did when it runs faster.
+     */
+    private static double timedBlock(final Runnable r, final int minCalls) {
+        final long t0 = System.nanoTime();
+        long calls = 0;
+        long elapsed;
+        do {
             r.run();
-            best = Math.min(best, System.nanoTime() - t0);
+            ++calls;
+            elapsed = System.nanoTime() - t0;
+        } while (calls < minCalls || elapsed < BLOCK_NANOS);
+        return elapsed / (double) calls;
+    }
+
+    /** Warms {@code r} up for about a block's worth of time and returns how many calls filled it. */
+    private static int callsPerBlock(final Runnable r) {
+        final long t0 = System.nanoTime();
+        long calls = 0;
+        do {
+            r.run();
+            ++calls;
+        } while (System.nanoTime() - t0 < BLOCK_NANOS);
+        return (int) Math.max(1, calls);
+    }
+
+    /** The best per-call time of each of {@code small} and {@code big} over alternating timed blocks. */
+    private static double[] bestPerCall(final Runnable small, final Runnable big) {
+        final int smallCalls = callsPerBlock(small);
+        final int bigCalls = callsPerBlock(big);
+        double bestSmall = Double.MAX_VALUE;
+        double bestBig = Double.MAX_VALUE;
+        for (int round = 0; round < ROUNDS; ++round) {
+            bestSmall = Math.min(bestSmall, timedBlock(small, smallCalls));
+            bestBig = Math.min(bestBig, timedBlock(big, bigCalls));
         }
-        return best;
+        return new double[] {bestSmall, bestBig};
+    }
+
+    private static void assertLinear(final String what, final Runnable small, final Runnable big) {
+        final double[] best = bestPerCall(small, big);
+        final double ratio = best[1] / best[0];
+        System.out.println(what + ": small=" + best[0] / 1_000_000.0 + "ms, big=" + best[1] / 1_000_000.0
+                + "ms, ratio=" + ratio);
+        assertTrue(what + " scaled super-linearly for 4x the elements in one bulk call: ratio=" + ratio,
+                ratio < MAX_RATIO);
     }
 
     /** Keys 0, 2, 4, ..., 2*(keys-1): one block whose container is a BitmapContainer. */
@@ -104,104 +145,91 @@ public class RspRankCursorLinearityTest {
         };
     }
 
-    private static long timeGetKeysForPositions(final RowSet rs, final int p) {
+    /** Keys {@code step * i} for {@code i < count}. */
+    private static RowSet everyNth(final int step, final int count) {
+        final RowSetBuilderSequential b = RowSetFactory.builderSequential();
+        for (int i = 0; i < count; ++i) {
+            b.appendKey((long) step * i);
+        }
+        return b.build();
+    }
+
+    private static Runnable getKeysForPositions(final RowSet rs, final int p) {
         final long[] sink = new long[1];
         final LongConsumer sinkConsumer = v -> sink[0] += v;
-        return minNanos(() -> rs.getKeysForPositions(positions(p), sinkConsumer));
+        return () -> rs.getKeysForPositions(positions(p), sinkConsumer);
     }
 
-    /** Every other position in [0, 2p): p single-position ranges, so the contiguous fast path does not apply. */
-    private static long timeSubSetForPositions(final RowSet rs, final int p) {
-        final RowSetBuilderSequential b = RowSetFactory.builderSequential();
-        for (int i = 0; i < p; ++i) {
-            b.appendKey(2L * i);
-        }
-        try (final RowSet positions = b.build()) {
-            return minNanos(() -> {
-                try (final WritableRowSet sub = rs.subSetForPositions(positions)) {
-                    assertEquals(p, sub.size());
-                }
-            });
-        }
+    /** {@code positions} holds single positions with gaps between them, so the contiguous fast path does not apply. */
+    private static Runnable subSetForPositions(final RowSet rs, final RowSet positions) {
+        return () -> {
+            try (final WritableRowSet sub = rs.subSetForPositions(positions)) {
+                assertEquals(positions.size(), sub.size());
+            }
+        };
     }
 
-    /** {@code s} shift windows [8i, 8i+3] by +1, all inside the receiver's single block. */
-    private static long timeShiftApply(final RowSet rs, final int s) {
+    /** {@code s} shift windows [4i, 4i+1] by +1, all inside the receiver's single block. */
+    private static RowSetShiftData shiftsOfTwo(final int s) {
         final RowSetShiftData.Builder b = new RowSetShiftData.Builder();
         for (int i = 0; i < s; ++i) {
-            b.shiftRange(8L * i, 8L * i + 3, 1);
+            b.shiftRange(4L * i, 4L * i + 1, 1);
         }
-        final RowSetShiftData sd = b.build();
-        return minNanos(() -> {
+        return b.build();
+    }
+
+    private static Runnable shiftApply(final RowSet rs, final RowSetShiftData sd) {
+        return () -> {
             try (final WritableRowSet copy = rs.copy()) {
                 sd.apply(copy);
                 assertEquals(rs.size(), copy.size());
             }
-        });
+        };
     }
 
-    /** Invert {@code d} single-key ranges (keys 8i, all present) against the receiver. */
-    private static long timeForAllInvertedLongRanges(final RowSet rs, final int d) {
-        final RowSetBuilderSequential b = RowSetFactory.builderSequential();
-        for (int i = 0; i < d; ++i) {
-            b.appendKey(8L * i);
-        }
+    /** Inverts the single-key ranges of {@code dest}, all of which the receiver holds, against the receiver. */
+    private static Runnable invertedRanges(final RowSet rs, final RowSet dest) {
         final long[] sink = new long[1];
-        try (final RowSet dest = b.build()) {
-            return minNanos(() -> RowSetUtils.forAllInvertedLongRanges(rs, dest, (s, e) -> sink[0] += e - s));
-        }
-    }
-
-    private static void assertSubQuadratic(final String what, final long small, final long big) {
-        final double ratio = big / (double) small;
-        System.out.println(what + ": small=" + small / 1_000_000.0 + "ms, big=" + big / 1_000_000.0
-                + "ms, ratio=" + ratio);
-        assertTrue(what + " scaled super-linearly for 4x the elements in one bulk call: ratio=" + ratio,
-                ratio < MAX_RATIO);
+        return () -> RowSetUtils.forAllInvertedLongRanges(rs, dest, (s, e) -> sink[0] += e - s);
     }
 
     @Test
     public void testGetKeysForPositionsInBitmapBlock() {
         try (final RowSet rs = bitmapBlock(32768)) {
-            final long small = timeGetKeysForPositions(rs, 8192);
-            final long big = timeGetKeysForPositions(rs, 32768);
-            assertSubQuadratic("bitmap getKeysForPositions", small, big);
+            assertLinear("bitmap getKeysForPositions", getKeysForPositions(rs, 8192), getKeysForPositions(rs, 32768));
         }
     }
 
     @Test
     public void testGetKeysForPositionsInRunBlock() {
         try (final RowSet rs = runBlock(1500)) { // 24000 keys
-            final long small = timeGetKeysForPositions(rs, 6000);
-            final long big = timeGetKeysForPositions(rs, 24000);
-            assertSubQuadratic("run getKeysForPositions", small, big);
+            assertLinear("run getKeysForPositions", getKeysForPositions(rs, 6000), getKeysForPositions(rs, 24000));
         }
     }
 
     @Test
     public void testSubSetForPositionsInBitmapBlock() {
-        try (final RowSet rs = bitmapBlock(32768)) {
-            final long small = timeSubSetForPositions(rs, 4096);
-            final long big = timeSubSetForPositions(rs, 16384);
-            assertSubQuadratic("bitmap subSetForPositions", small, big);
+        try (final RowSet rs = bitmapBlock(32768);
+                final RowSet small = everyNth(2, 4096);
+                final RowSet big = everyNth(2, 16384)) {
+            assertLinear("bitmap subSetForPositions", subSetForPositions(rs, small), subSetForPositions(rs, big));
         }
     }
 
     @Test
     public void testShiftDataApplyOnBitmapBlock() {
         try (final RowSet rs = bitmapBlock(32768)) {
-            final long small = timeShiftApply(rs, 2048);
-            final long big = timeShiftApply(rs, 8192);
-            assertSubQuadratic("bitmap RowSetShiftData.apply single call", small, big);
+            assertLinear("bitmap RowSetShiftData.apply single call", shiftApply(rs, shiftsOfTwo(4096)),
+                    shiftApply(rs, shiftsOfTwo(16384)));
         }
     }
 
     @Test
     public void testForAllInvertedLongRangesOnBitmapBlock() {
-        try (final RowSet rs = bitmapBlock(32768)) {
-            final long small = timeForAllInvertedLongRanges(rs, 2048);
-            final long big = timeForAllInvertedLongRanges(rs, 8192);
-            assertSubQuadratic("bitmap forAllInvertedLongRanges", small, big);
+        try (final RowSet rs = bitmapBlock(32768);
+                final RowSet small = everyNth(4, 4096);
+                final RowSet big = everyNth(4, 16384)) {
+            assertLinear("bitmap forAllInvertedLongRanges", invertedRanges(rs, small), invertedRanges(rs, big));
         }
     }
 }

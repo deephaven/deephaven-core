@@ -1676,15 +1676,36 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
+    /**
+     * Equivalent to {@code setFlat(false)}, for callers that are working with current values.
+     */
     public void setFlat() {
+        setFlat(false);
+    }
+
+    /**
+     * Mark this table as flat, meaning that its {@link #getRowSet() row set} is contiguous from zero now, and will
+     * remain so after every update it propagates.
+     *
+     * @param usePrev Whether to verify flatness against the {@link TrackingRowSet#prev() previous} row set rather than
+     *        the current one. Callers running inside a snapshot attempt that has not been validated must pass the
+     *        {@code usePrev} they were given, since the current row set may be under concurrent mutation.
+     * @see ConstructSnapshot#failIfConcurrentAttemptInconsistent()
+     */
+    public void setFlat(final boolean usePrev) {
+        final RowSet rowSetToCheck = usePrev ? rowSet.prev() : rowSet;
+        // RowSet.isFlat() makes several independent reads of a backing structure that mutations swap wholesale, so a
+        // refresh interleaved with those reads can produce a spurious false. Sample it first, then fail the enclosing
+        // concurrent snapshot attempt if the clock moved: that is the only way such an interleaving can occur, and
+        // checking it in the other order would leave the same window open.
+        final boolean rowSetIsFlat = rowSetToCheck.isFlat();
+        ConstructSnapshot.failIfConcurrentAttemptInconsistent();
+        Assert.assertion(rowSetIsFlat, "rowSet.isFlat()", rowSetToCheck, "rowSet");
         flat = true;
     }
 
     @Override
     public boolean isFlat() {
-        if (flat) {
-            Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()", rowSet, "rowSet");
-        }
         return flat;
     }
 
@@ -1834,7 +1855,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             propagateDataIndexes(processedColumns, resultTable);
                         }
                     }
-                    propagateFlatness(resultTable);
+                    propagateFlatness(resultTable, false);
                     copySortableColumns(resultTable, processedColumns);
                     if (publishTheseSources) {
                         maybeCopyColumnDescriptions(resultTable, processedColumns);
@@ -2026,7 +2047,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     sc.setListenerAndResult(listener, queryTable);
                                 }
 
-                                propagateFlatness(queryTable);
+                                propagateFlatness(queryTable, usePrev);
 
                                 copyAttributes(queryTable,
                                         flavor == Flavor.UpdateView ? CopyAttributeOperation.UpdateView
@@ -2121,7 +2142,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             addUpdateListener(new ListenerImpl(
                                     "lazyUpdate(" + Arrays.deepToString(processedColumns) + ')', this, result));
                         }
-                        propagateFlatness(result);
+                        propagateFlatness(result, false);
                         copyAttributes(result, CopyAttributeOperation.UpdateView);
                         copySortableColumns(result, processedColumns);
                         maybeCopyColumnDescriptions(result, processedColumns);
@@ -2154,7 +2175,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         initializeWithSnapshot("dropColumns", snapshotControl, (usePrev, beforeClockValue) -> {
                             final TableDefinition resultDef = TableDefinition.inferFrom(this, newColumns);
                             final QueryTable resultTable = new QueryTable(resultDef, rowSet, newColumns);
-                            propagateFlatness(resultTable);
+                            propagateFlatness(resultTable, usePrev);
 
                             copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
                             copySortableColumns(resultTable,
@@ -2277,7 +2298,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     initializeWithSnapshot("renameColumns", snapshotControl, (usePrev, beforeClockValue) -> {
                         final TableDefinition resultDef = TableDefinition.inferFrom(this, newColumns);
                         final QueryTable resultTable = new QueryTable(resultDef, rowSet, newColumns);
-                        propagateFlatness(resultTable);
+                        propagateFlatness(resultTable, usePrev);
 
                         copyAttributes(resultTable, CopyAttributeOperation.RenameColumns);
                         copySortableColumns(resultTable, pairs);
@@ -3034,10 +3055,12 @@ public class QueryTable extends BaseTable<QueryTable> {
      * </p>
      *
      * @param result the table derived from this table
+     * @param usePrev whether to verify flatness against the {@link TrackingRowSet#prev() previous} row set rather than
+     *        the current one; see {@link #setFlat(boolean)}
      */
-    public void propagateFlatness(QueryTable result) {
+    public void propagateFlatness(QueryTable result, final boolean usePrev) {
         if (isFlat()) {
-            result.setFlat();
+            result.setFlat(usePrev);
         }
     }
 
@@ -3166,7 +3189,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                 initializeWithSnapshot("copy", snapshotControl, (usePrev, beforeClockValue) -> {
                     final QueryTable resultTable = new CopiedTable(definition, this);
-                    propagateFlatness(resultTable);
+                    propagateFlatness(resultTable, usePrev);
                     if (shouldCopy != StandardOptions.COPY_NONE) {
                         copyAttributes(resultTable, shouldCopy);
                     }
