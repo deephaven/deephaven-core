@@ -649,17 +649,30 @@ public class QueryTableWhereInTest {
         // More set keys than the 1 << 16 the filter checks the kernel's generation at.
         final int setSize = (1 << 16) + 100;
         // Few enough distinct source keys that the source is more than 1 / DATA_INDEX_FOR_WHERE_THRESHOLD times the
-        // size of its index table, so that the filter uses the index rather than filtering linearly.
+        // size of its index table, which is what makes the filter use the index rather than filtering linearly.
         final int distinctSourceKeys = 100;
         final Table source = TableTools.emptyTable(10_000).update("Z = (int) (ii % " + distinctSourceKeys + ")");
-        DataIndexer.getOrCreateDataIndex(source, "Z");
+        final Table sourceIndexTable = DataIndexer.getOrCreateDataIndex(source, "Z").table();
         final Table setTable = TableTools.emptyTable(setSize).update("Z = (int) ii");
 
-        final Table included = source.whereIn(setTable, "Z");
-        assertTableEquals(source, included);
+        final boolean oldUseDataIndex = QueryTable.USE_DATA_INDEX_FOR_WHERE;
+        final double oldThreshold = QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD;
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = true;
+        try {
+            // Assert the conditions the filter itself tests, so that this cannot quietly become a linear filter test.
+            assertTrue("the source must be large enough relative to its index for the index path to be taken",
+                    source.size() > sourceIndexTable.size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+            assertTrue("the set must be larger than one kernel chunk", setTable.size() > (1 << 16));
 
-        final Table excluded = source.whereNotIn(setTable, "Z");
-        assertEquals(0, excluded.size());
+            final Table included = source.whereIn(setTable, "Z");
+            assertTableEquals(source, included);
+
+            final Table excluded = source.whereNotIn(setTable, "Z");
+            assertEquals(0, excluded.size());
+        } finally {
+            QueryTable.USE_DATA_INDEX_FOR_WHERE = oldUseDataIndex;
+            QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD = oldThreshold;
+        }
     }
 
     @Test
