@@ -589,6 +589,19 @@ public final class TestJobScheduler {
         }
     }
 
+    @Test
+    public void testAsDeliverableException() {
+        final Exception exception = new IllegalStateException("Test exception");
+        TestCase.assertSame(exception, JobScheduler.asDeliverableException(exception));
+
+        final Error error = new TestError("Test error");
+        final Exception delivered = JobScheduler.asDeliverableException(error);
+        TestCase.assertSame(error, delivered.getCause());
+        // The wrapper carries no stack trace of its own; the one that matters belongs to the Error, and filling in
+        // another is the largest allocation on a path that exists because the heap may be exhausted.
+        TestCase.assertEquals(0, delivered.getStackTrace().length);
+    }
+
     /**
      * An Error cannot be handed to a {@code Consumer<Exception>}, so the scheduler wraps it; what matters is that the
      * failure arrives at all, with the original Error intact.

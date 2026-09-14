@@ -42,18 +42,38 @@ public interface JobScheduler {
     Supplier<JobThreadContext> DEFAULT_CONTEXT_FACTORY = () -> DEFAULT_CONTEXT;
 
     /**
+     * Delivered when a job fails with an {@link Error} and even the wrapper for it cannot be allocated, which is to say
+     * when the heap is exhausted — the very failure this path exists for. Allocated once, when this interface is
+     * initialized, so that delivering a failure never depends on being able to allocate.
+     */
+    Exception UNREPORTABLE_JOB_ERROR = new UncheckedDeephavenException(
+            "Scheduled job failed with an Error that could not be wrapped for delivery", null, true, false);
+
+    /**
      * Convert a Throwable that escaped a scheduled job into something the {@code Consumer<Exception>} error handlers
      * used throughout the scheduler can accept. Exceptions pass through unchanged; an {@link Error} — an
      * {@link OutOfMemoryError}, in practice — is wrapped, so that the thread waiting on the job's completion fails with
      * a diagnostic instead of waiting forever for a completion that cannot happen.
      *
+     * <p>
+     * This never throws. The wrapper carries no stack trace of its own: filling one in is the largest allocation here,
+     * and the stack that matters belongs to the Error, which is kept as the cause. Should even that allocation fail,
+     * {@link #UNREPORTABLE_JOB_ERROR} is delivered instead — a caller that fails without a diagnostic is still far
+     * better than one that waits forever.
+     * </p>
+     *
      * @param throwable the Throwable that escaped the job
      * @return {@code throwable} itself if it is an Exception, otherwise a wrapper holding it as its cause
      */
     static Exception asDeliverableException(@NotNull final Throwable throwable) {
-        return throwable instanceof Exception
-                ? (Exception) throwable
-                : new UncheckedDeephavenException("Error thrown by scheduled job", throwable);
+        if (throwable instanceof Exception) {
+            return (Exception) throwable;
+        }
+        try {
+            return new UncheckedDeephavenException("Error thrown by scheduled job", throwable, true, false);
+        } catch (Throwable t) {
+            return UNREPORTABLE_JOB_ERROR;
+        }
     }
 
     /**
