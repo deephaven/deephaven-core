@@ -963,4 +963,39 @@ public class TestDynamicWhereFilterSnapshotRaces {
                 filter.stateChangedOnStep(quietStep[0]));
         assertTableEquals(newTable(intCol(KEY, 3)), result);
     }
+
+    /**
+     * {@code wouldMatch} on a refreshing table initializes from previous values when neither the table nor the filter
+     * is satisfied yet, and the result still tracks both once the cycle finishes. The static case cannot exercise this:
+     * a static parent has no previous values, so its snapshot control reads current ones however it is asked.
+     */
+    @Test
+    public void testRefreshingWouldMatchInitializesFromPreviousValues() throws Exception {
+        final GatedIntegerArraySource sourceKey = new GatedIntegerArraySource(new Gate());
+        final QueryTable source = sourceTable(sourceKey, true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, pairs());
+
+        updateGraph.startCycleForUnitTests(false);
+        final long step = updateGraph.clock().currentStep();
+        try {
+            // Neither the source nor the filter is satisfied, so the operation reads previous values.
+            final Table result = pool.submit(() -> source.wouldMatch(new WouldMatchPair("M", filter)))
+                    .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertTableEquals(newTable(intCol(KEY, 1, 2, 3), booleanCol("M", true, false, false)), result);
+
+            // The result tracks the source from there, on the same cycle it was built in.
+            addSourceRow(source, sourceKey, 3, 1);
+            source.notifyListeners(i(3), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+            while (!result.satisfied(step)) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+            updateGraph.completeCycleForUnitTests();
+
+            assertTableEquals(newTable(intCol(KEY, 1, 2, 3, 1), booleanCol("M", true, false, false, true)), result);
+        } finally {
+            endCycleIfOpen();
+        }
+    }
 }
