@@ -73,8 +73,10 @@ while true; do
     for pid in $(pgrep -x java 2>/dev/null); do
         echo "===== Thread.print pid=$pid =====" >> "$f"
         ok=0
+        # Attaching to an unresponsive JVM can block indefinitely, which would strand the watchdog
+        # on the very JVM it exists to diagnose, so each attempt is bounded.
         for jcmd in $(find_jcmd); do
-            if "$jcmd" "$pid" Thread.print -l >> "$f" 2>/dev/null; then ok=1; break; fi
+            if timeout 60 "$jcmd" "$pid" Thread.print -l >> "$f" 2>/dev/null; then ok=1; break; fi
         done
         # SIGQUIT makes the JVM print its own thread dump to stdout, which gradle captures into the
         # task's binary output events, so stacks still reach the artifact when attach is unavailable.
