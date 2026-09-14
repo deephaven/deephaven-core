@@ -29,7 +29,7 @@ A copy of the table with the key columns attribute set.
 
 ### Example
 
-```python
+```python order=null
 from deephaven import empty_table
 
 not_keyed = empty_table(100).update(["Key1=i%3", "Key2=(i+1)%3", "Value=i"])
@@ -64,7 +64,7 @@ A copy of the table with the key columns and unique keys attributes set.
 
 ### Example
 
-```python
+```python order=null
 from deephaven import empty_table
 
 not_keyed = empty_table(100).update(["Key1=i", "Key2=i+1", "Value=i*2"])

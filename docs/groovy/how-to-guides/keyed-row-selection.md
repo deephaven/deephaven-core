@@ -29,7 +29,7 @@ A copy of the table with the key columns attribute set.
 
 ### Example
 
-```groovy
+```groovy order=null
 notKeyed = emptyTable(100).update("Key1=i%3", "Key2=(i+1)%3", "Value=i")
 keyedTable = notKeyed.withKeys("Key1", "Key2")
 ```
@@ -62,7 +62,7 @@ A copy of the table with the key columns and unique keys attributes set.
 
 ### Example
 
-```groovy
+```groovy order=null
 notKeyed = emptyTable(100).update("Key1=i", "Key2=i+1", "Value=i*2")
 uniqueKeyedTable = notKeyed.withUniqueKeys("Key1", "Key2")
 ```
