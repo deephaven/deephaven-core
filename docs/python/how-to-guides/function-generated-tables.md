@@ -14,9 +14,10 @@ This guide covers [function-generated tables](../reference/table-operations/crea
 - Define a Python function that returns a table.
 - Define one or more trigger tables or a refresh interval.
 - Create a function-generated table by calling `function_generated_table`.
-  - A function-generated table uses exactly one of the following to trigger the function call:
+  - A function-generated table uses at most one of the following to trigger the function call:
     - One or more trigger tables.
     - A refresh interval.
+  - Supplying neither gives the result no trigger at all: the function runs once, and the result is a static table.
 
 A [function-generated table](../reference/table-operations/create/function_generated_table.md) is designed to ingest data from external sources into ticking tables. The only requirement is that the Python function that ingests this data returns a table, or returns `None` to [retain the previous result](#retain-the-previous-result).
 

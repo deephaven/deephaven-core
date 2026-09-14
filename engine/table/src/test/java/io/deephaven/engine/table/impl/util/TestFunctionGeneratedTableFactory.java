@@ -33,6 +33,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.SafeCloseable;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.Optional;
@@ -510,6 +511,27 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         handleDelayedRefresh(() -> updater.addAsync(newTable(intCol("IntCol", 2)), t -> {
         }), source);
         assertTableEquals(newTable(stringCol("Key", "p", "q")), functionBacked);
+    }
+
+    public void testNoTriggerIsStatic() {
+        final MutableInt invocations = new MutableInt(0);
+        final Table result = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
+                .tableSupplier(() -> {
+                    invocations.increment();
+                    return newTable(intCol("Value", invocations.intValue()));
+                })
+                .build());
+        // With neither a refreshInterval nor dependencies the supplier runs once at construction and the result never
+        // refreshes.
+        assertFalse(result.isRefreshing());
+        assertEquals(1, invocations.intValue());
+        assertTableEquals(newTable(intCol("Value", 1)), result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+        });
+        assertEquals(1, invocations.intValue());
+        assertTableEquals(newTable(intCol("Value", 1)), result);
     }
 
     public void testBlinkRequiresTrigger() {

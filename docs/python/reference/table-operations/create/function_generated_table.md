@@ -2,7 +2,7 @@
 title: function_generated_table
 ---
 
-The `function_generated_table` method is useful for creating tables that are dependent on one or more ticking tables, or for creating tables that need to be refreshed at a regular interval. The method creates a table by running the user-defined `table_generator` function. This function will be run once when the table is created, and then again when either the `source_tables` tick or when `refresh_interval_ms` milliseconds have elapsed.
+The `function_generated_table` method is useful for creating tables that are dependent on one or more ticking tables, or for creating tables that need to be refreshed at a regular interval. The method creates a table by running the user-defined `table_generator` function. This function runs once when the table is created, and then again when either the `source_tables` tick or when `refresh_interval_ms` milliseconds have elapsed. At most one of `source_tables` and `refresh_interval_ms` may be specified; when neither is specified there is no refresh trigger, so the `table_generator` runs exactly once and the result is a static table.
 
 > [!NOTE]
 > The `table_generator` may access data in the `source_tables`, but should not perform further table operations without careful handling. Table operations may be memoized, and it is possible that a table operation will return a table created by a previous invocation of the same operation. Since that result will not have been included in the `source_table’`, it is not automatically treated as a dependency for purposes of determining when it is safe to invoke `table_generator`. This allows race conditions to exist between (1) accessing the operation result and (2) that result’s own update processing.
@@ -39,14 +39,14 @@ The table generator function. This function must return a table, or `None` to de
 
 The source tables to be used by the generator function.
 
-Either this parameter or `refresh_interval_ms` must be specified, but not both.
+This parameter and `refresh_interval_ms` are mutually exclusive. When neither is specified, the result is static.
 
 </Param>
 <Param name="refresh_interval_ms" type="int" optional>
 
-The interval (in milliseconds) at which the `table_generator` function is re-run.
+The interval (in milliseconds) at which the `table_generator` function is re-run. A non-positive interval is treated the same as no trigger at all, producing a static result.
 
-Either this parameter or `source_tables` must be specified, but not both.
+This parameter and `source_tables` are mutually exclusive. When neither is specified, the result is static.
 
 </Param>
 <Param name="exec_ctx" type="ExecutionContext" optional>

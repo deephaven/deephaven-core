@@ -6,6 +6,7 @@ from typing import Any
 
 import deephaven.dtypes as dht
 from deephaven import (
+    DHError,
     empty_table,
     function_generated_table,
     input_table,
@@ -160,6 +161,44 @@ class TableTestCase(BaseTestCase):
             )
             self.assertEqual(result_str, "test string")
             self.assertEqual(result_int, 12345)
+
+    def test_generated_table_no_trigger(self):
+        invocations = []
+
+        def table_generator_function():
+            invocations.append(None)
+            return new_table([int_col("Value", [len(invocations)])])
+
+        # With neither source_tables nor refresh_interval_ms there is no refresh trigger, so the generator runs
+        # exactly once and the result is static.
+        result_table = function_generated_table(table_generator_function)
+        self.assertFalse(result_table.is_refreshing)
+        self.assertEqual(len(invocations), 1)
+        self.assertEqual(result_table.size, 1)
+        first_row_key = get_row_key(0, result_table)
+        self.assertEqual(
+            result_table.j_table.getColumnSource("Value").getInt(first_row_key), 1
+        )
+
+    def test_generated_table_non_positive_interval(self):
+        def table_generator_function():
+            return new_table([int_col("Value", [1])])
+
+        # A non-positive interval is no trigger at all, matching the omitted-trigger case.
+        for interval in (0, -1):
+            result_table = function_generated_table(
+                table_generator_function, refresh_interval_ms=interval
+            )
+            self.assertFalse(result_table.is_refreshing)
+            self.assertEqual(result_table.size, 1)
+
+    def test_generated_table_blink_requires_trigger(self):
+        def table_generator_function():
+            return new_table([int_col("Value", [1])])
+
+        with self.assertRaises(DHError) as cm:
+            function_generated_table(table_generator_function, blink_table=True)
+        self.assertIn("blinkTable requires", str(cm.exception))
 
     def test_generated_table_blink(self):
         append_only_input_table = input_table(col_defs={"MyStr": dht.string})
