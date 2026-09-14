@@ -76,13 +76,13 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
      * Note: This exports a PluginMarker for the specified plugin name. Plugin-specific routing is handled by
      * TypedTicket.type in the ConnectRequest phase, which is validated against the plugin's name() method.
      *
-     * @param session the session state for the current request
+     * @param session the session state for the current request, must be non-null
      * @param descriptor the flight descriptor containing the command
      * @param request the parsed RemoteFileSourcePluginFetchRequest containing the result ticket
      * @return a FlightInfo export object containing the plugin endpoint information
      * @throws StatusRuntimeException if the request doesn't contain a valid result ID ticket or plugin name
      */
-    private static SessionState.ExportObject<Flight.FlightInfo> fetchPlugin(@Nullable final SessionState session,
+    private static SessionState.ExportObject<Flight.FlightInfo> fetchPlugin(final SessionState session,
             final Flight.FlightDescriptor descriptor,
             final RemoteFileSourcePluginFetchRequest request) {
         final Ticket resultTicket = request.getResultId();
