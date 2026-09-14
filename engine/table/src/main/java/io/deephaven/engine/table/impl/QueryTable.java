@@ -1690,10 +1690,17 @@ public class QueryTable extends BaseTable<QueryTable> {
      * @param usePrev Whether to verify flatness against the {@link TrackingRowSet#prev() previous} row set rather than
      *        the current one. Callers running inside a snapshot attempt that has not been validated must pass the
      *        {@code usePrev} they were given, since the current row set may be under concurrent mutation.
+     * @see ConstructSnapshot#failIfConcurrentAttemptInconsistent()
      */
     public void setFlat(final boolean usePrev) {
         final RowSet rowSetToCheck = usePrev ? rowSet.prev() : rowSet;
-        Assert.assertion(rowSetToCheck.isFlat(), "rowSet.isFlat()", rowSetToCheck, "rowSet");
+        // RowSet.isFlat() makes several independent reads of a backing structure that mutations swap wholesale, so a
+        // refresh interleaved with those reads can produce a spurious false. Sample it first, then fail the enclosing
+        // concurrent snapshot attempt if the clock moved: that is the only way such an interleaving can occur, and
+        // checking it in the other order would leave the same window open.
+        final boolean rowSetIsFlat = rowSetToCheck.isFlat();
+        ConstructSnapshot.failIfConcurrentAttemptInconsistent();
+        Assert.assertion(rowSetIsFlat, "rowSet.isFlat()", rowSetToCheck, "rowSet");
         flat = true;
     }
 
