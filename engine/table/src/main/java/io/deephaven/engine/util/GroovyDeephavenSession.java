@@ -378,7 +378,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final boolean isDirty = remoteLoader.isDirty();
 
         // Clear the cache in two cases:
-        // 1. is_dirty flag is set - remote sources have changed
+        // 1. isDirty flag is set - remote sources have changed
         // 2. Previous eval had remote sources but current does not - catches edge case where script is run
         // without providing execution context at all, and we need to clear from previous remote source scenario
         if (isDirty || (previousEvalHadRemoteSources && !hasRemoteSources)) {
