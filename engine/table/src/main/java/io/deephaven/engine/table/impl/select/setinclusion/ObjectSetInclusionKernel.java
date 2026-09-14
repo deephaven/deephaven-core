@@ -15,6 +15,8 @@ import java.util.Iterator;
 
 public class ObjectSetInclusionKernel implements SetInclusionKernel {
 
+    // Must be a fastutil open hash set, not a java.util.HashSet: see SharedSetKernel#kernel() for the behavior we
+    // rely on when it is concurrently modified.
     private final ObjectSet<Object> liveValues;
     private final boolean inclusion;
 

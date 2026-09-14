@@ -38,7 +38,6 @@ import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.lang.invoke.VarHandle;
 import java.util.Arrays;
@@ -362,11 +361,6 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
         return entry == null ? LongStream.empty() : LongStream.of(entry.getId());
     }
 
-    @Nullable
-    QueryTable setTable() {
-        return setTable;
-    }
-
     @Override
     public LogOutput append(final LogOutput logOutput) {
         return logOutput.append("SharedSetKernel(")
@@ -391,6 +385,8 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
 
         /**
          * Set when a later snapshot attempt replaced this listener; a notification already queued for it then no-ops.
+         * <p>
+         * This is an optimization: allows early exit for superseded listeners without affecting correctness.
          */
         private volatile boolean superseded;
 
@@ -409,6 +405,7 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
         @Override
         public void onUpdate(final TableUpdate upstream) {
             if (superseded) {
+                // Nothing we do matters, so avoid wasted work.
                 return;
             }
             final boolean hasAdds = upstream.added().isNonempty();

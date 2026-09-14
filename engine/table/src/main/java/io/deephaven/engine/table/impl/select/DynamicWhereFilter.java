@@ -323,22 +323,22 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     /**
-     * Apply {@code action} to each key, abandoning the enclosing snapshot attempt if the set changes underneath us; see
-     * {@link SharedSetKernel#kernel()}. The check is made once per {@value #CHUNK_SIZE} keys, the same granularity as
-     * the linear path's per-chunk check, and once more at the end so that no torn tail goes unchecked. Harmless for a
-     * static set or a static lookup key list, whose generation never changes.
+     * Apply {@code action} to each value, abandoning the enclosing snapshot attempt if the set changes underneath us;
+     * see {@link SharedSetKernel#kernel()}. The check is made once per {@value #CHUNK_SIZE} values, the same
+     * granularity as the linear path's per-chunk check, and once more at the end so that no torn tail goes unchecked.
+     * Harmless for a static set or a static lookup key list, whose generation never changes.
      *
-     * @param keys The keys to iterate
-     * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before {@code keys} was obtained
-     * @param action What to do with each key
+     * @param values The set values to iterate
+     * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before {@code values} was obtained
+     * @param action What to do with each value
      */
-    private void forEachKernelKey(
-            @NotNull final Iterator<Object> keys,
+    private void forEachKernelValue(
+            @NotNull final Iterator<Object> values,
             final long kernelGeneration,
             @NotNull final Consumer<Object> action) {
         int sinceCheck = 0;
-        while (keys.hasNext()) {
-            action.accept(keys.next());
+        while (values.hasNext()) {
+            action.accept(values.next());
             if (++sinceCheck == CHUNK_SIZE) {
                 sharedSet.failIfChangedSince(kernelGeneration);
                 sinceCheck = 0;
@@ -347,14 +347,75 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         sharedSet.failIfChangedSince(kernelGeneration);
     }
 
+    /**
+     * Look up each value in the data index and accumulate the matching index row keys.
+     * <p>
+     * This is the first of two phases: gathering the index row keys up front lets
+     * {@link #forEachIndexRowSet(RowSet, ColumnSource, boolean, Consumer)} read the index row sets a chunk at a time,
+     * in row key order, rather than one row at a time in set value order.
+     *
+     * @param values The set values to look up
+     * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before {@code values} was obtained
+     * @param keyMappingFunction Maps a set value to the lookup key {@code rowKeyLookup} expects
+     * @param rowKeyLookup The source data index row key lookup
+     * @param usePrev Whether to use previous values
+     * @return The matching index row keys; the caller must close this
+     */
+    @NotNull
+    private RowSet lookupIndexRowKeys(
+            @NotNull final Iterator<Object> values,
+            final long kernelGeneration,
+            @NotNull final Function<Object, Object> keyMappingFunction,
+            @NotNull final DataIndex.RowKeyLookup rowKeyLookup,
+            final boolean usePrev) {
+        final RowSetBuilderRandom indexRowKeyBuilder = RowSetFactory.builderRandom();
+        forEachKernelValue(values, kernelGeneration, value -> {
+            final long indexRowKey = rowKeyLookup.apply(keyMappingFunction.apply(value), usePrev);
+            if (indexRowKey != RowSequence.NULL_ROW_KEY) {
+                indexRowKeyBuilder.addKey(indexRowKey);
+            }
+        });
+        return indexRowKeyBuilder.build();
+    }
+
+    /**
+     * Apply {@code action} to the index row set at each of {@code indexRowKeys}, reading them in chunks. The second of
+     * the two phases described by
+     * {@link #lookupIndexRowKeys(Iterator, long, Function, DataIndex.RowKeyLookup, boolean)}; it reads only the index,
+     * which is stable for the duration of this snapshot attempt, so it needs no further kernel generation checks.
+     *
+     * @param indexRowKeys The index row keys to read
+     * @param rowSetColumn The source data index row set column
+     * @param usePrev Whether to use previous values
+     * @param action What to do with each index row set
+     */
+    private void forEachIndexRowSet(
+            @NotNull final RowSet indexRowKeys,
+            @NotNull final ColumnSource<RowSet> rowSetColumn,
+            final boolean usePrev,
+            @NotNull final Consumer<RowSet> action) {
+        if (indexRowKeys.isEmpty()) {
+            return;
+        }
+        final ColumnSource<RowSet> sourceToUse = usePrev ? rowSetColumn.getPrevSource() : rowSetColumn;
+        try (final CloseableIterator<RowSet> rowSets =
+                ChunkedColumnIterator.make(sourceToUse, indexRowKeys, CHUNK_SIZE)) {
+            rowSets.forEachRemaining(rowSet -> {
+                if (rowSet != null) {
+                    action.accept(rowSet);
+                }
+            });
+        }
+    }
+
     @NotNull
     private WritableRowSet filterFullIndex(@NotNull final RowSet selection, final boolean usePrev) {
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
 
         final WritableRowSet filtered = inclusion ? RowSetFactory.empty() : selection.copy();
         // The kernel reads below throw SnapshotInconsistentException when the set table mutates during this concurrent
-        // snapshot attempt; that is the normal retry path, not an error. Close the partial result on the way out so an
-        // abandoned attempt does not leak it.
+        // snapshot attempt; that triggers the normal retry path and is not an error. Close the partial result on the
+        // way out so an abandoned attempt does not leak it.
         try {
             // noinspection DataFlowIssue
             final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
@@ -374,11 +435,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 keyMappingFunction = tupleToFullKeyMappingFunction();
             }
 
-            forEachKernelKey(values, kernelGeneration, key -> {
-                final Object mappedKey = keyMappingFunction.apply(key);
-                final long rowKey = rowKeyLookup.apply(mappedKey, usePrev);
-                final RowSet rowSet = usePrev ? rowSetColumn.getPrev(rowKey) : rowSetColumn.get(rowKey);
-                if (rowSet != null) {
+            try (final RowSet indexRowKeys =
+                    lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
+                forEachIndexRowSet(indexRowKeys, rowSetColumn, usePrev, rowSet -> {
                     if (inclusion) {
                         try (final RowSet intersected = rowSet.intersect(selection)) {
                             filtered.insert(intersected);
@@ -386,8 +445,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                     } else {
                         filtered.remove(rowSet);
                     }
-                }
-            });
+                });
+            }
         } catch (final Throwable t) {
             filtered.close();
             throw t;
@@ -425,16 +484,14 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 }
             }
 
-            forEachKernelKey(values, kernelGeneration, key -> {
-                final Object lookupKey = keyMappingFunction.apply(key);
-                final long rowKey = rowKeyLookup.apply(lookupKey, usePrev);
-                final RowSet rowSet = usePrev ? rowSetColumn.getPrev(rowKey) : rowSetColumn.get(rowKey);
-                if (rowSet != null) {
+            try (final RowSet indexRowKeys =
+                    lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
+                forEachIndexRowSet(indexRowKeys, rowSetColumn, usePrev, rowSet -> {
                     try (final RowSet intersected = rowSet.intersect(selection)) {
                         possiblyMatching.insert(intersected);
                     }
-                }
-            });
+                });
+            }
 
             // Now, do linear filter on possiblyMatching to determine the values to include or exclude from selection.
             matching = filterLinear(possiblyMatching, true, usePrev);
