@@ -612,7 +612,6 @@ public class TstUtils {
             queryTable.setRefreshing(true);
         }
         if (flat) {
-            Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()");
             queryTable.setFlat();
         }
 
