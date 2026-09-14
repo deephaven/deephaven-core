@@ -91,8 +91,21 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
             // Nothing satisfied
             postWaitStep = NULL_CLOCK_VALUE;
             usePrev = true;
+        } else if (notYetSatisfied.length > 0 && !sourceTable.isRefreshing()
+                && allNotificationAware(notYetSatisfied)) {
+            // Only extras are unsatisfied, and the source is static, so trivially satisfied. The wait below guards a
+            // refreshing source that already notified, which a static source cannot be, and would deadlock on the
+            // update thread. Unsatisfied extras that tick during this step fail the notification aware check instead.
+            postWaitStep = NULL_CLOCK_VALUE;
+            usePrev = true;
         } else if (notYetSatisfied.length > 0) {
             // Partially satisfied
+            if (getUpdateGraph().currentThreadProcessesUpdates()) {
+                // Can't wait on this thread or we will deadlock. Throw instead.
+                throw new IllegalStateException("Cannot wait for " + Arrays.toString(notYetSatisfied)
+                        + " to be satisfied on step " + beforeStep
+                        + " from a thread that processes updates; the wait would deadlock");
+            }
             if (WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
                 // Successful wait on beforeStep
                 postWaitStep = beforeStep;
@@ -174,6 +187,10 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
             }
         }
         return true;
+    }
+
+    private static boolean allNotificationAware(@NotNull final NotificationQueue.Dependency[] dependencies) {
+        return Arrays.stream(dependencies).allMatch(NotificationAwareDependency.class::isInstance);
     }
 
     private static boolean satisfied(@NotNull final NotificationQueue.Dependency dependency, final long step) {

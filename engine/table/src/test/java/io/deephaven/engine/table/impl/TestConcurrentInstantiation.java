@@ -1171,12 +1171,14 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // Static source is always satisfied.
         assertTrue(source.satisfied(updateGraph.clock().currentStep()));
 
-        // Fails because setTable is not yet satisfied
-        // Submit both before waiting, so that each is asserted to block independently. Waiting on the first inline
-        // would throw and skip the second submission entirely.
-        assertAllTimeOut(
-                largePool.submit(() -> source.where(filter.copy())),
-                largePool.submit(() -> source.whereIn(setTable, "z")));
+        // The set is not yet satisfied, but a static source has nothing to wait for: each operation snapshots the
+        // set's previous state and completes at once, then catches up when the set ticks below.
+        final Table earlyFiltered1 =
+                largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        final Table earlyFiltered2 =
+                largePool.submit(() -> source.whereIn(setTable, "z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        assertTableEquals(tableStart, earlyFiltered1);
+        assertTableEquals(tableStart, earlyFiltered2);
 
         // Make changes to the set tables.
         TstUtils.addToTable(setTable, i(1), col("z", false));
@@ -1208,11 +1210,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         updateGraph.completeCycleForUnitTests();
 
-        // The operations left blocked above unblock now that the cycle is over. Wait for them here, so that they finish
-        // against this sub-test's tables rather than inside the next sub-test's cycle.
-        awaitBlockedOperations();
-
-        // Now all the tables created in the cycle are correct
+        // Now all the tables created in the cycle are correct, including those built before the set ticked
+        assertTableEquals(source, earlyFiltered1);
+        assertTableEquals(source, earlyFiltered2);
         assertTableEquals(source, filtered1);
         assertTableEquals(source, filtered2);
     }
