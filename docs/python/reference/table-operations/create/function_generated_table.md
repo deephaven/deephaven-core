@@ -54,12 +54,12 @@ This parameter and `source_tables` are mutually exclusive. When neither is speci
 A custom [execution context](../../../conceptual/execution-context.md) to use for this operation. If not specified, the default [execution context](../../../conceptual/execution-context.md) will be used.
 
 </Param>
-<Param name="args" type="Tuple" optional>
+<Param name="args" type="tuple" optional>
 
 A Tuple of positional arguments to pass to `table_generator`. Defaults to `()`.
 
 </Param>
-<Param name="kwargs" type="Dict" optional>
+<Param name="kwargs" type="dict" optional>
 
 Dictionary of keyword arguments to pass to `table_generator`. Defaults to `{}`.
 
