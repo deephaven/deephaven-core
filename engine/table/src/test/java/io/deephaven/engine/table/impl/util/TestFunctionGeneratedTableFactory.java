@@ -609,6 +609,20 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    public void testUnrepresentableIntervalFails() {
+        // A Duration too large to express in milliseconds must still produce the documented validation failure rather
+        // than an ArithmeticException from the millisecond conversion.
+        try {
+            FunctionGeneratedTableSpec.builder()
+                    .tableSupplier(() -> newTable(intCol("V", 1)))
+                    .refreshInterval(java.time.Duration.ofSeconds(Long.MAX_VALUE))
+                    .build();
+            fail("Expected an oversized refresh interval to be rejected");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("must not exceed"));
+        }
+    }
+
     public void testIntervalRefresh() throws Exception {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 

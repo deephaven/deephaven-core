@@ -32,6 +32,11 @@ import java.util.function.Supplier;
 @BuildableStyle
 public abstract class FunctionGeneratedTableSpec {
 
+    /** The interval is truncated to whole milliseconds later, so anything shorter would silently become zero. */
+    private static final Duration MINIMUM_REFRESH_INTERVAL = Duration.ofMillis(1);
+    /** The factory schedules refreshes using an int millisecond interval. */
+    private static final Duration MAXIMUM_REFRESH_INTERVAL = Duration.ofMillis(Integer.MAX_VALUE);
+
     public static Builder builder() {
         return ImmutableFunctionGeneratedTableSpec.builder();
     }
@@ -123,12 +128,13 @@ public abstract class FunctionGeneratedTableSpec {
             throw new IllegalArgumentException("refreshInterval and dependencies are mutually exclusive");
         }
         refreshInterval().ifPresent(interval -> {
-            // The interval is truncated to whole milliseconds later, so anything shorter would silently become zero.
-            if (interval.toMillis() < 1) {
+            // Compare Durations rather than converting to milliseconds first: Duration.toMillis() throws
+            // ArithmeticException for a Duration beyond Long.MAX_VALUE milliseconds, which would replace these
+            // messages with an unhelpful overflow.
+            if (interval.compareTo(MINIMUM_REFRESH_INTERVAL) < 0) {
                 throw new IllegalArgumentException("refreshInterval must be at least one millisecond");
             }
-            // The factory schedules refreshes using an int millisecond interval.
-            if (interval.toMillis() > Integer.MAX_VALUE) {
+            if (interval.compareTo(MAXIMUM_REFRESH_INTERVAL) > 0) {
                 throw new IllegalArgumentException(
                         "refreshInterval must not exceed " + Integer.MAX_VALUE + " milliseconds");
             }
