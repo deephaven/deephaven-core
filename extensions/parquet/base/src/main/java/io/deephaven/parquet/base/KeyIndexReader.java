@@ -3,14 +3,13 @@
 //
 package io.deephaven.parquet.base;
 
-import org.apache.parquet.column.values.ValuesReader;
 import org.apache.parquet.column.values.dictionary.DictionaryValuesReader;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Adapter to expose dictionary key indexes.
  */
-class KeyIndexReader extends ValuesReader {
+final class KeyIndexReader implements PageValueReader {
 
     private final DictionaryValuesReader dictionaryValuesReader;
 
@@ -19,11 +18,6 @@ class KeyIndexReader extends ValuesReader {
     }
 
     @Override
-    public void skip() {
-        throw new UnsupportedOperationException();
-    }
-
-
     public int readInteger() {
         return dictionaryValuesReader.readValueDictionaryId();
     }

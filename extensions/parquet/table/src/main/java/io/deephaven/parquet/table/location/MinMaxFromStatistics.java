@@ -7,33 +7,7 @@ import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.primitive.function.FloatConsumer;
 import io.deephaven.engine.primitive.function.ShortConsumer;
-import io.deephaven.parquet.base.materializers.ByteMaterializer;
-import io.deephaven.parquet.base.materializers.CharMaterializer;
-import io.deephaven.parquet.base.materializers.DoubleFromFloatMaterializer;
-import io.deephaven.parquet.base.materializers.DoubleMaterializer;
-import io.deephaven.parquet.base.materializers.FloatMaterializer;
-import io.deephaven.parquet.base.materializers.InstantNanosFromMicrosMaterializer;
-import io.deephaven.parquet.base.materializers.InstantNanosFromMillisMaterializer;
-import io.deephaven.parquet.base.materializers.IntFromBooleanMaterializer;
-import io.deephaven.parquet.base.materializers.IntFromUnsignedByteMaterializer;
-import io.deephaven.parquet.base.materializers.IntFromUnsignedShortMaterializer;
-import io.deephaven.parquet.base.materializers.IntMaterializer;
-import io.deephaven.parquet.base.materializers.LocalDateMaterializer;
-import io.deephaven.parquet.base.materializers.LocalDateTimeFromMicrosMaterializer;
-import io.deephaven.parquet.base.materializers.LocalDateTimeFromMillisMaterializer;
-import io.deephaven.parquet.base.materializers.LocalDateTimeFromNanosMaterializer;
-import io.deephaven.parquet.base.materializers.LocalTimeFromMicrosMaterializer;
-import io.deephaven.parquet.base.materializers.LocalTimeFromMillisMaterializer;
-import io.deephaven.parquet.base.materializers.LocalTimeFromNanosMaterializer;
-import io.deephaven.parquet.base.materializers.LongFromBooleanMaterializer;
-import io.deephaven.parquet.base.materializers.LongFromIntMaterializer;
-import io.deephaven.parquet.base.materializers.LongFromUnsignedByteMaterializer;
-import io.deephaven.parquet.base.materializers.LongFromUnsignedIntMaterializer;
-import io.deephaven.parquet.base.materializers.LongFromUnsignedShortMaterializer;
-import io.deephaven.parquet.base.materializers.LongMaterializer;
-import io.deephaven.parquet.base.materializers.ShortFromBooleanMaterializer;
-import io.deephaven.parquet.base.materializers.ShortFromUnsignedByteMaterializer;
-import io.deephaven.parquet.base.materializers.ShortMaterializer;
+import io.deephaven.parquet.base.materializers.PageValueConversions;
 import org.apache.parquet.column.statistics.BooleanStatistics;
 import org.apache.parquet.column.statistics.DoubleStatistics;
 import org.apache.parquet.column.statistics.FloatStatistics;
@@ -100,8 +74,8 @@ final class MinMaxFromStatistics {
             if (intLogicalType.isSigned() && intLogicalType.getBitWidth() == 8) {
                 verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                 final IntStatistics intStats = (IntStatistics) statistics;
-                minSetter.accept(ByteMaterializer.convertValue(intStats.getMin()));
-                maxSetter.accept(ByteMaterializer.convertValue(intStats.getMax()));
+                minSetter.accept(PageValueConversions.byteFromInt(intStats.getMin()));
+                maxSetter.accept(PageValueConversions.byteFromInt(intStats.getMax()));
                 return true;
             }
         }
@@ -127,8 +101,8 @@ final class MinMaxFromStatistics {
                 if (bitWidth == 8 || bitWidth == 16) {
                     verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
-                    minSetter.accept(CharMaterializer.convertValue(intStats.getMin()));
-                    maxSetter.accept(CharMaterializer.convertValue(intStats.getMax()));
+                    minSetter.accept(PageValueConversions.charFromInt(intStats.getMin()));
+                    maxSetter.accept(PageValueConversions.charFromInt(intStats.getMax()));
                     return true;
                 }
             }
@@ -157,20 +131,20 @@ final class MinMaxFromStatistics {
             if (isSigned && (bitWidth == 8 || bitWidth == 16)) {
                 verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                 final IntStatistics intStats = (IntStatistics) statistics;
-                minSetter.accept(ShortMaterializer.convertValue(intStats.getMin()));
-                maxSetter.accept(ShortMaterializer.convertValue(intStats.getMax()));
+                minSetter.accept(PageValueConversions.shortFromInt(intStats.getMin()));
+                maxSetter.accept(PageValueConversions.shortFromInt(intStats.getMax()));
                 return true;
             } else if (!isSigned && bitWidth == 8) {
                 verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                 final IntStatistics intStats = (IntStatistics) statistics;
-                minSetter.accept(ShortFromUnsignedByteMaterializer.convertValue(intStats.getMin()));
-                maxSetter.accept(ShortFromUnsignedByteMaterializer.convertValue(intStats.getMax()));
+                minSetter.accept(PageValueConversions.shortFromUnsignedByte(intStats.getMin()));
+                maxSetter.accept(PageValueConversions.shortFromUnsignedByte(intStats.getMax()));
                 return true;
             }
         } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.BOOLEAN) {
             final BooleanStatistics booleanStatistics = (BooleanStatistics) statistics;
-            minSetter.accept(ShortFromBooleanMaterializer.convertValue(booleanStatistics.getMin()));
-            maxSetter.accept(ShortFromBooleanMaterializer.convertValue(booleanStatistics.getMax()));
+            minSetter.accept(PageValueConversions.shortFromBoolean(booleanStatistics.getMin()));
+            maxSetter.accept(PageValueConversions.shortFromBoolean(booleanStatistics.getMax()));
             return true;
         }
         return false;
@@ -197,33 +171,33 @@ final class MinMaxFromStatistics {
             if (isSigned && (bitWidth == 8 || bitWidth == 16 || bitWidth == 32)) {
                 verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                 final IntStatistics intStats = (IntStatistics) statistics;
-                minSetter.accept(IntMaterializer.convertValue(intStats.getMin()));
-                maxSetter.accept(IntMaterializer.convertValue(intStats.getMax()));
+                minSetter.accept(intStats.getMin());
+                maxSetter.accept(intStats.getMax());
                 return true;
             } else if (!isSigned) {
                 if (bitWidth == 8) {
                     verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
-                    minSetter.accept(IntFromUnsignedByteMaterializer.convertValue(intStats.getMin()));
-                    maxSetter.accept(IntFromUnsignedByteMaterializer.convertValue(intStats.getMax()));
+                    minSetter.accept(PageValueConversions.intFromUnsignedByte(intStats.getMin()));
+                    maxSetter.accept(PageValueConversions.intFromUnsignedByte(intStats.getMax()));
                     return true;
                 } else if (bitWidth == 16) {
                     verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
-                    minSetter.accept(IntFromUnsignedShortMaterializer.convertValue(intStats.getMin()));
-                    maxSetter.accept(IntFromUnsignedShortMaterializer.convertValue(intStats.getMax()));
+                    minSetter.accept(PageValueConversions.intFromUnsignedShort(intStats.getMin()));
+                    maxSetter.accept(PageValueConversions.intFromUnsignedShort(intStats.getMax()));
                     return true;
                 }
             }
         } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.BOOLEAN) {
             final BooleanStatistics booleanStats = (BooleanStatistics) statistics;
-            minSetter.accept(IntFromBooleanMaterializer.convertValue(booleanStats.getMin()));
-            maxSetter.accept(IntFromBooleanMaterializer.convertValue(booleanStats.getMax()));
+            minSetter.accept(PageValueConversions.intFromBoolean(booleanStats.getMin()));
+            maxSetter.accept(PageValueConversions.intFromBoolean(booleanStats.getMax()));
             return true;
         } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.INT32) {
             final IntStatistics intStats = (IntStatistics) statistics;
-            minSetter.accept(IntMaterializer.convertValue(intStats.getMin()));
-            maxSetter.accept(IntMaterializer.convertValue(intStats.getMax()));
+            minSetter.accept(intStats.getMin());
+            maxSetter.accept(intStats.getMax());
             return true;
         }
         return false;
@@ -252,51 +226,51 @@ final class MinMaxFromStatistics {
                 if (bitWidth == 8 || bitWidth == 16 || bitWidth == 32) {
                     verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
-                    minSetter.accept(LongFromIntMaterializer.convertValue(intStats.getMin()));
-                    maxSetter.accept(LongFromIntMaterializer.convertValue(intStats.getMax()));
+                    minSetter.accept(intStats.getMin());
+                    maxSetter.accept(intStats.getMax());
                     return true;
                 } else if (bitWidth == 64) {
                     verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT64);
                     final LongStatistics longStats = (LongStatistics) statistics;
-                    minSetter.accept(LongMaterializer.convertValue(longStats.getMin()));
-                    maxSetter.accept(LongMaterializer.convertValue(longStats.getMax()));
+                    minSetter.accept(longStats.getMin());
+                    maxSetter.accept(longStats.getMax());
                     return true;
                 }
             } else {
                 if (bitWidth == 8) {
                     verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
-                    minSetter.accept(LongFromUnsignedByteMaterializer.convertValue(intStats.getMin()));
-                    maxSetter.accept(LongFromUnsignedByteMaterializer.convertValue(intStats.getMax()));
+                    minSetter.accept(PageValueConversions.longFromUnsignedByte(intStats.getMin()));
+                    maxSetter.accept(PageValueConversions.longFromUnsignedByte(intStats.getMax()));
                     return true;
                 } else if (bitWidth == 16) {
                     verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
-                    minSetter.accept(LongFromUnsignedShortMaterializer.convertValue(intStats.getMin()));
-                    maxSetter.accept(LongFromUnsignedShortMaterializer.convertValue(intStats.getMax()));
+                    minSetter.accept(PageValueConversions.longFromUnsignedShort(intStats.getMin()));
+                    maxSetter.accept(PageValueConversions.longFromUnsignedShort(intStats.getMax()));
                     return true;
                 } else if (bitWidth == 32) {
                     verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
-                    minSetter.accept(LongFromUnsignedIntMaterializer.convertValue(intStats.getMin()));
-                    maxSetter.accept(LongFromUnsignedIntMaterializer.convertValue(intStats.getMax()));
+                    minSetter.accept(PageValueConversions.longFromUnsignedInt(intStats.getMin()));
+                    maxSetter.accept(PageValueConversions.longFromUnsignedInt(intStats.getMax()));
                     return true;
                 }
             }
         } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.BOOLEAN) {
             final BooleanStatistics booleanStats = (BooleanStatistics) statistics;
-            minSetter.accept(LongFromBooleanMaterializer.convertValue(booleanStats.getMin()));
-            maxSetter.accept(LongFromBooleanMaterializer.convertValue(booleanStats.getMax()));
+            minSetter.accept(PageValueConversions.longFromBoolean(booleanStats.getMin()));
+            maxSetter.accept(PageValueConversions.longFromBoolean(booleanStats.getMax()));
             return true;
         } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.INT32) {
             final IntStatistics intStats = (IntStatistics) statistics;
-            minSetter.accept(LongFromIntMaterializer.convertValue(intStats.getMin()));
-            maxSetter.accept(LongFromIntMaterializer.convertValue(intStats.getMax()));
+            minSetter.accept(intStats.getMin());
+            maxSetter.accept(intStats.getMax());
             return true;
         } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.INT64) {
             final LongStatistics longStats = (LongStatistics) statistics;
-            minSetter.accept(LongMaterializer.convertValue(longStats.getMin()));
-            maxSetter.accept(LongMaterializer.convertValue(longStats.getMax()));
+            minSetter.accept(longStats.getMin());
+            maxSetter.accept(longStats.getMax());
             return true;
         }
         return false;
@@ -321,8 +295,8 @@ final class MinMaxFromStatistics {
                 // so we return empty
                 return false;
             }
-            minSetter.accept(FloatMaterializer.convertValue(minFloat));
-            maxSetter.accept(FloatMaterializer.convertValue(maxFloat));
+            minSetter.accept(minFloat);
+            maxSetter.accept(maxFloat);
             return true;
         }
         return false;
@@ -347,8 +321,8 @@ final class MinMaxFromStatistics {
                 // so we return empty
                 return false;
             }
-            minSetter.accept(DoubleFromFloatMaterializer.convertValue(minFloat));
-            maxSetter.accept(DoubleFromFloatMaterializer.convertValue(maxFloat));
+            minSetter.accept(minFloat);
+            maxSetter.accept(maxFloat);
             return true;
         } else if (primitiveTypeName == PrimitiveType.PrimitiveTypeName.DOUBLE) {
             final double minDouble = ((DoubleStatistics) statistics).getMin();
@@ -358,8 +332,8 @@ final class MinMaxFromStatistics {
                 // so we return empty
                 return false;
             }
-            minSetter.accept(DoubleMaterializer.convertValue(minDouble));
-            maxSetter.accept(DoubleMaterializer.convertValue(maxDouble));
+            minSetter.accept(minDouble);
+            maxSetter.accept(maxDouble);
             return true;
         }
         return false;
@@ -452,15 +426,15 @@ final class MinMaxFromStatistics {
                 switch (timestampLogicalType.getUnit()) {
                     case MILLIS:
                         minSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
-                                InstantNanosFromMillisMaterializer.convertValue(minLong)));
+                                PageValueConversions.instantNanosFromEpochMillis(minLong)));
                         maxSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
-                                InstantNanosFromMillisMaterializer.convertValue(maxLong)));
+                                PageValueConversions.instantNanosFromEpochMillis(maxLong)));
                         return true;
                     case MICROS:
                         minSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
-                                InstantNanosFromMicrosMaterializer.convertValue(minLong)));
+                                PageValueConversions.instantNanosFromEpochMicros(minLong)));
                         maxSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
-                                InstantNanosFromMicrosMaterializer.convertValue(maxLong)));
+                                PageValueConversions.instantNanosFromEpochMicros(maxLong)));
                         return true;
                     case NANOS:
                         minSetter.accept(ParquetPushdownUtils.epochNanosToInstant(minLong));
@@ -492,16 +466,16 @@ final class MinMaxFromStatistics {
                 final long maxLong = ((LongStatistics) statistics).getMax();
                 switch (timestampLogicalType.getUnit()) {
                     case MILLIS:
-                        minSetter.accept(LocalDateTimeFromMillisMaterializer.convertValue(minLong));
-                        maxSetter.accept(LocalDateTimeFromMillisMaterializer.convertValue(maxLong));
+                        minSetter.accept(PageValueConversions.localDateTimeFromEpochMillis(minLong));
+                        maxSetter.accept(PageValueConversions.localDateTimeFromEpochMillis(maxLong));
                         return true;
                     case MICROS:
-                        minSetter.accept(LocalDateTimeFromMicrosMaterializer.convertValue(minLong));
-                        maxSetter.accept(LocalDateTimeFromMicrosMaterializer.convertValue(maxLong));
+                        minSetter.accept(PageValueConversions.localDateTimeFromEpochMicros(minLong));
+                        maxSetter.accept(PageValueConversions.localDateTimeFromEpochMicros(maxLong));
                         return true;
                     case NANOS:
-                        minSetter.accept(LocalDateTimeFromNanosMaterializer.convertValue(minLong));
-                        maxSetter.accept(LocalDateTimeFromNanosMaterializer.convertValue(maxLong));
+                        minSetter.accept(PageValueConversions.localDateTimeFromEpochNanos(minLong));
+                        maxSetter.accept(PageValueConversions.localDateTimeFromEpochNanos(maxLong));
                         return true;
                 }
             }
@@ -523,8 +497,8 @@ final class MinMaxFromStatistics {
         if (logicalType instanceof LogicalTypeAnnotation.DateLogicalTypeAnnotation) {
             verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
             final IntStatistics intStats = (IntStatistics) statistics;
-            minSetter.accept(LocalDateMaterializer.convertValue(intStats.getMin()));
-            maxSetter.accept(LocalDateMaterializer.convertValue(intStats.getMax()));
+            minSetter.accept(PageValueConversions.localDateFromEpochDay(intStats.getMin()));
+            maxSetter.accept(PageValueConversions.localDateFromEpochDay(intStats.getMax()));
             return true;
         }
         return false;
@@ -548,22 +522,22 @@ final class MinMaxFromStatistics {
                 case MILLIS: {
                     verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT32);
                     final IntStatistics intStats = (IntStatistics) statistics;
-                    minSetter.accept(LocalTimeFromMillisMaterializer.convertValue(intStats.getMin()));
-                    maxSetter.accept(LocalTimeFromMillisMaterializer.convertValue(intStats.getMax()));
+                    minSetter.accept(PageValueConversions.localTimeFromMillisOfDay(intStats.getMin()));
+                    maxSetter.accept(PageValueConversions.localTimeFromMillisOfDay(intStats.getMax()));
                     return true;
                 }
                 case MICROS: {
                     verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT64);
                     final LongStatistics longStats = (LongStatistics) statistics;
-                    minSetter.accept(LocalTimeFromMicrosMaterializer.convertValue(longStats.getMin()));
-                    maxSetter.accept(LocalTimeFromMicrosMaterializer.convertValue(longStats.getMax()));
+                    minSetter.accept(PageValueConversions.localTimeFromMicrosOfDay(longStats.getMin()));
+                    maxSetter.accept(PageValueConversions.localTimeFromMicrosOfDay(longStats.getMax()));
                     return true;
                 }
                 case NANOS: {
                     verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT64);
                     final LongStatistics longStats = (LongStatistics) statistics;
-                    minSetter.accept(LocalTimeFromNanosMaterializer.convertValue(longStats.getMin()));
-                    maxSetter.accept(LocalTimeFromNanosMaterializer.convertValue(longStats.getMax()));
+                    minSetter.accept(PageValueConversions.localTimeFromNanosOfDay(longStats.getMin()));
+                    maxSetter.accept(PageValueConversions.localTimeFromNanosOfDay(longStats.getMax()));
                     return true;
                 }
             }

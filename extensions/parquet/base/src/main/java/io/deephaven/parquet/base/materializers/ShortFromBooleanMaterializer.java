@@ -9,33 +9,29 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 public class ShortFromBooleanMaterializer extends ShortMaterializerBase implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new ShortFromBooleanMaterializer(dataReader, (short) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new ShortFromBooleanMaterializer(dataReader, numValues);
         }
     };
 
-    public static short convertValue(boolean value) {
-        return (short) (value ? 1 : 0);
-    }
+    private final PageValueReader dataReader;
 
-    private final ValuesReader dataReader;
-
-    private ShortFromBooleanMaterializer(ValuesReader dataReader, int numValues) {
+    private ShortFromBooleanMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, (short) 0, numValues);
     }
 
-    private ShortFromBooleanMaterializer(ValuesReader dataReader, short nullValue, int numValues) {
+    private ShortFromBooleanMaterializer(PageValueReader dataReader, short nullValue, int numValues) {
         super(nullValue, numValues);
         this.dataReader = dataReader;
     }
@@ -43,7 +39,7 @@ public class ShortFromBooleanMaterializer extends ShortMaterializerBase implemen
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readBoolean());
+            data[ii] = PageValueConversions.shortFromBoolean(dataReader.readBoolean());
         }
     }
 }

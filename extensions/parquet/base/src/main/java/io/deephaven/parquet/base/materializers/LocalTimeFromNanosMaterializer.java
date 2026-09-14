@@ -9,37 +9,31 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 import java.time.LocalTime;
-
-import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.NANO;
 
 public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<LocalTime> implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new LocalTimeFromNanosMaterializer(dataReader, (LocalTime) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new LocalTimeFromNanosMaterializer(dataReader, numValues);
         }
     };
 
-    public static LocalTime convertValue(long value) {
-        return LocalTime.ofNanoOfDay(value * NANO);
-    }
+    private final PageValueReader dataReader;
 
-    private final ValuesReader dataReader;
-
-    private LocalTimeFromNanosMaterializer(ValuesReader dataReader, int numValues) {
+    private LocalTimeFromNanosMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, null, numValues);
     }
 
-    private LocalTimeFromNanosMaterializer(ValuesReader dataReader, LocalTime nullValue, int numValues) {
+    private LocalTimeFromNanosMaterializer(PageValueReader dataReader, LocalTime nullValue, int numValues) {
         super(nullValue, new LocalTime[numValues]);
         this.dataReader = dataReader;
     }
@@ -47,7 +41,7 @@ public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<Local
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readLong());
+            data[ii] = PageValueConversions.localTimeFromNanosOfDay(dataReader.readLong());
         }
     }
 }
