@@ -13,8 +13,4 @@ repositories {
             includeGroup 'org.apache.kafka'
         }
     }
-    maven {
-        // the new sonatype central snapshots repo
-        url 'https://central.sonatype.com/repository/maven-snapshots/'
-    }
 }

@@ -43,7 +43,7 @@ grpc = "1.84.0"
 netty = "4.2.16.Final"
 
 protobuf-gwt='4.33.4-1'
-grpc-gwt='1.84.0-1-SNAPSHOT'
+grpc-gwt='1.84.0-1'
 
 grpc-web-gwt-fetch='1.4.0'
 
