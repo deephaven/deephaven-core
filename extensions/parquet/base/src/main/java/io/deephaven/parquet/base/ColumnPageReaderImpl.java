@@ -12,6 +12,7 @@ import io.deephaven.chunk.sized.SizedByteChunk;
 import io.deephaven.parquet.base.materializers.IntMaterializer;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
@@ -653,11 +654,12 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
      * @param dataEncoding this page's encoding
      * @param primitiveTypeName the column's parquet primitive type
      */
-    static boolean isPlainBinaryPage(final Encoding dataEncoding, final PrimitiveTypeName primitiveTypeName) {
+    private static boolean isPlainBinaryPage(final Encoding dataEncoding, final PrimitiveTypeName primitiveTypeName) {
         return dataEncoding == Encoding.PLAIN && primitiveTypeName == PrimitiveTypeName.BINARY;
     }
 
-    private ValuesReader getDataReader(
+    @VisibleForTesting
+    ValuesReader getDataReader(
             final Encoding dataEncoding,
             final ByteBuffer in,
             final int valueCount,
