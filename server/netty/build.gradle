@@ -40,4 +40,9 @@ dependencies {
 
 test.systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false
 
+// Netty 4.2+ defaults to io.netty.noUnsafe=true on Java 25+, breaking Arrow (as of 19)'s casting of PooledDirectByteBuf
+// to PooledUnsafeDirectByteBuf. This reenables the use of unsafe, without suppressing the JVM warning. Deliberately
+// only changing this one test, so as to ensure we don't require unsafe in other areas.
+test.jvmArgs += ['-Dio.netty.noUnsafe=false']
+
 apply plugin: 'io.deephaven.java-open-nio'
