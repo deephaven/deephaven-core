@@ -1,6 +1,6 @@
 ---
 name: deephaven-doc-structure-review
-description: Critique the structure, organization, and readability of a deephaven-core (Community) documentation page — will a new reader find it easy to follow, are concepts introduced in a sensible order, is content duplicated or interleaved oddly? Use this when a doc "feels hard to follow," when asked to review organization/flow/readability specifically (not facts or prose style), when drafting or substantially restructuring a long conceptual guide, or when a reviewer's feedback is about the document's shape rather than its content. Complements `deephaven-core-accuracy-check` (is it true?) and `deephaven-writing-style` (is each sentence/heading/example styled correctly?) — this skill asks whether the document as a whole is organized so a reader can follow it.
+description: Critique the structure, organization, and readability of a deephaven-core (Community) documentation page — will a new reader find it easy to follow, are concepts introduced in a sensible order, is content duplicated or interleaved oddly? Use this when a doc "feels hard to follow," when asked to review organization/flow/readability specifically (not facts or prose style), when drafting or substantially restructuring a long conceptual guide, or when a reviewer's feedback is about the document's shape rather than its content. Complements `deephaven-core-accuracy-check` (is it true?) and `deephaven-writing-style` (is each sentence/heading/example styled correctly?) — this skill asks whether the document as a whole is organized so a reader can follow it. Calibrates its checks by doc category via `ref-deephaven-doc-categories`. Run as the middle step of `deephaven-docs-review-full` for a complete review.
 allowed-tools: Read, Grep, Glob, Edit, Bash(awk *)
 ---
 
@@ -14,6 +14,22 @@ Run `deephaven-core-accuracy-check` and `deephaven-writing-style` separately for
 and prose-level style — don't duplicate their checklists here, and don't let a structural
 rewrite silently break a technical claim or introduce a style violation (re-run those skills
 after a structural edit that moves or merges prose).
+
+## 0. Identify the doc's category
+
+Read `ref-deephaven-doc-categories` and determine which of the four categories (Tutorial —
+Crash Course only, How-to guide, Concept guide, Reference guide) this doc is. It changes how
+severely several checks below should weigh:
+
+- **Tutorial** (Crash Course): treat any branch or "if you want X instead" aside as a bigger
+  defect than elsewhere — the category's whole point is one linear path for every reader.
+- **Concept guide**: the category most exposed to split/duplicated explanations and topic
+  interleaving, since it's usually the longest and most narrative. Weight those checks up.
+- **Reference guide**: an orphaned aside or a gap in an enumerated list matters more here than in
+  a concept guide — a reference reader is scanning for one fact, not reading linearly.
+- **How-to guide**: branching and offered alternatives are expected and not a defect by
+  themselves; judge flow by whether the reader can still complete their own goal, not by whether
+  every reader follows the identical path.
 
 ## 1. Build the structure map before reading prose in depth
 
