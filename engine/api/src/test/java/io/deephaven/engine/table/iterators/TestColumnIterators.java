@@ -18,6 +18,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.mutable.MutableInt;
 import org.junit.*;
 
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -33,7 +34,9 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 import static io.deephaven.util.type.TypeUtils.box;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.fail;
 
 /**
  * Unit tests for {@link ColumnIterator} implementations.
@@ -762,6 +765,59 @@ public class TestColumnIterators {
                     .filter((final String value) -> !(Objects.equals(value,
                             data.get(nextValueIndex.getAndIncrement()))))
                     .count());
+        }
+    }
+
+    @Test
+    public void testSerialColumnIteratorPartialRange() {
+        final ColumnSource<Long> source = input.getColumnSource("LongCol", long.class);
+        final RowSet rows = input.getRowSet();
+
+        // Start mid-row-set, so construction must advance the key iterator to the first requested key, and stop short
+        // of the end, so exhaustion releases the key iterator before the backing row set is consumed
+        final long startPosition = rows.size() / 3;
+        final long startKey = rows.get(startPosition);
+        final long length = Math.min(1000, rows.size() - startPosition - 1);
+        try (final LongColumnIterator serial = new SerialLongColumnIterator(source, rows, startKey, length)) {
+            for (long li = 0; li < length; ++li) {
+                assertEquals(length - li, serial.remaining());
+                assertTrue(serial.hasNext());
+                assertEquals(source.getLong(rows.get(startPosition + li)), serial.nextLong());
+            }
+            assertEquals(0, serial.remaining());
+            assertFalse(serial.hasNext());
+            try {
+                serial.nextLong();
+                fail("expected NoSuchElementException");
+            } catch (NoSuchElementException expected) {
+            }
+        }
+
+        // Abandoning a partially-consumed iterator releases via close
+        try (final LongColumnIterator serial = new SerialLongColumnIterator(source, rows, startKey, length)) {
+            assertEquals(source.getLong(startKey), serial.nextLong());
+        }
+
+        // An empty range never creates a key iterator
+        try (final LongColumnIterator serial = new SerialLongColumnIterator(source, rows, startKey, 0)) {
+            assertFalse(serial.hasNext());
+            assertEquals(0, serial.remaining());
+        }
+
+        // The first row key must be present in the row set
+        try {
+            // noinspection resource
+            new SerialLongColumnIterator(source, rows, rows.lastRowKey() + 1, 1);
+            fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+        }
+
+        // The length must not exceed the rows remaining from the first row key
+        try {
+            // noinspection resource
+            new SerialLongColumnIterator(source, rows, startKey, rows.size());
+            fail("expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
         }
     }
 }

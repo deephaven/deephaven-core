@@ -41,7 +41,7 @@ sudo yum install -y amazon-linux-extras
 A full list of software that can be easily installed with `amazon-linux-extras` can be found [here](https://aws.amazon.com/premiumsupport/knowledge-center/ec2-install-extras-library-software/).
 
 > [!NOTE]
-> Amazon also offers their own OpenJDK distribution, [Corretto](https://aws.amazon.com/corretto/?filtered-posts.sort-by=item.additionalFields.createdDate&filtered-posts.sort-order=desc). It works well on AWS, and can be used in place of Oracle's OpenJDK. Corretto user guides can be found [here](https://docs.aws.amazon.com/corretto/index.html). For this guide, we'll [install Corretto 11 on AWS Linux 2](https://docs.aws.amazon.com/corretto/latest/corretto-11-ug/amazon-linux-install.html).
+> Amazon also offers their own OpenJDK distribution, [Corretto](https://aws.amazon.com/corretto/?filtered-posts.sort-by=item.additionalFields.createdDate&filtered-posts.sort-order=desc). It works well on AWS, and can be used in place of Oracle's OpenJDK. Corretto user guides can be found [here](https://docs.aws.amazon.com/corretto/index.html). For this guide, we'll [install Corretto 11 on AWS Linux 2](https://docs.aws.amazon.com/corretto/latest/corretto-27-ug/amazon-linux-install.html).
 
 ```shell
 sudo yum install java-11-amazon-corretto

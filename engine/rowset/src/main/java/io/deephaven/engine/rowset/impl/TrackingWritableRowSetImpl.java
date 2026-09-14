@@ -134,6 +134,9 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
 
     @Override
     public long findPrev(long rowKey) {
+        if (rowKey < 0) {
+            return -1;
+        }
         return checkAndGetPrev().ixFind(rowKey);
     }
 

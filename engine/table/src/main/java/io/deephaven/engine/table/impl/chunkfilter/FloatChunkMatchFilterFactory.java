@@ -21,7 +21,9 @@ public class FloatChunkMatchFilterFactory {
     private FloatChunkMatchFilterFactory() {} // static use only
 
     public static FloatChunkFilter makeFilter(final MatchOptions matchOptions, final float... values) {
-        if (matchOptions.nanMatch()) {
+        // The NaN-aware filters differ from the plain ones only in holding NaN equal to itself, so a one-time pass
+        // over the search values is worth it to take the faster "==" path when none of them is NaN.
+        if (matchOptions.nanMatch() && containsNaN(values)) {
             if (matchOptions.inverted()) {
                 if (values.length == 1) {
                     return new InverseSingleValueNaNFloatChunkFilter(values[0]);
@@ -210,6 +212,18 @@ public class FloatChunkMatchFilterFactory {
         public boolean matches(float value) {
             return !this.values.contains(value);
         }
+    }
+
+    /**
+     * Whether any of the given values is NaN.
+     */
+    private static boolean containsNaN(final float... values) {
+        for (final float value : values) {
+            if (Float.isNaN(value)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

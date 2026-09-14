@@ -61,7 +61,8 @@ public abstract class StaticNaturalJoinStateManager {
                 final long[] innerIndex = new long[leftTable.intSize("contiguous redirection build")];
                 for (int ii = 0; ii < innerIndex.length; ++ii) {
                     final long rightSide = rightSideFromSlot.applyAsLong(ii);
-                    checkExactMatch(leftTable.getRowSet().get(ii), rightSide);
+                    // the table is flat, so the row position is also the row key
+                    checkExactMatch(ii, rightSide);
                     innerIndex[ii] = rightSide;
                 }
                 return new ContiguousWritableRowRedirection(innerIndex);
@@ -73,7 +74,7 @@ public abstract class StaticNaturalJoinStateManager {
                 for (final RowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext();) {
                     final long next = it.nextLong();
                     final long rightSide = rightSideFromSlot.applyAsLong(leftPosition++);
-                    checkExactMatch(leftTable.getRowSet().get(next), rightSide);
+                    checkExactMatch(next, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                         sparseRedirections.set(next, rightSide);
                     }
@@ -88,7 +89,7 @@ public abstract class StaticNaturalJoinStateManager {
                 for (final RowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext();) {
                     final long next = it.nextLong();
                     final long rightSide = rightSideFromSlot.applyAsLong(leftPosition++);
-                    checkExactMatch(leftTable.getRowSet().get(next), rightSide);
+                    checkExactMatch(next, rightSide);
                     if (rightSide != NO_RIGHT_ENTRY_VALUE) {
                         rowRedirection.put(next, rightSide);
                     }

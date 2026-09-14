@@ -74,6 +74,7 @@ import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
+import java.util.function.IntPredicate;
 import java.util.stream.LongStream;
 
 public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
@@ -83,6 +84,14 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             BarrageUtil.ATTR_DH_PREFIX + BarrageUtil.ATTR_COMPONENT_TYPE_TAG;
     private static final int FIXED_LIST_LEN = 4;
     private static final int MAX_LIST_LEN = 10;
+
+    /**
+     * Rows per round trip. Deliberately more than two 64-element validity words, and not a multiple of 64: the validity
+     * bitmap is packed a word at a time on the write side and walked in runs of valid/null slots on the read side, so a
+     * chunk narrower than a single word would leave every word-boundary transition and the partial trailing word
+     * untested.
+     */
+    private static final int ROUND_TRIP_NUM_ROWS = 133;
 
     private static final BarrageSubscriptionOptions OPT_DEFAULT = BarrageSubscriptionOptions.builder()
             .build();
@@ -634,6 +643,130 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_LONG : val * one_bil);
                 }
             }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    /**
+     * Positions at which a run of nulls or of valid values starting there straddles a 64-element validity word
+     * boundary. {@link #ROUND_TRIP_NUM_ROWS} is wide enough for all of them.
+     */
+    private static final int[] BOUNDARY_PIVOTS = {0, 1, 61, 62, 63, 64, 65, 66, 127, 128, 129};
+
+    /**
+     * Round trips a column for each null pattern that turns over on a validity word boundary, plus the all-null and
+     * all-valid extremes. The writer packs the bitmap a word at a time and the reader walks it in runs of valid and
+     * null slots, so these are the transitions where either side can drop or misplace an element; the type-specific
+     * tests above use patterns like {@code i % 7} that do not land on them deliberately.
+     */
+    private static void roundTripEachBoundaryPattern(final BoundaryPatternRunner runner) throws IOException {
+        runner.run("all valid", index -> false);
+        runner.run("all null", index -> true);
+        for (final int pivot : BOUNDARY_PIVOTS) {
+            runner.run("first null at " + pivot, index -> index >= pivot);
+            runner.run("first valid at " + pivot, index -> index < pivot);
+            runner.run("lone null at " + pivot, index -> index == pivot);
+            runner.run("lone valid at " + pivot, index -> index != pivot);
+        }
+    }
+
+    private interface BoundaryPatternRunner {
+        void run(String description, IntPredicate isNull) throws IOException;
+    }
+
+    public void testIntValidityWordBoundaries() throws IOException {
+        for (final BarrageSubscriptionOptions opts : OPTIONS) {
+            roundTripEachBoundaryPattern((description, isNull) -> testRoundTripSerialization(
+                    SpecialMode.NONE, opts, int.class,
+                    (utO) -> {
+                        final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, isNull.test(i) ? QueryConstants.NULL_INT : i * 31 + 7);
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableIntChunk<Values> original = utO.asWritableIntChunk();
+                        final WritableIntChunk<Values> computed = utC.asWritableIntChunk();
+                        final RowSequence rows =
+                                subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), description,
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    }));
+        }
+    }
+
+    public void testObjectValidityWordBoundaries() throws IOException {
+        // the var-binary path keeps its own offsets buffer alongside the validity bitmap
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            roundTripEachBoundaryPattern((description, isNull) -> testRoundTripSerialization(
+                    SpecialMode.NONE, opts, Object.class,
+                    (utO) -> {
+                        final WritableObjectChunk<String, Values> chunk = utO.asWritableObjectChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, isNull.test(i) ? null : Integer.toString(i));
+                        }
+                    },
+                    new ObjectIdentityValidator<String>()));
+        }
+    }
+
+    /**
+     * The fixed-width payload writers gather values into a {@code BaseChunkWriter#BULK_WRITE_BUFFER_BYTES} window and
+     * flush it with a single write. At the default 4096 bytes that takes 512 doubles, 1024 ints or 4096 bytes, so
+     * {@link #ROUND_TRIP_NUM_ROWS} never fills one and the flush-a-full-window branch goes untaken; real messages fill
+     * it constantly. This covers a full window plus the partial remainder that follows, for the narrowest and widest
+     * elements and one in between.
+     */
+    public void testBulkWritePayloadWindowFlush() throws IOException {
+        final int wideRows = 5000;
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            testRoundTripSerialization(SpecialMode.NONE, opts, int.class, wideRows,
+                    (utO) -> {
+                        final WritableIntChunk<Values> chunk = utO.asWritableIntChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, i % 97 == 0 ? QueryConstants.NULL_INT : i * 31 + 7);
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableIntChunk<Values> original = utO.asWritableIntChunk();
+                        final WritableIntChunk<Values> computed = utC.asWritableIntChunk();
+                        final RowSequence rows = subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original",
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    });
+
+            testRoundTripSerialization(SpecialMode.NONE, opts, byte.class, wideRows,
+                    (utO) -> {
+                        final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, i % 97 == 0 ? QueryConstants.NULL_BYTE : (byte) (i * 31 + 7));
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableByteChunk<Values> original = utO.asWritableByteChunk();
+                        final WritableByteChunk<Values> computed = utC.asWritableByteChunk();
+                        final RowSequence rows = subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original",
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    });
+
+            testRoundTripSerialization(SpecialMode.NONE, opts, double.class, wideRows,
+                    (utO) -> {
+                        final WritableDoubleChunk<Values> chunk = utO.asWritableDoubleChunk();
+                        for (int i = 0; i < chunk.size(); ++i) {
+                            chunk.set(i, i % 97 == 0 ? QueryConstants.NULL_DOUBLE : i * 2.25);
+                        }
+                    },
+                    (utO, utC, subset, offset) -> {
+                        final WritableDoubleChunk<Values> original = utO.asWritableDoubleChunk();
+                        final WritableDoubleChunk<Values> computed = utC.asWritableDoubleChunk();
+                        final RowSequence rows = subset == null ? RowSetFactory.flat(original.size()) : subset;
+                        final MutableInt off = new MutableInt();
+                        rows.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original",
+                                computed.get(offset + off.getAndIncrement()), "computed"));
+                    });
         }
     }
 
@@ -1814,7 +1947,17 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             Class<T> type,
             final Consumer<WritableChunk<Values>> initData,
             final Validator validator) throws IOException {
-        final int NUM_ROWS = 8;
+        testRoundTripSerialization(mode, options, type, ROUND_TRIP_NUM_ROWS, initData, validator);
+    }
+
+    private static <T> void testRoundTripSerialization(
+            final SpecialMode mode,
+            final BarrageSubscriptionOptions options,
+            Class<T> type,
+            final int chunkRows,
+            final Consumer<WritableChunk<Values>> initData,
+            final Validator validator) throws IOException {
+        final int NUM_ROWS = chunkRows;
         final ChunkType chunkType;
         final Class<T> readType;
         if (type == ZonedDateTime.class) {

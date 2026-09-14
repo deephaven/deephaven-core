@@ -9,6 +9,12 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.MatchOptions;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.ComparableRangeFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.SingleSidedComparableRangeFilter;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionObject;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -641,5 +647,100 @@ public class ObjectRegionBinarySearchKernelTest {
                         return values.size();
                     }
                 });
+    }
+
+    /** Ascending, with a repeated value so a bound can land inside a run. */
+    private static final List<String> DISPATCH_DATA = List.of("a", "c", "e", "e", "g");
+
+    /**
+     * The two {@code binsearch*Filter} entry points are the region kernel's front door, and the Parquet regions are
+     * their only production callers -- nothing else in this class reaches them, so the dispatch they perform goes
+     * unchecked here even though the searches it selects are covered thoroughly.
+     *
+     * <p>
+     * Unlike the primitive kernels, this one dispatches on the filter's runtime type rather than on its bound values: a
+     * single-sided filter carries a pivot and a direction, while a two-sided one carries both bounds. Each shape is
+     * asserted to agree with the search it should select.
+     */
+    @Test
+    public void testRangeFilterEntryPointDispatch() {
+        for (final boolean descending : new boolean[] {false, true}) {
+            final List<String> data;
+            final SortColumn sortColumn;
+            if (descending) {
+                data = new ArrayList<>(DISPATCH_DATA);
+                Collections.reverse(data);
+                sortColumn = SortColumn.desc(ColumnName.of("test"));
+            } else {
+                data = DISPATCH_DATA;
+                sortColumn = SortColumn.asc(ColumnName.of("test"));
+            }
+            final ColumnRegionObject<String, Values> region = makeColumnRegionObject(data);
+            final long lastKey = data.size() - 1;
+
+            for (final boolean inclusive : new boolean[] {false, true}) {
+                // Greater-than: only the lower bound is searched.
+                try (final RowSet viaFilter = ObjectRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                        sortColumn, SingleSidedComparableRangeFilter.makeForTest("test", "e", inclusive, true));
+                        final RowSet viaSearch = ObjectRegionBinarySearchKernel.binarySearchMin(region, 0, lastKey,
+                                sortColumn, "e", inclusive)) {
+                    assertEquals("descending=" + descending + " inclusive=" + inclusive, viaSearch, viaFilter);
+                }
+                // Less-than: only the upper bound is searched.
+                try (final RowSet viaFilter = ObjectRegionBinarySearchKernel.binsearchRangeFilter(region, 0, lastKey,
+                        sortColumn, SingleSidedComparableRangeFilter.makeForTest("test", "e", inclusive, false));
+                        final RowSet viaSearch = ObjectRegionBinarySearchKernel.binarySearchMax(region, 0, lastKey,
+                                sortColumn, "e", inclusive)) {
+                    assertEquals("descending=" + descending + " inclusive=" + inclusive, viaSearch, viaFilter);
+                }
+            }
+
+            // Two-sided: both bounds are searched.
+            for (final boolean lowerInc : new boolean[] {false, true}) {
+                for (final boolean upperInc : new boolean[] {false, true}) {
+                    try (final RowSet viaFilter = ObjectRegionBinarySearchKernel.binsearchRangeFilter(region, 0,
+                            lastKey, sortColumn,
+                            ComparableRangeFilter.makeForTest("test", "c", "e", lowerInc, upperInc));
+                            final RowSet viaSearch = ObjectRegionBinarySearchKernel.binarySearchMinMax(region, 0,
+                                    lastKey, sortColumn, "c", "e", lowerInc, upperInc)) {
+                        assertEquals("descending=" + descending + " lowerInc=" + lowerInc + " upperInc=" + upperInc,
+                                viaSearch, viaFilter);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * A {@link String} orders consistently with equals, so the match entry point answers by ordering alone rather than
+     * routing to {@link ComparableRegionBinarySearchKernel} -- the counterpart to the inconsistent-type case that
+     * {@code ComparableRegionBinarySearchKernelTest} covers. An empty value list matches nothing and must not touch the
+     * region at all.
+     */
+    @Test
+    public void testMatchFilterEntryPointDispatch() {
+        final ColumnRegionObject<String, Values> region = makeColumnRegionObject(DISPATCH_DATA);
+        final long lastKey = DISPATCH_DATA.size() - 1;
+        final SortColumn sortColumn = SortColumn.asc(ColumnName.of("test"));
+        final TableDefinition tableDefinition =
+                TableDefinition.of(ColumnDefinition.fromGenericType("test", String.class));
+
+        final MatchFilter matchFilter = new MatchFilter(MatchOptions.REGULAR, "test", "e", "a");
+        matchFilter.init(tableDefinition);
+        assertTrue(BinarySearchKernelHelper.compareConsistentWithEquality(matchFilter.getColumnType()));
+        try (final RowSet viaFilter = ObjectRegionBinarySearchKernel.binsearchMatchFilter(region, 0, lastKey,
+                sortColumn, matchFilter);
+                final RowSet viaSearch = ObjectRegionBinarySearchKernel.binarySearchMatch(region, 0, lastKey,
+                        sortColumn, new Object[] {"e", "a"})) {
+            assertEquals(viaSearch, viaFilter);
+        }
+
+        // No values to look for, so nothing matches and the search is skipped outright.
+        final MatchFilter emptyFilter = new MatchFilter(MatchOptions.REGULAR, "test");
+        emptyFilter.init(tableDefinition);
+        try (final RowSet viaFilter = ObjectRegionBinarySearchKernel.binsearchMatchFilter(region, 0, lastKey,
+                sortColumn, emptyFilter)) {
+            assertTrue(viaFilter.isEmpty());
+        }
     }
 }
