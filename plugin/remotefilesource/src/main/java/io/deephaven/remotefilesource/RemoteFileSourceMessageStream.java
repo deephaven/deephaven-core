@@ -328,9 +328,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      * @param requestId the request ID to acknowledge
      */
     private void sendExecutionContextAcknowledgment(String requestId) {
-        SetExecutionContextResponse response = SetExecutionContextResponse.newBuilder()
-                .setSuccess(true)
-                .build();
+        SetExecutionContextResponse response = SetExecutionContextResponse.newBuilder().build();
 
         RemoteFileSourceServerMessage serverRequest = RemoteFileSourceServerMessage.newBuilder()
                 .setRequestId(requestId)

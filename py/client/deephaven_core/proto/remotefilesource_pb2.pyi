@@ -168,20 +168,15 @@ Global___SetExecutionContextRequest: typing_extensions.TypeAlias = SetExecutionC
 
 @typing.final
 class SetExecutionContextResponse(google.protobuf.message.Message):
-    """Response acknowledging execution context was set"""
+    """Response acknowledging execution context was set. Intentionally empty: receipt of
+    this message is itself the acknowledgment. Failures are reported as stream errors.
+    """
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    SUCCESS_FIELD_NUMBER: builtins.int
-    success: builtins.bool
-    """Whether the operation was successful"""
     def __init__(
         self,
-        *,
-        success: builtins.bool = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["success", b"success"]
-    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___SetExecutionContextResponse: typing_extensions.TypeAlias = SetExecutionContextResponse
 

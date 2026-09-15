@@ -17,7 +17,6 @@ import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponse;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourcePluginFetchRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerMessage;
 import io.deephaven.proto.backplane.grpc.SetExecutionContextRequest;
-import io.deephaven.proto.backplane.grpc.SetExecutionContextResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
@@ -79,7 +78,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     private final JsWidget widget;
 
     // Track pending setExecutionContext requests
-    private final Map<String, LazyPromise<Boolean>> pendingSetExecutionContextRequests = new HashMap<>();
+    private final Map<String, LazyPromise<Void>> pendingSetExecutionContextRequests = new HashMap<>();
     private int requestIdCounter = 0;
 
     private JsRemoteFileSourceService(JsWidget widget) {
@@ -229,10 +228,9 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     private void handleSetExecutionContextResponse(RemoteFileSourceServerMessage message) {
         String requestId = message.getRequestId();
-        LazyPromise<Boolean> promise = pendingSetExecutionContextRequests.remove(requestId);
+        LazyPromise<Void> promise = pendingSetExecutionContextRequests.remove(requestId);
         if (promise != null) {
-            SetExecutionContextResponse response = message.getSetExecutionContextResponse();
-            promise.succeed(response.getSuccess());
+            promise.succeed(null);
         }
     }
 
@@ -243,15 +241,15 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * @param isDirty whether the execution context is dirty (has pending changes)
      * @param resourcePaths array of resource paths to resolve from remote source (e.g., ["com/example/Test.groovy",
      *        "org/mycompany/Utils.groovy"]), or null/empty for no specific resources
-     * @return a promise that resolves to true if the server successfully set the execution context, false otherwise
+     * @return a promise that resolves once the server has acknowledged the execution context
      */
     @JsMethod
-    public Promise<Boolean> setExecutionContext(boolean isDirty, @JsOptional String[] resourcePaths) {
+    public Promise<Void> setExecutionContext(boolean isDirty, @JsOptional String[] resourcePaths) {
         // Generate a unique request ID
         String requestId = "setExecutionContext-" + (requestIdCounter++);
 
         // Create a lazy promise that will be resolved when we get the response
-        LazyPromise<Boolean> promise = new LazyPromise<>();
+        LazyPromise<Void> promise = new LazyPromise<>();
         pendingSetExecutionContextRequests.put(requestId, promise);
 
         // Send the request
@@ -319,7 +317,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     public void close() {
         // Take the in-flight promises before clearing, so the map is empty before the failures are delivered
-        final List<LazyPromise<Boolean>> pending = new ArrayList<>(pendingSetExecutionContextRequests.values());
+        final List<LazyPromise<Void>> pending = new ArrayList<>(pendingSetExecutionContextRequests.values());
         pendingSetExecutionContextRequests.clear();
         pending.forEach(promise -> promise.fail("RemoteFileSourceService closed"));
 

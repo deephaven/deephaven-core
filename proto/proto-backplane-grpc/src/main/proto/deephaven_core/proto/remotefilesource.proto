@@ -67,10 +67,9 @@ message SetExecutionContextRequest {
   bool is_dirty = 2;
 }
 
-// Response acknowledging execution context was set
+// Response acknowledging execution context was set. Intentionally empty: receipt of
+// this message is itself the acknowledgment. Failures are reported as stream errors.
 message SetExecutionContextResponse {
-  // Whether the operation was successful
-  bool success = 1;
 }
 
 // Fetch the remote file source plugin into the specified ticket (Flight command, not MessageStream)
