@@ -37,6 +37,7 @@ import org.junit.experimental.categories.Category;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.function.Function;
@@ -1611,13 +1612,20 @@ public class WritableRowSetImplTest extends TestCase {
 
     private RowSet getUnionIndexStrings(final String[] indexStrings) {
         final RowSetBuilderRandom result = RowSetFactory.builderRandom();
+        final List<RowSet> addedRowSets = new ArrayList<>(indexStrings.length);
         for (String indexString : indexStrings) {
             final RowSet rowSetToAdd = RowSetTstUtils.rowSetFromString(indexString);
             rowSetToAdd.validate();
             result.addRowSet(rowSetToAdd);
-            assertEquals(1, getRefCount(rowSetToAdd));
+            addedRowSets.add(rowSetToAdd);
         }
-        return result.build();
+        final RowSet union = result.build();
+        if (addedRowSets.size() > 1) {
+            for (final RowSet addedRowSet : addedRowSets) {
+                assertEquals(1, getRefCount(addedRowSet));
+            }
+        }
+        return union;
     }
 
     private void unionIndexStrings(final String[] indexStrings) {

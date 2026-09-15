@@ -65,6 +65,17 @@ public interface RowSetBuilderRandom {
         addRowKeysChunk(chunk);
     }
 
+    /**
+     * Add every row key in {@code rowSet}.
+     *
+     * <p>
+     * A builder may share {@code rowSet}'s implementation while it accumulates rather than copying every range out of
+     * it, so mutating {@code rowSet} before {@link #build()} can cost it a copy. Merging further row sets in takes the
+     * shared implementation back off it, so a builder that has built holds nothing, unless {@code rowSet} was the only
+     * one added and the result is its implementation.
+     *
+     * @param rowSet The row set to add
+     */
     default void addRowSet(final RowSet rowSet) {
         Helper.add(this, rowSet);
     }
