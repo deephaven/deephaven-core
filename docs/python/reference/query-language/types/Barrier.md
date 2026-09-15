@@ -29,6 +29,8 @@ One operation **declares** the barrier — it goes first. Another operation **re
 
 > [!IMPORTANT]
 > A barrier only coordinates expressions passed to the **same** `select`, `update`, or `where` call — it can't order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it's declared, or never declared at all.
+>
+> For a `Selectable`, a constant-valued expression — one that doesn't depend on any column or row-position variable, such as `Selectable.parse("A = 1")` — can't declare or respect a barrier either. The engine never evaluates constants during `select`/`update` processing, so it raises an error if you try.
 
 ### Example: coordinating two columns
 
