@@ -1,0 +1,82 @@
+---
+title: ConcurrencyControl
+---
+
+[`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) is the shared interface that provides concurrency control for column calculations and filters. [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (used by [`where`](../../table-operations/filter/where.md)) both implement it, so the same three methods work the same way for either one.
+
+By default, Deephaven parallelizes column calculations and filter evaluation across multiple CPU cores. Use the methods below when your formula or filter has side effects, or depends on row order, that make parallel execution unsafe.
+
+## Methods
+
+### `with_serial`
+
+Forces the expression to evaluate sequentially on a single core, processing rows one at a time, in row-set order. Use this when the formula or filter has side effects or depends on row order.
+
+```python order=result
+from deephaven.table import Selectable
+from deephaven import empty_table
+
+counter = 0
+
+
+def get_and_increment_counter() -> int:
+    global counter
+    ret = counter
+    counter += 1
+    return ret
+
+
+# Force serial execution - rows processed one at a time, in order
+col = Selectable.parse("ID = get_and_increment_counter()").with_serial()
+result = empty_table(10).update(col)
+```
+
+When an expression is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), only one thread processes the expression at a time, and shared state updates happen sequentially without race conditions.
+
+> [!NOTE]
+> Not running concurrently isn't the same guarantee `with_serial` provides — the engine may still evaluate a non-serial expression out of row order, or without evaluating every row through its own individual call. Use `with_serial` any time your formula or filter depends on shared state or row order, not just when you expect concurrent execution.
+
+### `with_declared_barriers`
+
+Marks the expression as declaring the given [`Barrier`](./Barrier.md) object(s). The declaring expression runs to completion — all of its rows — before any expression that respects the same barrier begins.
+
+```python syntax
+from deephaven.concurrency_control import Barrier
+from deephaven.table import Selectable
+
+barrier = Barrier()
+col = Selectable.parse("A = some_function()").with_declared_barriers(barrier)
+```
+
+Each barrier can only be declared by one expression. See [Barrier](./Barrier.md) for a complete worked example.
+
+### `with_respected_barriers`
+
+Marks the expression as respecting the given [`Barrier`](./Barrier.md) object(s). The respecting expression doesn't start until every expression that declares that barrier has finished.
+
+```python syntax
+from deephaven.concurrency_control import Barrier
+from deephaven.table import Selectable
+
+barrier = Barrier()
+col = Selectable.parse("B = some_function()").with_respected_barriers(barrier)
+```
+
+Multiple expressions can respect the same barrier, and one expression can respect more than one barrier. See [Barrier](./Barrier.md) for a complete worked example, including how to coordinate more than two expressions.
+
+## `with_serial` vs. barriers
+
+These solve different problems:
+
+- **`with_serial`**: Rows _within one_ expression are processed sequentially (row 0, then row 1, etc.). Other expressions can still run at the same time.
+- **Barriers**: _Between_ expressions, one finishes all its rows before another starts. Rows within each expression can still be parallelized.
+
+When shared state is involved, you often need both: `with_serial` to protect row-level access to the shared state, and a barrier to ensure one expression is completely done before the other starts.
+
+## Related documentation
+
+- [Barrier](./Barrier.md) — The marker object used with `with_declared_barriers` and `with_respected_barriers`
+- [Query table configuration](../../../conceptual/query-table-configuration.md) — Configuration properties that control default parallelization behavior
+- [ConcurrencyControl Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl)
+- [Selectable Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable)
+- [Filter Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html)
