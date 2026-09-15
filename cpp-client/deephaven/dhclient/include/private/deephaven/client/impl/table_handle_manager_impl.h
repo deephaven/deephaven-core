@@ -28,11 +28,11 @@ class TableHandleManagerImpl final : public std::enable_shared_from_this<TableHa
 
 public:
   [[nodiscard]]
-  static std::shared_ptr<TableHandleManagerImpl> Create(std::optional<Ticket> console_id,
+  static std::shared_ptr<TableHandleManagerImpl> Create(std::string session_type,
       std::shared_ptr<ServerType> server, std::shared_ptr<ExecutorType> executor,
       std::shared_ptr<ExecutorType> flight_executor);
 
-  TableHandleManagerImpl(Private, std::optional<Ticket> &&console_id,
+  TableHandleManagerImpl(Private, std::string &&session_type,
       std::shared_ptr<ServerType> &&server, std::shared_ptr<ExecutorType> &&executor,
       std::shared_ptr<ExecutorType> &&flight_executor);
   TableHandleManagerImpl(const TableHandleManagerImpl &other) = delete;
@@ -68,8 +68,9 @@ public:
   void AddSubscriptionHandle(std::shared_ptr<SubscriptionHandle> handle);
   void RemoveSubscriptionHandle(const std::shared_ptr<SubscriptionHandle> &handle);
 
+  /** Returns the console Ticket, starting the console on first call. Throws if there is no script language. */
   [[nodiscard]]
-  const std::optional<Ticket> &ConsoleId() const { return consoleId_; }
+  const Ticket &EnsureConsoleId();
   [[nodiscard]]
   const std::shared_ptr<ServerType> &Server() const { return server_; }
   [[nodiscard]]
@@ -79,10 +80,15 @@ public:
 
 private:
   const std::string me_;  // useful printable object name for logging
-  std::optional<Ticket> consoleId_;
+  // Scripting language for this session; empty means console operations throw.
+  const std::string sessionType_;
   std::shared_ptr<ServerType> server_;
   std::shared_ptr<ExecutorType> executor_;
   std::shared_ptr<ExecutorType> flightExecutor_;
+  // Guards consoleId_. Not mutex_: starting the console makes an RPC under this lock.
+  std::mutex consoleMutex_;
+  // Lazily set by EnsureConsoleId(); never reset.
+  std::optional<Ticket> consoleId_;
   // Protects the below for concurrent access.
   std::mutex mutex_;
   // The SubscriptionHandles for the tables we have subscribed to. We keep these at the TableHandleManagerImpl level
