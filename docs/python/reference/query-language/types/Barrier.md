@@ -22,7 +22,7 @@ Create one `Barrier` instance per ordering constraint you need. Reusing the same
 
 ## Using a barrier
 
-One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until every operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) (used by `select` and `update`) and [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (used by `where`) both implement:
+One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until every operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) (used by [`where`](../../table-operations/filter/where.md)) both implement:
 
 - [`with_declared_barriers(barriers)`](./ConcurrencyControl.md#with_declared_barriers) — this operation declares the given barrier(s); it runs to completion before any operation that respects the same barrier.
 - [`with_respected_barriers(barriers)`](./ConcurrencyControl.md#with_respected_barriers) — this operation respects the given barrier(s); it doesn't start until every operation that declares the barrier has finished.
@@ -134,7 +134,7 @@ col_d = Selectable.parse("D = i * 5").with_respected_barriers(barrier_a)
 t = empty_table(10).update([col_a, col_b, col_c, col_d])
 ```
 
-Execution order: `A` and `B` run in parallel (they don't depend on each other); `D` starts after `A` finishes (doesn't wait for `B`); `C` starts after both `A` and `B` finish.
+Execution order: `A` and `B` don't depend on each other, so the engine is free to run them concurrently; `D` starts after `A` finishes (doesn't wait for `B`); `C` starts after both `A` and `B` finish.
 
 ## Related documentation
 

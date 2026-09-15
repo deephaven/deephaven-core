@@ -20,7 +20,7 @@ Create one object per ordering constraint you need. Reusing the same instance fo
 
 ## Using a barrier
 
-One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until every operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (used by `select` and `update`) and [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (used by `where`) both implement:
+One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until every operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (used by [`where`](../../table-operations/filter/where.md)) both implement:
 
 - [`withDeclaredBarriers(barriers)`](./ConcurrencyControl.md#withdeclaredbarriers) — this operation declares the given barrier(s); it runs to completion before any operation that respects the same barrier.
 - [`withRespectedBarriers(barriers)`](./ConcurrencyControl.md#withrespectedbarriers) — this operation respects the given barrier(s); it doesn't start until every operation that declares the barrier has finished.
@@ -108,7 +108,7 @@ colD = Selectable.parse("D = i * 5").withRespectedBarriers(barrierA)
 t = emptyTable(10).update([colA, colB, colC, colD])
 ```
 
-Execution order: `A` and `B` run in parallel (they don't depend on each other); `D` starts after `A` finishes (doesn't wait for `B`); `C` starts after both `A` and `B` finish.
+Execution order: `A` and `B` don't depend on each other, so the engine is free to run them concurrently; `D` starts after `A` finishes (doesn't wait for `B`); `C` starts after both `A` and `B` finish.
 
 ## Related documentation
 
