@@ -9,7 +9,7 @@ endif()
 project(deephaven)
 
 set(deephaven_VERSION 43.0)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 if(WIN32)
     add_compile_definitions(WIN32_LEAN_AND_MEAN NOMINMAX)
@@ -52,10 +52,14 @@ if(NOT DHCORE_ONLY)
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
 
-    # Make the install prefix self-contained by copying the vcpkg-built runtime
-    # libraries next to ours, so consumers of the prefix (CI artifacts, the
-    # enterprise client, ...) need no vcpkg tree of their own. This copies all
-    # of vcpkg's shared libraries, not just the ones we link (~65MB extra);
+    # Make the install prefix self-contained at *runtime* by copying the
+    # vcpkg-built shared libraries next to ours, so programs linked against the
+    # prefix (CI artifacts, the enterprise client, ...) run without a vcpkg
+    # tree. Building against the prefix with CMake still needs the
+    # dependencies' own CMake packages (find_dependency in deephavenConfig.cmake),
+    # which consumers get from their own vcpkg tree built with the same pins —
+    # hence the vcpkg.json installed below. This copies all of vcpkg's shared
+    # libraries, not just the ones we link (~65MB extra);
     # trimming would need install(RUNTIME_DEPENDENCY_SET) with per-platform
     # system-library exclusions and is not worth it at this size.
     # VCPKG_INSTALLED_DIR is set by the vcpkg toolchain in every mode: in

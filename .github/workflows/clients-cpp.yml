@@ -200,7 +200,7 @@ jobs:
       - name: Configure nuget
         shell: pwsh
         run: |
-          $nuget_exe = & ./vcpkg/vcpkg.exe fetch nuget
+          $nuget_exe = (& ./vcpkg/vcpkg.exe fetch nuget | Select-Object -Last 1)
           & $nuget_exe sources add `
           -Source "${{ env.GH_PACKAGES_FEED }}" `
           -StorePasswordInClearText `

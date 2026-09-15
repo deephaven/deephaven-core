@@ -97,7 +97,11 @@ abstract class CppDepsImageTask extends DefaultTask {
                     "Building it locally with vcpkg; this can take a long time (tens of minutes cold, " +
                     "much less when the local package cache has entries).")
             logger.lifecycle("Full build log (kept for post-mortems): ${logFile}")
+            // The client image is built for linux/amd64; a deps image built for
+            // the host's own architecture (e.g. an ARM laptop) would be useless
+            // to it, so pin the platform here too.
             def args = ['docker', 'buildx', 'build', '--load', '--progress=plain',
+                        '--platform', 'linux/amd64',
                         '-f', new File(contextDir.get().asFile, 'deps.Dockerfile').absolutePath,
                         '-t', ref,
                         '--build-arg', "VCPKG_BASELINE=${vcpkgBaseline.get()}".toString(),

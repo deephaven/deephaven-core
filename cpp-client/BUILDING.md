@@ -28,11 +28,13 @@ on top of a prebuilt dependencies image that is pulled anonymously from
 `ghcr.io/deephaven/deephaven-core-cpp-deps`. The dependencies image is
 content-addressed: its tag is a hash of `deephaven/vcpkg.json` (which pins
 the vcpkg baseline), the custom triplets and `docker/deps.Dockerfile`. CI
-publishes it on every push to `main`, so unless you have locally modified one
-of those files, no dependency is ever compiled on your machine. If you *have* modified them, the Gradle task falls back to
-building the dependencies locally with vcpkg (slow, but automatic); once your
-change lands on `main`, CI publishes the matching image and everyone else
-gets pulls again.
+publishes it on every push to `main`, so normally no dependency is ever
+compiled on your machine. The Gradle task falls back to building the
+dependencies locally with vcpkg (slow, but automatic) only when the image
+cannot be pulled: because you have modified one of those files and CI has not
+published the matching image yet, or because the registry is unreachable.
+Once your change lands on `main`, CI publishes the matching image and everyone
+else gets pulls again.
 
 To run the C++ client unit tests against a Deephaven server, all in Docker:
 
@@ -194,7 +196,7 @@ connect to a server when you want to run them.
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    cmake -S . -B build \
        -DCMAKE_INSTALL_LIBDIR=lib \
-       -DCMAKE_CXX_STANDARD=17 \
+       -DCMAKE_CXX_STANDARD=20 \
        -DCMAKE_INSTALL_PREFIX=${DHCPP} \
        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
        -DBUILD_SHARED_LIBS=ON \
@@ -259,9 +261,10 @@ connect to a server when you want to run them.
      to the list of arguments to `cmake`.
 
    * Some platforms combining old versions of GCC and cmake may fail
-     to set the cmake C++ standard to 17 without explicitly adding
-     `-DCMAKE_CXX_STANDARD=17` to the list of arguments to `cmake`.
-     Note the default mode for C++ is `-std=gnu++17` for GCC 11.
+     to set the cmake C++ standard to 20 without explicitly adding
+     `-DCMAKE_CXX_STANDARD=20` to the list of arguments to `cmake`.
+     Note the default mode for C++ is `-std=gnu++17` for GCC 11 through 13,
+     so the explicit setting matters.
 
 Notes
   (1) The standard assumptions for `Debug` and `Release` apply here.
