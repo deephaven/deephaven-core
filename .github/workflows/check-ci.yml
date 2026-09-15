@@ -19,7 +19,7 @@ jobs:
       # Must checkout for push, but not pull_request according to the action
       - name: Checkout
         if: github.event_name != 'pull_request'
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check for non-docs changes
         id: filter
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -36,7 +36,7 @@ jobs:
     if: ${{ needs.changes.outputs.non-docs == 'true' || startsWith(github.ref, 'refs/heads/release/v') }}
     steps:
       - name: Free Disk Space
-        uses: endersonmenezes/free-disk-space@v4
+        uses: endersonmenezes/free-disk-space@2a22f8c59cae9cddae7194b33e6b92d023b2b4b8 # v4.0.0
         with:
           remove_haskell: true
           remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
@@ -46,12 +46,12 @@ jobs:
         run: df -h
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true
 
       - name: Setup JDKs
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |

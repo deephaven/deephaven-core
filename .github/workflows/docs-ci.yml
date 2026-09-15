@@ -21,7 +21,7 @@ jobs:
           
       - name: Deploy Directories
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@0dc935cdecc5f5e571865e60d2a6cdc673704823 # 5.2
         with:
           switches: -rlptDvz
           path: tmp-deephaven-core-v2/
@@ -45,7 +45,7 @@ jobs:
           ln -s ../main latest
           
       - name: Deploy Symlinks
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@0dc935cdecc5f5e571865e60d2a6cdc673704823 # 5.2
         with:
           switches: -rlptDvz
           path: tmp-deephaven-core-v2/
@@ -62,7 +62,7 @@ jobs:
       group: core-docs-check-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: # Does not need lfs to validate since the header file existing is enough for the check
           sparse-checkout: /docs/
           sparse-checkout-cone-mode: false
@@ -84,7 +84,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: /docs/
           sparse-checkout-cone-mode: false
@@ -99,7 +99,7 @@ jobs:
 
       - name: Sync core Python to the salmon bucket
         id: sync-python
-        uses: deephaven/salmon-sync@v1
+        uses: deephaven/salmon-sync@a5f767c0edc5b27ec58796658d61a388c0b45192 # v1.2.0
         with:
           source: docs/python
           destination: deephaven/deephaven-core/docs/${{ steps.dhc-version.outputs.version }}
@@ -109,7 +109,7 @@ jobs:
 
       - name: Sync core Groovy to the salmon bucket
         id: sync-groovy
-        uses: deephaven/salmon-sync@v1
+        uses: deephaven/salmon-sync@a5f767c0edc5b27ec58796658d61a388c0b45192 # v1.2.0
         with:
           source: docs/groovy
           destination: deephaven/deephaven-core/groovy/docs/${{ steps.dhc-version.outputs.version }}
@@ -126,10 +126,10 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
@@ -159,7 +159,7 @@ jobs:
 
       - name: Deploy Javadoc
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@0dc935cdecc5f5e571865e60d2a6cdc673704823 # 5.2
         with:
           switches: -rlptDvz --delete
           path: combined-javadoc/build/docs/javadoc/
@@ -178,10 +178,10 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
@@ -211,7 +211,7 @@ jobs:
 
       - name: Deploy JavaScript/TypeScript docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@0dc935cdecc5f5e571865e60d2a6cdc673704823 # 5.2
         with:
           switches: -rlptDvz --delete
           path: web/client-api/types/build/documentation/
@@ -230,10 +230,10 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
@@ -270,7 +270,7 @@ jobs:
 
       - name: Deploy Python Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@0dc935cdecc5f5e571865e60d2a6cdc673704823 # 5.2
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/docs/
@@ -282,7 +282,7 @@ jobs:
 
       - name: Deploy Client Python Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@0dc935cdecc5f5e571865e60d2a6cdc673704823 # 5.2
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/pyclient-docs/
@@ -309,10 +309,10 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
@@ -349,7 +349,7 @@ jobs:
 
       - name: Deploy Client C++ Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@0dc935cdecc5f5e571865e60d2a6cdc673704823 # 5.2
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/cppClientDocs/
@@ -361,7 +361,7 @@ jobs:
 
       - name: Deploy Client C++ Example Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@0dc935cdecc5f5e571865e60d2a6cdc673704823 # 5.2
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/cppExamplesDocs/
@@ -380,10 +380,10 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
@@ -413,7 +413,7 @@ jobs:
 
       - name: Deploy R Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@0dc935cdecc5f5e571865e60d2a6cdc673704823 # 5.2
         with:
           switches: -rlptDvz --delete
           path: R/rdeephaven/docs/
@@ -435,10 +435,10 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
@@ -468,7 +468,7 @@ jobs:
 
       - name: Deploy Protobuf Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@0dc935cdecc5f5e571865e60d2a6cdc673704823 # 5.2
         with:
           switches: -rlptDvz --delete
           path: proto/proto-backplane-grpc/build/protoc-output/proto-doc/single-html/index.html
