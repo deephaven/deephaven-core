@@ -65,7 +65,7 @@ if(NOT DHCORE_ONLY)
     # VCPKG_INSTALLED_DIR is set by the vcpkg toolchain in every mode: in
     # manifest mode it is ${CMAKE_BINARY_DIR}/vcpkg_installed, but the Docker
     # build points it at a prebuilt tree elsewhere.
-    if(VCPKG_TOOLCHAIN)
+    if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
         if(WIN32)
             install(DIRECTORY ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin/
                 DESTINATION ${CMAKE_INSTALL_BINDIR}
