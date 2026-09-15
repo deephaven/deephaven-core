@@ -2571,6 +2571,14 @@
                     "path": "reference/query-language/types/arrays.md"
                   },
                   {
+                    "label": "Barrier",
+                    "path": "reference/query-language/types/Barrier.md"
+                  },
+                  {
+                    "label": "ConcurrencyControl",
+                    "path": "reference/query-language/types/ConcurrencyControl.md"
+                  },
+                  {
                     "label": "date-time",
                     "path": "reference/query-language/types/date-time.md"
                   },
