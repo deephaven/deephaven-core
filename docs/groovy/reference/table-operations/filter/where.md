@@ -107,14 +107,42 @@ result_filtered = source.where("(boolean)my_filter(IntegerColumn)")
 result_not_filtered = source.where("!((boolean)my_filter(IntegerColumn))")
 ```
 
+## Serial execution
+
+By default, Deephaven parallelizes filter evaluation across multiple CPU cores. For filters with side effects or order dependencies, use [`withSerial`](../../query-language/types/Filter.md#withserial) to force sequential processing.
+
+This filter tracks how many rows it evaluates. On a source with more than 131,072 rows, the filter would be evaluated in parallel and the counter could produce incorrect results. The example below uses 100 rows for clarity; use `withSerial` to protect larger inputs:
+
+```groovy order=source,result
+import io.deephaven.api.filter.Filter
+
+rowsChecked = [0] as int[]
+
+checkValue = { int x ->
+    rowsChecked[0]++  // Side effect: modifies external state
+    return x > 5
+}
+
+source = emptyTable(100).update("X = i")
+
+// Use .withSerial because the filter has side effects
+// Filter.from() returns a collection; [0] gets the single filter
+f = Filter.from("(boolean)checkValue(X)")[0].withSerial()
+result = source.where(f)
+```
+
+See [Parallelization](../../../conceptual/query-engine/parallelization.md) for more details.
+
 ## Related documentation
 
-- [How to create static tables](../../../how-to-guides/new-and-empty-table.md)
-- [How to use filters](../../../how-to-guides/use-filters.md)
+- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [How to use filters](../../../how-to-guides/filters.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Filter](../../query-language/types/Filter.md)
 - [equals](../../query-language/match-filters/equals.md)
-- [not equals (`!=`)](../../query-language/match-filters/not-equals.md)
-- [`icase in`](../..//query-language/match-filters/icase-in.md)
-- [`icase not in`](../../query-language/match-filters/icase-not-in.md)
-- [`in`](../../query-language/match-filters/in.md)
-- [`not in`](../../query-language/match-filters/not-in.md)
+- [icase in](../../query-language/match-filters/icase-in.md)
+- [icase not in](../../query-language/match-filters/icase-not-in.md)
+- [in](../../query-language/match-filters/in.md)
+- [not equals](../../query-language/match-filters/not-equals.md)
+- [not in](../../query-language/match-filters/not-in.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#where(java.lang.String...))

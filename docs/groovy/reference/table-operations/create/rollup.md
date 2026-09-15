@@ -175,7 +175,7 @@ We instead get an Exception message indicating that the formula cannot be applie
 Error running script: io.deephaven.engine.table.impl.select.FormulaCompilationException: Formula compilation error for: sum(Value)
 ...
 Full expression           : sum(Value)
-Expression having trouble : 
+Expression having trouble :
 Exception type            : io.deephaven.engine.table.impl.lang.QueryLanguageParser$ParserResolutionFailure
 Exception message         : Cannot find variable or class Value
 ```
@@ -192,7 +192,7 @@ source = newTable(
 depthAndKeys = source.rollup(List.of(AggFormula("Depth = __FORMULA_DEPTH__"), AggFormula("Keys = __FORMULA_KEYS__")), "Key", "Key2")
 ```
 
-These variables can be used to implement distinct aggregations at each level of the rollup. For example:
+You can use these variables to implement distinct aggregations at each level of the rollup. For example:
 
 ```groovy order=firstThenSum,source
 source = newTable(
