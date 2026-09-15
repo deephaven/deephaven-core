@@ -7,17 +7,29 @@ import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import org.apache.parquet.column.values.ValuesReader;
 
+import java.nio.ByteBuffer;
+
 public class StringMaterializer extends ObjectMaterializerBase<String> implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new StringMaterializer(dataReader, (String) nullValue, numValues);
+            return dataReader instanceof PlainBinaryStringValuesReader
+                    ? new PlainBinaryStringMaterializer(
+                            (PlainBinaryStringValuesReader) dataReader, (String) nullValue, numValues)
+                    : new StringMaterializer(dataReader, (String) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new StringMaterializer(dataReader, numValues);
+            return dataReader instanceof PlainBinaryStringValuesReader
+                    ? new PlainBinaryStringMaterializer((PlainBinaryStringValuesReader) dataReader, numValues)
+                    : new StringMaterializer(dataReader, numValues);
+        }
+
+        @Override
+        public ValuesReader maybeMakePlainBinaryValuesReader(final ByteBuffer in) {
+            return PlainBinaryStringValuesReader.isSupported(in) ? new PlainBinaryStringValuesReader(in) : null;
         }
     };
 
