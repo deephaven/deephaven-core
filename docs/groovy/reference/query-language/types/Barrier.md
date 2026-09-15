@@ -42,12 +42,12 @@ counter = new AtomicInteger(0)
 
 barrier = new Object()
 
-// Column A: serial (protect counter) + declares barrier (must finish first)
+// Column A: serial (preserve row-to-value order) + declares barrier (must finish first)
 colA = Selectable.parse("A = counter.getAndIncrement()")
     .withSerial()
     .withDeclaredBarriers(barrier)
 
-// Column B: serial (protect counter) + respects barrier (waits for A)
+// Column B: serial (preserve row-to-value order) + respects barrier (waits for A)
 colB = Selectable.parse("B = counter.getAndIncrement()")
     .withSerial()
     .withRespectedBarriers(barrier)
@@ -59,12 +59,13 @@ Column `A` gets values 0-9. Column `B` gets values 10-19. Without the barrier, t
 
 ### Example: coordinating two filters
 
-Barriers work the same way for [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) objects in `where` operations. Here, one filter populates a cache that a second filter depends on:
+Barriers work the same way for [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) objects in `where` operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs `withSerial` — a `ConcurrentHashMap` is already safe for concurrent writes to distinct keys — so the barrier is the only thing enforcing that the cache is fully populated before it's read:
 
 ```groovy order=result
 import io.deephaven.api.filter.Filter
+import java.util.concurrent.ConcurrentHashMap
 
-cache = [:]
+cache = new ConcurrentHashMap()
 
 initCache = { key ->
     cache[key] = "Value_${key}"
@@ -75,8 +76,8 @@ useCache = { key -> cache.containsKey(key) }
 
 barrier = new Object()
 
-// Filter A: serial (map writes aren't thread-safe) + declares barrier (must finish first)
-filterA = Filter.from("(boolean)initCache(Key)")[0].withSerial().withDeclaredBarriers(barrier)
+// Filter A: declares barrier (must finish first)
+filterA = Filter.from("(boolean)initCache(Key)")[0].withDeclaredBarriers(barrier)
 
 // Filter B: respects barrier (waits for A to finish populating the cache)
 filterB = Filter.from("(boolean)useCache(Key)")[0].withRespectedBarriers(barrier)

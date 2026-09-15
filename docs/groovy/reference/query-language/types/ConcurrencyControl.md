@@ -10,7 +10,7 @@ By default, Deephaven parallelizes column calculations and filter evaluation acr
 
 ### `withSerial`
 
-Forces the expression to evaluate sequentially on a single core, processing rows one at a time, in row-set order. Use this when the formula or filter has side effects or depends on row order.
+Forces the expression to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the formula or filter has side effects or depends on row order.
 
 ```groovy order=result
 import io.deephaven.api.Selectable
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 counter = new AtomicInteger(0)
 
-// Force serial execution - rows processed one at a time, in order
+// Force serial execution - never concurrent, rows processed in row-set order
 col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
 result = emptyTable(10).update([col])
 ```
@@ -26,7 +26,7 @@ result = emptyTable(10).update([col])
 When an expression is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), only one thread processes the expression at a time, and shared state updates happen sequentially without race conditions.
 
 > [!NOTE]
-> Not running concurrently isn't the same guarantee `withSerial` provides — the engine may still evaluate a non-serial expression out of row order, or without evaluating every row through its own individual call. Use `withSerial` any time your formula or filter depends on shared state or row order, not just when you expect concurrent execution.
+> Not running concurrently isn't the same guarantee `withSerial` provides — the engine may still evaluate a non-serial expression out of row-set order. Use `withSerial` any time your formula or filter depends on shared state or row order, not just when you expect concurrent execution.
 
 ### `withDeclaredBarriers`
 

@@ -74,7 +74,7 @@ t = empty_table(10).update([col_a, col_b])
 
 ### Example: coordinating two filters
 
-Barriers work the same way for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) objects in `where` operations. Here, one filter populates a cache that a second filter depends on:
+Barriers work the same way for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) objects in `where` operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs `with_serial` — a plain `dict` write to a distinct key per row is already safe under the GIL — so the barrier is the only thing enforcing that the cache is fully populated before it's read:
 
 ```python order=result
 from deephaven.concurrency_control import Barrier
@@ -95,12 +95,8 @@ def use_cache(key) -> bool:
 
 barrier = Barrier()
 
-# Filter A: serial (dict writes aren't thread-safe) + declares barrier (must finish first)
-filter_a = (
-    Filter.from_("(boolean)init_cache(Key)")
-    .with_serial()
-    .with_declared_barriers(barrier)
-)
+# Filter A: declares barrier (must finish first)
+filter_a = Filter.from_("(boolean)init_cache(Key)").with_declared_barriers(barrier)
 
 # Filter B: respects barrier (waits for A to finish populating the cache)
 filter_b = Filter.from_("(boolean)use_cache(Key)").with_respected_barriers(barrier)
