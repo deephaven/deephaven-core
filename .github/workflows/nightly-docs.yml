@@ -12,7 +12,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven' # Don't run on forks that haven't disabled actions
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: /docs/
           sparse-checkout-cone-mode: false
@@ -33,7 +33,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven' # Don't run on forks that haven't disabled actions
     steps:
     - name: Checkout
-      uses: actions/checkout@v7
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         sparse-checkout: /docs/
         sparse-checkout-cone-mode: false
@@ -59,7 +59,7 @@ jobs:
     if: failure() && github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven'
     steps:
       - name: Slack Notification
-        uses: slackapi/slack-github-action@v3.0.3
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL}}
           webhook-type: webhook-trigger

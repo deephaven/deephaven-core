@@ -76,7 +76,7 @@ jobs:
       - name: Sync core Python to the salmon bucket
         id: sync-python
         if: ${{ needs.doc-changes.outputs.python == 'true' }}
-        uses: deephaven/salmon-sync@v1
+        uses: deephaven/salmon-sync@a5f767c0edc5b27ec58796658d61a388c0b45192 # v1.2.0
         with:
           source: docs/python
           destination: deephaven/deephaven-core/docs/pr-${{ github.event.number }}
@@ -94,7 +94,7 @@ jobs:
       - name: Sync core Groovy to the salmon bucket
         id: sync-groovy
         if: ${{ needs.doc-changes.outputs.groovy == 'true' }}
-        uses: deephaven/salmon-sync@v1
+        uses: deephaven/salmon-sync@a5f767c0edc5b27ec58796658d61a388c0b45192 # v1.2.0
         with:
           source: docs/groovy
           destination: deephaven/deephaven-core/groovy/docs/pr-${{ github.event.number }}

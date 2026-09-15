@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout latest
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           sparse-checkout: |
@@ -38,7 +38,7 @@ jobs:
           sed -i "s/^ARG CHART_VERSION=.*/ARG CHART_VERSION=$CHART_VERSION/" ./web/client-ui/Dockerfile
           sed -i "s/^ARG WIDGET_VERSION=.*/ARG WIDGET_VERSION=$WIDGET_VERSION/" ./web/client-ui/Dockerfile
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
         env:
           WEB_VERSION: ${{steps.web_versions.outputs.WEB_VERSION}}
         with:

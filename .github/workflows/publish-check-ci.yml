@@ -52,7 +52,7 @@ jobs:
         run: unzip check-ci-results.zip
       - name: Publish Test Results
         if: steps.download.outputs.found == 'true'
-        uses: scacap/action-surefire-report@v1
+        uses: scacap/action-surefire-report@c38a2d74b9840ae8950a4387ae02b637421d0f39 # v1.13.0
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
