@@ -55,6 +55,16 @@ dependencies {
     testRuntimeOnly libs.hadoop.common
 
     testImplementation project(':engine-test-utils')
+
+    constraints {
+        implementation(libs.httpcore5) {
+            // used by calcite-core, iceberg, and confluent
+            because 'CVE-2026-54399'
+        }
+        implementation(libs.httpcore5.h2) {
+            because 'Keeping consistency with libs.httpcore5'
+        }
+    }
 }
 
 /**
