@@ -4,7 +4,7 @@ title: ConcurrencyControl
 
 [`ConcurrencyControl`](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) is the shared interface that provides concurrency control for column calculations and filters. [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (used by [`where`](../../table-operations/filter/where.md)) both implement it, so the same three methods work the same way for either one.
 
-By default, Deephaven parallelizes column calculations and filter evaluation across multiple CPU cores. Use the methods below when your formula or filter has side effects, or depends on row order, that make parallel execution unsafe.
+By default, Deephaven is free to parallelize column calculations and filter evaluation across multiple CPU cores when they're eligible for it — eligibility depends on statelessness, table size, and available threads. Use the methods below when your formula or filter has side effects, or depends on row order, that make parallel execution unsafe.
 
 ## Methods
 

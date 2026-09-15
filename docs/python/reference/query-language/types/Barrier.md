@@ -6,7 +6,7 @@ A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_co
 
 ## Why use a barrier?
 
-Deephaven parallelizes most column calculations and filters by default. A barrier lets you enforce that one operation completes all of its rows before another operation starts — for example, when one column populates a cache that another column reads from, or computes a running total that another column depends on.
+By default, Deephaven is free to parallelize column calculations and filters that are eligible for it — eligibility depends on statelessness, table size, available threads, and, for a formula that calls a Python function, a free-threaded (no-GIL) Python build. A barrier lets you enforce that one operation completes all of its rows before another operation starts — for example, when one column populates a cache that another column reads from, or computes a running total that another column depends on.
 
 A barrier alone does not force either operation to run serially. If an operation has shared mutable state that could race across its own rows, you typically need **both** [`with_serial`](./ConcurrencyControl.md#with_serial) (for sequential row processing within that operation) **and** a barrier (for ordering between operations).
 
