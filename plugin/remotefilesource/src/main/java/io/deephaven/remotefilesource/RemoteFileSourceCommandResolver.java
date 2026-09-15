@@ -30,6 +30,13 @@ import java.util.function.Consumer;
 public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTicketRouter {
     private static final Logger log = LoggerFactory.getLogger(RemoteFileSourceCommandResolver.class);
 
+    /**
+     * The single marker instance handed out for {@link RemoteFileSourcePlugin#NAME}. Exports for a given plugin name
+     * must resolve to one instance, so this is created once rather than per request.
+     */
+    private static final PluginMarker REMOTE_FILE_SOURCE_PLUGIN_MARKER =
+            new PluginMarker(RemoteFileSourcePlugin.NAME);
+
     private static final String FETCH_PLUGIN_TYPE_URL =
             "type.googleapis.com/" + RemoteFileSourcePluginFetchRequest.getDescriptor().getFullName();
 
@@ -69,8 +76,9 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     }
 
     /**
-     * Exports the PluginMarker singleton based on the fetch request. The marker object is exported to the session using
-     * the result ticket specified in the request, and flight info is returned containing the endpoint for accessing it.
+     * Exports a plugin's PluginMarker singleton based on the fetch request. The marker object is exported to the
+     * session using the result ticket specified in the request, and flight info is returned containing the endpoint for
+     * accessing it.
      *
      * <p>
      * Note: This exports a PluginMarker for the specified plugin name. Plugin-specific routing is handled by
@@ -93,15 +101,16 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
         }
 
         final String pluginName = request.getPluginName();
-        if (pluginName.isEmpty()) {
+        if (!RemoteFileSourcePlugin.NAME.equals(pluginName)) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    "RemoteFileSourcePluginFetchRequest must contain a valid plugin_name");
+                    "RemoteFileSourcePluginFetchRequest must contain plugin_name " + RemoteFileSourcePlugin.NAME
+                            + ", got '" + pluginName + "'");
         }
 
-        // Export a plugin-specific PluginMarker. Plugins using PluginMarker should check
+        // Export this plugin's single PluginMarker. Plugins using PluginMarker should check
         // marker.getPluginName() in isType() to prevent conflicts with markers for other plugins.
         session.newExport(resultTicket, "RemoteFileSourcePluginFetchRequest.resultTicket")
-                .submit(() -> PluginMarker.forPluginName(pluginName));
+                .submit(() -> REMOTE_FILE_SOURCE_PLUGIN_MARKER);
 
         final Flight.FlightInfo flightInfo = Flight.FlightInfo.newBuilder()
                 .setFlightDescriptor(descriptor)

@@ -3,9 +3,6 @@
 //
 package io.deephaven.plugin.type;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * A generic marker object for plugin exports that can be used by multiple plugin types.
  * <p>
@@ -13,35 +10,23 @@ import java.util.concurrent.ConcurrentHashMap;
  * isType() returns true. Without plugin-specific identification in isType(), multiple plugins using PluginMarker would
  * conflict, and whichever is registered first would intercept all PluginMarker instances.
  * <p>
- * This class maintains a single instance per pluginName - multiple calls to {@link #forPluginName(String)} with the
- * same name will return the same instance.
+ * Markers are matched by pluginName rather than by identity. Code that exports markers is expected to reuse a single
+ * instance per plugin name rather than creating one per request.
  */
 public class PluginMarker {
-    private static final Map<String, PluginMarker> INSTANCES = new ConcurrentHashMap<>();
-
     private final String pluginName;
 
     /**
-     * Private constructor - use forPluginName() to get instances.
+     * Creates a marker for the given plugin name.
      *
      * @param pluginName the plugin name identifier (should match the plugin's name() method)
-     */
-    private PluginMarker(String pluginName) {
-        this.pluginName = pluginName;
-    }
-
-    /**
-     * Gets the PluginMarker instance for the specified plugin name, creating it if necessary.
-     *
-     * @param pluginName the plugin name identifier (should match the plugin's name() method)
-     * @return the PluginMarker instance for this plugin name
      * @throws IllegalArgumentException if pluginName is null or empty
      */
-    public static PluginMarker forPluginName(String pluginName) {
+    public PluginMarker(String pluginName) {
         if (pluginName == null || pluginName.isEmpty()) {
             throw new IllegalArgumentException("pluginName cannot be null or empty");
         }
-        return INSTANCES.computeIfAbsent(pluginName, PluginMarker::new);
+        this.pluginName = pluginName;
     }
 
     /**

@@ -23,17 +23,18 @@ import io.deephaven.plugin.type.PluginMarker;
  */
 @AutoService(ObjectType.class)
 public class RemoteFileSourcePlugin extends ObjectTypeBase {
+    public static final String NAME = "DeephavenRemoteFileSourcePlugin";
 
     @Override
     public String name() {
-        return "DeephavenRemoteFileSourcePlugin";
+        return NAME;
     }
 
     @Override
     public boolean isType(Object object) {
         if (object instanceof PluginMarker) {
             PluginMarker marker = (PluginMarker) object;
-            return name().equals(marker.getPluginName());
+            return NAME.equals(marker.getPluginName());
         }
         return false;
     }
