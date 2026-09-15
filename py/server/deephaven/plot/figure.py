@@ -37,7 +37,7 @@ def _assert_type(name: str, obj: Any, types: List) -> None:
         types (List): acceptable types for the object
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
 
     types_no_subscript = tuple(set(t.__origin__ if isinstance(t, _GenericAlias) else t for t in types))
@@ -65,7 +65,7 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
         types (List): acceptable types for the object
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
 
     if obj is None:
@@ -142,7 +142,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -226,7 +226,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -401,7 +401,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -533,7 +533,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -597,7 +597,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -690,7 +690,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -755,7 +755,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -809,7 +809,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -865,7 +865,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -943,7 +943,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -982,7 +982,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -1030,7 +1030,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If required parameter is not set: series_name.
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
@@ -1090,7 +1090,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If required parameter is not set: series_name.
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
@@ -1140,7 +1140,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If required parameter is not set: series_name.
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
@@ -1199,7 +1199,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If required parameter is not set: series_name.
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
@@ -1252,7 +1252,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If required parameter is not set: series_name.
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
@@ -1329,7 +1329,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If required parameter is not set: series_name.
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
@@ -1426,7 +1426,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If required parameter is not set: series_name.
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
@@ -1493,7 +1493,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -1758,7 +1758,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If required parameter is not set: path.
         """
         if not path:
             raise DHError("required parameter is not set: path")
@@ -1824,7 +1824,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -1978,7 +1978,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -2008,7 +2008,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -2076,7 +2076,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -2120,7 +2120,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -2179,7 +2179,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -2337,7 +2337,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -2405,7 +2405,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -2447,7 +2447,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -2499,7 +2499,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -2657,7 +2657,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -2725,7 +2725,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 
@@ -2767,7 +2767,7 @@ class Figure(JObjectWrapper):
             a new Figure
 
         Raises:
-            DHError
+            DHError: If unsupported parameter combination.
         """
         non_null_args = set()
 

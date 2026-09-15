@@ -85,7 +85,7 @@ class BarrageSession:
             a Table
 
         Raises:
-            DHError
+            DHError: If unable to subscribe to the remote table with the provided ticket.
         """
         try:
             j_barrage_subscription = self.j_barrage_session.subscribe(
@@ -110,7 +110,7 @@ class BarrageSession:
             a Table
 
         Raises:
-            DHError
+            DHError: If unable to take a snapshot of the remote table with the provided ticket.
         """
         try:
             j_barrage_snapshot = self.j_barrage_session.snapshot(
@@ -157,7 +157,7 @@ def barrage_session(
         a Deephaven Barrage session
 
     Raises:
-        DHError
+        DHError: If unable to get a barrage session to the target remote Deephaven server.
     """
     try:
         if tls_root_certs and not use_tls:

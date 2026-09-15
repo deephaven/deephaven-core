@@ -24,7 +24,7 @@ def topics(kafka_config: dict) -> list[str]:
         a list of topic names
 
     Raises:
-        DHError
+        DHError: If unable to list Kafka topics.
     """
     try:
         j_kafka_config = j_properties(kafka_config)
