@@ -113,10 +113,10 @@ jobs:
 
       # Export the install tree from the image as a build artifact (a future
       # PR adds a Python ticking-client job that consumes it).
-      # -h dereferences symlinks (the deps image links /opt/deephaven/{include,lib}
-      # into the vcpkg install tree) so the tarball is self-contained; the
-      # transform renames the top-level directory to dhinstall, the layout the
-      # downstream job expects.
+      # -h dereferences symlinks (the deps image links /opt/deephaven/include and
+      # lib/pkgconfig into the vcpkg install tree) so the tarball is
+      # self-contained; the transform renames the top-level directory to
+      # dhinstall, the layout the downstream job expects.
       - name: Tar install dir
         run: |
           docker run --rm deephaven/cpp-client:local-build \

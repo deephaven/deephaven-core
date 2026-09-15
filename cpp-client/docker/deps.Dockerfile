@@ -173,15 +173,16 @@ RUN --mount=type=secret,id=gh_packages_token \
     # into the image layer (which gets published).
     rm -rf /root/.config/NuGet /root/.nuget /root/.local/share/NuGet
 
-# Expose the dependencies under ${PREFIX} the same way build-dependencies.sh
-# used to, so downstream consumers (R's Makevars uses $DHCPP/lib,
-# $DHCPP/include and $DHCPP/lib/pkgconfig) keep working unchanged. Symlinks
-# keep the image lean; consumers that need a self-contained tree should
-# dereference on export (tar -h).
+# Expose the dependencies' headers and pkg-config files under ${PREFIX} the
+# way build-dependencies.sh used to, so R's Makevars ($DHCPP/include,
+# $DHCPP/lib/pkgconfig) keeps working unchanged. The shared libraries are NOT
+# linked here: the client's CMake install copies them into $PREFIX/lib itself
+# (see install(DIRECTORY ...) in CMakeLists.txt), and pre-existing symlinks
+# would make CMake consider them already installed and copy nothing.
 RUN set -eux; \
     mkdir -p "$PREFIX/include" "$PREFIX/lib" "$PREFIX/bin" "$PREFIX/log"; \
     ln -s /opt/vcpkg_installed/"$TARGET_TRIPLET"/include/* "$PREFIX/include/"; \
-    ln -s /opt/vcpkg_installed/"$TARGET_TRIPLET"/lib/* "$PREFIX/lib/"; \
+    ln -s /opt/vcpkg_installed/"$TARGET_TRIPLET"/lib/pkgconfig "$PREFIX/lib/pkgconfig"; \
     { \
         echo "DHCPP=\"$PREFIX\"; export DHCPP"; \
         echo "CMAKE_PREFIX_PATH=\"$PREFIX\"; export CMAKE_PREFIX_PATH"; \
