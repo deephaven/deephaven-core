@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.updategraph.ClockInconsistencyException;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -99,13 +100,10 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
             postWaitStep = NULL_CLOCK_VALUE;
             usePrev = true;
         } else if (notYetSatisfied.length > 0) {
-            // Partially satisfied
-            if (getUpdateGraph().currentThreadProcessesUpdates()) {
-                // Can't wait on this thread or we will deadlock. Throw instead.
-                throw new IllegalStateException("Cannot wait for " + Arrays.toString(notYetSatisfied)
-                        + " to be satisfied on step " + beforeStep
-                        + " from a thread that processes updates; the wait would deadlock");
-            }
+            // Partially satisfied.
+            // Assert that we are not on the update graph's current thread, will deadlock if true.
+            Assert.eqFalse(getUpdateGraph().currentThreadProcessesUpdates(),
+                    "getUpdateGraph().currentThreadProcessesUpdates()");
             if (WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
                 // Successful wait on beforeStep
                 postWaitStep = beforeStep;

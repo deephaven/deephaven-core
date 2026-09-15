@@ -437,6 +437,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
             try (final RowSet indexRowKeys =
                     lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
+                // Abandon an attempt the set has already invalidated before paying for any row sets.
+                sharedSet.failIfChangedSince(kernelGeneration);
                 forEachIndexRowSet(indexRowKeys, rowSetColumn, usePrev, rowSet -> {
                     if (inclusion) {
                         try (final RowSet intersected = rowSet.intersect(selection)) {
@@ -486,6 +488,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
             try (final RowSet indexRowKeys =
                     lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
+                // Abandon an attempt the set has already invalidated before paying for any row sets.
+                sharedSet.failIfChangedSince(kernelGeneration);
                 forEachIndexRowSet(indexRowKeys, rowSetColumn, usePrev, rowSet -> {
                     try (final RowSet intersected = rowSet.intersect(selection)) {
                         possiblyMatching.insert(intersected);
