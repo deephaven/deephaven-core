@@ -1,8 +1,14 @@
 # The Deephaven Core devcontainer
 
-One configuration, used on macOS (Docker Desktop) and on Linux with rootful or rootless Docker.
-Open it with VS Code's Dev Containers extension ("Reopen in Container"), the `devcontainer` CLI,
-or `devc`. Nothing in here is host-specific; the Features detect what they need at build time.
+One configuration, used on macOS (Docker Desktop) and on Linux with rootless Docker. Open it
+with VS Code's Dev Containers extension ("Reopen in Container"), the `devcontainer` CLI, or
+`devc`. Nothing in here is host-specific; the Features detect what they need at build time.
+
+> **On Linux, use a rootless daemon.** To run nested podman without `--privileged`, this config
+> relaxes Docker's seccomp filter and its `/proc` masking (both detailed below). Under a rootless
+> daemon that costs little: container root is your own unprivileged user, so an escape reaches an
+> account you already control. Under a rootful daemon those same relaxations sit in front of real
+> host root, and nothing in this repo can change that. Rootful is not recommended.
 
 ## Git worktrees
 
@@ -44,8 +50,8 @@ devcontainer, `docker` is podman (the `podman-as-docker` Feature), and those con
 **children of the devcontainer**, not siblings on your host daemon. Nothing here mounts your
 host's Docker socket.
 
-The Feature grants the devcontainer **no capability**. Two things make that possible, and both
-are in this folder or the Feature:
+The Feature adds **no capabilities** beyond Docker's default set — in particular not
+`CAP_SYS_ADMIN`. Two things make that possible, and both are in this folder or the Feature:
 
 - **`seccomp-podman.json`**, referenced from `runArgs`. Docker's default seccomp filter blocks the
   syscalls that create user namespaces and mount filesystems unless the container holds
@@ -53,8 +59,8 @@ are in this folder or the Feature:
   complete and unmodified, with **one rule added**: an unconditional allow for
   `unshare setns clone clone3 mount umount2 pivot_root mount_setattr open_tree open_tree_attr
   move_mount fsopen fsconfig fsmount fspick sethostname setdomainname keyctl`.
-  The kernel still enforces its own rules on these: with no capability they only work inside a
-  user namespace the process created itself, which is how rootless podman works on any ordinary
+  The kernel still enforces its own rules on these: without `CAP_SYS_ADMIN` they only work inside
+  a user namespace the process created itself, which is how rootless podman works on any ordinary
   Linux desktop. Everything else Docker's default blocks stays blocked.
 - **`systempaths=unconfined`** (declared by the Feature, not here): without it the nested
   container runtime cannot mount its own `/proc`. Without `CAP_SYS_ADMIN` this mostly exposes
@@ -72,28 +78,21 @@ name resolution between them, which the `deephaven-in-docker` Gradle tests rely 
 
 ## Who you are inside the container
 
-| Host | `id` inside | Why |
-| --- | --- | --- |
-| macOS Docker Desktop | `uid=1000(vscode)` | Ordinary user, as always. |
-| Linux, rootful Docker | `uid=<your uid>(vscode)` | The devcontainer CLI's usual uid alignment. |
-| Linux, **rootless** Docker | `uid=0(vscode)`, `HOME=/home/vscode` | See below. |
-
-On a rootless daemon the workspace bind mount is owned by container uid 0 (the daemon maps your
-host uid to container root), so a normal user inside cannot write a single project file. The
-`rootless-remap` Feature detects that at build time and makes `vscode` uid 0 while keeping its
-name and home. `sudo` becomes a no-op and tools that refuse to run as root will complain, but
-nothing on the host changes: container root there *is* your own unprivileged user, so files
-come out owned by you. On every other host the Feature does nothing.
+On macOS you are an ordinary `uid=1000(vscode)`. On a rootless Linux daemon you are
+`uid=0(vscode)`, because the daemon maps your host uid to container root and so the workspace
+bind mount is unwritable by anyone else — the `rootless-remap` Feature detects that at build time
+and makes `vscode` uid 0, keeping its name and home. `sudo` becomes a no-op and tools that refuse
+to run as root will complain, but nothing on the host changes: container root there *is* your own
+unprivileged user, so files come out owned by you.
 
 ## What this opens, in plain terms
 
-Compared to a plain devcontainer, code running in here can additionally create user namespaces
-and use mount syscalls inside them, which is what any unprivileged user on a stock Linux desktop
-can do. That is a somewhat larger kernel attack surface than a default devcontainer, because
-unprivileged user namespaces have been the entry point for kernel privilege-escalation bugs in
-the past. It is not a capability grant: escaping the container still requires a kernel bug, not
-a known technique. The blast radius of any escape is unchanged by this folder: your user account
-on rootless Linux, the Docker Desktop VM (your shared folders and other containers) on macOS.
+Code in here can create user namespaces and mount inside them — what any unprivileged user on a
+stock Linux desktop can do. That is a larger kernel attack surface than a default devcontainer,
+since unprivileged user namespaces have been an entry point for privilege-escalation bugs; it is
+not a capability grant, and escaping still takes a kernel bug rather than a known technique. The
+blast radius is unchanged by this folder: your own account on rootless Linux, the Docker Desktop
+VM (its shared folders and other containers) on macOS.
 
 Two alternatives were rejected for being worse: `docker-in-docker` needs `--privileged`, and
 `docker-outside-of-docker` hands the devcontainer control of your host's Docker daemon with no
