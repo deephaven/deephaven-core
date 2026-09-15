@@ -4,6 +4,27 @@ One configuration, used on macOS (Docker Desktop) and on Linux with rootful or r
 Open it with VS Code's Dev Containers extension ("Reopen in Container"), the `devcontainer` CLI,
 or `devc`. Nothing in here is host-specific; the Features detect what they need at build time.
 
+## Git worktrees
+
+A worktree's `.git` is a file pointing into the main checkout's `.git/worktrees/<name>`, which
+sits outside the mounted folder. Two things follow from that.
+
+**Use relative worktree paths** (git 2.48+), so the pointer resolves under `/workspaces`:
+
+```sh
+git config --global worktree.useRelativePaths true   # new worktrees
+git worktree repair                                  # existing ones, from the main checkout
+```
+
+**Mount the common dir.** VS Code does this for you; the CLI needs the flag on every command:
+
+```sh
+devcontainer up --mount-git-worktree-common-dir
+devcontainer exec --mount-git-worktree-common-dir bash
+```
+
+Miss either and the container still starts — only git breaks, once you are inside.
+
 ## What is in this folder
 
 | File | Purpose |
@@ -11,7 +32,7 @@ or `devc`. Nothing in here is host-specific; the Features detect what they need 
 | `devcontainer.json` | The configuration. Base image plus Features for Java, Node, Python, git-lfs, coding-agent CLIs, git identity, and nested containers via podman. |
 | `devcontainer-lock.json` | Pins every Feature to a digest, so a rebuild gets the same Features until someone updates it deliberately. |
 | `initialize-command.sh` | Runs on the **host** before the container is created. Copies your git `user.name`/`user.email` into `~/.config/devc/gitconfig-identity`, which is bind-mounted read-only for the identity Feature. |
-| `post-create.sh` | Runs once per container as the remote user: creates the Python venv that `remoteEnv` points at, and fixes ownership of the Gradle cache volume. |
+| `post-create.sh` | Runs once per container as the remote user: creates the Python venv that `remoteEnv` points at, and fixes ownership of the Gradle cache and `node_modules` volumes. |
 | `post-start.sh` | Runs on every start: builds the Deephaven Python wheels (inside a nested container, via podman) and installs them into the venv, so `./gradlew server-jetty-app:run` works with no manual step. Idempotent; steady-state cost is one `pip show`. |
 | `seccomp-podman.json` | The seccomp profile that lets podman run inside the devcontainer without granting it any capability. See below. |
 
@@ -91,9 +112,15 @@ and `docs/manual-verification.md` § 13.9.
   `runArgs`, or the Feature's `rootlessNetworkCmd` is not `slirp4netns`.
 - **`./gradlew` dies with `Could not create parent directory for lock file`** — the Gradle cache
   volume is root-owned; `post-create.sh` should have fixed this. Rebuild the container.
+- **`npm ci` fails with `EACCES`** — same root-owned-volume problem, for a `node_modules` mount.
+  Rerun `bash .devcontainer/post-create.sh`; if you added a mount, add it to that script's list.
 - **Wheel build failed at start** — see `~/.cache/deephaven/devcontainer-post-start.log`. The
-  wheel container runs `mypy` and `ruff` over `py/server`, so formatting or typing drift there
-  fails this build.
+  wheel container runs `mypy` and `ruff` over `py/server`, so drift there fails the build.
+  Nothing is installed, so the next start just retries.
+- **You edited `py/server` and the venv still runs the old code** — use the build-and-install
+  command from `AGENTS.md`; `pip` in here is already the venv's, so it applies unchanged.
+  `post-start.sh` runs it for you on first start only. Java changes need none of this — only the
+  Python layer is a copy.
 - **On rootless Linux, files you create show up on the host owned by someone else** — the remap
   did not take. `id` inside should print `uid=0(vscode)`; if it prints 1000, rebuild without
   cache and check the build log for the `rootless-remap` lines.

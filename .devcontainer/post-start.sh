@@ -1,31 +1,19 @@
 #!/usr/bin/env bash
-# postStartCommand for the Deephaven Core devcontainer — builds the Deephaven Python
-# wheels and installs them into the venv post-create.sh created, so that the documented
-# `./gradlew server-jetty-app:run` (the Python flavor) works without a manual setup step.
+# postStartCommand for the Deephaven Core devcontainer: build the Deephaven Python wheel and
+# install it into the venv post-create.sh created, so `./gradlew server-jetty-app:run` (Python
+# flavor) works with no manual step. The same sequence as the build-and-install command in
+# AGENTS.md, minus the uninstall — this only ever runs when nothing is installed.
 #
-# Equivalent to running, by hand:
+# postStart rather than postCreate: `py-server:assemble` builds the wheel inside a container,
+# so it needs the podman socket at $DOCKER_HOST, which the podman-as-docker Feature only starts
+# in its own postStartCommand. Feature hooks run before the workspace's in the same phase, so
+# this is the earliest point it can work.
 #
-#   ./gradlew py-server:assemble
-#   pip install --find-links py/server/build/wheel "deephaven-core[autocomplete]"
+# Synchronous, not backgrounded: the guard below is not atomic, so an overlapping manual run
+# could put two installs into one venv. A slow or failing build is handled by exiting 0 and
+# logging instead.
 #
-# postStart rather than postCreate: `py-server:assemble` builds the wheel *inside a
-# container* (buildSrc/.../io.deephaven.python-wheel.gradle registers it as a docker task),
-# so it needs the podman API socket at $DOCKER_HOST — and that socket is started by the
-# podman-as-docker Feature's own postStartCommand. Feature lifecycle hooks run before the
-# workspace's in the same phase, so postStart is the earliest point this can work at all;
-# at postCreate it fails on connect.
-#
-# Run synchronously, NOT backgrounded. Backgrounding invites races: the `pip show` guard
-# below is not atomic, so a hook run overlapping a manual run would put two `pip install`s
-# into one venv and corrupt it, and a developer starting work mid-flight would see a
-# half-installed `deephaven` package. The reason to background — keeping a `ruff`/`mypy`
-# failure inside the wheel container from wedging container start — is handled instead by
-# always exiting 0 and writing failures to the log, which costs nothing and races with
-# nothing.
-#
-# Steady-state cost is one `pip show` (a fraction of a second); the real work happens once
-# per rebuild, roughly 10-15s given the ~/.gradle volume declared in devcontainer.json and
-# podman's own persistent image store.
+# Steady-state cost is one `pip show`; the real work happens once per rebuild, ~10-15s.
 set -u
 
 LOG_DIR="$HOME/.cache/deephaven"
@@ -45,9 +33,8 @@ say() {
   log "$*"
 }
 
-# Everything below is best-effort. A failing postStartCommand is not worth a container that
-# will not come up, and every failure here is recoverable from inside a running one — by
-# rerunning this exact script by hand, which the flock makes safe to do at any time.
+# Best-effort throughout: a failing postStartCommand is not worth a container that will not
+# come up, and every failure here is fixable from inside a running one.
 finish() {
   exit 0
 }
@@ -57,10 +44,9 @@ log "=== post-start begin (pwd=$PWD) ==="
 
 # --- serialize against any concurrent run ----------------------------------------------
 #
-# The guard and the install are not atomic together, so two overlapping runs — the hook and
-# a developer running this script directly, most likely — could both pass the guard and
-# then race inside the same venv. flock makes the whole body mutually exclusive. -w rather
-# than a bare block so a wedged holder cannot hang container start indefinitely.
+# The guard and the install are not atomic together, so two runs — the hook and a manual one,
+# most likely — could both pass the guard and race inside the same venv. -w rather than a bare
+# block, so a stuck holder cannot hang container start indefinitely.
 exec 9> "$LOCK" 2> /dev/null || true
 if ! flock -w 1800 9 2> /dev/null; then
   say "another instance is still running (lock held) — skipping"
@@ -69,18 +55,19 @@ fi
 
 # --- already installed? -----------------------------------------------------------------
 #
-# Deliberately install-once. Rebuilding the wheel whenever py/server changes is not
-# something a start hook can detect cheaply or correctly, so after editing py/server rerun
-# this script by hand (it is safe to run at any time) or reinstall the wheel yourself.
+# Install-once: a start hook cannot cheaply tell whether py/server changed. That also blocks a
+# deliberate rerun after editing py/server, which is what the AGENTS.md build-and-install
+# command is for.
 if pip show deephaven-core > /dev/null 2>&1; then
   log "deephaven-core already installed — nothing to do"
+  log "hint: edited py/server? this installs once — see build-and-install in AGENTS.md."
   exit 0
 fi
 
 # --- is the podman API socket actually up? ----------------------------------------------
 #
-# Checked explicitly so the common ordering failure reports itself, rather than surfacing as
-# an opaque gradle/docker-java connection error several minutes into a build.
+# Checked up front so the common ordering failure names itself, rather than surfacing as an
+# opaque gradle/docker-java connection error minutes into a build.
 if [ -n "${DOCKER_HOST:-}" ]; then
   SOCK_PATH="${DOCKER_HOST#unix://}"
   if [ ! -S "$SOCK_PATH" ]; then
@@ -103,19 +90,20 @@ log "py-server:assemble ok after $((SECONDS - t0))s"
 
 # --- install ----------------------------------------------------------------------------
 #
-# Gated on the build above having succeeded AND on a wheel actually being present.
-# `--find-links` only *adds* a search location; it does not disable the index, so a run
-# where the build silently produced nothing would happily install the latest release from
-# PyPI instead — a version-mismatched deephaven-core against a snapshot server, reported as
-# success. --no-index is not the fix here because the [autocomplete] extra legitimately
-# resolves from the index; checking for the artifact is.
-if ! ls "$WHEEL_DIR"/deephaven_core-*.whl > /dev/null 2>&1; then
+# By *path*, not by name with `--find-links`: that only adds a search location, so pip merges
+# the local wheel with PyPI and takes the highest version — not necessarily the one just built.
+# --no-index is not the alternative, since the [autocomplete] extra resolves from the index;
+# naming the file pins just the deephaven-core distribution. Newest by mtime, though gradle
+# syncs this directory, so it should hold one wheel.
+WHEEL="$(ls -1t "$WHEEL_DIR"/deephaven_core-*.whl 2> /dev/null | head -n1)"
+if [ -z "$WHEEL" ]; then
   say "no wheel found in $WHEEL_DIR after a successful build — skipping pip (see $LOG)"
   exit 0
 fi
+log "installing $WHEEL"
 
 t1=$SECONDS
-if pip install --find-links "$WHEEL_DIR" "deephaven-core[autocomplete]" >> "$LOG" 2>&1; then
+if pip install "./${WHEEL}[autocomplete]" >> "$LOG" 2>&1; then
   say "installed $(pip show deephaven-core 2> /dev/null | awk '/^Version:/{print $2}') into $VIRTUAL_ENV ($((SECONDS - t1))s)"
 else
   say "pip install FAILED after $((SECONDS - t1))s — see $LOG"
