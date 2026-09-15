@@ -27,9 +27,12 @@ One operation **declares** the barrier — it goes first. Another operation **re
 - [`with_declared_barriers(barriers)`](./ConcurrencyControl.md#with_declared_barriers) — this operation declares the given barrier(s); it runs to completion before any operation that respects the same barrier.
 - [`with_respected_barriers(barriers)`](./ConcurrencyControl.md#with_respected_barriers) — this operation respects the given barrier(s); it doesn't start until every operation that declares the barrier has finished.
 
+> [!IMPORTANT]
+> A barrier only coordinates expressions passed to the **same** `select`, `update`, or `where` call — it can't order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it's declared, or never declared at all.
+
 ### Example: coordinating two columns
 
-Consider two columns that share a counter, where column `A` should assign IDs 0-9 and column `B` should continue from 10-19. Without a barrier, both columns would start simultaneously, both read the counter starting at 0, and produce overlapping, incorrect results. With a barrier, column `A` runs first (0-9), then column `B` starts where `A` left off (10-19):
+Consider two columns that share a counter, where column `A` should assign IDs 0-9 and column `B` should continue from 10-19. Without a barrier, the engine gives no guarantee about the order in which `A` and `B` run relative to each other — `B` could just as easily end up with 0-9 while `A` gets 10-19. A barrier removes that ambiguity: column `A` is guaranteed to run first (0-9), then column `B` starts where `A` left off (10-19):
 
 ```python order=t
 from deephaven.concurrency_control import Barrier
@@ -65,7 +68,7 @@ col_b = (
 t = empty_table(10).update([col_a, col_b])
 ```
 
-`A` gets values 0-9. `B` gets values 10-19. Without the barrier, both columns would race and produce unpredictable results. Without `with_serial`, rows within each column would also race.
+`A` gets values 0-9. `B` gets values 10-19. Without the barrier, there's no guarantee `A` runs before `B` — the two columns could just as easily come out reversed. Without `with_serial`, a column's own rows could also be evaluated out of row-set order, breaking the correspondence between row and counter value even within a single column.
 
 ### Example: coordinating two filters
 

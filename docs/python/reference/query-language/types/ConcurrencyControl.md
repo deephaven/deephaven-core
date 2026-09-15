@@ -68,10 +68,10 @@ Multiple expressions can respect the same barrier, and one expression can respec
 
 These solve different problems:
 
-- **`with_serial`**: Rows _within one_ expression are processed sequentially (row 0, then row 1, etc.). Other expressions can still run at the same time.
+- **`with_serial`**: Rows _within one_ expression are processed sequentially (row 0, then row 1, etc.). For a **filter**, a serial filter also acts as an absolute ordering barrier against every other filter in the same `where` call — no filter can execute out of order around it. For a **selectable**, `with_serial` gives no such guarantee relative to other expressions by default; other expressions, serial or not, can still run at the same time unless you add an explicit barrier.
 - **Barriers**: _Between_ expressions, one finishes all its rows before another starts. Rows within each expression can still be parallelized.
 
-When shared state is involved, you often need both: `with_serial` to protect row-level access to the shared state, and a barrier to ensure one expression is completely done before the other starts.
+When shared state is involved, you often need both: `with_serial` to protect row-level access to the shared state, and — especially for selectables — a barrier to ensure one expression is completely done before another starts.
 
 ## Related documentation
 
