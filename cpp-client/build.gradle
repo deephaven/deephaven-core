@@ -79,7 +79,7 @@ abstract class CppDepsImageTask extends DefaultTask {
     @Input abstract Property<String> getImageRef()
     @Input abstract Property<String> getVcpkgBaseline()
     @Input abstract Property<String> getTargetTriplet()
-    @InputDirectory abstract DirectoryProperty getContextDir()
+    @InputDirectory @PathSensitive(PathSensitivity.RELATIVE) abstract DirectoryProperty getContextDir()
     @OutputFile abstract RegularFileProperty getMarkerFile()
     @Inject abstract ExecOperations getExecOperations()
 

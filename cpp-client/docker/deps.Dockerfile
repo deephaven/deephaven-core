@@ -6,9 +6,10 @@
 # the :cpp-client:cppClient Gradle task to build the client itself on top.
 #
 # This image is content-addressed: the Gradle build hashes this Dockerfile,
-# vcpkg.json and the custom triplets into the image tag, pulls the matching image from ghcr.io when it exists (anonymous, no
-# credentials needed), and only builds it locally on a miss. CI publishes the
-# image on pushes to main, so developers should almost never build it.
+# vcpkg.json and the custom triplets into the image tag, pulls the matching
+# image from ghcr.io when it exists (anonymous, no credentials needed), and
+# only builds it locally on a miss. CI publishes the image on pushes to main,
+# so developers should almost never build it.
 #
 # The toolchain stage mirrors the retired cpp-clients-multi-base image from
 # deephaven/deephaven-base-images: the R toolchain and R packages are included
@@ -22,6 +23,12 @@
 FROM ubuntu:24.04@sha256:33ceb71981b602c1a7443a53469e4dba065f7503eab3078a2d7a57a2ab987517 AS toolchain
 ARG DEBIAN_FRONTEND=noninteractive
 ARG PREFIX=/opt/deephaven
+# The R packages below come from a dated CRAN snapshot (Posit Package Manager)
+# rather than live CRAN, so rebuilding this image yields the same packages
+# until someone bumps this date on purpose. PPM also serves prebuilt binaries
+# for Ubuntu 24.04, which turns the R package step from a ~10 minute compile
+# into a short download.
+ARG CRAN_SNAPSHOT=2026-09-01
 
 # Toolchain, vcpkg host requirements (git/curl/zip/unzip/tar/pkg-config), and
 # host tools some vcpkg ports require but refuse to fetch themselves on Linux
@@ -76,12 +83,17 @@ RUN set -eux; \
     apt-get -qq -y install r-base r-recommended pandoc; \
     rm -rf /var/lib/apt/lists/*
 
+# The HTTPUserAgent option is how PPM learns the R version/platform it should
+# serve binaries for; without it, it falls back to source packages.
 RUN set -eux; \
     NCPUS=$(getconf _NPROCESSORS_ONLN); \
+    CRAN_REPO="https://packagemanager.posit.co/cran/__linux__/noble/${CRAN_SNAPSHOT}" \
     MAKE="make -j${NCPUS}" R --no-save --no-restore <<'EOF'
+options(HTTPUserAgent = sprintf("R/%s R (%s)", getRversion(),
+  paste(getRversion(), R.version["platform"], R.version["arch"], R.version["os"])))
 status = tryCatch(
   {
-     install.packages(c("Rcpp", "arrow", "R6", "dplyr", "testthat", "xml2", "lubridate", "zoo", "knitr", "rmarkdown"), repos="https://cloud.r-project.org", quiet=TRUE)
+     install.packages(c("Rcpp", "arrow", "R6", "dplyr", "testthat", "xml2", "lubridate", "zoo", "knitr", "rmarkdown"), repos=Sys.getenv("CRAN_REPO"), quiet=TRUE)
      0
   },
   error=function(e) { print(e); 1 },
@@ -156,7 +168,10 @@ RUN --mount=type=secret,id=gh_packages_token \
         --x-install-root=/opt/vcpkg_installed \
         --x-abi-tools-use-exact-versions \
         --clean-after-build; \
-    rm -rf /opt/vcpkg/downloads /opt/vcpkg/buildtrees /opt/vcpkg/packages
+    rm -rf /opt/vcpkg/downloads /opt/vcpkg/buildtrees /opt/vcpkg/packages; \
+    # nuget wrote the token in cleartext to its config; it must not persist
+    # into the image layer (which gets published).
+    rm -rf /root/.config/NuGet /root/.nuget /root/.local/share/NuGet
 
 # Expose the dependencies under ${PREFIX} the same way build-dependencies.sh
 # used to, so downstream consumers (R's Makevars uses $DHCPP/lib,

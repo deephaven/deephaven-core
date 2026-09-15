@@ -52,14 +52,23 @@ if(NOT DHCORE_ONLY)
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
 
+    # Make the install prefix self-contained by copying the vcpkg-built runtime
+    # libraries next to ours, so consumers of the prefix (CI artifacts, the
+    # enterprise client, ...) need no vcpkg tree of their own. This copies all
+    # of vcpkg's shared libraries, not just the ones we link (~65MB extra);
+    # trimming would need install(RUNTIME_DEPENDENCY_SET) with per-platform
+    # system-library exclusions and is not worth it at this size.
+    # VCPKG_INSTALLED_DIR is set by the vcpkg toolchain in every mode: in
+    # manifest mode it is ${CMAKE_BINARY_DIR}/vcpkg_installed, but the Docker
+    # build points it at a prebuilt tree elsewhere.
     if(VCPKG_TOOLCHAIN)
         if(WIN32)
-            install(DIRECTORY ${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/bin/
+            install(DIRECTORY ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin/
                 DESTINATION ${CMAKE_INSTALL_BINDIR}
                 FILES_MATCHING PATTERN "*.dll"
             )
         else()
-            install(DIRECTORY ${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/
+            install(DIRECTORY ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib/
                 DESTINATION ${CMAKE_INSTALL_LIBDIR}
                 FILES_MATCHING
                     PATTERN "*.so"

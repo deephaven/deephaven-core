@@ -224,7 +224,6 @@ jobs:
           --toolchain "$GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DVCPKG_INSTALL_OPTIONS="--x-abi-tools-use-exact-versions" \
-          -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON \
           -DCMAKE_INSTALL_PREFIX="$DHINSTALL" \
           -DVCPKG_TARGET_TRIPLET="${{ env.TARGET_TRIPLET }}" \
           -DVCPKG_OVERLAY_TRIPLETS=cpp-client/deephaven/custom-triplets \
