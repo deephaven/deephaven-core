@@ -131,8 +131,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         @Override
         protected boolean shouldCoalesce(WhereFilter... whereFilters) {
             return Arrays.stream(whereFilters)
-                    .anyMatch(whereFilter -> ((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
-                            whereFilter.getColumns(), whereFilter.getColumnArrays()));
+                    .anyMatch(whereFilter -> ((PartitionAwareSourceTable) table)
+                            .isPrioritizablePartitioningFilter(whereFilter));
         }
 
         @Override
@@ -147,9 +147,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                     serialFilterFound = true;
                 }
 
-                final boolean isPartitioningFilter = !(whereFilter instanceof ReindexingFilter)
-                        && ((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
-                                whereFilter.getColumns(), whereFilter.getColumnArrays());
+                final boolean isPartitioningFilter =
+                        ((PartitionAwareSourceTable) table).isPrioritizablePartitioningFilter(whereFilter);
 
                 final boolean missingBarrier = !partitionBarriers.containsAll(ExtractRespectedBarriers.of(whereFilter));
                 if (serialFilterFound || missingBarrier) {
@@ -333,8 +332,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 serialFilterFound = true;
             }
 
-            final boolean isPartitioningFilter = !(whereFilter instanceof ReindexingFilter)
-                    && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), whereFilter.getColumnArrays());
+            final boolean isPartitioningFilter = isPrioritizablePartitioningFilter(whereFilter);
             partitioningFilterFound |= isPartitioningFilter;
 
             final boolean missingBarrier = !partitionBarriers.containsAll(ExtractRespectedBarriers.of(whereFilter));
@@ -409,6 +407,20 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
         // Apply our selectDistinct() to the location table.
         return columnSourceManager.locationTable().selectDistinct(selectColumns);
+    }
+
+    /**
+     * Whether {@code whereFilter} may be applied to the location keys before coalescing, rather than to the rows after.
+     * Location discovery applies such filters once per discovered key, with no listener, so a refreshing filter cannot
+     * be one: it is deferred like any other row filter.
+     *
+     * @param whereFilter The filter to test, already {@link WhereFilter#init(TableDefinition) initialized}
+     * @return Whether {@code whereFilter} may be applied before coalescing
+     */
+    private boolean isPrioritizablePartitioningFilter(@NotNull final WhereFilter whereFilter) {
+        return !(whereFilter instanceof ReindexingFilter)
+                && !whereFilter.isRefreshing()
+                && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), whereFilter.getColumnArrays());
     }
 
     private boolean isValidAgainstColumnPartitionTable(

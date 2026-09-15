@@ -23,7 +23,10 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import org.apache.commons.lang3.mutable.MutableObject;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.testutil.filters.ReindexingRowSetCapturingFilter;
@@ -43,6 +46,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
@@ -526,7 +530,6 @@ public class TestPartitionAwareSourceTableNoMocks {
         Assert.eq(coalesced.size(), "res0.size()", partitionSize * 2);
     }
 
-
     @Test
     public void testSortedClockFilterReorderingWithAttribute() {
         final long partitionSize = 128;
@@ -950,17 +953,54 @@ public class TestPartitionAwareSourceTableNoMocks {
         return new DynamicWhereFilter(setTable, true, MatchPairFactory.getExpressions("partition"));
     }
 
+    /** Rows per location for the partition-tracking tests. */
+    private static final int PARTITION_SIZE = 4;
+
+    /**
+     * A refreshing source table over {@code locationProvider}, with no partitioning column filters of its own.
+     */
+    private Table partitionedSource(
+            final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider,
+            final String description) {
+        return new PartitionAwareSourceTable(
+                PARTITIONED_DEFINITION,
+                description,
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                locationProvider,
+                ExecutionContext.getContext().getUpdateGraph());
+    }
+
+    /**
+     * The {@code partition} column a result covering {@code partitions} must have, {@link #PARTITION_SIZE} rows each.
+     */
+    private static Table expectedPartitions(final String... partitions) {
+        return TableTools.newTable(stringCol("partition", Arrays.stream(partitions)
+                .flatMap(partition -> IntStream.range(0, PARTITION_SIZE).mapToObj(ignored -> partition))
+                .toArray(String[]::new)));
+    }
+
+    /** Discover one more location, with the same size as the rest. */
+    private static void appendSizedLocation(
+            final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider,
+            final String partition) {
+        final PartitionAwareSourceTableTestUtils.TableLocationKeyImpl locationKey =
+                new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(partition);
+        locationProvider.appendLocation(locationKey);
+        locationProvider.locations.get(locationKey).setSize(PARTITION_SIZE);
+    }
+
     /**
      * Every table that inherits a partitioning column filter must get its own copy of it. A {@link WhereFilter}
      * accumulates per-operation state as it is applied, so tables sharing one filter instance would fail as soon as the
-     * second of them was coalesced. A {@link DynamicWhereFilter} is used here because it rejects reuse explicitly.
+     * second of them was coalesced. A {@link DynamicWhereFilter} over a static set table is used here because it
+     * rejects reuse explicitly; a refreshing one could not be a partitioning column filter at all.
      */
     @Test
     public void testPartitioningFiltersAreCopiedForDerivedTables() {
         final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
         final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
                 locationProvider(tds, "A", "B");
-        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), stringCol("partition", "A"));
+        final Table setTable = TableTools.newTable(stringCol("partition", "A"));
 
         final PartitionAwareSourceTable filteredSource =
                 filteredPartitionedSource(locationProvider, "derivedTables", partitionFilter(setTable));
@@ -1006,50 +1046,258 @@ public class TestPartitionAwareSourceTableNoMocks {
     }
 
     /**
-     * The same location discovery, with a <em>refreshing</em> set table behind the partitioning column filter, hangs
-     * the thread that drives it.
+     * A refreshing filter over a partitioning column must survive location discovery, and must take the newly
+     * discovered locations into account.
      * <p>
-     * {@code filterLocationKeys} applies the partitioning column filters by running {@code where} against an in-memory
-     * table of the newly discovered keys, and it runs once per discovery pass, on the thread refreshing the location
-     * provider. That {@code where} builds an {@link OperationSnapshotControlEx}, because a static source with
-     * refreshing filter dependencies needs snapshot control, and {@link ConstructSnapshot}'s concurrent attempt calls
-     * {@code usePreviousValues}, which finds the static source satisfied and the filter not. Partially satisfied means
-     * wait, so it parks in {@code WaitNotification.waitForSatisfaction} for the set listener's notification — work only
-     * the waiting thread could have run, so the wait never ends.
+     * Because such a filter is applied after coalescing rather than to the location keys, discovery does not run it at
+     * all: the source table includes every location, and the filter sees the rows the new location contributes as an
+     * ordinary upstream addition.
      * <p>
-     * This does not reproduce on {@code main}: there the same {@code where} gets no snapshot control at all, because
-     * the source is static, and the run completes.
-     * <p>
-     * The timeout bounds the failure: without it this test hangs rather than fails. It also runs the body on another
-     * thread, which is why the execution context is opened here rather than relying on {@link #setUp}.
+     * The timeout bounds any regression that hangs discovery. It runs the body on another thread, which is why the
+     * execution context is opened explicitly rather than relying on {@link #setUp}.
      */
     @Test(timeout = 60_000)
     public void testRefreshingPartitioningFilterAcrossLocationDiscovery() {
         try (final SafeCloseable ignoredContext = updateGraph.getContext().open()) {
-            refreshingPartitioningFilterAcrossLocationDiscovery();
+            final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+            final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
+                    locationProvider(tds, "A", "B");
+            locationProvider.locations.values().forEach(location -> location.setSize(PARTITION_SIZE));
+            final QueryTable setTable = TstUtils.testRefreshingTable(i(0, 1).toTracking(),
+                    stringCol("partition", "A", "C"));
+
+            final Table source = partitionedSource(locationProvider, "refreshingDiscovery");
+            final Table filtered = source.where(partitionFilter(setTable));
+            assertTableEquals(expectedPartitions("A"), filtered.view("partition"));
+
+            // C is discovered, and it is in the set.
+            updateGraph.getDelegate().startCycleForUnitTests(false);
+            appendSizedLocation(locationProvider, "C");
+            updateGraph.refreshSources();
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.getDelegate().completeCycleForUnitTests();
+
+            assertFalse(filtered.isFailed());
+            assertTableEquals(expectedPartitions("A", "C"), filtered.view("partition"));
         }
     }
 
-    private void refreshingPartitioningFilterAcrossLocationDiscovery() {
+    /**
+     * The same discovery, but driven on the simulated update graph thread, which is where {@code refreshSources} runs
+     * in production. That thread can neither wait for a set filter's listener nor read it consistently, which is why a
+     * refreshing filter must not take part in discovery at all.
+     * <p>
+     * {@link CapturingUpdateGraph#refreshSources()} runs on the calling thread, so the test-thread variant above does
+     * not exercise this path.
+     */
+    @Test(timeout = 60_000)
+    public void testRefreshingPartitioningFilterAcrossLocationDiscoveryOnUpdateThread() {
+        try (final SafeCloseable ignoredContext = updateGraph.getContext().open()) {
+            final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+            final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
+                    locationProvider(tds, "A", "B");
+            locationProvider.locations.values().forEach(location -> location.setSize(PARTITION_SIZE));
+            final QueryTable setTable = TstUtils.testRefreshingTable(i(0, 1).toTracking(),
+                    stringCol("partition", "A", "C"));
+
+            final Table source = partitionedSource(locationProvider, "refreshingDiscoveryOnUpdateThread");
+            final Table filtered = source.where(partitionFilter(setTable));
+            assertTableEquals(expectedPartitions("A"), filtered.view("partition"));
+
+            // Capture the cause if the result fails, so that the failure is diagnosable.
+            final MutableObject<Throwable> tableFailure = new MutableObject<>();
+            filtered.addUpdateListener(new InstrumentedTableUpdateListenerAdapter("capture", filtered, false) {
+                @Override
+                public void onUpdate(final TableUpdate upstream) {}
+
+                @Override
+                public void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
+                    tableFailure.setValue(originalException);
+                }
+            });
+
+            updateGraph.getDelegate().startCycleForUnitTests(false);
+            appendSizedLocation(locationProvider, "C");
+            updateGraph.getDelegate().refreshUpdateSourceForUnitTests(() -> {
+                assertTrue(updateGraph.currentThreadProcessesUpdates());
+                try (final SafeCloseable ignored = updateGraph.getContext().open()) {
+                    updateGraph.refreshSources();
+                }
+            });
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.getDelegate().completeCycleForUnitTests();
+
+            if (tableFailure.getValue() != null) {
+                throw new AssertionError("location discovery failed on the update thread: " + tableFailure.getValue(),
+                        tableFailure.getValue());
+            }
+            assertFalse(filtered.isFailed());
+            assertTableEquals(expectedPartitions("A", "C"), filtered.view("partition"));
+        }
+    }
+
+    /**
+     * A refreshing filter over a partitioning column keeps tracking its set table: a partition whose value leaves the
+     * set is removed, and one whose value joins it is added.
+     * <p>
+     * This is why such a filter is applied after coalescing rather than to the location keys. Location discovery
+     * evaluates the partitioning column filters once per batch of newly discovered keys and keeps no listener on them
+     * ({@link SourceTable#maybeAddLocations} discards the {@code where} it runs), so nothing there could react to the
+     * set changing.
+     */
+    @Test
+    public void testRefreshingPartitioningFilterTracksSetChanges() {
         final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
         final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
-                locationProvider(tds, "A", "B");
+                locationProvider(tds, "A", "B", "C");
+        locationProvider.locations.values().forEach(location -> location.setSize(PARTITION_SIZE));
+
         final QueryTable setTable = TstUtils.testRefreshingTable(i(0, 1).toTracking(),
-                stringCol("partition", "A", "C"));
+                stringCol("partition", "A", "B"));
 
-        final PartitionAwareSourceTable filteredSource =
-                filteredPartitionedSource(locationProvider, "refreshingDiscovery", partitionFilter(setTable));
-        final Table coalesced = filteredSource.coalesce();
-        assertEquals(1, coalesced.size());
+        final Table source = partitionedSource(locationProvider, "tracksSetChanges");
+        final Table filtered = source.where(partitionFilter(setTable));
+        assertTableEquals(expectedPartitions("A", "B"), filtered.view("partition"));
 
-        updateGraph.getDelegate().startCycleForUnitTests(false);
-        locationProvider.appendLocation(new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl("C"));
-        // Hangs here.
-        updateGraph.refreshSources();
-        updateGraph.markSourcesRefreshedForUnitTests();
-        updateGraph.getDelegate().completeCycleForUnitTests();
+        // B leaves the set and C joins it.
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(setTable, i(1));
+            TstUtils.addToTable(setTable, i(2), stringCol("partition", "C"));
+            setTable.notifyListeners(i(2), i(1), i());
+        });
 
-        assertFalse(coalesced.isFailed());
-        assertEquals(2, coalesced.size());
+        assertFalse(filtered.isFailed());
+        assertTableEquals(expectedPartitions("A", "C"), filtered.view("partition"));
+    }
+
+    /**
+     * Demoting a refreshing filter must not drag the filters after it out of the fast path.
+     * <p>
+     * Filters in a conjunction may be reordered freely except across a serial filter or a barrier, and the fast path
+     * already hoists static partitioning filters over everything else; a demoted filter is one more thing to hoist
+     * over. So only a filter that respects a barrier the refreshing filter declares has to follow it (a serial filter
+     * follows everything before it regardless), and the existing barrier bookkeeping already arranges that: a demoted
+     * filter contributes no barriers to the prioritized set.
+     */
+    @Test
+    public void testRefreshingPartitioningFilterDoesNotDemoteLaterFilters() {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
+                locationProvider(tds, "A", "B", "C", "D");
+        locationProvider.locations.values().forEach(location -> location.setSize(PARTITION_SIZE));
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0, 1).toTracking(),
+                stringCol("partition", "A", "B"));
+
+        // The static partitioning filter is still prioritized. It sees the four location keys rather than the rows,
+        // and the locations it excludes never join the table: B, the only partition in the result, is the first
+        // included location and so occupies the first region.
+        final RowSetCapturingFilter independent = new RowSetCapturingFilter(FilterIn.of(
+                ColumnName.of("partition"), Literal.of("B"), Literal.of("C")));
+        final Table result = partitionedSource(locationProvider, "laterFilterPrioritized")
+                .where(Filter.and(partitionFilter(setTable), independent));
+        Assert.eq(independent.numRowsProcessed(), "independent.numRowsProcessed()", 4);
+        assertTableEquals(expectedPartitions("B"), result.view("partition"));
+        Assert.eq(result.getRowSet().firstRowKey(), "result.getRowSet().firstRowKey()",
+                RegionedColumnSource.getFirstRowKey(0), "first region");
+
+        // Respecting a barrier the refreshing filter declares puts it back behind that filter, after coalescing. Every
+        // location is included now, so B is the second region rather than the first.
+        final Object barrier = new Object();
+        final Table barriered = partitionedSource(locationProvider, "laterFilterBehindBarrier")
+                .where(Filter.and(
+                        partitionFilter(setTable).withDeclaredBarriers(barrier),
+                        FilterIn.of(ColumnName.of("partition"), Literal.of("B"), Literal.of("C"))
+                                .withRespectedBarriers(barrier)));
+        assertTableEquals(expectedPartitions("B"), barriered.view("partition"));
+        Assert.eq(barriered.getRowSet().firstRowKey(), "barriered.getRowSet().firstRowKey()",
+                RegionedColumnSource.getFirstRowKey(1), "second region");
+    }
+
+    /**
+     * A {@link DynamicWhereFilter} is refreshing exactly when its set table is. Over a static set it is an ordinary
+     * partitioning column filter and keeps the location-key fast path, by both routes: {@code where} directly on the
+     * source table, and {@code where} on a {@link DeferredViewTable} over it. Either way, only the selected locations
+     * are ever included, so the first selected partition lands in the first region.
+     */
+    @Test
+    public void testStaticSetFilterKeepsTheFastPath() {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
+                locationProvider(tds, "A", "B", "C", "D");
+        locationProvider.locations.values().forEach(location -> location.setSize(PARTITION_SIZE));
+        final Table setTable = TableTools.newTable(stringCol("partition", "C", "D"));
+
+        // Directly on the source table.
+        final Table direct = partitionedSource(locationProvider, "staticDirect").where(partitionFilter(setTable));
+        Assertions.assertThat(direct).isInstanceOf(QueryTable.class);
+        assertTableEquals(expectedPartitions("C", "D"), direct.view("partition"));
+        Assert.eq(direct.getRowSet().firstRowKey(), "direct.getRowSet().firstRowKey()",
+                RegionedColumnSource.getFirstRowKey(0), "first region");
+
+        // Through a deferred view: the non-partitioning filter defers, and the set filter then coalesces it.
+        final Table deferred = partitionedSource(locationProvider, "staticDeferred").where("II >= 0");
+        Assertions.assertThat(deferred).isInstanceOf(DeferredViewTable.class);
+        final Table viaDeferred = deferred.where(partitionFilter(setTable));
+        Assertions.assertThat(viaDeferred).isInstanceOf(QueryTable.class);
+        assertTableEquals(expectedPartitions("C", "D"), viaDeferred.view("partition"));
+        Assert.eq(viaDeferred.getRowSet().firstRowKey(), "viaDeferred.getRowSet().firstRowKey()",
+                RegionedColumnSource.getFirstRowKey(0), "first region");
+    }
+
+    /**
+     * Over a refreshing set the same filter is a row filter, and is deferred like one by both routes: {@code where}
+     * hands back a {@link DeferredViewTable} whether applied directly to the source table or to a view over it, and the
+     * filter runs once something coalesces that. Every location is included, so the first selected partition lands in
+     * the third region, behind the two the filter excludes.
+     */
+    @Test
+    public void testRefreshingSetFilterCoalescesEveryLocation() {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
+                locationProvider(tds, "A", "B", "C", "D");
+        locationProvider.locations.values().forEach(location -> location.setSize(PARTITION_SIZE));
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0, 1).toTracking(),
+                stringCol("partition", "C", "D"));
+
+        // Directly on the source table.
+        final Table direct =
+                partitionedSource(locationProvider, "refreshingDirect").where(partitionFilter(setTable));
+        Assertions.assertThat(direct).isInstanceOf(DeferredViewTable.class);
+        final Table directCoalesced = direct.coalesce();
+        assertTableEquals(expectedPartitions("C", "D"), directCoalesced.view("partition"));
+        Assert.eq(directCoalesced.getRowSet().firstRowKey(), "directCoalesced.getRowSet().firstRowKey()",
+                RegionedColumnSource.getFirstRowKey(2), "third region");
+
+        // Through a deferred view.
+        final Table viaDeferred = partitionedSource(locationProvider, "refreshingDeferred")
+                .where("II >= 0")
+                .where(partitionFilter(setTable));
+        Assertions.assertThat(viaDeferred).isInstanceOf(DeferredViewTable.class);
+        final Table viaDeferredCoalesced = viaDeferred.coalesce();
+        assertTableEquals(expectedPartitions("C", "D"), viaDeferredCoalesced.view("partition"));
+        Assert.eq(viaDeferredCoalesced.getRowSet().firstRowKey(), "viaDeferredCoalesced.getRowSet().firstRowKey()",
+                RegionedColumnSource.getFirstRowKey(2), "third region");
+    }
+
+    /**
+     * A refreshing set filter applied first must not cost a later static partitioning filter its location pruning. The
+     * refreshing filter is a row filter now, so it is deferred like any other, and the static filter that follows is
+     * still prioritized: only its locations are included, so the first selected partition lands in the first region.
+     */
+    @Test
+    public void testStaticPartitioningFilterStillPrunesAfterRefreshingSetFilter() {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
+                locationProvider(tds, "A", "B", "C", "D");
+        locationProvider.locations.values().forEach(location -> location.setSize(PARTITION_SIZE));
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0, 1).toTracking(),
+                stringCol("partition", "A", "B"));
+
+        final Table result = partitionedSource(locationProvider, "refreshingThenStatic")
+                .where(partitionFilter(setTable))
+                .where(FilterIn.of(ColumnName.of("partition"), Literal.of("B"), Literal.of("C")));
+        assertTableEquals(expectedPartitions("B"), result.view("partition"));
+        Assert.eq(result.getRowSet().firstRowKey(), "result.getRowSet().firstRowKey()",
+                RegionedColumnSource.getFirstRowKey(0), "first region");
     }
 }

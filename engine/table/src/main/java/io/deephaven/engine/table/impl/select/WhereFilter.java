@@ -265,6 +265,10 @@ public interface WhereFilter extends Filter {
 
     /**
      * Is this filter refreshing?
+     * <p>
+     * Callers may ask this any time after {@link #init(TableDefinition)}, and before {@link #beginOperation(Table)}; an
+     * implementation that cannot yet know must answer {@code true}, because every caller uses a {@code true} answer to
+     * take the conservative and provably correct path.
      *
      * @return if this filter is refreshing
      */
