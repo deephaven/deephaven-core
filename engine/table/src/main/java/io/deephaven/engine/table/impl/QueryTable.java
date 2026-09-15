@@ -1557,8 +1557,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                             final Mutable<QueryTable> result = new MutableObject<>();
                             initializeWithSnapshot("where", snapshotControl,
-                                    (prevRequested, beforeClock) -> {
-                                        final boolean usePrev = prevRequested && isRefreshing();
+                                    (usePrev, beforeClock) -> {
                                         final RowSet rowSetToUse = usePrev ? rowSet.prev() : rowSet;
 
                                         final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =

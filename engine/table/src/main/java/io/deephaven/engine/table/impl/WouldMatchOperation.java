@@ -147,9 +147,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     @Override
-    public Result<QueryTable> initialize(final boolean prevRequested, final long beforeClock) {
-        // A static parent has no previous values; its snapshot control exists only for refreshing filter dependencies.
-        final boolean usePrev = prevRequested && parent.isRefreshing();
+    public Result<QueryTable> initialize(final boolean usePrev, final long beforeClock) {
         MutableBoolean anyRefreshing = new MutableBoolean(false);
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {

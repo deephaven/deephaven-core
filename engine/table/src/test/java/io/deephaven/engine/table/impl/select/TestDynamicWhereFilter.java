@@ -50,6 +50,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
@@ -63,15 +64,16 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * Deterministic races for the lock-free {@link DynamicWhereFilter}.
+ * Tests for the lock-free {@link DynamicWhereFilter}: how it snapshots against a set that may change underneath it, and
+ * how its shared set listener fans changes and failures out to every result.
  * <p>
- * Each test parks a table operation at a known point on a worker thread (a {@link Gate} inside a column source or a
- * table's listener registration), drives the update graph from the test thread while the operation is parked, and then
- * lets the operation continue. The update graph is a {@link ControlledUpdateGraph}, so the set table's listener runs
+ * The race tests park a table operation at a known point on a worker thread (a {@link Gate} inside a column source or a
+ * table's listener registration), drive the update graph from the test thread while the operation is parked, and then
+ * let the operation continue. The update graph is a {@link ControlledUpdateGraph}, so the set table's listener runs
  * only when the test flushes it.
  */
 @Category(OutOfBandTest.class)
-public class TestDynamicWhereFilterSnapshotRaces {
+public class TestDynamicWhereFilter {
 
     private static final long TIMEOUT_SECONDS = 10;
 
@@ -581,13 +583,15 @@ public class TestDynamicWhereFilterSnapshotRaces {
     }
 
     /**
-     * {@code wouldMatch} on a static table initializes under snapshot control when a filter has refreshing
-     * dependencies, as a {@code where} on the same table does. A {@link DynamicWhereFilter} over a refreshing set is
-     * therefore read consistently with the set listener for the step: the operation waits for the listener, and the
-     * result reflects the set as of that step.
+     * Runs {@code operation} on a static table concurrently with a set change on the same step, arranging for the set
+     * listener to run underneath the operation's kernel read when the operation gets there first. A static source with
+     * an unsatisfied set filter is the "nothing satisfied" case: the operation reads the set as it stands rather than
+     * waiting, the aware check rejects the read if the set moved underneath it, and the retry reads current values. The
+     * result must reflect the set as of the step either way.
      */
-    @Test
-    public void testStaticWouldMatchIsProtectedFromRefreshingSet() throws Exception {
+    private void assertStaticOperationSurvivesSetTick(
+            final BiFunction<QueryTable, DynamicWhereFilter, Table> operation,
+            final Table expected) throws Exception {
         final Gate sourceGate = new Gate();
         final GatedIntegerArraySource sourceKey = new GatedIntegerArraySource(sourceGate);
         final QueryTable source = sourceTable(sourceKey, false, 1, 2, 3);
@@ -598,7 +602,7 @@ public class TestDynamicWhereFilterSnapshotRaces {
         final long step = updateGraph.clock().currentStep();
         try {
             sourceGate.arm();
-            final Future<Table> matchFuture = pool.submit(() -> source.wouldMatch(new WouldMatchPair("M", filter)));
+            final Future<Table> resultFuture = pool.submit(() -> operation.apply(source, filter));
 
             // Change the set on this step. The set listener has not run yet.
             TstUtils.addToTable(setTable, i(1), intCol(KEY, 2));
@@ -606,12 +610,14 @@ public class TestDynamicWhereFilterSnapshotRaces {
             updateGraph.markSourcesRefreshedForUnitTests();
 
             if (sourceGate.awaitReached(1_000)) {
-                // The operation reached the kernel before the set listener ran. Run the listener under it.
+                // The operation reached the kernel before the set listener ran. Run the listener under it, so the
+                // aware check must reject this attempt and the retry must read the changed set.
                 while (!filter.satisfied(step)) {
                     assertTrue(updateGraph.flushOneNotificationForUnitTests());
                 }
             } else {
-                // The operation is waiting for the set listener. Let the listener run, then wake it.
+                // The operation has not reached the kernel yet. Run the set listener first, then let it get there; it
+                // then finds every dependency satisfied and reads current values.
                 while (!filter.satisfied(step)) {
                     assertTrue(updateGraph.flushOneNotificationForUnitTests());
                 }
@@ -623,16 +629,38 @@ public class TestDynamicWhereFilterSnapshotRaces {
 
             final Table result;
             try {
-                result = matchFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                result = resultFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
             } catch (ExecutionException e) {
-                throw new AssertionError("wouldMatch on a static table failed when its set ticked: " + e.getCause(),
+                throw new AssertionError("operation on a static table failed when its set ticked: " + e.getCause(),
                         e.getCause());
             }
             updateGraph.completeCycleForUnitTests();
-            assertTableEquals(newTable(intCol(KEY, 1, 2, 3), booleanCol("M", true, true, false)), result);
+            assertTableEquals(expected, result);
         } finally {
             endCycleIfOpen();
         }
+    }
+
+    /**
+     * {@code where} on a static table with a {@link DynamicWhereFilter} over a refreshing set: see
+     * {@link #assertStaticOperationSurvivesSetTick}.
+     */
+    @Test
+    public void testStaticWhereIsProtectedFromRefreshingSet() throws Exception {
+        assertStaticOperationSurvivesSetTick(
+                (source, filter) -> source.where(filter),
+                newTable(intCol(KEY, 1, 2)));
+    }
+
+    /**
+     * {@code wouldMatch} on a static table initializes under the same snapshot control as {@code where} when a filter
+     * has refreshing dependencies: see {@link #assertStaticOperationSurvivesSetTick}.
+     */
+    @Test
+    public void testStaticWouldMatchIsProtectedFromRefreshingSet() throws Exception {
+        assertStaticOperationSurvivesSetTick(
+                (source, filter) -> source.wouldMatch(new WouldMatchPair("M", filter)),
+                newTable(intCol(KEY, 1, 2, 3), booleanCol("M", true, true, false)));
     }
 
     /**
@@ -650,7 +678,7 @@ public class TestDynamicWhereFilterSnapshotRaces {
 
         final MutableObject<Throwable> onCaller = new MutableObject<>();
         final MutableObject<Throwable> onWorker = new MutableObject<>();
-        ConstructSnapshot.callDataSnapshotFunction("TestDynamicWhereFilterSnapshotRaces",
+        ConstructSnapshot.callDataSnapshotFunction("TestDynamicWhereFilter",
                 ConstructSnapshot.makeSnapshotControl(false, true, setTable),
                 (usePrev, beforeClockValue) -> {
                     try {
@@ -966,8 +994,8 @@ public class TestDynamicWhereFilterSnapshotRaces {
 
     /**
      * {@code wouldMatch} on a refreshing table initializes from previous values when neither the table nor the filter
-     * is satisfied yet, and the result still tracks both once the cycle finishes. The static case cannot exercise this:
-     * a static parent has no previous values, so its snapshot control reads current ones however it is asked.
+     * is satisfied yet, and the result still tracks both once the cycle finishes. This is the refreshing counterpart of
+     * {@link #testStaticWouldMatchIsProtectedFromRefreshingSet()}: here the parent's previous row set is read too.
      */
     @Test
     public void testRefreshingWouldMatchInitializesFromPreviousValues() throws Exception {

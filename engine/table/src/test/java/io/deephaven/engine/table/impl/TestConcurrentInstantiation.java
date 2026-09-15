@@ -1171,8 +1171,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         // Static source is always satisfied.
         assertTrue(source.satisfied(updateGraph.clock().currentStep()));
 
-        // The set is not yet satisfied, but a static source has nothing to wait for: each operation snapshots the
-        // set's previous state and completes at once, then catches up when the set ticks below.
+        // The set is not yet satisfied and nothing else can be, so each operation reads the set as it stands and
+        // completes at once, then catches up when the set ticks below.
         final Table earlyFiltered1 =
                 largePool.submit(() -> source.where(filter.copy())).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         final Table earlyFiltered2 =
