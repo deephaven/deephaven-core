@@ -29,7 +29,10 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    to link to, do the one check that rule actually requires even at this scope: confirm this isn't
    the identifier's first occurrence in the file elsewhere (a first occurrence needs a link, but
    only when a suitable target actually exists); if it might be, escalate per step 4 rather than
-   guessing.
+   guessing. If applying any of these style fixes changes the wording of a technical claim (not
+   just its formatting or phrasing) — an active-voice rewrite can subtly change what a sentence
+   asserts — re-verify the reworded claim against source before applying it, the same as step 2
+   would; a style fix is not exempt from being wrong about facts.
 
 4. **Escalate rather than chase, when the change isn't actually isolated.** If the changed claim
    also appears elsewhere in this file, in its cross-language sibling doc, or is part of an

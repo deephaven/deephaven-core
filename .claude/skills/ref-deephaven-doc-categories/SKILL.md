@@ -6,17 +6,23 @@ user-invocable: false
 
 # Deephaven documentation categories (Community/Core)
 
-Identify a doc's category before applying any other doc skill's checks — tone, structure, and
+Identify a doc's category before applying any category-dependent check — tone, structure, and
 depth expectations all depend on it. This is the single source of truth for the categories;
 `deephaven-writing-style`, `deephaven-doc-structure-review`, `deephaven-core-accuracy-check`, and
 `deephaven-docs-review-full` read this file rather than each defining categories independently.
+`deephaven-core-accuracy-spot-check` is deliberately not a consumer — it's scoped to one small,
+already-isolated edit and stays category-agnostic on purpose; don't add a category-identification
+prerequisite to it.
 
 ## The four categories
 
 **Tutorial** — `docs/{python,groovy}/getting-started/crash-course/*` only. The Crash Course is
-the single tutorial in this doc set: a fixed, ordered sequence where every reader follows the
-same path to the same outcome. No other page in the repo is a tutorial, regardless of how
-step-by-step it reads — see **Common misclassification** below.
+the single tutorial among these four categories: a fixed, ordered sequence where every reader
+follows the same path to the same outcome. No other page under `docs/{python,groovy}` is a
+tutorial, regardless of how step-by-step it reads — see **Common misclassification** below. (This
+doesn't claim anything about contributor-facing tooling docs outside the four categories — see
+**Pages outside the four categories** — some of which are step-by-step walkthroughs in their own
+right; they're simply out of scope for this taxonomy, not classified as non-tutorials by it.)
 - Tone: conversational, first-person narrative, can be playful, still professional.
 - Structure: strict linear sequence. A reader should be able to go start to finish without
   branching; a structural review should treat a branch or "if you want X instead" aside as a
@@ -78,11 +84,14 @@ definition, and two kinds of exception are common enough to expect, not treat as
 advice or extraneous tips. JavaDocs, PyDocs, and other API documentation are reference guides.
 - Tone: dry, formal, third-person, no contractions. **Exception:** the 50+ *individual Q&A pages*
   under `reference/community-questions/*` (not the directory's own index page — see below) are a
-  Q&A format, not API documentation — they open with a first-person user question (e.g.
-  `reference/community-questions/chained-operations.md:6`: "I have a query in which...") and
-  answer conversationally, including giving advice ("We actually encourage users to...", "A
-  notable exception to this rule of thumb is..."). Apply the how-to guide's conversational tone
-  profile to these pages, not the dry/formal one, even though they live under `reference/`.
+  conversational Q&A format, not API documentation — the question lives in the title/front
+  matter (every page's `title` is phrased as a question), and the body answers conversationally,
+  including giving advice ("We actually encourage users to...", "A notable exception to this rule
+  of thumb is..."). Don't assume the body itself must open with a first-person question to
+  qualify: `chained-operations.md` does (its body opens "I have a query in which..."), but
+  `custom-data-sources.md` opens with a direct answer ("Yes, you can integrate...") and
+  `display-objects-python.md` opens with explanatory prose — both still take the how-to guide's
+  conversational tone profile, not the dry/formal one, even though they live under `reference/`.
 - Structure: enumerable and scannable. A reference reader is scanning for one specific fact, not
   reading linearly — an "orphaned aside" or a missing entry in an enumerated list is a bigger
   defect here than the same issue would be in a concept guide. This does not apply to individual

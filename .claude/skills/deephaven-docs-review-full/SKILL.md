@@ -56,24 +56,36 @@ renamed-away section can invalidate an accuracy finding just as easily as a lite
 
 ## 3. Re-verify what structure touched
 
-For every section from step 2's list:
+For every section from step 2's list, handle it by what happened to it:
 
-- Re-run `deephaven-core-accuracy-spot-check` on that section — but per its own scope (one
-  paragraph, one snippet, one changed claim), not as a single call covering the whole section.
-  If the section contains more than one claim or paragraph, call it once per claim/paragraph
-  rather than handing it the whole section at once; a merge can combine two previously-separate
-  claims into one that's subtly wrong even though both originals were correct individually, and a
-  single oversized spot-check call is exactly the under-checking that scope exists to prevent.
-  Escalate to a full `deephaven-core-accuracy-check` re-pass whenever any of those spot checks
-  recommends escalating (its own criteria: the claim also appears elsewhere in the file, in the
-  cross-language sibling, or is part of an enumerated list) — don't restate or narrow that
-  criteria here; defer to the spot check's judgment.
-- For any caveat, exception, or cross-language distinction that was near content step 2 touched:
-  check the rest of the document first for where it may have landed or been restated, and flag it
-  as dropped only if you can't find it after that check. If you're still not sure after checking,
-  say so explicitly ("possibly dropped, unconfirmed — verify against the pre-edit version") rather
-  than stating it as a confirmed finding — a false "this was dropped" claim costs a reviewer real
-  time chasing content that's actually still there.
+- **Moved, merged, or reworded** (surviving prose): re-run `deephaven-core-accuracy-spot-check`
+  on it — but per its own scope (one paragraph, one snippet, one changed claim), not as a single
+  call covering the whole section. If the section contains more than one claim or paragraph, call
+  it once per claim/paragraph rather than handing it the whole section at once; a merge can
+  combine two previously-separate claims into one that's subtly wrong even though both originals
+  were correct individually, and a single oversized spot-check call is exactly the under-checking
+  that scope exists to prevent. Escalate to a full `deephaven-core-accuracy-check` re-pass
+  whenever any of those spot checks recommends escalating (its own criteria: the claim also
+  appears elsewhere in the file, in the cross-language sibling, or is part of an enumerated list)
+  — don't restate or narrow that criteria here; defer to the spot check's judgment.
+- **Cut** (no surviving text): there's nothing left to hand the spot check — don't force this
+  through the bullet above. Instead check whether the cut section contained a caveat, exception,
+  or claim that existed *only* there and is now gone entirely from the doc; that's the next
+  bullet's job, not a spot-check call.
+- **Any caveat, exception, or cross-language distinction that was near content step 2 touched**
+  (moved, merged, cut, or renamed): check the rest of the document first for where it may have
+  landed or been restated, and flag it as dropped only if you can't find it after that check. If
+  you're still not sure after checking, say so explicitly ("possibly dropped, unconfirmed — verify
+  against the pre-edit version") rather than stating it as a confirmed finding — a false "this was
+  dropped" claim costs a reviewer real time chasing content that's actually still there.
+- **Links and anchors**: neither the spot check nor step 4's style pass validates links, and a
+  heading rename or section move can silently break an internal link or an anchor fragment
+  (`#some-heading`) even when every claim in the doc remains correct. For any section step 2
+  moved or renamed, re-check that links pointing *to* it (from elsewhere in this doc or its
+  cross-language sibling) still resolve, and that links *within* the moved section still resolve
+  from their new location. If more than a couple of links or anchors were affected, escalate to a
+  full `deephaven-core-accuracy-check` re-pass (its internal-link review step) rather than
+  re-deriving that check here.
 
 Do not skip this step under time pressure. It's the step that catches the compounding defect a
 structural edit introduces into content nobody re-reads afterward.
