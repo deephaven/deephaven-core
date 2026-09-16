@@ -30,7 +30,7 @@ One operation **declares** the barrier — it goes first. Another operation **re
 > [!IMPORTANT]
 > A barrier only coordinates expressions passed to the **same** `select`, `update`, or `where` call — it cannot order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it is declared, or never declared at all.
 >
-> For a `Selectable`, a constant-valued expression cannot declare or respect a barrier either — the engine never evaluates constants during `select`/`update` processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals combined with arithmetic/comparison operators, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `get_and_increment_counter()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated once per row — so it can freely use barriers.
+> For a `Selectable`, a constant-valued expression cannot declare or respect a barrier either — the engine never evaluates constants during `select`/`update` processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals combined with arithmetic/comparison operators, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `get_and_increment_counter()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated once per row, so it can freely use barriers.
 
 ### Example: coordinating two columns
 
@@ -132,7 +132,11 @@ col_d = Selectable.parse("D = i * 5").with_respected_barriers(barrier_a)
 t = empty_table(10).update([col_a, col_b, col_c, col_d])
 ```
 
-Execution order: `A` and `B` do not depend on each other, so the engine is free to run them concurrently; `D` starts after `A` finishes (does not wait for `B`); `C` starts after both `A` and `B` finish.
+Execution order:
+
+- `A` and `B` do not depend on each other, so the engine is free to run them concurrently.
+- `D` starts after `A` finishes (does not wait for `B`).
+- `C` starts after both `A` and `B` finish.
 
 ## Related documentation
 
