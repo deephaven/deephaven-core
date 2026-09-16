@@ -65,12 +65,12 @@ result = source.where(myFilter)
 
 These two methods work together to enforce execution order between filters. One filter **declares** the barrier (goes first), and another filter **respects** the barrier (waits).
 
-A barrier is a synchronization object you create and share between filters. In Groovy, any Java object can serve as a barrier:
+A [barrier](./Barrier.md) is a synchronization object you create and share between filters. In Groovy, any Java object can serve as a barrier:
 
 - `withDeclaredBarriers(barrier)` — This filter **goes first**. All rows are evaluated by this filter before any respecting filter's rows are evaluated.
 - `withRespectedBarriers(barrier)` — This filter **waits**. Its rows are not evaluated until all declaring filters have finished.
 
-For examples and detailed usage, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
+For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
 ## Filter functions
 
@@ -106,13 +106,13 @@ You need a `Filter` object in two situations:
 
 **Complex boolean logic**: Use `Filter.and` and `Filter.or` to combine filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
 
-**Barriers between filters** are rarely needed — most filters are stateless. If you do have filters with shared state where one must complete before another, see the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide.
+**Barriers between filters** are rarely needed — most filters are stateless. If you do have filters with shared state where one must complete before another, see [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
 
 ## Related documentation
 
 - [Parallelization](../../../conceptual/query-engine/parallelization.md) — Full guide on controlling parallel execution
 - [Selectable](./Selectable.md) — Similar concurrency controls for column calculations
+- [Barrier](./Barrier.md) — The synchronization primitive used by `withDeclaredBarriers`/`withRespectedBarriers`
+- [ConcurrencyControl](./ConcurrencyControl.md) — The shared interface behind `withSerial`, `withDeclaredBarriers`, and `withRespectedBarriers`
 - [`where`](../../table-operations/filter/where.md) — Uses Filter objects
-- [Barrier Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html#withDeclaredBarriers(java.lang.Object...))
-- [ConcurrencyControl Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html)
 - [Filter Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html)

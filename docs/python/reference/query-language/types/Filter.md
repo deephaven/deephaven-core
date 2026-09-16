@@ -66,12 +66,12 @@ result = source.where(my_filter)
 
 These two methods work together to enforce execution order between filters. One filter **declares** the barrier (goes first), and another filter **respects** the barrier (waits).
 
-A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier) is a synchronization object you create and share between filters:
+A [`Barrier`](./Barrier.md) is a synchronization object you create and share between filters:
 
 - `with_declared_barriers(barriers)` — This filter **goes first**. This filter evaluates all of its rows before any respecting filter evaluates its own.
 - `with_respected_barriers(barriers)` — This filter **waits**. This filter does not evaluate its rows until all declaring filters finish.
 
-For examples and detailed usage, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
+For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
 ## Filter functions
 
@@ -109,13 +109,13 @@ You need a `Filter` object in two situations:
 
 **Complex boolean logic**: Use `and_`, `or_`, and `not_` to compose filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
 
-**Barriers between filters** are rarely needed — most filters are stateless. If you do have filters with shared state where one must complete before another, see the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide.
+**Barriers between filters** are rarely needed — most filters are stateless. If you do have filters with shared state where one must complete before another, see [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
 
 ## Related documentation
 
 - [Parallelization](../../../conceptual/query-engine/parallelization.md) — Full guide on controlling parallel execution
 - [Selectable](./Selectable.md) — Similar concurrency controls for column calculations
+- [Barrier](./Barrier.md) — The synchronization primitive used by `with_declared_barriers`/`with_respected_barriers`
+- [ConcurrencyControl](./ConcurrencyControl.md) — The shared interface behind `with_serial`, `with_declared_barriers`, and `with_respected_barriers`
 - [`where`](../../table-operations/filter/where.md) — Uses Filter objects
-- [Barrier Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier)
-- [ConcurrencyControl Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl)
 - [Filter Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html)
