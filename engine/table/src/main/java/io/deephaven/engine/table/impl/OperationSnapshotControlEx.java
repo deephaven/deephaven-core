@@ -8,6 +8,7 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.WaitNotification;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
@@ -15,25 +16,47 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.updategraph.LogicalClock.NULL_CLOCK_VALUE;
 
 /**
  * Variant of {@link OperationSnapshotControl} that considers "extra" {@link NotificationQueue.Dependency dependencies}
  * in addition to the source {@link BaseTable} when determining whether to use previous values during initialization or
  * evaluating success. This is useful anytime an operation needs to listen to and snapshot one data source while also
  * snapshotting others.
+ * <p>
+ * The decision is made over the source and every extra together. Previous values are used only when none of them has
+ * been satisfied on the step. If some are satisfied and others are not, the control waits for the rest and then uses
+ * current values; once all are satisfied it uses current values without waiting. A static source cannot be unsatisfied,
+ * so it does not count.
+ * <p>
+ * For the consistency check afterwards, extras are treated as <em>notification oblivious</em> by default: their
+ * notifications do not invalidate a snapshot, because their previous values remain stable for the whole cycle and a
+ * snapshot using previous values reads them consistently no matter when they tick. That is the correct treatment for
+ * the usual extras, which are tables or table-backed structures such as data index tables.
+ * <p>
+ * An extra that also implements {@link NotificationAwareDependency} is the exception: it keeps no previous version of
+ * the state it guards, so a snapshot that used previous values while that extra changed its state on the same step must
+ * be retried. Such extras are detected automatically from those passed to the constructor, so callers need do nothing
+ * beyond passing them as dependencies.
+ * <p>
+ * On an update-processing thread a snapshot never uses previous values and cannot wait, so any unsatisfied dependency
+ * is an {@link IllegalStateException}: the operation must be ordered after that dependency by the caller.
  */
 public final class OperationSnapshotControlEx extends OperationSnapshotControl {
 
     private static final Logger log = LoggerFactory.getLogger(OperationSnapshotControlEx.class);
 
     private final NotificationQueue.Dependency[] extras;
+    private final NotificationAwareDependency[] notificationAwareExtras;
 
     public OperationSnapshotControlEx(
             @NotNull final BaseTable<?> sourceTable,
             @NotNull final NotificationQueue.Dependency... extras) {
         super(sourceTable);
         this.extras = extras;
+        this.notificationAwareExtras = Arrays.stream(extras)
+                .filter(NotificationAwareDependency.class::isInstance)
+                .map(NotificationAwareDependency.class::cast)
+                .toArray(NotificationAwareDependency[]::new);
     }
 
     @Override
@@ -60,37 +83,44 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
             return false;
         }
 
-        final NotificationQueue.Dependency[] notYetSatisfied;
+        final boolean sourceSatisfied;
+        final NotificationQueue.Dependency[] extrasNotSatisfied;
         try {
-            notYetSatisfied = Stream.concat(Stream.of(sourceTable), Arrays.stream(extras))
+            sourceSatisfied = satisfied(sourceTable, beforeStep);
+            extrasNotSatisfied = Arrays.stream(extras)
                     .sequential()
-                    .filter(dependency -> !satisfied(dependency, beforeStep))
+                    .filter(extra -> !satisfied(extra, beforeStep))
                     .toArray(NotificationQueue.Dependency[]::new);
         } catch (ClockInconsistencyException e) {
             return null;
         }
 
-        final long postWaitStep;
+        final boolean sourceUpdated = sourceTable.isRefreshing() && sourceSatisfied;
+        final boolean nothingUpdated = !sourceUpdated && extrasNotSatisfied.length == extras.length;
+
         final Boolean usePrev;
-        if (notYetSatisfied.length == extras.length + 1) {
-            // Nothing satisfied
-            postWaitStep = NULL_CLOCK_VALUE;
+        if (sourceSatisfied && extrasNotSatisfied.length == 0) {
+            usePrev = false;
+        } else if (getUpdateGraph().currentThreadProcessesUpdates()) {
+            throw new IllegalStateException(String.format(
+                    "Cannot snapshot from an update-processing thread with unsatisfied dependencies %s: "
+                            + "the operation must declare a dependency on them",
+                    describe(notYetSatisfied(sourceSatisfied, extrasNotSatisfied))));
+        } else if (nothingUpdated) {
             usePrev = true;
-        } else if (notYetSatisfied.length > 0) {
-            // Partially satisfied
-            if (WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
-                // Successful wait on beforeStep
-                postWaitStep = beforeStep;
+        } else {
+            // Partially satisfied. The wait cannot time out; it is refused if the step's updating phase has ended.
+            final boolean waitSuccessful = WaitNotification.waitForSatisfaction(beforeStep,
+                    notYetSatisfied(sourceSatisfied, extrasNotSatisfied));
+            if (waitSuccessful) {
+                usePrev = false;
+            } else if (getUpdateGraph().clock().currentStep() == beforeStep) {
+                // Refused on the same step: the step must have completed, so every dependency is satisfied for it.
                 usePrev = false;
             } else {
-                // Updating phase finished before we could wait; use current if we're in the subsequent idle phase
-                postWaitStep = getUpdateGraph().clock().currentStep();
-                usePrev = postWaitStep == beforeStep ? false : null;
+                // Refused and a later step has begun: this attempt cannot be judged, the caller retries.
+                usePrev = null;
             }
-        } else {
-            // All satisfied
-            postWaitStep = NULL_CLOCK_VALUE;
-            usePrev = false;
         }
 
         if (DEBUG) {
@@ -103,12 +133,77 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
                     .append("} usePreviousValues: beforeStep=").append(beforeStep)
                     .append(", beforeState=").append(beforeState.name())
                     .append(", sourceLastNotificationStep=").append(lastNotificationStep)
-                    .append(", notYetSatisfied=").append(Arrays.toString(notYetSatisfied))
-                    .append(", postWaitStep=").append(postWaitStep)
+                    .append(", sourceSatisfied=").append(sourceSatisfied)
+                    .append(", extrasNotSatisfied=").append(Arrays.toString(extrasNotSatisfied))
                     .append(", usePrev=").append(usePrev)
                     .endl();
         }
         return usePrev;
+    }
+
+    @Override
+    public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+        return notificationAwareExtrasConsistent(currentClockValue, usingPreviousValues)
+                && super.snapshotConsistent(currentClockValue, usingPreviousValues);
+    }
+
+    @Override
+    public synchronized boolean snapshotCompletedConsistently(
+            final long afterClockValue,
+            final boolean usedPreviousValues) {
+        // Note that we must not delegate to super when we have already failed: on success it records the result's
+        // last notification step and subscribes the eventual listener, which must not happen for a snapshot that is
+        // about to be retried.
+        if (!notificationAwareExtrasConsistent(afterClockValue, usedPreviousValues)) {
+            if (DEBUG) {
+                log.info().append("OperationSnapshotControlEx {source=")
+                        .append(System.identityHashCode(sourceTable))
+                        .append(", control=").append(System.identityHashCode(this))
+                        .append("} snapshotCompletedConsistently: afterClockValue=").append(afterClockValue)
+                        .append(", usedPreviousValues=").append(usedPreviousValues)
+                        .append(", notificationAwareExtraChanged=").append(true)
+                        .endl();
+            }
+            return false;
+        }
+        return super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
+    }
+
+    /**
+     * A snapshot that used previous values cannot read a {@link NotificationAwareDependency} consistently if that
+     * dependency changes its guarded state while being snapshotted. These dependencies cannot provide a consistent set
+     * of previous values, so a snapshot that used previous values must be retried.
+     *
+     * @param clockValue The clock value to evaluate against
+     * @param usedPreviousValues Whether the snapshot used previous values
+     * @return Whether the notification aware extras were read consistently
+     */
+    private boolean notificationAwareExtrasConsistent(final long clockValue, final boolean usedPreviousValues) {
+        if (!usedPreviousValues || notificationAwareExtras.length == 0) {
+            return true;
+        }
+        final long step = LogicalClock.getStep(clockValue);
+        for (final NotificationAwareDependency extra : notificationAwareExtras) {
+            if (extra.stateChangedOnStep(step)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private NotificationQueue.Dependency[] notYetSatisfied(
+            final boolean sourceSatisfied,
+            @NotNull final NotificationQueue.Dependency[] extrasNotSatisfied) {
+        return Stream.concat(
+                sourceSatisfied ? Stream.empty() : Stream.of(sourceTable),
+                Arrays.stream(extrasNotSatisfied))
+                .toArray(NotificationQueue.Dependency[]::new);
+    }
+
+    private static String describe(@NotNull final NotificationQueue.Dependency[] dependencies) {
+        return Arrays.stream(dependencies)
+                .map(dependency -> new LogOutputStringImpl().append(dependency).toString())
+                .collect(Collectors.joining(", ", "[", "]"));
     }
 
     private static boolean satisfied(@NotNull final NotificationQueue.Dependency dependency, final long step) {

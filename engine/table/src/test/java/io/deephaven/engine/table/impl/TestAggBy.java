@@ -25,6 +25,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.select.TimeSeriesFilter;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
@@ -478,6 +479,26 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertEquals(3L, counts.get(0));
         counts = ColumnVectors.ofLong(doubleCounted, "invert");
         assertEquals(7L, counts.get(0));
+    }
+
+    /**
+     * Count-where asks {@link io.deephaven.engine.table.impl.select.WhereFilter#isRefreshing()} before it ever calls
+     * {@code beginOperation}. A filter that cannot know until it sees its source table answers conservatively, so it is
+     * rejected as refreshing.
+     */
+    @Test
+    public void testCountWhereRejectsFilterOfUnknownRefreshingState() {
+        final Table table = TableTools.emptyTable(10).update("Timestamp = DateTimeUtils.epochNanosToInstant(ii)");
+        final TimeSeriesFilter filter = TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp")
+                .period("PT1M")
+                .build();
+        try {
+            table.aggBy(List.of(AggCountWhere("count", filter)));
+            TestCase.fail("expected AggCountWhere to reject a filter that may be refreshing");
+        } catch (final UnsupportedOperationException expected) {
+            TestCase.assertTrue(expected.getMessage(), expected.getMessage().contains("refreshing filters"));
+        }
     }
 
     @Test
