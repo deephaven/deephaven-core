@@ -194,9 +194,12 @@ filteredFollower = result.get(tableName)
 `LeaderTableFilter.PartitionedTableBuilder` works with partitioned tables:
 
 ```groovy syntax
-builder = new LeaderTableFilter.PartitionedTableBuilder(leaderPartitionedTable)
-builder.addTable(name, followerPartitionedTable, "leaderIdCol=followerIdCol")
+builder = new LeaderTableFilter.PartitionedTableBuilder(leaderPartitionedTable, keyColumn1, keyColumn2, ...)
+builder.addPartitionedTable(name, followerPartitionedTable, "leaderIdCol=followerIdCol")
 result = builder.build()
+
+filteredLeader = result.getLeader()
+filteredFollower = result.get(name)
 ```
 
 Requirements:
