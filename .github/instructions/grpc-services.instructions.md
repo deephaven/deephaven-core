@@ -32,9 +32,6 @@ the following:
   (the same `AggSpec` used inside an `Aggregation`'s column aggregations). Reuse the validator at the
   layer where the expression actually lives (e.g. the `AggSpec`/`Selectable`) so every service that
   embeds it is covered, rather than re-deriving a partial check per service.
-- **Validate request shape.** In `validateRequest`, use `GrpcErrorHelper.checkHasField` /
-  `checkRepeatedFieldNonEmpty` / `checkHasNoUnknownFields` and `Common.validate(...)` on every ticket
-  reference. `checkHasNoUnknownFields` is what rejects unknown/renamed proto fields.
 - **Enforce authorization on the right path.** Table-service operations must call their
   `authWiring.checkPermission<Operation>(...)` before returning a result. Service-loaded
   `TicketResolver`s have no service `authWiring`; they authorize through `TicketResolver.Authorization`
