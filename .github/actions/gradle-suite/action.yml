@@ -1,0 +1,60 @@
+name: 'Gradle suite'
+description: 'Sets up a JDK and Gradle, then runs one gradle task and uploads its test results.'
+
+inputs:
+  gradle-task:
+    description: 'The gradle task to run (check, testSerial, testParallel, testOutOfBand, ...).'
+    required: true
+  java-version:
+    description: 'The JDK to install and register as a gradle toolchain.'
+    required: false
+    default: '21'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Starting available disk space
+      shell: bash
+      run: df -h
+
+    - name: Setup JDKs
+      uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      with:
+        distribution: 'temurin'
+        java-version: ${{ inputs.java-version }}
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+
+    - name: Setup gradle properties
+      shell: bash
+      run: |
+        .github/scripts/gradle-properties.sh ${{ inputs.java-version }} >> gradle.properties
+        cat gradle.properties
+
+    - name: Run gradle ${{ inputs.gradle-task }}
+      shell: bash
+      run: ./gradlew --scan --continue ${{ inputs.gradle-task }}
+
+    - name: Run df -h after build
+      shell: bash
+      run: df -h
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      if: always()
+      with:
+        name: check-ci-${{ inputs.gradle-task }}-results
+        path: |
+          **/build/test-results/**
+          **/build/reports/tests/**
+
+    - name: Upload JVM Error Logs
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      if: failure()
+      with:
+        name: check-ci-${{ inputs.gradle-task }}-jvm-err
+        path: |
+          **/*_pid*.log
+          **/core.*
+        if-no-files-found: ignore

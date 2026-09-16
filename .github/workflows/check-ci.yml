@@ -42,61 +42,23 @@ jobs:
           remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
           testing: false
 
-      - name: Starting available disk space
-        run: df -h
-
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true
 
-      - name: Setup JDKs
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      - uses: ./.github/actions/gradle-suite
         with:
-          distribution: 'temurin'
-          java-version: |
-            21
+          gradle-task: check
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
-
-      - name: Setup gradle properties
-        run: |
-          .github/scripts/gradle-properties.sh 21 >> gradle.properties
-          cat gradle.properties
-
-      - name: Check
-        run: ./gradlew --scan --continue check
-
-      - name: Run df -h after build
-        run: df -h
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: check-ci-results
-          path: |
-            **/build/test-results/**
-            **/build/reports/tests/**
-
-      - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: failure()
-        with:
-          name: check-ci-jvm-err
-          path: |
-            **/*_pid*.log
-            **/core.*
-          if-no-files-found: ignore
-
-  # These suites are the ones Nightly Check CI runs on a nightly/** or coverage/** push. Running
-  # them here too lets auto-merge on such a pull request be gated on them; github.head_ref is empty
-  # for push events, so they are skipped everywhere else.
+  # The categorized suites that Nightly Check CI runs on a push. Running them here as well lets
+  # auto-merge on an oob/ or coverage/ pull request be gated on them. github.head_ref is empty for
+  # push events, so they are skipped everywhere else -- a skipped job still reports a check run,
+  # which is what makes these safe to mark as required.
   test-serial:
     runs-on: ubuntu-24.04
     needs: changes
-    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'nightly/') || startsWith(github.head_ref, 'coverage/')) }}
+    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'oob/') || startsWith(github.head_ref, 'coverage/')) }}
     steps:
       - name: Free Disk Space
         uses: endersonmenezes/free-disk-space@2a22f8c59cae9cddae7194b33e6b92d023b2b4b8 # v4.0.0
@@ -105,58 +67,19 @@ jobs:
           remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
           testing: false
 
-      - name: Starting available disk space
-        run: df -h
-
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true
 
-      - name: Setup JDKs
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      - uses: ./.github/actions/gradle-suite
         with:
-          distribution: 'temurin'
-          java-version: |
-            21
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
-
-      - name: Setup gradle properties
-        run: |
-          .github/scripts/gradle-properties.sh 21 >> gradle.properties
-          cat gradle.properties
-
-      - name: testSerial
-        run: ./gradlew --scan --continue testSerial
-
-      - name: Run df -h after build
-        run: df -h
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: check-ci-testSerial-results
-          path: |
-            **/build/test-results/**
-            **/build/reports/tests/**
-
-      - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: failure()
-        with:
-          name: check-ci-testSerial-jvm-err
-          path: |
-            **/*_pid*.log
-            **/core.*
-          if-no-files-found: ignore
+          gradle-task: testSerial
 
   test-parallel:
     runs-on: ubuntu-24.04
     needs: changes
-    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'nightly/') || startsWith(github.head_ref, 'coverage/')) }}
+    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'oob/') || startsWith(github.head_ref, 'coverage/')) }}
     steps:
       - name: Free Disk Space
         uses: endersonmenezes/free-disk-space@2a22f8c59cae9cddae7194b33e6b92d023b2b4b8 # v4.0.0
@@ -165,58 +88,19 @@ jobs:
           remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
           testing: false
 
-      - name: Starting available disk space
-        run: df -h
-
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true
 
-      - name: Setup JDKs
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      - uses: ./.github/actions/gradle-suite
         with:
-          distribution: 'temurin'
-          java-version: |
-            21
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
-
-      - name: Setup gradle properties
-        run: |
-          .github/scripts/gradle-properties.sh 21 >> gradle.properties
-          cat gradle.properties
-
-      - name: testParallel
-        run: ./gradlew --scan --continue testParallel
-
-      - name: Run df -h after build
-        run: df -h
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: check-ci-testParallel-results
-          path: |
-            **/build/test-results/**
-            **/build/reports/tests/**
-
-      - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: failure()
-        with:
-          name: check-ci-testParallel-jvm-err
-          path: |
-            **/*_pid*.log
-            **/core.*
-          if-no-files-found: ignore
+          gradle-task: testParallel
 
   test-out-of-band:
     runs-on: ubuntu-24.04
     needs: changes
-    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'nightly/') || startsWith(github.head_ref, 'coverage/')) }}
+    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'oob/') || startsWith(github.head_ref, 'coverage/')) }}
     steps:
       - name: Free Disk Space
         uses: endersonmenezes/free-disk-space@2a22f8c59cae9cddae7194b33e6b92d023b2b4b8 # v4.0.0
@@ -225,50 +109,11 @@ jobs:
           remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
           testing: false
 
-      - name: Starting available disk space
-        run: df -h
-
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           lfs: true
 
-      - name: Setup JDKs
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      - uses: ./.github/actions/gradle-suite
         with:
-          distribution: 'temurin'
-          java-version: |
-            21
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
-
-      - name: Setup gradle properties
-        run: |
-          .github/scripts/gradle-properties.sh 21 >> gradle.properties
-          cat gradle.properties
-
-      - name: testOutOfBand
-        run: ./gradlew --scan --continue testOutOfBand
-
-      - name: Run df -h after build
-        run: df -h
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: check-ci-testOutOfBand-results
-          path: |
-            **/build/test-results/**
-            **/build/reports/tests/**
-
-      - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: failure()
-        with:
-          name: check-ci-testOutOfBand-jvm-err
-          path: |
-            **/*_pid*.log
-            **/core.*
-          if-no-files-found: ignore
+          gradle-task: testOutOfBand
