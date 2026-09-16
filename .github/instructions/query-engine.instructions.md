@@ -29,8 +29,10 @@ for throughput. When adding or changing engine internals (`engine/table`, `engin
   For the containers that *do* accept a capacity — fastutil sets/maps, arrays, chunk-backed staging
   — size them from the known input size rather than a default; iterating an open-hash set into a
   default-sized destination can go ~quadratic (see the `RspBitmap` intersect history).
-- **Keep `RowSet` operations O(n); never add a quadratic path.** When modifying or adding a `RowSet`
-  operation, confirm its complexity is linear in the number of rows/ranges touched. A per-element
-  `find`/`get`/`insert` inside a loop over another set is the classic quadratic trap — restructure
-  to a single linear merge/scan instead. If you cannot make an operation O(n), flag it rather than
-  shipping a quadratic path.
+- **An operation between two `RowSet`s should ideally be O(n); never add an accidental quadratic
+  path.** Aim for linear in the combined size of the two inputs — a single ordered merge/scan —
+  rather than a per-element `find`/`get`/`insert` inside a loop over the other set, which is the
+  classic quadratic trap. Some operations legitimately need more than linear work (for example
+  `RowSetFactory.union` sorts unordered inputs and merges them in multiple passes); superlinear work
+  is acceptable when input ordering does not permit a linear pass, but call it out and benchmark it.
+  The invariant is to avoid *accidental* quadratic paths, not to forbid all superlinear work.

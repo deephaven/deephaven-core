@@ -158,8 +158,8 @@ for throughput. Before adding or changing engine internals (`engine/table`, `eng
 `engine/chunk`, aggregation/join/update-by operators, `ColumnSource`s, kernels), read
 `.github/instructions/query-engine.instructions.md` — the rules cover bulk (chunked) reads,
 dispatching to type-specialized kernels instead of per-cell virtual calls, allocating reusable
-context objects before the per-chunk loop, batching `RowSet` operations, and keeping `RowSet`
-operations O(n) with no quadratic paths.
+context objects before the per-chunk loop, batching `RowSet` operations, and keeping an operation
+between two `RowSet`s ideally O(n) while avoiding accidental quadratic paths.
 
 ### Server & client integration (`server/`, `py/`, `java-client/`, `proto/`)
 
