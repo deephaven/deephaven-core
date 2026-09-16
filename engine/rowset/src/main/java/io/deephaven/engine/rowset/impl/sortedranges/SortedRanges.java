@@ -1913,15 +1913,27 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      * up to about six on a twenty-entry set; the boundary fits {@code (ranges - 2)^2 * entries > 400}.
      */
     private boolean editIndividually(final SortedRanges other) {
-        final long extraRanges = other.count - 2;
-        return extraRanges <= 0 || extraRanges * extraRanges * count <= 400;
+        // A range takes one entry as a single and two as a start and an end, so ranges are counted from their
+        // starts, stopping as soon as there are enough of them for planning to pay.
+        long ranges = 0;
+        for (int i = 0; i < other.count; ++i) {
+            if (other.unpackedGet(i) >= 0) {
+                final long extraRanges = ++ranges - 2;
+                if (extraRanges > 0 && extraRanges * extraRanges * count > 400) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
      * Whether {@code other} is small enough, relative to this set, for planning its edits to beat merging the two sets.
      * Planning costs a binary search and a small block move per range, some 20 ns; the merge costs about 2 ns per entry
      * of either set. Measured with {@code RowSetSmallInsertBench} and {@code RowSetSmallRemoveBench}: planning wins up
-     * to about a twelfth of this set's size and loses from about a quarter, so the boundary sits at an eighth.
+     * to about a twelfth of this set's size and loses from about a quarter, so the boundary sits at an eighth. Entries
+     * stand in for ranges here; a range stored as two entries counts double, which only sends it to the merge a little
+     * earlier.
      */
     private boolean planEdits(final SortedRanges other) {
         return (long) other.count * 8 <= count;
@@ -2318,6 +2330,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         applyPlanToNew(plan, ans);
         ans.count = newCount;
         ans.cardinality = cardinality + plan.cardinalityDelta;
+        // This set is discarded in favor of ans; its array goes back to the pool when this set owned it.
+        recycleDataIfOwned();
         if (DEBUG) {
             ans.validate();
         }
@@ -3047,6 +3061,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      * Copy {@code len} packed entries from {@code src}, which is of this set's exact type and offset, into this set.
      */
     protected abstract void copyDataFrom(SortedRanges src, int srcPos, int dstPos, int len);
+
+    /**
+     * Return this set's backing array to the array pool, when arrays are pooled and this set is not shared, because the
+     * set is about to be discarded in favor of another.
+     */
+    protected abstract void recycleDataIfOwned();
 
     protected abstract void copyData(int newCapacity);
 

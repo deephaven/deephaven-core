@@ -180,4 +180,11 @@ public abstract class SortedRangesTyped<ArrayType> extends SortedRanges {
         // noinspection unchecked
         System.arraycopy(((SortedRangesTyped<ArrayType>) src).data, srcPos, data, dstPos, len);
     }
+
+    @Override
+    protected final void recycleDataIfOwned() {
+        if (POOL_ARRAYS && canWrite()) {
+            freeArray(data);
+        }
+    }
 }
