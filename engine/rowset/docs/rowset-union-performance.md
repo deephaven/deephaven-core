@@ -180,11 +180,13 @@ collapsed groups while the back gathers the next batch; only when the groups hav
 fold into one. A result is merged into again once per `batchSize` batches rather than once per batch — the same tree
 the multi-pass merge inside `union` builds, one level up, and for the same reason.
 
-The list is the only thing this costs: at most `2 * MAX_BATCH_SIZE` references. What is *held* is unchanged
-for the shapes the call sites produce, where the inputs are disjoint and the groups sum to the result. Input that is
-largely redundant is the exception — there a running result stays the size of one input while `batchSize` groups are
-each about that size — but no converted call site produces that shape, and the merge's own passes have the same
-property.
+The list is the only thing this costs: at most `2 * MAX_BATCH_SIZE` references. What is *held* is unchanged for the
+callers that produce a row set per key or per index entry — those inputs are disjoint, so the groups sum to the result.
+Overlapping input is where holding groups costs more than a running result would: a running result stays the size of
+one input while `batchSize` groups are each about that size. Only `WouldMatchOperation` overlaps, since a row can
+change in several match columns at once, and it sizes its batcher at `matchColumns.size()`, so it collapses once and
+never holds a second group. Reaching the bad case needs both overlap and enough inputs to fill the groups, which no
+converted call site does — and the merge's own passes have the same property.
 
 It does two things before the merge sees anything, both of which the merge would otherwise have to undo:
 

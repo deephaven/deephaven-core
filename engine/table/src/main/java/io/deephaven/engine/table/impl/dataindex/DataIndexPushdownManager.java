@@ -218,39 +218,46 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
             final PushdownResult result) {
-        final WritableRowSet matching;
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            // Extract the fundamental filter, ignoring barriers.
-            final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
-            final Table toFilter;
-            if (!renameMap.isEmpty()) {
-                final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                        .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
-                                ColumnName.of(entry.getKey())))
-                        .collect(Collectors.toList());
-                toFilter = dataIndex.table().renameColumns(renamePairs);
-            } else {
-                toFilter = dataIndex.table();
-            }
-            try {
-                final Table filteredTable = toFilter.where(copiedFilter);
-                // One row set per index row that passed the filter.
-                try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(filteredTable.size());
-                        final CloseableIterator<RowSet> it =
-                                ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
-                                        .iterator()) {
-                    it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(result.maybeMatch())));
-                    matching = batcher.build();
+        // Owned from here so that nothing this method builds is left to the mercy of a resource that fails to close.
+        final WritableRowSet matching = RowSetFactory.empty();
+        try (matching) {
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                // Extract the fundamental filter, ignoring barriers.
+                final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
+                final Table toFilter;
+                if (!renameMap.isEmpty()) {
+                    final Collection<Pair> renamePairs = renameMap.entrySet().stream()
+                            .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
+                                    ColumnName.of(entry.getKey())))
+                            .collect(Collectors.toList());
+                    toFilter = dataIndex.table().renameColumns(renamePairs);
+                } else {
+                    toFilter = dataIndex.table();
                 }
-            } catch (final Exception e) {
-                throw new TableInitializationException(
-                        "Error applying filter " + Strings.of(copiedFilter) + " to data index table", e);
+                try {
+                    final Table filteredTable = toFilter.where(copiedFilter);
+                    // One row set per index row that passed the filter.
+                    try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(filteredTable.size());
+                            final CloseableIterator<RowSet> it =
+                                    ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
+                                            .iterator()) {
+                        it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(result.maybeMatch())));
+                        try (final WritableRowSet built = batcher.build()) {
+                            // Inserting into an empty row set adopts what it is handed, so this is the transfer and
+                            // not a second merge.
+                            matching.insert(built);
+                        }
+                    }
+                } catch (final Exception e) {
+                    throw new TableInitializationException(
+                            "Error applying filter " + Strings.of(copiedFilter) + " to data index table", e);
+                }
             }
-        }
-        // Retain only the maybe rows and add the previously found matches.
-        try (matching; final WritableRowSet empty = RowSetFactory.empty()) {
-            matching.insert(result.match());
-            return PushdownResult.of(selection, matching, empty);
+            // Retain only the maybe rows and add the previously found matches.
+            try (final WritableRowSet empty = RowSetFactory.empty()) {
+                matching.insert(result.match());
+                return PushdownResult.of(selection, matching, empty);
+            }
         }
     }
 
