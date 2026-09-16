@@ -154,20 +154,18 @@ public final class RowSetUnionBatcher implements SafeCloseable {
      * as it stands rather than merged with itself.
      */
     private WritableRowSet mergeFrom(final int from) {
+        // A view of the entries being merged. Clearing it is what removes them from the list behind it.
         final List<WritableRowSet> tail = entries.subList(from, entries.size());
         if (tail.size() == 1) {
             return tail.remove(0);
         }
-        final WritableRowSet merged = RowSetFactory.empty();
         try {
-            // Inserting into an empty row set adopts what it is handed, so merging through one costs nothing but the
-            // wrapper. This also closes and removes the entries it merged.
-            RowSetFactory.insertUnionAndClose(merged, tail);
-        } catch (final RuntimeException | Error e) {
-            merged.close();
-            throw e;
+            // The union borrows what it is handed, so these entries are still ours to close once it has read them.
+            return RowSetFactory.union(tail);
+        } finally {
+            SafeCloseable.closeAll(tail.iterator());
+            tail.clear();
         }
-        return merged;
     }
 
     /**
