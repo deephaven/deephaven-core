@@ -30,8 +30,10 @@ import java.util.concurrent.TimeUnit;
  * The cost of an overlap test is set by where the answer is and how the two sets interleave on the way there. The
  * patterns cover both: {@link Pattern#TOUCH_AT_START} answers immediately and measures only the fixed overhead, while
  * the patterns that answer at the end or not at all are where a walk pays per range and a seek pays per alternation.
- * {@link #size} is the number of ranges per side; {@link SortedRanges} holds one array position per single key and two
- * per longer range, so the sizes here are the ones that fit before a row set converts to {@link RspBitmap}.
+ * {@link #size} is the number of ranges per side, except on {@link Pattern#DENSE_VS_SPARSE}, whose whole point is that
+ * the two sides differ: there it is the count on the sparse side and the dense side holds an eighth as many.
+ * {@link SortedRanges} holds one array position per single key and two per longer range, so the sizes here are the ones
+ * that fit before a row set converts to {@link RspBitmap}.
  *
  * <p>
  * {@link #swapped} tests the same pair with the arguments the other way around. For a symmetric implementation the two
@@ -98,7 +100,7 @@ public class RowSetOverlapsBench {
     @Param
     private Pattern pattern;
 
-    /** Ranges per side. */
+    /** Ranges per side, or on {@link Pattern#DENSE_VS_SPARSE} the count on the sparse side. */
     @Param({"64", "512", "2048"})
     private int size;
 
@@ -129,10 +131,12 @@ public class RowSetOverlapsBench {
                 break;
             case CLUSTERED: {
                 // Cluster c belongs to one side or the other by parity, and each cluster starts far enough into its
-                // own key region that no cluster reaches the next.
-                final int per = Math.max(1, size / CLUSTERS);
-                a = new long[2 * per * (CLUSTERS / 2)];
-                b = new long[2 * per * (CLUSTERS / 2)];
+                // own key region that no cluster reaches the next. Each side owns half the clusters, so the keys are
+                // spread over that half to leave it with `size` of them.
+                final int clustersPerSide = CLUSTERS / 2;
+                final int per = Math.max(1, size / clustersPerSide);
+                a = new long[2 * per * clustersPerSide];
+                b = new long[2 * per * clustersPerSide];
                 for (int c = 0; c < CLUSTERS; ++c) {
                     final long[] side = (c & 1) == 0 ? a : b;
                     final int base = per * (c / 2);
