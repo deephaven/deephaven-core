@@ -37,6 +37,7 @@ import org.junit.experimental.categories.Category;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.function.Function;
@@ -1611,13 +1612,20 @@ public class WritableRowSetImplTest extends TestCase {
 
     private RowSet getUnionIndexStrings(final String[] indexStrings) {
         final RowSetBuilderRandom result = RowSetFactory.builderRandom();
+        final List<RowSet> addedRowSets = new ArrayList<>(indexStrings.length);
         for (String indexString : indexStrings) {
             final RowSet rowSetToAdd = RowSetTstUtils.rowSetFromString(indexString);
             rowSetToAdd.validate();
             result.addRowSet(rowSetToAdd);
-            assertEquals(1, getRefCount(rowSetToAdd));
+            addedRowSets.add(rowSetToAdd);
         }
-        return result.build();
+        final RowSet union = result.build();
+        if (addedRowSets.size() > 1) {
+            for (final RowSet addedRowSet : addedRowSets) {
+                assertEquals(1, getRefCount(addedRowSet));
+            }
+        }
+        return union;
     }
 
     private void unionIndexStrings(final String[] indexStrings) {
@@ -3007,11 +3015,12 @@ public class WritableRowSetImplTest extends TestCase {
             if (block % 2 == 0) {
                 b.appendRange(blockKey + 11, blockKey + 20);
             } else {
+                // Five values: with the reserved slot, six shorts fill the 24 bytes the allocator rounds the array
+                // to, so a compact container has nothing to spare.
                 b.appendKey(blockKey + 12);
                 b.appendKey(blockKey + 14);
                 b.appendKey(blockKey + 16);
                 b.appendKey(blockKey + 18);
-                b.appendKey(blockKey + 20);
             }
         }
         final OrderedLongSet impl = b.getOrderedLongSet();

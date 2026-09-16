@@ -882,12 +882,10 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     }
                 },
                 () -> {
-                    // Note: it's not obvious what the best approach for building these RowSets is; that is, sequential
-                    // insertion vs sequential builder. We know that the individual results are ordered and
-                    // non-overlapping.
-                    // If this becomes important, we can do more benchmarking.
-                    try (final WritableRowSet match = RowSetFactory.unionInsert(Arrays.asList(matches));
-                            final WritableRowSet maybeMatch = RowSetFactory.unionInsert(Arrays.asList(maybeMatches))) {
+                    // The per constituent results are ordered and non-overlapping, which RowSetFactory.union merges
+                    // by appending.
+                    try (final WritableRowSet match = RowSetFactory.union(matches);
+                            final WritableRowSet maybeMatch = RowSetFactory.union(maybeMatches)) {
                         // Insert the rows from the constituents that don't support pushdown.
                         maybeMatch.insert(ctx.maybeMatch);
                         onComplete.accept(PushdownResult.of(selection, match, maybeMatch));

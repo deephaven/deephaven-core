@@ -10,6 +10,7 @@ import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.select.FloatRangeFilter;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.FloatChunkColumnSource;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.ParallelTest;
@@ -342,6 +343,76 @@ public class FloatColumnBinarySearchKernelTest {
     @Test
     public void testBinSearchWithGapsInverted() {
         binSearchWithGapsHelper(true);
+    }
+
+    /**
+     * Ascending data whose trailing value is NaN, which Deephaven ordering sorts above
+     * {@link Float#POSITIVE_INFINITY}.
+     */
+    private static final List<Float> NAN_TAILED_DATA = List.of((float) 1, (float) 5, Float.NaN);
+
+    /**
+     * {@link FloatColumnBinarySearchKernel#binsearchRangeFilter} short-circuits to a one-sided search when a bound
+     * covers everything beyond it. At the top of the range that value is NaN rather than {@code MAX_FLOAT}, because
+     * Deephaven ordering sorts NaN above {@link Float#POSITIVE_INFINITY}: an inclusive infinite upper bound must still
+     * exclude the trailing NaN block, while an inclusive NaN upper bound must include it. Results here feed pushdown as
+     * an exact match, so an over-broad range is never re-filtered.
+     *
+     * <p>
+     * The rest of this class drives the search methods directly; this is the only coverage of the range dispatch.
+     */
+    @Test
+    public void testRangeFilterDispatchAroundNaN() {
+        // An inclusive +Inf upper bound must not pick up the NaN row that sorts above it.
+        assertRangeFilterMatches(false, new FloatRangeFilter("test", 5.0f, Float.POSITIVE_INFINITY), 1, 1);
+        assertRangeFilterMatches(true, new FloatRangeFilter("test", 5.0f, Float.POSITIVE_INFINITY), 1, 1);
+
+        // An inclusive NaN upper bound does cover everything at or above the lower bound, NaN included.
+        assertRangeFilterMatches(false, new FloatRangeFilter("test", 5.0f, Float.NaN, true, true), 1, 2);
+        assertRangeFilterMatches(true, new FloatRangeFilter("test", 5.0f, Float.NaN, true, true), 1, 2);
+
+        // geq() builds a NaN-exclusive upper bound to follow IEEE 754, so NaN stays out.
+        assertRangeFilterMatches(false, FloatRangeFilter.geq("test", 5.0f), 1, 1);
+
+        // leq() builds a NULL_FLOAT-inclusive lower bound; NaN is beyond the upper bound either way.
+        assertRangeFilterMatches(false, FloatRangeFilter.leq("test", 5.0f), 0, 1);
+
+        // An inclusive NULL_FLOAT lower bound with an inclusive NaN upper bound spans the whole ordering.
+        assertRangeFilterMatches(false, new FloatRangeFilter("test", NULL_FLOAT, Float.NaN), 0, 2);
+    }
+
+    /**
+     * Runs {@code filter} over {@link #NAN_TAILED_DATA} and asserts the matched rows are exactly the given position
+     * range, which is expressed against the ascending ordering and mirrored when {@code descending} is set.
+     */
+    private void assertRangeFilterMatches(
+            final boolean descending,
+            final FloatRangeFilter filter,
+            final long expectedFirstPosAsc,
+            final long expectedLastPosAsc) {
+        final List<Float> data;
+        final SortColumn sortColumn;
+        if (descending) {
+            data = new ArrayList<>(NAN_TAILED_DATA);
+            Collections.reverse(data);
+            sortColumn = SortColumn.desc(ColumnName.of("test"));
+        } else {
+            data = NAN_TAILED_DATA;
+            sortColumn = SortColumn.asc(ColumnName.of("test"));
+        }
+        final long expectedFirstPos = descending ? data.size() - 1 - expectedLastPosAsc : expectedFirstPosAsc;
+        final long expectedLastPos = descending ? data.size() - 1 - expectedFirstPosAsc : expectedLastPosAsc;
+
+        final FloatChunkColumnSource source = makeChunkColumnSource(data);
+        try (final RowSet selection = RowSetFactory.fromRange(0, data.size() - 1);
+                final RowSet matches = FloatColumnBinarySearchKernel.binsearchRangeFilter(
+                        source, selection, sortColumn, filter, false)) {
+            assertEquals(expectedLastPos - expectedFirstPos + 1, matches.size());
+            assertEquals(expectedFirstPos, matches.firstRowKey());
+            assertEquals(expectedLastPos, matches.lastRowKey());
+        } finally {
+            source.clear(true);
+        }
     }
 
     private void binSearchWithGapsHelper(boolean inverted) {

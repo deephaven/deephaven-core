@@ -398,13 +398,19 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
                 it.next();
                 final long start = it.currentRangeStart();
                 final long end = it.currentRangeEnd();
-                Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
-                Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
-                Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
-                        "rowSet");
-                Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd, "lastEnd",
-                        this,
-                        "rowSet");
+                // Check the ranges with primitive comparisons first; the Assert calls box their operands and build
+                // message strings, which we must not pay for on the (overwhelmingly common) success path. The guard
+                // is deliberately written as the negation of each assertion below, so the two can be compared term by
+                // term. Note that lastEnd + 1 overflows when lastEnd is Long.MAX_VALUE, but in that case
+                // !(start > lastEnd) already holds, so the guard fires and that assertion reports the failure.
+                if (!(start >= 0) || !(end >= start) || !(start > lastEnd) || !(start > lastEnd + 1)) {
+                    Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
+                    Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
+                    Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
+                            "rowSet");
+                    Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd,
+                            "lastEnd", this, "rowSet");
+                }
                 lastEnd = end;
 
                 totalSize += ((end - start) + 1);
@@ -662,6 +668,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     public static void addToBuilderFromImpl(final OrderedLongSet.BuilderRandom builder,
             final WritableRowSetImpl rowSet) {
+        if (rowSet.innerSet.ixIsEmpty()) {
+            // An empty row set's implementation is the shared empty sentinel, which is none of the three types below.
+            return;
+        }
         if (rowSet.innerSet instanceof SingleRange) {
             builder.add((SingleRange) rowSet.innerSet);
             return;

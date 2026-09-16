@@ -60,7 +60,7 @@ public class RspRangeBatchIterator implements SafeCloseable {
             bufKey = spanInfoToKey(spanInfo);
             return;
         }
-        riView.init(p.arr(), p.arrIdx(), spanInfo, s);
+        riView.init(spanInfo, s);
         ri = riView.getContainer().getShortRangeIterator((int) ((long) (Integer.MAX_VALUE) & startOffset));
         bufKey = spanInfoToKey(spanInfo);
         if (!ri.hasNext()) {
@@ -252,7 +252,7 @@ public class RspRangeBatchIterator implements SafeCloseable {
                 riView.reset();
                 ri = new SingletonContainer.SearchRangeIter(lowBitsValue);
             } else {
-                riView.init(p.arr(), p.arrIdx(), spanInfo, s);
+                riView.init(spanInfo, s);
                 ri = riView.getContainer().getShortRangeIterator(0);
             }
         }

@@ -116,7 +116,7 @@ public abstract class AbstractDataIndex extends LivenessArtifact implements Data
                 QueryTable.initializeWithSnapshot("wrapRowSetColumn", snapshotControl, (usePrev, beforeClockValue) -> {
                     final QueryTable resultTable = new QueryTable(TableDefinition.inferFrom(resultColumnSourceMap),
                             parent.getRowSet(), resultColumnSourceMap, null, parent.getAttributes());
-                    parent.propagateFlatness(resultTable);
+                    parent.propagateFlatness(resultTable, usePrev);
                     if (snapshotControl != null) {
                         final BaseTable.ListenerImpl listener =
                                 new BaseTable.ListenerImpl("wrapRowSetColumn()", parent, resultTable);

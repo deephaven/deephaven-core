@@ -122,6 +122,55 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         }
     }
 
+    /**
+     * Returns {@code searchValues} with any NaN removed, or {@code searchValues} itself when there is nothing to
+     * remove. This is what upholds the {@link #getValues()} contract for primitive floating-point columns.
+     *
+     * <p>
+     * Without {@link MatchOptions#nanMatch()} a match follows IEEE 754, where NaN is equal to nothing at all -- itself
+     * included -- so a NaN among the values can never match a row. Removing it therefore does not change what this
+     * filter selects, and it leaves a value set that means the same thing to a consumer matching with NaN equal to
+     * itself, which is what consumers are permitted to do.
+     */
+    private Object[] maybeDropNaN(final Object[] searchValues) {
+        if (searchValues == null || matchOptions.nanMatch()
+                || (columnType != double.class && columnType != float.class)) {
+            return searchValues;
+        }
+        int nanCount = 0;
+        for (final Object value : searchValues) {
+            if (isNaN(value)) {
+                ++nanCount;
+            }
+        }
+        if (nanCount == 0) {
+            return searchValues;
+        }
+        final Object[] retained = new Object[searchValues.length - nanCount];
+        int nextIndex = 0;
+        for (final Object value : searchValues) {
+            if (!isNaN(value)) {
+                retained[nextIndex++] = value;
+            }
+        }
+        return retained;
+    }
+
+    private static boolean isNaN(final Object value) {
+        return value instanceof Double && ((Double) value).isNaN()
+                || value instanceof Float && ((Float) value).isNaN();
+    }
+
+    /**
+     * The values this filter matches against, normalized so that they may be matched by value equality that holds NaN
+     * equal to itself -- the type's {@code *Comparisons.eq}, or {@link java.util.Objects#equals}, for instance.
+     *
+     * <p>
+     * The filter's own NaN semantics are already applied here, so a consumer does not need to consult
+     * {@link MatchOptions#nanMatch()} to match correctly. On a primitive floating-point column without that option a
+     * match follows IEEE 754, under which NaN matches nothing, and any NaN has been removed accordingly; anywhere NaN
+     * remains, matching it is what this filter intends.
+     */
     public Object[] getValues() {
         return values;
     }
@@ -186,6 +235,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             }
             columnType = column.getDataType();
             if (strValues == null) {
+                values = maybeDropNaN(values);
                 initialized = true;
                 return;
             }
@@ -196,7 +246,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             for (String strValue : strValues) {
                 convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
             }
-            values = valueList.toArray();
+            values = maybeDropNaN(valueList.toArray());
         } catch (final RuntimeException err) {
             if (failoverFilter == null) {
                 throw err;
