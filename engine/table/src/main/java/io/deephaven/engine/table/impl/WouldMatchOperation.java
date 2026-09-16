@@ -242,8 +242,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             // Propagate the updates to each column, inserting any additional modified rows post-shift that were
             // produced
             // by each column (ie. if a filter required a recompute
-            final List<RowSet> recomputed = new ArrayList<>(matchColumns.size());
-            try {
+            try (final RowSetUnionBatcher recomputed = new RowSetUnionBatcher(matchColumns.size())) {
                 matchColumns.stream()
                         .map(vc -> vc.column.update(recorder.getAdded(),
                                 recorder.getRemoved(),
@@ -255,9 +254,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                                 parent))
                         .filter(Objects::nonNull)
                         .forEach(recomputed::add);
-                RowSetFactory.insertUnionAndClose(downstream.modified().writableCast(), recomputed);
-            } finally {
-                SafeCloseable.closeAll(recomputed.iterator());
+                try (final WritableRowSet additionalModified = recomputed.build()) {
+                    downstream.modified().writableCast().insert(additionalModified);
+                }
             }
 
 
@@ -280,8 +279,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         @Override
         protected void process() {
             TableUpdate downstream = null;
-            final List<RowSet> recomputed = new ArrayList<>(matchColumns.size());
-            try {
+            try (final RowSetUnionBatcher recomputed = new RowSetUnionBatcher(matchColumns.size())) {
                 for (final ColumnHolder holder : matchColumns) {
                     if (holder.column.recomputeRequested()) {
                         if (downstream == null) {
@@ -298,10 +296,10 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                     }
                 }
                 if (downstream != null) {
-                    RowSetFactory.insertUnionAndClose(downstream.modified().writableCast(), recomputed);
+                    try (final WritableRowSet modified = recomputed.build()) {
+                        downstream.modified().writableCast().insert(modified);
+                    }
                 }
-            } finally {
-                SafeCloseable.closeAll(recomputed.iterator());
             }
 
             if (downstream != null) {
@@ -515,7 +513,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
          * @return an Optional containing rows modified to add to the downstream update
          */
         @Nullable
-        private RowSet update(RowSet added, RowSet removed, RowSet modified,
+        private WritableRowSet update(RowSet added, RowSet removed, RowSet modified,
                 RowSet modPreShift, RowSetShiftData shift,
                 ModifiedColumnSet upstreamModified, ModifiedColumnSet downstreamModified,
                 QueryTable table) {
@@ -559,9 +557,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             return null;
         }
 
-        private RowSet recompute(QueryTable table, RowSet upstreamAdded) {
+        private WritableRowSet recompute(QueryTable table, RowSet upstreamAdded) {
             doRecompute = false;
-            final RowSet rowsChanged;
+            final WritableRowSet rowsChanged;
             try (final SafeCloseableList toClose = new SafeCloseableList()) {
                 final WritableRowSet refiltered =
                         toClose.add(filter.filter(table.getRowSet().copy(), table.getRowSet(), table, false));

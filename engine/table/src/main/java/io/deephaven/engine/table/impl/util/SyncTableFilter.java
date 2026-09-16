@@ -57,11 +57,6 @@ import java.util.stream.Collectors;
  */
 public class SyncTableFilter {
 
-    /**
-     * Row sets merged into the result at a time. Merging a batch bounds the row sets held at once.
-     */
-    private static final int UNION_BATCH_SIZE = 1024;
-
     private static final int CHUNK_SIZE =
             Configuration.getInstance().getIntegerWithDefault("SyncTableFilter.chunkSize", 1 << 16);
     private final List<SyncTableDescription> tables;
@@ -174,19 +169,16 @@ public class SyncTableFilter {
         final HashSet<Object> keysToRefilter = hashSetPair.first;
         Assert.eqZero(hashSetPair.second.size(), "hashSetPair.second.size()");
         for (int tt = 0; tt < tableCount; tt++) {
-            final List<RowSet> addedBatch = new ArrayList<>(UNION_BATCH_SIZE);
-            try {
+            try (final RowSetUnionBatcher addedBatch =
+                    new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
                 for (Object key : keysToRefilter) {
                     final KeyState state = objectToState.get(tt).get(key);
                     doMatch(tt, state, minimumid.getLong(key));
-                    addedBatch.add(state.matchedRows.copy());
-                    if (addedBatch.size() >= UNION_BATCH_SIZE) {
-                        RowSetFactory.insertUnionAndClose(resultRowSet[tt], addedBatch);
-                    }
+                    addedBatch.addCopy(state.matchedRows);
                 }
-                RowSetFactory.insertUnionAndClose(resultRowSet[tt], addedBatch);
-            } finally {
-                SafeCloseable.closeAll(addedBatch.iterator());
+                try (final WritableRowSet added = addedBatch.build()) {
+                    resultRowSet[tt].insert(added);
+                }
             }
         }
         keysToRefilter.clear();
@@ -221,50 +213,39 @@ public class SyncTableFilter {
             final HashSet<Object> keysToRefilter = hashSetPair.first;
             final HashSet<Object> keysWithNewCurrentRows = hashSetPair.second;
             for (int tt = 0; tt < objectToState.size(); tt++) {
-                final WritableRowSet removed = RowSetFactory.empty();
-                final WritableRowSet added = RowSetFactory.empty();
-                try {
-                    final List<RowSet> removedBatch = new ArrayList<>(UNION_BATCH_SIZE);
-                    final List<RowSet> addedBatch = new ArrayList<>(UNION_BATCH_SIZE);
-                    try {
-                        for (Object key : keysToRefilter) {
-                            final KeyState state = objectToState.get(tt).get(key);
-                            // The matched rows are snapshotted on the way past; doMatch replaces them below.
-                            removedBatch.add(state.matchedRows.copy());
-                            doMatch(tt, state, minimumid.getLong(key));
-                            addedBatch.add(state.matchedRows.copy());
-                            if (addedBatch.size() >= UNION_BATCH_SIZE) {
-                                RowSetFactory.insertUnionAndClose(removed, removedBatch);
-                                RowSetFactory.insertUnionAndClose(added, addedBatch);
-                            }
-                        }
+                WritableRowSet removed = null;
+                WritableRowSet added = null;
+                try (final RowSetUnionBatcher removedBatch =
+                        new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE);
+                        final RowSetUnionBatcher addedBatch =
+                                new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
+                    for (Object key : keysToRefilter) {
+                        final KeyState state = objectToState.get(tt).get(key);
+                        // The matched rows are snapshotted on the way past; doMatch replaces them below.
+                        removedBatch.addCopy(state.matchedRows);
+                        doMatch(tt, state, minimumid.getLong(key));
+                        addedBatch.addCopy(state.matchedRows);
+                    }
 
-                        for (Object key : keysWithNewCurrentRows) {
-                            final KeyState state = objectToState.get(tt).get(key);
-                            if (state.currentIdBuilder == null) {
-                                continue;
-                            }
-                            if (!keysToRefilter.contains(key)) {
-                                // if we did not refilter this key; then we should add the currently matched values,
-                                // otherwise we ignore them because they have already been superseded
-                                // Registered before anything that can throw, so the cleanup below owns it either way.
-                                final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build();
-                                addedBatch.add(newlyMatchedRows);
+                    for (Object key : keysWithNewCurrentRows) {
+                        final KeyState state = objectToState.get(tt).get(key);
+                        if (state.currentIdBuilder == null) {
+                            continue;
+                        }
+                        if (!keysToRefilter.contains(key)) {
+                            // if we did not refilter this key; then we should add the currently matched values,
+                            // otherwise we ignore them because they have already been superseded
+                            try (final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build()) {
                                 state.matchedRows.insert(newlyMatchedRows);
                                 newlyMatchedRows.remove(resultRowSet[tt]);
-                                if (addedBatch.size() >= UNION_BATCH_SIZE) {
-                                    RowSetFactory.insertUnionAndClose(added, addedBatch);
-                                }
+                                addedBatch.addCopy(newlyMatchedRows);
                             }
-                            state.currentIdBuilder = null;
                         }
-
-                        RowSetFactory.insertUnionAndClose(removed, removedBatch);
-                        RowSetFactory.insertUnionAndClose(added, addedBatch);
-                    } finally {
-                        SafeCloseable.closeAll(removedBatch.iterator());
-                        SafeCloseable.closeAll(addedBatch.iterator());
+                        state.currentIdBuilder = null;
                     }
+
+                    removed = removedBatch.build();
+                    added = addedBatch.build();
                 } catch (final RuntimeException | Error e) {
                     SafeCloseable.closeAll(removed, added);
                     throw e;

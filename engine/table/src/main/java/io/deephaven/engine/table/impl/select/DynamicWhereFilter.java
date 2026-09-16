@@ -39,12 +39,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     private static final int CHUNK_SIZE = 1 << 16;
 
-    /**
-     * Row sets merged into the result at a time. Merging a batch costs one pass over the batch rather than one insert
-     * into a growing accumulator per row set, and bounding it keeps the row sets held at once bounded too.
-     */
-    private static final int UNION_BATCH_SIZE = 1024;
-
     private final MatchPair[] sourceToSetColumnNamePairs;
     private final boolean inclusion;
 
@@ -439,27 +433,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         return filterLinear(selection, inclusion);
     }
 
-    /**
-     * Merge {@code batch} and remove the result from {@code accumulator}. Removing a merged batch walks the accumulator
-     * once instead of once per row set. The batch's row sets are only borrowed; the list is emptied but they are left
-     * open.
-     */
-    private static void removeBatchFrom(@NotNull final WritableRowSet accumulator, @NotNull final List<RowSet> batch) {
-        if (batch.isEmpty()) {
-            return;
-        }
-        try (final RowSet merged = RowSetFactory.union(batch)) {
-            accumulator.remove(merged);
-        } finally {
-            batch.clear();
-        }
-    }
-
     @NotNull
     private WritableRowSet filterFullIndex(@NotNull final RowSet selection) {
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
 
-        final WritableRowSet filtered = inclusion ? RowSetFactory.empty() : selection.copy();
         // noinspection DataFlowIssue
         final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
         final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
@@ -477,38 +454,30 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             keyMappingFunction = tupleToFullKeyMappingFunction();
         }
 
-        final List<RowSet> batch = new ArrayList<>(UNION_BATCH_SIZE);
-        try {
+        final WritableRowSet matching;
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
             values.forEachRemaining(key -> {
                 final Object mappedKey = keyMappingFunction.apply(key);
                 final long rowKey = rowKeyLookup.apply(mappedKey, false);
                 final RowSet rowSet = rowSetColumn.get(rowKey);
                 if (rowSet != null) {
                     if (inclusion) {
-                        batch.add(rowSet.intersect(selection));
-                        if (batch.size() >= UNION_BATCH_SIZE) {
-                            RowSetFactory.insertUnionAndClose(filtered, batch);
-                        }
+                        batcher.add(rowSet.intersect(selection));
                     } else {
-                        batch.add(rowSet);
-                        if (batch.size() >= UNION_BATCH_SIZE) {
-                            removeBatchFrom(filtered, batch);
-                        }
+                        // Borrowed and merged as they are: clipping each one to selection would cost an intersect
+                        // per key, where the single minus below does it once.
+                        batcher.addCopy(rowSet);
                     }
                 }
             });
-            if (inclusion) {
-                RowSetFactory.insertUnionAndClose(filtered, batch);
-            } else {
-                removeBatchFrom(filtered, batch);
-            }
-        } finally {
-            if (inclusion) {
-                // The intersections belong to this method; the index's row sets gathered for removal are borrowed.
-                SafeCloseable.closeAll(batch.iterator());
-            }
+            matching = batcher.build();
         }
-        return filtered;
+        if (inclusion) {
+            return matching;
+        }
+        try (final SafeCloseable ignored = matching) {
+            return selection.minus(matching);
+        }
     }
 
     @NotNull
@@ -516,49 +485,44 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
         Assert.gt(sourceKeyColumns.length, "sourceKeyColumns.length", 1);
 
-        final WritableRowSet matching;
-        try (final WritableRowSet possiblyMatching = RowSetFactory.empty()) {
-            // First, compute a possibly-matching subset of selection based on the partial index.
+        // First, compute a possibly-matching subset of selection based on the partial index.
 
-            // noinspection DataFlowIssue
-            final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
-            final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
+        // noinspection DataFlowIssue
+        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
+        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
 
-            final Iterator<Object> values;
-            final Function<Object, Object> keyMappingFunction;
+        final Iterator<Object> values;
+        final Function<Object, Object> keyMappingFunction;
 
-            if (staticSetLookupKeys != null) {
-                values = staticSetLookupKeys.iterator();
-                keyMappingFunction = Function.identity();
+        if (staticSetLookupKeys != null) {
+            values = staticSetLookupKeys.iterator();
+            keyMappingFunction = Function.identity();
+        } else {
+            values = setKernel.iterator();
+            if (sourceDataIndex.keyColumnNames().size() == 1) {
+                final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
+                keyMappingFunction = (final Object key) -> sourceKeySource.exportElement(key, keyOffset);
             } else {
-                values = setKernel.iterator();
-                if (sourceDataIndex.keyColumnNames().size() == 1) {
-                    final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
-                    keyMappingFunction = (final Object key) -> sourceKeySource.exportElement(key, keyOffset);
-                } else {
-                    keyMappingFunction = tupleToPartialKeyMappingFunction();
+                keyMappingFunction = tupleToPartialKeyMappingFunction();
+            }
+        }
+
+        final WritableRowSet possiblyMatching;
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
+            values.forEachRemaining(key -> {
+                final Object lookupKey = keyMappingFunction.apply(key);
+                final long rowKey = rowKeyLookup.apply(lookupKey, false);
+                final RowSet rowSet = rowSetColumn.get(rowKey);
+                if (rowSet != null) {
+                    batcher.add(rowSet.intersect(selection));
                 }
-            }
+            });
+            possiblyMatching = batcher.build();
+        }
 
-            final List<RowSet> batch = new ArrayList<>(UNION_BATCH_SIZE);
-            try {
-                values.forEachRemaining(key -> {
-                    final Object lookupKey = keyMappingFunction.apply(key);
-                    final long rowKey = rowKeyLookup.apply(lookupKey, false);
-                    final RowSet rowSet = rowSetColumn.get(rowKey);
-                    if (rowSet != null) {
-                        batch.add(rowSet.intersect(selection));
-                        if (batch.size() >= UNION_BATCH_SIZE) {
-                            RowSetFactory.insertUnionAndClose(possiblyMatching, batch);
-                        }
-                    }
-                });
-                RowSetFactory.insertUnionAndClose(possiblyMatching, batch);
-            } finally {
-                SafeCloseable.closeAll(batch.iterator());
-            }
-
-            // Now, do linear filter on possiblyMatching to determine the values to include or exclude from selection.
+        // Now, do linear filter on possiblyMatching to determine the values to include or exclude from selection.
+        final WritableRowSet matching;
+        try (possiblyMatching) {
             matching = filterLinear(possiblyMatching, true);
         }
         if (inclusion) {

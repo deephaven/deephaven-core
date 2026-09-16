@@ -124,11 +124,6 @@ import java.util.stream.Stream;
  */
 public class LeaderTableFilter {
 
-    /**
-     * Row sets merged into the result at a time. Merging a batch bounds the row sets held at once.
-     */
-    private static final int UNION_BATCH_SIZE = 1024;
-
     private static final int CHUNK_SIZE =
             Configuration.getInstance().getIntegerWithDefault("LeaderTableFilter.chunkSize", 1 << 16);
     private static final int DEFAULT_BINARY_SEARCH_THRESHOLD =
@@ -380,21 +375,18 @@ public class LeaderTableFilter {
         Assert.eqZero(processPendingResult.keysWithNewCurrent.size(), "hashSetPair.keysWithNewCurrent.size()");
         Assert.eqZero(processPendingResult.leaderRemoved.size(), "processPendingResult.leaderRemoved.size()");
         for (int tt = 0; tt < tableCount; tt++) {
-            final List<RowSet> addedBatch = new ArrayList<>(UNION_BATCH_SIZE);
-            try {
+            try (final RowSetUnionBatcher addedBatch =
+                    new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
                 for (Object key : processPendingResult.keysToRefilter) {
                     final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
                     if (state != null) {
                         doMatch(tt, state);
-                        addedBatch.add(state.matchedRows.copy());
-                        if (addedBatch.size() >= UNION_BATCH_SIZE) {
-                            RowSetFactory.insertUnionAndClose(followerResultRowSets[tt], addedBatch);
-                        }
+                        addedBatch.addCopy(state.matchedRows);
                     }
                 }
-                RowSetFactory.insertUnionAndClose(followerResultRowSets[tt], addedBatch);
-            } finally {
-                SafeCloseable.closeAll(addedBatch.iterator());
+                try (final WritableRowSet added = addedBatch.build()) {
+                    followerResultRowSets[tt].insert(added);
+                }
             }
         }
         leaderResultRowSet.insert(processPendingResult.leaderMatches);
@@ -460,68 +452,57 @@ public class LeaderTableFilter {
 
             final ProcessPendingResult processPendingResult = processPendingKeys();
             for (int tt = 0; tt < followerKeyStateMap.size(); tt++) {
-                final WritableRowSet removed = RowSetFactory.empty();
-                final WritableRowSet added = RowSetFactory.empty();
-                try {
-                    final List<RowSet> removedBatch = new ArrayList<>(UNION_BATCH_SIZE);
-                    final List<RowSet> addedBatch = new ArrayList<>(UNION_BATCH_SIZE);
-                    try {
-                        for (final Object key : processPendingResult.keysToRefilter) {
-                            final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
-                            if (state == null) {
-                                // we have never seen anything for this key on this table, which means that we must
-                                // have a NULL_LONG identifier in the leader table.
-                                continue;
-                            }
-                            final boolean removeMatches = state.lastMatchedId != state.activeId;
-                            final RowSet lastMatched;
-                            if (removeMatches) {
-                                // The matched rows are snapshotted on the way past; doMatch replaces them below.
-                                removedBatch.add(state.matchedRows.copy());
-                                lastMatched = null;
-                            } else {
-                                lastMatched = state.matchedRows.copy();
-                            }
-                            doMatch(tt, state);
-                            if (removeMatches) {
-                                addedBatch.add(state.matchedRows.copy());
-                            } else {
-                                try (final RowSet ignored = lastMatched) {
-                                    addedBatch.add(state.matchedRows.minus(lastMatched));
-                                }
-                            }
-                            if (addedBatch.size() >= UNION_BATCH_SIZE) {
-                                RowSetFactory.insertUnionAndClose(removed, removedBatch);
-                                RowSetFactory.insertUnionAndClose(added, addedBatch);
+                WritableRowSet removed = null;
+                WritableRowSet added = null;
+                try (final RowSetUnionBatcher removedBatch =
+                        new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE);
+                        final RowSetUnionBatcher addedBatch =
+                                new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
+                    for (final Object key : processPendingResult.keysToRefilter) {
+                        final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
+                        if (state == null) {
+                            // we have never seen anything for this key on this table, which means that we must
+                            // have a NULL_LONG identifier in the leader table.
+                            continue;
+                        }
+                        final boolean removeMatches = state.lastMatchedId != state.activeId;
+                        final RowSet lastMatched;
+                        if (removeMatches) {
+                            // The matched rows are snapshotted on the way past; doMatch replaces them below.
+                            removedBatch.addCopy(state.matchedRows);
+                            lastMatched = null;
+                        } else {
+                            lastMatched = state.matchedRows.copy();
+                        }
+                        doMatch(tt, state);
+                        if (removeMatches) {
+                            addedBatch.addCopy(state.matchedRows);
+                        } else {
+                            try (final RowSet ignored = lastMatched) {
+                                addedBatch.add(state.matchedRows.minus(lastMatched));
                             }
                         }
+                    }
 
-                        for (final Object key : processPendingResult.keysWithNewCurrent) {
-                            final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
-                            if (state == null || state.currentIdBuilder == null) {
-                                continue;
-                            }
-                            if (!processPendingResult.keysToRefilter.contains(key)) {
-                                // if we did not refilter this key; then we should add the currently matched values,
-                                // otherwise we ignore them because they have already been superseded
-                                // Registered before anything that can throw, so the cleanup below owns it either way.
-                                final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build();
-                                addedBatch.add(newlyMatchedRows);
+                    for (final Object key : processPendingResult.keysWithNewCurrent) {
+                        final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
+                        if (state == null || state.currentIdBuilder == null) {
+                            continue;
+                        }
+                        if (!processPendingResult.keysToRefilter.contains(key)) {
+                            // if we did not refilter this key; then we should add the currently matched values,
+                            // otherwise we ignore them because they have already been superseded
+                            try (final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build()) {
                                 state.matchedRows.insert(newlyMatchedRows);
                                 newlyMatchedRows.remove(followerResultRowSets[tt]);
-                                if (addedBatch.size() >= UNION_BATCH_SIZE) {
-                                    RowSetFactory.insertUnionAndClose(added, addedBatch);
-                                }
+                                addedBatch.addCopy(newlyMatchedRows);
                             }
-                            state.currentIdBuilder = null;
                         }
-
-                        RowSetFactory.insertUnionAndClose(removed, removedBatch);
-                        RowSetFactory.insertUnionAndClose(added, addedBatch);
-                    } finally {
-                        SafeCloseable.closeAll(removedBatch.iterator());
-                        SafeCloseable.closeAll(addedBatch.iterator());
+                        state.currentIdBuilder = null;
                     }
+
+                    removed = removedBatch.build();
+                    added = addedBatch.build();
                 } catch (final RuntimeException | Error e) {
                     SafeCloseable.closeAll(removed, added);
                     throw e;

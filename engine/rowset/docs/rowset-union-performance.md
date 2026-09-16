@@ -156,6 +156,29 @@ merge sorts, so it is flat across all three orders.
 | shuffled | 1000 | 3980.69 | 3969.63 | 536.89 | **7.41x** |
 | descending | 1000 | 574.70 | 575.46 | 572.50 | 1.00x |
 
+## The call-site batcher
+
+`RowSetUnionBatcher` is the batched merge the converted call sites all repeated, with their ownership bookkeeping
+folded into one `SafeCloseable`. A caller hands it row sets and calls `build()` for the union; it owns everything in
+between, so a traversal that throws part way through abandons what it gathered instead of handing back half a union.
+The batch size is the caller's: 1024 where the input is data-driven, and the known count where there is one, which
+merges exactly once.
+
+It accumulates rather than writing into a row set the caller passes in. Every converted site wanted a new row set, and
+the two that ultimately insert into a long-lived one — `SyncTableFilter` and `LeaderTableFilter`, whose targets are the
+tracking row sets behind their results — do it with a single insert at the end rather than one per batch.
+
+It does two things before the merge sees anything, both of which the merge would otherwise have to undo:
+
+- **Empty row sets never take a slot.** The merge already compacts them away, but a batch that spends slots on them
+  fills early and merges more often than the caller asked for.
+- **A row set that appends to the last one is spliced onto it in place.** Ascending input therefore collapses to a
+  single row set that `build()` hands over as it stands: no sort, no group array, no copy-on-write reference per input.
+  This is the same append test the merge makes, moved to where the batch is still one row set long.
+
+The ordering caveat from pitfall 5 stands. Batching still forfeits the global sort, and the collapse only fires for
+input that arrives in ascending order; it makes the good case cheaper, not the bad case good.
+
 ## Pitfalls
 
 Each of these produced a confident, plausible, wrong conclusion first. They are the parts of this work least likely to
