@@ -519,7 +519,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
          * @param downstreamModified the modified set for the downstream notification
          * @param table the table to apply filters to
          *
-         * @return an Optional containing rows modified to add to the downstream update
+         * @return The rows to add to the downstream update's modified set, or {@code null} when this column produced
+         *         none
          */
         @Nullable
         private WritableRowSet update(RowSet added, RowSet removed, RowSet modified,
