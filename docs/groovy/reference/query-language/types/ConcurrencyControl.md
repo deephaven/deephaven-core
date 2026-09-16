@@ -2,7 +2,7 @@
 title: ConcurrencyControl
 ---
 
-[`ConcurrencyControl`](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) is the shared interface that provides concurrency control for column calculations and filters. [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (used by [`where`](../../table-operations/filter/where.md)) both implement it, so the same three methods work the same way for either one.
+[`ConcurrencyControl`](https://deephaven.io/core/javadoc/io/deephaven/api/ConcurrencyControl.html) is the shared interface that provides concurrency control for column calculations and filters. [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (used by [`where`](../../table-operations/filter/where.md)) both implement it, so the same three methods are available on either one — though, as the `withSerial` vs. barriers comparison below shows, not every method's behavior is identical between the two.
 
 By default, Deephaven is free to parallelize column calculations and filter evaluation across multiple CPU cores when they're eligible for it — eligibility depends on statelessness, table size, and available threads. Use the methods below when your formula or filter has side effects, or depends on row order, that make parallel execution unsafe.
 
@@ -58,7 +58,7 @@ Multiple expressions can respect the same barrier, and one expression can respec
 
 These solve different problems:
 
-- **`withSerial`**: Rows _within one_ expression are processed sequentially (row 0, then row 1, etc.). For a **filter**, a serial filter also acts as an absolute ordering barrier against every other filter in the same `where` call — no filter can execute out of order around it. For a **selectable**, `withSerial` gives no such guarantee relative to other expressions by default; other expressions, serial or not, can still run at the same time unless you add an explicit barrier.
+- **`withSerial`**: Rows _within one_ expression are processed sequentially (row 0, then row 1, etc.). For a **filter**, a serial filter also acts as an absolute ordering barrier against every other filter in the same `where` call — no filter can execute out of order around it. For a **selectable**, `withSerial` gives no such guarantee relative to other _independent_ expressions by default; two expressions that don't reference each other's output can still run at the same time unless you add an explicit barrier. (An expression that references another's result column is a different case — the engine already evaluates the referenced column first as an ordinary data dependency, barrier or not.)
 - **Barriers**: _Between_ expressions, one finishes all its rows before another starts. Rows within each expression can still be parallelized.
 
 When shared state is involved, you often need both: `withSerial` to protect row-level access to the shared state, and — especially for selectables — a barrier to ensure one expression is completely done before another starts.

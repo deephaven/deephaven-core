@@ -18,6 +18,8 @@ barrier = new Object()
 
 Create one object per ordering constraint you need. Reusing the same instance for unrelated constraints would incorrectly link them together; use a separate instance for each independent constraint.
 
+Deephaven identifies a barrier by `equals`/`hashCode`, not strict reference identity. A plain `new Object()` is always safe, since its default `equals` is identity-based — but if you use a value type that overrides `equals` (a `String`, a boxed number, a `List`), two _different_ instances that compare equal are treated as the same barrier, which can trigger a duplicate-declaration error or an unintended dependency. Stick with `new Object()` unless you have a specific reason to use something else.
+
 ## Using a barrier
 
 One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until every operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (used by [`where`](../../table-operations/filter/where.md)) both implement:

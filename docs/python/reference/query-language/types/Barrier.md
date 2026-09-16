@@ -6,7 +6,7 @@ A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_co
 
 ## Why use a barrier?
 
-By default, Deephaven is free to parallelize column calculations and filters that are eligible for it — eligibility depends on statelessness, table size, available threads, and, for a formula that calls a Python function, a free-threaded (no-GIL) Python build. A barrier lets you enforce that one operation completes all of its rows before another operation starts — for example, when one column populates a cache that another column reads from, or computes a running total that another column depends on.
+By default, Deephaven is free to parallelize column calculations and filters that are eligible for it — eligibility depends on statelessness, table size, available threads, and, for a formula or filter that calls a Python function or uses Python objects, a free-threaded (no-GIL) Python build. A barrier lets you enforce that one operation completes all of its rows before another operation starts — for example, when one column populates a cache that another column reads from, or computes a running total that another column depends on.
 
 A barrier alone does not force either operation to run serially. If an operation has shared mutable state that could race across its own rows, you typically need **both** [`with_serial`](./ConcurrencyControl.md#with_serial) (for sequential row processing within that operation) **and** a barrier (for ordering between operations).
 
@@ -74,7 +74,7 @@ t = empty_table(10).update([col_a, col_b])
 
 ### Example: coordinating two filters
 
-Barriers work the same way for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) objects in `where` operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs `with_serial` — a plain `dict` write to a distinct key per row is already safe under the GIL — so the barrier is the only thing enforcing that the cache is fully populated before it's read:
+Barriers work the same way for [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) objects in `where` operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs `with_serial` on the common GIL-enabled build, where the GIL already serializes the underlying `dict` writes — a Python-calling filter isn't eligible for true parallel execution there anyway (see the note above). On a free-threaded build, where that eligibility gate opens up, a plain `dict` write is no longer implicitly protected, so a genuinely thread-safe structure (e.g. a `threading.Lock` around the write) would be needed instead. Either way, the barrier — not `with_serial` — is what enforces that the cache is fully populated before it's read:
 
 ```python order=result
 from deephaven.concurrency_control import Barrier
