@@ -45,9 +45,11 @@ import java.util.List;
 public final class RowSetUnionBatcher implements SafeCloseable {
 
     /**
-     * The most row sets that will be gathered before merging, however many the caller asks for. Large enough that the
+     * The most row sets that will be gathered into one batch, however many the caller asks for. Large enough that the
      * merge amortizes the pass it costs, small enough that input driven by data rather than by the shape of the query
-     * cannot make this hold an unbounded number of row sets.
+     * cannot make this hold an unbounded number of row sets. This caps the batch rather than every merge:
+     * {@link #build()} hands {@code union} the collapsed groups as well as the batch, at most {@code 2 * batchSize - 1}
+     * row sets.
      */
     public static final int MAX_BATCH_SIZE = 1024;
 

@@ -507,8 +507,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         /**
-         * Update the internal RowSet with the upstream {@link TableUpdateImpl}. If the column was recomputed, return an
-         * optional containing rows that were modified.
+         * Update the internal RowSet with the upstream {@link TableUpdateImpl}. If the column was recomputed, return
+         * the rows that were modified, and otherwise {@code null}.
          *
          * @param added the set of added rows in the update
          * @param removed the set of removed rows in the update

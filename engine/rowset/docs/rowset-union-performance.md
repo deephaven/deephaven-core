@@ -162,7 +162,7 @@ merge sorts, so it is flat across all three orders.
 folded into one `SafeCloseable`. A caller hands it row sets and calls `build` for the union; it owns everything in
 between, so a traversal that throws part way through abandons what it gathered instead of handing back half a union.
 
-The batch size is the caller's own count — `setKernel.size`, `filteredTable.size`, `keysToRefilter.size`,
+The batch size is the caller's own count — `indexRowKeys.size`, `filteredTable.size`, `keysToRefilter.size`,
 `matchColumns.size` — taken as a `long` and clamped by the constructor to `[1, MAX_BATCH_SIZE]`, so a caller
 counting rows rather than objects has nothing to narrow and no reason to name the cap. Under the cap that count merges the whole
 input at once; over it, or where it is only an upper bound, it costs nothing to pass and the cap takes over. The clamp
@@ -292,7 +292,7 @@ plausible-sounding optimization was for a cost that did not exist.
 | `SortedRanges.MAX_CAPACITY` | 8193 | Entries, so roughly 4096 ranges. Above it a set becomes an `RspBitmap` and the insert path changes character — the cause of a non-monotonic result that looked like a measurement error. |
 | RSP block size | 65,536 | Keys per span. Whether an incoming range starts a new block decides whether a pre-pass can pay for itself. |
 | `MixedBuilderRandom.addAsIndexThreshold` | 65,536 | Gates the builder's whole-set path on the *incoming* range count alone, ignoring the accumulator. Still open — the same class of mistake as pitfall 4. |
-| `RowSetUnionBatcher.MAX_BATCH_SIZE` | 1024 | The most row sets gathered before merging, whatever count a caller asks for. Callers pass their own count; this is the ceiling that keeps data-driven input from holding an unbounded number of row sets. |
+| `RowSetUnionBatcher.MAX_BATCH_SIZE` | 1024 | The most row sets gathered into one batch, whatever count a caller asks for. Callers pass their own count; this is the ceiling that keeps data-driven input from holding an unbounded number of row sets. It caps the batch, not every merge — the final `build` also hands over the collapsed groups, up to `2 * batchSize - 1` row sets. |
 
 ## Still unresolved
 
