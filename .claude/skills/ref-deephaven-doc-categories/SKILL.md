@@ -84,13 +84,17 @@ definition, and two kinds of exception are common enough to expect, not treat as
 advice or extraneous tips. JavaDocs, PyDocs, and other API documentation are reference guides.
 - Tone: dry, formal, third-person, no contractions. **Exception:** the 50+ *individual Q&A pages*
   under `reference/community-questions/*` (not the directory's own index page — see below) are a
-  conversational Q&A format, not API documentation — the question lives in the title/front
-  matter (every page's `title` is phrased as a question), and the body answers conversationally,
-  including giving advice ("We actually encourage users to...", "A notable exception to this rule
-  of thumb is..."). Don't assume the body itself must open with a first-person question to
-  qualify: `chained-operations.md` does (its body opens "I have a query in which..."), but
+  conversational Q&A format, not API documentation. The question isn't reliably in any one
+  field — `sidebar_label` usually carries it ("Does it make any difference if I separate table
+  operations or chain them together?"), but `title` doesn't always: `chained-operations.md`'s
+  `title` is the same question, while `why-do-my-python-type-hints-error.md`'s `title` is just
+  "Why" (truncated) and the actual question is in its body's opening `<em>` tag instead. Identify
+  these pages by directory and the Q&A shape of their content — a single question answered
+  conversationally, often with an opening emphasized question — not by assuming any specific
+  front-matter field always holds it. The body doesn't have to open with a first-person question
+  either: `chained-operations.md` does (its body opens "I have a query in which..."), but
   `custom-data-sources.md` opens with a direct answer ("Yes, you can integrate...") and
-  `display-objects-python.md` opens with explanatory prose — both still take the how-to guide's
+  `display-objects-python.md` opens with explanatory prose — all still take the how-to guide's
   conversational tone profile, not the dry/formal one, even though they live under `reference/`.
 - Structure: enumerable and scannable. A reference reader is scanning for one specific fact, not
   reading linearly — an "orphaned aside" or a missing entry in an enumerated list is a bigger
