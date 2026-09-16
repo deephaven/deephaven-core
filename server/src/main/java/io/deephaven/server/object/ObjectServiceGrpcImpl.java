@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.object;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.auth.AuthContext;
@@ -84,6 +85,72 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         WAITING, RUNNING, CLOSED
     }
 
+    /**
+     * Runs operations one at a time, in the order they were submitted, and roughly like
+     * {@code SerializingExecutor(directExecutor())} in that an operation is started on the thread that submits it. The
+     * distinction is that an operation may continue off-thread; it holds the dispatcher until it calls
+     * {@link #operationComplete()}, which releases the dispatcher and starts whatever is next.
+     */
+    @VisibleForTesting
+    static final class OperationDispatcher {
+        private final Queue<Runnable> operations = new ConcurrentLinkedQueue<>();
+        private final AtomicReference<EnqueuedState> runState = new AtomicReference<>(EnqueuedState.WAITING);
+
+        /**
+         * Submits an operation, starting it on the calling thread if no other operation holds the dispatcher.
+         */
+        void submit(final Runnable operation) {
+            operations.add(operation);
+            dispatch();
+        }
+
+        /**
+         * Releases the dispatcher on behalf of the operation holding it and starts the next operation, if any.
+         */
+        void operationComplete() {
+            if (runState.compareAndSet(EnqueuedState.RUNNING, EnqueuedState.WAITING)) {
+                dispatch();
+            } // else we have been closed, and no further operations may be started
+        }
+
+        /**
+         * Prevents any further operations from being started and discards those that have not started yet.
+         */
+        void close() {
+            runState.set(EnqueuedState.CLOSED);
+            operations.clear();
+        }
+
+        boolean isClosed() {
+            return runState.get() == EnqueuedState.CLOSED;
+        }
+
+        private void dispatch() {
+            // More than one thread can arrive here at the same time, but only the one that passes the compareAndSet
+            // holds the dispatcher. Because only the holder polls, operations run one at a time and in order.
+            while (runState.compareAndSet(EnqueuedState.WAITING, EnqueuedState.RUNNING)) {
+                final Runnable next = operations.poll();
+                if (next != null) {
+                    // The dispatcher now belongs to this operation until it calls operationComplete()
+                    next.run();
+                    return;
+                }
+
+                // Nothing was queued after all, so release the dispatcher. A failed compareAndSet means we were closed
+                // while holding it, and no further operations may be started.
+                if (!runState.compareAndSet(EnqueuedState.RUNNING, EnqueuedState.WAITING)) {
+                    return;
+                }
+
+                // An operation may have been submitted between the poll and the release by a thread that saw us as
+                // RUNNING and therefore did not start it; loop so that it is not stranded.
+                if (operations.isEmpty()) {
+                    return;
+                }
+            }
+        }
+    }
+
     private final class SendMessageObserver implements StreamObserver<StreamRequest> {
         private final SessionState session;
         private final StreamObserver<StreamResponse> responseObserver;
@@ -91,8 +158,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         private boolean seenConnect = false;
         private ObjectType.MessageStream messageStream;
 
-        private final Queue<EnqueuedStreamOperation> operations = new ConcurrentLinkedQueue<>();
-        private final AtomicReference<EnqueuedState> runState = new AtomicReference<>(EnqueuedState.WAITING);
+        private final OperationDispatcher dispatcher = new OperationDispatcher();
 
         class EnqueuedStreamOperation {
             private final StreamOperation wrapped;
@@ -108,7 +174,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
 
             public void run() {
                 nonExport.submit(() -> {
-                    if (runState.get() == EnqueuedState.CLOSED) {
+                    if (dispatcher.isClosed()) {
                         return;
                     }
                     // Run the specified work. Note that we're not concerned about exceptions, the stream will
@@ -120,10 +186,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                                 "Error performing MessageStream operation");
                     }
 
-                    // Set state to WAITING if it is RUNNING so that any new work can race being added
-                    if (runState.compareAndSet(EnqueuedState.RUNNING, EnqueuedState.WAITING)) {
-                        doWork();
-                    } // else the stream should be ended and no more work done
+                    dispatcher.operationComplete();
                 });
             }
         }
@@ -193,49 +256,20 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         /**
-         * Helper to serialize incoming ObjectType messages. These methods are intended to roughly behave like
-         * SerializingExecutor(directExecutor()) in that only one can be running at a time, and will be started on the
-         * current thread, with the distinction that submitted work will continue off-thread and will signal when it is
-         * finished.
+         * Helper to serialize incoming ObjectType messages.
          *
          * @param dependencies other ExportObjects that must be resolve to perform the operation
          * @param operation the lambda to execute when it is our turn to run
          */
         private void runOrEnqueue(Collection<? extends ExportObject<?>> dependencies, StreamOperation operation) {
             // gRPC guarantees we can't race enqueuing
-            operations.add(new EnqueuedStreamOperation(dependencies, operation));
-            doWork();
-        }
-
-        private void doWork() {
-            // More than one thread can arrive here at the same time, but only the one that passes the compareAndSet
-            // owns dispatching. Because only the owner polls, operations run one at a time and in enqueued order.
-            while (runState.compareAndSet(EnqueuedState.WAITING, EnqueuedState.RUNNING)) {
-                final EnqueuedStreamOperation next = operations.poll();
-                if (next != null) {
-                    // Ownership passes to the operation, which restores the state to WAITING once it completes
-                    next.run();
-                    return;
-                }
-
-                // Nothing was enqueued after all, so release ownership. A failed compareAndSet means the stream was
-                // closed while we held it, and no more work may be dispatched.
-                if (!runState.compareAndSet(EnqueuedState.RUNNING, EnqueuedState.WAITING)) {
-                    return;
-                }
-
-                // Work may have been enqueued between the poll and the release by a thread that saw us as RUNNING and
-                // therefore did not dispatch it; loop so that it is not stranded.
-                if (operations.isEmpty()) {
-                    return;
-                }
-            }
+            dispatcher.submit(new EnqueuedStreamOperation(dependencies, operation)::run);
         }
 
         @Override
         public void onError(final Throwable t) {
             // Avoid starting more work
-            runState.set(EnqueuedState.CLOSED);
+            dispatcher.close();
 
             // Safely inform the client that an error happened
             GrpcUtil.safelyError(responseObserver, errorTransformer.transform(t));
@@ -245,8 +279,6 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                 closeMessageStream();
             }
 
-            // Don't attempt to run additional work
-            operations.clear();
         }
 
         private void closeMessageStream() {
@@ -261,7 +293,7 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         public void onCompleted() {
             // Don't finalize until we've processed earlier messages
             runOrEnqueue(Collections.emptyList(), () -> {
-                runState.set(EnqueuedState.CLOSED);
+                dispatcher.close();
                 // Respond by closing the stream - note that closing here allows the server plugin to respond to earlier
                 // messages without error, but those responses will be ignored by the client.
                 GrpcUtil.safelyComplete(responseObserver);
