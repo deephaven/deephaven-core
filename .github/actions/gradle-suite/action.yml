@@ -13,6 +13,15 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    # Runs after the checkout because a local action cannot be resolved before one, which is still
+    # well ahead of the build.
+    - name: Free Disk Space
+      uses: endersonmenezes/free-disk-space@2a22f8c59cae9cddae7194b33e6b92d023b2b4b8 # v4.0.0
+      with:
+        remove_haskell: true
+        remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
+        testing: false
+
     - name: Starting available disk space
       shell: bash
       run: df -h
