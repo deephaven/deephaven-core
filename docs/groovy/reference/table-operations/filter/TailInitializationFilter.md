@@ -4,9 +4,9 @@ title: TailInitializationFilter
 
 `TailInitializationFilter` reduces the input size for downstream operations by limiting initialization to only the most recent rows from each partition. This is particularly useful when working with large datasets that periodically publish new snapshots, and you intend to run a `lastBy` on the data to retrieve the most recent snapshot.
 
-The filter is designed to work with add-only source tables with one or more partitions. `mostRecent` detects partitions from the timestamp column: when that column's source is regioned (for example, Parquet-backed tables), one partition is assumed per region; otherwise, each contiguous range of row keys is assumed to represent a single partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
+The filter is designed to work with add-only source tables with one or more partitions. `mostRecent` detects partitions from the timestamp column. When that column's source is regioned (for example, Parquet-backed tables), one partition is assumed per region. Otherwise, each contiguous range of row keys is assumed to represent a single partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
 
-`mostRecentRows` never reads the timestamp column and does not require sorted timestamps; it detects partitions the same way `mostRecent` does, but checks whether any column in the table is regioned rather than the timestamp column specifically, since it has no timestamp argument. It keeps the trailing rows of each partition by row position.
+`mostRecentRows` never reads the timestamp column and does not require sorted timestamps. Since it has no timestamp argument, it detects partitions the same way `mostRecent` does, but checks whether any column in the table is regioned rather than the timestamp column specifically. It keeps the trailing rows of each partition by row position.
 
 Once initialized, the filter passes through all new rows. Rows that have already been filtered are not removed or modified.
 
@@ -91,9 +91,9 @@ For each partition, `mostRecent` uses the last row's timestamp as the reference 
 - Each partition is sorted by timestamp.
 - Null timestamps are not permitted.
 
-Violating the add-only requirement raises an `IllegalArgumentException`. The binary search reads only the first, last, and midpoint timestamps of each partition, not every row, so it raises an `IllegalArgumentException` if one of those is null, but a null elsewhere in the partition may go undetected. If a partition is not correctly sorted by timestamp, the result table is undefined.
+Violating the add-only requirement raises an `IllegalArgumentException`. The binary search reads only the first, last, and midpoint timestamps of each partition, not every row. As a result, it raises an `IllegalArgumentException` if one of those specific timestamps is null, but a null elsewhere in the partition may go undetected. If a partition is not correctly sorted by timestamp, the result table is undefined.
 
-`mostRecentRows` never reads timestamps, so the sorting and null-timestamp assumptions do not apply to it; only the add-only requirement does.
+`mostRecentRows` never reads timestamps, so the sorting and null-timestamp assumptions do not apply to it. Only the add-only requirement does.
 
 ## Examples
 

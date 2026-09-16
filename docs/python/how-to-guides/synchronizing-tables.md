@@ -18,7 +18,7 @@ This independence can cause consistency issues when you have multiple tables tha
 Both `SyncTableFilter` and `LeaderTableFilter` solve this problem by ensuring that only coordinated rows appear in the filtered results.
 
 > [!NOTE]
-> These filters are accessed directly through [`jpy`](./use-jpy.md) rather than through a Python API wrapper. Console and script-session code already runs under the update graph's exclusive lock, so calling a builder's `build` method directly, as shown below, is safe there even when the input tables are refreshing. If you call one of these builders from a background thread instead — for example, from inside a listener callback — acquire the lock yourself first with [`shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock) or [`auto_locking_ctx`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking_ctx). See [Update graph locks and thread safety](./table-listeners-python.md#update-graph-locks-and-thread-safety) for more on when explicit locking is needed.
+> These filters are accessed directly through [`jpy`](./use-jpy.md) rather than through a Python API wrapper. Console and script-session code already runs under the update graph's exclusive lock, so calling a builder's `build` method directly, as shown below, is safe there even when the input tables are refreshing. Explicit locking is only needed if you call one of these builders from a background thread, such as inside a listener callback. In that case, acquire the lock yourself first with [`shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock) or [`auto_locking_ctx`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking_ctx). See [Update graph locks and thread safety](./table-listeners-python.md#update-graph-locks-and-thread-safety) for more on when explicit locking is needed.
 
 ## When to use each utility
 
@@ -129,7 +129,7 @@ synced_table = Table(result.get(table_name))
 
 ### How it works
 
-The leader table contains one ID column for each follower table. For each key, the filter shows the rows from each follower table that match the IDs in the leader's most recent row for that key once every follower's ID is satisfied — either matched by a row in that follower table, or null, which is always treated as satisfied but yields no rows for that follower. An earlier leader row for that key is superseded once a later one is fully satisfied.
+The leader table contains one ID column for each follower table. For each key, the filter shows the rows from each follower table that match the IDs in the leader's most recent row for that key, once every follower's ID is satisfied. An ID is satisfied either by a matching row in that follower table, or by a null, which is always treated as satisfied but yields no rows for that follower. An earlier leader row for that key is superseded once a later one is fully satisfied.
 
 ### Example
 
@@ -197,8 +197,8 @@ filtered_messages = Table(result.get("messages"))
 
 In this example:
 
-- The `sync_log` leader table controls which trades and messages appear; only the most recent leader row per key is shown once its IDs are matched in every follower table.
-- For `ClientA/S1`, the leader has two rows: (`TradeId` 100, `MessageId` 1) and (`TradeId` 101, `MessageId` 2). Both are fully matched by `trade_log` and `message_log`, but only the most recent match, `TradeId` 101 and `MessageId` 2, appears in the synchronized results.
+- The `sync_log` leader table controls which trades and messages appear. Only the most recent leader row per key is shown once its IDs are matched in every follower table.
+- For `ClientA/S1`, the leader has two rows: (`TradeId` 100, `MessageId` 1) and (`TradeId` 101, `MessageId` 2). Both are fully matched by `trade_log` and `message_log`. However, only the most recent match, `TradeId` 101 and `MessageId` 2, appears in the synchronized results.
 - Even though `trade_log` has `Id` 102 and `message_log` has `MsgId` 3, they don't appear because the leader hasn't referenced them yet.
 - For `ClientB/S2`, only trade 200 and message 5 appear.
 

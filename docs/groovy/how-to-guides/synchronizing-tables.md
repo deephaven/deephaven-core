@@ -113,7 +113,7 @@ syncedTable = result.get(tableName)
 
 ### How it works
 
-The leader table contains one ID column for each follower table. For each key, the filter shows the rows from each follower table that match the IDs in the leader's most recent row for that key once every follower's ID is satisfied — either matched by a row in that follower table, or null, which is always treated as satisfied but yields no rows for that follower. An earlier leader row for that key is superseded once a later one is fully satisfied.
+The leader table contains one ID column for each follower table. For each key, the filter shows the rows from each follower table that match the IDs in the leader's most recent row for that key, once every follower's ID is satisfied. An ID is satisfied either by a matching row in that follower table, or by a null, which is always treated as satisfied but yields no rows for that follower. An earlier leader row for that key is superseded once a later one is fully satisfied.
 
 ### Example
 
@@ -157,8 +157,8 @@ filteredMessages = result.get("messages")
 
 In this example:
 
-- The `syncLog` leader table controls which trades and messages appear; only the most recent leader row per key is shown once its IDs are matched in every follower table.
-- For `ClientA/S1`, the leader has two rows: (`TradeId` 100, `MessageId` 1) and (`TradeId` 101, `MessageId` 2). Both are fully matched by `tradeLog` and `messageLog`, but only the most recent match, `TradeId` 101 and `MessageId` 2, appears in the synchronized results.
+- The `syncLog` leader table controls which trades and messages appear. Only the most recent leader row per key is shown once its IDs are matched in every follower table.
+- For `ClientA/S1`, the leader has two rows: (`TradeId` 100, `MessageId` 1) and (`TradeId` 101, `MessageId` 2). Both are fully matched by `tradeLog` and `messageLog`. However, only the most recent match, `TradeId` 101 and `MessageId` 2, appears in the synchronized results.
 - Even though `tradeLog` has `Id` 102 and `messageLog` has `MsgId` 3, they don't appear because the leader hasn't referenced them yet.
 - For `ClientB/S2`, only trade 200 and message 5 appear.
 
