@@ -45,8 +45,11 @@ half-finished pass this skill exists to prevent.
 
 ## 2. Structure second
 
-Invoke `deephaven-doc-structure-review`. This may move, merge, cut, reorder, or rename sections
-that were just verified in step 1 — that's expected and fine, but it's exactly why step 3 exists.
+Invoke `deephaven-doc-structure-review` as the middle step of this orchestrator — its own
+instructions know to skip its standalone full accuracy/style re-run in that case and defer to
+this workflow's steps 3-4 instead, so don't expect or trigger that separately here. This step may
+move, merge, cut, reorder, or rename sections that were just verified in step 1 — that's expected
+and fine, but it's exactly why step 3 exists.
 Note everywhere content was moved, merged, cut, reordered, or renamed (not just "moved, merged, or
 had a transition rewritten") — step 3 needs the complete list, since a deleted caveat or a
 renamed-away section can invalidate an accuracy finding just as easily as a literal move can.

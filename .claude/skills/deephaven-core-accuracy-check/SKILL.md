@@ -23,9 +23,11 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    force-fit an out-of-taxonomy page into the nearest-sounding category. For a page that does fit
    one of the four, carry that forward: a Reference guide gets harder scrutiny on enumerated-list
    completeness below (a missing entry matters more when the reader is scanning for one fact than
-   in a narrative Concept guide) — except `reference/community-questions/*`, which is one
-   question and one answer per page, not an enumerable reference — and a Crash Course chapter is
-   exempt from the Related-documentation requirement in the internal-link review step.
+   in a narrative Concept guide) — except individual `reference/community-questions/*` Q&A pages,
+   which are one question and one answer per page, not an enumerable reference (`cq-index.md`
+   itself is the exception to that exception — see `ref-deephaven-doc-categories` — and stays on
+   the normal enumerable-reference path) — and a Crash Course chapter is exempt from the
+   Related-documentation requirement in the internal-link review step.
 
 4. **Technical accuracy review:**
    - **For EVERY code snippet**, search the source code FIRST. Never write or "correct" an example from memory.
@@ -74,7 +76,7 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    - **Example-necessity check:** For a worked example whose whole point is demonstrating that API X is needed, verify X is actually load-bearing given everything else already active in that example — not just that the example's output is correct. Trace what would happen if X were removed, accounting for every *other* mechanism already in play (an implicit ordering guarantee a nearby `with_serial`/`withSerial` already provides, a default parallelization gate that keeps the operation single-threaded anyway, etc.), and reason from the guarantee, not from a single run's output: removing a barrier can still produce the same result on one execution while silently dropping the ordering guarantee, since a different, equally valid schedule could produce a different result on another run. An example is a defect if X isn't actually necessary to guarantee the claimed behavior, regardless of whether one observed run happens to match.
    - **Now-redundant or superseded code patterns:** Before including boilerplate copied from another doc page, a prior PR, or an older review comment (e.g., manually capturing and reopening an `ExecutionContext` around a `transform` callback), check whether the current engine API already does that automatically. Another doc page is not an authoritative source on its own — it can be stale too. Verify directly against the current implementation, and if the other page turns out to be stale as well, flag it as a separate follow-up rather than silently propagating its pattern into new content.
    - **Constants presented as universal:** Any specific technical number (chunk size, buffer size, timeout, cycle duration, a throughput multiplier) needs to be checked against every place it's actually defined in source — Configuration properties, per-class constants — not assumed to be a single value. Two different dispositions apply depending on what you find, so don't conflate them: if source shows the number genuinely varies by code path, you have a citation either way — state the variation (or name the specific path the doc is actually about) instead of one blanket figure. If instead there's no source backing the number at all (an invented or unverifiable benchmark multiplier like "4-8x throughput"), that's the sizing/performance-number case below — mark it "⚠️ Needs SME input" rather than silently deleting it.
-   - **Moved content is still in scope:** When a diff relocates a paragraph (deleted from one spot, added back verbatim elsewhere) rather than editing its wording, that text is touched by this PR and its factual claims are fair game for re-verification — a claim that was correct in its original context can go stale once moved (a cross-reference that no longer resolves, a "as shown above" that's now below, a claim that depended on context that didn't move with it). Don't skip re-checking it just because the words themselves didn't change. (Style and structural implications of the same move are `deephaven-writing-style`'s and `deephaven-doc-structure-review`'s concern, not this skill's.)
+   - **Moved content is still in scope:** When a diff relocates a paragraph (deleted from one spot, added back verbatim elsewhere) rather than editing its wording, that text is touched by this PR and its factual claims are fair game for re-verification — a claim that was correct in its original context can go stale once moved (an internal link or cross-reference that no longer resolves after the move, a claim that depended on context — a preceding definition, a nearby caveat — that didn't move with it). Don't skip re-checking it just because the words themselves didn't change. (Whether a positional reference like "as shown above" still reads correctly after the move is `deephaven-doc-structure-review`'s concern, not this skill's; style implications are `deephaven-writing-style`'s.)
 
    - **For sizing recommendations, performance numbers, or "typical ranges":**
      - NEVER invent numbers. These require SME expertise or benchmarks.
@@ -98,8 +100,8 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    - Identify methods, classes, or concepts mentioned without links.
    - Suggest links to appropriate reference pages in `docs/{python,groovy}/reference/`.
    - Check that existing links are valid and point to the correct pages.
-   - Ensure a "Related documentation" section exists (unless it's a landing page, overview, blog, or a Crash Course tutorial chapter — see `ref-deephaven-doc-categories`).
    - **Before suggesting any new link:** confirm the target file actually exists in the repo (search/list the directory for it) rather than assuming a path is correct by pattern-matching similar pages.
+   - Whether a "Related documentation" section exists at all is `deephaven-writing-style`'s Page-structure rule, not this step's — don't duplicate that check here even though it's link-shaped.
 
 6. Report findings organized by category with specific suggestions for fixes.
 

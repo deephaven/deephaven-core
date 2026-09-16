@@ -25,9 +25,11 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    specific prose rules that matter for a small edit directly to the changed lines only: bare
    method names in prose (no leading dot, no parentheses), descriptive link text, active voice,
    proper noun capitalization, straight quotes, em dashes. If the changed lines add a genuinely
-   new backticked method reference, do the one check that rule actually requires even at this
-   scope: confirm this isn't the identifier's first occurrence in the file elsewhere (a first
-   occurrence needs a link); if it might be, escalate per step 4 rather than guessing.
+   new backticked method reference that has an appropriate reference page or pydoc/javadoc anchor
+   to link to, do the one check that rule actually requires even at this scope: confirm this isn't
+   the identifier's first occurrence in the file elsewhere (a first occurrence needs a link, but
+   only when a suitable target actually exists); if it might be, escalate per step 4 rather than
+   guessing.
 
 4. **Escalate rather than chase, when the change isn't actually isolated.** If the changed claim
    also appears elsewhere in this file, in its cross-language sibling doc, or is part of an

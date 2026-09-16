@@ -25,7 +25,7 @@ per category.
 - **Define jargon and internal terms on first use.** Terms like "ticking," "blink table," "live table," or internal service/component names should be defined in plain language or linked to a reference page the first time they appear in a doc — don't assume the reader already knows them.
 - **Calibrate to the audience.** All *published* `docs/{python,groovy}` content is external-facing (deephaven.io) — none of it is an internal-only tier — but how much you can lean on internal vocabulary once it's defined still varies by category (see `ref-deephaven-doc-categories`): the Crash Course assumes zero prior context, Concept/Reference pages can assume more. Avoid unexplained internal-only vocabulary (internal service names, internal abbreviations, implementation details that don't matter to the reader) regardless of category. This external-audience assumption does **not** extend to contributor-facing tooling docs that happen to live under `docs/` but aren't published (e.g. `docs/README.md`, `docs/snapshotter/README.md`) — those are written for repo contributors and may freely use internal tooling vocabulary, script names, and implementation detail.
 - **Avoid egregious jargon and hedging.** Prefer concrete, direct sentences over vague qualifiers ("may potentially," "in some cases could") unless the uncertainty is real and worth flagging.
-- **Tone.** Tutorials and how-tos can be conversational, first-person narrative while remaining professional. Reference material is dry and formal — third-person narrative without contractions — except `reference/community-questions/*`, which is a first-person Q&A format and takes the conversational how-to tone instead (see `ref-deephaven-doc-categories`).
+- **Tone.** Tutorials and how-tos can be conversational, first-person narrative while remaining professional. Reference material is dry and formal — third-person narrative without contractions — except individual `reference/community-questions/*` Q&A pages, which are a first-person Q&A format and take the conversational how-to tone instead. `cq-index.md` itself is the exception to that exception — a category-card index page, not a Q&A — and keeps the dry/formal Reference tone (see `ref-deephaven-doc-categories` for the full carve-out).
 - **Sentence case in headings** — not Title Case. Don't include links in headers.
 - **Straight quotes only.** Use `"` and `'`, never smart/curly quotes (`“` `”` `‘` `’`).
 - **Em dashes** for parenthetical statements, not hyphens or en dashes. Surround with a single space on either side: `word — word`, not `word—word`.
@@ -35,7 +35,7 @@ per category.
 
 ## Page structure
 
-- Every page (except landing pages, overviews, blog articles, or a Crash Course tutorial chapter — see `ref-deephaven-doc-categories` — none of which carry one today) should include a "Related documentation" section at the end.
+- Every page (except landing pages, overviews, blog articles, or a Crash Course tutorial chapter — see `ref-deephaven-doc-categories`) should include a "Related documentation" section at the end. The exemption means the section isn't *required* on those pages, not that it's *forbidden* — some exempted overview pages include one anyway (e.g. `conceptual/table-operations-overview.md`), which is fine; don't flag its presence as a violation of the exemption.
 - When a method is referenced in narrative text, link it to the appropriate reference page if one exists.
 
 ## Deephaven proper nouns
@@ -96,8 +96,10 @@ required searches, not optional style intuition:
   specific bug). Flag every dot-prefixed method reference in prose (e.g. `.with_serial`, `.where`)
   for correction — see **Method names in prose** above.
 - Search for backticked method-shaped identifiers (`snake_case` or `camelCase`, especially ones
-  matching `with_`, `is_`, `from_`, `agg_`, `update`, `select`, `where`, etc.) and check the
-  **first** occurrence of each in the file, not just whether a link exists anywhere — a doc whose
+  matching `with_`, `is_`, `from_`, `agg_`, `update`, `select`, `where`, etc.) and, **only for
+  those that have an appropriate reference page or pydoc/javadoc anchor to link to** (per the
+  Page structure rule above — this check doesn't apply if no suitable target exists), check the
+  **first** occurrence of each in the file, not just whether a link exists anywhere. A doc whose
   first mention is bare and a later mention is linked still violates "first mention should link,"
   even though a plain existence check would pass it. Flag any identifier whose first occurrence is
   bare; the fix is to move the link to that first mention, not to add one anywhere in the file.

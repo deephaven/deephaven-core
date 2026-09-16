@@ -76,18 +76,24 @@ definition, and two kinds of exception are common enough to expect, not treat as
 
 **Reference guide** — `docs/{python,groovy}/reference/*`. Purely informative — describes without
 advice or extraneous tips. JavaDocs, PyDocs, and other API documentation are reference guides.
-- Tone: dry, formal, third-person, no contractions. **Exception:** the 50+ pages under
-  `reference/community-questions/*` are a Q&A format, not API documentation — they open with a
-  first-person user question (e.g. `reference/community-questions/chained-operations.md:6`: "I
-  have a query in which...") and answer conversationally, including giving advice ("We actually
-  encourage users to...", "A notable exception to this rule of thumb is..."). Apply the how-to
-  guide's conversational tone profile to this subdirectory, not the dry/formal one, even though it
-  lives under `reference/`.
+- Tone: dry, formal, third-person, no contractions. **Exception:** the 50+ *individual Q&A pages*
+  under `reference/community-questions/*` (not the directory's own index page — see below) are a
+  Q&A format, not API documentation — they open with a first-person user question (e.g.
+  `reference/community-questions/chained-operations.md:6`: "I have a query in which...") and
+  answer conversationally, including giving advice ("We actually encourage users to...", "A
+  notable exception to this rule of thumb is..."). Apply the how-to guide's conversational tone
+  profile to these pages, not the dry/formal one, even though they live under `reference/`.
 - Structure: enumerable and scannable. A reference reader is scanning for one specific fact, not
   reading linearly — an "orphaned aside" or a missing entry in an enumerated list is a bigger
-  defect here than the same issue would be in a concept guide. This does not apply to
-  `community-questions/*`, which is one question and one answer per page, not an enumerable
-  reference.
+  defect here than the same issue would be in a concept guide. This does not apply to individual
+  `community-questions/*` Q&A pages, which are one question and one answer per page, not an
+  enumerable reference.
+  - **Exception to the exception:** `community-questions/cq-index.md` ("FAQ Overview") is the
+    directory's own index page — a category-card landing page, not a Q&A. It stays on the normal
+    Reference-guide profile: dry/formal tone, and it *is* an enumerable index (check it for
+    missing or stale entries like any other reference index), not "one question and one answer."
+    Every skill that carries this community-questions exception must carry this carve-out too —
+    don't restate the wildcard without it.
 
 ## Pages outside the four categories
 

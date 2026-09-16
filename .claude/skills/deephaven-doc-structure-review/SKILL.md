@@ -31,8 +31,11 @@ weigh:
   interleaving, since it's usually the longest and most narrative. Weight those checks up.
 - **Reference guide**: an orphaned aside or a gap in an enumerated list matters more here than in
   a concept guide — a reference reader is scanning for one fact, not reading linearly. This does
-  not apply to `reference/community-questions/*`, which is one question and one answer per page,
-  not an enumerable reference — weight it like a how-to guide instead.
+  not apply to individual `reference/community-questions/*` Q&A pages, which are one question and
+  one answer per page, not an enumerable reference — weight those like a how-to guide instead.
+  `cq-index.md` itself is the exception to that exception (see `ref-deephaven-doc-categories`) and
+  stays on the normal enumerable/reference weighting — a missing or stale card entry there is a
+  real gap, not exempt just because it lives in the same directory as the Q&A pages.
 - **How-to guide**: branching and offered alternatives are expected and not a defect by
   themselves; judge flow by whether the reader can still complete their own goal, not by whether
   every reader follows the identical path.
@@ -162,6 +165,15 @@ they'd actually confuse a first-time reader, not by document order.
 
 Do not rewrite the document as part of this review unless asked to — a structural critique is a
 report first. If the user then asks you to apply the restructuring, do it as an explicit,
-reviewable diff, and re-run `deephaven-core-accuracy-check` and `deephaven-writing-style` on the
-result before considering it done: moving and merging prose is exactly the kind of edit that can
-quietly drop a caveat, break a cross-reference, or introduce a style violation.
+reviewable diff, and — **when invoked standalone** — re-run `deephaven-core-accuracy-check` and
+`deephaven-writing-style` on the result before considering it done: moving and merging prose is
+exactly the kind of edit that can quietly drop a caveat, break a cross-reference, or introduce a
+style violation.
+
+**When invoked as the middle step of `deephaven-docs-review-full`**, skip that re-run: the
+orchestrator's own steps 3 (targeted spot-check re-verification) and 4 (style) already cover it,
+in a more scoped and correctly-ordered way than re-running the full accuracy and style skills
+here would. Running the full re-run here too would duplicate step 4 and pre-empt step 3 with a
+full accuracy pass before the orchestrator's lighter, targeted one — say so in your output
+("structural edits applied; deferring re-verification to the orchestrator's steps 3-4") rather
+than silently doing the full re-run.
