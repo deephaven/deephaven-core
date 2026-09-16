@@ -2799,4 +2799,55 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         listener.close();
     }
+
+    public void testRightShiftAndModifyReportsOnlyModifiedColumnsRightIncremental() {
+        testRightShiftAndModifyReportsOnlyModifiedColumns(false);
+    }
+
+    public void testRightShiftAndModifyReportsOnlyModifiedColumnsBothIncremental() {
+        testRightShiftAndModifyReportsOnlyModifiedColumns(true);
+    }
+
+    private void testRightShiftAndModifyReportsOnlyModifiedColumns(final boolean leftRefreshing) {
+        // a shift rewrites the redirection to the same right row at a new key; combined with a modification of one
+        // added column it must not widen the modified column set to the other added columns, for a single-right-row
+        // key or a duplicate one
+        final QueryTable left = leftRefreshing
+                ? testRefreshingTable(i(0, 1).toTracking(), col("Key", "dup", "solo"), intCol("L", 1, 2))
+                : testTable(i(0, 1).toTracking(), col("Key", "dup", "solo"), intCol("L", 1, 2));
+        final QueryTable right = testRefreshingTable(i(0, 1, 2).toTracking(),
+                col("Key", "dup", "dup", "solo"), intCol("C", 100, 101, 200), intCol("D", 1000, 1001, 2000));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "C,D", NaturalJoinType.FIRST_MATCH);
+        assertTableEquals(newTable(col("Key", "dup", "solo"), intCol("L", 1, 2), intCol("C", 100, 200),
+                intCol("D", 1000, 2000)), result);
+
+        final ModifiedColumnSet cColumn = result.newModifiedColumnSet("C");
+        final ModifiedColumnSet dColumn = result.newModifiedColumnSet("D");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(0, 2, 10);
+            removeRows(right, i(0, 1, 2));
+            // the first-match "dup" row and the "solo" row get a new C at their shifted keys
+            addToTable(right, i(10, 11, 12), col("Key", "dup", "dup", "solo"), intCol("C", 150, 101, 250),
+                    intCol("D", 1000, 1001, 2000));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(10, 12), builder.build(),
+                    right.newModifiedColumnSet("C")));
+        });
+
+        assertEquals(1, listener.getCount());
+        final TableUpdate update = listener.getUpdate();
+        assertEquals(i(0, 1), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertFalse(update.modifiedColumnSet().containsAny(dColumn));
+
+        assertTableEquals(newTable(col("Key", "dup", "solo"), intCol("L", 1, 2), intCol("C", 150, 250),
+                intCol("D", 1000, 2000)), result);
+
+        listener.close();
+    }
 }
