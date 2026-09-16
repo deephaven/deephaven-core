@@ -706,7 +706,16 @@ class NaturalJoinHelper {
             }
             final long rightRowKey = rowKey;
 
-            final boolean unchangedRedirection = rightRowKey == originalRightValue;
+            final boolean unchangedRedirection;
+            if (IncrementalNaturalJoinStateManager.isDuplicateRightState(originalRightValue)) {
+                // The slot held several right rows when it was first recorded, and the token does not identify which
+                // of them the left rows were redirected to. The flags decide instead: a change or shift of the deciding
+                // right row is recorded as such, while a modify probe leaves the redirection alone.
+                unchangedRedirection = (flag & (NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE
+                        | NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT)) == 0;
+            } else {
+                unchangedRedirection = rightRowKey == originalRightValue;
+            }
 
             // if we have no right columns that have changed, and our redirection is identical we can quit here
             if (unchangedRedirection && !rightAddedColumnsChanged

@@ -490,7 +490,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                         searchAlternate = false;
                         break;
                     }
-                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_MODIFY_PROBE));
                     found = true;
                     break;
                 }
@@ -510,7 +510,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                 if (isStateDeleted(existingRightRowKey)) {
                                     break;
                                 }
-                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_MODIFY_PROBE));
                                 alternateFound = true;
                                 break;
                             }

@@ -98,14 +98,16 @@ public class NaturalJoinModifiedSlotTracker {
      * Add a slot in the main table.
      *
      * @param slot the slot to add.
-     * @param originalRightValue if we are the addition of the slot, what the right value was before our modification
-     *        (otherwise ignored)
+     * @param originalRightValue the slot's right state before this modification (a right row key, a duplicate location
+     *        token, or one of the no-right-row markers); recorded only if this call creates the entry
      * @param flags the flags to or into our state
      *
      * @return the cookie for future access
      */
     public long addMain(final long cookie, final int slot, final long originalRightValue, byte flags) {
-        if (originalRightValue < 0) {
+        // The no-right-row markers are all negative, but so are the duplicate location tokens, which denote a slot that
+        // already had several right rows.
+        if (originalRightValue < 0 && !IncrementalNaturalJoinStateManager.isDuplicateRightState(originalRightValue)) {
             flags |= FLAG_RIGHT_ADD;
         }
         if (!isValidCookie(cookie)) {
@@ -203,10 +205,7 @@ public class NaturalJoinModifiedSlotTracker {
             final byte flag = (byte) (slotAndFlag & FLAG_MASK);
             if (flag == 0) {
                 // A pure left add/remove entry whose FLAG_LEFT_ADD/FLAG_LEFT_REMOVE has already been consumed and
-                // cleared has no right-side change to propagate. Skipping it is required for correctness (not just
-                // efficiency): its saved originalRightValue is the raw slot state, which for a duplicate RHS key is the
-                // internal duplicate-location token rather than the resolved RHS row key, so processing it would
-                // spuriously report the right columns as modified for every remaining left row on that key.
+                // cleared has no right-side change to propagate.
                 continue;
             }
             final int slot = (int) (slotAndFlag >> FLAG_SHIFT);

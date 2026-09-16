@@ -514,7 +514,7 @@ public class TypedNaturalJoinFactory {
 
     public static void incrementalModifyRightFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        modifyCookie(builder, getSourceType(alternate), getTableLocation(alternate), "FLAG_RIGHT_CHANGE");
+        modifyCookie(builder, getSourceType(alternate), getTableLocation(alternate), "FLAG_RIGHT_MODIFY_PROBE");
     }
 
     @NotNull
