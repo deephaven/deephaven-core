@@ -8,10 +8,14 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.LongChunkAppender;
+import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.sources.UngroupedColumnSource;
@@ -216,8 +220,6 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
 
                     // Read the total length of items in this group
                     final int lengthFromThisGroup = sameGroupRunLengths.get(ii);
-                    // Determine when to stop iterating for the items in this group
-                    final long endIndex = currentIndex + lengthFromThisGroup;
 
                     // Get the row key and determine the starting position for the first entry of this group
                     final long rowKey = groupRowKeys.get(ii);
@@ -225,17 +227,19 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
                     final long localStartOffset = startOffsets != null ? startOffsets.get(ii) : startOffset;
                     final long startPos = ClampUtil.clampLong(0, bucketSize, rowPos + localStartOffset);
 
-                    while (currentIndex < endIndex) {
-                        // Read the offset for this output row and determine the key in the underlying source
-                        final long offsetInGroup = componentRowKeys.get(currentIndex);
-                        final long pos = startPos + offsetInGroup;
-                        final long key = bucketRowSet.get(pos);
+                    final WritableLongChunk<OrderedRowKeys> remappedComponentKeys = componentRowKeySlice
+                            .resetFromTypedChunk(componentRowKeys, currentIndex, lengthFromThisGroup);
 
-                        // Map component row position to row key in-place
-                        componentRowKeys.set(currentIndex, key);
-
-                        currentIndex++;
+                    // Offset the component row positions by the group's start position
+                    for (int ci = 0; ci < lengthFromThisGroup; ++ci) {
+                        remappedComponentKeys.set(ci, remappedComponentKeys.get(ci) + startPos);
                     }
+                    // Invert the component row positions to component row keys, in-place
+                    bucketRowSet.getKeysForPositions(
+                            new LongChunkIterator(remappedComponentKeys),
+                            new LongChunkAppender(remappedComponentKeys));
+
+                    currentIndex += lengthFromThisGroup;
                 }
 
                 stateReusable = shared;

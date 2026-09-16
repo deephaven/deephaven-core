@@ -37,6 +37,7 @@ def buildRClient = Docker.registerDockerTask(project, 'rClient') {
             include 'rdeephaven/LICENSE'
             include 'rdeephaven/NAMESPACE'
             include 'rdeephaven/README.md'
+            include 'rdeephaven/BUILDING.md'
             include 'rdeephaven/inst/**'
             include 'rdeephaven/etc/**'
             include 'rdeephaven/R/**'
@@ -60,6 +61,7 @@ def buildRClient = Docker.registerDockerTask(project, 'rClient') {
         copyFile('rdeephaven/LICENSE',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/NAMESPACE',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/README.md',  "${prefix}/src/rdeephaven/")
+        copyFile('rdeephaven/BUILDING.md',  "${prefix}/src/rdeephaven/")
         copyFile('rdeephaven/inst/',  "${prefix}/src/rdeephaven/inst/")
         copyFile('rdeephaven/etc/', "${prefix}/src/rdeephaven/etc/")
         copyFile('rdeephaven/R/', "${prefix}/src/rdeephaven/R/")

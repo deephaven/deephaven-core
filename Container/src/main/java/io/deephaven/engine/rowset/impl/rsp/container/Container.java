@@ -74,9 +74,7 @@ public abstract class Container {
 
     public static Container singleton(final short v) {
         if (smallContainersDisabled()) {
-            final short[] vs = new short[shortArraySizeRounding(1)];
-            vs[0] = v;
-            return new ArrayContainer(vs, 1);
+            return new ArrayContainer(v);
         }
         return new SingletonContainer(v);
     }
@@ -129,10 +127,7 @@ public abstract class Container {
             }
         }
         if (smallContainersDisabled()) {
-            final short[] vs = new short[shortArraySizeRounding(2)];
-            vs[0] = v1;
-            vs[1] = v2;
-            return new ArrayContainer(vs, 2);
+            return new ArrayContainer(v1, v2);
         }
         if (iv2 - 1 == iv1) {
             return Container.singleRange(iv1, iv2 + 1);
@@ -666,6 +661,20 @@ public abstract class Container {
     public abstract SearchRangeIterator getShortRangeIterator(int skipFromStartCount);
 
     /**
+     * As {@link #getShortRangeIterator(int)}, locating the starting position through {@code cursor}, a
+     * {@link RankCursor} on this container. Container kinds for which the cursor saves work (see
+     * {@link RankCursor#benefits}) resume from the cursor's position instead of counting from the start of the
+     * container; the others ignore the cursor.
+     *
+     * @param skipFromStartCount number of elements to skip from the start of the container.
+     * @param cursor a cursor on this container
+     * @return iterator
+     */
+    public SearchRangeIterator getShortRangeIterator(final int skipFromStartCount, final RankCursor cursor) {
+        return getShortRangeIterator(skipFromStartCount);
+    }
+
+    /**
      * Add all shorts in [begin,end) using an unsigned interpretation. May generate a new container.
      *
      * @param begin start of range (inclusive)
@@ -1175,8 +1184,9 @@ public abstract class Container {
      *         cardinality - 1]. If not present, (-(insertion point) - 1) similar to Array.binarySearch.
      *         <p>
      *         For values of x that {@link io.deephaven.engine.rowset.impl.rsp.container.Container#contains} returns
-     *         true, this method returns the same value as
-     *         {@link io.deephaven.engine.rowset.impl.rsp.container.Container#rank}.
+     *         true, this method returns one less than
+     *         {@link io.deephaven.engine.rowset.impl.rsp.container.Container#rank}: rank counts the values less than
+     *         or equal to x, while this is the zero-based position of x itself.
      */
     public abstract int find(short x);
 

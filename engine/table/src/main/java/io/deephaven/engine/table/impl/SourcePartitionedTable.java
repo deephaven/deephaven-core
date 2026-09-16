@@ -176,8 +176,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             }
 
             if (subscribeToTableLocationProvider) {
-                resultLocationStates.startTrackingPrevValues();
-
                 sourceTableLocations = new TableLocationSubscriptionBuffer(tableLocationProvider);
                 manage(sourceTableLocations);
 
@@ -198,6 +196,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                         rawResult.getUpdateGraph(),
                         UnderlyingTableMaintainer::unmanageForRemovedLocationStates);
                 processBufferedLocationChanges(false);
+                resultLocationStates.startTrackingPrevValues();
             } else {
                 sourceTableLocations = null;
                 processLocationsUpdateRoot = null;

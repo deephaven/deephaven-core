@@ -153,6 +153,18 @@ class WhereListener extends MergedListener {
 
     @Override
     public void process() {
+        // A recompute queued for a result that a rejected snapshot attempt has since released must not run for it.
+        if (!result.tryRetainReference()) {
+            return;
+        }
+        try {
+            processRetained();
+        } finally {
+            result.dropReference();
+        }
+    }
+
+    private void processRetained() {
         initialNotificationStep = getUpdateGraph().clock().currentStep();
 
         if (result.refilterRequested()) {

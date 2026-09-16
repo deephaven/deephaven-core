@@ -43,6 +43,50 @@ public class PushdownResultTest {
     }
 
     @Test
+    public void exactMatch() {
+        try (
+                final WritableRowSet selection = RowSetFactory.fromRange(0, 29);
+                final WritableRowSet match = RowSetFactory.fromRange(0, 9);
+                final PushdownResult r = PushdownResult.exactMatch(selection, match)) {
+            assertThat(r.match()).isEqualTo(match);
+            assertThat(r.maybeMatch().isEmpty()).isTrue();
+        }
+    }
+
+    @Test
+    public void exactMatchCopiesMatch() {
+        // Callers close the row set they pass, so the result must not alias it.
+        try (
+                final WritableRowSet selection = RowSetFactory.fromRange(0, 29);
+                final WritableRowSet match = RowSetFactory.fromRange(0, 9);
+                final PushdownResult r = PushdownResult.exactMatch(selection, match)) {
+            match.insert(20);
+            assertThat(r.match().size()).isEqualTo(10);
+        }
+    }
+
+    @Test
+    public void exactMatchAll() {
+        try (
+                final WritableRowSet selection = RowSetFactory.fromRange(0, 29);
+                final PushdownResult r = PushdownResult.exactMatch(selection, selection)) {
+            assertThat(r.match()).isEqualTo(selection);
+            assertThat(r.maybeMatch().isEmpty()).isTrue();
+        }
+    }
+
+    @Test
+    public void exactMatchNone() {
+        try (
+                final WritableRowSet selection = RowSetFactory.fromRange(0, 29);
+                final WritableRowSet match = RowSetFactory.empty();
+                final PushdownResult r = PushdownResult.exactMatch(selection, match)) {
+            assertThat(r.match().isEmpty()).isTrue();
+            assertThat(r.maybeMatch().isEmpty()).isTrue();
+        }
+    }
+
+    @Test
     public void basicConstruction() {
         try (
                 final WritableRowSet selection = RowSetFactory.fromRange(0, 29);
@@ -90,6 +134,41 @@ public class PushdownResultTest {
             } else {
                 // does not catch precondition failure
                 PushdownResult.of(selection, match, maybeMatch);
+            }
+        }
+    }
+
+    @Test
+    public void exactMatchNotSubset() {
+        try (
+                final WritableRowSet selection = RowSetFactory.fromRange(1, 29);
+                final WritableRowSet match = RowSetFactory.fromRange(0, 9)) {
+            if (PushdownResult.FORCE_VALIDATION) {
+                try {
+                    PushdownResult.exactMatch(selection, match);
+                    failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+                } catch (IllegalArgumentException e) {
+                    assertThat(e).hasMessageContaining("match must be a subset of selection");
+                }
+            } else {
+                // does not catch precondition failure
+                PushdownResult.exactMatch(selection, match);
+            }
+        }
+    }
+
+    @Test
+    public void exactMatchObviouslyBad() {
+        try (
+                final WritableRowSet selection = RowSetFactory.fromRange(0, 29);
+                final WritableRowSet match = RowSetFactory.fromRange(0, 30)) {
+            try {
+                PushdownResult.exactMatch(selection, match);
+                failBecauseExceptionWasNotThrown(IllegalArgumentException.class);
+            } catch (IllegalArgumentException e) {
+                assertThat(e).hasMessageContaining(PushdownResult.FORCE_VALIDATION
+                        ? "match must be a subset of selection"
+                        : "matchSize + maybeMatchSize > selectionSize, 31 + 0 > 30");
             }
         }
     }

@@ -534,20 +534,23 @@ public abstract class UpdateBy {
                             }
                         } else {
                             // Get the minimal set of rows to be updated for this window (shiftedRows is empty when
-                            // using redirection).
-                            try (final WritableRowSet windowRowSet = changedRows.copy()) {
-                                for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                                    if (win.isWindowBucketDirty(bucket.windowContexts[winIdx])) {
-                                        windowRowSet.insert(win.getAffectedRows(bucket.windowContexts[winIdx]));
-                                    }
+                            // using redirection). The dirty buckets are visited in an order unrelated to their keys,
+                            // so the changed rows and every dirty bucket's affected rows are merged in one pass; the
+                            // list holds borrowed references to row sets the window contexts already own.
+                            final List<RowSet> windowRowSets = new ArrayList<>(dirtyBuckets.length + 1);
+                            windowRowSets.add(changedRows);
+                            for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                                if (win.isWindowBucketDirty(bucket.windowContexts[winIdx])) {
+                                    windowRowSets.add(win.getAffectedRows(bucket.windowContexts[winIdx]));
                                 }
-                                try (final RowSet windowChangedRows = redirHelper.isRedirected()
-                                        ? redirHelper.getInnerKeys(windowRowSet)
-                                        : null) {
-                                    final RowSet rowsToUse =
-                                            windowChangedRows == null ? windowRowSet : windowChangedRows;
-                                    win.prepareForParallelPopulation(rowsToUse);
-                                }
+                            }
+                            try (final WritableRowSet windowRowSet = RowSetFactory.union(windowRowSets);
+                                    final RowSet windowChangedRows = redirHelper.isRedirected()
+                                            ? redirHelper.getInnerKeys(windowRowSet)
+                                            : null) {
+                                final RowSet rowsToUse =
+                                        windowChangedRows == null ? windowRowSet : windowChangedRows;
+                                win.prepareForParallelPopulation(rowsToUse);
                             }
                         }
 
@@ -991,12 +994,15 @@ public abstract class UpdateBy {
             downstream.modifiedColumnSet = result().getModifiedColumnSetForUpdates();
             downstream.modifiedColumnSet.clear();
 
-            WritableRowSet modifiedRowSet = upstream.modified().copy();
-            downstream.modified = modifiedRowSet;
-
             if (upstream.modified().isNonempty()) {
                 mcsTransformer().transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
             }
+
+            // The dirty buckets are visited in an order unrelated to their keys, so the upstream modifications and
+            // every dirty window's affected rows are merged in one pass. The list holds borrowed references to row
+            // sets the window contexts already own, and only dirty windows contribute, so it is not presized.
+            final List<RowSet> modifiedRowSets = new ArrayList<>();
+            modifiedRowSets.add(upstream.modified());
 
             for (UpdateByBucketHelper bucket : dirtyBuckets) {
                 // retrieve the modified row and column sets from the windows
@@ -1006,7 +1012,7 @@ public abstract class UpdateBy {
 
                     if (win.isWindowBucketDirty(winCtx)) {
                         // add the window modified rows to this set
-                        modifiedRowSet.insert(win.getAffectedRows(winCtx));
+                        modifiedRowSets.add(win.getAffectedRows(winCtx));
                         // add the modified output column sets to the downstream set
                         for (int winOpIdx : win.getDirtyOperators(winCtx)) {
                             // these were created directly from the result output columns so no transformer needed
@@ -1016,6 +1022,8 @@ public abstract class UpdateBy {
                 }
 
             }
+            final WritableRowSet modifiedRowSet = RowSetFactory.union(modifiedRowSets);
+            downstream.modified = modifiedRowSet;
             // should not include upstream adds as modifies
             modifiedRowSet.remove(downstream.added);
 

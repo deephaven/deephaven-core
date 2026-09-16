@@ -72,7 +72,8 @@ public class RspArrayDirtyCardinalityCacheTest {
         // Positions at or past the cardinality yield NULL_ROW_KEY, and everything after them does too.
         assertEquals(List.of(-1L), keysForPositions(dirty, cardinality));
         assertEquals(List.of(-1L, -1L), keysForPositions(dirty, cardinality, cardinality + 5));
-        assertEquals(List.of(-1L, -1L), keysForPositions(dirty, -1, 0));
+        // A negative position has no key either, but says nothing about the positions after it.
+        assertEquals(List.of(-1L, clean.get(0)), keysForPositions(dirty, -1, 0));
         final List<Long> mixed = keysForPositions(dirty, 0, cardinality + 1, 1);
         assertEquals(3, mixed.size());
         assertEquals(clean.get(0), mixed.get(0).longValue());

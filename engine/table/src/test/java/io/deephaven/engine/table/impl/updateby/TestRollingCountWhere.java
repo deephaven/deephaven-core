@@ -16,6 +16,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
+import io.deephaven.engine.table.impl.select.TimeSeriesFilter;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -86,6 +87,26 @@ public class TestRollingCountWhere extends BaseUpdateByTest {
     // endregion Object Helper functions
 
     // region Static Zero Key Tests
+    /**
+     * Rolling count-where asks {@link io.deephaven.engine.table.impl.select.WhereFilter#isRefreshing()} before it ever
+     * calls {@code beginOperation}. A filter that cannot know until it sees its source table answers conservatively, so
+     * it is rejected as refreshing.
+     */
+    @Test
+    public void testRejectsFilterOfUnknownRefreshingState() {
+        final Table table = TableTools.emptyTable(10).update("Timestamp = DateTimeUtils.epochNanosToInstant(ii)");
+        final TimeSeriesFilter filter = TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp")
+                .period("PT1M")
+                .build();
+        try {
+            table.updateBy(UpdateByOperation.RollingCountWhere(5, "count", filter));
+            Assert.statementNeverExecuted("expected RollingCountWhere to reject a filter that may be refreshing");
+        } catch (final UnsupportedOperationException expected) {
+            Assert.eqTrue(expected.getMessage().contains("refreshing filters"), expected.getMessage());
+        }
+    }
+
     @Test
     public void testStaticZeroKeyAllNullVector() {
         final int prevTicks = 1;

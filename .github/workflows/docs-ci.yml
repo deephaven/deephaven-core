@@ -21,7 +21,7 @@ jobs:
           
       - name: Deploy Directories
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@b247bfd3aff7245a6df1b3a64798f4176ca2a4a1 # 5.2.2
         with:
           switches: -rlptDvz
           path: tmp-deephaven-core-v2/
@@ -45,7 +45,7 @@ jobs:
           ln -s ../main latest
           
       - name: Deploy Symlinks
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@b247bfd3aff7245a6df1b3a64798f4176ca2a4a1 # 5.2.2
         with:
           switches: -rlptDvz
           path: tmp-deephaven-core-v2/
@@ -62,7 +62,7 @@ jobs:
       group: core-docs-check-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: # Does not need lfs to validate since the header file existing is enough for the check
           sparse-checkout: /docs/
           sparse-checkout-cone-mode: false
@@ -84,7 +84,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: /docs/
           sparse-checkout-cone-mode: false
@@ -99,7 +99,7 @@ jobs:
 
       - name: Sync core Python to the salmon bucket
         id: sync-python
-        uses: deephaven/salmon-sync@v1
+        uses: deephaven/salmon-sync@a5f767c0edc5b27ec58796658d61a388c0b45192 # v1.2.0
         with:
           source: docs/python
           destination: deephaven/deephaven-core/docs/${{ steps.dhc-version.outputs.version }}
@@ -109,7 +109,7 @@ jobs:
 
       - name: Sync core Groovy to the salmon bucket
         id: sync-groovy
-        uses: deephaven/salmon-sync@v1
+        uses: deephaven/salmon-sync@a5f767c0edc5b27ec58796658d61a388c0b45192 # v1.2.0
         with:
           source: docs/groovy
           destination: deephaven/deephaven-core/groovy/docs/${{ steps.dhc-version.outputs.version }}
@@ -126,17 +126,17 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
       - name: Setup gradle properties
         run: |
@@ -152,14 +152,14 @@ jobs:
 
       - name: Upload Javadocs
         if: ${{ github.event_name == 'push' }} 
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: javadocs-${{ steps.dhc-version.outputs.version }}
           path: 'combined-javadoc/build/docs/javadoc/'
 
       - name: Deploy Javadoc
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@b247bfd3aff7245a6df1b3a64798f4176ca2a4a1 # 5.2.2
         with:
           switches: -rlptDvz --delete
           path: combined-javadoc/build/docs/javadoc/
@@ -178,17 +178,17 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
       - name: Setup gradle properties
         run: |
@@ -204,14 +204,14 @@ jobs:
           
       - name: Upload JavaScript/TypeScript docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: typedoc-${{ steps.dhc-version.outputs.version }}
           path: 'web/client-api/types/build/documentation/'
 
       - name: Deploy JavaScript/TypeScript docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@b247bfd3aff7245a6df1b3a64798f4176ca2a4a1 # 5.2.2
         with:
           switches: -rlptDvz --delete
           path: web/client-api/types/build/documentation/
@@ -230,17 +230,17 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
       - name: Setup gradle properties
         run: |
@@ -256,21 +256,21 @@ jobs:
  
       - name: Upload Python Server Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pyserver-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/docs/'
           
       - name: Upload Python Client Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pyclient-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/pyclient-docs/'
 
       - name: Deploy Python Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@b247bfd3aff7245a6df1b3a64798f4176ca2a4a1 # 5.2.2
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/docs/
@@ -282,7 +282,7 @@ jobs:
 
       - name: Deploy Client Python Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@b247bfd3aff7245a6df1b3a64798f4176ca2a4a1 # 5.2.2
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/pyclient-docs/
@@ -293,7 +293,7 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
       - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: docs-ci-pydoc-jvm-err
@@ -309,17 +309,17 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
       - name: Setup gradle properties
         run: |
@@ -335,21 +335,21 @@ jobs:
   
       - name: Upload Client C++ Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cppclient-docs-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/cppClientDocs/'
           
       - name: Upload Client C++ Example Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: cppclient-examples-${{ steps.dhc-version.outputs.version }}
           path: 'sphinx/build/cppExamplesDocs/'
 
       - name: Deploy Client C++ Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@b247bfd3aff7245a6df1b3a64798f4176ca2a4a1 # 5.2.2
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/cppClientDocs/
@@ -361,7 +361,7 @@ jobs:
 
       - name: Deploy Client C++ Example Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@b247bfd3aff7245a6df1b3a64798f4176ca2a4a1 # 5.2.2
         with:
           switches: -rlptDvz --delete
           path: sphinx/build/cppExamplesDocs/
@@ -380,17 +380,17 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
       - name: Setup gradle properties
         run: |
@@ -406,14 +406,14 @@ jobs:
         
       - name: Upload R Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: rdoc-${{ steps.dhc-version.outputs.version }}
           path: 'R/rdeephaven/docs/'
 
       - name: Deploy R Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@b247bfd3aff7245a6df1b3a64798f4176ca2a4a1 # 5.2.2
         with:
           switches: -rlptDvz --delete
           path: R/rdeephaven/docs/
@@ -424,8 +424,12 @@ jobs:
           remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
 
       - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
+        with:
+          name: docs-ci-rdoc-jvm-err
+          path: '**/*_pid*.log'
+          if-no-files-found: ignore
 
   protodoc:
     needs: [makedirs]
@@ -435,17 +439,17 @@ jobs:
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup JDKs
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: 'temurin'
           java-version: |
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
       - name: Setup gradle properties
         run: |
@@ -461,14 +465,14 @@ jobs:
 
       - name: Upload Protobuf Docs
         if: ${{ github.event_name == 'push' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: protobuf-docs-${{ steps.dhc-version.outputs.version }}
           path: 'proto/proto-backplane-grpc/build/protoc-output/proto-doc/single-html/index.html'
 
       - name: Deploy Protobuf Docs
         if: ${{ github.event_name == 'push' }}
-        uses: burnett01/rsync-deployments@5.2
+        uses: burnett01/rsync-deployments@b247bfd3aff7245a6df1b3a64798f4176ca2a4a1 # 5.2.2
         with:
           switches: -rlptDvz --delete
           path: proto/proto-backplane-grpc/build/protoc-output/proto-doc/single-html/index.html

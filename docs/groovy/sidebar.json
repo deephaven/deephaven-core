@@ -106,6 +106,14 @@
                 "path": "conceptual/deephaven-design.md"
               },
               {
+                "label": "Patterns of use",
+                "path": "conceptual/deephaven-mental-model.md"
+              },
+              {
+                "label": "The Table API",
+                "path": "conceptual/table-api.md"
+              },
+              {
                 "label": "Incremental update model",
                 "path": "conceptual/table-update-model.md"
               },
@@ -307,6 +315,10 @@
           {
             "label": "Work with tables",
             "items": [
+              {
+                "label": "Table operations overview",
+                "path": "conceptual/table-operations-overview.md"
+              },
               {
                 "label": "Metadata",
                 "path": "how-to-guides/metadata.md"
@@ -643,6 +655,10 @@
                   {
                     "label": "Extract data with a Java client",
                     "path": "how-to-guides/java-client.md"
+                  },
+                  {
+                    "label": "Stream data with input tables",
+                    "path": "how-to-guides/java-client-input-tables.md"
                   }
                 ]
               },
@@ -2675,6 +2691,14 @@
                   {
                     "label": "Arrays",
                     "path": "reference/query-language/types/arrays.md"
+                  },
+                  {
+                    "label": "Barrier",
+                    "path": "reference/query-language/types/Barrier.md"
+                  },
+                  {
+                    "label": "ConcurrencyControl",
+                    "path": "reference/query-language/types/ConcurrencyControl.md"
                   },
                   {
                     "label": "DateTime",

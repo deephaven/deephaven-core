@@ -93,6 +93,11 @@ public class UnionBenchmark {
         }
     }
 
+    @Benchmark
+    public void unionIteratorRuns() {
+        actual = unionIteratorRuns(toUnion);
+    }
+
     private static WritableRowSet unionPriorityQueue(final RowSet... indices) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         final IndexRangeFirstKeyPriorityQueue pq = new IndexRangeFirstKeyPriorityQueue(indices.length);
@@ -125,6 +130,62 @@ public class UnionBenchmark {
 
             if (it.hasNext()) {
                 it.next();
+                pq.add(it);
+            }
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Union through the same priority queue of iterators, but drain each popped iterator for as long as the rest of the
+     * queue allows instead of re-enqueueing it after every range. While the popped iterator's current range starts at
+     * or before the queue head's, no other iterator can produce an earlier range, so its ranges are globally next and
+     * can be appended without consulting the queue; when it passes the head it goes back in. That is one heap operation
+     * per run of ranges rather than one per range. Ranges are still clipped against the last one appended, since a run
+     * may end past where another iterator starts.
+     */
+    private static WritableRowSet unionIteratorRuns(final RowSet... indices) {
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        final IndexRangeFirstKeyPriorityQueue pq = new IndexRangeFirstKeyPriorityQueue(indices.length);
+        for (final RowSet index : indices) {
+            final RowSet.RangeIterator itToAdd = index.rangeIterator();
+            if (itToAdd.hasNext()) {
+                itToAdd.next();
+                pq.add(itToAdd);
+            } else {
+                itToAdd.close();
+            }
+        }
+
+        long lastAppendedRangeEnd = -1;
+        while (!pq.isEmpty()) {
+            final RowSet.RangeIterator it = pq.pop();
+            final RowSet.RangeIterator nextIt = pq.peek();
+            final long nextStart = nextIt == null ? Long.MAX_VALUE : nextIt.currentRangeStart();
+
+            boolean exhausted = false;
+            while (true) {
+                final long rangeToAppendEnd = it.currentRangeEnd();
+                if (rangeToAppendEnd > lastAppendedRangeEnd) {
+                    final long rangeToAppendStart = Math.max(it.currentRangeStart(), lastAppendedRangeEnd + 1);
+                    builder.appendRange(rangeToAppendStart, rangeToAppendEnd);
+                    lastAppendedRangeEnd = rangeToAppendEnd;
+                }
+
+                if (!it.hasNext()) {
+                    exhausted = true;
+                    break;
+                }
+                it.next();
+                if (it.currentRangeStart() > nextStart) {
+                    break;
+                }
+            }
+
+            if (exhausted) {
+                it.close();
+            } else {
                 pq.add(it);
             }
         }
@@ -190,6 +251,15 @@ public class UnionBenchmark {
             }
 
             return atTop;
+        }
+
+        /**
+         * The top element, left in the queue.
+         *
+         * @return The item at the top, or null when the queue is empty
+         */
+        public RowSet.RangeIterator peek() {
+            return size == 0 ? null : iterators[1];
         }
 
         private void ensureCapacityFor(final int lastIndex) {

@@ -13,15 +13,15 @@ jobs:
       issues: write
     if: ${{ github.repository_owner == 'deephaven' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Link Checker
         id: lychee
-        uses: lycheeverse/lychee-action@v2
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
 
       - name: Create Issue From File
         if: env.lychee_exit_code != 0
-        uses: peter-evans/create-issue-from-file@v5
+        uses: peter-evans/create-issue-from-file@e8ef132d6df98ed982188e460ebb3b5d4ef3a9cd # v5.0.1
         with:
           title: Link Checker Report
           content-filepath: ./lychee/out.md

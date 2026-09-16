@@ -132,6 +132,12 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     @Override
+    public boolean snapshotNeeded(@NotNull final QueryTable parent) {
+        // Snapshot control is needed if the parent is refreshing or any filter has refreshing dependencies.
+        return parent.isRefreshing() || !WhereListener.extractDependencies(whereFilters).isEmpty();
+    }
+
+    @Override
     public OperationSnapshotControl newSnapshotControl(@NotNull final QueryTable queryTable) {
         final List<NotificationQueue.Dependency> dependencies = WhereListener.extractDependencies(whereFilters);
         if (dependencies.isEmpty()) {
@@ -141,7 +147,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     @Override
-    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
+    public Result<QueryTable> initialize(final boolean usePrev, final long beforeClock) {
         MutableBoolean anyRefreshing = new MutableBoolean(false);
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {
@@ -169,13 +175,11 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             transformer =
                     parent.newModifiedColumnSetTransformer(resultTable, parent.getDefinition().getColumnNamesArray());
 
-            // Set up the column to be a listener for recomputes
             matchColumns.forEach(mc -> {
                 if (mc.getFilter() instanceof LivenessReferent) {
                     resultTable.manage((LivenessArtifact) mc.getFilter());
                 }
                 mc.column.setResultTable(resultTable);
-                mc.getFilter().setRecomputeListener(mc.column);
             });
 
             TableUpdateListener eventualListener = null;
@@ -201,6 +205,11 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 resultTable.addParentReference(eventualMergedListener);
                 matchColumns.forEach(h -> h.column.setMergedListener(finalMergedListener));
             }
+
+            // Set up the column to be a listener for recomputes. This must come last: a refreshing filter's inputs
+            // can tick as soon as it has its recompute listener, and the resulting request has nothing to notify
+            // until the merged listener above is installed.
+            matchColumns.forEach(mc -> mc.getFilter().setRecomputeListener(mc.column));
 
             return new Result<>(resultTable, eventualListener);
         }
@@ -242,20 +251,23 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             // Propagate the updates to each column, inserting any additional modified rows post-shift that were
             // produced
             // by each column (ie. if a filter required a recompute
-            matchColumns.stream()
-                    .map(vc -> vc.column.update(recorder.getAdded(),
-                            recorder.getRemoved(),
-                            recorder.getModified(),
-                            recorder.getModifiedPreShift(),
-                            recorder.getShifted(),
-                            recorder.getModifiedColumnSet(),
-                            downstream.modifiedColumnSet(),
-                            parent))
-                    .filter(Objects::nonNull)
-                    .forEach(rs -> {
-                        downstream.modified().writableCast().insert(rs);
-                        rs.close();
-                    });
+            try (final RowSetUnionBatcher recomputed = new RowSetUnionBatcher(matchColumns.size())) {
+                matchColumns.stream()
+                        .map(vc -> vc.column.update(recorder.getAdded(),
+                                recorder.getRemoved(),
+                                recorder.getModified(),
+                                recorder.getModifiedPreShift(),
+                                recorder.getShifted(),
+                                recorder.getModifiedColumnSet(),
+                                downstream.modifiedColumnSet(),
+                                parent))
+                        .filter(Objects::nonNull)
+                        .forEach(recomputed::add);
+                try (final WritableRowSet additionalModified = recomputed.build()) {
+                    downstream.modified().writableCast().insert(additionalModified);
+                }
+            }
+
 
             resultTable.notifyListeners(downstream);
         }
@@ -276,20 +288,25 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         @Override
         protected void process() {
             TableUpdate downstream = null;
-            for (final ColumnHolder holder : matchColumns) {
-                if (holder.column.recomputeRequested()) {
-                    if (downstream == null) {
-                        downstream =
-                                new TableUpdateImpl(RowSetFactory.empty(),
-                                        RowSetFactory.empty(),
-                                        RowSetFactory.empty(),
-                                        RowSetShiftData.EMPTY,
-                                        resultTable.getModifiedColumnSetForUpdates());
-                    }
+            try (final RowSetUnionBatcher recomputed = new RowSetUnionBatcher(matchColumns.size())) {
+                for (final ColumnHolder holder : matchColumns) {
+                    if (holder.column.recomputeRequested()) {
+                        if (downstream == null) {
+                            downstream =
+                                    new TableUpdateImpl(RowSetFactory.empty(),
+                                            RowSetFactory.empty(),
+                                            RowSetFactory.empty(),
+                                            RowSetShiftData.EMPTY,
+                                            resultTable.getModifiedColumnSetForUpdates());
+                        }
 
-                    downstream.modifiedColumnSet().setAll(holder.getColumnName());
-                    try (final RowSet recomputed = holder.column.recompute(parent, EMPTY_INDEX)) {
-                        downstream.modified().writableCast().insert(recomputed);
+                        downstream.modifiedColumnSet().setAll(holder.getColumnName());
+                        recomputed.add(holder.column.recompute(parent, EMPTY_INDEX));
+                    }
+                }
+                if (downstream != null) {
+                    try (final WritableRowSet modified = recomputed.build()) {
+                        downstream.modified().writableCast().insert(modified);
                     }
                 }
             }
@@ -490,8 +507,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         /**
-         * Update the internal RowSet with the upstream {@link TableUpdateImpl}. If the column was recomputed, return an
-         * optional containing rows that were modified.
+         * Update the internal RowSet with the upstream {@link TableUpdateImpl}. If the column was recomputed, return
+         * the rows that were modified, and otherwise {@code null}.
          *
          * @param added the set of added rows in the update
          * @param removed the set of removed rows in the update
@@ -502,10 +519,11 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
          * @param downstreamModified the modified set for the downstream notification
          * @param table the table to apply filters to
          *
-         * @return an Optional containing rows modified to add to the downstream update
+         * @return The rows to add to the downstream update's modified set, or {@code null} when this column produced
+         *         none
          */
         @Nullable
-        private RowSet update(RowSet added, RowSet removed, RowSet modified,
+        private WritableRowSet update(RowSet added, RowSet removed, RowSet modified,
                 RowSet modPreShift, RowSetShiftData shift,
                 ModifiedColumnSet upstreamModified, ModifiedColumnSet downstreamModified,
                 QueryTable table) {
@@ -549,9 +567,9 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             return null;
         }
 
-        private RowSet recompute(QueryTable table, RowSet upstreamAdded) {
+        private WritableRowSet recompute(QueryTable table, RowSet upstreamAdded) {
             doRecompute = false;
-            final RowSet rowsChanged;
+            final WritableRowSet rowsChanged;
             try (final SafeCloseableList toClose = new SafeCloseableList()) {
                 final WritableRowSet refiltered =
                         toClose.add(filter.filter(table.getRowSet().copy(), table.getRowSet(), table, false));

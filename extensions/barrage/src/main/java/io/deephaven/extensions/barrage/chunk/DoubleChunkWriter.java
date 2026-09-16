@@ -92,26 +92,12 @@ public class DoubleChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends 
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final DoubleChunk<Values> doubleChunk = context.getChunk().asDoubleChunk();
-        subset.forAllRowKeys(row -> {
-            if (doubleChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final DoubleChunk<Values> doubleChunk = context.getChunk().asDoubleChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(doubleChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(doubleChunk.isNull((int) row)));
     }
 
     private class DoubleChunkInputStream extends BaseChunkInputStream<Context> {
@@ -149,8 +135,8 @@ public class DoubleChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends 
             bytesWritten += writeValidityBuffer(dos);
 
             // write the payload buffer in bounded windows, encoding each value into little-endian bytes (via
-            // LittleEndianCodec) and flushing a full window with a single bulk write rather than one DataOutput value
-            // (eight bytes) at a time.
+            // LittleEndianCodec) and flushing a full window with a single bulk write rather than one DataOutput value,
+            // i.e. one individual byte write per byte of the value, at a time.
             final DoubleChunk<Values> doubleChunk = context.getChunk().asDoubleChunk();
             final byte[] buffer = new byte[BULK_WRITE_ELEMENTS * Double.BYTES];
             final MutableInt bufferPos = new MutableInt(0);

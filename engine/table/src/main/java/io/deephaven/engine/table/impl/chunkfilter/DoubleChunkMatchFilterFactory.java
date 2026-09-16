@@ -24,7 +24,9 @@ public class DoubleChunkMatchFilterFactory {
     private DoubleChunkMatchFilterFactory() {} // static use only
 
     public static DoubleChunkFilter makeFilter(final MatchOptions matchOptions, final double... values) {
-        if (matchOptions.nanMatch()) {
+        // The NaN-aware filters differ from the plain ones only in holding NaN equal to itself, so a one-time pass
+        // over the search values is worth it to take the faster "==" path when none of them is NaN.
+        if (matchOptions.nanMatch() && containsNaN(values)) {
             if (matchOptions.inverted()) {
                 if (values.length == 1) {
                     return new InverseSingleValueNaNDoubleChunkFilter(values[0]);
@@ -213,6 +215,18 @@ public class DoubleChunkMatchFilterFactory {
         public boolean matches(double value) {
             return !this.values.contains(value);
         }
+    }
+
+    /**
+     * Whether any of the given values is NaN.
+     */
+    private static boolean containsNaN(final double... values) {
+        for (final double value : values) {
+            if (Double.isNaN(value)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
