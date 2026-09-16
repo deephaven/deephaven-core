@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.RowSetUtils;
@@ -185,7 +186,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                     if (getFullBlockSpanLen(existingSpanInfo, existingSpan) >= 1) {
                         continue;
                     }
-                    ourView.init(this, spanIndex, existingSpanInfo, existingSpan);
+                    ourView.init(existingSpanInfo, existingSpan);
                     container = ourView.getContainer();
                     existing = true;
                 }
@@ -364,11 +365,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     private static Container makeValuesContainer(final LongChunk<OrderedRowKeys> values,
             final int offset, final int length) {
         if (length <= ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD) {
-            final short[] valuesArray = new short[length];
+            // Fill an array the container can take over as is, rather than one it would have to copy.
+            final short[] valuesArray = ArrayContainer.allocateContent(length);
             for (int vi = 0; vi < length; ++vi) {
                 valuesArray[vi] = lowBitsAsShort(values.get(vi + offset));
             }
-            return new ArrayContainer(valuesArray);
+            return ArrayContainer.makeByWrapping(valuesArray, length);
         }
         final BitmapContainer bitmapContainer = new BitmapContainer();
         for (int vi = 0; vi < length; ++vi) {
@@ -633,7 +635,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 result = Container.singleRange(startLowBits, endExclusive);
             }
         } else {
-            view = workDataPerThread.get().borrowSpanView(this, i, spanInfos[i], span);
+            view = workDataPerThread.get().borrowSpanView(spanInfos[i], span);
             container = view.getContainer();
             result = container.iadd(startLowBits, endExclusive);
             if (result.isAllOnes()) {
@@ -679,7 +681,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             if (!RspArray.isFullBlockSpan(span)) { // if it is a full block span, we already have the range.
                 final Container result;
                 Container container = null;
-                try (SpanView view = workDataPerThread.get().borrowSpanView(this, pos, spanInfos[pos], span)) {
+                try (SpanView view = workDataPerThread.get().borrowSpanView(spanInfos[pos], span)) {
                     if (view.isSingletonSpan()) {
                         final long single = view.getSingletonSpanValue();
                         result = containerForLowValueAndRange(lowBitsAsInt(single), start, end);
@@ -846,7 +848,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         if (RspArray.isFullBlockSpan(span)) {
             return true;
         }
-        try (SpanView view = workDataPerThread.get().borrowSpanView(this, i, spanInfos[i], span)) {
+        try (SpanView view = workDataPerThread.get().borrowSpanView(spanInfos[i], span)) {
             if (view.isSingletonSpan()) {
                 return view.getSingletonSpanValue() == val;
             }
@@ -891,7 +893,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                     removeSpanAtIndex(i);
                 }
             } else {
-                try (SpanView view = workDataPerThread.get().borrowSpanView(this, i, spanInfo, s)) {
+                try (SpanView view = workDataPerThread.get().borrowSpanView(spanInfo, s)) {
                     final Container orig = view.getContainer();
                     final Container result = orig.iunset(lowBitsAsShort(val));
                     if (result.isSingleElement()) {
@@ -1428,7 +1430,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                     final long v = spanInfoToSingletonSpanValue(spanInfo);
                     c = Container.singleton(lowBitsAsShort(v));
                 } else {
-                    view.init(this, i, spanInfo, span);
+                    view.init(spanInfo, span);
                     c = view.getContainer();
                 }
                 final RangeConsumer rc = (final int rs, final int re) -> {
@@ -1747,6 +1749,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         addRangeUnsafeNoWriteCheck(0, ix.ixFirstKey(), ix.ixLastKey());
     }
 
+    /**
+     * Fewest spans for which {@link #makeRoomForPartiallyCoveredBlocks} can pay for itself. The pass costs a few
+     * nanoseconds per range; below this many spans, shifting the tail of the arrays once per new span costs less than
+     * that, even when every range starts a new span.
+     */
+    static final int PARTIAL_BLOCK_PREPASS_MIN_SPANS = Configuration.getInstance().getIntegerForClassWithDefault(
+            RspBitmap.class, "partialBlockPrePassMinSpans", 256);
+
     public void insertOrderedLongSetUnsafeNoWriteCheck(final SortedRanges sr) {
         makeRoomForPartiallyCoveredBlocks(0, sr);
         addRangesUnsafeNoWriteCheck(sr.getRangeIterator());
@@ -1769,8 +1779,18 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * @param sr the ranges about to be inserted
      */
     private void makeRoomForPartiallyCoveredBlocks(final long shiftAmount, final SortedRanges sr) {
-        if (size == 0) {
-            // Nothing to make room in; the insert takes its append path.
+        if (size == 0 || sr.isEmpty()) {
+            // Nothing to make room in, or nothing to make room for; an insert into no spans takes its append path.
+            return;
+        }
+        if (size < PARTIAL_BLOCK_PREPASS_MIN_SPANS) {
+            // Shifting a short spans array once per new span costs less than this pass over the ranges, even when
+            // every range starts a new span.
+            return;
+        }
+        if (hasSpanForEveryBlockBetween(sr.first() + shiftAmount, sr.last() + shiftAmount)) {
+            // Every block the ranges touch has a span already, so there is no room to make. Two searches settle that,
+            // where the pass below would search once per range to find the same thing.
             return;
         }
         final WorkData wd = workDataPerThread.get();

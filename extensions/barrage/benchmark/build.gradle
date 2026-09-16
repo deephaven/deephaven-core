@@ -41,10 +41,16 @@ def createJmhTask = {
         ]
         jvmArgs.addAll(jvmAddArgs)
         task.jvmArgs jvmArgs
-        task.args cliArgs
+        // cliArgs may be a single benchmark name or a list of JMH command-line arguments
+        task.setArgs(([] + cliArgs).flatten().collect { it.toString() })
 
         return
     })
 }
 
 createJmhTask('jmhRunBarrageRoundTrip', 'BarrageMessageRoundTripBenchmark')
+
+// The String arm runs fewer columns than the primitive default: String cells are wide enough that 5000 columns of
+// them split the snapshot across record batches, which the single-batch reader in this benchmark cannot parse.
+createJmhTask('jmhRunBarrageRoundTripStrings',
+        ['BarrageMessageRoundTripBenchmark', '-p', 'columnType=String', '-p', 'numColumns=1000'])

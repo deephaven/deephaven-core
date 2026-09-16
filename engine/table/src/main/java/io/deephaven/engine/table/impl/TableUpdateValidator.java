@@ -15,13 +15,20 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowKeyRangeShiftCallback;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
+import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.rowset.RowSetShiftCallback;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.vector.*;
 import io.deephaven.util.mutable.MutableInt;
 
@@ -36,6 +43,14 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             .getBooleanForClassWithDefault(TableUpdateValidator.class, "useSharedContext", true);
     private static final boolean aggressiveUpdateValidation = Configuration.getInstance()
             .getBooleanForClassWithDefault(TableUpdateValidator.class, "aggressiveUpdateValidation", false);
+    /**
+     * Expected values are stored in sparse sources addressed by the validated table's row keys. When the row set's
+     * shape would make the sparse structure exceed this overhead factor (e.g. 2.0 permits 100% overhead), we instead
+     * store expected values densely, addressed through a row redirection. Values less than zero always use the sparse
+     * structure; zero always uses the redirection.
+     */
+    private static final double maximumSparseMemoryOverhead = Configuration.getInstance()
+            .getDoubleForClassWithDefault(TableUpdateValidator.class, "maximumSparseMemoryOverhead", 2.0);
     private static final int CHUNK_SIZE = 4096;
 
     public static TableUpdateValidator make(final QueryTable tableToValidate) {
@@ -60,6 +75,12 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
     private ModifiedColumnSet.Transformer mcsTransformer;
     private SharedContext sharedContext;
     private final String description;
+
+    // Non-null iff expected values are stored densely through a redirection; see maximumSparseMemoryOverhead. Once we
+    // switch to the redirection we never switch back.
+    private WritableRowRedirection rowRedirection;
+    private WritableRowSet freeRows;
+    private long maxInnerRowKey;
 
     private TableUpdateValidator(final String description, final QueryTable tableToValidate) {
         this.description = description == null ? tableToValidate.getDescription() : description;
@@ -115,6 +136,12 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
                 tableToValidate.getAttributes());
         mcsTransformer = tableToValidate.newModifiedColumnSetIdentityTransformer(resultTable);
 
+        if (columnInfos.length > 0
+                && SparseConstants.sparseStructureExceedsOverhead(rowSet, maximumSparseMemoryOverhead)) {
+            // no values have been recorded yet, so there is nothing to copy
+            switchToRedirected(false);
+        }
+
         final TableUpdateListener listener;
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
                 final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
@@ -164,6 +191,15 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
 
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
                 final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
+            // tableToValidate's row set has already been updated for this cycle; if its new shape makes the sparse
+            // structures too expensive, migrate before this update records any values at the scattered keys (our own
+            // rowSet - the mapped key space - is still at its pre-update state, matching the recorded values)
+            if (!isRedirectionUsed() && columnInfos.length > 0
+                    && SparseConstants.sparseStructureExceedsOverhead(
+                            tableToValidate.getRowSet(), maximumSparseMemoryOverhead)) {
+                switchToRedirected(true);
+            }
+
             if (!upstream.modifiedColumnSet().isCompatibleWith(validationMCS)) {
                 noteIssue(
                         () -> "upstream.modifiedColumnSet is not compatible with table.newModifiedColumnSet(...): upstream="
@@ -180,17 +216,25 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
                         false);
             }
 
-            validateIndexesEqual("pre-update rowSet", rowSet, tableToValidate.getRowSet().copyPrev());
+            validateRowSetsEqual("pre-update rowSet", rowSet, tableToValidate.getRowSet().prev());
             rowSet.remove(upstream.removed());
+            // ci.remove clears values through the redirection (if in use), so it must precede freeRedirections
             Arrays.stream(columnInfos).forEach((ci) -> ci.remove(upstream.removed()));
 
-            // shift columns first because they use rowSet
-            Arrays.stream(columnInfos).forEach((ci) -> upstream.shifted().apply(ci));
+            if (isRedirectionUsed()) {
+                freeRedirections(upstream.removed());
+                // rowSet currently holds the pre-shift keys of the surviving rows
+                rowRedirection.applyShift(rowSet, upstream.shifted());
+            } else {
+                // shift columns first because they use rowSet
+                Arrays.stream(columnInfos).forEach((ci) -> upstream.shifted().apply(ci));
+            }
             upstream.shifted().apply(rowSet);
 
             if (aggressiveUpdateValidation) {
-                final RowSet unmodified = rowSet.minus(upstream.modified());
-                validateValues("post-shift unmodified", ModifiedColumnSet.ALL, unmodified, false, false);
+                try (final RowSet unmodified = rowSet.minus(upstream.modified())) {
+                    validateValues("post-shift unmodified", ModifiedColumnSet.ALL, unmodified, false, false);
+                }
                 validateValues("post-shift unmodified columns", upstream.modifiedColumnSet(), upstream.modified(),
                         false,
                         true);
@@ -198,22 +242,35 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
 
             // added
             if (rowSet.overlaps(upstream.added())) {
-                noteIssue(() -> "post-shift rowSet contains rows that are added: "
-                        + rowSet.intersect(upstream.added()));
+                noteIssue(() -> {
+                    try (final RowSet addedInRowSet = rowSet.intersect(upstream.added())) {
+                        return "post-shift rowSet contains rows that are added: " + addedInRowSet;
+                    }
+                });
             }
             rowSet.insert(upstream.added());
-            validateIndexesEqual("post-update rowSet", rowSet, tableToValidate.getRowSet());
+            validateRowSetsEqual("post-update rowSet", rowSet, tableToValidate.getRowSet());
+            if (isRedirectionUsed()) {
+                allocateRedirections(upstream.added());
+            }
             updateValues(ModifiedColumnSet.ALL, upstream.added(), false);
 
             // modified
             updateValues(upstream.modifiedColumnSet(), upstream.modified(), false);
             if (upstream.added().overlaps(upstream.modified())) {
-                noteIssue(() -> "added contains rows that are modified (post-shift): "
-                        + upstream.added().intersect(upstream.modified()));
+                noteIssue(() -> {
+                    try (final RowSet addedAndModified = upstream.added().intersect(upstream.modified())) {
+                        return "added contains rows that are modified (post-shift): " + addedAndModified;
+                    }
+                });
             }
             if (upstream.removed().overlaps(upstream.getModifiedPreShift())) {
-                noteIssue(() -> "removed contains rows that are modified (pre-shift): "
-                        + upstream.removed().intersect(upstream.getModifiedPreShift()));
+                noteIssue(() -> {
+                    try (final RowSet removedAndModified =
+                            upstream.removed().intersect(upstream.getModifiedPreShift())) {
+                        return "removed contains rows that are modified (pre-shift): " + removedAndModified;
+                    }
+                });
             }
 
             if (!issues.isEmpty()) {
@@ -235,18 +292,70 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
         }
     }
 
-    private void validateIndexesEqual(final String what, final RowSet expected, final RowSet actual) {
+    @VisibleForTesting
+    boolean isRedirectionUsed() {
+        return rowRedirection != null;
+    }
+
+    /**
+     * Switch from sparse expected sources addressed by outer row keys to dense inner sources addressed through a row
+     * redirection. The mapping assigns dense inner keys to the current row set in order; thereafter inner keys are
+     * recycled through {@link #freeRows}.
+     *
+     * @param copyData true to copy previously recorded expected values into the new sources
+     */
+    private void switchToRedirected(final boolean copyData) {
+        Assert.eqNull(rowRedirection, "rowRedirection");
+        rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(
+                (int) Math.min(rowSet.size(), 1 << 20));
+        freeRows = RowSetFactory.empty();
+        maxInnerRowKey = 0;
+        rowSet.forAllRowKeys((final long outerKey) -> rowRedirection.put(outerKey, maxInnerRowKey++));
+        Arrays.stream(columnInfos).forEach((ci) -> ci.switchToRedirected(copyData));
+    }
+
+    private void freeRedirections(final RowSet removed) {
+        if (removed.isEmpty()) {
+            return;
+        }
+        final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
+        removed.forAllRowKeys((final long outerKey) -> freeBuilder.addKey(rowRedirection.remove(outerKey)));
+        try (final RowSet freed = freeBuilder.build()) {
+            freeRows.insert(freed);
+        }
+    }
+
+    private void allocateRedirections(final RowSet added) {
+        if (added.isEmpty()) {
+            return;
+        }
+        final RowSet.Iterator freeIt = freeRows.iterator();
+        added.forAllRowKeys((final long outerKey) -> {
+            final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : maxInnerRowKey++;
+            rowRedirection.put(outerKey, innerKey);
+        });
+        if (freeIt.hasNext()) {
+            try (final RowSet used = freeRows.subSetByKeyRange(0, freeIt.nextLong() - 1)) {
+                freeRows.remove(used);
+            }
+        } else {
+            freeRows.clear();
+        }
+    }
+
+    private void validateRowSetsEqual(final String what, final RowSet expected, final RowSet actual) {
         if (expected.equals(actual)) {
             return;
         }
 
-        final RowSet missing = expected.minus(actual);
-        final RowSet excess = actual.minus(expected);
-        if (missing.isNonempty()) {
-            noteIssue(() -> what + " expected.minus(actual)=" + missing);
-        }
-        if (excess.isNonempty()) {
-            noteIssue(() -> what + " actual.minus(expected)=" + excess);
+        try (final RowSet missing = expected.minus(actual);
+                final RowSet excess = actual.minus(expected)) {
+            if (missing.isNonempty()) {
+                noteIssue(() -> what + " expected.minus(actual)=" + missing);
+            }
+            if (excess.isNonempty()) {
+                noteIssue(() -> what + " actual.minus(expected)=" + excess);
+            }
         }
     }
 
@@ -344,7 +453,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
         final ModifiedColumnSet modifiedColumnSet;
 
         final ColumnSource<?> source;
-        final WritableColumnSource<?> expectedSource;
+        WritableColumnSource<?> expectedSource;
 
         final ChunkEquals chunkEquals;
 
@@ -415,9 +524,41 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             return equalValuesDest;
         }
 
+        /**
+         * Replace the sparse expectedSource with a dense source addressed through the enclosing validator's
+         * rowRedirection, which must already map every current outer row key.
+         *
+         * @param copyData true to copy previously recorded expected values into the new source
+         */
+        private void switchToRedirected(final boolean copyData) {
+            final WritableColumnSource<?> innerSource =
+                    SparseArrayColumnSource.getSparseMemoryColumnSource(source.getType(), source.getComponentType());
+            // noinspection unchecked
+            final WritableColumnSource<?> redirectedSource = WritableRedirectedColumnSource.maybeRedirect(
+                    rowRedirection, (WritableColumnSource<Object>) innerSource, 0);
+            if (copyData) {
+                try (final ColumnSource.GetContext getContext = expectedSource.makeGetContext(CHUNK_SIZE);
+                        final ChunkSink.FillFromContext fillFromContext =
+                                redirectedSource.makeFillFromContext(CHUNK_SIZE);
+                        final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+                    while (it.hasMore()) {
+                        final RowSequence subKeys = it.getNextRowSequenceWithLength(CHUNK_SIZE);
+                        redirectedSource.fillFromChunk(
+                                fillFromContext, expectedSource.getChunk(getContext, subKeys), subKeys);
+                    }
+                }
+            }
+            // release the transient contexts bound to the old expectedSource; they are lazily recreated
+            close();
+            expectedSource = redirectedSource;
+        }
+
         @Override
         public void shift(final long beginRange, final long endRange, final long shiftDelta) {
-            ((RowSetShiftCallback) expectedSource).shift(rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
+            // note: in redirected mode the enclosing validator shifts the shared rowRedirection instead
+            try (final RowSet keysToShift = rowSet.subSetByKeyRange(beginRange, endRange)) {
+                ((RowSetShiftCallback) expectedSource).shift(keysToShift, shiftDelta);
+            }
         }
 
         public void remove(final RowSet toRemove) {

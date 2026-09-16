@@ -127,6 +127,14 @@
                 "path": "conceptual/deephaven-design.md"
               },
               {
+                "label": "Patterns of use",
+                "path": "conceptual/deephaven-mental-model.md"
+              },
+              {
+                "label": "The Table API",
+                "path": "conceptual/table-api.md"
+              },
+              {
                 "label": "Incremental update model",
                 "path": "conceptual/table-update-model.md"
               },
@@ -323,6 +331,10 @@
           {
             "label": "Work with tables",
             "items": [
+              {
+                "label": "Table operations overview",
+                "path": "conceptual/table-operations-overview.md"
+              },
               {
                 "label": "Metadata",
                 "path": "how-to-guides/metadata.md"
@@ -806,6 +818,10 @@
                   {
                     "label": "Capture Python client tables",
                     "path": "how-to-guides/capture-tables.md"
+                  },
+                  {
+                    "label": "Stream data with input tables",
+                    "path": "how-to-guides/client-input-tables.md"
                   }
                 ]
               },

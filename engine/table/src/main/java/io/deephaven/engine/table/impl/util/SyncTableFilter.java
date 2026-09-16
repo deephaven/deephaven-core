@@ -24,6 +24,7 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,6 +56,11 @@ import java.util.stream.Collectors;
  * includes this filter to ensure that the assumptions are not violated.
  */
 public class SyncTableFilter {
+
+    /**
+     * Row sets merged into the result at a time. Merging a batch bounds the row sets held at once.
+     */
+    private static final int UNION_BATCH_SIZE = 1024;
 
     private static final int CHUNK_SIZE =
             Configuration.getInstance().getIntegerWithDefault("SyncTableFilter.chunkSize", 1 << 16);
@@ -168,13 +174,20 @@ public class SyncTableFilter {
         final HashSet<Object> keysToRefilter = hashSetPair.first;
         Assert.eqZero(hashSetPair.second.size(), "hashSetPair.second.size()");
         for (int tt = 0; tt < tableCount; tt++) {
-            final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
-            for (Object key : keysToRefilter) {
-                final KeyState state = objectToState.get(tt).get(key);
-                doMatch(tt, state, minimumid.getLong(key));
-                addedBuilder.addRowSet(state.matchedRows);
+            final List<RowSet> addedBatch = new ArrayList<>(UNION_BATCH_SIZE);
+            try {
+                for (Object key : keysToRefilter) {
+                    final KeyState state = objectToState.get(tt).get(key);
+                    doMatch(tt, state, minimumid.getLong(key));
+                    addedBatch.add(state.matchedRows.copy());
+                    if (addedBatch.size() >= UNION_BATCH_SIZE) {
+                        RowSetFactory.insertUnionAndClose(resultRowSet[tt], addedBatch);
+                    }
+                }
+                RowSetFactory.insertUnionAndClose(resultRowSet[tt], addedBatch);
+            } finally {
+                SafeCloseable.closeAll(addedBatch.iterator());
             }
-            resultRowSet[tt].insert(addedBuilder.build());
         }
         keysToRefilter.clear();
     }
@@ -198,8 +211,9 @@ public class SyncTableFilter {
                     if (recorder.getShifted().nonempty()) {
                         throw new IllegalStateException("Can not process shifted rows in SyncTableFilter!");
                     }
-                    final RowSet addedAndModified = recorder.getAdded().union(recorder.getModified());
-                    consumeRows(rr, addedAndModified);
+                    try (final RowSet addedAndModified = recorder.getAdded().union(recorder.getModified())) {
+                        consumeRows(rr, addedAndModified);
+                    }
                 }
             }
 
@@ -207,49 +221,74 @@ public class SyncTableFilter {
             final HashSet<Object> keysToRefilter = hashSetPair.first;
             final HashSet<Object> keysWithNewCurrentRows = hashSetPair.second;
             for (int tt = 0; tt < objectToState.size(); tt++) {
-                final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
-                final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
-                for (Object key : keysToRefilter) {
-                    final KeyState state = objectToState.get(tt).get(key);
-                    removedBuilder.addRowSet(state.matchedRows);
-                    doMatch(tt, state, minimumid.getLong(key));
-                    addedBuilder.addRowSet(state.matchedRows);
-                }
+                final WritableRowSet removed = RowSetFactory.empty();
+                final WritableRowSet added = RowSetFactory.empty();
+                try {
+                    final List<RowSet> removedBatch = new ArrayList<>(UNION_BATCH_SIZE);
+                    final List<RowSet> addedBatch = new ArrayList<>(UNION_BATCH_SIZE);
+                    try {
+                        for (Object key : keysToRefilter) {
+                            final KeyState state = objectToState.get(tt).get(key);
+                            // The matched rows are snapshotted on the way past; doMatch replaces them below.
+                            removedBatch.add(state.matchedRows.copy());
+                            doMatch(tt, state, minimumid.getLong(key));
+                            addedBatch.add(state.matchedRows.copy());
+                            if (addedBatch.size() >= UNION_BATCH_SIZE) {
+                                RowSetFactory.insertUnionAndClose(removed, removedBatch);
+                                RowSetFactory.insertUnionAndClose(added, addedBatch);
+                            }
+                        }
 
-                for (Object key : keysWithNewCurrentRows) {
-                    final KeyState state = objectToState.get(tt).get(key);
-                    if (state.currentIdBuilder == null) {
-                        continue;
-                    }
-                    if (!keysToRefilter.contains(key)) {
-                        // if we did not refilter this key; then we should add the currently matched values,
-                        // otherwise we ignore them because they have already been superseded
-                        final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build();
-                        state.matchedRows.insert(newlyMatchedRows);
-                        newlyMatchedRows.remove(resultRowSet[tt]);
-                        addedBuilder.addRowSet(newlyMatchedRows);
-                    }
-                    state.currentIdBuilder = null;
-                }
+                        for (Object key : keysWithNewCurrentRows) {
+                            final KeyState state = objectToState.get(tt).get(key);
+                            if (state.currentIdBuilder == null) {
+                                continue;
+                            }
+                            if (!keysToRefilter.contains(key)) {
+                                // if we did not refilter this key; then we should add the currently matched values,
+                                // otherwise we ignore them because they have already been superseded
+                                // Registered before anything that can throw, so the cleanup below owns it either way.
+                                final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build();
+                                addedBatch.add(newlyMatchedRows);
+                                state.matchedRows.insert(newlyMatchedRows);
+                                newlyMatchedRows.remove(resultRowSet[tt]);
+                                if (addedBatch.size() >= UNION_BATCH_SIZE) {
+                                    RowSetFactory.insertUnionAndClose(added, addedBatch);
+                                }
+                            }
+                            state.currentIdBuilder = null;
+                        }
 
-                final RowSet removed = removedBuilder.build();
-                final RowSet added = addedBuilder.build();
+                        RowSetFactory.insertUnionAndClose(removed, removedBatch);
+                        RowSetFactory.insertUnionAndClose(added, addedBatch);
+                    } finally {
+                        SafeCloseable.closeAll(removedBatch.iterator());
+                        SafeCloseable.closeAll(addedBatch.iterator());
+                    }
+                } catch (final RuntimeException | Error e) {
+                    SafeCloseable.closeAll(removed, added);
+                    throw e;
+                }
                 resultRowSet[tt].remove(removed);
                 resultRowSet[tt].insert(added);
-
-                final WritableRowSet addedAndRemoved = added.intersect(removed);
 
                 final WritableRowSet modified;
                 if (recorders.get(tt).getNotificationStep() == currentStep) {
                     modified = recorders.get(tt).getModified().intersect(resultRowSet[tt]);
                     modified.remove(added);
-                    modified.insert(addedAndRemoved);
+                    try (final WritableRowSet addedAndRemoved = added.intersect(removed)) {
+                        modified.insert(addedAndRemoved);
+                    }
                 } else {
-                    modified = addedAndRemoved;
+                    // Rows that were both added and removed are the only modifications in this case.
+                    modified = added.intersect(removed);
                 }
 
                 if (added.isNonempty() || removed.isNonempty() || modified.isNonempty()) {
                     results[tt].notifyListeners(added, removed, modified);
+                } else {
+                    // There is nothing to notify, so nothing takes ownership of these.
+                    SafeCloseable.closeAll(added, removed, modified);
                 }
             }
             keysToRefilter.clear();

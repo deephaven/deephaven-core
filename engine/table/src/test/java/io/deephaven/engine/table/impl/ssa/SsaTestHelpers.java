@@ -80,10 +80,33 @@ public class SsaTestHelpers {
         return new SortedIntGenerator(0, 100000);
     }
 
+    /**
+     * Zero-pads {@code value} to a width of six, matching {@code String.format("%06d", value)} over the non-negative
+     * range produced by {@link #getGeneratorForObject()}, so that the lexicographic ordering of the results matches the
+     * numeric ordering of the inputs.
+     *
+     * <p>
+     * Every call allocates a new String, because the tests rely on distinct instances to catch code that compares
+     * values with {@code ==} rather than {@code equals}. The method holds no state, so it is safe to evaluate from
+     * several select threads at once.
+     */
+    public static String formatObjectValue(final int value) {
+        final String digits = Integer.toString(value);
+        final int width = Math.max(6, digits.length());
+        final char[] chars = new char[width];
+        final int offset = width - digits.length();
+        for (int ii = 0; ii < offset; ++ii) {
+            chars[ii] = '0';
+        }
+        digits.getChars(0, digits.length(), chars, offset);
+        return new String(chars);
+    }
+
     public static Table prepareTestTableForObject(QueryTable table) {
         // an update might be faster, but updateView ensures we break when object equality is not the same as ==
         return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
-                () -> table.updateView("Value=String.format(`%06d`, Value)"));
+                () -> table.updateView(
+                        "Value=io.deephaven.engine.table.impl.ssa.SsaTestHelpers.formatObjectValue(Value)"));
     }
 
     public static final class TestDescriptor {

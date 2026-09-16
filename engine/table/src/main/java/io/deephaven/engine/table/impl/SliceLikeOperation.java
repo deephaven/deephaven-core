@@ -157,35 +157,37 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     private void onUpdate(final TableUpdate upstream) {
         final TrackingWritableRowSet rowSet = resultTable.getRowSet().writableCast();
-        final RowSet sliceRowSet = computeSliceRowSet(parent.getRowSet());
 
-        final TableUpdateImpl downstream = new TableUpdateImpl();
-        downstream.removed = upstream.removed().intersect(rowSet);
-        rowSet.remove(downstream.removed());
+        try (final RowSet sliceRowSet = computeSliceRowSet(parent.getRowSet())) {
+            final TableUpdateImpl downstream = new TableUpdateImpl();
+            downstream.removed = upstream.removed().intersect(rowSet);
+            rowSet.remove(downstream.removed());
 
-        downstream.shifted = upstream.shifted().intersect(rowSet);
-        downstream.shifted().apply(rowSet);
+            downstream.shifted = upstream.shifted().intersect(rowSet);
+            downstream.shifted().apply(rowSet);
 
-        // Must calculate in post-shift space what indices were removed by the slice operation.
-        final WritableRowSet opRemoved = rowSet.minus(sliceRowSet);
-        rowSet.remove(opRemoved);
-        downstream.shifted().unapply(opRemoved);
-        downstream.removed().writableCast().insert(opRemoved);
+            // Must calculate in post-shift space what indices were removed by the slice operation.
+            try (final WritableRowSet opRemoved = rowSet.minus(sliceRowSet)) {
+                rowSet.remove(opRemoved);
+                downstream.shifted().unapply(opRemoved);
+                downstream.removed().writableCast().insert(opRemoved);
+            }
 
-        // Must intersect against modified set before adding the new rows to result rowSet.
-        downstream.modified = upstream.modified().intersect(rowSet);
+            // Must intersect against modified set before adding the new rows to result rowSet.
+            downstream.modified = upstream.modified().intersect(rowSet);
 
-        downstream.added = sliceRowSet.minus(rowSet);
-        rowSet.insert(downstream.added());
+            downstream.added = sliceRowSet.minus(rowSet);
+            rowSet.insert(downstream.added());
 
-        // propagate an empty MCS if modified is empty
-        downstream.modifiedColumnSet = upstream.modifiedColumnSet();
-        if (downstream.modified().isEmpty()) {
-            downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
-            downstream.modifiedColumnSet.clear();
+            // propagate an empty MCS if modified is empty
+            downstream.modifiedColumnSet = upstream.modifiedColumnSet();
+            if (downstream.modified().isEmpty()) {
+                downstream.modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();
+                downstream.modifiedColumnSet.clear();
+            }
+
+            resultTable.notifyListeners(downstream);
         }
-
-        resultTable.notifyListeners(downstream);
     }
 
     private WritableRowSet computeSliceRowSet(RowSet useRowSet) {

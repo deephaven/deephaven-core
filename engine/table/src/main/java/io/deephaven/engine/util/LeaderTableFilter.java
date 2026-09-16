@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.select.MultiSourceFunctionalColumn;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -122,6 +123,11 @@ import java.util.stream.Stream;
  * </p>
  */
 public class LeaderTableFilter {
+
+    /**
+     * Row sets merged into the result at a time. Merging a batch bounds the row sets held at once.
+     */
+    private static final int UNION_BATCH_SIZE = 1024;
 
     private static final int CHUNK_SIZE =
             Configuration.getInstance().getIntegerWithDefault("LeaderTableFilter.chunkSize", 1 << 16);
@@ -374,15 +380,22 @@ public class LeaderTableFilter {
         Assert.eqZero(processPendingResult.keysWithNewCurrent.size(), "hashSetPair.keysWithNewCurrent.size()");
         Assert.eqZero(processPendingResult.leaderRemoved.size(), "processPendingResult.leaderRemoved.size()");
         for (int tt = 0; tt < tableCount; tt++) {
-            final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
-            for (Object key : processPendingResult.keysToRefilter) {
-                final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
-                if (state != null) {
-                    doMatch(tt, state);
-                    addedBuilder.addRowSet(state.matchedRows);
+            final List<RowSet> addedBatch = new ArrayList<>(UNION_BATCH_SIZE);
+            try {
+                for (Object key : processPendingResult.keysToRefilter) {
+                    final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
+                    if (state != null) {
+                        doMatch(tt, state);
+                        addedBatch.add(state.matchedRows.copy());
+                        if (addedBatch.size() >= UNION_BATCH_SIZE) {
+                            RowSetFactory.insertUnionAndClose(followerResultRowSets[tt], addedBatch);
+                        }
+                    }
                 }
+                RowSetFactory.insertUnionAndClose(followerResultRowSets[tt], addedBatch);
+            } finally {
+                SafeCloseable.closeAll(addedBatch.iterator());
             }
-            followerResultRowSets[tt].insert(addedBuilder.build());
         }
         leaderResultRowSet.insert(processPendingResult.leaderMatches);
         leaderResultRowSet.initializePreviousValue();
@@ -447,52 +460,72 @@ public class LeaderTableFilter {
 
             final ProcessPendingResult processPendingResult = processPendingKeys();
             for (int tt = 0; tt < followerKeyStateMap.size(); tt++) {
-                final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
-                final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
-                for (final Object key : processPendingResult.keysToRefilter) {
-                    final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
-                    if (state == null) {
-                        // we have never seen anything for this key on this table, which means that we must have a
-                        // NULL_LONG identifier in the leader table.
-                        continue;
-                    }
-                    final boolean removeMatches = state.lastMatchedId != state.activeId;
-                    final RowSet lastMatched;
-                    if (removeMatches) {
-                        removedBuilder.addRowSet(state.matchedRows);
-                        lastMatched = null;
-                    } else {
-                        lastMatched = state.matchedRows.copy();
-                    }
-                    doMatch(tt, state);
-                    if (removeMatches) {
-                        addedBuilder.addRowSet(state.matchedRows);
-                    } else {
-                        try (final RowSet ignored = lastMatched;
-                                final RowSet newlyMatched = state.matchedRows.minus(lastMatched)) {
-                            addedBuilder.addRowSet(newlyMatched);
+                final WritableRowSet removed = RowSetFactory.empty();
+                final WritableRowSet added = RowSetFactory.empty();
+                try {
+                    final List<RowSet> removedBatch = new ArrayList<>(UNION_BATCH_SIZE);
+                    final List<RowSet> addedBatch = new ArrayList<>(UNION_BATCH_SIZE);
+                    try {
+                        for (final Object key : processPendingResult.keysToRefilter) {
+                            final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
+                            if (state == null) {
+                                // we have never seen anything for this key on this table, which means that we must
+                                // have a NULL_LONG identifier in the leader table.
+                                continue;
+                            }
+                            final boolean removeMatches = state.lastMatchedId != state.activeId;
+                            final RowSet lastMatched;
+                            if (removeMatches) {
+                                // The matched rows are snapshotted on the way past; doMatch replaces them below.
+                                removedBatch.add(state.matchedRows.copy());
+                                lastMatched = null;
+                            } else {
+                                lastMatched = state.matchedRows.copy();
+                            }
+                            doMatch(tt, state);
+                            if (removeMatches) {
+                                addedBatch.add(state.matchedRows.copy());
+                            } else {
+                                try (final RowSet ignored = lastMatched) {
+                                    addedBatch.add(state.matchedRows.minus(lastMatched));
+                                }
+                            }
+                            if (addedBatch.size() >= UNION_BATCH_SIZE) {
+                                RowSetFactory.insertUnionAndClose(removed, removedBatch);
+                                RowSetFactory.insertUnionAndClose(added, addedBatch);
+                            }
                         }
-                    }
-                }
 
-                for (final Object key : processPendingResult.keysWithNewCurrent) {
-                    final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
-                    if (state == null || state.currentIdBuilder == null) {
-                        continue;
-                    }
-                    if (!processPendingResult.keysToRefilter.contains(key)) {
-                        // if we did not refilter this key; then we should add the currently matched values,
-                        // otherwise we ignore them because they have already been superseded
-                        final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build();
-                        state.matchedRows.insert(newlyMatchedRows);
-                        newlyMatchedRows.remove(followerResultRowSets[tt]);
-                        addedBuilder.addRowSet(newlyMatchedRows);
-                    }
-                    state.currentIdBuilder = null;
-                }
+                        for (final Object key : processPendingResult.keysWithNewCurrent) {
+                            final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
+                            if (state == null || state.currentIdBuilder == null) {
+                                continue;
+                            }
+                            if (!processPendingResult.keysToRefilter.contains(key)) {
+                                // if we did not refilter this key; then we should add the currently matched values,
+                                // otherwise we ignore them because they have already been superseded
+                                // Registered before anything that can throw, so the cleanup below owns it either way.
+                                final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build();
+                                addedBatch.add(newlyMatchedRows);
+                                state.matchedRows.insert(newlyMatchedRows);
+                                newlyMatchedRows.remove(followerResultRowSets[tt]);
+                                if (addedBatch.size() >= UNION_BATCH_SIZE) {
+                                    RowSetFactory.insertUnionAndClose(added, addedBatch);
+                                }
+                            }
+                            state.currentIdBuilder = null;
+                        }
 
-                final RowSet removed = removedBuilder.build();
-                final RowSet added = addedBuilder.build();
+                        RowSetFactory.insertUnionAndClose(removed, removedBatch);
+                        RowSetFactory.insertUnionAndClose(added, addedBatch);
+                    } finally {
+                        SafeCloseable.closeAll(removedBatch.iterator());
+                        SafeCloseable.closeAll(addedBatch.iterator());
+                    }
+                } catch (final RuntimeException | Error e) {
+                    SafeCloseable.closeAll(removed, added);
+                    throw e;
+                }
                 followerResultRowSets[tt].remove(removed);
                 followerResultRowSets[tt].insert(added);
 
@@ -507,6 +540,9 @@ public class LeaderTableFilter {
                     update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
                     update.shifted = RowSetShiftData.EMPTY;
                     followerResults[tt].notifyListeners(update);
+                } else {
+                    // There is nothing to notify, so no update takes ownership of these.
+                    SafeCloseable.closeAll(added, removed);
                 }
             }
 
