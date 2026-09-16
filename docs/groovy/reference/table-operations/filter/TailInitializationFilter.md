@@ -99,17 +99,17 @@ Violating the add-only requirement raises an `IllegalArgumentException`. The bin
 
 ### Filter by time period
 
-This example uses a time table and filters to show only rows from the last 10 seconds:
+This example filters a table of historical snapshots to show only rows from the last 10 seconds of the partition's timeline:
 
 ```groovy order=result,source
 import io.deephaven.engine.table.impl.util.TailInitializationFilter
 
-source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
+source = emptyTable(20).update("Timestamp = '2026-01-01T00:00:00 UTC' + ii * SECOND", "Value = ii")
 
 result = TailInitializationFilter.mostRecent(source, "Timestamp", "PT00:00:10")
 ```
 
-This filters to show only rows where the timestamp is within 10 seconds of the most recent row in the table.
+`source` spans 20 seconds of history; `result` keeps only the rows within 10 seconds of the newest timestamp in the partition.
 
 ### Filter by time in nanoseconds
 
@@ -119,7 +119,7 @@ This example filters to show rows from the last 5 seconds (5 billion nanoseconds
 import io.deephaven.engine.table.impl.util.TailInitializationFilter
 import static io.deephaven.time.DateTimeUtils.SECOND
 
-source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
+source = emptyTable(20).update("Timestamp = '2026-01-01T00:00:00 UTC' + ii * SECOND", "Value = ii")
 
 result = TailInitializationFilter.mostRecent(source, "Timestamp", 5 * SECOND)
 ```
@@ -129,7 +129,7 @@ result = TailInitializationFilter.mostRecent(source, "Timestamp", 5 * SECOND)
 The `mostRecentRows` method filters to show a specified number of rows from the end of each partition:
 
 ```groovy order=result,source
-source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
+source = emptyTable(20).update("Timestamp = '2026-01-01T00:00:00 UTC' + ii * SECOND", "Value = ii")
 rowCount = 10
 result = TailInitializationFilter.mostRecentRows(source, rowCount)
 ```
