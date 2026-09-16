@@ -2,7 +2,7 @@
 title: Barrier
 ---
 
-A **barrier** is a synchronization primitive for coordinating execution order between column calculations and filters. In Groovy, there is no dedicated barrier type — **any Java object** can serve as a barrier. The object itself carries no data; it's a unique marker you create once and share between the operations that need to coordinate.
+A **barrier** is a synchronization primitive for coordinating execution order between column calculations and filters. In Groovy, there is no dedicated barrier type — **any Java object** can serve as a barrier. Deephaven only uses the object's identity (and, for filters, its `equals`/`hashCode`) to match a declaring expression to the expressions that respect it — it never reads or otherwise uses any state the object happens to hold. Pick a unique marker you create once and share between the operations that need to coordinate; a plain `new Object()` works well precisely because it has nothing meaningful for code to accidentally rely on.
 
 ## Why use a barrier?
 
@@ -18,19 +18,19 @@ barrier = new Object()
 
 Create one object per ordering constraint you need. Reusing the same instance for unrelated constraints would incorrectly link them together; use a separate instance for each independent constraint.
 
-Barrier identity isn't handled the same way for filters and selectables. A **filter**'s barrier bookkeeping uses a `HashSet`, so identity follows `equals`/`hashCode` — two _different_ instances that compare equal are treated as the same barrier. A **selectable**'s barrier bookkeeping uses an `IdentityHashMap`, so only the exact same object instance matches, regardless of `equals` — a value-equal but distinct instance won't match at all, and a respected barrier can come back "not defined." A plain `new Object()` is safe either way, since its default `equals` is identity-based. If you use a value type that overrides `equals` (a `String`, a boxed number, a `List`), you risk a duplicate-declaration error for filters or a false "not defined" for selectables. Stick with `new Object()` unless you have a specific reason to use something else.
+Barrier identity is not handled the same way for filters and selectables. A **filter**'s barrier bookkeeping uses a `HashSet`, so identity follows `equals`/`hashCode` — two _different_ instances that compare equal are treated as the same barrier. A **selectable**'s barrier bookkeeping uses an `IdentityHashMap`, so only the exact same object instance matches, regardless of `equals` — a value-equal but distinct instance will not match at all, and a respected barrier can come back "not defined." A plain `new Object()` is safe either way, since its default `equals` is identity-based. If you use a value type that overrides `equals` (a `String`, a boxed number, a `List`), you risk a duplicate-declaration error for filters or a false "not defined" for selectables. Stick with `new Object()` unless you have a specific reason to use something else.
 
 ## Using a barrier
 
 One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until every operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) (used by [`where`](../../table-operations/filter/where.md)) both implement:
 
 - [`withDeclaredBarriers(barriers)`](./ConcurrencyControl.md#withdeclaredbarriers) — this operation declares the given barrier(s); it runs to completion before any operation that respects the same barrier.
-- [`withRespectedBarriers(barriers)`](./ConcurrencyControl.md#withrespectedbarriers) — this operation respects the given barrier(s); it doesn't start until every operation that declares the barrier has finished.
+- [`withRespectedBarriers(barriers)`](./ConcurrencyControl.md#withrespectedbarriers) — this operation respects the given barrier(s); it does not start until every operation that declares the barrier has finished.
 
 > [!IMPORTANT]
-> A barrier only coordinates expressions passed to the **same** `select`, `update`, or `where` call — it can't order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it's declared, or never declared at all.
+> A barrier only coordinates expressions passed to the **same** `select`, `update`, or `where` call — it cannot order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it is declared, or never declared at all.
 >
-> For a `Selectable`, a constant-valued expression — one that doesn't depend on any column or row-position variable, such as `Selectable.parse("A = 1")` — can't declare or respect a barrier either. The engine never evaluates constants during `select`/`update` processing, so it raises an error if you try.
+> For a `Selectable`, a constant-valued expression cannot declare or respect a barrier either — the engine never evaluates constants during `select`/`update` processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals combined with arithmetic/comparison operators, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `counter.getAndIncrement()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated once per row — so it can freely use barriers.
 
 ### Example: coordinating two columns
 
@@ -57,11 +57,11 @@ colB = Selectable.parse("B = counter.getAndIncrement()")
 t = emptyTable(10).update([colA, colB])
 ```
 
-Column `A` gets values 0-9. Column `B` gets values 10-19. Without the barrier, there's no guarantee `A` runs before `B` — the two columns could just as easily come out reversed. Without `withSerial`, a column's own rows could also be evaluated out of row-set order, breaking the correspondence between row and counter value even within a single column.
+Column `A` gets values 0-9. Column `B` gets values 10-19. Without the barrier, there is no guarantee `A` runs before `B` — the two columns could just as easily come out reversed. Without `withSerial`, a column's own rows could also be evaluated out of row-set order, breaking the correspondence between row and counter value even within a single column.
 
 ### Example: coordinating two filters
 
-Barriers work the same way for [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) objects in `where` operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs `withSerial` — a `ConcurrentHashMap` is already safe for concurrent writes to distinct keys — so the barrier is the only thing enforcing that the cache is fully populated before it's read:
+Barriers work the same way for [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) objects in `where` operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs `withSerial` — a `ConcurrentHashMap` is already safe for concurrent writes to distinct keys — so the barrier is the only thing enforcing that the cache is fully populated before it is read:
 
 ```groovy order=result
 import io.deephaven.api.filter.Filter
@@ -113,7 +113,7 @@ colD = Selectable.parse("D = i * 5").withRespectedBarriers(barrierA)
 t = emptyTable(10).update([colA, colB, colC, colD])
 ```
 
-Execution order: `A` and `B` don't depend on each other, so the engine is free to run them concurrently; `D` starts after `A` finishes (doesn't wait for `B`); `C` starts after both `A` and `B` finish.
+Execution order: `A` and `B` do not depend on each other, so the engine is free to run them concurrently; `D` starts after `A` finishes (does not wait for `B`); `C` starts after both `A` and `B` finish.
 
 ## Related documentation
 
