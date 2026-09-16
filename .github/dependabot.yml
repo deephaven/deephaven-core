@@ -5,6 +5,8 @@ updates:
     open-pull-requests-limit: 99
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: "chore(github-actions)"
     labels:
