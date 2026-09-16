@@ -109,7 +109,8 @@ public final class RowSetUnionBatcher implements SafeCloseable {
      * Merge whatever is outstanding and hand over the union of everything added since this batcher was constructed or
      * last built. Ownership passes to the caller, and this batcher is left empty and ready for more.
      *
-     * @return A new {@link WritableRowSet} containing every row key added
+     * @return A {@link WritableRowSet} containing every row key added, which the caller owns. Not necessarily a newly
+     *         constructed one: a single outstanding row set is handed back as it stands.
      */
     public WritableRowSet build() {
         run = null;

@@ -216,7 +216,7 @@ public class SyncTableFilter {
                 WritableRowSet added = null;
                 try (final RowSetUnionBatcher removedBatch = new RowSetUnionBatcher(keysToRefilter.size());
                         final RowSetUnionBatcher addedBatch = new RowSetUnionBatcher(
-                                keysToRefilter.size() + keysWithNewCurrentRows.size())) {
+                                (long) keysToRefilter.size() + keysWithNewCurrentRows.size())) {
                     for (Object key : keysToRefilter) {
                         final KeyState state = objectToState.get(tt).get(key);
                         // The matched rows are snapshotted on the way past; doMatch replaces them below.

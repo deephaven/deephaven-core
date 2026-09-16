@@ -180,7 +180,9 @@ collapsed groups while the back gathers the next batch; only when the groups hav
 fold into one. A result is merged into again once per `batchSize` batches rather than once per batch — the same tree
 the multi-pass merge inside `union` builds, one level up, and for the same reason.
 
-The list is the only thing this costs: at most `2 * MAX_BATCH_SIZE` references. What is *held* is unchanged for the
+The list is all this holds onto: at most `2 * MAX_BATCH_SIZE` references. Each collapse still allocates what
+`union` allocates — an array of its inputs and a groups array about half that size — but so did every batch under the
+old hand-rolled loop, so that part is unchanged. What is *held* is unchanged for the
 callers that produce a row set per key or per index entry — those inputs are disjoint, so the groups sum to the result.
 Overlapping input is where holding groups costs more than a running result would: a running result stays the size of
 one input while `batchSize` groups are each about that size. Only `WouldMatchOperation` overlaps, since a row can

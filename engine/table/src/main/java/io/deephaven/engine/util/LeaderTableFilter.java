@@ -457,7 +457,7 @@ public class LeaderTableFilter {
                 try (final RowSetUnionBatcher removedBatch =
                         new RowSetUnionBatcher(processPendingResult.keysToRefilter.size());
                         final RowSetUnionBatcher addedBatch = new RowSetUnionBatcher(
-                                processPendingResult.keysToRefilter.size()
+                                (long) processPendingResult.keysToRefilter.size()
                                         + processPendingResult.keysWithNewCurrent.size())) {
                     for (final Object key : processPendingResult.keysToRefilter) {
                         final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
