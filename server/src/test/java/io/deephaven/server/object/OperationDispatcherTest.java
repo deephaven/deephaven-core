@@ -87,9 +87,10 @@ public class OperationDispatcherTest {
                         failure.compareAndSet(null, new AssertionError("operations ran concurrently"));
                     }
                     inFlight.decrementAndGet();
-                    allRan.countDown();
-                    // complete off-thread, racing whatever the submitting threads are doing
+                    // complete off-thread, racing whatever the submitting threads are doing; the completion must be
+                    // accepted before the latch drops, or the executor can be shut down out from under it
                     completers.execute(dispatcher::operationComplete);
+                    allRan.countDown();
                 };
 
                 final CountDownLatch start = new CountDownLatch(1);
