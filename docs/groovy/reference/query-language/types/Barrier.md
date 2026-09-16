@@ -18,7 +18,7 @@ barrier = new Object()
 
 Create one object per ordering constraint you need. Reusing the same instance for unrelated constraints would incorrectly link them together; use a separate instance for each independent constraint.
 
-Deephaven identifies a barrier by `equals`/`hashCode`, not strict reference identity. A plain `new Object()` is always safe, since its default `equals` is identity-based — but if you use a value type that overrides `equals` (a `String`, a boxed number, a `List`), two _different_ instances that compare equal are treated as the same barrier, which can trigger a duplicate-declaration error or an unintended dependency. Stick with `new Object()` unless you have a specific reason to use something else.
+Barrier identity isn't handled the same way for filters and selectables. A **filter**'s barrier bookkeeping uses a `HashSet`, so identity follows `equals`/`hashCode` — two _different_ instances that compare equal are treated as the same barrier. A **selectable**'s barrier bookkeeping uses an `IdentityHashMap`, so only the exact same object instance matches, regardless of `equals` — a value-equal but distinct instance won't match at all, and a respected barrier can come back "not defined." A plain `new Object()` is safe either way, since its default `equals` is identity-based. If you use a value type that overrides `equals` (a `String`, a boxed number, a `List`), you risk a duplicate-declaration error for filters or a false "not defined" for selectables. Stick with `new Object()` unless you have a specific reason to use something else.
 
 ## Using a barrier
 
