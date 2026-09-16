@@ -18,7 +18,7 @@ This independence can cause consistency issues when you have multiple tables tha
 Both `SyncTableFilter` and `LeaderTableFilter` solve this problem by ensuring that only coordinated rows appear in the filtered results.
 
 > [!NOTE]
-> Python API methods on [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) automatically acquire the update graph lock when needed. Because these filters are accessed directly through [`jpy`](./use-jpy.md), that automatic locking does not apply. Each builder's `build()` method must be called while holding the update graph lock if any input table is refreshing (the common case for tables being kept in sync). Wrap the call in [`auto_locking_ctx`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking_ctx) to avoid an `IllegalStateException`.
+> Python API methods on [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) automatically acquire the update graph lock when needed. Because these filters are accessed directly through [`jpy`](./use-jpy.md), that automatic locking does not apply. Each builder's `build` method must be called while holding the update graph lock if any input table is refreshing (the common case for tables being kept in sync). Wrap the call in [`auto_locking_ctx`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking_ctx) to avoid an `IllegalStateException`.
 
 ## When to use each utility
 
@@ -249,7 +249,7 @@ filtered_follower = Table(result.get(table_name))
 
 ```python syntax
 from deephaven.table import PartitionedTable
-from deephaven.update_graph import auto_locking_ctx
+from deephaven.update_graph import shared_lock
 
 PartitionedTableBuilder = jpy.get_type(
     "io.deephaven.engine.util.LeaderTableFilter$PartitionedTableBuilder"
@@ -260,12 +260,15 @@ builder = PartitionedTableBuilder(
 builder.addPartitionedTable(
     name, follower_partitioned_table.j_partitioned_table, "leaderIdCol=followerIdCol"
 )
-with auto_locking_ctx(leader_partitioned_table.table, follower_partitioned_table.table):
+with shared_lock(leader_partitioned_table):
     result = builder.build()
 
 filtered_leader = PartitionedTable(result.getLeader())
 filtered_follower = PartitionedTable(result.get(name))
 ```
+
+> [!NOTE]
+> A `PartitionedTable`'s own refreshing state reflects only whether its set of partitions changes, not whether its constituent tables are refreshing. `auto_locking_ctx` cannot detect refreshing constituents through a static outer partitioned table, so use [`shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock) here, which acquires the lock unconditionally.
 
 Requirements:
 

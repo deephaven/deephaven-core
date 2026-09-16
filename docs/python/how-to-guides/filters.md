@@ -287,7 +287,7 @@ result_combined = source.where("Symbol == `AAPL` && Price > 100 && Price < 150")
 
 ## Filter utilities
 
-Deephaven provides several advanced filter utilities that can improve performance in specific scenarios. These utilities are Java classes; most are not exposed as first-class Python APIs, but they can be accessed from Python through [`jpy`](./use-jpy.md).
+Deephaven provides several advanced filter utilities that can improve performance in specific scenarios. `TailInitializationFilter` and `WindowCheck` have first-class Python wrappers; `SyncTableFilter` and `LeaderTableFilter` are Java-only and are accessed from Python through [`jpy`](./use-jpy.md).
 
 ### `TailInitializationFilter`
 
