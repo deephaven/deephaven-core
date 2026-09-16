@@ -2633,4 +2633,20 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertNotNull(listener.originalException());
         return listener.originalException().getMessage();
     }
+
+    public void testNaturalJoinDuplicateRightsStaticLeftDataIndex() {
+        // a static left with a data index smaller than the right table builds from the left data index; a duplicate
+        // right key detected while decorating with the right side must be reported like the other static build paths
+        final QueryTable left = testTable(i(10, 20, 30).toTracking(), col("Key", "a", "b", "c"), intCol("L", 1, 2, 3));
+        DataIndexer.getOrCreateDataIndex(left, "Key");
+        final Table right = testTable(col("Key", "a", "a", "b", "c", "d", "e"), intCol("R", 10, 11, 20, 30, 40, 50));
+
+        try {
+            final Table result = left.naturalJoin(right, "Key");
+            showWithRowSet(result);
+            fail("Expected exception");
+        } catch (IllegalStateException e) {
+            assertEquals(dupMsg + "a", e.getMessage());
+        }
+    }
 }

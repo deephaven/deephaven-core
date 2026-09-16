@@ -230,7 +230,11 @@ class NaturalJoinHelper {
                 final IntegerArraySource leftHashSlots = new IntegerArraySource();
                 jsm.buildFromLeftSide(bc.leftDataIndexTable, bc.leftDataIndexSources,
                         leftHashSlots);
-                jsm.decorateWithRightSide(rightTable, bc.rightSources);
+                try {
+                    jsm.decorateWithRightSide(rightTable, bc.rightSources);
+                } catch (DuplicateRightRowDecorationException e) {
+                    jsm.errorOnDuplicatesIndexed(leftHashSlots, bc.leftDataIndexTable.getRowSet());
+                }
                 rowRedirection = jsm.buildIndexedRowRedirectionFromHashSlots(leftTable,
                         bc.leftDataIndexTable.getRowSet(), leftHashSlots,
                         bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
