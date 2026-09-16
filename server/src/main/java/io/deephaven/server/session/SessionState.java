@@ -1009,9 +1009,15 @@ public class SessionState {
                         || !tryRetainReference()) {
                     if (!isExportStateTerminal(state)) {
                         setState(ExportNotification.State.CANCELLED);
-                    } else if (errorHandler != null) {
-                        // noinspection ThrowableNotThrown
-                        Assert.statementNeverExecuted("in terminal state but error handler is not null");
+                    } else if (exportMain != null || errorHandler != null || successHandler != null) {
+                        // A terminal export has already reported its outcome; still holding its work or handlers
+                        // means an earlier teardown was interrupted. That costs this export, not the process.
+                        log.error().append(session.logPrefix).append("export '").append(logIdentity)
+                                .append("' is in terminal state ").append(state.name())
+                                .append(" but still holds its work or completion handlers; clearing them").endl();
+                        exportMain = null;
+                        errorHandler = null;
+                        successHandler = null;
                     }
                     return;
                 }
