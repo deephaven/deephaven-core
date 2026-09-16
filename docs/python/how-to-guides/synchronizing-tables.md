@@ -39,11 +39,11 @@ Both utilities require:
 
 ## `SyncTableFilter`
 
-`SyncTableFilter` synchronizes multiple peer tables by showing only rows where all tables have the same minimum ID for each key.
+`SyncTableFilter` synchronizes multiple peer tables by showing, for each key, only the rows at the highest ID that all tables currently share.
 
 ### How it works
 
-For each key, the filter identifies the minimum ID value across all input tables. Only rows with that minimum ID are passed through. When all tables advance to the next ID, the filter removes the old ID's rows and adds the new ID's rows.
+For each key, the filter finds the highest ID for which every input table has a matching row, and passes through only the rows at that ID. When the tables receive new data and reach a higher commonly available ID, the filter removes the previous ID's rows and adds the new ID's rows.
 
 ### Example
 
@@ -100,10 +100,9 @@ synced_bid_ask = Table(result.get("bidAsk"))
 
 In this example:
 
-- For `AAPL`, all three tables have `SeqNum` 1 and 2, so those rows appear in the synchronized results.
-- For `AAPL`, only `price_data` has `SeqNum` 3, so that row is filtered out.
-- For `GOOGL`, only `bid_ask_data` is missing `SeqNum` 2, so only rows with `SeqNum` 1 appear.
-- When `bid_ask_data` receives `SeqNum` 2 for `GOOGL`, the filter will advance to show those rows.
+- For `AAPL`, `price_data` has `SeqNum` 1, 2, and 3, but `volume_data` and `bid_ask_data` only go up to `SeqNum` 2. The highest ID common to all three is 2, so only the `SeqNum` 2 rows appear in the synchronized results.
+- For `GOOGL`, `price_data` and `volume_data` have `SeqNum` 1 and 2, but `bid_ask_data` only has `SeqNum` 1. The highest common ID is 1, so only the `SeqNum` 1 rows appear.
+- When `bid_ask_data` receives `SeqNum` 2 for `GOOGL`, the filter will advance to show those rows instead, replacing the `SeqNum` 1 rows.
 
 ### API
 
@@ -133,7 +132,7 @@ synced_table = Table(result.get(table_name))
 
 ### How it works
 
-The leader table contains one ID column for each follower table. When the leader table has a row with specific ID values, the filter shows the corresponding rows from each follower table that match those IDs.
+The leader table contains one ID column for each follower table. For each key, the filter shows the rows from each follower table that match the IDs in the leader's most recent row for that key whose IDs are all matched in the follower tables; an earlier leader row for that key is superseded once a later one is fully matched.
 
 ### Example
 
@@ -203,8 +202,8 @@ filtered_messages = Table(result.get("messages"))
 
 In this example:
 
-- The `sync_log` leader table controls which trades and messages appear.
-- For `ClientA/S1`, the leader shows `TradeId` 100 and 101, and `MessageId` 1 and 2.
+- The `sync_log` leader table controls which trades and messages appear; only the most recent leader row per key is shown once its IDs are matched in every follower table.
+- For `ClientA/S1`, the leader has two rows: (`TradeId` 100, `MessageId` 1) and (`TradeId` 101, `MessageId` 2). Both are fully matched by `trade_log` and `message_log`, but only the most recent match, `TradeId` 101 and `MessageId` 2, appears in the synchronized results.
 - Even though `trade_log` has `Id` 102 and `message_log` has `MsgId` 3, they don't appear because the leader hasn't referenced them yet.
 - For `ClientB/S2`, only trade 200 and message 5 appear.
 

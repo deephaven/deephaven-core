@@ -4,7 +4,9 @@ title: TailInitializationFilter
 
 `TailInitializationFilter` filters an [add-only](../../../conceptual/table-types.md#specialization-2-add-only) source table down to its most recent rows, using either a timestamp window or a row count. This is particularly useful when working with large datasets that periodically publish new snapshots, and you intend to run a [`last_by`](../group-and-aggregate/lastBy.md) on the data to retrieve the most recent snapshot.
 
-`most_recent` detects partitions from the timestamp column: when that column's source is regioned (for example, Parquet-backed tables), one partition is assumed per region; otherwise, each contiguous range of row keys is assumed to be a single partition. `most_recent_rows` has no timestamp column to check, so it instead looks at every column in the table: if any column's source is regioned, one partition is assumed per region; otherwise, each contiguous range of row keys is assumed to be a single partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
+`most_recent` detects partitions from the timestamp column: when that column's source is regioned (for example, Parquet-backed tables), one partition is assumed per region; otherwise, each contiguous range of row keys is assumed to be a single partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
+
+`most_recent_rows` never reads `ts_col` and does not require sorted timestamps; it detects partitions the same way `most_recent` does, but checks whether any column in the table is regioned rather than the timestamp column specifically, since it has no timestamp argument. It keeps the trailing rows of each partition by row position.
 
 Once initialized, the filter passes through all new rows appended to the source. Rows that have already been filtered are not removed or modified.
 
@@ -60,7 +62,9 @@ A new [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) con
 
 ## Errors
 
-`most_recent` and `most_recent_rows` both raise a [`DHError`](/core/pydoc/code/deephaven.dherror.html#deephaven.dherror.DHError) if the source table is not add-only. `most_recent` additionally raises a `DHError` if `ts_col` contains a null value. If a partition is not correctly sorted by timestamp, the result is undefined.
+`most_recent` and `most_recent_rows` both raise a [`DHError`](/core/pydoc/code/deephaven.dherror.html#deephaven.dherror.DHError) if the source table is not add-only.
+
+`most_recent` reads only the first, last, and binary-search midpoint timestamps of each partition, not every row, so it raises a `DHError` if one of those is null, but a null elsewhere in the partition may go undetected. If a partition is not correctly sorted by timestamp, the result of `most_recent` is undefined. `most_recent_rows` does not read `ts_col` at all, so neither of these applies to it.
 
 ## Examples
 

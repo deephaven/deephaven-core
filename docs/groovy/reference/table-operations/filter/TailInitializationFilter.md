@@ -4,7 +4,9 @@ title: TailInitializationFilter
 
 `TailInitializationFilter` reduces the input size for downstream operations by limiting initialization to only the most recent rows from each partition. This is particularly useful when working with large datasets that periodically publish new snapshots, and you intend to run a `lastBy` on the data to retrieve the most recent snapshot.
 
-The filter is designed to work with add-only source tables with one or more partitions. `mostRecent` detects partitions from the timestamp column: when that column's source is regioned (for example, Parquet-backed tables), one partition is assumed per region; otherwise, each contiguous range of row keys is assumed to represent a single partition. `mostRecentRows` has no timestamp column to check, so it instead looks at every column in the table: if any column's source is regioned, one partition is assumed per region; otherwise, each contiguous range of row keys is assumed to represent a single partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
+The filter is designed to work with add-only source tables with one or more partitions. `mostRecent` detects partitions from the timestamp column: when that column's source is regioned (for example, Parquet-backed tables), one partition is assumed per region; otherwise, each contiguous range of row keys is assumed to represent a single partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
+
+`mostRecentRows` never reads the timestamp column and does not require sorted timestamps; it detects partitions the same way `mostRecent` does, but checks whether any column in the table is regioned rather than the timestamp column specifically, since it has no timestamp argument. It keeps the trailing rows of each partition by row position.
 
 Once initialized, the filter passes through all new rows. Rows that have already been filtered are not removed or modified.
 
@@ -81,15 +83,17 @@ A table containing only the most recent values from each partition in the source
 
 ## How it works
 
-For each partition, the filter uses the last row's timestamp as the reference point. It subtracts the specified period from this timestamp and performs a binary search to identify rows within that time window.
+For each partition, `mostRecent` uses the last row's timestamp as the reference point. It subtracts the specified period from this timestamp and performs a binary search to identify rows within that time window.
 
-The filter makes these assumptions:
+`mostRecent` makes these assumptions:
 
 - The source table is add-only (no modifications, shifts, or removals).
 - Each partition is sorted by timestamp.
 - Null timestamps are not permitted.
 
-Violating the add-only or non-null timestamp requirements raises an `IllegalArgumentException`. If a partition is not correctly sorted by timestamp, the result table is undefined.
+Violating the add-only requirement raises an `IllegalArgumentException`. The binary search reads only the first, last, and midpoint timestamps of each partition, not every row, so it raises an `IllegalArgumentException` if one of those is null, but a null elsewhere in the partition may go undetected. If a partition is not correctly sorted by timestamp, the result table is undefined.
+
+`mostRecentRows` never reads timestamps, so none of these assumptions apply to it; it only requires an add-only source table.
 
 ## Examples
 
