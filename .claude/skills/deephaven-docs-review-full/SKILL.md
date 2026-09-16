@@ -78,13 +78,19 @@ For every section from step 2's list, handle it by what happened to it:
   you're still not sure after checking, say so explicitly ("possibly dropped, unconfirmed — verify
   against the pre-edit version") rather than stating it as a confirmed finding — a false "this was
   dropped" claim costs a reviewer real time chasing content that's actually still there.
-- **Links and anchors**: neither the spot check nor step 4's style pass validates links, and a
-  heading rename or section move can silently break an internal link or an anchor fragment
-  (`#some-heading`) even when every claim in the doc remains correct. For any section step 2
-  moved or renamed, re-check that links pointing *to* it (from elsewhere in this doc or its
-  cross-language sibling) still resolve, and that links *within* the moved section still resolve
-  from their new location. If more than a couple of links or anchors were affected, escalate to a
-  full `deephaven-core-accuracy-check` re-pass (its internal-link review step) rather than
+- **Links and anchors**: neither the spot check nor step 4's style pass validates that a link's
+  *target* still resolves or that a heading's *anchor fragment* is still correct after an edit —
+  `deephaven-writing-style` checks link wording and first-mention linking, but not target/anchor
+  resolution. A heading rename, section move, merge, or cut can silently break an internal link
+  or an anchor fragment (`#some-heading`) even when every claim in the doc remains correct. For
+  any section step 2 moved, renamed, merged, or cut (not just moved/renamed): re-check that links
+  *within* it still resolve from wherever it ended up (or, if cut, that nothing else in the doc
+  still assumes it exists), and search **all** doc pages — not just this doc and its
+  cross-language sibling — for links pointing *to* it, since any page in the corpus can link to
+  any other (e.g. `conceptual/query-table-configuration.md` links to
+  `query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where`, a
+  completely unrelated file). If more than a couple of links or anchors were affected, escalate to
+  a full `deephaven-core-accuracy-check` re-pass (its internal-link review step) rather than
   re-deriving that check here.
 
 Do not skip this step under time pressure. It's the step that catches the compounding defect a

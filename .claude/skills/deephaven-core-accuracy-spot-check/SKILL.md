@@ -28,8 +28,10 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    new backticked method reference that has an appropriate reference page or pydoc/javadoc anchor
    to link to, do the one check that rule actually requires even at this scope: confirm this isn't
    the identifier's first occurrence in the file elsewhere (a first occurrence needs a link, but
-   only when a suitable target actually exists); if it might be, escalate per step 4 rather than
-   guessing. If applying any of these style fixes changes the wording of a technical claim (not
+   only when a suitable target actually exists); if it might be, recommend a `deephaven-writing-style`
+   pass for this one check rather than guessing — step 4's escalation goes to
+   `deephaven-core-accuracy-check`, which doesn't do style/prose checks and can't resolve this
+   specific uncertainty. If applying any of these style fixes changes the wording of a technical claim (not
    just its formatting or phrasing) — an active-voice rewrite can subtly change what a sentence
    asserts — re-verify the reworded claim against source before applying it, the same as step 2
    would; a style fix is not exempt from being wrong about facts.
