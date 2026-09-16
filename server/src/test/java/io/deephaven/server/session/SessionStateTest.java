@@ -26,12 +26,18 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.*;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.CANCELLED;
@@ -1624,6 +1630,166 @@ public class SessionStateTest {
         Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
         Assert.eq(result.getState(), "result.getState()", DEPENDENCY_FAILED);
     }
+
+    // region DH-23571 / DH-23573: racing teardown of a queued parent export and its dependent
+
+    /**
+     * The participants in a racing teardown: a queued parent that depends on an exported grand-parent, and a child that
+     * depends on the parent.
+     */
+    private final class TeardownRace {
+        final CountingLivenessReferent grandParentResult = new CountingLivenessReferent();
+        final SessionState.ExportObject<Object> grandParent;
+        final SessionState.ExportObject<Object> parent;
+        final SessionState.ExportObject<Object> child;
+        final MutableBoolean parentRan = new MutableBoolean();
+        final AtomicInteger parentErrors = new AtomicInteger();
+        final AtomicInteger childErrors = new AtomicInteger();
+
+        TeardownRace(final boolean childIsExport) {
+            // a throw-away scope, so that only the exports (and their dependents) keep each other alive
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                grandParent = session.newServerSideExport(grandParentResult);
+                parent = session.<Object>newExport(nextExportId++)
+                        .require(grandParent)
+                        .onError((state, errorContext, cause, dependentId) -> parentErrors.incrementAndGet())
+                        .submit(parentRan::setTrue);
+                final SessionState.ExportBuilder<Object> childBuilder =
+                        childIsExport ? session.newExport(nextExportId++) : session.nonExport();
+                child = childBuilder
+                        .require(parent)
+                        .onError((state, errorContext, cause, dependentId) -> childErrors.incrementAndGet())
+                        .submit(() -> {
+                        });
+            }
+            // the parent's work is scheduled but has not run; the child is waiting on the parent
+            Assert.eq(parent.getState(), "parent.getState()", QUEUED);
+            Assert.eq(child.getState(), "child.getState()", PENDING);
+            Assert.eq(grandParentResult.refCount, "grandParentResult.refCount", 1);
+        }
+    }
+
+    /**
+     * Runs {@code parentTeardown} on another thread while this thread holds the child's monitor, and cancels the child
+     * only once that thread is blocked waiting for the monitor. Failure propagation reads the child's state without the
+     * monitor and then locks the child to change it; blocking the propagating thread on the monitor lands the child's
+     * own cancellation exactly in that window.
+     *
+     * @return the throwable that escaped {@code parentTeardown}, or null if it completed normally
+     */
+    private static Throwable cancelChildDuringTeardown(
+            final SessionState.ExportObject<?> child,
+            final Runnable parentTeardown) throws InterruptedException {
+        final AtomicReference<Throwable> escaped = new AtomicReference<>();
+        final Thread teardownThread = new Thread(() -> {
+            try {
+                parentTeardown.run();
+            } catch (final Throwable t) {
+                escaped.set(t);
+            }
+        }, "SessionStateTest-teardown");
+        synchronized (child) {
+            teardownThread.start();
+            awaitBlockedOnMonitorHeldByCurrentThread(teardownThread);
+            child.cancel();
+        }
+        teardownThread.join(TimeUnit.SECONDS.toMillis(30));
+        Assert.eqFalse(teardownThread.isAlive(), "teardownThread.isAlive()");
+        return escaped.get();
+    }
+
+    private static void awaitBlockedOnMonitorHeldByCurrentThread(final Thread thread) {
+        final ThreadMXBean threads = ManagementFactory.getThreadMXBean();
+        final long currentThreadId = Thread.currentThread().getId();
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (thread.isAlive()) {
+            final ThreadInfo info = threads.getThreadInfo(thread.getId());
+            if (info != null && info.getThreadState() == Thread.State.BLOCKED
+                    && info.getLockOwnerId() == currentThreadId) {
+                return;
+            }
+            if (System.nanoTime() > deadlineNanos) {
+                throw new IllegalStateException("thread never blocked on a monitor held by this thread");
+            }
+            Thread.onSpinWait();
+        }
+        throw new IllegalStateException("thread finished without contending for the child's monitor");
+    }
+
+    @Test
+    public void testParentCancelRacingChildCancelTearsDownParent() throws InterruptedException {
+        final TeardownRace race = new TeardownRace(true);
+
+        final Throwable escaped = cancelChildDuringTeardown(race.child, race.parent::cancel);
+        if (escaped != null) {
+            throw new AssertionFailure("cancelling the parent must not throw when its child is concurrently cancelled",
+                    escaped);
+        }
+        Assert.eq(race.parent.getState(), "race.parent.getState()", CANCELLED);
+        Assert.eq(race.child.getState(), "race.child.getState()", CANCELLED);
+        Assert.eq(race.parentErrors.get(), "race.parentErrors.get()", 1);
+        Assert.eq(race.childErrors.get(), "race.childErrors.get()", 1);
+
+        // a torn down parent no longer manages its dependency, so releasing the grand-parent frees its result
+        race.grandParent.release();
+        Assert.eq(race.grandParentResult.refCount, "race.grandParentResult.refCount", 0);
+
+        // the parent's queued work must be a harmless no-op
+        scheduler.runUntilQueueEmpty();
+        Assert.eqFalse(race.parentRan.booleanValue(), "race.parentRan.booleanValue()");
+    }
+
+    @Test
+    public void testCancelledQueuedExportWithHandlerIsNotFatalWhenRun() throws InterruptedException {
+        final TeardownRace race = new TeardownRace(true);
+
+        // Whether or not the propagation itself misbehaves (see the previous test), the parent's already scheduled
+        // work runs afterwards and finds the parent terminal; any inconsistency it finds must be recoverable.
+        cancelChildDuringTeardown(race.child, race.parent::cancel);
+        Assert.eq(race.parent.getState(), "race.parent.getState()", CANCELLED);
+
+        try {
+            scheduler.runUntilQueueEmpty();
+        } catch (final AssertionFailure | FakeProcessEnvironment.FakeFatalException e) {
+            throw new AssertionFailure("running a cancelled export's queued work must not be fatal", e);
+        }
+        Assert.eqFalse(race.parentRan.booleanValue(), "race.parentRan.booleanValue()");
+        Assert.eq(race.parent.getState(), "race.parent.getState()", CANCELLED);
+    }
+
+    @Test
+    public void testSessionExpiryRacingChildCancelReleasesEverything() throws InterruptedException {
+        // a non-export child is not in the export map, so the expiry sweep reaches it only through the parent's
+        // failure propagation
+        final TeardownRace race = new TeardownRace(false);
+        final CountingLivenessReferent unrelatedResult = new CountingLivenessReferent();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            session.newServerSideExport(unrelatedResult);
+        }
+        Assert.eq(unrelatedResult.refCount, "unrelatedResult.refCount", 1);
+        final MutableBoolean onCloseInvoked = new MutableBoolean();
+        session.addOnCloseCallback(onCloseInvoked::setTrue);
+        final QueueingExportListener listener = new QueueingExportListener();
+        session.addExportListener(listener);
+
+        final Throwable escaped = cancelChildDuringTeardown(race.child, session::onExpired);
+        if (escaped != null) {
+            throw new AssertionFailure("session expiry must not throw when an export is concurrently cancelled",
+                    escaped);
+        }
+        Assert.eqTrue(session.isExpired(), "session.isExpired()");
+        Assert.eq(race.parent.getState(), "race.parent.getState()", CANCELLED);
+        Assert.eq(race.child.getState(), "race.child.getState()", CANCELLED);
+
+        // every export the session held must have been released, and the session-scoped resources closed
+        Assert.eq(unrelatedResult.refCount, "unrelatedResult.refCount", 0);
+        Assert.eq(race.grandParentResult.refCount, "race.grandParentResult.refCount", 0);
+        Assert.eqTrue(onCloseInvoked.booleanValue(), "onCloseInvoked.booleanValue()");
+        Assert.eqTrue(listener.isComplete, "listener.isComplete");
+        Assert.eq(session.numExportListeners(), "session.numExportListeners()", 0);
+    }
+
+    // endregion
 
     private static long getExportId(final ExportNotification notification) {
         return ticketToExportId(notification.getTicket(), "test");

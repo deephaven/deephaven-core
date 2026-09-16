@@ -919,17 +919,33 @@ public class SessionState {
             }
 
             if (isNowExported || isExportStateTerminal(state)) {
-                children.forEach(child -> child.onResolveOne(this));
+                // Detach everything before notifying dependents, so that a dependent that throws cannot leave this
+                // export terminal but still holding its handlers, dependents and dependencies. Dependents are
+                // notified independently of one another, so one misbehaving dependent cannot starve its siblings,
+                // and the reference this export holds on itself is dropped no matter what.
+                final List<ExportObject<?>> dependents = children;
+                final List<ExportObject<?>> dependencies = parents;
                 children = Collections.emptyList();
-                parents.stream().filter(Objects::nonNull).forEach(this::tryUnmanage);
                 parents = Collections.emptyList();
                 exportMain = null;
                 errorHandler = null;
                 successHandler = null;
-            }
-
-            if ((isNowExported && isNonExport()) || isExportStateTerminal(state)) {
-                dropReference();
+                try {
+                    for (final ExportObject<?> dependent : dependents) {
+                        try {
+                            dependent.onResolveOne(this);
+                        } catch (final RuntimeException err) {
+                            log.error().append(session == null ? "" : session.logPrefix).append("export '")
+                                    .append(logIdentity).append("' failed to notify dependent '")
+                                    .append(dependent.logIdentity).append("': ").append(err).endl();
+                        }
+                    }
+                } finally {
+                    dependencies.stream().filter(Objects::nonNull).forEach(this::tryUnmanage);
+                    if ((isNowExported && isNonExport()) || isExportStateTerminal(state)) {
+                        dropReference();
+                    }
+                }
             }
         }
 
@@ -1091,6 +1107,10 @@ public class SessionState {
         }
 
         private synchronized void onDependencyFailure(final ExportObject<?> parent) {
+            if (isExportStateTerminal(state)) {
+                // onResolveOne reads our state without the lock; a concurrent cancel or release may have won the race
+                return;
+            }
             errorId = parent.errorId;
             if (parent.caughtException instanceof StatusRuntimeException) {
                 caughtException = parent.caughtException;
