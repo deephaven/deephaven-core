@@ -93,7 +93,7 @@ For each partition, `mostRecent` uses the last row's timestamp as the reference 
 
 Violating the add-only requirement raises an `IllegalArgumentException`. The binary search reads only the first, last, and midpoint timestamps of each partition, not every row, so it raises an `IllegalArgumentException` if one of those is null, but a null elsewhere in the partition may go undetected. If a partition is not correctly sorted by timestamp, the result table is undefined.
 
-`mostRecentRows` never reads timestamps, so none of these assumptions apply to it; it only requires an add-only source table.
+`mostRecentRows` never reads timestamps, so the sorting and null-timestamp assumptions do not apply to it; only the add-only requirement does.
 
 ## Examples
 

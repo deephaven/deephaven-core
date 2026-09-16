@@ -267,7 +267,7 @@ filtered_follower = PartitionedTable(result.get(name))
 ```
 
 > [!NOTE]
-> A `PartitionedTable`'s own refreshing state reflects only whether its set of partitions changes, not whether its constituent tables are refreshing. `auto_locking_ctx` cannot detect refreshing constituents through a static outer partitioned table, so use [`shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock) here, which acquires the lock unconditionally.
+> As with the non-partitioned examples above, `auto_locking_ctx` only locks automatically while `auto_locking` is enabled. Use [`shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock) here, which acquires the lock unconditionally, so this snippet doesn't depend on that setting.
 
 Requirements:
 
