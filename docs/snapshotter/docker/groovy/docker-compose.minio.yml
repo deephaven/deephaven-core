@@ -31,7 +31,7 @@ services:
       retries: 5
 
   init:
-    image: minio/mc
+    image: quay.io/minio/mc
     depends_on:
       - minio
     volumes:

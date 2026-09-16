@@ -251,20 +251,24 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             // Propagate the updates to each column, inserting any additional modified rows post-shift that were
             // produced
             // by each column (ie. if a filter required a recompute
-            matchColumns.stream()
-                    .map(vc -> vc.column.update(recorder.getAdded(),
-                            recorder.getRemoved(),
-                            recorder.getModified(),
-                            recorder.getModifiedPreShift(),
-                            recorder.getShifted(),
-                            recorder.getModifiedColumnSet(),
-                            downstream.modifiedColumnSet(),
-                            parent))
-                    .filter(Objects::nonNull)
-                    .forEach(rs -> {
-                        downstream.modified().writableCast().insert(rs);
-                        rs.close();
-                    });
+            final List<RowSet> recomputed = new ArrayList<>(matchColumns.size());
+            try {
+                matchColumns.stream()
+                        .map(vc -> vc.column.update(recorder.getAdded(),
+                                recorder.getRemoved(),
+                                recorder.getModified(),
+                                recorder.getModifiedPreShift(),
+                                recorder.getShifted(),
+                                recorder.getModifiedColumnSet(),
+                                downstream.modifiedColumnSet(),
+                                parent))
+                        .filter(Objects::nonNull)
+                        .forEach(recomputed::add);
+                RowSetFactory.insertUnionAndClose(downstream.modified().writableCast(), recomputed);
+            } finally {
+                SafeCloseable.closeAll(recomputed.iterator());
+            }
+
 
             resultTable.notifyListeners(downstream);
         }
@@ -285,22 +289,28 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         @Override
         protected void process() {
             TableUpdate downstream = null;
-            for (final ColumnHolder holder : matchColumns) {
-                if (holder.column.recomputeRequested()) {
-                    if (downstream == null) {
-                        downstream =
-                                new TableUpdateImpl(RowSetFactory.empty(),
-                                        RowSetFactory.empty(),
-                                        RowSetFactory.empty(),
-                                        RowSetShiftData.EMPTY,
-                                        resultTable.getModifiedColumnSetForUpdates());
-                    }
+            final List<RowSet> recomputed = new ArrayList<>(matchColumns.size());
+            try {
+                for (final ColumnHolder holder : matchColumns) {
+                    if (holder.column.recomputeRequested()) {
+                        if (downstream == null) {
+                            downstream =
+                                    new TableUpdateImpl(RowSetFactory.empty(),
+                                            RowSetFactory.empty(),
+                                            RowSetFactory.empty(),
+                                            RowSetShiftData.EMPTY,
+                                            resultTable.getModifiedColumnSetForUpdates());
+                        }
 
-                    downstream.modifiedColumnSet().setAll(holder.getColumnName());
-                    try (final RowSet recomputed = holder.column.recompute(parent, EMPTY_INDEX)) {
-                        downstream.modified().writableCast().insert(recomputed);
+                        downstream.modifiedColumnSet().setAll(holder.getColumnName());
+                        recomputed.add(holder.column.recompute(parent, EMPTY_INDEX));
                     }
                 }
+                if (downstream != null) {
+                    RowSetFactory.insertUnionAndClose(downstream.modified().writableCast(), recomputed);
+                }
+            } finally {
+                SafeCloseable.closeAll(recomputed.iterator());
             }
 
             if (downstream != null) {

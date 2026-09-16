@@ -45,6 +45,12 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     private static final int CHUNK_SIZE = 1 << 16;
 
+    /**
+     * Row sets merged into the result at a time. Merging a batch costs one pass over the batch rather than one insert
+     * into a growing accumulator per row set, and bounding it keeps the row sets held at once bounded too.
+     */
+    private static final int UNION_BATCH_SIZE = 1024;
+
     private final MatchPair[] sourceToSetColumnNamePairs;
     private final boolean inclusion;
 
@@ -408,6 +414,22 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         }
     }
 
+    /**
+     * Merge {@code batch} and remove the result from {@code accumulator}. Removing a merged batch walks the accumulator
+     * once instead of once per row set. The batch's row sets are only borrowed; the list is emptied but they are left
+     * open.
+     */
+    private static void removeBatchFrom(@NotNull final WritableRowSet accumulator, @NotNull final List<RowSet> batch) {
+        if (batch.isEmpty()) {
+            return;
+        }
+        try (final RowSet merged = RowSetFactory.union(batch)) {
+            accumulator.remove(merged);
+        } finally {
+            batch.clear();
+        }
+    }
+
     @NotNull
     private WritableRowSet filterFullIndex(@NotNull final RowSet selection, final boolean usePrev) {
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
@@ -435,19 +457,34 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 keyMappingFunction = tupleToFullKeyMappingFunction();
             }
 
+            final List<RowSet> batch = new ArrayList<>(UNION_BATCH_SIZE);
             try (final RowSet indexRowKeys =
                     lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
                 // Abandon an attempt the set has already invalidated before paying for any row sets.
                 sharedSet.failIfChangedSince(kernelGeneration);
                 forEachIndexRowSet(indexRowKeys, rowSetColumn, usePrev, rowSet -> {
                     if (inclusion) {
-                        try (final RowSet intersected = rowSet.intersect(selection)) {
-                            filtered.insert(intersected);
+                        batch.add(rowSet.intersect(selection));
+                        if (batch.size() >= UNION_BATCH_SIZE) {
+                            RowSetFactory.insertUnionAndClose(filtered, batch);
                         }
                     } else {
-                        filtered.remove(rowSet);
+                        batch.add(rowSet);
+                        if (batch.size() >= UNION_BATCH_SIZE) {
+                            removeBatchFrom(filtered, batch);
+                        }
                     }
                 });
+                if (inclusion) {
+                    RowSetFactory.insertUnionAndClose(filtered, batch);
+                } else {
+                    removeBatchFrom(filtered, batch);
+                }
+            } finally {
+                if (inclusion) {
+                    // The intersections belong to this method; the index's row sets gathered for removal are borrowed.
+                    SafeCloseable.closeAll(batch.iterator());
+                }
             }
         } catch (final Throwable t) {
             filtered.close();
@@ -486,15 +523,20 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 }
             }
 
+            final List<RowSet> batch = new ArrayList<>(UNION_BATCH_SIZE);
             try (final RowSet indexRowKeys =
                     lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
                 // Abandon an attempt the set has already invalidated before paying for any row sets.
                 sharedSet.failIfChangedSince(kernelGeneration);
                 forEachIndexRowSet(indexRowKeys, rowSetColumn, usePrev, rowSet -> {
-                    try (final RowSet intersected = rowSet.intersect(selection)) {
-                        possiblyMatching.insert(intersected);
+                    batch.add(rowSet.intersect(selection));
+                    if (batch.size() >= UNION_BATCH_SIZE) {
+                        RowSetFactory.insertUnionAndClose(possiblyMatching, batch);
                     }
                 });
+                RowSetFactory.insertUnionAndClose(possiblyMatching, batch);
+            } finally {
+                SafeCloseable.closeAll(batch.iterator());
             }
 
             // Now, do linear filter on possiblyMatching to determine the values to include or exclude from selection.
