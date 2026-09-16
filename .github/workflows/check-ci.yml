@@ -45,13 +45,13 @@ jobs:
           gradle-task: check
 
   # The categorized suites that Nightly Check CI runs on a push. Running them here as well lets
-  # auto-merge on an oob/ or coverage/ pull request be gated on them. github.head_ref is empty for
+  # auto-merge on an engine/ or coverage/ pull request be gated on them. github.head_ref is empty for
   # push events, so they are skipped everywhere else -- a skipped job still reports a check run,
   # which is what makes these safe to mark as required.
   test-serial:
     runs-on: ubuntu-24.04
     needs: changes
-    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'oob/') || startsWith(github.head_ref, 'coverage/')) }}
+    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'engine/') || startsWith(github.head_ref, 'coverage/')) }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -65,7 +65,7 @@ jobs:
   test-parallel:
     runs-on: ubuntu-24.04
     needs: changes
-    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'oob/') || startsWith(github.head_ref, 'coverage/')) }}
+    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'engine/') || startsWith(github.head_ref, 'coverage/')) }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -79,7 +79,7 @@ jobs:
   test-out-of-band:
     runs-on: ubuntu-24.04
     needs: changes
-    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'oob/') || startsWith(github.head_ref, 'coverage/')) }}
+    if: ${{ needs.changes.outputs.non-docs == 'true' && (startsWith(github.head_ref, 'engine/') || startsWith(github.head_ref, 'coverage/')) }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
