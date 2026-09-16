@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.impl.IncrementalNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.by.typed.HasherConfig;
@@ -274,9 +275,35 @@ public class TypedNaturalJoinFactory {
     public static void rightIncrementalModify(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
         builder.addStatement("final long oldRightRow = rightRowKey.getUnsafe(tableLocation)");
+        selectedRightRowModified(builder, "oldRightRow");
+        builder.beginControlFlow("if (selectedRightRowModified)");
         builder.addStatement(
                 "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, $T.FLAG_RIGHT_MODIFY_PROBE))",
                 NaturalJoinModifiedSlotTracker.class);
+        builder.endControlFlow();
+    }
+
+    /**
+     * Emit {@code final boolean selectedRightRowModified}: whether the modified right row is the one the slot's left
+     * rows are redirected to. A slot with several right rows redirects its left rows to just one of them, so a
+     * modification of any other duplicate row leaves the left rows' values unchanged and is not recorded.
+     */
+    private static void selectedRightRowModified(CodeBlock.Builder builder, String stateValueName) {
+        builder.addStatement("final boolean selectedRightRowModified");
+        builder.beginControlFlow("if ($T.isDuplicateRightState($L))", IncrementalNaturalJoinStateManager.class,
+                stateValueName);
+        builder.addStatement(
+                "final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocationFromRowKey($L))",
+                WritableRowSet.class, stateValueName);
+        // the row key chunk is only needed for a duplicate slot, so it is materialized here (the row sequence caches
+        // it after the first call) rather than for every probe chunk
+        builder.addStatement("final $T<$T> rowKeyChunk = rowSequence.asRowKeyChunk()", LongChunk.class,
+                OrderedRowKeys.class);
+        builder.addStatement(
+                "selectedRightRowModified = getRightRowKeyFromDuplicates(duplicates, joinType) == rowKeyChunk.get(chunkPosition)");
+        builder.nextControlFlow("else");
+        builder.addStatement("selectedRightRowModified = true");
+        builder.endControlFlow();
     }
 
     public static void rightIncrementalShift(HasherConfig<?> hasherConfig, boolean alternate,
@@ -339,12 +366,8 @@ public class TypedNaturalJoinFactory {
 
     public static void incrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.beginControlFlow("if (rightRowKeyForState <= $L && (joinType == $L || joinType == $L))",
-                FIRST_DUPLICATE, "NaturalJoinType.ERROR_ON_DUPLICATE", "NaturalJoinType.EXACTLY_ONE_MATCH");
-        builder.addStatement(
-                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable($L))",
-                "rowKeyChunk.get(chunkPosition)");
-        builder.endControlFlow();
+        // A duplicate right key is reported when the row redirection is built (getRightRowKeyFromState), which
+        // renders the error from a left table row key; the rows built here may be data index table rows.
         builder.addStatement("mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition))");
     }
 
@@ -518,7 +541,10 @@ public class TypedNaturalJoinFactory {
 
     public static void incrementalModifyRightFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        modifyCookie(builder, getSourceType(alternate), getTableLocation(alternate), "FLAG_RIGHT_CHANGE");
+        selectedRightRowModified(builder, "existingRightRowKey");
+        builder.beginControlFlow("if (selectedRightRowModified)");
+        modifyCookie(builder, getSourceType(alternate), getTableLocation(alternate), "FLAG_RIGHT_MODIFY_PROBE");
+        builder.endControlFlow();
     }
 
     @NotNull
@@ -551,7 +577,7 @@ public class TypedNaturalJoinFactory {
         builder.beginControlFlow(
                 "if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH)");
         builder.addStatement(
-                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(rightRowKeyForState))");
+                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)))");
         builder.endControlFlow();
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState)");
         builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)",

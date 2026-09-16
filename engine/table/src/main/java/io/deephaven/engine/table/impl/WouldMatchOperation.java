@@ -132,6 +132,12 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     @Override
+    public boolean snapshotNeeded(@NotNull final QueryTable parent) {
+        // Snapshot control is needed if the parent is refreshing or any filter has refreshing dependencies.
+        return parent.isRefreshing() || !WhereListener.extractDependencies(whereFilters).isEmpty();
+    }
+
+    @Override
     public OperationSnapshotControl newSnapshotControl(@NotNull final QueryTable queryTable) {
         final List<NotificationQueue.Dependency> dependencies = WhereListener.extractDependencies(whereFilters);
         if (dependencies.isEmpty()) {
@@ -141,7 +147,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     @Override
-    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
+    public Result<QueryTable> initialize(final boolean usePrev, final long beforeClock) {
         MutableBoolean anyRefreshing = new MutableBoolean(false);
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {
@@ -169,13 +175,11 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             transformer =
                     parent.newModifiedColumnSetTransformer(resultTable, parent.getDefinition().getColumnNamesArray());
 
-            // Set up the column to be a listener for recomputes
             matchColumns.forEach(mc -> {
                 if (mc.getFilter() instanceof LivenessReferent) {
                     resultTable.manage((LivenessArtifact) mc.getFilter());
                 }
                 mc.column.setResultTable(resultTable);
-                mc.getFilter().setRecomputeListener(mc.column);
             });
 
             TableUpdateListener eventualListener = null;
@@ -201,6 +205,11 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 resultTable.addParentReference(eventualMergedListener);
                 matchColumns.forEach(h -> h.column.setMergedListener(finalMergedListener));
             }
+
+            // Set up the column to be a listener for recomputes. This must come last: a refreshing filter's inputs
+            // can tick as soon as it has its recompute listener, and the resulting request has nothing to notify
+            // until the merged listener above is installed.
+            matchColumns.forEach(mc -> mc.getFilter().setRecomputeListener(mc.column));
 
             return new Result<>(resultTable, eventualListener);
         }

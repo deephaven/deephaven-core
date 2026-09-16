@@ -22,6 +22,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.IncrementalNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
@@ -233,7 +234,6 @@ final class RightIncrementalNaturalJoinHasherByte extends RightIncrementalNatura
     protected void modifyByRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
-        final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
             final byte k0 = keyChunk0.get(chunkPosition);
@@ -243,7 +243,17 @@ final class RightIncrementalNaturalJoinHasherByte extends RightIncrementalNatura
             while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long oldRightRow = rightRowKey.getUnsafe(tableLocation);
-                    modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_MODIFY_PROBE));
+                    final boolean selectedRightRowModified;
+                    if (IncrementalNaturalJoinStateManager.isDuplicateRightState(oldRightRow)) {
+                        final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocationFromRowKey(oldRightRow));
+                        final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
+                        selectedRightRowModified = getRightRowKeyFromDuplicates(duplicates, joinType) == rowKeyChunk.get(chunkPosition);
+                    } else {
+                        selectedRightRowModified = true;
+                    }
+                    if (selectedRightRowModified) {
+                        modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, oldRightRow, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_MODIFY_PROBE));
+                    }
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);

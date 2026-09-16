@@ -45,10 +45,6 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChun
 public abstract class IncrementalNaturalJoinStateManagerTypedBase extends StaticNaturalJoinStateManager
         implements IncrementalNaturalJoinStateManager, BothIncrementalNaturalJoinStateManager {
 
-    public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
-    public static final long TOMBSTONE_RIGHT_STATE = RowSet.NULL_ROW_KEY - 1;
-    public static final long FIRST_DUPLICATE = TOMBSTONE_RIGHT_STATE - 1;
-
     // the number of slots in our table
     protected int tableSize;
 

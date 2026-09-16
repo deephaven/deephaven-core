@@ -7,8 +7,33 @@ import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.util.QueryConstants;
 
 public interface IncrementalNaturalJoinStateManager {
+    /**
+     * The right state of a hash slot that has never held a key.
+     */
+    long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
+    /**
+     * The right state of a hash slot whose key was deleted (only produced by the both-incremental state manager).
+     */
+    long TOMBSTONE_RIGHT_STATE = RowSet.NULL_ROW_KEY - 1;
+    /**
+     * Right states at or below this value encode a location in the right-side duplicate row sets: {@code
+     * FIRST_DUPLICATE} maps to location 0, {@code FIRST_DUPLICATE - 1} to location 1, and so on. A right state above
+     * this value is a single right row key, {@link RowSet#NULL_ROW_KEY} for a key with no right row, or the tombstone.
+     */
+    long FIRST_DUPLICATE = TOMBSTONE_RIGHT_STATE - 1;
+
+    /**
+     * @param rightState a right state as stored in a hash slot
+     * @return whether the state encodes a duplicate row set location, rather than a row key or one of the no-right-row
+     *         markers ({@link RowSet#NULL_ROW_KEY}, {@link #TOMBSTONE_RIGHT_STATE}, {@link #EMPTY_RIGHT_STATE})
+     */
+    static boolean isDuplicateRightState(final long rightState) {
+        return rightState <= FIRST_DUPLICATE && rightState != EMPTY_RIGHT_STATE;
+    }
+
     long getRightRowKey(int slot);
 
     RowSet getRightRowSet(int slot);
