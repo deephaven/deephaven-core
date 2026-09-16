@@ -176,8 +176,8 @@ tracking row sets behind their results — do it with a single insert at the end
 about, one level up: one pass over a growing result per batch instead of per row set, which at 1024 to a batch is still
 `n/1024` passes over something that keeps getting bigger. Instead the entries live in two regions of a list of
 `2 * batchSize` slots. A full batch collapses into a single row set that stays where it is, so the front fills with
-collapsed groups while the back gathers the next batch; only when the groups have taken half the list does everything
-fold into one. A result is merged into again once per `batchSize` batches rather than once per batch — the same tree
+collapsed groups while the back gathers the next batch. The groups are allowed to fill their half of the list; the
+batch that would need a slot past it folds everything into one instead. A result is merged into again once per `batchSize` batches rather than once per batch — the same tree
 the multi-pass merge inside `union` builds, one level up, and for the same reason.
 
 The list is all this holds onto: at most `2 * MAX_BATCH_SIZE` references. Each collapse still allocates what

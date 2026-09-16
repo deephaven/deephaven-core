@@ -26,9 +26,10 @@ import java.util.List;
  * Merging every batch into one result would reintroduce the same problem one level up, at one pass per batch rather
  * than one per row set. Instead the entries are held in two regions of a list of {@code 2 * batchSize} slots. A full
  * batch collapses into a single row set that stays where it is, so the front of the list fills with collapsed groups
- * while the back gathers the next batch; only when the groups have taken half the list does everything collapse into
- * one. A result is therefore merged into again once per {@code batchSize} batches instead of once per batch, which is
- * the same tree the multi-pass merge inside {@code union} builds, one level up.
+ * while the back gathers the next batch. The groups are allowed to fill their half of the list; the batch that would
+ * need a slot past it folds everything into one instead. A result is therefore merged into again once per
+ * {@code batchSize} batches instead of once per batch, which is the same tree the multi-pass merge inside {@code union}
+ * builds, one level up.
  *
  * <p>
  * Two things are handled here rather than at the merge. {@link RowSet#isEmpty() Empty} row sets are dropped as they
