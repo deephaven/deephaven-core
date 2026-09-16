@@ -240,7 +240,7 @@ public class TypedHasherFactory {
                     null,
                     modifiedSlotTrackerParam));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", null, true,
+            builder.addProbe(new HasherConfig.ProbeSpec("modifyByRight", null, false,
                     TypedNaturalJoinFactory::rightIncrementalModify,
                     null,
                     modifiedSlotTrackerParam));

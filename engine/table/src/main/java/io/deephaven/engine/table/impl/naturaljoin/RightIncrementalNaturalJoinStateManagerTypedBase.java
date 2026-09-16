@@ -34,8 +34,6 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends RightIncrementalNaturalJoinStateManager {
-    public static final long FIRST_DUPLICATE = RowSet.NULL_ROW_KEY - 1;
-
     // the number of slots in our table
     protected int tableSize;
 

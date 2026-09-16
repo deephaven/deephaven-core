@@ -269,15 +269,18 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
                 redirectionType, false);
     }
 
-    public void errorOnDuplicatesIndexed(IntegerArraySource leftHashSlots, long size,
-            ObjectArraySource<RowSet> rowSetSource) {
-        errorOnDuplicates(leftHashSlots, size,
-                (long indexPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(indexPosition)),
-                (long row) -> rowSetSource.getUnsafe(row).firstRowKey());
+    @Override
+    public void errorOnDuplicatesIndexed(IntegerArraySource leftHashSlots, RowSet indexTableRowSet) {
+        // the key sources for error messages are columns of the data index table, so the error row key is the index
+        // table row key for the offending group
+        errorOnDuplicates(indexTableRowSet.size(),
+                (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)),
+                indexTableRowSet::get);
     }
 
+    @Override
     public void errorOnDuplicatesSingle(IntegerArraySource leftHashSlots, long size, RowSet rowSet) {
-        errorOnDuplicates(leftHashSlots, size,
-                (long position) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)), rowSet::get);
+        errorOnDuplicates(size, (long position) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)),
+                rowSet::get);
     }
 }
