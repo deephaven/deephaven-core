@@ -44,11 +44,11 @@ import java.util.List;
 public final class RowSetUnionBatcher implements SafeCloseable {
 
     /**
-     * Row sets to gather before merging when the caller has no count to go on, which is to say when the input is driven
-     * by data rather than by the shape of the query. Large enough that the merge amortizes the pass it costs, small
-     * enough to bound what is held at once.
+     * The most row sets that will be gathered before merging, however many the caller asks for. Large enough that the
+     * merge amortizes the pass it costs, small enough that input driven by data rather than by the shape of the query
+     * cannot make this hold an unbounded number of row sets.
      */
-    public static final int DEFAULT_BATCH_SIZE = 1024;
+    public static final int MAX_BATCH_SIZE = 1024;
 
     private final int batchSize;
 
@@ -68,10 +68,13 @@ public final class RowSetUnionBatcher implements SafeCloseable {
     private WritableRowSet run;
 
     /**
-     * @param batchSize The number of row sets to gather before merging; anything below one is treated as one
+     * @param batchSize The number of row sets to gather before merging, which a caller that knows how many it will
+     *        produce passes so that they all merge at once. Clamped to {@code [1, }{@link #MAX_BATCH_SIZE}{@code ]}, so
+     *        a count that is only an upper bound, or is not bounded at all, costs nothing to pass.
      */
     public RowSetUnionBatcher(final int batchSize) {
-        this.batchSize = Math.max(1, batchSize);
+        this.batchSize = Math.min(Math.max(1, batchSize), MAX_BATCH_SIZE);
+        // Bounded by the clamp above, so this is the list's greatest extent and not just a starting point.
         entries = new ArrayList<>(2 * this.batchSize);
     }
 
@@ -80,7 +83,8 @@ public final class RowSetUnionBatcher implements SafeCloseable {
      *
      * <p>
      * Ownership of {@code rowSet} passes here: it may be closed before this call returns, and the caller must not use
-     * or close it afterwards. Use {@link #addCopy(RowSet)} for a row set the caller keeps.
+     * or close it afterwards. A caller that keeps its row set hands over a {@link RowSet#copy() copy}, which is a
+     * copy-on-write reference that later mutation of the original does not disturb.
      *
      * @param rowSet The row set to add; ownership passes here
      */
@@ -96,27 +100,6 @@ public final class RowSetUnionBatcher implements SafeCloseable {
             return;
         }
         startRun(rowSet);
-    }
-
-    /**
-     * Add the current contents of {@code rowSet} to the union, merging the gathered batch if it is now full.
-     *
-     * <p>
-     * The caller retains ownership of {@code rowSet} and remains responsible for closing it. What this batcher retains
-     * is a snapshot: a {@link RowSet#copy() copy-on-write reference} when it needs one, which later mutation of
-     * {@code rowSet} does not disturb.
-     *
-     * @param rowSet The row set to add; the caller retains ownership of it
-     */
-    public void addCopy(@NotNull final RowSet rowSet) {
-        if (rowSet.isEmpty()) {
-            return;
-        }
-        if (appendsToRun(rowSet)) {
-            run.insert(rowSet);
-            return;
-        }
-        startRun(rowSet.copy());
     }
 
     /**

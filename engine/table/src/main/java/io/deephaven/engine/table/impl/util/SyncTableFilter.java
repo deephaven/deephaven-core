@@ -169,12 +169,11 @@ public class SyncTableFilter {
         final HashSet<Object> keysToRefilter = hashSetPair.first;
         Assert.eqZero(hashSetPair.second.size(), "hashSetPair.second.size()");
         for (int tt = 0; tt < tableCount; tt++) {
-            try (final RowSetUnionBatcher addedBatch =
-                    new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
+            try (final RowSetUnionBatcher addedBatch = new RowSetUnionBatcher(keysToRefilter.size())) {
                 for (Object key : keysToRefilter) {
                     final KeyState state = objectToState.get(tt).get(key);
                     doMatch(tt, state, minimumid.getLong(key));
-                    addedBatch.addCopy(state.matchedRows);
+                    addedBatch.add(state.matchedRows.copy());
                 }
                 try (final WritableRowSet added = addedBatch.build()) {
                     resultRowSet[tt].insert(added);
@@ -215,16 +214,15 @@ public class SyncTableFilter {
             for (int tt = 0; tt < objectToState.size(); tt++) {
                 WritableRowSet removed = null;
                 WritableRowSet added = null;
-                try (final RowSetUnionBatcher removedBatch =
-                        new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE);
-                        final RowSetUnionBatcher addedBatch =
-                                new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
+                try (final RowSetUnionBatcher removedBatch = new RowSetUnionBatcher(keysToRefilter.size());
+                        final RowSetUnionBatcher addedBatch = new RowSetUnionBatcher(
+                                keysToRefilter.size() + keysWithNewCurrentRows.size())) {
                     for (Object key : keysToRefilter) {
                         final KeyState state = objectToState.get(tt).get(key);
                         // The matched rows are snapshotted on the way past; doMatch replaces them below.
-                        removedBatch.addCopy(state.matchedRows);
+                        removedBatch.add(state.matchedRows.copy());
                         doMatch(tt, state, minimumid.getLong(key));
-                        addedBatch.addCopy(state.matchedRows);
+                        addedBatch.add(state.matchedRows.copy());
                     }
 
                     for (Object key : keysWithNewCurrentRows) {
@@ -238,7 +236,7 @@ public class SyncTableFilter {
                             try (final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build()) {
                                 state.matchedRows.insert(newlyMatchedRows);
                                 newlyMatchedRows.remove(resultRowSet[tt]);
-                                addedBatch.addCopy(newlyMatchedRows);
+                                addedBatch.add(newlyMatchedRows.copy());
                             }
                         }
                         state.currentIdBuilder = null;

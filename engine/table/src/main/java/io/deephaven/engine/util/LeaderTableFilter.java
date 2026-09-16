@@ -376,12 +376,12 @@ public class LeaderTableFilter {
         Assert.eqZero(processPendingResult.leaderRemoved.size(), "processPendingResult.leaderRemoved.size()");
         for (int tt = 0; tt < tableCount; tt++) {
             try (final RowSetUnionBatcher addedBatch =
-                    new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
+                    new RowSetUnionBatcher(processPendingResult.keysToRefilter.size())) {
                 for (Object key : processPendingResult.keysToRefilter) {
                     final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
                     if (state != null) {
                         doMatch(tt, state);
-                        addedBatch.addCopy(state.matchedRows);
+                        addedBatch.add(state.matchedRows.copy());
                     }
                 }
                 try (final WritableRowSet added = addedBatch.build()) {
@@ -455,9 +455,10 @@ public class LeaderTableFilter {
                 WritableRowSet removed = null;
                 WritableRowSet added = null;
                 try (final RowSetUnionBatcher removedBatch =
-                        new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE);
-                        final RowSetUnionBatcher addedBatch =
-                                new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
+                        new RowSetUnionBatcher(processPendingResult.keysToRefilter.size());
+                        final RowSetUnionBatcher addedBatch = new RowSetUnionBatcher(
+                                processPendingResult.keysToRefilter.size()
+                                        + processPendingResult.keysWithNewCurrent.size())) {
                     for (final Object key : processPendingResult.keysToRefilter) {
                         final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
                         if (state == null) {
@@ -469,14 +470,14 @@ public class LeaderTableFilter {
                         final RowSet lastMatched;
                         if (removeMatches) {
                             // The matched rows are snapshotted on the way past; doMatch replaces them below.
-                            removedBatch.addCopy(state.matchedRows);
+                            removedBatch.add(state.matchedRows.copy());
                             lastMatched = null;
                         } else {
                             lastMatched = state.matchedRows.copy();
                         }
                         doMatch(tt, state);
                         if (removeMatches) {
-                            addedBatch.addCopy(state.matchedRows);
+                            addedBatch.add(state.matchedRows.copy());
                         } else {
                             try (final RowSet ignored = lastMatched) {
                                 addedBatch.add(state.matchedRows.minus(lastMatched));
@@ -495,7 +496,7 @@ public class LeaderTableFilter {
                             try (final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build()) {
                                 state.matchedRows.insert(newlyMatchedRows);
                                 newlyMatchedRows.remove(followerResultRowSets[tt]);
-                                addedBatch.addCopy(newlyMatchedRows);
+                                addedBatch.add(newlyMatchedRows.copy());
                             }
                         }
                         state.currentIdBuilder = null;

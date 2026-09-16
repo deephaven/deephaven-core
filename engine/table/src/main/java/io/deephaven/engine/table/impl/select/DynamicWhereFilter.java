@@ -443,31 +443,32 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
         final Iterator<Object> values;
         final Function<Object, Object> keyMappingFunction;
+        final int valueCount;
         if (staticSetLookupKeys != null) {
             values = staticSetLookupKeys.iterator();
             keyMappingFunction = Function.identity();
+            valueCount = staticSetLookupKeys.size();
         } else if (sourceKeyColumns.length == 1) {
             values = setKernel.iterator();
             keyMappingFunction = Function.identity();
+            valueCount = setKernel.size();
         } else {
             values = setKernel.iterator();
             keyMappingFunction = tupleToFullKeyMappingFunction();
+            valueCount = setKernel.size();
         }
 
+        // At most one row set per set value, and fewer when a value is not in the index.
         final WritableRowSet matching;
-        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(valueCount)) {
             values.forEachRemaining(key -> {
                 final Object mappedKey = keyMappingFunction.apply(key);
                 final long rowKey = rowKeyLookup.apply(mappedKey, false);
                 final RowSet rowSet = rowSetColumn.get(rowKey);
                 if (rowSet != null) {
-                    if (inclusion) {
-                        batcher.add(rowSet.intersect(selection));
-                    } else {
-                        // Borrowed and merged as they are: clipping each one to selection would cost an intersect
-                        // per key, where the single minus below does it once.
-                        batcher.addCopy(rowSet);
-                    }
+                    // An index row set holds every source row for its key, so it is clipped to selection on the way
+                    // in. Without that, excluding many keys would accumulate a union approaching the whole source.
+                    batcher.add(rowSet.intersect(selection));
                 }
             });
             matching = batcher.build();
@@ -493,12 +494,15 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
         final Iterator<Object> values;
         final Function<Object, Object> keyMappingFunction;
+        final int valueCount;
 
         if (staticSetLookupKeys != null) {
             values = staticSetLookupKeys.iterator();
             keyMappingFunction = Function.identity();
+            valueCount = staticSetLookupKeys.size();
         } else {
             values = setKernel.iterator();
+            valueCount = setKernel.size();
             if (sourceDataIndex.keyColumnNames().size() == 1) {
                 final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
                 keyMappingFunction = (final Object key) -> sourceKeySource.exportElement(key, keyOffset);
@@ -507,8 +511,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             }
         }
 
+        // At most one row set per set value, and fewer when a value is not in the index.
         final WritableRowSet possiblyMatching;
-        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(valueCount)) {
             values.forEachRemaining(key -> {
                 final Object lookupKey = keyMappingFunction.apply(key);
                 final long rowKey = rowKeyLookup.apply(lookupKey, false);

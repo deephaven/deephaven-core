@@ -219,8 +219,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             final BasicDataIndex dataIndex,
             final PushdownResult result) {
         final WritableRowSet matching;
-        try (final SafeCloseable ignored = LivenessScopeStack.open();
-                final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.DEFAULT_BATCH_SIZE)) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             // Extract the fundamental filter, ignoring barriers.
             final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
             final Table toFilter;
@@ -235,16 +234,19 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             }
             try {
                 final Table filteredTable = toFilter.where(copiedFilter);
-                try (final CloseableIterator<RowSet> it =
-                        ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
-                                .iterator()) {
+                // One row set per index row that passed the filter.
+                try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(
+                        (int) Math.min(filteredTable.size(), RowSetUnionBatcher.MAX_BATCH_SIZE));
+                        final CloseableIterator<RowSet> it =
+                                ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
+                                        .iterator()) {
                     it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(result.maybeMatch())));
+                    matching = batcher.build();
                 }
             } catch (final Exception e) {
                 throw new TableInitializationException(
                         "Error applying filter " + Strings.of(copiedFilter) + " to data index table", e);
             }
-            matching = batcher.build();
         }
         // Retain only the maybe rows and add the previously found matches.
         try (matching; final WritableRowSet empty = RowSetFactory.empty()) {
