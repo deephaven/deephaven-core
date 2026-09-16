@@ -300,7 +300,7 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
                             final long rightRowKey;
                             if (rightRowKeyForState <= FIRST_DUPLICATE) {
                                 if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                                    throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rightRowKeyForState));
+                                    throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                                 }
                                 final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
                                 final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
@@ -345,7 +345,7 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
                     final long rightRowKey;
                     if (rightRowKeyForState <= FIRST_DUPLICATE) {
                         if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rightRowKeyForState));
+                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                         }
                         final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
                         final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);

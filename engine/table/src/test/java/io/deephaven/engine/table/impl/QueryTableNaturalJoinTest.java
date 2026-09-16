@@ -2649,4 +2649,34 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             assertEquals(dupMsg + "a", e.getMessage());
         }
     }
+
+    public void testNaturalJoinDuplicateRightsBothRefreshingLeftAdd() {
+        testNaturalJoinDuplicateRightsBothRefreshingLeftAdd(NaturalJoinType.ERROR_ON_DUPLICATE);
+        testNaturalJoinDuplicateRightsBothRefreshingLeftAdd(NaturalJoinType.EXACTLY_ONE_MATCH);
+    }
+
+    private void testNaturalJoinDuplicateRightsBothRefreshingLeftAdd(final NaturalJoinType joinType) {
+        // the right side holds a duplicate key that no left row matches, so instantiation succeeds; the error must name
+        // the key once a left row for it arrives
+        final QueryTable left = testRefreshingTable(i(0).toTracking(), col("Key", "b"), intCol("L", 1));
+        final QueryTable right = testRefreshingTable(i(0, 1, 2).toTracking(), col("Key", "a", "a", "b"),
+                intCol("R", 10, 11, 20));
+
+        final Table result = left.naturalJoin(right, "Key", "R", joinType);
+        assertTableEquals(newTable(col("Key", "b"), intCol("L", 1), intCol("R", 20)), result);
+
+        final ErrorListener listener = new ErrorListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(1), col("Key", "a"), intCol("L", 2));
+                left.notifyListeners(i(1), i(), i());
+            });
+        }
+
+        assertNotNull(listener.originalException());
+        assertEquals(dupMsg + "a", listener.originalException().getMessage());
+    }
 }
