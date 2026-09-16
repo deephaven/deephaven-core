@@ -1,7 +1,7 @@
 ---
 name: deephaven-core-accuracy-check
-description: Review deephaven-core (Community) documentation for technical accuracy, style, and missing links. Use this whenever a developer asks you to review, check, proofread, or verify a doc against source for the deephaven-core repo specifically. Do not use for deephaven-ent/iris docs — that repo has a separate skill (deephaven-enterprise-accuracy-check) with different paths, pitfalls, and vocabulary.
-allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
+description: Review deephaven-core (Community) documentation for technical/factual accuracy and missing links. Use this whenever a developer asks you to review, check, proofread, or verify a doc against source for the deephaven-core repo specifically. Do not use for deephaven-ent/iris docs — that repo has a separate skill (deephaven-enterprise-accuracy-check) with different paths, pitfalls, and vocabulary. Pair with deephaven-doc-structure-review for organization/flow and deephaven-writing-style for prose and style — this skill is accuracy/link validation only and does not check style. For a single small edit rather than a full-file audit, use deephaven-core-accuracy-spot-check instead. For all three review dimensions in one pass, use deephaven-docs-review-full.
+allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 ---
 
 > [!IMPORTANT]
@@ -16,7 +16,19 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
 
 2. Read the documentation file.
 
-3. **Technical accuracy review:**
+3. **Identify the doc's category.** Read `ref-deephaven-doc-categories` and determine which of
+   the four categories (Tutorial — Crash Course only, How-to guide, Concept guide, Reference
+   guide) this doc is — check that file's "Pages outside the four categories" section first if it
+   doesn't obviously fit one (e.g. `intro.md`, or a contributor-facing tooling README); don't
+   force-fit an out-of-taxonomy page into the nearest-sounding category. For a page that does fit
+   one of the four, carry that forward: a Reference guide gets harder scrutiny on enumerated-list
+   completeness below (a missing entry matters more when the reader is scanning for one fact than
+   in a narrative Concept guide) — except individual `reference/community-questions/*` Q&A pages,
+   which are one question and one answer per page, not an enumerable reference (`cq-index.md`
+   itself is the exception to that exception — see `ref-deephaven-doc-categories` — and stays on
+   the normal enumerable-reference path).
+
+4. **Technical accuracy review:**
    - **For EVERY code snippet**, search the source code FIRST. Never write or "correct" an example from memory.
      - Engine/server code: `engine/`, `server/`, `extensions/`
      - Python API: `py/server/deephaven/`, `py/client/pydeephaven/`
@@ -63,7 +75,7 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
    - **Example-necessity check:** For a worked example whose whole point is demonstrating that API X is needed, verify X is actually load-bearing given everything else already active in that example — not just that the example's output is correct. Trace what would happen if X were removed, accounting for every *other* mechanism already in play (an implicit ordering guarantee a nearby `with_serial`/`withSerial` already provides, a default parallelization gate that keeps the operation single-threaded anyway, etc.), and reason from the guarantee, not from a single run's output: removing a barrier can still produce the same result on one execution while silently dropping the ordering guarantee, since a different, equally valid schedule could produce a different result on another run. An example is a defect if X isn't actually necessary to guarantee the claimed behavior, regardless of whether one observed run happens to match.
    - **Now-redundant or superseded code patterns:** Before including boilerplate copied from another doc page, a prior PR, or an older review comment (e.g., manually capturing and reopening an `ExecutionContext` around a `transform` callback), check whether the current engine API already does that automatically. Another doc page is not an authoritative source on its own — it can be stale too. Verify directly against the current implementation, and if the other page turns out to be stale as well, flag it as a separate follow-up rather than silently propagating its pattern into new content.
    - **Constants presented as universal:** Any specific technical number (chunk size, buffer size, timeout, cycle duration, a throughput multiplier) needs to be checked against every place it's actually defined in source — Configuration properties, per-class constants — not assumed to be a single value. Two different dispositions apply depending on what you find, so don't conflate them: if source shows the number genuinely varies by code path, you have a citation either way — state the variation (or name the specific path the doc is actually about) instead of one blanket figure. If instead there's no source backing the number at all (an invented or unverifiable benchmark multiplier like "4-8x throughput"), that's the sizing/performance-number case below — mark it "⚠️ Needs SME input" rather than silently deleting it.
-   - **Moved content is still in scope:** When a diff relocates a paragraph (deleted from one spot, added back verbatim elsewhere) rather than editing its wording, that text is touched by this PR and its style is now fair game for review — smart quotes, generic link text, and other violations don't get a pass just because the words themselves didn't change.
+   - **Moved content is still in scope:** When a diff relocates a paragraph (deleted from one spot, added back verbatim elsewhere) rather than editing its wording, that text is touched by this PR and its factual claims are fair game for re-verification — a claim that was correct in its original context can go stale once moved (an internal link or cross-reference that no longer resolves after the move, a claim that depended on context — a preceding definition, a nearby caveat — that didn't move with it). Don't skip re-checking it just because the words themselves didn't change. (Whether a positional reference like "as shown above" still reads correctly after the move is `deephaven-doc-structure-review`'s concern, not this skill's; style implications are `deephaven-writing-style`'s.)
 
    - **For sizing recommendations, performance numbers, or "typical ranges":**
      - NEVER invent numbers. These require SME expertise or benchmarks.
@@ -71,14 +83,13 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
      - If no source exists, mark as "⚠️ Needs SME input" and suggest a reviewer from the SME matrix.
    - Flag any outdated or incorrect information.
 
-4. **Style guide proofreading:** Apply the `deephaven-writing-style` skill for the full style guide — tone, quotes, links, page structure, proper noun capitalization, code formatting conventions, backticks, prose quality (active voice, jargon, audience calibration). That skill is the single source of truth; don't maintain a separate proper-noun, formatting, or punctuation list here.
-
-   **Mechanical pattern checks — run these as literal Grep searches, don't rely on catching them by eye.** These specific mistakes have recurred across many reviews of this doc set, so treat them as required searches, not optional style intuition:
-   - Search for `` `\.[a-z] `` (backtick, dot, lowercase letter) in the file. For every hit, confirm it's a genuine file extension or config key (`.parquet`, `.env`, `.yml`) and not a method/property reference in prose — a bare method name with **no leading dot** is this repo's actual convention (confirmed by corpus frequency: hundreds of bare mentions of `where`/`update`/`with_serial`/etc. vs. only isolated dot-prefixed outliers, each traceable to a specific bug). Flag every dot-prefixed method reference in prose (e.g. `.with_serial`, `.where`) for correction.
-   - Search for backticked method-shaped identifiers (`snake_case` or `camelCase`, especially ones matching `with_`, `is_`, `from_`, `agg_`, `update`, `select`, `where`, etc.) and confirm each one appears inside a markdown link (`` [`name`](...) ``) at least once in the file. Flag any that are only ever mentioned bare — first mention of a method should link to its reference page or pydoc/javadoc anchor.
-   - Search for a backticked identifier immediately followed by `()` outside of a fenced code block (e.g. `` `with_serial()` `` in prose) — flag it; parentheses belong in code, not prose.
-   - Search for the literal *markdown link label* `[here]`, `[click here]`, or `[this page]` (case-insensitive — the brackets matter: this targets link syntax, not ordinary prose like "This page explains...") — `deephaven-writing-style` bans non-descriptive link text; flag every instance for a replacement that names its destination.
-   - **If you're unsure whether a pattern is actually "the project standard"** (including when a prior comment or your own assumption asserts one), don't trust the assertion alone — verify by counting real occurrences of both forms across `docs/python` and `docs/groovy` (e.g. `grep -rc` for each candidate form). A stated convention — including one written into this skill or `deephaven-writing-style` — can itself be wrong; corpus frequency is the actual authority.
+   Style, prose, and page-structure concerns (backticks, link wording, proper noun
+   capitalization, tone, active voice, the mechanical dot-prefix/parens/link-text grep patterns)
+   are out of scope for this skill entirely — see `deephaven-writing-style`. Organizational
+   concerns (heading order, duplicated explanations, topic flow, orphaned sections) are equally
+   out of scope — see `deephaven-doc-structure-review`. Don't re-run either check here, and don't
+   maintain a parallel style/structure checklist in this file; use `deephaven-docs-review-full` to
+   run accuracy, structure, and style together in the right order.
 
    **Cross-language consistency check (when a sibling doc exists):** If reviewing `docs/python/.../X.md`, check whether `docs/groovy/.../X.md` exists, or vice versa. If so, diff the substantive claims between them — numeric thresholds, "cannot be used with..." restrictions, and any enumerated list ("N ways this works," "these methods are supported") — and flag any divergence that isn't explained by an actual language-level API difference. Verify each language's claims independently against that language's own source rather than assuming a claim already confirmed correct in one language's doc also holds for its sibling. **When a fix corrects a shared, substantive claim that both siblings make — not a language-specific detail — apply it to both in the same pass**, rather than fixing Python and leaving the same wrong claim sitting in Groovy (or vice versa) for a later round; that's exactly the kind of gap that resurfaces as a "why wasn't this also fixed here" finding next review. A fix that's genuinely specific to one language's API or behavior stays in that one file — don't copy it into the sibling just because you touched both docs in the same session.
 
@@ -88,8 +99,8 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
    - Identify methods, classes, or concepts mentioned without links.
    - Suggest links to appropriate reference pages in `docs/{python,groovy}/reference/`.
    - Check that existing links are valid and point to the correct pages.
-   - Ensure a "Related documentation" section exists (unless it's a landing page, overview, or blog).
    - **Before suggesting any new link:** confirm the target file actually exists in the repo (search/list the directory for it) rather than assuming a path is correct by pattern-matching similar pages.
+   - Whether a "Related documentation" section exists at all is `deephaven-writing-style`'s Page-structure rule, not this step's — don't duplicate that check here even though it's link-shaped.
 
 6. Report findings organized by category with specific suggestions for fixes.
 

@@ -1,6 +1,6 @@
 ---
 name: deephaven-writing-style
-description: Deephaven's documentation style guide for deephaven-core — proper noun capitalization, Python/Groovy code formatting conventions, backtick usage, code example tags, and prose quality standards (active voice, clarity, jargon/audience calibration). Applies to deephaven-core (Community) documentation specifically. Use this whenever drafting, writing, editing, or reviewing any deephaven-core documentation, tutorial, how-to guide, README, or API reference — not just when explicitly asked about "style." Also consult this alongside deephaven-core-accuracy-check when reviewing existing docs.
+description: Deephaven's documentation style guide for deephaven-core — proper noun capitalization, Python/Groovy code formatting conventions, backtick usage, code example tags, and prose quality standards (active voice, clarity, jargon/audience calibration). Applies to deephaven-core (Community) documentation specifically. Use this whenever drafting, writing, editing, or reviewing any deephaven-core documentation, tutorial, how-to guide, README, or API reference — not just when explicitly asked about "style." Also consult this alongside deephaven-core-accuracy-check and deephaven-doc-structure-review when reviewing existing docs (deephaven-core-accuracy-spot-check for a single small edit instead), or use deephaven-docs-review-full to run accuracy, structure, and style together in the right order; see ref-deephaven-doc-categories for the Tutorial/How-to/Concept/Reference categories this guide's tone rules are calibrated to.
 ---
 
 # Deephaven documentation style guide (Community/Core)
@@ -9,21 +9,23 @@ These standards apply to deephaven-core documentation.
 
 ## Documentation categories
 
-**Tutorial:** A learning resource that guides a reader step-by-step to a specific outcome. All users will achieve the same outcome. Tutorials are lessons.
-
-**How-to guide:** A follow-along resource that guides a reader step-by-step. These usually show new users how to solve a specific problem. Similar to a recipe, when following along with a how-to guide, all users will learn the same information, but they can use their own ingredients, so outcomes may differ. Advice or general recommendations on how to use a feature/method may be offered.
-
-**Concept guide:** A resource to study. It is intended to broaden understanding of higher concepts and to explain how or why with contextual explanations. Overview pages may be considered concept guides.
-
-**Reference guide:** A study resource. It is purely informative; its purpose is to describe without extraneous information — very pointed, without advice or general tips. JavaDocs, PyDocs, and other API documentation are reference guides.
+Read `ref-deephaven-doc-categories` and identify which of the four categories (Tutorial — Crash
+Course only, How-to guide, Concept guide, Reference guide) the doc is — that file has the
+directory rule for each, the misclassification trap ("tutorial" is not a synonym for
+"step-by-step"), and the pages that don't fit any of the four (see its "Pages outside the four
+categories" section — the site's landing page and contributor-facing tooling docs, not just the
+former). For an out-of-taxonomy page, skip the per-category tone/audience calibration below
+entirely; the prose-quality and formatting rules still apply. For a page that does fit one of the
+four, do the category identification before applying the tone rules below — they're calibrated
+per category.
 
 ## Prose quality
 
 - **Prefer present, active voice.** Avoid future-tense "will". Flag passive constructions and suggest an active rewrite unless the actor is genuinely unknown or irrelevant (e.g., "the file is created" only when who/what creates it doesn't matter to the reader).
 - **Define jargon and internal terms on first use.** Terms like "ticking," "blink table," "live table," or internal service/component names should be defined in plain language or linked to a reference page the first time they appear in a doc — don't assume the reader already knows them.
-- **Calibrate to the audience.** External-facing docs (deephaven.io, public tutorials) should avoid unexplained internal-only vocabulary (internal service names, internal abbreviations, implementation details that don't matter to the reader). Internal/contributor-facing docs can assume more shared context, but still define anything genuinely obscure.
+- **Calibrate to the audience.** All *published* `docs/{python,groovy}` content is external-facing (deephaven.io) — none of it is an internal-only tier — but how much you can lean on internal vocabulary once it's defined still varies by category (see `ref-deephaven-doc-categories`): the Crash Course assumes zero prior context, Concept/Reference pages can assume more. Avoid unexplained internal-only vocabulary (internal service names, internal abbreviations, implementation details that don't matter to the reader) regardless of category. This external-audience assumption does **not** extend to contributor-facing tooling docs that happen to live under `docs/` but aren't published (e.g. `docs/README.md`, `docs/snapshotter/README.md`) — those are written for repo contributors and may freely use internal tooling vocabulary, script names, and implementation detail.
 - **Avoid egregious jargon and hedging.** Prefer concrete, direct sentences over vague qualifiers ("may potentially," "in some cases could") unless the uncertainty is real and worth flagging.
-- **Tone.** Tutorials and how-tos can be conversational, first-person narrative while remaining professional. Reference material is dry and formal — third-person narrative without contractions.
+- **Tone.** Tutorials and how-tos can be conversational, first-person narrative while remaining professional. Reference material is dry and formal — third-person narrative without contractions — except individual `reference/community-questions/*` Q&A pages, which are a conversational Q&A format and take the conversational how-to tone instead (identify these by directory and content shape — a single question answered conversationally — not by assuming the question is in any specific front-matter field or that the body opens with it; see `ref-deephaven-doc-categories` for why). `cq-index.md` itself is the exception to that exception — a category-card index page, not a Q&A — and keeps the dry/formal Reference tone (see `ref-deephaven-doc-categories` for the full carve-out).
 - **Sentence case in headings** — not Title Case. Don't include links in headers.
 - **Straight quotes only.** Use `"` and `'`, never smart/curly quotes (`“` `”` `‘` `’`).
 - **Em dashes** for parenthetical statements, not hyphens or en dashes. Surround with a single space on either side: `word — word`, not `word—word`.
@@ -33,7 +35,7 @@ These standards apply to deephaven-core documentation.
 
 ## Page structure
 
-- Every page (except landing pages, overviews, or blog articles) should include a "Related documentation" section at the end.
+- Every published `docs/{python,groovy}` page (except landing pages, overviews, blog articles, a Crash Course tutorial chapter, the four root quickstarts, or an individual `reference/community-questions/*` Q&A page — see `ref-deephaven-doc-categories`) should include a "Related documentation" section at the end. The quickstart and community-questions exemptions reflect actual, established repo convention, verified by corpus count, not an assumption: none of the four root quickstarts (`getting-started/quickstart.md`, `pyclient-quickstart.md`, `jupyter-quickstart.md`) carry the section, and only 9 of the ~99 individual community-questions pages across both languages do — so flagging the other ~90 would mean flagging the repo's own established norm, not a real defect. This rule doesn't apply at all to the out-of-taxonomy contributor-facing tooling docs (`docs/README.md`, `docs/snapshotter/README.md`, `docs/tools/autoimport/README.md`, etc. — see `ref-deephaven-doc-categories`'s "Pages outside the four categories") — none of those carry the section, and that's not a defect to flag. Every exemption here means the section isn't *required* on those pages, not that it's *forbidden* — some exempted pages include one anyway (e.g. `conceptual/table-operations-overview.md`, or the 9 community-questions pages that have one), which is fine; don't flag its presence as a violation of the exemption.
 - When a method is referenced in narrative text, link it to the appropriate reference page if one exists.
 
 ## Deephaven proper nouns
@@ -79,6 +81,40 @@ Capitalize:
 - Correct prose: "Use `with_serial` when your formula has side effects"
 - Correct code: `col.with_serial()`
 - Incorrect prose: "Use `.with_serial` when your formula has side effects" or "Use `with_serial()` when your formula has side effects"
+
+## Mechanical verification
+
+Run these as literal Grep searches when reviewing a doc — don't rely on catching them by eye.
+These specific mistakes have recurred across many reviews of this doc set, so treat them as
+required searches, not optional style intuition:
+
+- Search for `` `\.[a-z] `` (backtick, dot, lowercase letter) in the file. For every hit, confirm
+  it's a genuine file extension or config key (`.parquet`, `.env`, `.yml`) and not a
+  method/property reference in prose — a bare method name with **no leading dot** is this repo's
+  actual convention (confirmed by corpus frequency: hundreds of bare mentions of
+  `where`/`update`/`with_serial`/etc. vs. only isolated dot-prefixed outliers, each traceable to a
+  specific bug). Flag every dot-prefixed method reference in prose (e.g. `.with_serial`, `.where`)
+  for correction — see **Method names in prose** above.
+- Search for backticked method-shaped identifiers (`snake_case` or `camelCase`, especially ones
+  matching `with_`, `is_`, `from_`, `agg_`, `update`, `select`, `where`, etc.) and, **only for
+  those that have an appropriate reference page or pydoc/javadoc anchor to link to** (per the
+  Page structure rule above — this check doesn't apply if no suitable target exists), check the
+  **first** occurrence of each in the file, not just whether a link exists anywhere. A doc whose
+  first mention is bare and a later mention is linked still violates "first mention should link,"
+  even though a plain existence check would pass it. Flag any identifier whose first occurrence is
+  bare; the fix is to move the link to that first mention, not to add one anywhere in the file.
+- Search for a backticked identifier immediately followed by `()` outside of a fenced code block
+  (e.g. `` `with_serial()` `` in prose) — flag it; parentheses belong in code, not prose (see
+  **Method names in prose** above).
+- Search for the literal *markdown link label* `[here]`, `[click here]`, or `[this page]`
+  (case-insensitive — the brackets matter: this targets link syntax, not ordinary prose like
+  "This page explains...") — the **Link wording** rule above bans non-descriptive link text; flag
+  every instance for a replacement that names its destination.
+- **If you're unsure whether a pattern is actually "the project standard"** (including when a
+  prior comment or your own assumption asserts one), don't trust the assertion alone — verify by
+  counting real occurrences of both forms across `docs/python` and `docs/groovy` (e.g. `grep -rc`
+  for each candidate form). A stated convention — including one written into this skill — can
+  itself be wrong; corpus frequency is the actual authority.
 
 **Python vs Groovy:**
 
