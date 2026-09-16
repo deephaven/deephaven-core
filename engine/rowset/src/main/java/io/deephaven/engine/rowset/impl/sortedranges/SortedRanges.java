@@ -1157,9 +1157,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     // startIdx is the array position index where to begin the search for packedStart.
     // returns -1 if this array overlaps the provided range, or if it doesn't, returns the array position index
     // where to begin a subsequent call for a later range that might overlap.
+    // packedStart must be within [0, our last packed value], which is what keeps the search result inside the array.
     private int overlapsRangeInternal(final int startIdx, final long packedStart, final long packedEnd) {
-        final int iStart = absRawBinarySearch(packedStart, startIdx, count - 1);
-        // is < count since we know start < end < first().
+        final int iStart = absRawGallopingSearch(packedStart, startIdx, count - 1);
         final long iStartData = packedGet(iStart);
         if (iStartData < 0 || iStartData == packedStart) {
             return -1;
@@ -1168,6 +1168,39 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return -1;
         }
         return iStart;
+    }
+
+    /**
+     * The array position of the first of our ranges that ends at or after {@code packedKey}, or {@link #count} if every
+     * range of ours ends before it. The returned position always holds a non-negative packed value, ie, the start of a
+     * range or a singleton.
+     *
+     * @param startIdx A position at or before the answer, to begin the search from
+     * @param packedKey The key to seek, packed; must be non-negative
+     */
+    private int seekRangeStartIdx(final int startIdx, final long packedKey) {
+        final int i = absRawGallopingSearch(packedKey, startIdx, count - 1);
+        if (i >= count) {
+            return count;
+        }
+        // A negative value at i is the end of the range that starts at i - 1, and that range covers packedKey.
+        return packedGet(i) < 0 ? i - 1 : i;
+    }
+
+    /**
+     * The last packed value of the range (or singleton) that starts at position {@code i}.
+     *
+     * @param i A position holding a non-negative packed value
+     * @param packedStart {@code packedGet(i)}
+     */
+    private long packedRangeEnd(final int i, final long packedStart) {
+        if (i + 1 < count) {
+            final long next = packedGet(i + 1);
+            if (next < 0) {
+                return -next;
+            }
+        }
+        return packedStart;
     }
 
     /**
@@ -1186,7 +1219,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             if (isEmpty()) {
                 return false;
             }
-            if (!rangeIter.advance(first())) {
+            final long first = first();
+            if (!rangeIter.advance(first)) {
                 return false;
             }
             int i = 0;
@@ -1197,17 +1231,131 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     return false;
                 }
                 final long end = rangeIter.currentRangeEnd();
-                i = overlapsRangeInternal(i, pack(start), pack(end));
+                i = overlapsRangeInternal(i, pack(Math.max(start, first)), pack(Math.min(end, last)));
                 if (i < 0) {
                     return true;
                 }
-                if (!rangeIter.hasNext()) {
+                // packedGet(i) is our first key past the range just tested; no range below it can overlap us, so seek
+                // the iterator there instead of stepping over the ranges in between.
+                if (!rangeIter.advance(unpack(packedGet(i)))) {
                     return false;
                 }
-                rangeIter.next();
             }
         } finally {
             rangeIter.close();
+        }
+    }
+
+    /**
+     * Whether any of our ranges overlaps any range of {@code other}.
+     * <p>
+     * The side with fewer array positions is walked range by range and each of its ranges is probed against the other,
+     * both by binary search from a carried position. A probe that misses reports the other side's next candidate key,
+     * which is used to skip ahead on the walked side, so disjoint inputs that interleave coarsely cost a search per
+     * alternation rather than a step per range.
+     *
+     * @param other The ranges to test against
+     * @return true if some range of ours overlaps some range of {@code other}
+     */
+    public final boolean overlaps(final SortedRanges other) {
+        if (isEmpty() || other.isEmpty()) {
+            return false;
+        }
+        return (count <= other.count) ? overlaps(this, other) : overlaps(other, this);
+    }
+
+    // Walks r1's ranges, probing r2 for each. Neither is empty on entry.
+    private static boolean overlaps(final SortedRanges r1, final SortedRanges r2) {
+        final long lastKey = Math.min(r1.last(), r2.last());
+        long key = Math.max(r1.first(), r2.first());
+        if (key > lastKey) {
+            return false;
+        }
+        int i1 = 0;
+        int i2 = 0;
+        while (true) {
+            i1 = r1.seekRangeStartIdx(i1, r1.pack(key));
+            if (i1 >= r1.count) {
+                return false;
+            }
+            final long packedStart = r1.packedGet(i1);
+            final long start = Math.max(r1.unpack(packedStart), key);
+            if (start > lastKey) {
+                return false;
+            }
+            final long end = Math.min(r1.unpack(r1.packedRangeEnd(i1, packedStart)), lastKey);
+            i2 = r2.overlapsRangeInternal(i2, r2.pack(start), r2.pack(end));
+            if (i2 < 0) {
+                return true;
+            }
+            if (end == lastKey) {
+                return false;
+            }
+            // r2's next key that could still match; nothing of r1 below it can overlap.
+            key = r2.unpack(r2.packedGet(i2));
+            if (key > lastKey) {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Whether any of our ranges overlaps any range of {@code other}.
+     * <p>
+     * We are walked range by range and each range is probed against {@code other} by
+     * {@link RspBitmap#overlapsRange(int, long, long)}, which binary searches spans from a carried position; the span
+     * index it reports on a miss is turned back into a key to skip ahead on our side.
+     * <p>
+     * Which side gets walked matters, because a probe costs a span search and a span view where a step of
+     * {@link #overlaps(RowSet.RangeIterator) the walk over other} amortizes both over the ranges it reads out of one
+     * container. We walk ourselves while {@code other} holds at least as many spans as we could hold ranges, since a
+     * span covers one block and cannot then be hiding more ranges per probe than we would step over; below that we walk
+     * {@code other} instead.
+     *
+     * @param other The ranges to test against
+     * @return true if some range of ours overlaps some range of {@code other}
+     */
+    public final boolean overlaps(final RspBitmap other) {
+        if (isEmpty() || other.isEmpty()) {
+            return false;
+        }
+        if (other.size() < (count >> 1)) {
+            return overlaps(other.ixRangeIterator());
+        }
+        final long lastKey = Math.min(last(), other.last());
+        long key = Math.max(first(), other.first());
+        if (key > lastKey) {
+            return false;
+        }
+        int i = 0;
+        int spanIdx = 0;
+        while (true) {
+            i = seekRangeStartIdx(i, pack(key));
+            if (i >= count) {
+                return false;
+            }
+            final long packedStart = packedGet(i);
+            final long start = Math.max(unpack(packedStart), key);
+            if (start > lastKey) {
+                return false;
+            }
+            final long end = Math.min(unpack(packedRangeEnd(i, packedStart)), lastKey);
+            final int probe = other.overlapsRange(spanIdx, start, end);
+            if (probe >= 0) {
+                return true;
+            }
+            if (end == lastKey) {
+                return false;
+            }
+            // The probe reports where to resume, which is the span past the range just tested only when it found one;
+            // when it ran off the end of the spans it reports that end, and when it stopped on the span it was reading
+            // it reports that span, which may still hold keys above our range. Clamping to the last span and taking
+            // our own range end as the floor covers both: we never skip past a key we have not tested.
+            spanIdx = Math.min(~probe, other.size() - 1);
+            key = Math.max(end + 1, other.keyForBlockAtSpanIndex(spanIdx));
+            if (key > lastKey) {
+                return false;
+            }
         }
     }
 
@@ -2662,6 +2810,33 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
 
         return maxPos;
+    }
+
+    /**
+     * As {@link #absRawBinarySearch}, but bracketing the answer by doubling steps from {@code startIdx} before
+     * searching within the bracket.
+     * <p>
+     * Callers that walk ascending targets from a carried position usually land a position or two along, and a binary
+     * search over the whole tail reads the middle of the array to get there. This costs a handful of reads next to the
+     * carried position for a near answer, and stays logarithmic in the distance to a far one.
+     */
+    final int absRawGallopingSearch(final long packedTarget, final int startIdx, final int endIdx) {
+        if (packedTarget <= absPackedGet(startIdx)) {
+            return startIdx;
+        }
+        int lo = startIdx;
+        int step = 1;
+        while (true) {
+            final int hi = lo + step;
+            if (hi >= endIdx) {
+                return absRawBinarySearch(packedTarget, lo, endIdx);
+            }
+            if (packedTarget <= absPackedGet(hi)) {
+                return absRawBinarySearch(packedTarget, lo, hi);
+            }
+            lo = hi;
+            step <<= 1;
+        }
     }
 
     protected abstract SortedRanges checkSizeAndMoveData(
@@ -4194,6 +4369,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
         if (impl instanceof SingleRange) {
             return overlapsRange(impl.ixFirstKey(), impl.ixLastKey());
+        }
+        if (impl instanceof SortedRanges) {
+            return overlaps((SortedRanges) impl);
+        }
+        if (impl instanceof RspBitmap) {
+            return overlaps((RspBitmap) impl);
         }
         final RowSet.RangeIterator it = impl.ixRangeIterator();
         return overlaps(it);

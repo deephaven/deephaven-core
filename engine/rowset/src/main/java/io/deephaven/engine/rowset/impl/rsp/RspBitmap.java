@@ -2053,7 +2053,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         }
         if (other instanceof SortedRanges) {
             final SortedRanges sr = (SortedRanges) other;
-            return sr.overlaps(ixRangeIterator());
+            return sr.overlaps(this);
         }
         final RspBitmap o = (RspBitmap) other;
         return overlaps(o);
