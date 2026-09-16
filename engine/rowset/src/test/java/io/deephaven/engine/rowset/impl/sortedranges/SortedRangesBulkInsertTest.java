@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset.impl.sortedranges;
 
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
@@ -69,13 +70,14 @@ public class SortedRangesBulkInsertTest {
                         check(trial, expected, actual);
                     }
 
-                    // A shared copy: the insert must leave the original untouched.
-                    try (final WritableRowSet shared = target.copy()) {
+                    // A shared copy: the insert must leave the original untouched. The snapshot is built key by key
+                    // so it shares nothing with the original and still holds its prior contents if the original is
+                    // wrongly written in place.
+                    try (final WritableRowSet snapshot = snapshot(target);
+                            final WritableRowSet shared = target.copy()) {
                         shared.insert(added);
                         check(trial, expected, shared);
-                        assertEquals("trial " + trial + " original changed", targetInner.ixCardinality(),
-                                target.size());
-                        assertTrue("trial " + trial + " original changed", target.subsetOf(expected));
+                        assertTrue("trial " + trial + " original changed", snapshot.equals(target));
                     }
                 }
 
@@ -89,12 +91,11 @@ public class SortedRangesBulkInsertTest {
                             actual.remove(added);
                             check(trial, expected, actual);
                         }
-                        final long fromSize = from.size();
-                        try (final WritableRowSet shared = from.copy()) {
+                        try (final WritableRowSet snapshot = snapshot(from);
+                                final WritableRowSet shared = from.copy()) {
                             shared.remove(added);
                             check(trial, expected, shared);
-                            assertEquals("trial " + trial + " original changed", fromSize, from.size());
-                            assertTrue("trial " + trial + " original changed", expected.subsetOf(from));
+                            assertTrue("trial " + trial + " original changed", snapshot.equals(from));
                         }
                     }
                     if (from != target) {
@@ -104,6 +105,13 @@ public class SortedRangesBulkInsertTest {
             }
         }
         assertTrue("too few SortedRanges targets: " + sortedRangesTargets, sortedRangesTargets > TRIALS / 2);
+    }
+
+    /** An independent copy of {@code rowSet}, sharing no state with it. */
+    private static WritableRowSet snapshot(final WritableRowSet rowSet) {
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        rowSet.forAllRowKeyRanges(builder::appendRange);
+        return builder.build();
     }
 
     private static WritableRowSet expectedUnion(final WritableRowSet target, final WritableRowSet added) {

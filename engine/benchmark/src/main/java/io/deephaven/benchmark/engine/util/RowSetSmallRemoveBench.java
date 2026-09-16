@@ -128,6 +128,11 @@ public class RowSetSmallRemoveBench {
         target.close();
     }
 
+    @TearDown(Level.Trial)
+    public void tearDownTrial() {
+        removed.close();
+    }
+
     @Benchmark
     public long bulkRemove() {
         target.remove(removed);

@@ -120,6 +120,12 @@ public class RowSetSmallInsertBench {
         target.close();
     }
 
+    @TearDown(Level.Trial)
+    public void tearDownTrial() {
+        base.close();
+        added.close();
+    }
+
     @Benchmark
     public long bulkInsert() {
         target.insert(added);
