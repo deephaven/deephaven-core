@@ -64,7 +64,7 @@ A new [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) con
 
 `most_recent` and `most_recent_rows` both raise a [`DHError`](/core/pydoc/code/deephaven.dherror.html#deephaven.dherror.DHError) if the source table is not add-only.
 
-`most_recent` reads only the first, last, and binary-search midpoint timestamps of each partition, not every row. As a result, it raises a `DHError` if one of those specific timestamps is null, but a null elsewhere in the partition may go undetected. If a partition is not correctly sorted by timestamp, the result of `most_recent` is undefined. `most_recent_rows` does not read `ts_col` at all, so neither of these applies to it.
+`most_recent` reads only the first, last, and binary-search midpoint timestamps of each partition, not every row. It raises a `DHError` if one of those is null, but a null elsewhere in the partition may go undetected. If a partition is not correctly sorted by timestamp, the result of `most_recent` is undefined. `most_recent_rows` does not read `ts_col` at all, so neither of these applies to it.
 
 ## Examples
 
