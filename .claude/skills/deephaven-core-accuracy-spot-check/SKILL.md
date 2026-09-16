@@ -1,7 +1,7 @@
 ---
 name: deephaven-core-accuracy-spot-check
 description: Fast, targeted technical-accuracy check for a small addition or edit to deephaven-core (Community) documentation — one paragraph, one code snippet, one changed claim. Verifies only the changed lines against source; deliberately skips the full-file completeness sweep, cross-language duplicate-claim search, and exhaustive enumeration re-derivation that deephaven-core-accuracy-check performs. Use deephaven-core-accuracy-check instead for a new doc, a substantial rewrite, or an end-to-end PR review — this skill will under-check those.
-allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
+allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 ---
 
 > [!IMPORTANT]

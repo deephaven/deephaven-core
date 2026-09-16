@@ -28,10 +28,16 @@ are *not* part of the Crash Course (`quickstart.md`, `pyclient-quickstart.md`,
 `production-application.md`). These follow the same step-by-step shape as the Crash Course, but
 the reader supplies their own "ingredients" (their own data, tables, use case) and can reach a
 different outcome — that's what makes them how-to guides, not tutorials. In `sidebar.json` these
-fill essentially every **User Guide** subsection other than Architectural details: Create/import/
-export tables, Work with tables, Query strings, Python, Plot, GUI, Client APIs, Plugins,
-Development tools, Best practices and troubleshooting, System setup and admin (informally "the
-admin guide" — authentication, configuration, cloud deployment), Cloud deployment.
+fill essentially every **User Guide** subsection: Create/import/export tables, Work with tables,
+Query strings, Python, Plot, GUI, Client APIs, Plugins, Development tools, Best practices and
+troubleshooting, System setup and admin (informally "the admin guide" — authentication,
+configuration, cloud deployment), Cloud deployment — including at least one placed inside
+**Architectural details** itself: `how-to-guides/initialization-and-updates.md` sits there
+alongside the conceptual live/ticking-table pages in both `docs/python/sidebar.json:145-150` and
+`docs/groovy/sidebar.json:124-130`, presumably for discoverability rather than as a category
+override (same rationale as the Concept-guide co-location exception below). Don't treat
+Architectural details as an Architectural-details-only zone — check the directory, not the
+sidebar cluster, the same way you would for any other placement exception here.
 - Tone: conversational, first-person narrative; can offer advice, tips, or alternatives.
 - Structure: goal-oriented; branching ("if you want X instead, do Y") is expected and fine here.
 
@@ -41,13 +47,17 @@ under **User Guide → Architectural details** (Deephaven's design, Patterns of 
 Incremental update model, Live DAG, Table types, Column types, Deephaven Vectors, Core API design,
 Servers & clients, What is Barrage?) — but that clustering is a strong tendency, not the
 definition, and two kinds of exception are common enough to expect, not treat as anomalies:
-  - **Overview pages**, which count as concept guides even when they introduce a different section
-    entirely rather than sitting in Architectural details — e.g. "Deephaven Overview" (site intro),
-    "Crash Course Overview," "Table operations overview" (filed under Work with tables). Don't
-    over-trust the word "overview" itself as the signal, though: `how-to-guides/overview-kafka.md`
-    is titled "Kafka Overview" but is a how-to guide by directory and content (it walks through
-    using Kafka, not the concept of streaming) — check the directory and what the page actually
-    does, not just its title.
+  - **Overview pages under `conceptual/`** are concept guides by directory even when their sidebar
+    placement puts them in a different section entirely rather than the Architectural details
+    cluster — e.g. "Deephaven Overview" (`conceptual/deephaven-overview.md`, a top-level sidebar
+    entry outside User Guide entirely) and "Table operations overview"
+    (`conceptual/table-operations-overview.md`, filed under Work with tables). Don't over-trust
+    the word "overview" itself as the signal, though — it points the wrong way as often as the
+    right one: `how-to-guides/overview-kafka.md` is titled "Kafka Overview" but is a how-to guide
+    by directory and content (it walks through using Kafka, not the concept of streaming), and
+    `getting-started/crash-course/overview.md` ("Crash Course Overview") is the Crash Course's own
+    landing chapter — a Tutorial page by directory, not a concept guide, despite the title. Check
+    the directory and what the page actually does, not just its title.
   - **Concept guides co-located with their practical companions for discoverability.**
     `conceptual/query-engine/parallelization.md` and `conceptual/query-engine/engine-locking.md`
     sit under **Best practices and troubleshooting → Performance** in the sidebar, alongside
@@ -87,8 +97,13 @@ let the subsection name override the directory-based category.
 
 ## Audience calibration
 
-All deephaven-core docs under `docs/` are public/external — this doc set has no internal-only
-tier. Concept and Reference pages can assume more from the reader (using internal/technical
-vocabulary once it's been defined) than the Crash Course, which is written for a first-time user
-with zero context. Define jargon on first use in every category; how much you can lean on that
-definition later depends on the category above.
+All *published* deephaven-core docs under `docs/{python,groovy}` are public/external — this doc
+set has no internal-only tier. Concept and Reference pages can assume more from the reader (using
+internal/technical vocabulary once it's been defined) than the Crash Course, which is written for
+a first-time user with zero context. Define jargon on first use in every category; how much you
+can lean on that definition later depends on the category above.
+
+This external-audience assumption does not extend to contributor-facing tooling docs that live
+under `docs/` but aren't published (e.g. `docs/README.md`, `docs/snapshotter/README.md`) — those
+document the doc-build tooling itself for repo contributors, not a deephaven.io reader, and aren't
+one of the four categories above at all.
