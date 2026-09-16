@@ -46,7 +46,9 @@ The default `test` task **excludes** the three categorized types (`ParallelTest`
 runs *only* that category. These categorized tasks are **not** wired into `check` — run them
 explicitly by name. CI runs them nightly: the root `nightly` task and
 `.github/workflows/nightly-check-ci.yml` invoke `check`, `testParallel`, `testSerial`, and
-`testOutOfBand` directly.
+`testOutOfBand` directly. A pull request whose source branch is named `engine/**` or
+`coverage/**` additionally runs `testParallel`, `testSerial`, and `testOutOfBand` on Java 21 as
+part of `.github/workflows/check-ci.yml`, so auto-merge on such a PR is gated on them.
 
 ```bash
 # Run the (uncategorized) tests for a module
