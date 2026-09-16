@@ -111,14 +111,13 @@ public class SortedRangesBulkInsertTest {
      */
     @Test
     public void containedFirstRangeKeepsSharedCopyIsolated() {
-        try (final WritableRowSet original = RowSetFactory.fromRange(10, 20);
-                final WritableRowSet shared = original.copy();
-                final WritableRowSet added = RowSetFactory.empty()) {
+        // The original is complete before the copy is taken, so the copy still shares its inner set when it is
+        // written; an insert into either one before that point would already have split them.
+        try (final WritableRowSet original = RowSetFactory.fromRange(10, 20)) {
             original.insert(30);
-            shared.insert(30);
-            added.insert(15);
-            added.insert(25);
-            try (final WritableRowSet snapshot = snapshot(original)) {
+            try (final WritableRowSet snapshot = snapshot(original);
+                    final WritableRowSet shared = original.copy();
+                    final WritableRowSet added = RowSetFactory.fromKeys(15, 25)) {
                 shared.insert(added);
                 assertTrue(snapshot.equals(original));
                 assertTrue(shared.containsRange(25, 25));
