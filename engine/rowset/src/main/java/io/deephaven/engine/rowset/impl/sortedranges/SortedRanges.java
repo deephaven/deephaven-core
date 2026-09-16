@@ -1157,7 +1157,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     // startIdx is the array position index where to begin the search for packedStart.
     // returns -1 if this array overlaps the provided range, or if it doesn't, returns the array position index
     // where to begin a subsequent call for a later range that might overlap.
-    // packedStart must be within [0, our last packed value], which is what keeps the search result inside the array.
+    // packedStart must be within [0, absPackedGet(count - 1)] -- the last value is negated when it ends a range --
+    // which is what keeps the search result inside the array.
     private int overlapsRangeInternal(final int startIdx, final long packedStart, final long packedEnd) {
         final int iStart = absRawGallopingSearch(packedStart, startIdx, count - 1);
         final long iStartData = packedGet(iStart);
