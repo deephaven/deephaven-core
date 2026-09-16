@@ -20,7 +20,7 @@ col = Selectable.parse("NewColumn = ExistingColumn * 2")
 
 ### From column name and expression
 
-Use `Selectable.of` with [`ColumnName`](https://deephaven.io/core/javadoc/io/deephaven/api/ColumnName.html) and [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html) when the column name and expression are separate values, such as when they come from variables or user input.
+Use `Selectable.of` with [`ColumnName`](https://deephaven.io/core/javadoc/io/deephaven/api/ColumnName.html) and [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html) when the column name and expression are separate values you construct programmatically, such as from application variables. Only build a `RawString` from a trusted source: it stores the expression unparsed and the engine executes it verbatim, so passing untrusted user input to `RawString.of` lets an attacker inject arbitrary query code.
 
 ```groovy syntax
 import io.deephaven.api.Selectable
