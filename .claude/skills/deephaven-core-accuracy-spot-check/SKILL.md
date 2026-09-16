@@ -19,7 +19,12 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    the step number, since renumbering there has already gone stale once). Search source first;
    never correct an example from memory.
 
-3. **Apply style locally.** Don't invoke `deephaven-writing-style` as a full pass — its mechanical
+3. **Apply style locally — skip this step entirely when invoked as part of `deephaven-docs-review-full`'s
+   step 3.** That orchestrator runs a dedicated, full `deephaven-writing-style` pass afterward, in
+   its own step 4; doing local style fixes here too would apply style changes before the
+   orchestrator's promised style-last step, or duplicate its findings when report-only. When
+   invoked standalone (not nested in that orchestrator), don't invoke `deephaven-writing-style` as
+   a full pass either — its mechanical
    verification section is a file-wide grep sweep by nature, and running it here would mean
    checking the whole file, defeating the point of a scoped spot check. Instead, apply the
    specific prose rules that matter for a small edit directly to the changed lines only: bare

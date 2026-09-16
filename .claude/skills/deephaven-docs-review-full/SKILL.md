@@ -1,7 +1,7 @@
 ---
 name: deephaven-docs-review-full
 description: Run a complete deephaven-core (Community) documentation review — technical accuracy, structural organization, and prose style — in one pass, in the order that keeps one dimension from silently undoing another. Use this for a new doc, a substantially rewritten doc, or before merging a doc PR, instead of remembering to invoke deephaven-core-accuracy-check, deephaven-doc-structure-review, and deephaven-writing-style separately and in the right order. For a single small edit, use deephaven-core-accuracy-spot-check instead — this skill is overkill for a one-paragraph change.
-allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *), Bash(awk *), Bash(git log *)
+allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *), Bash(awk *)
 ---
 
 # Full deephaven-core documentation review
@@ -50,17 +50,21 @@ instructions know to skip its standalone full accuracy/style re-run in that case
 this workflow's steps 3-4 instead, so don't expect or trigger that separately here. This step may
 move, merge, cut, reorder, or rename sections that were just verified in step 1 — that's expected
 and fine, but it's exactly why step 3 exists.
-Note everywhere content was moved, merged, cut, reordered, or renamed (not just "moved, merged, or
-had a transition rewritten") — step 3 needs the complete list, since a deleted caveat or a
-renamed-away section can invalidate an accuracy finding just as easily as a literal move can.
+Note everywhere content was moved, merged, cut, reordered, renamed, **or reworded in place**
+(rewritten without changing location) — step 3 needs the complete list, since a rewrite that
+changes a claim without moving its section would otherwise never reach the spot-check, and a
+deleted caveat or a renamed-away section can invalidate an accuracy finding just as easily as a
+literal move can.
 
 ## 3. Re-verify what structure touched
 
 For every section from step 2's list, handle it by what happened to it:
 
 - **Moved, merged, or reworded** (surviving prose): re-run `deephaven-core-accuracy-spot-check`
-  on it — but per its own scope (one paragraph, one snippet, one changed claim), not as a single
-  call covering the whole section. If the section contains more than one claim or paragraph, call
+  on it as the middle step of this orchestrator — its own instructions know to skip its local
+  style step in that case and defer to this workflow's step 4 instead, so don't expect or trigger
+  that separately here. Run it per its own scope (one paragraph, one snippet, one changed claim),
+  not as a single call covering the whole section. If the section contains more than one claim or paragraph, call
   it once per claim/paragraph rather than handing it the whole section at once; a merge can
   combine two previously-separate claims into one that's subtly wrong even though both originals
   were correct individually, and a single oversized spot-check call is exactly the under-checking
@@ -89,9 +93,12 @@ For every section from step 2's list, handle it by what happened to it:
   cross-language sibling — for links pointing *to* it, since any page in the corpus can link to
   any other (e.g. `conceptual/query-table-configuration.md` links to
   `query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where`, a
-  completely unrelated file). If more than a couple of links or anchors were affected, escalate to
-  a full `deephaven-core-accuracy-check` re-pass (its internal-link review step) rather than
-  re-deriving that check here.
+  completely unrelated file). This corpus-wide inbound-link scan is mandatory and has no
+  substitute — `deephaven-core-accuracy-check`'s own internal-link step only checks links inside
+  the document being reviewed, not other pages' inbound links to it, so escalating to it does not
+  cover this. If more than a couple of links or anchors were affected, run the corpus-wide scan
+  *and* escalate to a full `deephaven-core-accuracy-check` re-pass for the document's own
+  within-doc links — the two checks are complementary, not alternatives.
 
 Do not skip this step under time pressure. It's the step that catches the compounding defect a
 structural edit introduces into content nobody re-reads afterward.
