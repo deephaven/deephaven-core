@@ -228,7 +228,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
     }
 
     @Override
-    public boolean snapshotNeeded() {
+    public boolean snapshotNeeded(@NotNull final QueryTable parent) {
         // This operation currently requires the UGP lock when either input table is refreshing, so there's no need to
         // use a snapshot.
         return false;
