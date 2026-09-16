@@ -44,6 +44,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
@@ -2583,5 +2584,53 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 result);
 
         listener.close();
+    }
+
+    public void testExactJoinLeftRefreshingRightStaticUnmatchedLeftUpdate() {
+        // a refreshing left with a static right uses the LeftTickingListener, which must enforce the exact-match
+        // requirement for rows that arrive or change key after instantiation just as the initial build does
+        final String exactMsg = "Tables don't have one-to-one mapping - no mappings for key ";
+
+        // an added row with no right match
+        assertEquals(exactMsg + "c.", exactJoinLeftUpdateError(col("Key", "a", "b"), left -> {
+            addToTable(left, i(2), col("Key", "c"), intCol("L", 3));
+            left.notifyListeners(i(2), i(), i());
+        }));
+
+        // a row whose key changes to a value with no right match
+        assertEquals(exactMsg + "c.", exactJoinLeftUpdateError(col("Key", "a", "b"), left -> {
+            addToTable(left, i(1), col("Key", "c"), intCol("L", 2));
+            left.notifyListeners(i(), i(), i(1));
+        }));
+
+        // a single boolean key selects the SimpleUniqueStaticNaturalJoinStateManager, which shares the
+        // LeftTickingListener with the hashed static state manager
+        assertEquals(exactMsg + "null.", exactJoinLeftUpdateError(col("Key", true, false), left -> {
+            addToTable(left, i(2), col("Key", (Boolean) null), intCol("L", 3));
+            left.notifyListeners(i(2), i(), i());
+        }));
+    }
+
+    /**
+     * exactJoin a two-row refreshing left table to a static right table with the same keys, apply {@code leftUpdate}
+     * within a cycle, and return the message of the resulting failure of the join.
+     */
+    private String exactJoinLeftUpdateError(final ColumnHolder<?> keys, final Consumer<QueryTable> leftUpdate) {
+        final QueryTable left = testRefreshingTable(i(0, 1).toTracking(), keys, intCol("L", 1, 2));
+        final Table right = testTable(keys, intCol("R", 10, 20));
+
+        final Table result = left.exactJoin(right, "Key");
+        assertTableEquals(newTable(keys, intCol("L", 1, 2), intCol("R", 10, 20)), result);
+
+        final ErrorListener listener = new ErrorListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> leftUpdate.accept(left));
+        }
+
+        assertNotNull(listener.originalException());
+        return listener.originalException().getMessage();
     }
 }

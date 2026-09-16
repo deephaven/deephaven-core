@@ -519,6 +519,7 @@ class NaturalJoinHelper {
                 final MutableInt position = new MutableInt(0);
                 downstream.modified().forAllRowKeys((long modifiedKey) -> {
                     final long newRedirection = newLeftRedirections.getLong(position.get());
+                    jsm.checkExactMatch(modifiedKey, newRedirection);
                     final long old;
                     if (newRedirection == RowSequence.NULL_ROW_KEY) {
                         old = rowRedirection.remove(modifiedKey);
@@ -541,6 +542,7 @@ class NaturalJoinHelper {
             final MutableInt position = new MutableInt(0);
             downstream.added().forAllRowKeys((long ll) -> {
                 final long newRedirection = newLeftRedirections.getLong(position.get());
+                jsm.checkExactMatch(ll, newRedirection);
                 if (newRedirection != RowSequence.NULL_ROW_KEY) {
                     rowRedirection.putVoid(ll, newRedirection);
                 }
