@@ -72,10 +72,11 @@ public final class RowSetUnionBatcher implements SafeCloseable {
      * @param batchSize The number of row sets to gather before merging, which a caller passes as the number it expects
      *        to produce. Clamped to {@code [1, }{@link #MAX_BATCH_SIZE}{@code ]}: under the cap the whole input merges
      *        at once, and over it, or where the count is only an upper bound or no bound at all, the cap takes over and
-     *        the count costs nothing to have passed.
+     *        the count costs nothing to have passed. Taken as a {@code long} so that a caller counting rows rather than
+     *        objects has nothing to narrow and no reason to know the cap.
      */
-    public RowSetUnionBatcher(final int batchSize) {
-        this.batchSize = Math.min(Math.max(1, batchSize), MAX_BATCH_SIZE);
+    public RowSetUnionBatcher(final long batchSize) {
+        this.batchSize = (int) Math.min(Math.max(1L, batchSize), MAX_BATCH_SIZE);
         // Bounded by the clamp above, so this is the list's greatest extent and not just a starting point.
         entries = new ArrayList<>(2 * this.batchSize);
     }

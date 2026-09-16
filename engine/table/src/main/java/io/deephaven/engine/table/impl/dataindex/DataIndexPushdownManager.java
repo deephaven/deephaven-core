@@ -235,8 +235,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             try {
                 final Table filteredTable = toFilter.where(copiedFilter);
                 // One row set per index row that passed the filter.
-                try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(
-                        (int) Math.min(filteredTable.size(), RowSetUnionBatcher.MAX_BATCH_SIZE));
+                try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(filteredTable.size());
                         final CloseableIterator<RowSet> it =
                                 ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
                                         .iterator()) {

@@ -78,7 +78,7 @@ public class RowSetUnionBatcherTest {
      * Build {@code rowSets} through a batcher at {@code batchSize} and assert that the result is their union and
      * nothing else, and that the inputs are left as they were found.
      */
-    private static void checkBuild(final List<RowSet> rowSets, final int batchSize) {
+    private static void checkBuild(final List<RowSet> rowSets, final long batchSize) {
         final long[] sizesBefore = rowSets.stream().mapToLong(RowSet::size).toArray();
         try (final WritableRowSet expected = reference(rowSets)) {
             final WritableRowSet actual;
@@ -162,7 +162,8 @@ public class RowSetUnionBatcherTest {
         // is small, not an unbounded batch when it is not. Two ranges each, so the sets genuinely interleave and none
         // of them appends to the one before it.
         final List<RowSet> rowSets = interleaved(RowSetUnionBatcher.MAX_BATCH_SIZE + 1, 2);
-        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(Integer.MAX_VALUE)) {
+        // A row count, which is what a caller with a table rather than a collection has to offer.
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(Long.MAX_VALUE)) {
             for (int ii = 0; ii < rowSets.size(); ++ii) {
                 batcher.add(rowSets.get(ii).copy());
                 assertThat(batcher.pendingBatchSize()).isLessThanOrEqualTo(RowSetUnionBatcher.MAX_BATCH_SIZE);
@@ -182,7 +183,7 @@ public class RowSetUnionBatcherTest {
     @Test
     public void aRequestBelowOneIsTreatedAsOne() {
         final List<RowSet> rowSets = interleaved(4, 2);
-        for (final int batchSize : new int[] {Integer.MIN_VALUE, -1, 0}) {
+        for (final long batchSize : new long[] {Long.MIN_VALUE, Integer.MIN_VALUE, -1, 0}) {
             checkBuild(rowSets, batchSize);
         }
         closeAll(rowSets);

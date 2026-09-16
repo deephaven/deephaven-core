@@ -163,7 +163,8 @@ folded into one `SafeCloseable`. A caller hands it row sets and calls `build` fo
 between, so a traversal that throws part way through abandons what it gathered instead of handing back half a union.
 
 The batch size is the caller's own count — `setKernel.size()`, `filteredTable.size()`, `keysToRefilter.size()`,
-`matchColumns.size()` — clamped by the constructor to `[1, MAX_BATCH_SIZE]`. Under the cap that count merges the whole
+`matchColumns.size()` — taken as a `long` and clamped by the constructor to `[1, MAX_BATCH_SIZE]`, so a caller
+counting rows rather than objects has nothing to narrow and no reason to name the cap. Under the cap that count merges the whole
 input at once; over it, or where it is only an upper bound, it costs nothing to pass and the cap takes over. The clamp
 is also what makes `2 * batchSize` the list's greatest extent rather than just its starting capacity.
 
