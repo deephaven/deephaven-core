@@ -469,29 +469,38 @@ public class SessionService {
         public void run() {
             final long nowMillis = scheduler.currentTimeMillis();
 
-            do {
-                final TokenExpiration next = outstandingCookies.peek();
-                if (next == null || next.deadlineMillis > nowMillis) {
-                    break;
-                }
+            try {
+                do {
+                    final TokenExpiration next = outstandingCookies.peek();
+                    if (next == null || next.deadlineMillis > nowMillis) {
+                        break;
+                    }
 
-                // Permanently remove the first token as it is officially expired, note that other tokens may exist for
-                // this session, so the session itself does not expire. We allow multiple tokens to co-exist to best
-                // support out of order requests and thus allow any reasonable client behavior that respects a given
-                // token expiration time.
-                outstandingCookies.poll();
+                    // Permanently remove the first token as it is officially expired, note that other tokens may exist
+                    // for this session, so the session itself does not expire. We allow multiple tokens to co-exist to
+                    // best support out of order requests and thus allow any reasonable client behavior that respects a
+                    // given token expiration time.
+                    outstandingCookies.poll();
 
-                if (next.session.isExpired()) {
-                    next.session.onExpired();
-                }
-            } while (true);
-
-            synchronized (SessionService.this) {
-                final TokenExpiration next = outstandingCookies.peek();
-                if (next == null) {
-                    cleanupJobInstalled = false;
-                } else {
-                    scheduler.runAtTime(next.deadlineMillis, this);
+                    if (next.session.isExpired()) {
+                        try {
+                            next.session.onExpired();
+                        } catch (final RuntimeException err) {
+                            // an exception escaping a scheduled task is fatal to the process; one session that cannot
+                            // be expired must cost neither the process nor the other sessions waiting in this sweep
+                            log.error().append("failed to expire session ").append(next.session.getSessionId())
+                                    .append(": ").append(err).endl();
+                        }
+                    }
+                } while (true);
+            } finally {
+                synchronized (SessionService.this) {
+                    final TokenExpiration next = outstandingCookies.peek();
+                    if (next == null) {
+                        cleanupJobInstalled = false;
+                    } else {
+                        scheduler.runAtTime(next.deadlineMillis, this);
+                    }
                 }
             }
         }

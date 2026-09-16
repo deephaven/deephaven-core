@@ -48,7 +48,6 @@ import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import javax.inject.Provider;
 import java.io.Closeable;
-import java.io.IOException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -503,7 +502,15 @@ public class SessionState {
 
         log.debug().append(logPrefix).append("releasing outstanding exports").endl();
         synchronized (exportMap) {
-            exportMap.forEach(ExportObject::cancel);
+            // the sweep must reach every export; one export that cannot be cancelled must not leak the rest
+            exportMap.forEach(export -> {
+                try {
+                    export.cancel();
+                } catch (final RuntimeException err) {
+                    log.error().append(logPrefix).append("failed to cancel export '").append(export.logIdentity)
+                            .append("' while expiring the session: ").append(err).endl();
+                }
+            });
             exportMap.clear();
         }
 
@@ -522,7 +529,7 @@ public class SessionState {
         callbacksToClose.forEach(callback -> {
             try {
                 callback.close();
-            } catch (final IOException e) {
+            } catch (final Exception e) {
                 log.error().append(logPrefix).append("error during onClose callback: ").append(e).endl();
             }
         });
