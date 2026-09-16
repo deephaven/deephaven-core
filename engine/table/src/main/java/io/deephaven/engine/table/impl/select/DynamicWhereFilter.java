@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
@@ -511,12 +513,19 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             }
         }
 
-        // At most one row set per set value, and fewer when a value is not in the index.
+        // At most one row set per set value, and fewer when values share an index row or are not in the index.
         final WritableRowSet possiblyMatching;
         try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(valueCount)) {
+            // The set values are full tuples but the lookup is on a subset of their columns, so many of them can land
+            // on the same index row. That row's rows are the same rows every time, so taking them once is both less
+            // work and less held: the alternative fills the merge with copies of one intersection.
+            final LongSet visitedIndexRowKeys = new LongOpenHashSet();
             values.forEachRemaining(key -> {
                 final Object lookupKey = keyMappingFunction.apply(key);
                 final long rowKey = rowKeyLookup.apply(lookupKey, false);
+                if (!visitedIndexRowKeys.add(rowKey)) {
+                    return;
+                }
                 final RowSet rowSet = rowSetColumn.get(rowKey);
                 if (rowSet != null) {
                     batcher.add(rowSet.intersect(selection));

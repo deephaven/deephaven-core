@@ -162,8 +162,8 @@ merge sorts, so it is flat across all three orders.
 folded into one `SafeCloseable`. A caller hands it row sets and calls `build` for the union; it owns everything in
 between, so a traversal that throws part way through abandons what it gathered instead of handing back half a union.
 
-The batch size is the caller's own count — `setKernel.size()`, `filteredTable.size()`, `keysToRefilter.size()`,
-`matchColumns.size()` — taken as a `long` and clamped by the constructor to `[1, MAX_BATCH_SIZE]`, so a caller
+The batch size is the caller's own count — `setKernel.size`, `filteredTable.size`, `keysToRefilter.size`,
+`matchColumns.size` — taken as a `long` and clamped by the constructor to `[1, MAX_BATCH_SIZE]`, so a caller
 counting rows rather than objects has nothing to narrow and no reason to name the cap. Under the cap that count merges the whole
 input at once; over it, or where it is only an upper bound, it costs nothing to pass and the cap takes over. The clamp
 is also what makes `2 * batchSize` the list's greatest extent rather than just its starting capacity.
@@ -185,10 +185,13 @@ The list is all this holds onto: at most `2 * MAX_BATCH_SIZE` references. Each c
 old hand-rolled loop, so that part is unchanged. What is *held* is unchanged for the
 callers that produce a row set per key or per index entry — those inputs are disjoint, so the groups sum to the result.
 Overlapping input is where holding groups costs more than a running result would: a running result stays the size of
-one input while `batchSize` groups are each about that size. Only `WouldMatchOperation` overlaps, since a row can
-change in several match columns at once, and it sizes its batcher at `matchColumns.size()`, so it collapses once and
-never holds a second group. Reaching the bad case needs both overlap and enough inputs to fill the groups, which no
-converted call site does — and the merge's own passes have the same property.
+one input while `batchSize` groups are each about that size. Two call sites could overlap and neither reaches it.
+`WouldMatchOperation` overlaps, since a row can change in several match columns at once, but it sizes its batcher at
+`matchColumns.size`, so it collapses once and never holds a second group. `DynamicWhereFilter.filterPartialIndex`
+looks up a subset of the set's key columns, so many set values land on the same index row — it deduplicates the index
+row keys it has already taken, which is less work as well as less held, and leaves the intersections it merges
+disjoint. Reaching the bad case needs both overlap and enough inputs to fill the groups, which no converted call site
+does — and the merge's own passes have the same property.
 
 It does two things before the merge sees anything, both of which the merge would otherwise have to undo:
 
