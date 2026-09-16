@@ -6,7 +6,6 @@ package io.deephaven.server.object;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.auth.AuthContext;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -209,20 +208,27 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         }
 
         private void doWork() {
-            // More than one thread (at most two) can arrive here at the same time, but only one will pass the
-            // compareAndSet
-            EnqueuedStreamOperation next = operations.peek();
+            // More than one thread can arrive here at the same time, but only the one that passes the compareAndSet
+            // owns dispatching. Because only the owner polls, operations run one at a time and in enqueued order.
+            while (runState.compareAndSet(EnqueuedState.WAITING, EnqueuedState.RUNNING)) {
+                final EnqueuedStreamOperation next = operations.poll();
+                if (next != null) {
+                    // Ownership passes to the operation, which restores the state to WAITING once it completes
+                    next.run();
+                    return;
+                }
 
-            // If we fail the null check, no work to do, leave state as WAITING (though if work was added right after
-            // peek(), that thread will make it into here and start). If we fail the state check, something else has
-            // already started work
-            if (next != null && runState.compareAndSet(EnqueuedState.WAITING, EnqueuedState.RUNNING)) {
-                // We successfully set state to running, and should remove the item we just peeked at
-                EnqueuedStreamOperation actualNext = operations.poll();
-                Assert.eq(next, "next", actualNext, "actualNext");
+                // Nothing was enqueued after all, so release ownership. A failed compareAndSet means the stream was
+                // closed while we held it, and no more work may be dispatched.
+                if (!runState.compareAndSet(EnqueuedState.RUNNING, EnqueuedState.WAITING)) {
+                    return;
+                }
 
-                // Run the new item
-                next.run();
+                // Work may have been enqueued between the poll and the release by a thread that saw us as RUNNING and
+                // therefore did not dispatch it; loop so that it is not stranded.
+                if (operations.isEmpty()) {
+                    return;
+                }
             }
         }
 
