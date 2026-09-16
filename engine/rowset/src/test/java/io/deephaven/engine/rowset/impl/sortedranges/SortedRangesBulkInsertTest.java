@@ -160,6 +160,35 @@ public class SortedRangesBulkInsertTest {
     }
 
     /**
+     * A planned removal whose ranges run past our last entry must stop once our entries are exhausted, leaving the
+     * earlier cuts intact, in private and shared sets alike.
+     */
+    @Test
+    public void removalPastTheLastEntryStops() {
+        // Enough entries that five removed ranges take the planned path.
+        final RowSetBuilderSequential targetBuilder = RowSetFactory.builderSequential();
+        for (long key = 0; key < 2_000 * 4; key += 4) {
+            targetBuilder.appendKey(key);
+        }
+        try (final WritableRowSet target = targetBuilder.build();
+                final WritableRowSet removed = RowSetFactory.fromKeys(4, 8, 12, 7_996, 9_000);
+                final WritableRowSet expected = snapshot(target)) {
+            removed.forAllRowKeyRanges(expected::removeRange);
+            assertEquals(target.size() - 4, expected.size());
+            try (final WritableRowSet actual = snapshot(target)) {
+                actual.remove(removed);
+                check(0, expected, actual);
+            }
+            try (final WritableRowSet snapshotBefore = snapshot(target);
+                    final WritableRowSet shared = target.copy()) {
+                shared.remove(removed);
+                check(0, expected, shared);
+                assertTrue(snapshotBefore.equals(target));
+            }
+        }
+    }
+
+    /**
      * An independent copy of {@code rowSet}, sharing no state with it. Inserting into an empty row set would instead
      * take a shared reference to the argument's inner set.
      */

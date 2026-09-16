@@ -2185,13 +2185,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
 
             if (pending && s <= gLastOldEnd) {
-                // [s, e] cuts the remainder [pieceFirst, gLastOldEnd] the previous removal left of our last range.
+                // [s, e] cuts the remainder [pieceFirst, gLastOldEnd] the previous removal left of our last range. The
+                // removed set's ranges are neither overlapping nor adjacent, so s lies at least one key past the
+                // remainder's first key and a left part of the remainder always survives.
                 final int piece = plan.pieces - 1;
-                if (plan.first[piece] <= s - 1) {
-                    plan.last[piece] = s - 1;
-                } else {
-                    --plan.pieces;
-                }
+                Assert.geq(s - 1, "s - 1", plan.first[piece], "plan.first[piece]");
+                plan.last[piece] = s - 1;
                 if (e < gLastOldEnd) {
                     plan.addPiece(e + 1, gLastOldEnd);
                 } else {
