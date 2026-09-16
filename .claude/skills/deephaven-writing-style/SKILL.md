@@ -12,8 +12,12 @@ These standards apply to deephaven-core documentation.
 Read `ref-deephaven-doc-categories` and identify which of the four categories (Tutorial — Crash
 Course only, How-to guide, Concept guide, Reference guide) the doc is — that file has the
 directory rule for each, the misclassification trap ("tutorial" is not a synonym for
-"step-by-step"), and the pages that don't fit any of the four (currently just the site's landing
-page). Do this before applying the tone rules below — they're calibrated per category.
+"step-by-step"), and the pages that don't fit any of the four (see its "Pages outside the four
+categories" section — the site's landing page and contributor-facing tooling docs, not just the
+former). For an out-of-taxonomy page, skip the per-category tone/audience calibration below
+entirely; the prose-quality and formatting rules still apply. For a page that does fit one of the
+four, do the category identification before applying the tone rules below — they're calibrated
+per category.
 
 ## Prose quality
 
@@ -21,7 +25,7 @@ page). Do this before applying the tone rules below — they're calibrated per c
 - **Define jargon and internal terms on first use.** Terms like "ticking," "blink table," "live table," or internal service/component names should be defined in plain language or linked to a reference page the first time they appear in a doc — don't assume the reader already knows them.
 - **Calibrate to the audience.** All *published* `docs/{python,groovy}` content is external-facing (deephaven.io) — none of it is an internal-only tier — but how much you can lean on internal vocabulary once it's defined still varies by category (see `ref-deephaven-doc-categories`): the Crash Course assumes zero prior context, Concept/Reference pages can assume more. Avoid unexplained internal-only vocabulary (internal service names, internal abbreviations, implementation details that don't matter to the reader) regardless of category. This external-audience assumption does **not** extend to contributor-facing tooling docs that happen to live under `docs/` but aren't published (e.g. `docs/README.md`, `docs/snapshotter/README.md`) — those are written for repo contributors and may freely use internal tooling vocabulary, script names, and implementation detail.
 - **Avoid egregious jargon and hedging.** Prefer concrete, direct sentences over vague qualifiers ("may potentially," "in some cases could") unless the uncertainty is real and worth flagging.
-- **Tone.** Tutorials and how-tos can be conversational, first-person narrative while remaining professional. Reference material is dry and formal — third-person narrative without contractions.
+- **Tone.** Tutorials and how-tos can be conversational, first-person narrative while remaining professional. Reference material is dry and formal — third-person narrative without contractions — except `reference/community-questions/*`, which is a first-person Q&A format and takes the conversational how-to tone instead (see `ref-deephaven-doc-categories`).
 - **Sentence case in headings** — not Title Case. Don't include links in headers.
 - **Straight quotes only.** Use `"` and `'`, never smart/curly quotes (`“` `”` `‘` `’`).
 - **Em dashes** for parenthetical statements, not hyphens or en dashes. Surround with a single space on either side: `word — word`, not `word—word`.

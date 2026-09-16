@@ -18,15 +18,21 @@ after a structural edit that moves or merges prose).
 ## 0. Identify the doc's category
 
 Read `ref-deephaven-doc-categories` and determine which of the four categories (Tutorial —
-Crash Course only, How-to guide, Concept guide, Reference guide) this doc is. It changes how
-severely several checks below should weigh:
+Crash Course only, How-to guide, Concept guide, Reference guide) this doc is — check that file's
+"Pages outside the four categories" section first if it doesn't obviously fit one (e.g.
+`intro.md`, or a contributor-facing tooling README); for an out-of-taxonomy page, skip the
+category weighting below entirely and apply only the generic structural checks in step 2. For a
+page that does fit one of the four, category changes how severely several checks below should
+weigh:
 
 - **Tutorial** (Crash Course): treat any branch or "if you want X instead" aside as a bigger
   defect than elsewhere — the category's whole point is one linear path for every reader.
 - **Concept guide**: the category most exposed to split/duplicated explanations and topic
   interleaving, since it's usually the longest and most narrative. Weight those checks up.
 - **Reference guide**: an orphaned aside or a gap in an enumerated list matters more here than in
-  a concept guide — a reference reader is scanning for one fact, not reading linearly.
+  a concept guide — a reference reader is scanning for one fact, not reading linearly. This does
+  not apply to `reference/community-questions/*`, which is one question and one answer per page,
+  not an enumerable reference — weight it like a how-to guide instead.
 - **How-to guide**: branching and offered alternatives are expected and not a defect by
   themselves; judge flow by whether the reader can still complete their own goal, not by whether
   every reader follows the identical path.

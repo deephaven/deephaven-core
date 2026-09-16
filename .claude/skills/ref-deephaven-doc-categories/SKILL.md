@@ -91,14 +91,26 @@ advice or extraneous tips. JavaDocs, PyDocs, and other API documentation are ref
 
 ## Pages outside the four categories
 
-Almost every page fits Tutorial, How-to guide, Concept guide, or Reference guide by directory. The
-one current exception is `docs/{python,groovy}/intro.md` — the site's root landing page (sidebar
-label "Introduction"), which isn't under `crash-course/`, `how-to-guides/`, `conceptual/`, or
-`reference/` at all. Treat it as the "landing page" that `deephaven-writing-style`'s
-Related-documentation exemption already refers to: no tone/structure calibration from this file
-applies to it, and a doc-review skill that can't classify a doc into one of the four categories
-should check here first before assuming the doc or the classification is broken — it may just be
-this one page (or a future page like it).
+Almost every page under `docs/{python,groovy}` fits Tutorial, How-to guide, Concept guide, or
+Reference guide by directory. Two kinds of page fall outside all four — a doc-review skill that
+can't classify a doc into one of them should check here before assuming the doc or the
+classification is broken:
+
+- **The site landing page**, `docs/{python,groovy}/intro.md` (sidebar label "Introduction") — not
+  under `crash-course/`, `how-to-guides/`, `conceptual/`, or `reference/` at all. Treat it as the
+  "landing page" that `deephaven-writing-style`'s Related-documentation exemption already refers
+  to: no tone/structure calibration from this file applies to it.
+- **Contributor-facing tooling docs that live under `docs/` but aren't published** to
+  deephaven.io — e.g. `docs/README.md`, `docs/snapshotter/README.md`,
+  `docs/tools/autoimport/README.md`. These document the doc-build tooling itself for repo
+  contributors, not a deephaven.io reader (see **Audience calibration** below); no tone/structure
+  calibration from this file applies to them either.
+
+This list isn't necessarily exhaustive — a future page could be added outside `docs/{python,groovy}`
+entirely (a new top-level landing page) or as new contributor tooling documentation. When in
+doubt, the test is the same as classifying any other page: does it live under one of the four
+category directories *and* serve a deephaven.io reader? If not, it's out of taxonomy, whether or
+not it's specifically named here.
 
 ## Common misclassification
 
@@ -124,7 +136,6 @@ internal/technical vocabulary once it's been defined) than the Crash Course, whi
 a first-time user with zero context. Define jargon on first use in every category; how much you
 can lean on that definition later depends on the category above.
 
-This external-audience assumption does not extend to contributor-facing tooling docs that live
-under `docs/` but aren't published (e.g. `docs/README.md`, `docs/snapshotter/README.md`) — those
-document the doc-build tooling itself for repo contributors, not a deephaven.io reader, and aren't
-one of the four categories above at all.
+This external-audience assumption does not extend to the contributor-facing tooling docs listed
+under **Pages outside the four categories** above — those are written for repo contributors, not
+a deephaven.io reader.

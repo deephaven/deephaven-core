@@ -19,9 +19,15 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    the step number, since renumbering there has already gone stale once). Search source first;
    never correct an example from memory.
 
-3. **Apply style locally.** Run the relevant `deephaven-writing-style` checks against the changed
-   lines only (backticks, link wording, active voice, proper nouns) — not the file-wide mechanical
-   grep sweep.
+3. **Apply style locally.** Don't invoke `deephaven-writing-style` as a full pass — its mechanical
+   verification section is a file-wide grep sweep by nature, and running it here would mean
+   checking the whole file, defeating the point of a scoped spot check. Instead, apply the
+   specific prose rules that matter for a small edit directly to the changed lines only: bare
+   method names in prose (no leading dot, no parentheses), descriptive link text, active voice,
+   proper noun capitalization, straight quotes, em dashes. If the changed lines add a genuinely
+   new backticked method reference, do the one check that rule actually requires even at this
+   scope: confirm this isn't the identifier's first occurrence in the file elsewhere (a first
+   occurrence needs a link); if it might be, escalate per step 4 rather than guessing.
 
 4. **Escalate rather than chase, when the change isn't actually isolated.** If the changed claim
    also appears elsewhere in this file, in its cross-language sibling doc, or is part of an

@@ -18,10 +18,14 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 
 3. **Identify the doc's category.** Read `ref-deephaven-doc-categories` and determine which of
    the four categories (Tutorial — Crash Course only, How-to guide, Concept guide, Reference
-   guide) this doc is. Carry that forward: a Reference guide gets harder scrutiny on enumerated-
-   list completeness below (a missing entry matters more when the reader is scanning for one
-   fact than in a narrative Concept guide), and a Crash Course chapter is exempt from the
-   Related-documentation requirement in the internal-link review step.
+   guide) this doc is — check that file's "Pages outside the four categories" section first if it
+   doesn't obviously fit one (e.g. `intro.md`, or a contributor-facing tooling README); don't
+   force-fit an out-of-taxonomy page into the nearest-sounding category. For a page that does fit
+   one of the four, carry that forward: a Reference guide gets harder scrutiny on enumerated-list
+   completeness below (a missing entry matters more when the reader is scanning for one fact than
+   in a narrative Concept guide) — except `reference/community-questions/*`, which is one
+   question and one answer per page, not an enumerable reference — and a Crash Course chapter is
+   exempt from the Related-documentation requirement in the internal-link review step.
 
 4. **Technical accuracy review:**
    - **For EVERY code snippet**, search the source code FIRST. Never write or "correct" an example from memory.

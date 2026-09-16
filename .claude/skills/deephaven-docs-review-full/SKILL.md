@@ -20,11 +20,13 @@ dimension from undoing another.
 ## 0. Identify the doc's category
 
 Read `ref-deephaven-doc-categories` and determine which of the four categories this doc is. Carry
-that forward — the accuracy and structure skills below both calibrate to it. Not every doc fits
-one of the four: check that file's "Pages outside the four categories" section first (currently
-just the site's `intro.md` landing page) before assuming the doc or the categorization is broken.
-For an out-of-taxonomy page, skip category-specific calibration in steps 1-2 but still run all
-three checks.
+that forward — the accuracy, structure, and style skills below all calibrate to it. Not every doc
+fits one of the four: check that file's "Pages outside the four categories" section first (the
+site's `intro.md` landing page and contributor-facing tooling docs such as `docs/README.md`) —
+don't assume the doc or the categorization is broken just because it doesn't fit. For an
+out-of-taxonomy page, skip category-specific calibration in every step below (1, 2, and 4) but
+still run all three checks; the generic accuracy, structural, and prose-quality rules that aren't
+category-conditional still apply.
 
 ## 1. Accuracy first
 
@@ -35,9 +37,11 @@ this step reports issues; only apply the fixes it finds if the user asked for ed
 
 If a fix is applied and it corrects a shared, substantive claim in the cross-language sibling too
 (`deephaven-core-accuracy-check`'s own cross-language-consistency check may have already edited
-both files) — track that sibling as a second doc in scope. Run steps 2 and 4 on it as well, not
-just the originally-requested file; a sibling edited by the accuracy pass but never structurally
-or style-reviewed is exactly the kind of half-finished pass this skill exists to prevent.
+both files) — track that sibling as a second doc in scope. Run steps 2 **through 4** on it as
+well (not just 2 and 4 — a structural edit to the sibling needs the step-3 re-verification just as
+much as the originally-requested file does), not just the originally-requested file; a sibling
+edited by the accuracy pass but never structurally or style-reviewed is exactly the kind of
+half-finished pass this skill exists to prevent.
 
 ## 2. Structure second
 
@@ -51,11 +55,15 @@ renamed-away section can invalidate an accuracy finding just as easily as a lite
 
 For every section from step 2's list:
 
-- Re-run `deephaven-core-accuracy-spot-check` on that section only — a merge can combine two
-  previously-separate claims into one that's subtly wrong even though both originals were correct
-  individually. Escalate to a full `deephaven-core-accuracy-check` re-pass whenever the spot check
-  itself recommends escalating (its own criteria: the claim also appears elsewhere in the file, in
-  the cross-language sibling, or is part of an enumerated list) — don't restate or narrow that
+- Re-run `deephaven-core-accuracy-spot-check` on that section — but per its own scope (one
+  paragraph, one snippet, one changed claim), not as a single call covering the whole section.
+  If the section contains more than one claim or paragraph, call it once per claim/paragraph
+  rather than handing it the whole section at once; a merge can combine two previously-separate
+  claims into one that's subtly wrong even though both originals were correct individually, and a
+  single oversized spot-check call is exactly the under-checking that scope exists to prevent.
+  Escalate to a full `deephaven-core-accuracy-check` re-pass whenever any of those spot checks
+  recommends escalating (its own criteria: the claim also appears elsewhere in the file, in the
+  cross-language sibling, or is part of an enumerated list) — don't restate or narrow that
   criteria here; defer to the spot check's judgment.
 - For any caveat, exception, or cross-language distinction that was near content step 2 touched:
   check the rest of the document first for where it may have landed or been restated, and flag it
