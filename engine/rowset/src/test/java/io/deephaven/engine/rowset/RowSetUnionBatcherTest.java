@@ -153,6 +153,65 @@ public class RowSetUnionBatcherTest {
     }
 
     @Test
+    public void collapsedBatchesFillTheGroupsBeforeFoldingTogether() {
+        // Four row sets to a batch, and a fold only once a fifth group would be needed, so 20 row sets take the list
+        // through one full cycle. Interleaved, so nothing appends and every one of them takes a slot.
+        final int batchSize = 4;
+        final List<RowSet> rowSets = interleaved(20, 3);
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(batchSize)) {
+            for (int ii = 0; ii < rowSets.size(); ++ii) {
+                batcher.addCopy(rowSets.get(ii));
+                final int added = ii + 1;
+                assertThat(batcher.pendingBatchSize()).isEqualTo(added % batchSize);
+                // Whatever the state, the two regions fit in the list.
+                assertThat(batcher.groupCount() + batcher.pendingBatchSize())
+                        .isLessThanOrEqualTo(2 * batchSize);
+
+                if (added == 4) {
+                    // The first full batch collapsed into a group of its own rather than into a running result.
+                    assertThat(batcher.groupCount()).isEqualTo(1);
+                } else if (added == 16) {
+                    // Four batches in, four groups, and nothing has been merged into twice.
+                    assertThat(batcher.groupCount()).isEqualTo(4);
+                } else if (added == 19) {
+                    // The widest the list ever gets: every group slot taken and the batch one short of full.
+                    assertThat(batcher.groupCount()).isEqualTo(4);
+                    assertThat(batcher.pendingBatchSize()).isEqualTo(3);
+                } else if (added == 20) {
+                    // The batch that would have needed a fifth group folded all of them into one instead.
+                    assertThat(batcher.groupCount()).isEqualTo(1);
+                }
+            }
+            try (final WritableRowSet built = batcher.build();
+                    final WritableRowSet expected = reference(rowSets)) {
+                assertThat(built).isEqualTo(expected);
+            }
+        } finally {
+            closeAll(rowSets);
+        }
+    }
+
+    @Test
+    public void aFullBatchLeavesTheGroupAvailableToAppendOnto() {
+        // Ascending blocks, but presented so that each batch has to merge: the fourth of every four is the one that
+        // extends past the rest, so it lands on the run only after the batch it completed has collapsed.
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(2)) {
+            batcher.add(RowSetFactory.fromRange(100, 199));
+            batcher.add(RowSetFactory.fromRange(0, 99));
+            // The batch collapsed into one group covering [0, 199], which the next row set appends to.
+            assertThat(batcher.groupCount()).isEqualTo(1);
+            assertThat(batcher.pendingBatchSize()).isZero();
+            batcher.add(RowSetFactory.fromRange(200, 299));
+            assertThat(batcher.pendingBatchSize()).isZero();
+            assertThat(batcher.groupCount()).isEqualTo(1);
+            try (final WritableRowSet built = batcher.build()) {
+                assertThat(built.size()).isEqualTo(300);
+                assertThat(built.lastRowKey()).isEqualTo(299);
+            }
+        }
+    }
+
+    @Test
     public void emptyInputsAreDroppedAndTheOwnedOneIsClosed() {
         final WritableRowSet owned = RowSetFactory.empty();
         try (final WritableRowSet borrowed = RowSetFactory.empty();

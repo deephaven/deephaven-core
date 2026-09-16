@@ -22,11 +22,19 @@ import java.util.List;
  * caller that already knows how many row sets it will produce passes that count and merges exactly once.
  *
  * <p>
+ * Merging every batch into one result would reintroduce the same problem one level up, at one pass per batch rather
+ * than one per row set. Instead the entries are held in two regions of a list of {@code 2 * batchSize} slots. A full
+ * batch collapses into a single row set that stays where it is, so the front of the list fills with collapsed groups
+ * while the back gathers the next batch; only when the groups have taken half the list does everything collapse into
+ * one. A result is therefore merged into again once per {@code batchSize} batches instead of once per batch, which is
+ * the same tree the multi-pass merge inside {@code union} builds, one level up.
+ *
+ * <p>
  * Two things are handled here rather than at the merge. {@link RowSet#isEmpty() Empty} row sets are dropped as they
- * arrive, so a batch never spends a slot on one. A row set that only appends past the end of the previous one is
- * spliced onto it in place instead of taking a slot of its own, which the row set implementations satisfy without
- * merging range by range; input that arrives in ascending order therefore collapses into a single row set that
- * {@link #build()} hands over as it stands, with no union at all.
+ * arrive, so a batch never spends a slot on one. A row set that only appends past the end of the last entry is spliced
+ * onto it in place instead of taking a slot of its own, which the row set implementations satisfy without merging range
+ * by range; input that arrives in ascending order therefore collapses into a single row set that {@link #build()} hands
+ * over as it stands, with no union at all.
  *
  * <p>
  * {@link #build()} is what releases the result to the caller. Everything this batcher is still holding at
@@ -43,29 +51,32 @@ public final class RowSetUnionBatcher implements SafeCloseable {
     public static final int DEFAULT_BATCH_SIZE = 1024;
 
     private final int batchSize;
-    private final List<WritableRowSet> batch;
 
     /**
-     * Everything merged so far, or null while the batch still holds all of it. {@link #build()} hands this over.
+     * The collapsed groups, then the batch being gathered. Never longer than twice the batch size: the groups are
+     * folded into one as soon as they would take more than half of it.
      */
-    private WritableRowSet accumulated;
+    private final List<WritableRowSet> entries;
+
+    /** How many leading {@link #entries} are collapsed groups rather than part of the batch being gathered. */
+    private int groupCount;
 
     /**
-     * The last entry of {@link #batch}, which a row set that appends to it is spliced onto. Null whenever the batch is
-     * empty.
+     * The last entry of {@link #entries}, which a row set that appends to it is spliced onto. Null whenever there are
+     * no entries.
      */
     private WritableRowSet run;
 
     /**
-     * @param batchSize The number of row sets to gather before merging, at least one
+     * @param batchSize The number of row sets to gather before merging; anything below one is treated as one
      */
     public RowSetUnionBatcher(final int batchSize) {
         this.batchSize = Math.max(1, batchSize);
-        batch = new ArrayList<>(this.batchSize);
+        entries = new ArrayList<>(2 * this.batchSize);
     }
 
     /**
-     * Add {@code rowSet} to the union, merging the outstanding batch if it is now full.
+     * Add {@code rowSet} to the union, merging the gathered batch if it is now full.
      *
      * <p>
      * Ownership of {@code rowSet} passes here: it may be closed before this call returns, and the caller must not use
@@ -88,7 +99,7 @@ public final class RowSetUnionBatcher implements SafeCloseable {
     }
 
     /**
-     * Add the current contents of {@code rowSet} to the union, merging the outstanding batch if it is now full.
+     * Add the current contents of {@code rowSet} to the union, merging the gathered batch if it is now full.
      *
      * <p>
      * The caller retains ownership of {@code rowSet} and remains responsible for closing it. What this batcher retains
@@ -115,10 +126,12 @@ public final class RowSetUnionBatcher implements SafeCloseable {
      * @return A new {@link WritableRowSet} containing every row key added
      */
     public WritableRowSet build() {
-        mergeBatch();
-        final WritableRowSet result = accumulated;
-        accumulated = null;
-        return result == null ? RowSetFactory.empty() : result;
+        run = null;
+        groupCount = 0;
+        if (entries.isEmpty()) {
+            return RowSetFactory.empty();
+        }
+        return mergeFrom(0);
     }
 
     /**
@@ -130,44 +143,61 @@ public final class RowSetUnionBatcher implements SafeCloseable {
     }
 
     private void startRun(final WritableRowSet rowSet) {
-        batch.add(rowSet);
+        entries.add(rowSet);
         run = rowSet;
-        if (batch.size() >= batchSize) {
-            mergeBatch();
+        if (entries.size() - groupCount < batchSize) {
+            return;
         }
-    }
-
-    private void mergeBatch() {
+        // The batch is full. Collapse it in place, and fold the groups together if that was the last free slot.
         run = null;
-        if (batch.isEmpty()) {
+        final WritableRowSet group = mergeFrom(groupCount);
+        entries.add(group);
+        if (++groupCount > batchSize) {
+            final WritableRowSet folded = mergeFrom(0);
+            entries.add(folded);
+            groupCount = 1;
+            run = folded;
             return;
         }
-        if (batch.size() == 1) {
-            // A straight run of appends built this one row set on the way in, so there is nothing left to merge.
-            final WritableRowSet only = batch.remove(0);
-            if (accumulated == null) {
-                accumulated = only;
-            } else {
-                try (only) {
-                    accumulated.insert(only);
-                }
-            }
-            return;
-        }
-        if (accumulated == null) {
-            // Inserting into an empty row set adopts what it is handed, so starting empty costs nothing here.
-            accumulated = RowSetFactory.empty();
-        }
-        RowSetFactory.insertUnionAndClose(accumulated, batch);
+        run = group;
     }
 
     /**
-     * The number of row sets the outstanding batch holds, which is what the next merge will be handed. A run of appends
-     * does not grow it.
+     * Remove {@code entries[from, size)} and return their union, which the caller owns. A single entry is handed back
+     * as it stands rather than merged with itself.
+     */
+    private WritableRowSet mergeFrom(final int from) {
+        final List<WritableRowSet> tail = entries.subList(from, entries.size());
+        if (tail.size() == 1) {
+            return tail.remove(0);
+        }
+        final WritableRowSet merged = RowSetFactory.empty();
+        try {
+            // Inserting into an empty row set adopts what it is handed, so merging through one costs nothing but the
+            // wrapper. This also closes and removes the entries it merged.
+            RowSetFactory.insertUnionAndClose(merged, tail);
+        } catch (final RuntimeException | Error e) {
+            merged.close();
+            throw e;
+        }
+        return merged;
+    }
+
+    /**
+     * The number of row sets in the batch being gathered, which is what the next merge will be handed. A run of appends
+     * does not grow it, and collapsing it empties it.
      */
     @VisibleForTesting
     int pendingBatchSize() {
-        return batch.size();
+        return entries.size() - groupCount;
+    }
+
+    /**
+     * The number of collapsed groups waiting to be folded together.
+     */
+    @VisibleForTesting
+    int groupCount() {
+        return groupCount;
     }
 
     /**
@@ -176,15 +206,11 @@ public final class RowSetUnionBatcher implements SafeCloseable {
     @Override
     public void close() {
         run = null;
-        final WritableRowSet localAccumulated = accumulated;
-        accumulated = null;
+        groupCount = 0;
         try {
-            SafeCloseable.closeAll(batch.iterator());
+            SafeCloseable.closeAll(entries.iterator());
         } finally {
-            batch.clear();
-            if (localAccumulated != null) {
-                localAccumulated.close();
-            }
+            entries.clear();
         }
     }
 }

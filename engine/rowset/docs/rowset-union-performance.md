@@ -168,6 +168,20 @@ It accumulates rather than writing into a row set the caller passes in. Every co
 the two that ultimately insert into a long-lived one — `SyncTableFilter` and `LeaderTableFilter`, whose targets are the
 tracking row sets behind their results — do it with a single insert at the end rather than one per batch.
 
+**Batches are not merged into one running result.** That would reintroduce exactly the problem this whole document is
+about, one level up: one pass over a growing result per batch instead of per row set, which at 1024 to a batch is still
+`n/1024` passes over something that keeps getting bigger. Instead the entries live in two regions of a list of
+`2 * batchSize` slots. A full batch collapses into a single row set that stays where it is, so the front fills with
+collapsed groups while the back gathers the next batch; only when the groups have taken half the list does everything
+fold into one. A result is merged into again once per `batchSize` batches rather than once per batch — the same tree
+the multi-pass merge inside `union` builds, one level up, and for the same reason.
+
+The list is the only thing this costs: `2 * batchSize` references, 16 KB at the default. What is *held* is unchanged
+for the shapes the call sites produce, where the inputs are disjoint and the groups sum to the result. Input that is
+largely redundant is the exception — there a running result stays the size of one input while `batchSize` groups are
+each about that size — but no converted call site produces that shape, and the merge's own passes have the same
+property.
+
 It does two things before the merge sees anything, both of which the merge would otherwise have to undo:
 
 - **Empty row sets never take a slot.** The merge already compacts them away, but a batch that spends slots on them
