@@ -26,8 +26,7 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    in a narrative Concept guide) — except individual `reference/community-questions/*` Q&A pages,
    which are one question and one answer per page, not an enumerable reference (`cq-index.md`
    itself is the exception to that exception — see `ref-deephaven-doc-categories` — and stays on
-   the normal enumerable-reference path) — and a Crash Course chapter is exempt from the
-   Related-documentation requirement in the internal-link review step.
+   the normal enumerable-reference path).
 
 4. **Technical accuracy review:**
    - **For EVERY code snippet**, search the source code FIRST. Never write or "correct" an example from memory.
