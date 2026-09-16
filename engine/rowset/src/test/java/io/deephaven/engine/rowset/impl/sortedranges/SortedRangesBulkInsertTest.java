@@ -63,9 +63,8 @@ public class SortedRangesBulkInsertTest {
                 try (final WritableRowSet expected = target.copy()) {
                     added.forAllRowKeyRanges(expected::insertRange);
 
-                    // A private copy that is written in place.
-                    try (final WritableRowSet actual = RowSetFactory.empty()) {
-                        actual.insert(target);
+                    // A private copy, built key by key so it shares nothing, that is written in place.
+                    try (final WritableRowSet actual = snapshot(target)) {
                         actual.insert(added);
                         check(trial, expected, actual);
                     }
@@ -86,8 +85,7 @@ public class SortedRangesBulkInsertTest {
                 for (final WritableRowSet from : new WritableRowSet[] {expectedUnion(target, added), target}) {
                     try (final WritableRowSet expected = from.copy()) {
                         added.forAllRowKeyRanges(expected::removeRange);
-                        try (final WritableRowSet actual = RowSetFactory.empty()) {
-                            actual.insert(from);
+                        try (final WritableRowSet actual = snapshot(from)) {
                             actual.remove(added);
                             check(trial, expected, actual);
                         }
@@ -129,7 +127,10 @@ public class SortedRangesBulkInsertTest {
         }
     }
 
-    /** An independent copy of {@code rowSet}, sharing no state with it. */
+    /**
+     * An independent copy of {@code rowSet}, sharing no state with it. Inserting into an empty row set would instead
+     * take a shared reference to the argument's inner set.
+     */
     private static WritableRowSet snapshot(final WritableRowSet rowSet) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         rowSet.forAllRowKeyRanges(builder::appendRange);
