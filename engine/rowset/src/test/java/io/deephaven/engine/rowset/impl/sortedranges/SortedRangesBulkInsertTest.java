@@ -128,6 +128,39 @@ public class SortedRangesBulkInsertTest {
     }
 
     /**
+     * An inserted range that starts inside one of ours and reaches the next must coalesce all three into one range,
+     * through both the planned and the individual paths, into private and shared sets alike.
+     */
+    @Test
+    public void bridgingInsertCoalescesThroughToTheNextRange() {
+        // Enough ranges past the bridge that a five-range argument takes the planned path on the private target.
+        final RowSetBuilderSequential targetBuilder = RowSetFactory.builderSequential();
+        targetBuilder.appendRange(48, 49);
+        for (long key = 51; key < 51 + 2_000 * 4; key += 4) {
+            targetBuilder.appendKey(key);
+        }
+        try (final WritableRowSet target = targetBuilder.build()) {
+            for (final long[] keys : new long[][] {{50}, {50, 5_000, 5_004, 5_008, 5_012}}) {
+                try (final WritableRowSet added = RowSetFactory.fromKeys(keys);
+                        final WritableRowSet expected = snapshot(target)) {
+                    added.forAllRowKeyRanges(expected::insertRange);
+                    try (final WritableRowSet actual = snapshot(target)) {
+                        actual.insert(added);
+                        check(0, expected, actual);
+                        assertTrue(actual.containsRange(48, 51));
+                    }
+                    try (final WritableRowSet snapshotBefore = snapshot(target);
+                            final WritableRowSet shared = target.copy()) {
+                        shared.insert(added);
+                        check(0, expected, shared);
+                        assertTrue(snapshotBefore.equals(target));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * An independent copy of {@code rowSet}, sharing no state with it. Inserting into an empty row set would instead
      * take a shared reference to the argument's inner set.
      */
