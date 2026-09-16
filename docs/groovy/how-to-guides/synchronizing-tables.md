@@ -84,7 +84,7 @@ In this example:
 
 - For `AAPL`, `priceData` has `SeqNum` 1, 2, and 3, but `volumeData` and `bidAskData` only go up to `SeqNum` 2. The highest ID common to all three is 2, so only the `SeqNum` 2 rows appear in the synchronized results.
 - For `GOOGL`, `priceData` and `volumeData` have `SeqNum` 1 and 2, but `bidAskData` only has `SeqNum` 1. The highest common ID is 1, so only the `SeqNum` 1 rows appear.
-- When `bidAskData` receives `SeqNum` 2 for `GOOGL`, the filter will advance to show those rows instead, replacing the `SeqNum` 1 rows.
+- When `bidAskData` receives `SeqNum` 2 for `GOOGL`, the filter advances to show those rows instead, replacing the `SeqNum` 1 rows.
 
 ### API
 
@@ -113,7 +113,7 @@ syncedTable = result.get(tableName)
 
 ### How it works
 
-The leader table contains one ID column for each follower table. For each key, the filter shows the rows from each follower table that match the IDs in the leader's most recent row for that key whose IDs are all matched in the follower tables; an earlier leader row for that key is superseded once a later one is fully matched.
+The leader table contains one ID column for each follower table. For each key, the filter shows the rows from each follower table that match the IDs in the leader's most recent row for that key once every follower's ID is satisfied — either matched by a row in that follower table, or null, which is always treated as satisfied but yields no rows for that follower. An earlier leader row for that key is superseded once a later one is fully satisfied.
 
 ### Example
 
