@@ -1,6 +1,6 @@
 ---
 name: deephaven-writing-style
-description: Deephaven's documentation style guide for deephaven-core — proper noun capitalization, Python/Groovy code formatting conventions, backtick usage, code example tags, and prose quality standards (active voice, clarity, jargon/audience calibration). Applies to deephaven-core (Community) documentation specifically. Use this whenever drafting, writing, editing, or reviewing any deephaven-core documentation, tutorial, how-to guide, README, or API reference — not just when explicitly asked about "style." Also consult this alongside deephaven-core-accuracy-check and deephaven-doc-structure-review when reviewing existing docs, or use deephaven-docs-review-full to run all three in the right order; see ref-deephaven-doc-categories for the Tutorial/How-to/Concept/Reference categories this guide's tone rules are calibrated to.
+description: Deephaven's documentation style guide for deephaven-core — proper noun capitalization, Python/Groovy code formatting conventions, backtick usage, code example tags, and prose quality standards (active voice, clarity, jargon/audience calibration). Applies to deephaven-core (Community) documentation specifically. Use this whenever drafting, writing, editing, or reviewing any deephaven-core documentation, tutorial, how-to guide, README, or API reference — not just when explicitly asked about "style." Also consult this alongside deephaven-core-accuracy-check and deephaven-doc-structure-review when reviewing existing docs (deephaven-core-accuracy-spot-check for a single small edit instead), or use deephaven-docs-review-full to run accuracy, structure, and style together in the right order; see ref-deephaven-doc-categories for the Tutorial/How-to/Concept/Reference categories this guide's tone rules are calibrated to.
 ---
 
 # Deephaven documentation style guide (Community/Core)
@@ -9,10 +9,11 @@ These standards apply to deephaven-core documentation.
 
 ## Documentation categories
 
-See `ref-deephaven-doc-categories` for the four categories (Tutorial — Crash Course only,
-How-to guide, Concept guide, Reference guide), which directory each lives in, and the
-misclassification trap ("tutorial" is not a synonym for "step-by-step"). Identify the doc's
-category before applying the tone rules below — they're calibrated per category.
+Read `ref-deephaven-doc-categories` and identify which of the four categories (Tutorial — Crash
+Course only, How-to guide, Concept guide, Reference guide) the doc is — that file has the
+directory rule for each, the misclassification trap ("tutorial" is not a synonym for
+"step-by-step"), and the pages that don't fit any of the four (currently just the site's landing
+page). Do this before applying the tone rules below — they're calibrated per category.
 
 ## Prose quality
 
@@ -91,10 +92,11 @@ required searches, not optional style intuition:
   specific bug). Flag every dot-prefixed method reference in prose (e.g. `.with_serial`, `.where`)
   for correction — see **Method names in prose** above.
 - Search for backticked method-shaped identifiers (`snake_case` or `camelCase`, especially ones
-  matching `with_`, `is_`, `from_`, `agg_`, `update`, `select`, `where`, etc.) and confirm each one
-  appears inside a markdown link (`` [`name`](...) ``) at least once in the file. Flag any that
-  are only ever mentioned bare — first mention of a method should link to its reference page or
-  pydoc/javadoc anchor.
+  matching `with_`, `is_`, `from_`, `agg_`, `update`, `select`, `where`, etc.) and check the
+  **first** occurrence of each in the file, not just whether a link exists anywhere — a doc whose
+  first mention is bare and a later mention is linked still violates "first mention should link,"
+  even though a plain existence check would pass it. Flag any identifier whose first occurrence is
+  bare; the fix is to move the link to that first mention, not to add one anywhere in the file.
 - Search for a backticked identifier immediately followed by `()` outside of a fenced code block
   (e.g. `` `with_serial()` `` in prose) — flag it; parentheses belong in code, not prose (see
   **Method names in prose** above).

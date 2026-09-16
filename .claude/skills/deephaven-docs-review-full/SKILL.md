@@ -10,45 +10,79 @@ This skill doesn't duplicate any checklist — it sequences the three existing r
 full pass always covers all three dimensions, and so a later step's edits get re-checked against
 the earlier steps rather than assumed still valid.
 
+**Report by default; edit only if asked.** Like `deephaven-doc-structure-review`, this skill
+produces one consolidated report unless the user has explicitly asked for fixes to be applied.
+"Review this doc" or "run a full review" means report only — nothing below should be read as
+license to rewrite the document on its own. If the user does ask for fixes, apply them in the
+order below (accuracy, then structure, then style), since that's the order that keeps one
+dimension from undoing another.
+
 ## 0. Identify the doc's category
 
 Read `ref-deephaven-doc-categories` and determine which of the four categories this doc is. Carry
-that forward — the accuracy and structure skills below both calibrate to it.
+that forward — the accuracy and structure skills below both calibrate to it. Not every doc fits
+one of the four: check that file's "Pages outside the four categories" section first (currently
+just the site's `intro.md` landing page) before assuming the doc or the categorization is broken.
+For an out-of-taxonomy page, skip category-specific calibration in steps 1-2 but still run all
+three checks.
 
 ## 1. Accuracy first
 
-Invoke `deephaven-core-accuracy-check` on the doc. Fix facts before reorganizing: there's no
-point building a clean structure around a wrong claim, and it's easier to verify claims against
-source while they're still in their original location and context.
+Invoke `deephaven-core-accuracy-check` on the doc. Facts before reorganizing: there's no point
+building a clean structure around a wrong claim, and it's easier to verify claims against source
+while they're still in their original location and context. Per the report-by-default rule above,
+this step reports issues; only apply the fixes it finds if the user asked for edits.
+
+If a fix is applied and it corrects a shared, substantive claim in the cross-language sibling too
+(`deephaven-core-accuracy-check`'s own cross-language-consistency check may have already edited
+both files) — track that sibling as a second doc in scope. Run steps 2 and 4 on it as well, not
+just the originally-requested file; a sibling edited by the accuracy pass but never structurally
+or style-reviewed is exactly the kind of half-finished pass this skill exists to prevent.
 
 ## 2. Structure second
 
-Invoke `deephaven-doc-structure-review`. This may move, merge, or cut prose that was just
-verified in step 1 — that's expected and fine, but it's exactly why step 3 exists.
+Invoke `deephaven-doc-structure-review`. This may move, merge, cut, reorder, or rename sections
+that were just verified in step 1 — that's expected and fine, but it's exactly why step 3 exists.
+Note everywhere content was moved, merged, cut, reordered, or renamed (not just "moved, merged, or
+had a transition rewritten") — step 3 needs the complete list, since a deleted caveat or a
+renamed-away section can invalidate an accuracy finding just as easily as a literal move can.
 
 ## 3. Re-verify what structure touched
 
-For every section the structure pass moved, merged, or rewrote a transition around:
+For every section from step 2's list:
 
 - Re-run `deephaven-core-accuracy-spot-check` on that section only — a merge can combine two
   previously-separate claims into one that's subtly wrong even though both originals were correct
-  individually. Escalate to a full `deephaven-core-accuracy-check` re-pass only if the merge
-  touched an enumerated list or a claim repeated elsewhere in the file.
-- Note anywhere a caveat, exception, or cross-language distinction looks like it got dropped in
-  the move — flag it even if you can't immediately tell whether it survived elsewhere.
+  individually. Escalate to a full `deephaven-core-accuracy-check` re-pass whenever the spot check
+  itself recommends escalating (its own criteria: the claim also appears elsewhere in the file, in
+  the cross-language sibling, or is part of an enumerated list) — don't restate or narrow that
+  criteria here; defer to the spot check's judgment.
+- For any caveat, exception, or cross-language distinction that was near content step 2 touched:
+  check the rest of the document first for where it may have landed or been restated, and flag it
+  as dropped only if you can't find it after that check. If you're still not sure after checking,
+  say so explicitly ("possibly dropped, unconfirmed — verify against the pre-edit version") rather
+  than stating it as a confirmed finding — a false "this was dropped" claim costs a reviewer real
+  time chasing content that's actually still there.
 
 Do not skip this step under time pressure. It's the step that catches the compounding defect a
 structural edit introduces into content nobody re-reads afterward.
 
 ## 4. Style last
 
-Invoke `deephaven-writing-style` over the whole doc. Run it last because both the accuracy fixes
-(step 1) and the structural moves (steps 2-3) introduce or relocate prose that hasn't had a
-dedicated style pass yet — running style first would mean re-doing it.
+Invoke `deephaven-writing-style` over the whole doc (both files, if step 1 put a cross-language
+sibling in scope). Run it last because both the accuracy fixes (step 1) and the structural moves
+(steps 2-3) introduce or relocate prose that hasn't had a dedicated style pass yet — running style
+first would mean re-doing it. Per the report-by-default rule above, this step reports style
+issues; if the user asked for edits to be applied here too, prefer a fix that only changes
+formatting, wording style, or phrasing — if a style fix would also change what a sentence
+technically claims (not just how it's worded), re-verify that reworded claim against source before
+applying it, the same way step 1 would have. A style pass is not exempt from being wrong about
+facts just because it isn't the accuracy step.
 
 ## 5. Report
 
 One consolidated list, grouped by dimension (Accuracy / Structure / Style), each finding citing
 which step surfaced it and its location in the doc. Note the doc's category from step 0 at the
 top of the report so a reviewer can sanity-check severity calls (e.g. an orphaned aside flagged
-harder because the doc is a Reference guide).
+harder because the doc is a Reference guide). If a cross-language sibling was pulled into scope by
+step 1, report on both files, not just the one the user originally pointed at.

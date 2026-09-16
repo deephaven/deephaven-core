@@ -1,6 +1,6 @@
 ---
 name: ref-deephaven-doc-categories
-description: Reference — the four deephaven-core documentation categories (Tutorial, How-to guide, Concept guide, Reference guide), which repo directory each lives in, and the tone/structure expectations tied to each. Loaded by deephaven-writing-style, deephaven-doc-structure-review, and deephaven-core-accuracy-check to calibrate their checks to the doc's actual category. Not invoked directly — there is no scenario where a human asks for this skill by itself.
+description: Reference — the four deephaven-core documentation categories (Tutorial, How-to guide, Concept guide, Reference guide), which repo directory each lives in, and the tone/structure expectations tied to each. Loaded by deephaven-writing-style, deephaven-doc-structure-review, deephaven-core-accuracy-check, and deephaven-docs-review-full to calibrate their checks to the doc's actual category. Not invoked directly — there is no scenario where a human asks for this skill by itself.
 user-invocable: false
 ---
 
@@ -8,8 +8,8 @@ user-invocable: false
 
 Identify a doc's category before applying any other doc skill's checks — tone, structure, and
 depth expectations all depend on it. This is the single source of truth for the categories;
-`deephaven-writing-style`, `deephaven-doc-structure-review`, and `deephaven-core-accuracy-check`
-read this file rather than each defining categories independently.
+`deephaven-writing-style`, `deephaven-doc-structure-review`, `deephaven-core-accuracy-check`, and
+`deephaven-docs-review-full` read this file rather than each defining categories independently.
 
 ## The four categories
 
@@ -33,9 +33,11 @@ Query strings, Python, Plot, GUI, Client APIs, Plugins, Development tools, Best 
 troubleshooting, System setup and admin (informally "the admin guide" — authentication,
 configuration, cloud deployment), Cloud deployment — including at least one placed inside
 **Architectural details** itself: `how-to-guides/initialization-and-updates.md` sits there
-alongside the conceptual live/ticking-table pages in both `docs/python/sidebar.json:145-150` and
-`docs/groovy/sidebar.json:124-130`, presumably for discoverability rather than as a category
-override (same rationale as the Concept-guide co-location exception below). Don't treat
+alongside the conceptual live/ticking-table pages in both `docs/python/sidebar.json` and
+`docs/groovy/sidebar.json` (search for its `"label"` entry — don't cite an exact line range here,
+sidebar.json entries shift as pages are added, and a stale range is worse than none), presumably
+for discoverability rather than as a category override (same rationale as the Concept-guide
+co-location exception below). Don't treat
 Architectural details as an Architectural-details-only zone — check the directory, not the
 sidebar cluster, the same way you would for any other placement exception here.
 - Tone: conversational, first-person narrative; can offer advice, tips, or alternatives.
@@ -74,10 +76,29 @@ definition, and two kinds of exception are common enough to expect, not treat as
 
 **Reference guide** — `docs/{python,groovy}/reference/*`. Purely informative — describes without
 advice or extraneous tips. JavaDocs, PyDocs, and other API documentation are reference guides.
-- Tone: dry, formal, third-person, no contractions.
+- Tone: dry, formal, third-person, no contractions. **Exception:** the 50+ pages under
+  `reference/community-questions/*` are a Q&A format, not API documentation — they open with a
+  first-person user question (e.g. `reference/community-questions/chained-operations.md:6`: "I
+  have a query in which...") and answer conversationally, including giving advice ("We actually
+  encourage users to...", "A notable exception to this rule of thumb is..."). Apply the how-to
+  guide's conversational tone profile to this subdirectory, not the dry/formal one, even though it
+  lives under `reference/`.
 - Structure: enumerable and scannable. A reference reader is scanning for one specific fact, not
   reading linearly — an "orphaned aside" or a missing entry in an enumerated list is a bigger
-  defect here than the same issue would be in a concept guide.
+  defect here than the same issue would be in a concept guide. This does not apply to
+  `community-questions/*`, which is one question and one answer per page, not an enumerable
+  reference.
+
+## Pages outside the four categories
+
+Almost every page fits Tutorial, How-to guide, Concept guide, or Reference guide by directory. The
+one current exception is `docs/{python,groovy}/intro.md` — the site's root landing page (sidebar
+label "Introduction"), which isn't under `crash-course/`, `how-to-guides/`, `conceptual/`, or
+`reference/` at all. Treat it as the "landing page" that `deephaven-writing-style`'s
+Related-documentation exemption already refers to: no tone/structure calibration from this file
+applies to it, and a doc-review skill that can't classify a doc into one of the four categories
+should check here first before assuming the doc or the classification is broken — it may just be
+this one page (or a future page like it).
 
 ## Common misclassification
 
