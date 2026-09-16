@@ -159,10 +159,13 @@ merge sorts, so it is flat across all three orders.
 ## The call-site batcher
 
 `RowSetUnionBatcher` is the batched merge the converted call sites all repeated, with their ownership bookkeeping
-folded into one `SafeCloseable`. A caller hands it row sets and calls `build()` for the union; it owns everything in
+folded into one `SafeCloseable`. A caller hands it row sets and calls `build` for the union; it owns everything in
 between, so a traversal that throws part way through abandons what it gathered instead of handing back half a union.
-The batch size is the caller's: 1024 where the input is data-driven, and the known count where there is one, which
-merges exactly once.
+
+The batch size is the caller's own count — `setKernel.size()`, `filteredTable.size()`, `keysToRefilter.size()`,
+`matchColumns.size()` — clamped by the constructor to `[1, MAX_BATCH_SIZE]`. Under the cap that count merges the whole
+input at once; over it, or where it is only an upper bound, it costs nothing to pass and the cap takes over. The clamp
+is also what makes `2 * batchSize` the list's greatest extent rather than just its starting capacity.
 
 It accumulates rather than writing into a row set the caller passes in. Every converted site wanted a new row set, and
 the two that ultimately insert into a long-lived one — `SyncTableFilter` and `LeaderTableFilter`, whose targets are the
@@ -176,7 +179,7 @@ collapsed groups while the back gathers the next batch; only when the groups hav
 fold into one. A result is merged into again once per `batchSize` batches rather than once per batch — the same tree
 the multi-pass merge inside `union` builds, one level up, and for the same reason.
 
-The list is the only thing this costs: `2 * batchSize` references, 16 KB at the default. What is *held* is unchanged
+The list is the only thing this costs: at most `2 * MAX_BATCH_SIZE` references. What is *held* is unchanged
 for the shapes the call sites produce, where the inputs are disjoint and the groups sum to the result. Input that is
 largely redundant is the exception — there a running result stays the size of one input while `batchSize` groups are
 each about that size — but no converted call site produces that shape, and the merge's own passes have the same
@@ -187,7 +190,7 @@ It does two things before the merge sees anything, both of which the merge would
 - **Empty row sets never take a slot.** The merge already compacts them away, but a batch that spends slots on them
   fills early and merges more often than the caller asked for.
 - **A row set that appends to the last one is spliced onto it in place.** Ascending input therefore collapses to a
-  single row set that `build()` hands over as it stands: no sort, no group array, no copy-on-write reference per input.
+  single row set that `build` hands over as it stands: no sort, no group array, no copy-on-write reference per input.
   This is the same append test the merge makes, moved to where the batch is still one row set long.
 
 The ordering caveat from pitfall 5 stands. Batching still forfeits the global sort, and the collapse only fires for
@@ -281,7 +284,7 @@ plausible-sounding optimization was for a cost that did not exist.
 | `SortedRanges.MAX_CAPACITY` | 8193 | Entries, so roughly 4096 ranges. Above it a set becomes an `RspBitmap` and the insert path changes character — the cause of a non-monotonic result that looked like a measurement error. |
 | RSP block size | 65,536 | Keys per span. Whether an incoming range starts a new block decides whether a pre-pass can pay for itself. |
 | `MixedBuilderRandom.addAsIndexThreshold` | 65,536 | Gates the builder's whole-set path on the *incoming* range count alone, ignoring the accumulator. Still open — the same class of mistake as pitfall 4. |
-| `UNION_BATCH_SIZE` | 1024 | Row sets merged at a time where entries are newly materialized. Deliberately not applied where they are borrowed references. |
+| `RowSetUnionBatcher.MAX_BATCH_SIZE` | 1024 | The most row sets gathered before merging, whatever count a caller asks for. Callers pass their own count; this is the ceiling that keeps data-driven input from holding an unbounded number of row sets. |
 
 ## Still unresolved
 

@@ -18,8 +18,9 @@ import java.util.List;
  * <p>
  * Inserting each row set into the result separately costs a pass over the result every time, which is quadratic when
  * the inputs are disjoint and arrive in an order unrelated to their keys; a batch costs one
- * {@link RowSetFactory#union(Collection) union}, which sorts itself first. The batch size bounds what that buys: a
- * caller that already knows how many row sets it will produce passes that count and merges exactly once.
+ * {@link RowSetFactory#union(Collection) union}, which sorts itself first. The batch size is what bounds that: a caller
+ * passes how many row sets it expects to produce, and one no larger than {@link #MAX_BATCH_SIZE} merges the whole input
+ * at once.
  *
  * <p>
  * Merging every batch into one result would reintroduce the same problem one level up, at one pass per batch rather
@@ -68,9 +69,10 @@ public final class RowSetUnionBatcher implements SafeCloseable {
     private WritableRowSet run;
 
     /**
-     * @param batchSize The number of row sets to gather before merging, which a caller that knows how many it will
-     *        produce passes so that they all merge at once. Clamped to {@code [1, }{@link #MAX_BATCH_SIZE}{@code ]}, so
-     *        a count that is only an upper bound, or is not bounded at all, costs nothing to pass.
+     * @param batchSize The number of row sets to gather before merging, which a caller passes as the number it expects
+     *        to produce. Clamped to {@code [1, }{@link #MAX_BATCH_SIZE}{@code ]}: under the cap the whole input merges
+     *        at once, and over it, or where the count is only an upper bound or no bound at all, the cap takes over and
+     *        the count costs nothing to have passed.
      */
     public RowSetUnionBatcher(final int batchSize) {
         this.batchSize = Math.min(Math.max(1, batchSize), MAX_BATCH_SIZE);
