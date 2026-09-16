@@ -4,6 +4,8 @@
 package io.deephaven.benchmark.engine.util;
 
 import io.deephaven.benchmarking.BenchUtil;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -24,6 +26,9 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.RunnerException;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -150,6 +155,61 @@ public class RowSetIncrementalInsertBench {
             for (final WritableRowSet affected : bucketAffectedRowSets) {
                 accumulator.insert(affected);
             }
+            return accumulator.size();
+        }
+    }
+
+    /**
+     * The same accumulation through {@link RowSetFactory#union}, which orders the per-bucket sets and merges them in
+     * passes instead of inserting each one into a single growing accumulator. {@code updateBy} builds its per-window
+     * and downstream modified row sets with the insert loop above, so this is what moving those to the factory costs or
+     * saves. The list is built per invocation because a caller would have to build one too.
+     */
+    @Benchmark
+    public long rowSetApiUnion() {
+        final List<RowSet> toUnion = new ArrayList<>(bucketAffectedRowSets.length + 1);
+        try (final WritableRowSet seed = RowSetFactory.fromRange(frontier, rows - 1)) {
+            toUnion.add(seed);
+            toUnion.addAll(Arrays.asList(bucketAffectedRowSets));
+            try (final WritableRowSet accumulator = RowSetFactory.union(toUnion)) {
+                return accumulator.size();
+            }
+        }
+    }
+
+    /**
+     * The same accumulation through a random builder, walking each per-bucket set range by range. This is what
+     * {@link io.deephaven.engine.rowset.RowSetBuilderRandom#addRowSet} did before the builder took the row set's
+     * implementation whole, and is kept alongside {@link #rowSetBuilderRandom} to show what that is worth.
+     */
+    @Benchmark
+    public long rowSetBuilderRandomPerRange() {
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+        builder.addRange(frontier, rows - 1);
+        for (final WritableRowSet affected : bucketAffectedRowSets) {
+            try (final RowSet.RangeIterator it = affected.rangeIterator()) {
+                while (it.hasNext()) {
+                    it.next();
+                    builder.addRange(it.currentRangeStart(), it.currentRangeEnd());
+                }
+            }
+        }
+        try (final WritableRowSet accumulator = builder.build()) {
+            return accumulator.size();
+        }
+    }
+
+    /**
+     * The same accumulation through a random builder, which takes each per-bucket set whole rather than walking it.
+     */
+    @Benchmark
+    public long rowSetBuilderRandom() {
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+        builder.addRange(frontier, rows - 1);
+        for (final WritableRowSet affected : bucketAffectedRowSets) {
+            builder.addRowSet(affected);
+        }
+        try (final WritableRowSet accumulator = builder.build()) {
             return accumulator.size();
         }
     }

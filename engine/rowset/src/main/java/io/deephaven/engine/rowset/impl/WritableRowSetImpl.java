@@ -668,6 +668,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     public static void addToBuilderFromImpl(final OrderedLongSet.BuilderRandom builder,
             final WritableRowSetImpl rowSet) {
+        if (rowSet.innerSet.ixIsEmpty()) {
+            // An empty row set's implementation is the shared empty sentinel, which is none of the three types below.
+            return;
+        }
         if (rowSet.innerSet instanceof SingleRange) {
             builder.add((SingleRange) rowSet.innerSet);
             return;
