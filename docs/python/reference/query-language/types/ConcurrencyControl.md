@@ -48,7 +48,7 @@ barrier = Barrier()
 col = Selectable.parse("A = some_function()").with_declared_barriers(barrier)
 ```
 
-Each barrier can only be declared by one expression, and only within the same `select`, `update`, or `where` call as the expression that respects it — a constant-valued expression cannot declare one either. See [Barrier](./Barrier.md) for the full constraints and a complete worked example.
+Each barrier can only be declared by one expression, and only within the same `select`, `update`, or `where` call as the expression that respects it. For a `Selectable` specifically, a constant-valued expression cannot declare one either — this restriction does not apply to `Filter`. See [Barrier](./Barrier.md) for the full constraints and a complete worked example.
 
 ### `with_respected_barriers`
 
