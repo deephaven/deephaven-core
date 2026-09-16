@@ -11,4 +11,14 @@ dependencies {
     compileOnly libs.autoservice
     compileOnly libs.jetbrains.annotations
     annotationProcessor libs.autoservice.compiler
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
+    testRuntimeOnly project(':log-to-slf4j')
+}
+
+test {
+    useJUnitPlatform()
 }

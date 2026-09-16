@@ -81,6 +81,9 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     private final Map<String, LazyPromise<Void>> pendingSetExecutionContextRequests = new HashMap<>();
     private int requestIdCounter = 0;
 
+    private boolean closed;
+    private Runnable closedHandler;
+
     private JsRemoteFileSourceService(JsWidget widget) {
         this.widget = widget;
     }
@@ -176,7 +179,66 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     private Promise<JsRemoteFileSourceService> connect() {
         widget.addEventListener(JsWidget.EVENT_MESSAGE, this::handleMessage);
+        widget.addEventListener(JsWidget.EVENT_CLOSE,
+                ignored -> markClosed("RemoteFileSourceService message stream closed"));
         return widget.refetch().then(w -> Promise.resolve(this));
+    }
+
+    /**
+     * Marks this service unusable, failing what is in flight and notifying the owner so it can discard this instance.
+     * Reached both when the server closes the message stream and from {@link #close()}, so a caller closing a service
+     * the server has already closed arrives here twice; the first call wins, leaving the owner notified once.
+     *
+     * <p>
+     * A closed stream is permanent for this instance: {@link JsWidget} does not reconnect, and widgets are not
+     * refetched when the connection is re-established (deephaven-core#3604). Left in place, this service would silently
+     * drop messages and leave {@link #setExecutionContext} calls sitting until their timeout.
+     *
+     * @param reason the failure reason to deliver to in-flight callers
+     */
+    private void markClosed(final String reason) {
+        if (closed) {
+            return;
+        }
+        closed = true;
+
+        failPendingRequests(reason);
+
+        // Release the handler as it runs. Callers can hold a reference to a closed service, and it should not keep
+        // the owner alive through this lambda.
+        final Runnable handler = closedHandler;
+        closedHandler = null;
+        if (handler != null) {
+            handler.run();
+        }
+    }
+
+    /**
+     * Sets the handler notified when this service's message stream closes and the instance should be discarded,
+     * replacing any previous one. The handler runs once and is not retained afterwards, and it runs immediately if the
+     * stream has already closed, which it may have by the time the owner gets the resolved service.
+     *
+     * @param handler the handler to run when the stream closes
+     */
+    @JsIgnore
+    public void setClosedHandler(final Runnable handler) {
+        if (closed) {
+            handler.run();
+            return;
+        }
+        closedHandler = handler;
+    }
+
+    /**
+     * Fails every in-flight setExecutionContext request with the given reason.
+     *
+     * @param reason the failure reason to deliver to callers
+     */
+    private void failPendingRequests(final String reason) {
+        // Take the in-flight promises before clearing, so the map is empty before the failures are delivered
+        final List<LazyPromise<Void>> pending = new ArrayList<>(pendingSetExecutionContextRequests.values());
+        pendingSetExecutionContextRequests.clear();
+        pending.forEach(promise -> promise.fail(reason));
     }
 
     /**
@@ -313,13 +375,11 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
     /**
      * Closes the message stream connection to the server. Any in-flight requests are failed rather than left to time
-     * out, since their responses can no longer arrive once the stream is gone.
+     * out, since their responses can no longer arrive once the stream is gone, and the owner is notified so that this
+     * instance is not handed out again.
      */
     public void close() {
-        // Take the in-flight promises before clearing, so the map is empty before the failures are delivered
-        final List<LazyPromise<Void>> pending = new ArrayList<>(pendingSetExecutionContextRequests.values());
-        pendingSetExecutionContextRequests.clear();
-        pending.forEach(promise -> promise.fail("RemoteFileSourceService closed"));
+        markClosed("RemoteFileSourceService closed");
 
         widget.close();
     }

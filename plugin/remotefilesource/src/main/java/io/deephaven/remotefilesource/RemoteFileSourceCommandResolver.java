@@ -7,7 +7,6 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Code;
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -41,22 +40,38 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
             "type.googleapis.com/" + RemoteFileSourcePluginFetchRequest.getDescriptor().getFullName();
 
     /**
+     * Set by the {@link TicketRouter} that owns this resolver, before any request can reach it. Exports are published
+     * through the router so that the deployment's {@link io.deephaven.server.session.TicketResolver.Authorization} gets
+     * to see the caller-selected result ticket.
+     */
+    private TicketRouter ticketRouter;
+
+    /**
      * Parses a RemoteFileSourcePluginFetchRequest from the given Any command.
+     *
+     * <p>
+     * The payload is client input, so a parse failure is reported as {@code INVALID_ARGUMENT} rather than as a server
+     * error; this method is called synchronously from {@link #flightInfoFor}, so anything else would surface to the
+     * caller as an unexplained server failure.
      *
      * @param command the Any command containing the fetch request
      * @return the parsed RemoteFileSourcePluginFetchRequest
-     * @throws IllegalArgumentException if the command type URL doesn't match the expected fetch plugin type
-     * @throws UncheckedDeephavenException if the command cannot be parsed as a RemoteFileSourcePluginFetchRequest
+     * @throws StatusRuntimeException if the command type URL doesn't match the expected fetch plugin type, or the
+     *         command cannot be parsed as a RemoteFileSourcePluginFetchRequest
      */
     private static RemoteFileSourcePluginFetchRequest parseFetchRequest(final Any command) {
         if (!FETCH_PLUGIN_TYPE_URL.equals(command.getTypeUrl())) {
-            throw new IllegalArgumentException("Not a valid remotefilesource command: " + command.getTypeUrl());
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Not a valid remotefilesource command: " + command.getTypeUrl());
         }
 
         try {
             return RemoteFileSourcePluginFetchRequest.parseFrom(command.getValue());
         } catch (InvalidProtocolBufferException e) {
-            throw new UncheckedDeephavenException("Could not parse RemoteFileSourcePluginFetchRequest", e);
+            // The status exception carries no cause, so log the parse failure to keep the detail
+            log.error().append("Could not parse RemoteFileSourcePluginFetchRequest: ").append(e).endl();
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Could not parse RemoteFileSourcePluginFetchRequest");
         }
     }
 
@@ -84,13 +99,20 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
      * Note: This exports a PluginMarker for the specified plugin name. Plugin-specific routing is handled by
      * TypedTicket.type in the ConnectRequest phase, which is validated against the plugin's name() method.
      *
+     * <p>
+     * The export is published through the {@link TicketRouter} rather than directly against the session, so that the
+     * result ticket the caller chose passes through
+     * {@link io.deephaven.server.session.TicketResolver.Authorization#authorizePublishRequest} like every other
+     * published export.
+     *
      * @param session the session state for the current request, must be non-null
      * @param descriptor the flight descriptor containing the command
      * @param request the parsed RemoteFileSourcePluginFetchRequest containing the result ticket
      * @return a FlightInfo export object containing the plugin endpoint information
-     * @throws StatusRuntimeException if the request doesn't contain a valid result ID ticket or plugin name
+     * @throws StatusRuntimeException if the request doesn't contain a valid result ID ticket or plugin name, or the
+     *         caller is not authorized to publish to the result ticket
      */
-    private static SessionState.ExportObject<Flight.FlightInfo> fetchPlugin(final SessionState session,
+    private SessionState.ExportObject<Flight.FlightInfo> fetchPlugin(final SessionState session,
             final Flight.FlightDescriptor descriptor,
             final RemoteFileSourcePluginFetchRequest request) {
         final Ticket resultTicket = request.getResultId();
@@ -109,7 +131,8 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
 
         // Export this plugin's single PluginMarker. Plugins using PluginMarker should check
         // marker.getPluginName() in isType() to prevent conflicts with markers for other plugins.
-        session.newExport(resultTicket, "RemoteFileSourcePluginFetchRequest.resultTicket")
+        ticketRouter.<PluginMarker>publish(session, resultTicket, "RemoteFileSourcePluginFetchRequest.resultTicket",
+                null)
                 .submit(() -> REMOTE_FILE_SOURCE_PLUGIN_MARKER);
 
         final Flight.FlightInfo flightInfo = Flight.FlightInfo.newBuilder()
@@ -253,14 +276,12 @@ public class RemoteFileSourceCommandResolver implements CommandResolver, WantsTi
     }
 
     /**
-     * Sets the ticket router for this resolver.
-     *
-     * <p>
-     * <b>Not implemented:</b> This resolver does not need access to the ticket router.
+     * Sets the ticket router for this resolver. The router is used to publish the fetched plugin marker, which routes
+     * the caller-selected result ticket through the deployment's authorization.
      */
     @Override
-    public void setTicketRouter(TicketRouter ticketRouter) {
-        // not needed
+    public void setTicketRouter(final TicketRouter ticketRouter) {
+        this.ticketRouter = ticketRouter;
     }
 
     /**

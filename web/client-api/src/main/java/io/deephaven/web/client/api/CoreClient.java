@@ -213,12 +213,43 @@ public class CoreClient extends HasEventHandling {
         return ideConnection.onConnected();
     }
 
+    /**
+     * Returns the remote file source service for this client, fetching it on first use.
+     *
+     * <p>
+     * The service is cached, but only for as long as it is usable: its message stream does not reconnect and is not
+     * refetched when the connection is re-established (deephaven-core#3604), so the cached instance is discarded once
+     * that stream closes and the next call fetches a fresh one. A failed fetch is not cached either.
+     *
+     * @return a promise resolving to the remote file source service
+     */
     public Promise<JsRemoteFileSourceService> getRemoteFileSourceService() {
         if (remoteFileSourceServicePromise == null) {
-            remoteFileSourceServicePromise = JsRemoteFileSourceService.fetchPlugin(ideConnection.connection.get());
+            final Promise<JsRemoteFileSourceService> pending =
+                    JsRemoteFileSourceService.fetchPlugin(ideConnection.connection.get());
+            remoteFileSourceServicePromise = pending;
+            pending.then(service -> {
+                service.setClosedHandler(() -> forgetRemoteFileSourceService(pending));
+                return null;
+            }, error -> {
+                forgetRemoteFileSourceService(pending);
+                return null;
+            });
         }
 
         return remoteFileSourceServicePromise;
+    }
+
+    /**
+     * Drops the cached remote file source service, provided it is still the one that was cached. A later fetch may
+     * already have replaced it, in which case the newer instance must be left alone.
+     *
+     * @param expected the promise to forget
+     */
+    private void forgetRemoteFileSourceService(final Promise<JsRemoteFileSourceService> expected) {
+        if (remoteFileSourceServicePromise == expected) {
+            remoteFileSourceServicePromise = null;
+        }
     }
 
     /**

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Message stream implementation for RemoteFileSource bidirectional communication. Each instance represents a file
@@ -37,9 +38,10 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     /**
      * The current execution context containing the active message stream and configuration. Null when no execution
      * context is active. Read via {@link #activeContextIfOwned()} to determine if this provider should handle resource
-     * requests from RemoteFileSourceClassLoader.
+     * requests from RemoteFileSourceClassLoader. Atomic so that a closing stream can relinquish ownership without
+     * disturbing an execution context another stream has since installed; see {@link #clearExecutionContextIfOwned()}.
      */
-    private static volatile RemoteFileSourceExecutionContext executionContext;
+    private static final AtomicReference<RemoteFileSourceExecutionContext> executionContext = new AtomicReference<>();
 
 
     private final ObjectType.MessageStream connection;
@@ -161,14 +163,14 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      *
      * <p>
      * The context is read into a local so that callers observe a single, consistent snapshot. The context is nulled by
-     * {@link #clearExecutionContext()} on the transport thread when the client stream closes, which can happen while a
-     * script evaluation is still resolving resources on another thread; checking the field and then reading through it
-     * separately would leave a window for a NullPointerException.
+     * {@link #clearExecutionContextIfOwned()} on the transport thread when the client stream closes, which can happen
+     * while a script evaluation is still resolving resources on another thread; checking the field and then reading
+     * through it separately would leave a window for a NullPointerException.
      *
      * @return the execution context owned by this message stream, or null if this stream is not the active one
      */
     private RemoteFileSourceExecutionContext activeContextIfOwned() {
-        final RemoteFileSourceExecutionContext context = executionContext;
+        final RemoteFileSourceExecutionContext context = executionContext.get();
         return context != null && context.getActiveMessageStream() == this ? context : null;
     }
 
@@ -221,18 +223,21 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
             throw new IllegalArgumentException("messageStream must not be null");
         }
 
-        executionContext = new RemoteFileSourceExecutionContext(messageStream, resourcePaths, isDirty);
+        executionContext.set(new RemoteFileSourceExecutionContext(messageStream, resourcePaths, isDirty));
         log.info().append("Set execution context with ")
-                .append(executionContext.getResourcePaths().size()).append(" resource paths")
+                .append(resourcePaths.size()).append(" resource paths")
                 .append(", isDirty: ").append(isDirty).endl();
     }
 
     /**
-     * Clears the execution context.
+     * Clears the execution context if it is still owned by this message stream at the moment of the clear. Checking
+     * ownership first and then clearing is not enough: closes arrive on the transport error path while
+     * {@link #setExecutionContext} runs on the message stream's executor, so a stream can be superseded in between and
+     * would otherwise discard the new owner's execution context.
      */
-    public static void clearExecutionContext() {
-        if (executionContext != null) {
-            executionContext = null;
+    private void clearExecutionContextIfOwned() {
+        final RemoteFileSourceExecutionContext context = activeContextIfOwned();
+        if (context != null && executionContext.compareAndSet(context, null)) {
             log.info().append("Cleared execution context").endl();
         }
     }
@@ -352,10 +357,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         // Unregister this provider from the RemoteFileSourceClassLoader
         unregisterFromClassLoader();
 
-        // Clear execution context if this was the active stream
-        if (isActive()) {
-            clearExecutionContext();
-        }
+        // Clear the execution context, but only if this stream still owns it
+        clearExecutionContextIfOwned();
 
         // Cancel all pending requests
         pendingRequests.values().forEach(future -> future.cancel(true));
