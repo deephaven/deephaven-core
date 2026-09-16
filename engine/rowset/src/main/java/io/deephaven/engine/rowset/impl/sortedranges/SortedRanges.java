@@ -1936,7 +1936,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      */
     private SortedRanges insertRangesIndividually(final SortedRanges other, final boolean writeCheck) {
         SortedRanges result = this;
-        // Only the first insert can find this set shared; whatever it returns is writable in place.
+        // A shared set is checked until an insert returns a different set: that one is a private, writable copy. A
+        // range already contained in this set returns this set itself, unchanged and still shared.
         boolean check = writeCheck;
         for (int i = 0; i < other.count;) {
             final long start = other.unpackedGet(i++);
@@ -1952,7 +1953,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             if (result == null) {
                 return null;
             }
-            check = false;
+            if (result != this) {
+                check = false;
+            }
         }
         return result;
     }

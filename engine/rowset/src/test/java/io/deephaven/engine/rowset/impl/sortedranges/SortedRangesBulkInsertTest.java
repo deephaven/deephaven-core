@@ -107,6 +107,28 @@ public class SortedRangesBulkInsertTest {
         assertTrue("too few SortedRanges targets: " + sortedRangesTargets, sortedRangesTargets > TRIALS / 2);
     }
 
+    /**
+     * A shared set must stay untouched even when the first inserted range is already contained, which returns the
+     * shared set itself unchanged, and only a later range has anything to write.
+     */
+    @Test
+    public void containedFirstRangeKeepsSharedCopyIsolated() {
+        try (final WritableRowSet original = RowSetFactory.fromRange(10, 20);
+                final WritableRowSet shared = original.copy();
+                final WritableRowSet added = RowSetFactory.empty()) {
+            original.insert(30);
+            shared.insert(30);
+            added.insert(15);
+            added.insert(25);
+            try (final WritableRowSet snapshot = snapshot(original)) {
+                shared.insert(added);
+                assertTrue(snapshot.equals(original));
+                assertTrue(shared.containsRange(25, 25));
+                assertEquals(original.size() + 1, shared.size());
+            }
+        }
+    }
+
     /** An independent copy of {@code rowSet}, sharing no state with it. */
     private static WritableRowSet snapshot(final WritableRowSet rowSet) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
