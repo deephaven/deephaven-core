@@ -17,6 +17,9 @@ This independence can cause consistency issues when you have multiple tables tha
 
 Both `SyncTableFilter` and `LeaderTableFilter` solve this problem by ensuring that only coordinated rows appear in the filtered results.
 
+> [!NOTE]
+> Python API methods on [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) automatically acquire the update graph lock when needed. Because these filters are accessed directly through [`jpy`](./use-jpy.md), that automatic locking does not apply. Each builder's `build()` method must be called while holding the update graph lock if any input table is refreshing (the common case for tables being kept in sync). Wrap the call in [`auto_locking_ctx`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking_ctx) to avoid an `IllegalStateException`.
+
 ## When to use each utility
 
 Choose the synchronization utility based on your table relationships:
@@ -50,6 +53,8 @@ This example synchronizes three tables that share `Symbol` as a key and use `Seq
 import jpy
 from deephaven import new_table
 from deephaven.column import string_col, long_col, double_col
+from deephaven.table import Table
+from deephaven.update_graph import auto_locking_ctx
 
 SyncTableFilterBuilder = jpy.get_type(
     "io.deephaven.engine.table.impl.util.SyncTableFilter$Builder"
@@ -85,11 +90,12 @@ builder.addTable("prices", price_data.j_table)
 builder.addTable("volumes", volume_data.j_table)
 builder.addTable("bidAsk", bid_ask_data.j_table)
 
-result = builder.build()
+with auto_locking_ctx(price_data, volume_data, bid_ask_data):
+    result = builder.build()
 
-synced_prices = result.get("prices")
-synced_volumes = result.get("volumes")
-synced_bid_ask = result.get("bidAsk")
+synced_prices = Table(result.get("prices"))
+synced_volumes = Table(result.get("volumes"))
+synced_bid_ask = Table(result.get("bidAsk"))
 ```
 
 In this example:
@@ -116,8 +122,9 @@ builder.addTable(table_name, table.j_table)
 Build and retrieve the synchronized tables:
 
 ```python syntax
-result = builder.build()
-synced_table = result.get(table_name)
+with auto_locking_ctx(table1, table2, ...):
+    result = builder.build()
+synced_table = Table(result.get(table_name))
 ```
 
 ## `LeaderTableFilter`
@@ -136,6 +143,8 @@ This example uses a synchronization log as the leader table:
 import jpy
 from deephaven import new_table
 from deephaven.column import string_col, long_col, double_col
+from deephaven.table import Table
+from deephaven.update_graph import auto_locking_ctx
 
 LeaderTableFilterBuilder = jpy.get_type(
     "io.deephaven.engine.util.LeaderTableFilter$TableBuilder"
@@ -184,11 +193,12 @@ builder.addTable(
     "messages", message_log.j_table, "MessageId=MsgId", "Client", "SessionId"
 )
 
-result = builder.build()
+with auto_locking_ctx(sync_log, trade_log, message_log):
+    result = builder.build()
 
-filtered_leader = result.getLeader()
-filtered_trades = result.get("trades")
-filtered_messages = result.get("messages")
+filtered_leader = Table(result.getLeader())
+filtered_trades = Table(result.get("trades"))
+filtered_messages = Table(result.get("messages"))
 ```
 
 In this example:
@@ -227,9 +237,10 @@ builder.addTable(
 Build and retrieve the synchronized tables:
 
 ```python syntax
-result = builder.build()
-filtered_leader = result.getLeader()
-filtered_follower = result.get(table_name)
+with auto_locking_ctx(leader_table, table1, table2, ...):
+    result = builder.build()
+filtered_leader = Table(result.getLeader())
+filtered_follower = Table(result.get(table_name))
 ```
 
 ### Partitioned table variant
@@ -237,14 +248,23 @@ filtered_follower = result.get(table_name)
 `LeaderTableFilter.PartitionedTableBuilder` works with partitioned tables. Access it via jpy:
 
 ```python syntax
+from deephaven.table import PartitionedTable
+from deephaven.update_graph import auto_locking_ctx
+
 PartitionedTableBuilder = jpy.get_type(
     "io.deephaven.engine.util.LeaderTableFilter$PartitionedTableBuilder"
 )
-builder = PartitionedTableBuilder(leader_partitioned_table.j_partitioned_table)
-builder.addTable(
+builder = PartitionedTableBuilder(
+    leader_partitioned_table.j_partitioned_table, key_column1, key_column2, ...
+)
+builder.addPartitionedTable(
     name, follower_partitioned_table.j_partitioned_table, "leaderIdCol=followerIdCol"
 )
-result = builder.build()
+with auto_locking_ctx(leader_partitioned_table.table, follower_partitioned_table.table):
+    result = builder.build()
+
+filtered_leader = PartitionedTable(result.getLeader())
+filtered_follower = PartitionedTable(result.get(name))
 ```
 
 Requirements:

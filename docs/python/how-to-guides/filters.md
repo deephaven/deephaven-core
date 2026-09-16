@@ -285,6 +285,22 @@ result_separate = source.where(["Symbol == `AAPL`", "Price > 100 && Price < 150"
 result_combined = source.where("Symbol == `AAPL` && Price > 100 && Price < 150")
 ```
 
+## Filter utilities
+
+Deephaven provides several advanced filter utilities that can improve performance in specific scenarios. These utilities are Java classes; most are not exposed as first-class Python APIs, but they can be accessed from Python through [`jpy`](./use-jpy.md).
+
+### `TailInitializationFilter`
+
+[`TailInitializationFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/TailInitializationFilter.html) reduces the input size for downstream operations by limiting initialization to only the most recent rows. This is particularly useful when working with large historical datasets where you're primarily interested in the tail of the data. See the [`TailInitializationFilter`](../reference/table-operations/filter/TailInitializationFilter.md) reference page for usage examples.
+
+### `SyncTableFilter` and `LeaderTableFilter`
+
+[`SyncTableFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/SyncTableFilter.html) and [`LeaderTableFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/LeaderTableFilter.html) help synchronize table updates across multiple dependent tables. These utilities ensure that filtered results stay consistent when dealing with related tables that update at different rates. See [Synchronize multiple tables](./synchronizing-tables.md) for usage examples and guidance on choosing between these utilities.
+
+### `WindowCheck`
+
+[`WindowCheck`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/WindowCheck.html) provides time-window filtering capabilities, and is exposed in Python as [`time_window`](../reference/time/time-window.md). For practical usage, see the [`time_window`](../reference/time/time-window.md) reference page, which demonstrates how to add Boolean columns that indicate whether rows fall within a specified time window.
+
 ## Related documentation
 
 - [Built-in constants](./built-in-constants.md)

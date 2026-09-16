@@ -1840,6 +1840,10 @@
                     "path": "reference/table-operations/filter/tail-pct.md"
                   },
                   {
+                    "label": "TailInitializationFilter",
+                    "path": "reference/table-operations/filter/TailInitializationFilter.md"
+                  },
+                  {
                     "label": "where",
                     "path": "reference/table-operations/filter/where.md"
                   },
