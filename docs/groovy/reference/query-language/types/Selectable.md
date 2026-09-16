@@ -36,7 +36,7 @@ These methods control how Deephaven executes the column calculation. By default,
 
 ### `withSerial`
 
-Forces the column calculation to execute sequentially on a single core, processing rows one at a time in order. Use this when the formula has side effects or depends on row order.
+Forces the column calculation to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the formula has side effects or depends on row order.
 
 ```groovy order=result
 import io.deephaven.api.Selectable
@@ -77,7 +77,7 @@ If both of those are true, use string formulas directly. There is no benefit to 
 
 You need a `Selectable` object when parallel execution would produce incorrect results. This happens when your formula is **stateful** — it reads or writes shared state that changes between rows.
 
-**Use `withSerial`** when your formula must process rows one at a time, in order. Common cases include:
+**Use `withSerial`** when your formula must process rows in row-set order, not in parallel. Common cases include:
 
 - A counter or accumulator that increments for each row.
 - Logging or file writes that must happen sequentially.

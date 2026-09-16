@@ -39,7 +39,7 @@ These methods control how Deephaven evaluates the filter. By default, Deephaven 
 
 ### `withSerial`
 
-Forces the filter to evaluate sequentially on a single core, processing rows one at a time in order. Use this when the filter has side effects or depends on row order. With default settings, sources larger than about 131,072 rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `withSerial` to protect filters that can't tolerate that.
+Forces the filter to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the filter has side effects or depends on row order. With default settings, sources larger than about 131,072 rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `withSerial` to protect filters that can't tolerate that.
 
 ```groovy order=source,result
 import io.deephaven.api.filter.Filter
@@ -53,7 +53,7 @@ checkValue = { int x ->
 
 source = emptyTable(100).update("X = i")
 
-// Use .withSerial because the filter has side effects
+// Use withSerial because the filter has side effects
 myFilter = Filter.from("(boolean)checkValue(X)")[0].withSerial()
 result = source.where(myFilter)
 ```
