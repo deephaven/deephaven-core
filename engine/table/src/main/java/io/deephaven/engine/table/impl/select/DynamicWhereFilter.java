@@ -630,8 +630,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         if (localListener == null || localResult == null) {
             return;
         }
-        // The result may already be dead: released by a discarded snapshot attempt whose retry will supersede it, or
-        // released by its consumers. Either way, do not request a recompute for it.
+        // Skip a result already known to be dead, to avoid queueing a notification that would only be dropped. This
+        // is an early out, not the guard: a result released after this check is caught in WhereListener.process.
         if (!localResult.tryRetainReference()) {
             return;
         }

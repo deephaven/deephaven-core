@@ -385,6 +385,27 @@ public class TestDynamicWhereFilter {
     }
 
     /**
+     * A {@link DynamicWhereFilter} that passes through a {@link Gate} when a snapshot attempt asks whether the set
+     * changed on its step. That is the attempt's completion check, so it parks a {@code where} after its result has a
+     * {@code WhereListener} and before the attempt is judged and, if rejected, released.
+     */
+    private static final class GateInCompletionCheckFilter extends DynamicWhereFilter {
+
+        private final Gate gate;
+
+        private GateInCompletionCheckFilter(@NotNull final Table setTable, final Gate gate) {
+            super(setTable, true, pairs());
+            this.gate = gate;
+        }
+
+        @Override
+        public boolean stateChangedOnStep(final long step) {
+            gate.passThrough();
+            return super.stateChangedOnStep(step);
+        }
+    }
+
+    /**
      * A full data index over a source table's key column whose row key lookup passes through a {@link Gate}, parking a
      * {@code where} inside {@link DynamicWhereFilter}'s index filtering rather than its linear filtering.
      */
@@ -759,6 +780,70 @@ public class TestDynamicWhereFilter {
 
             assertEquals("only the discarded attempt and the retry may read the source; a refilter of the discarded"
                     + " attempt's result is a third read", 2, sourceKey.chunkReads.get());
+            assertTableEquals(newTable(intCol(KEY, 1, 2)), result);
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A set change that lands after a rejected attempt's result has its where listener, but before the attempt is
+     * released, finds the result alive and queues a recompute for it. The result is destroyed before that notification
+     * runs, and the notification does nothing: only the rejected attempt's read and the retry's read reach the source.
+     */
+    @Test
+    public void testSetChangeBeforeDiscardedAttemptIsReleasedDoesNotRefilterIt() throws Exception {
+        final Gate sourceGate = new Gate();
+        final Gate verdictGate = new Gate();
+        final GatedIntegerArraySource sourceKey = new GatedIntegerArraySource(sourceGate);
+        final QueryTable source = sourceTable(sourceKey, true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final DynamicWhereFilter filter = new GateInCompletionCheckFilter(setTable, verdictGate);
+
+        updateGraph.startCycleForUnitTests(false);
+        final long step = updateGraph.clock().currentStep();
+        try {
+            sourceGate.arm();
+            final Future<Table> whereFuture = pool.submit(() -> source.where(filter));
+            assertTrue("where began its previous-values read",
+                    sourceGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+
+            // Tick the source under the read so the attempt will be rejected, then park it at its completion check:
+            // its result and where listener exist, and nothing has been released yet.
+            verdictGate.arm();
+            addSourceRow(source, sourceKey, 3, 4);
+            source.notifyListeners(i(3), i(), i());
+            sourceGate.release();
+            assertTrue("attempt reached its completion check",
+                    verdictGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+
+            // Change the set now. The set listener finds the doomed result alive and queues a recompute for it.
+            TstUtils.addToTable(setTable, i(1), intCol(KEY, 2));
+            setTable.notifyListeners(i(1), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+            while (!filter.satisfied(step)) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+
+            // Let the attempt be judged, rejected and released; the retry then reads current values.
+            verdictGate.release();
+            final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
+            while (!whereFuture.isDone()) {
+                if (System.nanoTime() > deadlineNanos) {
+                    fail("where did not complete after its dependencies were satisfied");
+                }
+                if (!updateGraph.flushOneNotificationForUnitTests()) {
+                    // noinspection BusyWait
+                    Thread.sleep(1);
+                }
+            }
+            final Table result = whereFuture.get();
+
+            // The recompute queued for the released result runs here, and must not read the source.
+            updateGraph.completeCycleForUnitTests();
+
+            assertEquals("only the discarded attempt and the retry may read the source", 2,
+                    sourceKey.chunkReads.get());
             assertTableEquals(newTable(intCol(KEY, 1, 2)), result);
         } finally {
             endCycleIfOpen();
