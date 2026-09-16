@@ -2679,4 +2679,21 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertNotNull(listener.originalException());
         assertEquals(dupMsg + "a", listener.originalException().getMessage());
     }
+
+    public void testNaturalJoinDuplicateRightsBothRefreshingLeftDataIndex() {
+        // sparse left row keys, so no data index table row key is a valid left row key; the error must be rendered from
+        // a left table row key rather than a data index table row key
+        final QueryTable left =
+                testRefreshingTable(i(10, 20, 30).toTracking(), col("Key", "a", "b", "c"), intCol("L", 1, 2, 3));
+        DataIndexer.getOrCreateDataIndex(left, "Key");
+        final QueryTable right = testRefreshingTable(col("Key", "a", "a"), intCol("R", 10, 11));
+
+        try {
+            final Table result = left.naturalJoin(right, "Key");
+            showWithRowSet(result);
+            fail("Expected exception");
+        } catch (IllegalStateException e) {
+            assertEquals(dupMsg + "a", e.getMessage());
+        }
+    }
 }

@@ -339,12 +339,8 @@ public class TypedNaturalJoinFactory {
 
     public static void incrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
-        builder.beginControlFlow("if (rightRowKeyForState <= $L && (joinType == $L || joinType == $L))",
-                FIRST_DUPLICATE, "NaturalJoinType.ERROR_ON_DUPLICATE", "NaturalJoinType.EXACTLY_ONE_MATCH");
-        builder.addStatement(
-                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable($L))",
-                "rowKeyChunk.get(chunkPosition)");
-        builder.endControlFlow();
+        // A duplicate right key is reported when the row redirection is built (getRightRowKeyFromState), which
+        // renders the error from a left table row key; the rows built here may be data index table rows.
         builder.addStatement("mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition))");
     }
 

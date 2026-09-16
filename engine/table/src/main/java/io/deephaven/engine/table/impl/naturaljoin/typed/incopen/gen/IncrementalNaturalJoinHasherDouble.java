@@ -72,9 +72,6 @@ final class IncrementalNaturalJoinHasherDouble extends IncrementalNaturalJoinSta
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (rightRowKeyForState <= FIRST_DUPLICATE && (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH)) {
-                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
-                    }
                     mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition));
                     break;
                 } else {
