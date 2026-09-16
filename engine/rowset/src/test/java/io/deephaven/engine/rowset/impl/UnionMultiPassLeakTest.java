@@ -83,28 +83,4 @@ public class UnionMultiPassLeakTest {
             rowSets.forEach(RowSet::close);
         }
     }
-
-    @Test
-    public void insertUnionAndCloseReleasesItsBatch() {
-        final List<RowSet> batch = interleaved(17, 7);
-        // The batch's row sets are closed by the call and cannot be asked anything afterwards, so hold their
-        // implementations: those outlive the wrappers, and their reference counts are what a leak would show up in.
-        final List<OrderedLongSet> innerSets = new ArrayList<>(batch.size());
-        for (final RowSet rowSet : batch) {
-            final OrderedLongSet innerSet = ((WritableRowSetImpl) rowSet).getInnerSet();
-            assertEquals(1, innerSet.ixRefCount());
-            innerSets.add(innerSet);
-        }
-
-        try (final WritableRowSet accumulator = RowSetFactory.empty()) {
-            RowSetFactory.insertUnionAndClose(accumulator, batch);
-            assertEquals(17 * 7 * 5, accumulator.size());
-            assertEquals(0, batch.size());
-        }
-
-        for (final OrderedLongSet innerSet : innerSets) {
-            // Nothing the merge built survives it, so the last reference to each input went with its wrapper.
-            assertEquals(0, innerSet.ixRefCount());
-        }
-    }
 }

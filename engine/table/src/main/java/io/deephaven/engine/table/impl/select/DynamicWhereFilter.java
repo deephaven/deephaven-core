@@ -45,12 +45,6 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     private static final int CHUNK_SIZE = 1 << 16;
 
-    /**
-     * Row sets merged into the result at a time. Merging a batch costs one pass over the batch rather than one insert
-     * into a growing accumulator per row set, and bounding it keeps the row sets held at once bounded too.
-     */
-    private static final int UNION_BATCH_SIZE = 1024;
-
     private final MatchPair[] sourceToSetColumnNamePairs;
     private final boolean inclusion;
 
@@ -414,83 +408,56 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         }
     }
 
-    /**
-     * Merge {@code batch} and remove the result from {@code accumulator}. Removing a merged batch walks the accumulator
-     * once instead of once per row set. The batch's row sets are only borrowed; the list is emptied but they are left
-     * open.
-     */
-    private static void removeBatchFrom(@NotNull final WritableRowSet accumulator, @NotNull final List<RowSet> batch) {
-        if (batch.isEmpty()) {
-            return;
-        }
-        try (final RowSet merged = RowSetFactory.union(batch)) {
-            accumulator.remove(merged);
-        } finally {
-            batch.clear();
-        }
-    }
-
     @NotNull
     private WritableRowSet filterFullIndex(@NotNull final RowSet selection, final boolean usePrev) {
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
 
-        final WritableRowSet filtered = inclusion ? RowSetFactory.empty() : selection.copy();
+        // noinspection DataFlowIssue
+        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
+        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
+
+        final long kernelGeneration = sharedSet.beginRead();
+        final Iterator<Object> values;
+        final Function<Object, Object> keyMappingFunction;
+        if (staticSetLookupKeys != null) {
+            values = staticSetLookupKeys.iterator();
+            keyMappingFunction = Function.identity();
+        } else if (sourceKeyColumns.length == 1) {
+            values = sharedSet.kernel().iterator();
+            keyMappingFunction = Function.identity();
+        } else {
+            values = sharedSet.kernel().iterator();
+            keyMappingFunction = tupleToFullKeyMappingFunction();
+        }
+
         // The kernel reads below throw SnapshotInconsistentException when the set table mutates during this concurrent
-        // snapshot attempt; that triggers the normal retry path and is not an error. Close the partial result on the
-        // way out so an abandoned attempt does not leak it.
-        try {
-            // noinspection DataFlowIssue
-            final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
-            final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
-
-            final long kernelGeneration = sharedSet.beginRead();
-            final Iterator<Object> values;
-            final Function<Object, Object> keyMappingFunction;
-            if (staticSetLookupKeys != null) {
-                values = staticSetLookupKeys.iterator();
-                keyMappingFunction = Function.identity();
-            } else if (sourceKeyColumns.length == 1) {
-                values = sharedSet.kernel().iterator();
-                keyMappingFunction = Function.identity();
-            } else {
-                values = sharedSet.kernel().iterator();
-                keyMappingFunction = tupleToFullKeyMappingFunction();
-            }
-
-            final List<RowSet> batch = new ArrayList<>(UNION_BATCH_SIZE);
-            try (final RowSet indexRowKeys =
-                    lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
-                // Abandon an attempt the set has already invalidated before paying for any row sets.
-                sharedSet.failIfChangedSince(kernelGeneration);
-                forEachIndexRowSet(indexRowKeys, rowSetColumn, usePrev, rowSet -> {
-                    if (inclusion) {
-                        batch.add(rowSet.intersect(selection));
-                        if (batch.size() >= UNION_BATCH_SIZE) {
-                            RowSetFactory.insertUnionAndClose(filtered, batch);
-                        }
-                    } else {
-                        batch.add(rowSet);
-                        if (batch.size() >= UNION_BATCH_SIZE) {
-                            removeBatchFrom(filtered, batch);
-                        }
-                    }
-                });
-                if (inclusion) {
-                    RowSetFactory.insertUnionAndClose(filtered, batch);
-                } else {
-                    removeBatchFrom(filtered, batch);
-                }
-            } finally {
-                if (inclusion) {
-                    // The intersections belong to this method; the index's row sets gathered for removal are borrowed.
-                    SafeCloseable.closeAll(batch.iterator());
-                }
+        // snapshot attempt; that triggers the normal retry path and is not an error. The batcher owns everything it
+        // has gathered until it is built, so an abandoned attempt releases it; what is built is closed here.
+        WritableRowSet matching = null;
+        try (final RowSet indexRowKeys =
+                lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
+            // Abandon an attempt the set has already invalidated before paying for any row sets.
+            sharedSet.failIfChangedSince(kernelGeneration);
+            // One row set per index row, and the lookup has already reduced the values to distinct row keys.
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(indexRowKeys.size())) {
+                // An index row set holds every source row for its key, so it is clipped to selection on the way in.
+                // Without that, excluding many keys would accumulate a union approaching the whole source.
+                forEachIndexRowSet(indexRowKeys, rowSetColumn, usePrev,
+                        rowSet -> batcher.add(rowSet.intersect(selection)));
+                matching = batcher.build();
             }
         } catch (final Throwable t) {
-            filtered.close();
+            if (matching != null) {
+                matching.close();
+            }
             throw t;
         }
-        return filtered;
+        if (inclusion) {
+            return matching;
+        }
+        try (final SafeCloseable ignored = matching) {
+            return selection.minus(matching);
+        }
     }
 
     @NotNull
@@ -498,49 +465,47 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
         Assert.gt(sourceKeyColumns.length, "sourceKeyColumns.length", 1);
 
-        final WritableRowSet matching;
-        try (final WritableRowSet possiblyMatching = RowSetFactory.empty()) {
-            // First, compute a possibly-matching subset of selection based on the partial index.
+        // First, compute a possibly-matching subset of selection based on the partial index.
 
-            // noinspection DataFlowIssue
-            final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
-            final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
+        // noinspection DataFlowIssue
+        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
+        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
 
-            final long kernelGeneration = sharedSet.beginRead();
-            final Iterator<Object> values;
-            final Function<Object, Object> keyMappingFunction;
+        final long kernelGeneration = sharedSet.beginRead();
+        final Iterator<Object> values;
+        final Function<Object, Object> keyMappingFunction;
 
-            if (staticSetLookupKeys != null) {
-                values = staticSetLookupKeys.iterator();
-                keyMappingFunction = Function.identity();
+        if (staticSetLookupKeys != null) {
+            values = staticSetLookupKeys.iterator();
+            keyMappingFunction = Function.identity();
+        } else {
+            values = sharedSet.kernel().iterator();
+            if (sourceDataIndex.keyColumnNames().size() == 1) {
+                final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
+                keyMappingFunction = (final Object key) -> sourceKeySource.exportElement(key, keyOffset);
             } else {
-                values = sharedSet.kernel().iterator();
-                if (sourceDataIndex.keyColumnNames().size() == 1) {
-                    final int keyOffset = indexToTupleMap == null ? 0 : indexToTupleMap[0];
-                    keyMappingFunction = (final Object key) -> sourceKeySource.exportElement(key, keyOffset);
-                } else {
-                    keyMappingFunction = tupleToPartialKeyMappingFunction();
-                }
+                keyMappingFunction = tupleToPartialKeyMappingFunction();
             }
+        }
 
-            final List<RowSet> batch = new ArrayList<>(UNION_BATCH_SIZE);
-            try (final RowSet indexRowKeys =
-                    lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
-                // Abandon an attempt the set has already invalidated before paying for any row sets.
-                sharedSet.failIfChangedSince(kernelGeneration);
-                forEachIndexRowSet(indexRowKeys, rowSetColumn, usePrev, rowSet -> {
-                    batch.add(rowSet.intersect(selection));
-                    if (batch.size() >= UNION_BATCH_SIZE) {
-                        RowSetFactory.insertUnionAndClose(possiblyMatching, batch);
-                    }
-                });
-                RowSetFactory.insertUnionAndClose(possiblyMatching, batch);
-            } finally {
-                SafeCloseable.closeAll(batch.iterator());
+        final WritableRowSet matching;
+        try (final RowSet indexRowKeys =
+                lookupIndexRowKeys(values, kernelGeneration, keyMappingFunction, rowKeyLookup, usePrev)) {
+            // Abandon an attempt the set has already invalidated before paying for any row sets.
+            sharedSet.failIfChangedSince(kernelGeneration);
+            // Set values project onto a subset of their columns here, so many of them can land on the same index row.
+            // The lookup collects the row keys into a row set, which leaves each index row set taken once.
+            final WritableRowSet possiblyMatching;
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(indexRowKeys.size())) {
+                forEachIndexRowSet(indexRowKeys, rowSetColumn, usePrev,
+                        rowSet -> batcher.add(rowSet.intersect(selection)));
+                possiblyMatching = batcher.build();
             }
 
             // Now, do linear filter on possiblyMatching to determine the values to include or exclude from selection.
-            matching = filterLinear(possiblyMatching, true, usePrev);
+            try (possiblyMatching) {
+                matching = filterLinear(possiblyMatching, true, usePrev);
+            }
         }
         if (inclusion) {
             return matching;

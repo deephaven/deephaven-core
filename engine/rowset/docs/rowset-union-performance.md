@@ -156,6 +156,54 @@ merge sorts, so it is flat across all three orders.
 | shuffled | 1000 | 3980.69 | 3969.63 | 536.89 | **7.41x** |
 | descending | 1000 | 574.70 | 575.46 | 572.50 | 1.00x |
 
+## The call-site batcher
+
+`RowSetUnionBatcher` is the batched merge the converted call sites all repeated, with their ownership bookkeeping
+folded into one `SafeCloseable`. A caller hands it row sets and calls `build` for the union; it owns everything in
+between, so a traversal that throws part way through abandons what it gathered instead of handing back half a union.
+
+The batch size is the caller's own count — `indexRowKeys.size`, `filteredTable.size`, `keysToRefilter.size`,
+`matchColumns.size` — taken as a `long` and clamped by the constructor to `[1, MAX_BATCH_SIZE]`, so a caller
+counting rows rather than objects has nothing to narrow and no reason to name the cap. Under the cap that count merges the whole
+input at once; over it, or where it is only an upper bound, it costs nothing to pass and the cap takes over. The clamp
+is also what makes `2 * batchSize` the list's greatest extent rather than just its starting capacity.
+
+It accumulates rather than writing into a row set the caller passes in. Every converted site wanted a new row set, and
+the two that ultimately insert into a long-lived one — `SyncTableFilter` and `LeaderTableFilter`, whose targets are the
+tracking row sets behind their results — do it with a single insert at the end rather than one per batch.
+
+**Batches are not merged into one running result.** That would reintroduce exactly the problem this whole document is
+about, one level up: one pass over a growing result per batch instead of per row set, which at 1024 to a batch is still
+`n/1024` passes over something that keeps getting bigger. Instead the entries live in two regions of a list of
+`2 * batchSize` slots. A full batch collapses into a single row set that stays where it is, so the front fills with
+collapsed groups while the back gathers the next batch. The groups are allowed to fill their half of the list; the
+batch that would need a slot past it folds everything into one instead. A result is merged into again once per `batchSize` batches rather than once per batch — the same tree
+the multi-pass merge inside `union` builds, one level up, and for the same reason.
+
+The list is all this holds onto: at most `2 * MAX_BATCH_SIZE` references. Each collapse still allocates what
+`union` allocates — an array of its inputs and a groups array about half that size — but so did every batch under the
+old hand-rolled loop, so that part is unchanged. What is *held* is unchanged for the
+callers that produce a row set per key or per index entry — those inputs are disjoint, so the groups sum to the result.
+Overlapping input is where holding groups costs more than a running result would: a running result stays the size of
+one input while `batchSize` groups are each about that size. Two call sites could overlap and neither reaches it.
+`WouldMatchOperation` overlaps, since a row can change in several match columns at once, but it sizes its batcher at
+`matchColumns.size`, so it collapses once and never holds a second group. `DynamicWhereFilter.filterPartialIndex`
+looks up a subset of the set's key columns, so many set values land on the same index row — it deduplicates the index
+row keys it has already taken, which is less work as well as less held, and leaves the intersections it merges
+disjoint. Reaching the bad case needs both overlap and enough inputs to fill the groups, which no converted call site
+does — and the merge's own passes have the same property.
+
+It does two things before the merge sees anything, both of which the merge would otherwise have to undo:
+
+- **Empty row sets never take a slot.** The merge already compacts them away, but a batch that spends slots on them
+  fills early and merges more often than the caller asked for.
+- **A row set that appends to the last one is spliced onto it in place.** Ascending input therefore collapses to a
+  single row set that `build` hands over as it stands: no sort, no group array, no copy-on-write reference per input.
+  This is the same append test the merge makes, moved to where the batch is still one row set long.
+
+The ordering caveat from pitfall 5 stands. Batching still forfeits the global sort, and the collapse only fires for
+input that arrives in ascending order; it makes the good case cheaper, not the bad case good.
+
 ## Pitfalls
 
 Each of these produced a confident, plausible, wrong conclusion first. They are the parts of this work least likely to
@@ -244,7 +292,7 @@ plausible-sounding optimization was for a cost that did not exist.
 | `SortedRanges.MAX_CAPACITY` | 8193 | Entries, so roughly 4096 ranges. Above it a set becomes an `RspBitmap` and the insert path changes character — the cause of a non-monotonic result that looked like a measurement error. |
 | RSP block size | 65,536 | Keys per span. Whether an incoming range starts a new block decides whether a pre-pass can pay for itself. |
 | `MixedBuilderRandom.addAsIndexThreshold` | 65,536 | Gates the builder's whole-set path on the *incoming* range count alone, ignoring the accumulator. Still open — the same class of mistake as pitfall 4. |
-| `UNION_BATCH_SIZE` | 1024 | Row sets merged at a time where entries are newly materialized. Deliberately not applied where they are borrowed references. |
+| `RowSetUnionBatcher.MAX_BATCH_SIZE` | 1024 | The most row sets gathered into one batch, whatever count a caller asks for. Callers pass their own count; this is the ceiling that keeps data-driven input from holding an unbounded number of row sets. It caps the batch, not every merge — the final `build` also hands over the collapsed groups, up to `2 * batchSize - 1` row sets. |
 
 ## Still unresolved
 

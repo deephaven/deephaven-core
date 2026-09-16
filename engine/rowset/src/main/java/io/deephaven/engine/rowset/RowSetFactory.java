@@ -8,8 +8,6 @@ import io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 
-import io.deephaven.util.SafeCloseable;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -128,36 +126,6 @@ public abstract class RowSetFactory {
      */
     public static WritableRowSet union(final RowSet... rowSets) {
         return union(rowSets.clone(), rowSets.length);
-    }
-
-    /**
-     * Insert the union of {@code rowSets} into {@code accumulator}, then close every row set in {@code rowSets} and
-     * clear it.
-     *
-     * <p>
-     * This is how a caller accumulates many row sets into one result without holding them all at once: gather a batch,
-     * merge it in, and go on. Merging a batch costs one pass over the batch, where inserting each row set separately
-     * costs a pass over the accumulator each time.
-     *
-     * <p>
-     * {@code rowSets} must be mutable, must not contain {@code accumulator}, and must not contain the same row set
-     * twice. Each of those closes a row set that is still in use, and {@link RowSet#close()} is not idempotent.
-     *
-     * @param accumulator The {@link WritableRowSet} to insert into
-     * @param rowSets The row sets to union, close and remove from the collection; ownership of them passes here
-     */
-    public static void insertUnionAndClose(
-            final WritableRowSet accumulator,
-            final Collection<? extends RowSet> rowSets) {
-        if (rowSets.isEmpty()) {
-            return;
-        }
-        try (final RowSet merged = union(rowSets)) {
-            accumulator.insert(merged);
-        } finally {
-            SafeCloseable.closeAll(rowSets.iterator());
-            rowSets.clear();
-        }
     }
 
     /**
