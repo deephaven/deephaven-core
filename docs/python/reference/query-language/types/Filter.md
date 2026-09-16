@@ -37,7 +37,7 @@ These methods control how Deephaven evaluates the filter. By default, Deephaven 
 
 ### `with_serial`
 
-Forces the filter to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the filter has side effects or depends on row order. With default settings, sources larger than about 131,072 rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `with_serial` to protect filters that can't tolerate that. A filter backed by a Python callback is only eligible for that parallel (concurrent) evaluation on a free-threaded Python build — on the standard GIL-enabled build, it's never invoked concurrently. However, that alone doesn't guarantee row-set order or exactly-once evaluation the way `with_serial` does: use `with_serial` for any filter with order- or evaluation-dependent side effects, regardless of Python build.
+Forces the filter to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the filter has side effects or depends on row order. With default settings, sources larger than about 131,072 rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `with_serial` to protect filters that can't tolerate that. A filter backed by a Python callback is only eligible for that parallel (concurrent) evaluation on a free-threaded Python build — on the standard GIL-enabled build, it's never invoked concurrently. However, that alone doesn't guarantee row-set order the way `with_serial` does: use `with_serial` for any filter with order-dependent side effects, regardless of Python build.
 
 ```python order=source,result
 from deephaven.filters import Filter
@@ -103,7 +103,7 @@ If both of those are true, use string conditions directly. There is no benefit t
 
 ### When you need explicit control
 
-You need a `Filter` object in two situations:
+You need a `Filter` object in three situations:
 
 **Stateful filters**: If your filter modifies shared state (e.g., counting how many rows pass), use `with_serial` to force sequential evaluation. Without it, multiple threads evaluating rows simultaneously could corrupt the shared state.
 

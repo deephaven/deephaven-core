@@ -73,7 +73,7 @@ Deephaven also parallelizes calculations within a single table, in two ways:
 > [!CAUTION]
 > **Python GIL limitation**: Most Python builds use the GIL (global interpreter lock), which prevents concurrent execution of Python code across threads. Deephaven only considers Python-backed filters and selectables for parallel execution on a [free-threaded Python build](https://docs.python.org/3/howto/free-threading-python.html) — on a standard (GIL-enabled) build, they're never run concurrently. To get parallel execution of Python-backed formulas and filters, switch to a free-threaded Python build; no other Deephaven configuration is required.
 >
-> **This is not the same guarantee `with_serial` provides.** Not running concurrently isn't the same as running in row-set order, exactly once per row — the engine may still evaluate a non-parallelizable column out of order, or without evaluating every row through its own individual call. If your formula or filter has side effects that depend on row order or exactly-once evaluation, use `with_serial` regardless of which Python build you're running.
+> **This is not the same guarantee `with_serial` provides.** Not running concurrently isn't the same as running in row-set order — the engine may still evaluate a non-parallelizable column out of order. If your formula or filter has side effects that depend on row order, use `with_serial` regardless of which Python build you're running.
 
 ### Query phases and thread pools
 

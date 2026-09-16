@@ -2,7 +2,7 @@
 title: Query Parallelization
 ---
 
-Modern computers have multiple processors (called "cores") that can work simultaneously. Deephaven automatically distributes work across these cores to make queries faster. For example, if your computer has 4 cores and a calculation takes 8 seconds on a single core, Deephaven can complete it in roughly 2 seconds by having all 4 cores work on different parts at the same time.
+Modern computers have multiple processors (called "cores") that can work simultaneously. Deephaven automatically distributes work across these cores to make queries faster. For example, a calculation that takes 8 seconds on a single core can complete significantly faster on a multi-core machine by having several cores work on different parts at the same time — though the actual speedup depends on the workload and scheduling overhead, not just the number of cores.
 
 > [!TIP]
 > **Most queries benefit from parallelization automatically.** You don't need to do anything special. This guide explains how parallelization works and covers the uncommon situations where you need to disable it.
@@ -51,7 +51,7 @@ large_table = empty_table(20_000_000).update(
 )
 ```
 
-With 20 million rows and 4 cores, Deephaven divides the work into four chunks of roughly 5 million rows each. All four cores compute their chunks simultaneously, so the work completes about 4 times faster than if a single core processed all rows sequentially. (Deephaven only splits a computation across cores once a table is large enough — at least a few million rows — so small tables are always processed on a single core.)
+With 20 million rows and 4 cores, Deephaven divides the work into four chunks of roughly 5 million rows each. All four cores compute their chunks simultaneously, so the work completes faster than if a single core processed all rows sequentially — though scheduling overhead means the speedup is rarely a perfectly linear 4x. (Deephaven only splits a computation across cores once a table is large enough — at least a few million rows — so small tables are always processed on a single core.)
 
 ## When it works
 
@@ -159,7 +159,7 @@ Two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both
 
 ## The fix: force sequential processing with `with_serial`
 
-The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method tells Deephaven to process this formula on a single core, one row at a time, in order:
+The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method tells Deephaven to process this formula serially: never running concurrently with itself, with rows evaluated one at a time in row-set order:
 
 ```python test-set=serial order=result
 from deephaven import empty_table
@@ -182,7 +182,7 @@ result = empty_table(100).update(col)
 > [!NOTE]
 > This example uses only 100 rows, well below the threshold where Deephaven would actually parallelize it, so it wouldn't show the race from the broken version above even without `with_serial`. Use `with_serial` any time your formula depends on shared state or row order, regardless of table size — parallelization isn't the only way execution order can vary, and `with_serial` is the only thing that guarantees rows are processed one at a time, in order.
 
-**Trade-off**: Sequential processing uses only one core, so it's slower than parallel processing. Only use `with_serial` when your formula requires it for correctness.
+**Trade-off**: Sequential processing forgoes the speedup of running rows concurrently across cores, so it's slower than parallel processing. Only use `with_serial` when your formula requires it for correctness.
 
 ## Key takeaways
 

@@ -100,7 +100,7 @@ If both of those are true, use string conditions directly. There is no benefit t
 
 ### When you need explicit control
 
-You need a `Filter` object in two situations:
+You need a `Filter` object in three situations:
 
 **Stateful filters**: If your filter modifies shared state (e.g., counting how many rows pass), use `withSerial` to force sequential evaluation. Without it, multiple threads evaluating rows simultaneously could corrupt the shared state.
 
