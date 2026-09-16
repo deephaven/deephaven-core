@@ -102,6 +102,11 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         void submit(final Runnable operation) {
             operations.add(operation);
             dispatch();
+            if (isClosed()) {
+                // close() may have cleared the queue before this operation landed; it will never be started, so
+                // discard it rather than retaining the work it holds
+                operations.clear();
+            }
         }
 
         /**

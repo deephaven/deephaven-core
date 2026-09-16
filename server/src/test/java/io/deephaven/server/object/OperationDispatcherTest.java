@@ -113,12 +113,13 @@ public class OperationDispatcherTest {
                     thread.join();
                 }
 
-                if (failure.get() != null) {
-                    throw new AssertionError("round " + round + " failed", failure.get());
-                }
                 assertThat(allRan.await(30, TimeUnit.SECONDS))
                         .withFailMessage("round %d stranded %d operations", round, allRan.getCount())
                         .isTrue();
+                // checked after the latch so that violations recorded by the operations themselves are seen
+                if (failure.get() != null) {
+                    throw new AssertionError("round " + round + " failed", failure.get());
+                }
             }
         } finally {
             completers.shutdownNow();
