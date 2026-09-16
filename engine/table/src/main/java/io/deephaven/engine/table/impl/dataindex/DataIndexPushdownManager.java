@@ -218,9 +218,11 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
             final PushdownResult result) {
-        // Owned from here so that nothing this method builds is left to the mercy of a resource that fails to close.
-        final WritableRowSet matching = RowSetFactory.empty();
-        try (matching) {
+        final WritableRowSet matching;
+        // One row set per index row that passes the filter, so the unfiltered index bounds them. The batcher owns
+        // what it gathers, and outliving the liveness scope and the iterator leaves nothing that can throw between
+        // building the result and the caller taking it.
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(dataIndex.table().size())) {
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 // Extract the fundamental filter, ignoring barriers.
                 final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
@@ -236,28 +238,22 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                 }
                 try {
                     final Table filteredTable = toFilter.where(copiedFilter);
-                    // One row set per index row that passed the filter.
-                    try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(filteredTable.size());
-                            final CloseableIterator<RowSet> it =
-                                    ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
-                                            .iterator()) {
+                    try (final CloseableIterator<RowSet> it =
+                            ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
+                                    .iterator()) {
                         it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(result.maybeMatch())));
-                        try (final WritableRowSet built = batcher.build()) {
-                            // Inserting into an empty row set adopts what it is handed, so this is the transfer and
-                            // not a second merge.
-                            matching.insert(built);
-                        }
                     }
                 } catch (final Exception e) {
                     throw new TableInitializationException(
                             "Error applying filter " + Strings.of(copiedFilter) + " to data index table", e);
                 }
             }
-            // Retain only the maybe rows and add the previously found matches.
-            try (final WritableRowSet empty = RowSetFactory.empty()) {
-                matching.insert(result.match());
-                return PushdownResult.of(selection, matching, empty);
-            }
+            matching = batcher.build();
+        }
+        // Retain only the maybe rows and add the previously found matches.
+        try (matching; final WritableRowSet empty = RowSetFactory.empty()) {
+            matching.insert(result.match());
+            return PushdownResult.of(selection, matching, empty);
         }
     }
 

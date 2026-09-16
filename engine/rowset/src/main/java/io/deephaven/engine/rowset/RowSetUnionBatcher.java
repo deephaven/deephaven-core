@@ -166,7 +166,7 @@ public final class RowSetUnionBatcher implements SafeCloseable {
             // The union borrows what it is handed, so these entries are still ours to close once it has read them.
             return RowSetFactory.union(tail);
         } finally {
-            SafeCloseable.closeAll(tail.iterator());
+            SafeCloseable.closeAll(tail);
             tail.clear();
         }
     }
@@ -196,7 +196,7 @@ public final class RowSetUnionBatcher implements SafeCloseable {
         run = null;
         groupCount = 0;
         try {
-            SafeCloseable.closeAll(entries.iterator());
+            SafeCloseable.closeAll(entries);
         } finally {
             entries.clear();
         }

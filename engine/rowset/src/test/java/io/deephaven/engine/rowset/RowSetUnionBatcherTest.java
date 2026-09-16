@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset;
 
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
+import io.deephaven.util.SafeCloseable;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -39,10 +40,6 @@ public class RowSetUnionBatcherTest {
             builder.appendKey(rowKey);
         }
         return builder.build();
-    }
-
-    private static void closeAll(final List<RowSet> rowSets) {
-        rowSets.forEach(RowSet::close);
     }
 
     /** Disjoint blocks laid end to end. Every one of these appends to the one before it. */
@@ -108,8 +105,8 @@ public class RowSetUnionBatcherTest {
                 Collections.reverse(descending);
                 checkBuild(descending, batchSize);
             } finally {
-                closeAll(ascending);
-                closeAll(mixed);
+                SafeCloseable.closeAll(ascending);
+                SafeCloseable.closeAll(mixed);
             }
         }
     }
@@ -135,7 +132,7 @@ public class RowSetUnionBatcherTest {
                 assertThat(built.size()).isEqualTo(64 * 50);
             }
         } finally {
-            closeAll(rowSets);
+            SafeCloseable.closeAll(rowSets);
         }
     }
 
@@ -152,7 +149,7 @@ public class RowSetUnionBatcherTest {
                 assertThat(built.size()).isEqualTo(8 * 4 * 5);
             }
         } finally {
-            closeAll(rowSets);
+            SafeCloseable.closeAll(rowSets);
         }
     }
 
@@ -176,7 +173,7 @@ public class RowSetUnionBatcherTest {
                 assertThat(built).isEqualTo(expected);
             }
         } finally {
-            closeAll(rowSets);
+            SafeCloseable.closeAll(rowSets);
         }
     }
 
@@ -186,7 +183,7 @@ public class RowSetUnionBatcherTest {
         for (final long batchSize : new long[] {Long.MIN_VALUE, Integer.MIN_VALUE, -1, 0}) {
             checkBuild(rowSets, batchSize);
         }
-        closeAll(rowSets);
+        SafeCloseable.closeAll(rowSets);
     }
 
     @Test
@@ -224,7 +221,7 @@ public class RowSetUnionBatcherTest {
                 assertThat(built).isEqualTo(expected);
             }
         } finally {
-            closeAll(rowSets);
+            SafeCloseable.closeAll(rowSets);
         }
     }
 
@@ -290,7 +287,7 @@ public class RowSetUnionBatcherTest {
                 assertThat(built.size()).isEqualTo(6 * 4 * 5);
             }
         } finally {
-            closeAll(rowSets);
+            SafeCloseable.closeAll(rowSets);
         }
     }
 
@@ -314,8 +311,8 @@ public class RowSetUnionBatcherTest {
                 assertThat(refCount(rowSet)).isEqualTo(1);
             }
         } finally {
-            closeAll(rowSets);
-            closeAll(more);
+            SafeCloseable.closeAll(rowSets);
+            SafeCloseable.closeAll(more);
         }
     }
 
@@ -351,7 +348,7 @@ public class RowSetUnionBatcherTest {
                 assertThat(built).isEqualTo(expected);
             }
         } finally {
-            closeAll(rowSets);
+            SafeCloseable.closeAll(rowSets);
         }
     }
 
@@ -374,7 +371,7 @@ public class RowSetUnionBatcherTest {
             try {
                 checkBuild(rowSets, 1 + random.nextInt(8));
             } finally {
-                closeAll(rowSets);
+                SafeCloseable.closeAll(rowSets);
             }
         }
     }
