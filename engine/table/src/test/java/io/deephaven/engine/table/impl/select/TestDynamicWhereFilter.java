@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -14,9 +15,11 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
@@ -38,6 +41,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -60,6 +64,9 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -385,9 +392,9 @@ public class TestDynamicWhereFilter {
     }
 
     /**
-     * A {@link DynamicWhereFilter} that passes through a {@link Gate} when a snapshot attempt asks whether the set
-     * changed on its step. That is the attempt's completion check, so it parks a {@code where} after its result has a
-     * {@code WhereListener} and before the attempt is judged and, if rejected, released.
+     * A {@link DynamicWhereFilter} that passes through a {@link Gate} when a snapshot attempt asks when the set last
+     * changed. That is the attempt's completion check, so it parks a {@code where} after its result has a
+     * {@code WhereListener}, and before the attempt is judged, subscribed and, if rejected, released.
      */
     private static final class GateInCompletionCheckFilter extends DynamicWhereFilter {
 
@@ -399,9 +406,52 @@ public class TestDynamicWhereFilter {
         }
 
         @Override
-        public boolean stateChangedOnStep(final long step) {
+        public long lastStateChangeStep() {
             gate.passThrough();
-            return super.stateChangedOnStep(step);
+            return super.lastStateChangeStep();
+        }
+    }
+
+    /**
+     * A {@link DynamicWhereFilter} that passes through a {@link Gate} as its snapshot attempt commits, just before that
+     * attempt subscribes to the set. The attempt's verdict is already given by then, so a set change or failure made
+     * while it is parked is one the verdict did not see, and the subscription is all that can still refuse it.
+     */
+    private static final class GateBeforeSubscribeFilter extends DynamicWhereFilter {
+
+        private final Gate gate;
+
+        private GateBeforeSubscribeFilter(@NotNull final Table setTable, final Gate gate) {
+            super(setTable, true, pairs());
+            this.gate = gate;
+        }
+
+        @Override
+        public boolean subscribe(final long requiredLastStateChangeStep) {
+            gate.passThrough();
+            return super.subscribe(requiredLastStateChangeStep);
+        }
+    }
+
+    /**
+     * A {@link DynamicWhereFilter} that passes through a {@link Gate} once its snapshot attempt has subscribed to the
+     * set, and before that attempt subscribes its result to the source. It is the one window in which a set change can
+     * reach a result whose attempt is still going to be rejected.
+     */
+    private static final class GateAfterSubscribeFilter extends DynamicWhereFilter {
+
+        private final Gate gate;
+
+        private GateAfterSubscribeFilter(@NotNull final Table setTable, final Gate gate) {
+            super(setTable, true, pairs());
+            this.gate = gate;
+        }
+
+        @Override
+        public boolean subscribe(final long requiredLastStateChangeStep) {
+            final boolean subscribed = super.subscribe(requiredLastStateChangeStep);
+            gate.passThrough();
+            return subscribed;
         }
     }
 
@@ -540,15 +590,15 @@ public class TestDynamicWhereFilter {
             final SharedSetKernel shared = filter.sharedSet();
 
             // The committed kernel was built from current values, after the tick, and nothing has changed it.
-            assertFalse(filter.stateChangedOnStep(step));
+            assertNotEquals(step, filter.lastStateChangeStep());
             final long generation = shared.beginRead();
 
             // The only queued notification belongs to the discarded attempt's listener. Let it run.
             updateGraph.markSourcesRefreshedForUnitTests();
             assertTrue(updateGraph.flushOneNotificationForUnitTests());
 
-            assertFalse("a discarded attempt's listener must not report a state change for the committed kernel",
-                    filter.stateChangedOnStep(step));
+            assertNotEquals("a discarded attempt's listener must not report a state change for the committed kernel",
+                    step, filter.lastStateChangeStep());
             assertEquals("a discarded attempt's listener must not move the committed kernel's generation",
                     generation, shared.beginRead());
         } finally {
@@ -726,9 +776,9 @@ public class TestDynamicWhereFilter {
     }
 
     /**
-     * A filter registers with its shared set inside every snapshot attempt, so between a failed attempt and its retry
-     * the filter still points at the failed attempt's released result. A set change in that window does not refilter
-     * that result: the failed attempt's read and the retry's read are the only reads the source sees.
+     * A set change that lands while an attempt that will be rejected is still running reaches nothing: that attempt
+     * subscribes to its set only when it commits, which it never does. The rejected attempt's read and the retry's read
+     * are the only reads the source sees.
      */
     @Test
     public void testDiscardedWhereAttemptIsNotRefilteredBySetChange() throws Exception {
@@ -787,9 +837,9 @@ public class TestDynamicWhereFilter {
     }
 
     /**
-     * A set change that lands after a rejected attempt's result has its where listener, but before the attempt is
-     * released, finds the result alive and queues a recompute for it. The result is destroyed before that notification
-     * runs, and the notification does nothing: only the rejected attempt's read and the retry's read reach the source.
+     * The same guarantee at the latest moment a rejected attempt can reach: parked at its completion check, with its
+     * result and where listener built and nothing released yet. It has still not subscribed to its set, so a set change
+     * made there reaches nothing, and only the rejected attempt's read and the retry's read reach the source.
      */
     @Test
     public void testSetChangeBeforeDiscardedAttemptIsReleasedDoesNotRefilterIt() throws Exception {
@@ -887,7 +937,7 @@ public class TestDynamicWhereFilter {
             while (!filter.satisfied(step)) {
                 assertTrue(updateGraph.flushOneNotificationForUnitTests());
             }
-            assertTrue("the set changed on this step", filter.stateChangedOnStep(step));
+            assertEquals("the set changed on this step", step, filter.lastStateChangeStep());
 
             recomputeGate.release();
 
@@ -1062,7 +1112,7 @@ public class TestDynamicWhereFilter {
                     col(ROW_SET_COLUMN, (RowSet) RowSetFactory.fromKeys(0)));
             indexTable.notifyListeners(i(), i(), i(0));
         });
-        assertTrue("a key change is a kernel change", filter.stateChangedOnStep(modifyStep[0]));
+        assertEquals("a key change is a kernel change", modifyStep[0], filter.lastStateChangeStep());
         assertTableEquals(newTable(intCol(KEY, 3)), result);
 
         // An update that touches only the row set column leaves the keys alone.
@@ -1072,8 +1122,8 @@ public class TestDynamicWhereFilter {
             indexTable.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
                     indexTable.newModifiedColumnSet(ROW_SET_COLUMN)));
         });
-        assertFalse("a modify that leaves every key alone must not report a kernel change",
-                filter.stateChangedOnStep(quietStep[0]));
+        assertNotEquals("a modify that leaves every key alone must not report a kernel change",
+                quietStep[0], filter.lastStateChangeStep());
         assertTableEquals(newTable(intCol(KEY, 3)), result);
     }
 
@@ -1111,4 +1161,389 @@ public class TestDynamicWhereFilter {
             endCycleIfOpen();
         }
     }
+    // region Attempts that cannot commit over the set they read (DH-23666)
+
+    /** @return Whether {@code thrown}, or anything it was caused by, is an instance of {@code causeType} */
+    private static boolean hasCause(final Throwable thrown, final Class<? extends Throwable> causeType) {
+        for (Throwable current = thrown; current != null; current = current.getCause()) {
+            if (causeType.isInstance(current)) {
+                return true;
+            }
+            if (current.getCause() == current) {
+                break;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Pump notifications until {@code future} completes, for an operation whose retry cannot proceed until the work
+     * queued on this thread's update graph runs.
+     */
+    private void pumpUntilDone(@NotNull final Future<Table> future) {
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
+        while (!future.isDone()) {
+            if (System.nanoTime() > deadlineNanos) {
+                fail("the operation did not complete after its dependencies were satisfied");
+            }
+            if (!updateGraph.flushOneNotificationForUnitTests()) {
+                try {
+                    // noinspection BusyWait
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Interrupted while pumping notifications", e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Run {@code operation} with its attempt parked between its verdict and its subscription, change the set while it
+     * is parked, and return the result the caller eventually receives.
+     * <p>
+     * The attempt read the old set, and would begin following the new one having missed the change, so its subscription
+     * refuses it. The retry reads the changed set instead, which is what the result must reflect. While the attempt is
+     * parked nothing is registered with the set at all, so the change has no result to reach.
+     */
+    private Table assertSetChangeBeforeSubscriptionRejectsTheAttempt(
+            @NotNull final BiFunction<QueryTable, DynamicWhereFilter, Table> operation) throws Exception {
+        final Gate subscribeGate = new Gate();
+        // Never armed; this source only counts reads, so that the retry can be asserted.
+        final GatedIntegerArraySource sourceKey = new GatedIntegerArraySource(new Gate());
+        final QueryTable source = sourceTable(sourceKey, true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final DynamicWhereFilter filter = new GateBeforeSubscribeFilter(setTable, subscribeGate);
+
+        updateGraph.startCycleForUnitTests(false);
+        final long step = updateGraph.clock().currentStep();
+        try {
+            // Nothing is satisfied yet, so this attempt reads previous values.
+            subscribeGate.arm();
+            final Future<Table> future = pool.submit(() -> operation.apply(source, filter));
+            assertTrue("the attempt reached its subscription",
+                    subscribeGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+            assertEquals("the attempt has read the source exactly once", 1, sourceKey.chunkReads.get());
+            assertEquals("an attempt that has not committed follows nothing", 0,
+                    filter.sharedSet().registeredFilterCount());
+
+            // Change the set while the attempt is parked: its verdict is already given, so only the subscription can
+            // refuse it now.
+            TstUtils.addToTable(setTable, i(1), intCol(KEY, 2));
+            setTable.notifyListeners(i(1), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+            while (!filter.satisfied(step)) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+
+            subscribeGate.release();
+            pumpUntilDone(future);
+            final Table result = future.get();
+
+            assertEquals("the refused attempt was retried against the changed set", 2, sourceKey.chunkReads.get());
+            assertEquals("the committed attempt is the one following the set", 1,
+                    filter.sharedSet().registeredFilterCount());
+            updateGraph.completeCycleForUnitTests();
+            return result;
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A {@code where} whose set changes between its verdict and its subscription is refused and retried, so the result
+     * the caller receives already reflects the change rather than catching up to it later.
+     */
+    @Test
+    public void testSetChangeBeforeSubscriptionRejectsTheWhereAttempt() throws Exception {
+        final Table result = assertSetChangeBeforeSubscriptionRejectsTheAttempt(QueryTable::where);
+        assertTableEquals(newTable(intCol(KEY, 1, 2)), result);
+    }
+
+    /** The same guarantee for {@code wouldMatch}, which commits through the same snapshot control. */
+    @Test
+    public void testSetChangeBeforeSubscriptionRejectsTheWouldMatchAttempt() throws Exception {
+        final Table result = assertSetChangeBeforeSubscriptionRejectsTheAttempt(
+                (source, filter) -> source.wouldMatch(new WouldMatchPair("M", filter)));
+        assertTableEquals(newTable(intCol(KEY, 1, 2, 3), booleanCol("M", true, true, false)), result);
+    }
+
+    /**
+     * Run {@code operation} with its attempt parked between its verdict and its subscription, and fail the set while it
+     * is parked.
+     * <p>
+     * No result over a dead set could ever follow it, so the subscription refuses outright rather than retrying, and
+     * the caller is told by the operation throwing. Nothing is left registered with the set, and the caller never
+     * receives a table.
+     */
+    private void assertSetFailureBeforeSubscriptionThrows(
+            @NotNull final BiFunction<QueryTable, DynamicWhereFilter, Table> operation) throws Exception {
+        final Gate subscribeGate = new Gate();
+        final GatedIntegerArraySource sourceKey = new GatedIntegerArraySource(new Gate());
+        final QueryTable source = sourceTable(sourceKey, true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final QueryTable indexTable = registerSetIndex(setTable, new Gate());
+        final DynamicWhereFilter filter = new GateBeforeSubscribeFilter(setTable, subscribeGate);
+
+        updateGraph.startCycleForUnitTests(false);
+        final long step = updateGraph.clock().currentStep();
+        try {
+            subscribeGate.arm();
+            final Future<Table> future = pool.submit(() -> operation.apply(source, filter));
+            assertTrue("the attempt reached its subscription",
+                    subscribeGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+
+            final RuntimeException setError = new RuntimeException("set table failure");
+            try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+                indexTable.notifyListenersOnError(setError, null);
+                updateGraph.markSourcesRefreshedForUnitTests();
+                while (!filter.satisfied(step)) {
+                    assertTrue(updateGraph.flushOneNotificationForUnitTests());
+                }
+            }
+
+            subscribeGate.release();
+            pumpUntilDone(future);
+
+            final ExecutionException failure = assertThrows(ExecutionException.class, future::get);
+            assertTrue("the operation must fail because its set failed: " + failure.getCause(),
+                    hasCause(failure, TableAlreadyFailedException.class));
+            assertEquals("an operation that could not be built follows nothing", 0,
+                    filter.sharedSet().registeredFilterCount());
+            updateGraph.completeCycleForUnitTests();
+
+            for (final Throwable reported : base.getUpdateErrors()) {
+                assertSame("only the set's own failure may be reported", setError, reported);
+            }
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A {@code where} whose set fails between its verdict and its subscription throws, rather than handing back a table
+     * that can never follow its set.
+     */
+    @Test
+    public void testSetFailureBeforeSubscriptionFailsTheWhere() throws Exception {
+        assertSetFailureBeforeSubscriptionThrows(QueryTable::where);
+    }
+
+    /** The same guarantee for {@code wouldMatch}. */
+    @Test
+    public void testSetFailureBeforeSubscriptionFailsTheWouldMatch() throws Exception {
+        assertSetFailureBeforeSubscriptionThrows(
+                (source, filter) -> source.wouldMatch(new WouldMatchPair("M", filter)));
+    }
+
+    /**
+     * A filter whose set has already failed cannot be used to build anything: {@code where} and {@code wouldMatch} over
+     * it throw, exactly as listening to the failed set directly would, rather than returning a refreshing table that
+     * can never again follow its set.
+     */
+    @Test
+    public void testOperationsOnAFilterWhoseSetHasFailedThrow() {
+        final QueryTable source = sourceTable(new GatedIntegerArraySource(new Gate()), true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final QueryTable indexTable = registerSetIndex(setTable, new Gate());
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, pairs());
+
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> indexTable.notifyListenersOnError(
+                    new RuntimeException("set table failure"), null));
+        }
+
+        assertThrows(TableAlreadyFailedException.class, () -> source.where(filter));
+        assertThrows(TableAlreadyFailedException.class,
+                () -> source.wouldMatch(new WouldMatchPair("M", filter.copy())));
+        assertEquals("a filter that could not be used must not follow its set",
+                0, filter.sharedSet().registeredFilterCount());
+    }
+
+    /**
+     * A listener that records every failure delivered to it, so a test can assert that a result failed exactly once and
+     * with the error that actually occurred upstream.
+     */
+    private static final class FailureRecorder extends InstrumentedTableUpdateListenerAdapter {
+
+        private final List<Throwable> failures = new ArrayList<>();
+
+        private FailureRecorder(@NotNull final Table result) {
+            super("failure recorder", result, false);
+            result.addUpdateListener(this);
+        }
+
+        @Override
+        public void onUpdate(final TableUpdate upstream) {}
+
+        @Override
+        public void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
+            failures.add(originalException);
+        }
+
+        private void assertFailedOnceWith(@NotNull final Throwable expected) {
+            assertEquals("failures delivered: " + failures, 1, failures.size());
+            assertSame(expected, failures.get(0));
+        }
+    }
+
+    /**
+     * Run {@code operation} to completion on an open cycle with nothing ticking, so that its attempt commits and hands
+     * out a result, and then fail the set on that same step. The attempt is over and the filter is following its set,
+     * so it is the handed-out result the failure must reach. That result carries the step of the previous values it
+     * read, so it can be failed at once, exactly once.
+     * <p>
+     * There is no current-values counterpart: an attempt reads current values only once the set listener is satisfied
+     * for the step, after which the set can neither change nor fail on it.
+     */
+    private void assertSetFailureAfterCommitFailsResultAtOnce(
+            @NotNull final BiFunction<QueryTable, DynamicWhereFilter, Table> operation,
+            @NotNull final Table expected) throws Exception {
+        final QueryTable source = sourceTable(new GatedIntegerArraySource(new Gate()), true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final QueryTable indexTable = registerSetIndex(setTable, new Gate());
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, pairs());
+
+        updateGraph.startCycleForUnitTests(false);
+        final long step = updateGraph.clock().currentStep();
+        try {
+            final Table result =
+                    pool.submit(() -> operation.apply(source, filter)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertEquals("the result carries the step of the previous values it read", step - 1,
+                    ((QueryTable) result).getLastNotificationStep());
+            assertTableEquals(expected, result);
+            final FailureRecorder failures = new FailureRecorder(result);
+
+            final RuntimeException setError = new RuntimeException("set table failure");
+            try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+                indexTable.notifyListenersOnError(setError, null);
+                updateGraph.markSourcesRefreshedForUnitTests();
+                while (!filter.satisfied(step)) {
+                    assertTrue(updateGraph.flushOneNotificationForUnitTests());
+                }
+                // noinspection StatementWithEmptyBody
+                while (updateGraph.flushOneNotificationForUnitTests()) {
+                }
+            }
+
+            assertTrue("a result carrying an earlier step fails on this one", result.isFailed());
+            failures.assertFailedOnceWith(setError);
+            for (final Throwable reported : base.getUpdateErrors()) {
+                assertSame("only the set's own failure may be reported", setError, reported);
+            }
+            updateGraph.completeCycleForUnitTests();
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A set failure that lands on a committed {@code where} result's own creating step fails that result then and
+     * there, exactly once and with the set's own error.
+     */
+    @Test
+    public void testSetFailureAfterCommitFailsTheWhereResultAtOnce() throws Exception {
+        assertSetFailureAfterCommitFailsResultAtOnce(QueryTable::where, newTable(intCol(KEY, 1)));
+    }
+
+    /** The same guarantee for {@code wouldMatch}. */
+    @Test
+    public void testSetFailureAfterCommitFailsTheWouldMatchResultAtOnce() throws Exception {
+        assertSetFailureAfterCommitFailsResultAtOnce(
+                (source, filter) -> source.wouldMatch(new WouldMatchPair("M", filter)),
+                newTable(intCol(KEY, 1, 2, 3), booleanCol("M", true, false, false)));
+    }
+
+    /**
+     * Run {@code operation} with its attempt parked between subscribing to its set and subscribing its result to the
+     * source, tick the source so that second subscription is refused, and change the set while it is parked.
+     * <p>
+     * This is the one window in which a set change reaches a result whose attempt is still going to be rejected. The
+     * recompute it queues runs after that attempt has been released, and must do nothing: refiltering would read the
+     * source for a table nobody holds, and, for {@code wouldMatch}, a listener that read the operation's fields rather
+     * than its own attempt's would act on the retried result instead.
+     */
+    private Table assertRecomputeForARejectedAttemptDoesNothing(
+            @NotNull final BiFunction<QueryTable, DynamicWhereFilter, Table> operation) throws Exception {
+        final Gate sourceGate = new Gate();
+        final Gate subscribeGate = new Gate();
+        final GatedIntegerArraySource sourceKey = new GatedIntegerArraySource(sourceGate);
+        final QueryTable source = sourceTable(sourceKey, true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final DynamicWhereFilter filter = new GateAfterSubscribeFilter(setTable, subscribeGate);
+
+        updateGraph.startCycleForUnitTests(false);
+        final long step = updateGraph.clock().currentStep();
+        try {
+            // Nothing is satisfied yet, so this attempt reads previous values.
+            subscribeGate.arm();
+            final Future<Table> future = pool.submit(() -> operation.apply(source, filter));
+            assertTrue("the attempt subscribed to its set",
+                    subscribeGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+            assertEquals("the attempt is following its set", 1, filter.sharedSet().registeredFilterCount());
+
+            // Tick the source, so this attempt's own subscription to it is refused and the attempt is rejected.
+            addSourceRow(source, sourceKey, 3, 4);
+            source.notifyListeners(i(3), i(), i());
+
+            // Change the set, which the attempt is following, so a recompute is queued for its doomed result.
+            TstUtils.addToTable(setTable, i(1), intCol(KEY, 2));
+            setTable.notifyListeners(i(1), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+            while (!filter.satisfied(step)) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+
+            // Let the attempt be rejected and released, and park the retry at its read. Reaching that read is what
+            // proves the release happened, so the queued recompute below runs against a result that is already gone.
+            sourceGate.arm();
+            subscribeGate.release();
+            assertTrue("the retry began its read",
+                    sourceGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+
+            // noinspection StatementWithEmptyBody
+            while (updateGraph.flushOneNotificationForUnitTests()) {
+            }
+            assertEquals("the released result must not be refiltered", 1, sourceKey.chunkReads.get());
+
+            sourceGate.release();
+            pumpUntilDone(future);
+            final Table result = future.get();
+
+            assertEquals("only the rejected attempt and the retry may read the source", 2,
+                    sourceKey.chunkReads.get());
+            assertEquals("only the committed attempt is following the set", 1,
+                    filter.sharedSet().registeredFilterCount());
+            updateGraph.completeCycleForUnitTests();
+
+            assertFalse("the retried result must not fail", result.isFailed());
+            assertTrue("no error may be reported: " + base.getUpdateErrors(), base.getUpdateErrors().isEmpty());
+            return result;
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A recompute queued for a {@code where} attempt that is rejected after it subscribed does nothing once that
+     * attempt's result is released, and the retry's result is correct and unfailed.
+     */
+    @Test
+    public void testRecomputeForARejectedWhereAttemptDoesNothing() throws Exception {
+        final Table result = assertRecomputeForARejectedAttemptDoesNothing(QueryTable::where);
+        assertTableEquals(newTable(intCol(KEY, 1, 2)), result);
+    }
+
+    /**
+     * The same guarantee for {@code wouldMatch}, whose listener must act on its own attempt's result and columns rather
+     * than on the operation's fields, which the retry has since reassigned.
+     */
+    @Test
+    public void testRecomputeForARejectedWouldMatchAttemptDoesNothing() throws Exception {
+        final Table result = assertRecomputeForARejectedAttemptDoesNothing(
+                (source, filter) -> source.wouldMatch(new WouldMatchPair("M", filter)));
+        assertTableEquals(newTable(intCol(KEY, 1, 2, 3, 4), booleanCol("M", true, true, false, false)), result);
+    }
+
+    // endregion Attempts that cannot commit over the set they read (DH-23666)
 }

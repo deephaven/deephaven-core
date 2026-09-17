@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -19,6 +20,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -74,6 +76,24 @@ public interface WhereFilter extends Filter {
          * be re-evaluated. The rowSet ownership is not taken by requestRecompute.
          */
         void requestRecompute(RowSet rowSet);
+
+        /**
+         * Notify that the filter's inputs have failed, so that the result must fail too.
+         * <p>
+         * The default fails {@link #getTable() the table} directly, which is only safe if nothing else can notify that
+         * table on the same step. An implementation that notifies its own table must instead override this to route the
+         * failure through that notification, ignoring repeats and requests that arrive before it has anything to
+         * notify.
+         *
+         * @param error The error that the filter's inputs failed with
+         * @param sourceEntry The entry that the error is attributed to, if any
+         */
+        default void requestFailure(@NotNull final Throwable error, @Nullable final TableListener.Entry sourceEntry) {
+            final QueryTable table = getTable();
+            if (!table.isFailed()) {
+                table.notifyListenersOnError(error, sourceEntry);
+            }
+        }
 
         /**
          * Get the table underlying this listener.

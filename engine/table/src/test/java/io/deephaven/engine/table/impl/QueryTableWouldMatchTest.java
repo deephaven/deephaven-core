@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.vectors.ColumnVectors;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import junit.framework.TestCase;
@@ -24,6 +25,7 @@ import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.show;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
@@ -471,4 +473,39 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(result, "M", Boolean.class).toArray());
     }
 
+    /**
+     * When a set table fails on the same cycle the source ticks, the {@code wouldMatch} result fails exactly once, on
+     * that cycle, with the set's error. The source update must not be applied to a result whose set is gone, and it
+     * must not produce a second notification of any kind.
+     * <p>
+     * This is the {@code where} scenario of {@code QueryTableWhereTest} again, because {@code wouldMatch} answers a
+     * filter's recompute and failure requests through its own listener implementation, a match column and its own
+     * merged listener, rather than through a {@code FilteredTable} and a {@code WhereListener}.
+     */
+    public void testMatchSetFailureWhileSourceTicksFailsResultOnce() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, new MatchPair("Key", "Key"));
+        final Table result = source.wouldMatch(new WouldMatchPair("A", filter));
+        final FailureRecordingListener failures = new FailureRecordingListener(result);
+        assertFalse(result.isFailed());
+
+        final RuntimeException setError = new RuntimeException("set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                setTable.notifyListenersOnError(setError, null);
+                addToTable(source, i(8), intCol("Key", 1));
+                source.notifyListeners(i(8), i(), i());
+            });
+        }
+
+        assertTrue("the result must fail on the cycle its set failed", result.isFailed());
+        failures.assertFailedOnceWith(setError);
+        // The only error anyone reported is the set's own; an engine error raised while propagating it would be a bug.
+        for (final Throwable reported : getUpdateErrors()) {
+            assertSame("unexpected error reported: " + reported, setError, reported);
+        }
+    }
 }

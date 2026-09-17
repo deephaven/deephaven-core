@@ -127,10 +127,35 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
             return false;
         }
 
-        // Be sure to record initial last notification step before subscribing
+        // Be sure to record the result's initial last notification step before subscribing.
         eventualResult.setLastNotificationStep(lastNotificationStep);
-        return eventualListener == null || subscribeForUpdates(eventualListener);
+        if (!maybeSubscribeDependencies()) {
+            // There were dependencies that could not be subscribed consistently. Fail the snapshot.
+            return false;
+        }
+        if (eventualListener != null && !subscribeForUpdates(eventualListener)) {
+            // The source table could not be subscribed consistently. Unwind the dependency subscriptions and fail the
+            // snapshot.
+            maybeUnsubscribeDependencies();
+            return false;
+        }
+        return true;
     }
+
+    /**
+     * Subscribe to dependencies this operation needs (other than {@link #sourceTable}). A failure to subscribe any
+     * dependency will reject the snapshot attempt.
+     *
+     * @return Whether every such dependency was subscribed
+     */
+    boolean maybeSubscribeDependencies() {
+        return true;
+    }
+
+    /**
+     * Undo {@link #maybeSubscribeDependencies()} when a later step rejects the attempt.
+     */
+    void maybeUnsubscribeDependencies() {}
 
     /**
      * @return Whether we are in the initial notification window and can continue with the snapshot

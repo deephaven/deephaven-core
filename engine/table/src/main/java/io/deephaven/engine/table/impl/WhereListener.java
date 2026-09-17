@@ -41,7 +41,7 @@ import java.util.stream.Stream;
  * Other filters may be dependent on e.g. a LiveTable to be complete before operating. It is possible we have a static
  * source table, but a refreshing filter in which case our listener recorder is null.
  */
-class WhereListener extends MergedListener {
+class WhereListener extends GuardedMergedListener {
 
     private final QueryTable sourceTable;
     private final QueryTable.FilteredTable result;
@@ -152,19 +152,7 @@ class WhereListener extends MergedListener {
     }
 
     @Override
-    public void process() {
-        // A recompute queued for a result that a rejected snapshot attempt has since released must not run for it.
-        if (!result.tryRetainReference()) {
-            return;
-        }
-        try {
-            processRetained();
-        } finally {
-            result.dropReference();
-        }
-    }
-
-    private void processRetained() {
+    protected void processRetained() {
         initialNotificationStep = getUpdateGraph().clock().currentStep();
 
         if (result.refilterRequested()) {

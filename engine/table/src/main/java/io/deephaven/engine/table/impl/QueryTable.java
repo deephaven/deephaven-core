@@ -1166,6 +1166,19 @@ public class QueryTable extends BaseTable<QueryTable> {
             notifyWhereListener();
         }
 
+        @Override
+        public synchronized void requestFailure(
+                @NotNull final Throwable error,
+                @Nullable final TableListener.Entry sourceEntry) {
+            if (whereListener == null) {
+                // No listener yet, so there is no result to fail; see notifyWhereListener for why dropping is safe.
+                return;
+            }
+            // The listener fails this table exactly once, inside its own notification, where the failure cannot
+            // collide with an update it might otherwise deliver for this step.
+            whereListener.notifyOnUpstreamError(error, sourceEntry);
+        }
+
         /**
          * Note that refilterRequested is only accessible so that {@link WhereListener} can get to it and is not part of
          * the public API.
@@ -1357,14 +1370,12 @@ public class QueryTable extends BaseTable<QueryTable> {
         /**
          * Notify the {@link WhereListener} that a refilter has been requested, if there is one yet.
          * <p>
-         * The where listener is installed only after the initial filter completes. A request can precede it in two ways
-         * only, and neither attempt can commit, so the request is safe to drop: an attempt begun while the clock was
-         * idle fails the clock check once the cycle starts, and a previous-values attempt during which the filter's
-         * inputs tick is rejected by the filter's {@link NotificationAwareDependency#stateChangedOnStep} report. A
-         * current-values attempt cannot receive one, because it begins only after the filter is
-         * {@link NotificationQueue.Dependency#satisfied} for the step. The retry that follows sees the change directly.
-         * Callers hold this table's monitor, which is what makes the listener written by {@link #setWhereListener}
-         * visible here.
+         * The where listener is installed only after the initial filter completes, so a filter that requests before
+         * then is dropped. A {@link NotificationAwareDependency} cannot request before then, because it does not begin
+         * following its inputs until this operation's snapshot attempt commits, which is after the listener is
+         * installed. A filter that follows something else, such as a clock, can, and dropping such a request is the
+         * behavior it has always had. Callers hold this table's monitor, which is what makes the listener written by
+         * {@link #setWhereListener} visible here.
          */
         private void notifyWhereListener() {
             if (whereListener != null) {

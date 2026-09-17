@@ -47,6 +47,8 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
 
     private final NotificationQueue.Dependency[] extras;
     private final NotificationAwareDependency[] notificationAwareExtras;
+    private final long[] notificationAwareChangeSteps;
+    private int subscribedExtras;
 
     public OperationSnapshotControlEx(
             @NotNull final BaseTable<?> sourceTable,
@@ -57,12 +59,17 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
                 .filter(NotificationAwareDependency.class::isInstance)
                 .map(NotificationAwareDependency.class::cast)
                 .toArray(NotificationAwareDependency[]::new);
+        this.notificationAwareChangeSteps = new long[notificationAwareExtras.length];
     }
 
     @Override
     @SuppressWarnings("AutoBoxing")
     public synchronized Boolean usePreviousValues(final long beforeClockValue) {
         lastNotificationStep = sourceTable.getLastNotificationStep();
+        // Record what each aware extra's state was before this attempt reads it.
+        for (int ei = 0; ei < notificationAwareExtras.length; ++ei) {
+            notificationAwareChangeSteps[ei] = notificationAwareExtras[ei].lastStateChangeStep();
+        }
 
         final long beforeStep = LogicalClock.getStep(beforeClockValue);
         final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
@@ -184,11 +191,58 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
         }
         final long step = LogicalClock.getStep(clockValue);
         for (final NotificationAwareDependency extra : notificationAwareExtras) {
-            if (extra.stateChangedOnStep(step)) {
+            if (extra.lastStateChangeStep() == step) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Subscribe every aware extra, each requiring the state it guards to be as this attempt found it. One that refuses,
+     * or that has failed, undoes those already subscribed: the snapshot attempt will be aborted.
+     * <p>
+     * Only an aware extra has anything to subscribe to, because only it pushes its state changes into this operation.
+     * An oblivious extra's previous values are stable for the whole cycle, so there is no change for this attempt to
+     * have missed: what such an extra describes reaches the operation through the listener chain. Ordering is not a
+     * subscription either; the merged listener is built with the dependencies it must run after.
+     * <p>
+     * This is not the check {@link #notificationAwareExtrasConsistent} makes. That one refuses a previous-values
+     * attempt that read a change made on its own step, whenever that change was made; this one refuses any attempt that
+     * would begin following an extra having missed a change made since the attempt began.
+     */
+    @Override
+    boolean maybeSubscribeDependencies() {
+        for (int ei = 0; ei < notificationAwareExtras.length; ++ei) {
+            final boolean subscribed;
+            try {
+                subscribed = notificationAwareExtras[ei].subscribe(notificationAwareChangeSteps[ei]);
+            } catch (Exception e) {
+                maybeUnsubscribeDependencies();
+                throw e;
+            }
+            if (!subscribed) {
+                maybeUnsubscribeDependencies();
+                if (DEBUG) {
+                    log.info().append("OperationSnapshotControlEx {source=")
+                            .append(System.identityHashCode(sourceTable))
+                            .append(", control=").append(System.identityHashCode(this))
+                            .append("} maybeSubscribeDependencies: refused by extra=")
+                            .append(System.identityHashCode(notificationAwareExtras[ei]))
+                            .endl();
+                }
+                return false;
+            }
+            subscribedExtras = ei + 1;
+        }
+        return true;
+    }
+
+    @Override
+    void maybeUnsubscribeDependencies() {
+        while (subscribedExtras > 0) {
+            notificationAwareExtras[--subscribedExtras].unsubscribe();
+        }
     }
 
     private NotificationQueue.Dependency[] notYetSatisfied(
