@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.impl.rsp.container.*;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesInt;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
@@ -3045,6 +3046,127 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
         }
         return false;
+    }
+
+    /**
+     * A probe for callers that test many ascending ranges against this array, as
+     * {@link io.deephaven.engine.rowset.impl.sortedranges.SortedRanges#overlaps(RspBitmap)} does.
+     *
+     * @return a probe over this array; the caller closes it
+     */
+    public OverlapProbe overlapProbe() {
+        return new OverlapProbe(this);
+    }
+
+    /**
+     * A resumable form of {@link #overlapsRange(int, long, long)}, carrying both cursors a caller would otherwise
+     * re-establish on every call.
+     * <p>
+     * The one-shot form has nowhere to keep a span view, so it takes one from the thread's work data and gives it back
+     * on each call. A caller testing one key per span pays that for every key, which is what makes probing lose to
+     * simply walking this array's ranges. This holds a view of its own, as {@link RspRangeIterator} does, and
+     * re-initializes it only on moving to a different span; it also carries the span index, so an ascending caller
+     * searches from where the last probe stopped.
+     */
+    public static final class OverlapProbe implements SafeCloseable {
+        private final RspArray<?> arr;
+        /** Allocated on first use, since probes answered from block keys alone never need one. */
+        private SpanView view;
+        /** The span {@link #view} holds, or -1 when it holds none. */
+        private int viewIdx = -1;
+        /** Where the next probe begins searching. */
+        private int spanIdx;
+
+        private OverlapProbe(final RspArray<?> arr) {
+            this.arr = arr;
+        }
+
+        /**
+         * Whether the array holds any key in {@code [start, end]}.
+         * <p>
+         * Ranges must be presented in ascending order: the search resumes where the last one stopped.
+         */
+        public boolean overlapsRange(final long start, final long end) {
+            final long startHighBits = highBits(start);
+            int i = arr.getSpanIndex(spanIdx, startHighBits);
+            if (i < 0) {
+                i = ~i;
+                if (i >= arr.size) {
+                    spanIdx = arr.size - 1;
+                    return false;
+                }
+            }
+            final long endHighBits = highBits(end);
+            long keyBlock = arr.getKey(i);
+            if (endHighBits < keyBlock) {
+                spanIdx = i;
+                return false;
+            }
+            while (true) {
+                final long sk = Math.max(start, keyBlock);
+                final long ek = Math.min(end, keyBlock + BLOCK_LAST);
+                if (sk == keyBlock && ek == keyBlock + BLOCK_LAST) {
+                    spanIdx = i;
+                    return true;
+                }
+                final SpanView v = viewAt(i);
+                if (v.isSingletonSpan()) {
+                    final long value = v.getSingletonSpanValue();
+                    if (start <= value && value <= end) {
+                        spanIdx = i;
+                        return true;
+                    }
+                } else {
+                    if (v.getFullBlockSpanLen() > 0) {
+                        spanIdx = i;
+                        return true;
+                    }
+                    final Container c = v.getContainer();
+                    if (c.overlapsRange(lowBitsAsInt(sk), lowBitsAsInt(ek) + 1)) {
+                        spanIdx = i;
+                        return true;
+                    }
+                }
+                ++i;
+                if (i >= arr.size) {
+                    spanIdx = arr.size - 1;
+                    return false;
+                }
+                keyBlock = arr.getKey(i);
+                if (endHighBits < keyBlock) {
+                    // Resume on the span just read, not on i: it can still hold keys above the range just tested.
+                    spanIdx = i - 1;
+                    return false;
+                }
+            }
+        }
+
+        /**
+         * The first key of the block the next probe will start on. Every key this array still has to offer is at or
+         * above it, so a caller that has just missed can skip its own keys below that point.
+         */
+        public long resumeBlockKey() {
+            return arr.size == 0 ? -1 : arr.getKey(spanIdx);
+        }
+
+        private SpanView viewAt(final int i) {
+            if (viewIdx != i) {
+                if (view == null) {
+                    view = new SpanView(null);
+                }
+                view.init(arr, i);
+                viewIdx = i;
+            }
+            return view;
+        }
+
+        @Override
+        public void close() {
+            if (view != null) {
+                view.reset();
+                viewIdx = -1;
+            }
+        }
     }
 
     /**

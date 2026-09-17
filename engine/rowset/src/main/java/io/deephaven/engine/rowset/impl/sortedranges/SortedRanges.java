@@ -13,6 +13,7 @@ import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.util.metrics.IntCounterMetric;
+import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
@@ -1330,33 +1331,30 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return false;
         }
         int i = 0;
-        int spanIdx = 0;
-        while (true) {
-            i = seekRangeStartIdx(i, pack(key));
-            if (i >= count) {
-                return false;
-            }
-            final long packedStart = packedGet(i);
-            final long start = Math.max(unpack(packedStart), key);
-            if (start > lastKey) {
-                return false;
-            }
-            final long end = Math.min(unpack(packedRangeEnd(i, packedStart)), lastKey);
-            final int probe = other.overlapsRange(spanIdx, start, end);
-            if (probe >= 0) {
-                return true;
-            }
-            if (end == lastKey) {
-                return false;
-            }
-            // The probe reports where to resume, which is the span past the range just tested only when it found one;
-            // when it ran off the end of the spans it reports that end, and when it stopped on the span it was reading
-            // it reports that span, which may still hold keys above our range. Clamping to the last span and taking
-            // our own range end as the floor covers both: we never skip past a key we have not tested.
-            spanIdx = Math.min(~probe, other.size() - 1);
-            key = Math.max(end + 1, other.keyForBlockAtSpanIndex(spanIdx));
-            if (key > lastKey) {
-                return false;
+        try (final RspArray.OverlapProbe probe = other.overlapProbe()) {
+            while (true) {
+                i = seekRangeStartIdx(i, pack(key));
+                if (i >= count) {
+                    return false;
+                }
+                final long packedStart = packedGet(i);
+                final long start = Math.max(unpack(packedStart), key);
+                if (start > lastKey) {
+                    return false;
+                }
+                final long end = Math.min(unpack(packedRangeEnd(i, packedStart)), lastKey);
+                if (probe.overlapsRange(start, end)) {
+                    return true;
+                }
+                if (end == lastKey) {
+                    return false;
+                }
+                // The probe resumes on the span it stopped at, which may still hold keys above the range just tested,
+                // so our own range end is the floor: we never skip past a key we have not tested.
+                key = Math.max(end + 1, probe.resumeBlockKey());
+                if (key > lastKey) {
+                    return false;
+                }
             }
         }
     }
