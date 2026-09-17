@@ -19,8 +19,9 @@ as a single; a negative entry is the (negated) end of the range whose start prec
 as `3, 10, -12, 20`: four entries for three ranges. Ranges are never adjacent or overlapping; `{10} {11..12}` is not a
 valid state, it is `10..12`. The array is packed as shorts or ints relative to an offset (`SortedRangesShort`,
 `SortedRangesInt`, via `SortedRangesPacked`) or as raw longs with no offset (`SortedRangesLong`). Each packing has a
-capacity, and a result that outgrows its packing's capacity is repacked into a wider or narrower one when any of them
-can hold it; only a result that no `SortedRanges` packing can hold becomes an `RspBitmap`.
+capacity. The merge-based paths choose the result's packing afresh, by span, density and capacity, as described under
+the merge below; the append path does not, and converts straight to an `RspBitmap` when its result does not fit our
+own packing. A result no packing can hold, or one the merge judges dense, becomes an `RspBitmap`.
 
 Two consequences shape everything below. First, the number of *ranges* and the number of *entries* differ by up to
 2x, and the code is explicit about which one it is counting. Second, an edit that changes no entry count can still
@@ -53,8 +54,10 @@ ixInsert(added)
       ├─ editIndividually(added) .................... INDIVIDUAL: addRangeInternal per range
       ├─ planEdits(added) ........................... PLANNED: insertPlanned
       └─ otherwise, or INDIVIDUAL/PLANNED returned null
-         └─ MERGE: union into the long work buffer, repack into the narrowest
-            type that holds the result (null on capacity → convert to RspBitmap)
+         └─ MERGE: union into the long work buffer, then pack by span, density and
+            capacity: shorts when the span fits a short; otherwise a bitmap when the
+            result is dense; otherwise ints or longs by span; a bitmap when the chosen
+            packing has no capacity for the result
 ```
 
 For `remove(removed)`:
@@ -181,21 +184,26 @@ against the O(k log n) searches of the plan pass.
 
 The original strategy and still the right one for large arguments and for arguments that do not fit our packing.
 `union` (or `intersect` with the complement, for removal) walks both sets through range iterators into a thread-local
-long work buffer, then `makeOrderedLongSetFromLongRangesArray` repacks the result into the narrowest type that can
-hold it, reusing our array when we own it. It visits every entry of both sets, at about 2 ns each, which is what made
+long work buffer, then `makeOrderedLongSetFromLongRangesArray` packs the result by span, density and capacity: shorts
+when the span from first to last key fits a short and the entry count is within the short capacity; otherwise an
+`RspBitmap` when the result is dense (`isDenseLong`: enough entries per 64K block that a bitmap is the better
+representation); otherwise ints when the span fits an int, or longs, each subject to its own capacity, beyond which
+the result is an `RspBitmap` too. Our own array is reused when we own it and the chosen packing is ours. The merge
+visits every entry of both sets, at about 2 ns each, which is what made
 it 40-68x slower than key-by-key insertion at two keys into 2000 entries, and it is also what makes it the fastest
 choice once the argument is a sizeable fraction of the set: at 500 keys into 2000 the planned pass was 1.6x slower,
 at 2000 into 6000 2.3x slower.
 
 The merge is also the fallback for the individual and planned strategies' capacity failures, because it can change the
 packing: a dense `SortedRangesLong` caps at 256 entries by default (`SortedRanges.longDenseMaxCapacity`) where the same
-content repacked as shorts holds thousands (`SortedRanges.shortMaxCapacity`, 4090 by default). Only when the merge's
-own repack finds no packing with room does the result become an `RspBitmap`.
+content repacked as shorts holds thousands (`SortedRanges.shortMaxCapacity`, 4090 by default). The result becomes an
+`RspBitmap` only when the merge's packing rules above say so: dense, or beyond the chosen packing's capacity.
 
 ### Convert to RspBitmap
 
-When even the merge's repack cannot hold the result, the set becomes an `RspBitmap` and the argument is applied
-there. This is the terminal case of every branch; it is not a performance strategy.
+When the merge's packing rules produce a bitmap, or an append's result does not fit our own packing, the set becomes
+an `RspBitmap` and the argument is applied there. This is the terminal case of every branch; it is not a performance
+strategy.
 
 ## Measured behaviour
 
