@@ -647,6 +647,166 @@ public class SessionStateTest {
     }
 
     @Test
+    public void testDependencyAlreadyReleasedViaLookup() {
+        // Characterization: a dependency resolved by id *after* the export was released must still surface as
+        // DEPENDENCY_RELEASED, whether the released export is retained as a shell or reconstructed on lookup.
+        final int releasedId = nextExportId++;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final SessionState.ExportObject<Object> e1 = session.newExport(releasedId).submit(() -> {
+            });
+            scheduler.runUntilQueueEmpty();
+            e1.release();
+            Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
+        }
+
+        // Look the released id back up by ticket rather than holding the original reference.
+        final SessionState.ExportObject<Object> lookedUp = session.getExport(releasedId);
+        Assert.eq(lookedUp.getState(), "lookedUp.getState()", ExportNotification.State.RELEASED);
+
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++).require(lookedUp)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(() -> {
+                });
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_RELEASED);
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
+    }
+
+    @Test
+    public void testReexportAtReleasedIdFails() {
+        // Characterization: re-defining work at a released id must fail cleanly via the error handler (rather than
+        // succeeding or throwing), since the id has been consumed.
+        final int releasedId = nextExportId++;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final SessionState.ExportObject<Object> e1 = session.newExport(releasedId).submit(() -> {
+            });
+            scheduler.runUntilQueueEmpty();
+            e1.release();
+            Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
+        }
+
+        final MutableBoolean errored = new MutableBoolean();
+        final MutableBoolean success = new MutableBoolean();
+        final SessionState.ExportObject<Object> reexport = session.newExport(releasedId)
+                .onErrorHandler(err -> errored.setTrue())
+                .onSuccess(success::setTrue)
+                .submit(() -> new Object());
+        scheduler.runUntilQueueEmpty();
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eqFalse(success.booleanValue(), "success.booleanValue()");
+        Assert.eqTrue(SessionState.isExportStateTerminal(reexport.getState()), "reexport is terminal");
+    }
+
+    @Test
+    public void testReleasedExportRemovedFromMap() {
+        // Leak guard: once an export is released, its id must not retain an ExportObject shell in the export map for
+        // the remaining lifetime of the session.
+        Assert.eq(session.numExports(), "session.numExports()", 0);
+
+        final int releasedId = nextExportId++;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final SessionState.ExportObject<Object> e1 = session.newExport(releasedId).submit(() -> {
+            });
+            scheduler.runUntilQueueEmpty();
+            Assert.eq(session.numExports(), "session.numExports()", 1);
+            e1.release();
+            Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
+        }
+
+        Assert.eq(session.numExports(), "session.numExports()", 0);
+    }
+
+    /**
+     * An export listener is notified while its own monitor is held, and may look exports up from inside the callback
+     * (ExportedTableUpdateListener does, for every EXPORTED notification). Meanwhile an export being created notifies
+     * the same listeners from inside its constructor, which the export map runs under its own monitor. Looking up an
+     * existing export must therefore never take the export map monitor, or the two close a cycle.
+     */
+    @Test
+    public void testExportLookupFromListenerDoesNotDeadlockWithExportCreation() throws InterruptedException {
+        final int existingId = nextExportId++;
+        final SessionState.ExportObject<Object> existing = session.newExport(existingId).submit(Object::new);
+        scheduler.runUntilQueueEmpty();
+        Assert.eq(existing.getState(), "existing.getState()", ExportNotification.State.EXPORTED);
+
+        final int completingId = nextExportId++;
+        final int createdId = nextExportId++;
+        final Thread[] creator = new Thread[1];
+        final Thread[] lookup = new Thread[1];
+        final Throwable[] failure = new Throwable[1];
+        final MutableBoolean lookedUp = new MutableBoolean();
+        final StreamObserver<ExportNotification> listener = new StreamObserver<>() {
+            @Override
+            public void onNext(final ExportNotification notification) {
+                if (getExportId(notification) != completingId
+                        || notification.getExportState() != ExportNotification.State.EXPORTED) {
+                    return;
+                }
+                // We are inside ExportListener.notify, holding this listener's monitor. Create another export on a
+                // second thread: it takes the export map monitor and then blocks on our monitor to notify us. Ours is
+                // the only monitor it can block on, since this thread holds nothing else.
+                creator[0] = new Thread(() -> session.newExport(createdId), "SessionStateTest-creator");
+                creator[0].start();
+                final long deadlineNanos = System.nanoTime() + 10_000_000_000L;
+                while (creator[0].getState() != Thread.State.BLOCKED) {
+                    if (!creator[0].isAlive() || System.nanoTime() > deadlineNanos) {
+                        failure[0] = new IllegalStateException("creating an export did not block to notify us");
+                        return;
+                    }
+                    Thread.onSpinWait();
+                }
+                // Now look up the existing export, as ExportedTableUpdateListener would; it must not need the map.
+                lookup[0] = new Thread(() -> {
+                    try {
+                        session.getExport(existingId);
+                        lookedUp.setTrue();
+                    } catch (final Throwable t) {
+                        failure[0] = t;
+                    }
+                }, "SessionStateTest-lookup");
+                lookup[0].start();
+                try {
+                    lookup[0].join(5_000);
+                } catch (final InterruptedException e) {
+                    failure[0] = e;
+                }
+                if (lookup[0].isAlive()) {
+                    failure[0] = new IllegalStateException(
+                            "looking up an existing export from an export listener blocked on the export map");
+                }
+                // returning releases our monitor, which lets the creator (and with it any blocked lookup) finish
+            }
+
+            @Override
+            public void onError(final Throwable t) {}
+
+            @Override
+            public void onCompleted() {}
+        };
+        session.addExportListener(listener);
+
+        session.newExport(completingId).submit(Object::new);
+        // completes on this thread, notifying the listener from under the completing export's monitor
+        scheduler.runUntilQueueEmpty();
+
+        Assert.neqNull(creator[0], "creator[0]");
+        creator[0].join(5_000);
+        if (lookup[0] != null) {
+            lookup[0].join(5_000);
+        }
+        if (failure[0] != null) {
+            throw new AssertionFailure("export lookup from a listener must not deadlock with export creation",
+                    failure[0]);
+        }
+        Assert.eqTrue(lookedUp.booleanValue(), "lookedUp.booleanValue()");
+        Assert.eqFalse(creator[0].isAlive(), "creator[0].isAlive()");
+        Assert.neqNull(session.getExportIfExists(createdId), "session.getExportIfExists(createdId)");
+    }
+
+    @Test
     public void testExpiredNewExport() {
         final MutableBoolean errored = new MutableBoolean();
         final MutableBoolean success = new MutableBoolean();

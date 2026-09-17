@@ -15,6 +15,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.QueryState;
@@ -151,6 +153,11 @@ public class SessionState {
     // maintains all requested exports by this client's session
     private final KeyedIntObjectHashMap<ExportObject<?>> exportMap = new KeyedIntObjectHashMap<>(EXPORT_OBJECT_ID_KEY);
 
+    // Tracks export ids that have been released so their ExportObject shells can be dropped from exportMap while still
+    // rejecting reuse of the id. Client ids are positive, and server ids negative; both are folded into an unsigned key
+    // space (an efficient wide bitset). Guarded by the exportMap monitor.
+    private final WritableRowSet releasedExports = RowSetFactory.empty();
+
     // the list of active listeners
     private final List<ExportListener> exportListeners = new CopyOnWriteArrayList<>();
     private volatile int exportListenerVersion = 0;
@@ -245,6 +252,15 @@ public class SessionState {
     }
 
     /**
+     * Throw an {@code UNAUTHENTICATED} exception if this session has expired.
+     */
+    private void throwIfExpired() {
+        if (isExpired()) {
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+        }
+    }
+
+    /**
      * @return the auth context for this session
      */
     public AuthContext getAuthContext() {
@@ -288,30 +304,42 @@ public class SessionState {
      */
     @SuppressWarnings("unchecked")
     public <T> ExportObject<T> getExport(final int exportId) {
-        if (isExpired()) {
-            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
-        }
-
-        final ExportObject<T> result;
-
-        if (exportId < NON_EXPORT_ID) {
-            // If this a server-side export then it must already exist or else is a user error.
-            result = (ExportObject<T>) exportMap.get(exportId);
-
-            if (result == null) {
-                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "Export id " + exportId + " does not exist and cannot be used out-of-order!");
-            }
-        } else if (exportId > NON_EXPORT_ID) {
-            // If this a client-side export we'll allow an out-of-order request by creating a new export object.
-            result = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
-        } else {
+        if (exportId == NON_EXPORT_ID) {
             // If this is a non-export request, then it is a user error.
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Export id " + exportId + " refers to a non-export and cannot be requested!");
         }
 
-        return result;
+        // Lock-free when the export exists. Export listeners look exports up from inside their callbacks, while an
+        // export being created notifies those same listeners from under the exportMap monitor; taking that monitor
+        // here would close the cycle.
+        throwIfExpired();
+        final ExportObject<T> found = (ExportObject<T>) exportMap.get(exportId);
+        if (found != null) {
+            return found;
+        }
+
+        synchronized (exportMap) {
+            // Expired check must be guarded by the lock, and must dominate any existing/released answer.
+            throwIfExpired();
+
+            final ExportObject<T> existing = (ExportObject<T>) exportMap.get(exportId);
+            if (existing != null) {
+                return existing;
+            }
+
+            if (!isReleased(exportId)) {
+                if (exportId > NON_EXPORT_ID) {
+                    // If this a client-side export we'll allow an out-of-order request by creating a new export object.
+                    return (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+                }
+                // If this a server-side export then it must already exist or else is a user error.
+                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Export id " + exportId + " does not exist and cannot be used out-of-order!");
+            }
+        }
+
+        return newReleasedExport(exportId);
     }
 
     /**
@@ -322,11 +350,28 @@ public class SessionState {
      */
     @SuppressWarnings("unchecked")
     public <T> ExportObject<T> getExportIfExists(final int exportId) {
-        if (isExpired()) {
-            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+        // see getExport for why the existing case must not take the exportMap monitor
+        throwIfExpired();
+        final ExportObject<T> found = (ExportObject<T>) exportMap.get(exportId);
+        if (found != null) {
+            return found;
         }
 
-        return (ExportObject<T>) exportMap.get(exportId);
+        synchronized (exportMap) {
+            // Expired check must be guarded by the lock, and must dominate any existing/released answer.
+            throwIfExpired();
+
+            final ExportObject<T> existing = (ExportObject<T>) exportMap.get(exportId);
+            if (existing != null) {
+                return existing;
+            }
+
+            if (!isReleased(exportId)) {
+                return null;
+            }
+        }
+
+        return newReleasedExport(exportId);
     }
 
     /**
@@ -341,6 +386,54 @@ public class SessionState {
     }
 
     /**
+     * Fold an export id into the unsigned key space used by {@link #releasedExports}. Client ids are positive and
+     * server ids negative; both map to distinct non-negative keys. {@link #NON_EXPORT_ID} is never stored.
+     */
+    private static long exportIdToKey(final int exportId) {
+        return exportId & 0xFFFFFFFFL;
+    }
+
+    /**
+     * @param exportId the export id to test
+     * @return whether the id has already been released; callers must hold the {@code exportMap} monitor
+     */
+    private boolean isReleased(final int exportId) {
+        Assert.assertion(Thread.holdsLock(exportMap), "Thread.holdsLock(exportMap)");
+        final long key = exportIdToKey(exportId);
+        return releasedExports.containsRange(key, key);
+    }
+
+    /**
+     * Drop a released export's shell from {@code exportMap} and remember that its id was consumed. Callers must hold
+     * the {@code exportMap} monitor. Skipped during session expiration, where the entire map is cleared and
+     * {@code releasedExports} is closed under that same monitor.
+     *
+     * @param exportId the id that has transitioned to {@link ExportNotification.State#RELEASED}
+     */
+    private void markExportReleased(final int exportId) {
+        Assert.assertion(Thread.holdsLock(exportMap), "Thread.holdsLock(exportMap)");
+        if (isExpired()) {
+            // Teardown owns clearing the map and closing releasedExports; don't mutate them here.
+            return;
+        }
+        exportMap.removeKey(exportId);
+        releasedExports.insert(exportIdToKey(exportId));
+    }
+
+    /**
+     * Construct a throwaway {@link ExportObject} standing in for an id that has already been released. It resolves
+     * dependents as {@link ExportNotification.State#DEPENDENCY_RELEASED} and rejects reuse, without retaining the
+     * original export. A fresh instance is created per lookup so it carries good diagnostics for the offending id.
+     *
+     * @param exportId the released export id
+     * @param <T> the export type
+     * @return a released marker export
+     */
+    private <T> ExportObject<T> newReleasedExport(final int exportId) {
+        return new ExportObject<>(this, exportId);
+    }
+
+    /**
      * Create and export a pre-computed element. This is typically used in scenarios where the number of exports is not
      * known in advance by the requesting client.
      *
@@ -349,12 +442,9 @@ public class SessionState {
      * @return the ExportObject for this item for ease of access to the export
      */
     public <T> ExportObject<T> newServerSideExport(final T export) {
-        if (isExpired()) {
-            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
-        }
-
         final int exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
 
+        // As a new export, the entry is always absent; we'll do the auth check inside the factory function
         // noinspection unchecked
         final ExportObject<T> result = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
         result.setResult(export);
@@ -368,12 +458,9 @@ public class SessionState {
      * @return the ExportObject for this item for ease of access to the export
      */
     public ExportObject<Void> newFailedServerSideExport(final Exception failure) {
-        if (isExpired()) {
-            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
-        }
-
         final int exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
 
+        // As a new export, the entry is always absent; we'll do the auth check inside the factory function
         // noinspection unchecked
         final ExportObject<Void> result =
                 (ExportObject<Void>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
@@ -414,11 +501,9 @@ public class SessionState {
      */
     @VisibleForTesting
     public <T> ExportBuilder<T> newExport(final int exportId) {
-        if (isExpired()) {
-            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
-        }
+        throwIfExpired();
         if (exportId <= 0) {
-            throw new IllegalArgumentException("exportId's <= 0 are reserved for server allocation only");
+            throw new IllegalArgumentException("exportIds <= 0 are reserved for server allocation only");
         }
         return new ExportBuilder<>(exportId);
     }
@@ -429,9 +514,7 @@ public class SessionState {
      * @return an export builder
      */
     public <T> ExportBuilder<T> nonExport() {
-        if (isExpired()) {
-            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
-        }
+        throwIfExpired();
         return new ExportBuilder<>(NON_EXPORT_ID);
     }
 
@@ -447,11 +530,9 @@ public class SessionState {
      */
     public void addOnCloseCallback(final Closeable onClose) {
         synchronized (onCloseCallbacks) {
-            if (isExpired()) {
-                // After the session has expired, nothing new can be added to the collection, so throw an exception (and
-                // release the lock, allowing each item already in the collection to be released)
-                throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
-            }
+            // After the session has expired, nothing new can be added to the collection, so throw an exception (and
+            // release the lock, allowing each item already in the collection to be released)
+            throwIfExpired();
             onCloseCallbacks.add(onClose);
         }
     }
@@ -499,6 +580,9 @@ public class SessionState {
         synchronized (exportMap) {
             exportMap.forEach(ExportObject::cancel);
             exportMap.clear();
+            // Safe to release here: the expiration flag is already set above, so any lookup that later takes this
+            // monitor observes expiration and never reads releasedExports.
+            releasedExports.close();
         }
 
         log.debug().append(logPrefix).append("outstanding exports released").endl();
@@ -620,8 +704,8 @@ public class SessionState {
         }
 
         /**
-         * Create an ExportObject that is not tied to any session. These must be non-exports that have require no work
-         * to be performed. These export objects can be used as dependencies.
+         * Create an ExportObject that is not tied to any session. These must be non-exports that have no work to be
+         * performed. These export objects can be used as dependencies.
          *
          * @param result the object to wrap in an export
          */
@@ -645,6 +729,28 @@ public class SessionState {
             if (result instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(result)) {
                 manage((LivenessReferent) result);
             }
+        }
+
+        /**
+         * Create a throwaway ExportObject representing an id that has already been released. It is not stored in the
+         * export map; it exists only to reject reuse of the id and to resolve late dependencies as
+         * {@link ExportNotification.State#DEPENDENCY_RELEASED}.
+         *
+         * @param session the owning session
+         * @param exportId the released export id
+         */
+        private ExportObject(final SessionState session, final int exportId) {
+            super(true);
+            this.errorTransformer = session.errorTransformer;
+            this.session = session;
+            this.exportId = exportId;
+            this.logIdentity = Long.toString(exportId);
+            // Enter the RELEASED state directly to avoid re-notifying listeners for an id that is already gone.
+            this.state = ExportNotification.State.RELEASED;
+            // Drive the reference count to a terminal zero so that dependents fail to manage this and observe it as a
+            // released dependency (retain first, since forcing to zero is a no-op from the initial-zero state).
+            retainReference();
+            forceReferenceCountToZero();
         }
 
         /**
@@ -793,8 +899,8 @@ public class SessionState {
          * @return the result of the computed export
          */
         public T get() {
-            if (session != null && session.isExpired()) {
-                throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+            if (session != null) {
+                session.throwIfExpired();
             }
             final T localResult = result;
             // Note: an export may be released while still being a dependency of queued work; so let's make sure we're
@@ -1180,34 +1286,47 @@ public class SessionState {
         /**
          * Releases this export; it will wait for the work to complete before releasing.
          */
-        public synchronized void release() {
+        public void release() {
             if (session == null) {
                 throw new UnsupportedOperationException("Session-less exports cannot be released");
             }
-            if (state == ExportNotification.State.EXPORTED) {
-                if (isNonExport()) {
-                    return;
+            // Acquire the export map monitor before our own to match the ordering used during session expiration, so
+            // that dropping our released shell from the map cannot deadlock with teardown.
+            synchronized (session.exportMap) {
+                synchronized (this) {
+                    if (state == ExportNotification.State.EXPORTED) {
+                        if (isNonExport()) {
+                            return;
+                        }
+                        setState(ExportNotification.State.RELEASED);
+                        session.markExportReleased(exportId);
+                    } else if (!isExportStateTerminal(state)) {
+                        session.nonExport().require(this).submit(this::release);
+                    }
                 }
-                setState(ExportNotification.State.RELEASED);
-            } else if (!isExportStateTerminal(state)) {
-                session.nonExport().require(this).submit(this::release);
             }
         }
 
         /**
          * Releases this export; it will cancel the work and dependent exports proactively when possible.
          */
-        public synchronized void cancel() {
+        public void cancel() {
             if (session == null) {
                 throw new UnsupportedOperationException("Session-less exports cannot be cancelled");
             }
-            if (state == ExportNotification.State.EXPORTED) {
-                if (isNonExport()) {
-                    return;
+            // See release(): take the export map monitor before our own to preserve a consistent lock ordering.
+            synchronized (session.exportMap) {
+                synchronized (this) {
+                    if (state == ExportNotification.State.EXPORTED) {
+                        if (isNonExport()) {
+                            return;
+                        }
+                        setState(ExportNotification.State.RELEASED);
+                        session.markExportReleased(exportId);
+                    } else if (!isExportStateTerminal(state)) {
+                        setState(ExportNotification.State.CANCELLED);
+                    }
                 }
-                setState(ExportNotification.State.RELEASED);
-            } else if (!isExportStateTerminal(state)) {
-                setState(ExportNotification.State.CANCELLED);
             }
         }
 
@@ -1246,9 +1365,7 @@ public class SessionState {
         final int versionId;
         final ExportListener listener;
         synchronized (exportListeners) {
-            if (isExpired()) {
-                throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
-            }
+            throwIfExpired();
 
             listener = new ExportListener(observer);
             exportListeners.add(listener);
@@ -1288,6 +1405,11 @@ public class SessionState {
     @VisibleForTesting
     public long numExportListeners() {
         return exportListeners.size();
+    }
+
+    @VisibleForTesting
+    public int numExports() {
+        return exportMap.size();
     }
 
     private class ExportListener {
@@ -1451,8 +1573,20 @@ public class SessionState {
             if (exportId == NON_EXPORT_ID) {
                 this.export = new ExportObject<>(SessionState.this.errorTransformer, SessionState.this, NON_EXPORT_ID);
             } else {
-                // noinspection unchecked
-                this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+                final boolean released;
+                final ExportObject<T> found;
+                synchronized (exportMap) {
+                    // See getExport: expiration may be flagged before teardown acquires this monitor; answer as
+                    // expired rather than resurrecting or reporting the id as released.
+                    throwIfExpired();
+                    released = isReleased(exportId);
+                    // noinspection unchecked
+                    found = released ? null
+                            : (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
+                }
+                // Redefining work at a released id must fail cleanly rather than resurrecting the id; hand back a
+                // released marker so submit() reports the failure via the error handler.
+                this.export = released ? newReleasedExport(exportId) : found;
             }
         }
 
@@ -1666,9 +1800,7 @@ public class SessionState {
             new KeyedIntObjectHash.ValueFactory.Strict<>() {
                 @Override
                 public ExportObject<?> newValue(final int key) {
-                    if (isExpired()) {
-                        throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
-                    }
+                    throwIfExpired();
 
                     return new ExportObject<>(SessionState.this.errorTransformer, SessionState.this, key);
                 }
