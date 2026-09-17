@@ -30,7 +30,7 @@ The source table to filter. Must be add-only with partitions sorted by timestamp
 </Param>
 <Param name="timestampName" type="String">
 
-The name of the timestamp column used to determine recency.
+The name of the timestamp column used to determine recency. The column must be typed as an `Instant`; a column that stores epoch nanoseconds as a plain integer type is not accepted.
 
 </Param>
 <Param name="period" type="String">
@@ -52,7 +52,7 @@ The source table to filter. Must be add-only with partitions sorted by timestamp
 </Param>
 <Param name="timestampName" type="String">
 
-The name of the timestamp column used to determine recency.
+The name of the timestamp column used to determine recency. The column must be typed as an `Instant`; a column that stores epoch nanoseconds as a plain integer type is not accepted.
 
 </Param>
 <Param name="nanos" type="long">
@@ -79,7 +79,7 @@ The number of rows to include per partition.
 
 ## Returns
 
-A table containing only the most recent values from each partition in the source table.
+A table containing each partition's most recent values as of initialization. If the source table is refreshing, the result is too, and every row appended to the source afterward is included in the result — the trimming applies only to the table's initial state, not to an ongoing rolling window.
 
 ## How it works
 

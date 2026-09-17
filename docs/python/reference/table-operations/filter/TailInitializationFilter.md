@@ -31,7 +31,7 @@ The add-only source table to filter. Must be add-only with partitions sorted asc
 </Param>
 <Param name="ts_col" type="str">
 
-The name of the timestamp column used to determine recency.
+The name of the timestamp column used to determine recency. The column must be typed as an `Instant`; a column that stores epoch nanoseconds as a plain integer type is not accepted.
 
 </Param>
 <Param name="period" type="DurationLike">
@@ -58,7 +58,7 @@ The number of most-recent rows to keep per partition.
 
 ## Returns
 
-A new [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) containing only the most recent values from each partition in the source table. The result is refreshing if the source table is refreshing.
+A new [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) containing each partition's most recent values as of initialization. If the source table is refreshing, the result is too, and every row appended to the source afterward is included in the result — the trimming applies only to the table's initial state, not to an ongoing rolling window.
 
 ## Errors
 
