@@ -79,12 +79,14 @@ A result that comes back empty is normalized to `OrderedLongSet.EMPTY`.
 ### The two predicates
 
 **`editIndividually(other)`**: true for one or two ranges at any size, and for a handful of ranges on a tiny set;
-precisely, with `r` the number of ranges in `other` and `n` our entry count, `(r - 2)^2 * n <= 400`. Ranges are counted
+precisely, with `r` the number of ranges in `other` and `n` our entry count, `(r - 2)^2 * n <= 400`, where 400 is the default of
+`SortedRanges.individualEditThreshold`. Ranges are counted
 from their start entries, stopping as soon as the inequality fails, so the count is cheap. This is where the planned
 strategy's fixed cost of a few tens of nanoseconds does not pay: measured, individual edits win for one or two ranges
 everywhere and for up to about six ranges on a 20-entry set.
 
-**`planEdits(other)`**: `other.count * 8 <= count`, on entries. A planned edit costs a binary search and a small block
+**`planEdits(other)`**: `other.count * 8 <= count`, on entries, where 8 is the default of
+`SortedRanges.plannedEditMaxSizeRatio`. A planned edit costs a binary search and a small block
 move, about 20 ns; the merge costs about 2 ns per entry of either set. Measured, planning wins while the argument has
 up to about a twelfth as many entries as we do and loses from about a quarter, so the boundary sits at an eighth.
 Counting entries rather than ranges only sends a range-heavy argument to the merge a little early.

@@ -1930,11 +1930,28 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     private static final ThreadLocal<EditPlan> EDIT_PLAN = ThreadLocal.withInitial(EditPlan::new);
 
     /**
+     * A bulk insert or remove of {@code r} ranges into a set of {@code n} entries applies them one at a time when
+     * {@code (r - 2)^2 * n} does not exceed this; see {@link #editIndividually}. Property
+     * {@code SortedRanges.individualEditThreshold}.
+     */
+    static final int INDIVIDUAL_EDIT_THRESHOLD = Configuration.getInstance().getIntegerForClassWithDefault(
+            SortedRanges.class, "individualEditThreshold", 400);
+
+    /**
+     * A bulk insert or remove plans its edits only when the argument's entry count times this fits within the set's
+     * entry count; larger arguments are merged; see {@link #planEdits}. Property
+     * {@code SortedRanges.plannedEditMaxSizeRatio}.
+     */
+    static final int PLANNED_EDIT_MAX_SIZE_RATIO = Configuration.getInstance().getIntegerForClassWithDefault(
+            SortedRanges.class, "plannedEditMaxSizeRatio", 8);
+
+    /**
      * Whether {@code other}'s ranges are few enough, for a set of this size, that inserting or removing them one at a
      * time beats planning. Planning carries a fixed cost of some tens of nanoseconds and saves one move of the entries
      * past each insertion point, so it needs enough ranges to pay for itself, and more of them the smaller this set is.
      * Measured with {@code RowSetSmallInsertBench}: individual inserts win for one or two ranges at every size, and for
-     * up to about six on a twenty-entry set; the boundary fits {@code (ranges - 2)^2 * entries > 400}.
+     * up to about six on a twenty-entry set; the boundary fits {@code (ranges - 2)^2 * entries > 400}, the default of
+     * {@link #INDIVIDUAL_EDIT_THRESHOLD}.
      */
     private boolean editIndividually(final SortedRanges other) {
         // A range takes one entry as a single and two as a start and an end, so ranges are counted from their
@@ -1943,7 +1960,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         for (int i = 0; i < other.count; ++i) {
             if (other.unpackedGet(i) >= 0) {
                 final long extraRanges = ++ranges - 2;
-                if (extraRanges > 0 && extraRanges * extraRanges * count > 400) {
+                if (extraRanges > 0 && extraRanges * extraRanges * count > INDIVIDUAL_EDIT_THRESHOLD) {
                     return false;
                 }
             }
@@ -1955,12 +1972,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      * Whether {@code other} is small enough, relative to this set, for planning its edits to beat merging the two sets.
      * Planning costs a binary search and a small block move per range, some 20 ns; the merge costs about 2 ns per entry
      * of either set. Measured with {@code RowSetSmallInsertBench} and {@code RowSetSmallRemoveBench}: planning wins up
-     * to about a twelfth of this set's size and loses from about a quarter, so the boundary sits at an eighth. Entries
-     * stand in for ranges here; a range stored as two entries counts double, which only sends it to the merge a little
-     * earlier.
+     * to about a twelfth of this set's size and loses from about a quarter, so the boundary sits at an eighth, the
+     * default of {@link #PLANNED_EDIT_MAX_SIZE_RATIO}. Entries stand in for ranges here; a range stored as two entries
+     * counts double, which only sends it to the merge a little earlier.
      */
     private boolean planEdits(final SortedRanges other) {
-        return (long) other.count * 8 <= count;
+        return (long) other.count * PLANNED_EDIT_MAX_SIZE_RATIO <= count;
     }
 
     /**
