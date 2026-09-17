@@ -17,8 +17,10 @@ be 40-68x slower than key-by-key insertion for the small arguments incremental `
 A `SortedRanges` is one sorted array of *entries*. A non-negative entry is a key that starts a range or stands alone
 as a single; a negative entry is the (negated) end of the range whose start precedes it. So `{3, 10..12, 20}` is stored
 as `3, 10, -12, 20`: four entries for three ranges. Ranges are never adjacent or overlapping; `{10} {11..12}` is not a
-valid state, it is `10..12`. The array is packed as shorts, ints or longs (`SortedRangesShort/Int/Long`) relative to an
-offset, and each packing has a capacity beyond which the set must become an `RspBitmap`.
+valid state, it is `10..12`. The array is packed as shorts or ints relative to an offset (`SortedRangesShort`,
+`SortedRangesInt`, via `SortedRangesPacked`) or as raw longs with no offset (`SortedRangesLong`). Each packing has a
+capacity, and a result that outgrows its packing's capacity is repacked into a wider or narrower one when any of them
+can hold it; only a result that no `SortedRanges` packing can hold becomes an `RspBitmap`.
 
 Two consequences shape everything below. First, the number of *ranges* and the number of *entries* differ by up to
 2x, and the code is explicit about which one it is counting. Second, an edit that changes no entry count can still
@@ -41,9 +43,11 @@ ixInsert(added)
 ├─ added is an RspBitmap ............................ convert to RspBitmap, or the two together
 └─ added is a SortedRanges .......................... insertImpl(added):
    ├─ our last key < added.first .................... APPEND: mergeAppend copies added onto our tail
-   │                                                  (null when added.last is outside our packing or no
-   │                                                  capacity of our type holds the result → convert to
-   │                                                  RspBitmap directly; the merge below is not tried)
+   │                                                  (null when added.last is outside a short or int
+   │                                                  packing's range from our offset, or no capacity of our
+   │                                                  type holds the result and it cannot be repacked
+   │                                                  smaller → convert to RspBitmap directly; the merge
+   │                                                  below is not tried)
    └─ otherwise
       ├─ added does not fit our packing ............. MERGE (see below)
       ├─ editIndividually(added) .................... INDIVIDUAL: addRangeInternal per range
@@ -93,8 +97,9 @@ The two predicates are shared by insert and remove; the remove benchmark showed 
 
 Our last key is below the argument's first key, so the argument goes on the end. `mergeAppend` copies its entries
 after ours, coalescing when its first key is adjacent to our last. It fails (`ensureCanAppend` returns null) in two
-cases: the argument's last key lies outside what our packing can represent from our offset, or no capacity of our type
-holds the result and it cannot be repacked smaller. Either way `insertImpl` converts to an `RspBitmap` at once; the
+cases: for a short or int packing, the argument's last key lies outside what the packing can represent from our offset;
+or no capacity of our type holds the result and it cannot be repacked smaller. Either way `insertImpl` converts to an
+`RspBitmap` at once; the
 append and the merge are alternatives, so a failed append does not fall through to the merge's repack. This is the path
 every append-only workload takes, including the release phase of an incremental join, and it was never the problem.
 
@@ -110,8 +115,10 @@ returns the receiver *unchanged and still shared* when the range is already cont
 on until a call returns a different object, which is the private copy. Clearing it after the first call let a later
 range write into a shared set; `containedFirstRangeKeepsSharedCopyIsolated` covers the sequence.
 
-A null from either loop means a range outgrew the set's type. The loop may already have applied earlier ranges in
-place; the caller falls through to the merge, for which re-inserting or re-removing them is idempotent.
+A null from either loop means the result outgrew the capacity of the set's current packing: an insert added more
+entries than it can hold, or a removal split ranges into more entries than before. The loop may already have applied
+earlier ranges in place; the caller falls through to the merge, which can repack into another packing, and for which
+re-inserting or re-removing them is idempotent.
 
 ### Planned edits
 
@@ -180,7 +187,8 @@ at 2000 into 6000 2.3x slower.
 
 The merge is also the fallback for the individual and planned strategies' capacity failures, because it can change the
 packing: a dense `SortedRangesLong` caps at 256 entries by default (`SortedRanges.longDenseMaxCapacity`) where the same
-content repacked as shorts holds thousands (`SortedRanges.shortMaxCapacity`, 4090 by default).
+content repacked as shorts holds thousands (`SortedRanges.shortMaxCapacity`, 4090 by default). Only when the merge's
+own repack finds no packing with room does the result become an `RspBitmap`.
 
 ### Convert to RspBitmap
 
@@ -189,9 +197,9 @@ there. This is the terminal case of every branch; it is not a performance strate
 
 ## Measured behaviour
 
-Microseconds per bulk insert into a target of scattered single keys; `forAll` is the same keys inserted one at a
-time, the bound the bulk call should never be slower than. Before is the merge for every argument; after is the tree
-above.
+Microseconds per bulk insert into a target of scattered single keys; `forAll` is the comparison baseline, the same keys
+inserted one at a time through `forAllRowKeys`. The aim was for the bulk call to be no slower than that baseline beyond
+the benchmark's own run-to-run noise. Before is the merge for every argument; after is the tree above.
 
 ```
  target    k   before    after   forAll
@@ -208,8 +216,10 @@ above.
    6000 2000   23.222   23.044      n/a   (merge, via planEdits)
 ```
 
-Removal shows the same shape. Differences under about 30 ns, which is where the 20- and 200-entry rows sit, are inside
-the benchmark's own run-to-run noise. For the join, accumulation of a slot's row keys per cycle went from losing to
+Removal shows the same shape. The 20- and 200-entry rows are sub-microsecond operations whose cells moved by up to
+about 80 ns between otherwise identical runs; the `200 / 20` cell, for instance, measured between 0.32 and 0.46 µs for
+bulk against 0.38 to 0.39 µs for `forAll` across runs of the same build. Differences of that size in those rows are not
+evidence either way; the larger rows are well outside it. For the join, accumulation of a slot's row keys per cycle went from losing to
 per-key insertion by 84% on 2000-key slots to beating it by 13%.
 
 ## Traps this code has already fallen into

@@ -34,9 +34,10 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * The target holds {@code targetKeys} single keys spread uniformly over a key space wide enough to need int offsets, so
  * it is a {@code SortedRangesInt} up to that class's capacity and an {@code RspBitmap} beyond it. The
- * {@code removeKeys} removed keys are a uniformly random subset of the target's keys. {@link #bulkRemove} is one
- * {@link WritableRowSet#remove(io.deephaven.engine.rowset.RowSet)} call; {@link #forAllRowKeysRemove} removes the same
- * keys one at a time through the row set API, which is the bound the bulk call should never be slower than;
+ * {@code removeKeys} removed keys are a uniformly random subset of the target's keys; a combination that asks for more
+ * keys than the target holds is rejected in setup rather than measured under a misleading label. {@link #bulkRemove} is
+ * one {@link WritableRowSet#remove(io.deephaven.engine.rowset.RowSet)} call; {@link #forAllRowKeysRemove} removes the
+ * same keys one at a time through the row set API, which is the bound the bulk call should never be slower than;
  * {@link #arrayRemove} is the same loop over a primitive array, the floor without the removed set's iteration.
  * </p>
  */
@@ -66,13 +67,19 @@ public class RowSetSmallRemoveBench {
     @Setup(Level.Trial)
     public void setupTrial() {
         final Random random = new Random(RANDOM_SEED);
+        if (removeKeys > targetKeys) {
+            // Rather than silently removing fewer keys than the parameter says, which would label two identical
+            // workloads differently, the combination is reported as invalid.
+            throw new IllegalArgumentException(
+                    "removeKeys=" + removeKeys + " exceeds targetKeys=" + targetKeys + "; nothing to measure");
+        }
         targetSortedKeys = distinctSortedKeys(random, targetKeys);
         // A uniformly random subset of the target's keys, by a partial Fisher-Yates shuffle of their positions.
         final int[] positions = new int[targetKeys];
         for (int i = 0; i < targetKeys; ++i) {
             positions[i] = i;
         }
-        final int chosen = Math.min(removeKeys, targetKeys);
+        final int chosen = removeKeys;
         for (int i = 0; i < chosen; ++i) {
             final int j = i + random.nextInt(targetKeys - i);
             final int tmp = positions[i];
