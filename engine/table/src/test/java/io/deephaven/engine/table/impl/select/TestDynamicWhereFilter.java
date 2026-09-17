@@ -19,6 +19,7 @@ import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.FailureRecordingListener;
+import io.deephaven.engine.table.impl.ForcedParallelWhere;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
@@ -1552,6 +1553,82 @@ public class TestDynamicWhereFilter {
         final Table result = assertRecomputeForARejectedAttemptDoesNothing(
                 (source, filter) -> source.wouldMatch(new WouldMatchPair("M", filter)));
         assertTableEquals(newTable(intCol(KEY, 1, 2, 3, 4), booleanCol("M", true, true, false, false)), result);
+    }
+
+    /**
+     * A where listener whose filters run through the update graph's job scheduler finishes its work on notifications of
+     * its own, after its own notification has returned. A recompute that reaches a doomed result while it is still
+     * alive can therefore be in flight when that result's attempt is rejected and released. The listener must hold the
+     * result until that work completes, so the work runs against a live table, and release it afterwards, so the table
+     * does not leak.
+     */
+    @Test
+    public void testRefilterInFlightForARejectedWhereAttemptOutlivesItsRelease() throws Exception {
+        final Gate sourceGate = new Gate();
+        final Gate subscribeGate = new Gate();
+        final GatedIntegerArraySource sourceKey = new GatedIntegerArraySource(sourceGate);
+        final QueryTable source = sourceTable(sourceKey, true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final GateAfterSubscribeFilter filter = new GateAfterSubscribeFilter(setTable, subscribeGate);
+
+        updateGraph.startCycleForUnitTests(false);
+        final long step = updateGraph.clock().currentStep();
+        try (final SafeCloseable ignored = new ForcedParallelWhere()) {
+            // Nothing is satisfied yet, so this attempt reads previous values.
+            subscribeGate.arm();
+            final Future<Table> future = pool.submit(() -> source.where(filter));
+            assertTrue("the attempt subscribed to its set",
+                    subscribeGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+            final QueryTable rejectedResult = filter.firstResult;
+            assertNotNull(rejectedResult);
+
+            // Tick the source, so this attempt's own subscription to it is refused and the attempt is rejected.
+            addSourceRow(source, sourceKey, 3, 4);
+            source.notifyListeners(i(3), i(), i());
+
+            // Change the set, which the attempt is following, so a recompute is queued for its doomed result.
+            TstUtils.addToTable(setTable, i(1), intCol(KEY, 2));
+            setTable.notifyListeners(i(1), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+            while (!filter.satisfied(step)) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+
+            // Run the where listener now, while its result is alive. It schedules its filter work on the update graph
+            // and returns; that work has not run yet.
+            assertTrue("the where listener's notification was queued", updateGraph.flushOneNotificationForUnitTests());
+            assertEquals("the filter work has not run yet", 1, sourceKey.chunkReads.get());
+
+            // Let the attempt be rejected and released, and park the retry at its read, which proves the release.
+            sourceGate.arm();
+            subscribeGate.release();
+            assertTrue("the retry began its read",
+                    sourceGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+
+            assertTrue("the listener must hold its result while its filter work is in flight",
+                    rejectedResult.tryRetainReference());
+            rejectedResult.dropReference();
+
+            // Run the filter work. It reads the source for a table that is alive, and the listener then lets go of it.
+            // noinspection StatementWithEmptyBody
+            while (updateGraph.flushOneNotificationForUnitTests()) {
+            }
+            assertEquals("the in-flight refilter read the source once", 2, sourceKey.chunkReads.get());
+            assertFalse("the listener must release its result once its filter work is done",
+                    rejectedResult.tryRetainReference());
+
+            sourceGate.release();
+            pumpUntilDone(future);
+            final Table result = future.get();
+            assertEquals("the retry read the source once", 3, sourceKey.chunkReads.get());
+            updateGraph.completeCycleForUnitTests();
+
+            assertFalse("the retried result must not fail", result.isFailed());
+            assertTrue("no error may be reported: " + base.getUpdateErrors(), base.getUpdateErrors().isEmpty());
+            assertTableEquals(newTable(intCol(KEY, 1, 2)), result);
+        } finally {
+            endCycleIfOpen();
+        }
     }
 
     /**
