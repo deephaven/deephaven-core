@@ -1173,6 +1173,43 @@ public abstract class QueryTableWhereTest {
         assertOnlyReportedErrors(setError);
     }
 
+    /**
+     * A filter error fails the result from outside its listener's notification. When the set table fails afterwards,
+     * the failure request that reaches the listener must leave the already-failed result alone, rather than failing it
+     * a second time, and must not surface as an engine error.
+     */
+    @Test
+    public void testSetFailureAfterAFilterErrorLeavesTheFailedResultAlone() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(),
+                intCol("Key", 1, 2, 3), col("y", "a", "b", "c"));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final Table result =
+                source.where(Filter.and(keyIn(setTable), WhereFilterFactory.getExpression("y.length() > 0")));
+        final FailureRecordingListener failures = new FailureRecordingListener(result);
+        assertFalse(result.isFailed());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final RuntimeException setError = new RuntimeException("set table failure");
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            // A null y makes the formula filter throw, which fails the result through the filter error path.
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(source, i(8), intCol("Key", 1), col("y", (String) null));
+                source.notifyListeners(i(8), i(), i());
+            });
+            assertTrue("the filter error must fail the result", result.isFailed());
+            assertEquals(1, failures.failureCount());
+
+            updateGraph.runWithinUnitTestCycle(() -> setTable.notifyListenersOnError(setError, null));
+        }
+
+        assertEquals("the set failure must not fail the result a second time", 1, failures.failureCount());
+        for (final Throwable reported : base.getUpdateErrors()) {
+            assertTrue("unexpected error reported: " + reported,
+                    reported == setError || reported instanceof FormulaEvaluationException);
+        }
+    }
+
     // endregion Set table failures (DH-23666)
 
     @Test

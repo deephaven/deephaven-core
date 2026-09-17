@@ -1465,10 +1465,12 @@ public class TestDynamicWhereFilter {
      * Run {@code operation} with its attempt parked between subscribing to its set and subscribing its result to the
      * source, tick the source so that second subscription is refused, and change the set while it is parked.
      * <p>
-     * This is the one window in which a set change reaches a result whose attempt is still going to be rejected. The
-     * recompute it queues runs after that attempt has been released, and must do nothing: refiltering would read the
-     * source for a table nobody holds, and, for {@code wouldMatch}, a listener that read the operation's fields rather
-     * than its own attempt's would act on the retried result instead.
+     * This is the one window in which a set change reaches a result whose attempt is still going to be rejected. This
+     * test holds the recompute it queues until that attempt has been released, and it must then do nothing: refiltering
+     * would read the source for a table nobody holds, and, for {@code wouldMatch}, a listener that read the operation's
+     * fields rather than its own attempt's would act on the retried result instead. (A recompute that runs before the
+     * release refilters a table that is about to be released, which wastes work but harms nothing; it is not what this
+     * test pins.)
      */
     private Table assertRecomputeForARejectedAttemptDoesNothing(
             @NotNull final BiFunction<QueryTable, DynamicWhereFilter, Table> operation) throws Exception {
@@ -1556,9 +1558,10 @@ public class TestDynamicWhereFilter {
      * Run {@code operation} with its attempt parked between subscribing to its set and subscribing its result to the
      * source, tick the source so that second subscription is refused, and fail the set while it is parked.
      * <p>
-     * The failure reaches the rejected attempt's result through its listener. That listener runs after the attempt has
-     * been released, and must leave the released result alone: nobody was handed that table, so failing it would only
-     * report the set's error against it. The retry finds the set failed, and the operation throws.
+     * The failure reaches the rejected attempt's result through its listener. This test holds that listener until the
+     * attempt has been released, and it must then leave the released result alone: nobody was handed that table, so
+     * failing it would only report the set's error against it. The retry finds the set failed, and the operation
+     * throws.
      */
     private void assertSetFailureForARejectedAttemptFailsNothing(
             @NotNull final BiFunction<QueryTable, DynamicWhereFilter, Table> operation) throws Exception {

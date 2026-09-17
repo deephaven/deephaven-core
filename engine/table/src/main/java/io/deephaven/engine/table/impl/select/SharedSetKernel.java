@@ -256,15 +256,15 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationQueu
      * {@link #failIfChangedSince(long)} as they go, so that a read overtaken by a mutation is abandoned early.
      * <p>
      * Reading without synchronization is safe because a concurrent read of the fastutil open hash set behind every
-     * kernel can return a wrong answer or throw, but cannot hang. A wrong answer is rejected by
-     * {@link #stateChangedOnStep} or the snapshot clock and the attempt is retried, and the snapshot machinery retries
-     * on an exception, so neither reaches a caller. Termination follows from the set's shape: {@code contains} reads
-     * the {@code key} array once and {@code mask} on each probe, and {@code rehash} assigns {@code key} last, so a
-     * reader can see a torn pair, but every such pair either indexes out of bounds (an exception) or probes a region
-     * that still holds a free slot, because a doubled table is at most three quarters full and a table is only ever
-     * halved when under a fifth full; in-place mutation never fills the table; and the iterator's position only
-     * decreases. This depends on every kernel being fastutil-backed, including the object kernel, which is why that one
-     * uses {@code ObjectOpenHashSet} rather than {@code HashSet}.
+     * kernel can return a wrong answer or throw, but cannot hang. A wrong answer is rejected by the snapshot control,
+     * which compares {@link #lastStateChangeStep()} against its step, or by the snapshot clock, and the attempt is
+     * retried; the snapshot machinery retries on an exception, so neither reaches a caller. Termination follows from
+     * the set's shape: {@code contains} reads the {@code key} array once and {@code mask} on each probe, and
+     * {@code rehash} assigns {@code key} last, so a reader can see a torn pair, but every such pair either indexes out
+     * of bounds (an exception) or probes a region that still holds a free slot, because a doubled table is at most
+     * three quarters full and a table is only ever halved when under a fifth full; in-place mutation never fills the
+     * table; and the iterator's position only decreases. This depends on every kernel being fastutil-backed, including
+     * the object kernel, which is why that one uses {@code ObjectOpenHashSet} rather than {@code HashSet}.
      */
     SetInclusionKernel kernel() {
         return kernel;

@@ -54,6 +54,23 @@ abstract class GuardedMergedListener extends MergedListener {
     }
 
     /**
+     * Leave a result that has already failed alone. A filter error fails the result from outside this listener's
+     * notification, without marking the listener failed, so a later upstream failure still reaches here; the result
+     * asserts that it fails exactly once. The listener is marked failed by the caller all the same, so no further
+     * request for this result is enqueued.
+     */
+    @Override
+    protected void propagateErrorDownstream(
+            final boolean fromProcess,
+            @NotNull final Throwable error,
+            @Nullable final TableListener.Entry entry) {
+        if (result.isFailed()) {
+            return;
+        }
+        super.propagateErrorDownstream(fromProcess, error, entry);
+    }
+
+    /**
      * Process this step's work, with the result retained for the duration.
      */
     protected abstract void processRetained();
