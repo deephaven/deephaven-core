@@ -2058,14 +2058,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         final EditPlan plan = EDIT_PLAN.get();
         plan.reset();
 
-        // The coalesced group under construction: the old entries [g0, g1) it replaces, the range [gFirst, gLast] it
-        // becomes, and the keys the old ranges it absorbed held.
+        // The coalesced group under construction: the old entries [groupStart, groupEnd) it replaces, the range
+        // [groupFirst, groupLast] it becomes, and the keys the old ranges it absorbed held.
         boolean pending = false;
-        int g0 = 0;
-        int g1 = 0;
-        long gFirst = 0;
-        long gLast = 0;
-        long gOldCardinality = 0;
+        int groupStart = 0;
+        int groupEnd = 0;
+        long groupFirst = 0;
+        long groupLast = 0;
+        long groupOldCardinality = 0;
         // Every range of other lies beyond the entries the previous group replaced.
         int cursor = 0;
 
@@ -2080,56 +2080,56 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
             }
 
-            if (pending && (gLast == Long.MAX_VALUE || s <= gLast + 1)) {
+            if (pending && (groupLast == Long.MAX_VALUE || s <= groupLast + 1)) {
                 // [s, e] touches the group's range, so it joins the group, along with any ranges of ours it reaches.
-                if (e > gLast) {
-                    g1 = absorbTouching(plan, g1, e);
-                    gOldCardinality += plan.absorbedCardinality;
-                    gLast = plan.absorbedLastEnd;
+                if (e > groupLast) {
+                    groupEnd = absorbTouching(plan, groupEnd, e);
+                    groupOldCardinality += plan.absorbedCardinality;
+                    groupLast = plan.absorbedLastEnd;
                 }
                 continue;
             }
             if (pending) {
-                recordInsertGroup(plan, g0, g1, gFirst, gLast, gOldCardinality);
-                cursor = g1;
+                recordInsertGroup(plan, groupStart, groupEnd, groupFirst, groupLast, groupOldCardinality);
+                cursor = groupEnd;
             }
 
             // Start a group for [s, e] at the first of our entries whose key is at least s - 1: the end of a range
             // reaching s - 1 or beyond, or the start of a range or single at s - 1 or beyond.
             final int p = cursor >= count ? count : absRawBinarySearch(pack(s == 0 ? 0 : s - 1), cursor, count - 1);
             if (p == count) {
-                g0 = count;
-                g1 = count;
-                gFirst = s;
-                gLast = e;
-                gOldCardinality = 0;
+                groupStart = count;
+                groupEnd = count;
+                groupFirst = s;
+                groupLast = e;
+                groupOldCardinality = 0;
             } else {
                 final long data = unpackedGet(p);
                 if (data < 0) {
                     // The range ending here started before s - 1 and reaches at least s - 1: it touches [s, e].
                     final long rangeStart = unpackedGet(p - 1);
-                    g0 = p - 1;
-                    g1 = p + 1;
-                    gFirst = Math.min(rangeStart, s);
-                    gLast = Math.max(-data, e);
-                    gOldCardinality = -data - rangeStart + 1;
+                    groupStart = p - 1;
+                    groupEnd = p + 1;
+                    groupFirst = Math.min(rangeStart, s);
+                    groupLast = Math.max(-data, e);
+                    groupOldCardinality = -data - rangeStart + 1;
                 } else {
                     // Entry p starts a range or single at s - 1 or beyond; the walk below absorbs it when it lies
                     // within e + 1, and otherwise [s, e] goes in before it.
-                    g0 = p;
-                    g1 = p;
-                    gFirst = Math.min(data, s);
-                    gLast = e;
-                    gOldCardinality = 0;
+                    groupStart = p;
+                    groupEnd = p;
+                    groupFirst = Math.min(data, s);
+                    groupLast = e;
+                    groupOldCardinality = 0;
                 }
-                g1 = absorbTouching(plan, g1, e);
-                gOldCardinality += plan.absorbedCardinality;
-                gLast = Math.max(gLast, plan.absorbedLastEnd);
+                groupEnd = absorbTouching(plan, groupEnd, e);
+                groupOldCardinality += plan.absorbedCardinality;
+                groupLast = Math.max(groupLast, plan.absorbedLastEnd);
             }
             pending = true;
         }
         if (pending) {
-            recordInsertGroup(plan, g0, g1, gFirst, gLast, gOldCardinality);
+            recordInsertGroup(plan, groupStart, groupEnd, groupFirst, groupLast, groupOldCardinality);
         }
 
         if (plan.size == 0) {
@@ -2177,15 +2177,16 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      * fell inside one of ours changes nothing, whereas two singles bridged by a key keep their entry count but become
      * one range.
      */
-    private void recordInsertGroup(final EditPlan plan, final int g0, final int g1, final long gFirst,
-            final long gLast, final long gOldCardinality) {
-        final int newLength = gFirst == gLast ? 1 : 2;
-        if (newLength == g1 - g0 && gFirst == unpackedGet(g0) && (newLength == 1 || unpackedGet(g1 - 1) == -gLast)) {
+    private void recordInsertGroup(final EditPlan plan, final int groupStart, final int groupEnd, final long groupFirst,
+            final long groupLast, final long groupOldCardinality) {
+        final int newLength = groupFirst == groupLast ? 1 : 2;
+        if (newLength == groupEnd - groupStart && groupFirst == unpackedGet(groupStart)
+                && (newLength == 1 || unpackedGet(groupEnd - 1) == -groupLast)) {
             return;
         }
-        plan.addEdit(g0);
-        plan.addPiece(gFirst, gLast);
-        plan.finishEdit(g1, gOldCardinality);
+        plan.addEdit(groupStart);
+        plan.addPiece(groupFirst, groupLast);
+        plan.finishEdit(groupEnd, groupOldCardinality);
     }
 
     /**
@@ -2204,14 +2205,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         final EditPlan plan = EDIT_PLAN.get();
         plan.reset();
 
-        // The edit under construction: the old entries [g0, g1) it replaces, the keys the ranges those entries held,
-        // and the end key of the last of those ranges, whose remainder past the removed keys is the edit's last piece
-        // and may be carved again by the next removed range.
+        // The edit under construction: the old entries [groupStart, groupEnd) it replaces, the keys the ranges those
+        // entries held, and the end key of the last of those ranges, whose remainder past the removed keys is the
+        // edit's last piece and may be carved again by the next removed range.
         boolean pending = false;
-        int g0 = 0;
-        int g1 = 0;
-        long gOldCardinality = 0;
-        long gLastOldEnd = 0;
+        int groupStart = 0;
+        int groupEnd = 0;
+        long groupOldCardinality = 0;
+        long groupLastOldEnd = 0;
         int cursor = 0;
 
         for (int ri = 0; ri < removed.count;) {
@@ -2225,25 +2226,26 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
             }
 
-            if (pending && s <= gLastOldEnd) {
-                // [s, e] cuts the remainder [pieceFirst, gLastOldEnd] the previous removal left of our last range. The
+            if (pending && s <= groupLastOldEnd) {
+                // [s, e] cuts the remainder [pieceFirst, groupLastOldEnd] the previous removal left of our last range.
+                // The
                 // removed set's ranges are neither overlapping nor adjacent, so s lies at least one key past the
                 // remainder's first key and a left part of the remainder always survives.
                 final int piece = plan.pieces - 1;
                 Assert.geq(s - 1, "s - 1", plan.first[piece], "plan.first[piece]");
                 plan.last[piece] = s - 1;
-                if (e < gLastOldEnd) {
-                    plan.addPiece(e + 1, gLastOldEnd);
+                if (e < groupLastOldEnd) {
+                    plan.addPiece(e + 1, groupLastOldEnd);
                 } else {
-                    g1 = absorbCut(plan, g1, e);
-                    gOldCardinality += plan.absorbedCardinality;
-                    gLastOldEnd = plan.absorbedLastEnd;
+                    groupEnd = absorbCut(plan, groupEnd, e);
+                    groupOldCardinality += plan.absorbedCardinality;
+                    groupLastOldEnd = plan.absorbedLastEnd;
                 }
                 continue;
             }
             if (pending) {
-                plan.finishEdit(g1, gOldCardinality);
-                cursor = g1;
+                plan.finishEdit(groupEnd, groupOldCardinality);
+                cursor = groupEnd;
                 pending = false;
             }
 
@@ -2261,34 +2263,34 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 // s falls inside the range ending here, which started before s, so a left remainder always survives.
                 final long rangeStart = unpackedGet(p - 1);
                 final long rangeEnd = -data;
-                g0 = p - 1;
-                g1 = p + 1;
-                plan.addEdit(g0);
+                groupStart = p - 1;
+                groupEnd = p + 1;
+                plan.addEdit(groupStart);
                 plan.addPiece(rangeStart, s - 1);
-                gOldCardinality = rangeEnd - rangeStart + 1;
-                gLastOldEnd = rangeEnd;
+                groupOldCardinality = rangeEnd - rangeStart + 1;
+                groupLastOldEnd = rangeEnd;
                 if (e < rangeEnd) {
                     plan.addPiece(e + 1, rangeEnd);
                 } else {
-                    g1 = absorbCut(plan, g1, e);
-                    gOldCardinality += plan.absorbedCardinality;
-                    gLastOldEnd = plan.absorbedLastEnd;
+                    groupEnd = absorbCut(plan, groupEnd, e);
+                    groupOldCardinality += plan.absorbedCardinality;
+                    groupLastOldEnd = plan.absorbedLastEnd;
                 }
             } else if (data > e) {
                 // [s, e] holds none of our keys.
                 cursor = p;
                 continue;
             } else {
-                g0 = p;
-                plan.addEdit(g0);
-                g1 = absorbCut(plan, p, e);
-                gOldCardinality = plan.absorbedCardinality;
-                gLastOldEnd = plan.absorbedLastEnd;
+                groupStart = p;
+                plan.addEdit(groupStart);
+                groupEnd = absorbCut(plan, p, e);
+                groupOldCardinality = plan.absorbedCardinality;
+                groupLastOldEnd = plan.absorbedLastEnd;
             }
             pending = true;
         }
         if (pending) {
-            plan.finishEdit(g1, gOldCardinality);
+            plan.finishEdit(groupEnd, groupOldCardinality);
         }
 
         if (plan.size == 0) {
