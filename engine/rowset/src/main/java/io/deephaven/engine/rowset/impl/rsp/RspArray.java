@@ -3052,6 +3052,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      * simply walking this array's ranges. This holds a view of its own, as {@link RspRangeIterator} does, and
      * re-initializes it only on moving to a different span; it also carries the span index, so an ascending caller
      * searches from where the last probe stopped.
+     * <p>
+     * A probe reads the array directly and takes no reference on it, as {@link #overlaps(RspArray, RspArray)} does not
+     * either: it belongs to one operation and is closed before that operation returns, so the array cannot be mutated
+     * while one is open. Cursors that do outlive their caller, such as {@link SpanCursorForwardImpl}, acquire instead,
+     * which marks the array shared and makes the next mutation of it copy.
      */
     public static final class OverlapProbe implements SafeCloseable {
         private final RspArray<?> arr;

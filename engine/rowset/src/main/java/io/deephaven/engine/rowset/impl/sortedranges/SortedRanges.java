@@ -1304,11 +1304,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     /**
      * Whether any of our ranges overlaps any range of {@code other}.
      * <p>
-     * We are walked range by range and each range is probed against {@code other} by
-     * {@link RspBitmap#overlapsRange(int, long, long)}, which binary searches spans from a carried position; the span
-     * index it reports on a miss is turned back into a key to skip ahead on our side.
+     * We are walked range by range and each range is probed against {@code other} through a single
+     * {@link RspArray.OverlapProbe}, which carries its span cursor and its span view across the whole call; the block
+     * key it reports on a miss is where we skip ahead to on our side.
      * <p>
-     * Which side gets walked matters, because a probe costs a span search and a span view where a step of
+     * Which side gets walked matters, because a probe costs a span search and possibly a span view where a step of
      * {@link #overlaps(RowSet.RangeIterator) the walk over other} amortizes both over the ranges it reads out of one
      * container. Span count is the cheap proxy for how much a probe can miss, so we walk ourselves while {@code other}
      * has at least {@code count / 2} spans, that being the fewest ranges our own array can hold, and walk {@code other}
