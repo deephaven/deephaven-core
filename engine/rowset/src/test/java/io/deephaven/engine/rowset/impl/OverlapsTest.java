@@ -16,7 +16,6 @@ import java.util.Random;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * Cross-checks {@link OrderedLongSet#ixOverlaps} against a linear merge of the same ranges, for every pair of
@@ -138,7 +137,12 @@ public class OverlapsTest {
                 assertEquals(m, expected, ia.ixOverlaps(ib));
                 assertEquals("reversed " + m, expected, ib.ixOverlaps(ia));
                 // ixIntersectOnNew is the independent oracle: it builds the intersection rather than short circuiting.
-                assertEquals(m + " vs intersect", expected, !ia.ixIntersectOnNew(ib).ixIsEmpty());
+                final OrderedLongSet intersection = ia.ixIntersectOnNew(ib);
+                try {
+                    assertEquals(m + " vs intersect", expected, !intersection.ixIsEmpty());
+                } finally {
+                    intersection.ixRelease();
+                }
             }
         }
         // The generic iterator path, which the impl dispatch above no longer reaches for these representations.
@@ -241,7 +245,8 @@ public class OverlapsTest {
     /** One side entirely inside a gap of the other, and one side entirely to the left or right of the other. */
     @Test
     public void testDisjointByPosition() {
-        final Shape outer = shape("outer", 0, 999, 100_000, 100_999);
+        // Starts at 1 so that the key below it is genuinely to its left.
+        final Shape outer = shape("outer", 1, 999, 100_000, 100_999);
         check(outer, shape("in the gap", 50_000, 50_999));
         check(outer, shape("left of everything", 0, 0));
         check(outer, shape("to the right", 200_000, 200_999));
@@ -376,13 +381,8 @@ public class OverlapsTest {
         for (final int count : new int[] {1, 2, 128, 1_000, 2_048, 4_096, 8_192}) {
             final Shape a = singletons("stair n=" + count, 0, 4, count);
             final Shape b = singletons("stair offset n=" + count, 2, 4, count);
-            final SortedRanges sra = toSortedRanges(a);
-            if (sra == null) {
-                // Past the packed-array capacity; the RSP representations are still covered by check().
-                check(a, b);
-                continue;
-            }
-            assertNotNull(toRsp(a));
+            // Past the packed-array capacity check() covers the RSP representations alone, which is the point: the
+            // answer must not change at the size where a row set stops fitting in a SortedRanges.
             check(a, b);
         }
     }

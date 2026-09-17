@@ -1075,21 +1075,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return getKey(0);
     }
 
-    /**
-     * The first key of the block that the span at {@code spanIndex} starts on. Every key we hold from that span on is
-     * greater than or equal to it, which lets a caller holding a span index from a resumable probe (eg,
-     * {@link #overlapsRange(int, long, long)}) skip its own keys below that point.
-     *
-     * @param spanIndex A span index, which need not be in range
-     * @return The block key, or -1 if {@code spanIndex} is not the index of a span we hold
-     */
-    public long keyForBlockAtSpanIndex(final int spanIndex) {
-        if (spanIndex < 0 || spanIndex >= size) {
-            return -1;
-        }
-        return getKey(spanIndex);
-    }
-
     public long keyForLastBlock() {
         final Object span = spans[size - 1];
         final long spanInfo = spanInfos[size - 1];
