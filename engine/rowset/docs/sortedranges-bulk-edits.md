@@ -28,7 +28,7 @@ Two consequences shape everything below. First, the number of *ranges* and the n
 change the encoding: inserting `11` into `{10} {12}` leaves two entries but turns two singles into the range `10..12`.
 
 A set may be shared copy-on-write (`RefCountedCow`). Every strategy either writes in place because it holds the only
-reference, or produces a new set and leaves the shared one untouched. Shared sets are read concurrently by update-graph
+reference, or produces a new set and leaves the shared one untouched. Shared sets are read concurrently by `UpdateGraph`
 threads, so no strategy keeps scratch state on the set itself.
 
 ## The decision tree
@@ -81,10 +81,10 @@ A result that comes back empty is normalized to `OrderedLongSet.EMPTY`.
 
 ### The two predicates
 
-**`editIndividually(other)`**: true for one or two ranges at any size, and for a handful of ranges on a tiny set;
-precisely, with `r` the number of ranges in `other` and `n` our entry count, `(r - 2)^2 * n <= 400`, where 400 is the default of
-`SortedRanges.individualEditThreshold`. Ranges are counted
-from their start entries, stopping as soon as the inequality fails, so the count is cheap. This is where the planned
+**`editIndividually(other)`**: true for one or two ranges at any size; beyond that, with `r` the number of ranges in
+`other` and `n` our entry count, true when `(r - 2)^2 * n <= 400`, where 400 is the default of
+`SortedRanges.individualEditThreshold`, which admits a handful of ranges on a tiny set. Ranges are counted from their
+start entries, stopping as soon as the inequality fails, so the count is cheap. This is where the planned
 strategy's fixed cost of a few tens of nanoseconds does not pay: measured, individual edits win for one or two ranges
 everywhere and for up to about six ranges on a 20-entry set.
 
@@ -111,9 +111,11 @@ every append-only workload takes, including the release phase of an incremental 
 ### Individual edits
 
 `insertRangesIndividually` walks the argument's ranges and calls `addRangeInternal` for each;
-`removeRangesIndividually` calls `removeRange`. Each call is the same code a single-key insert or remove runs: a binary
-search and one `System.arraycopy` to open or close a gap, moving about half the entries. That block move is cheap,
-about 0.02-0.05 ns per entry moved, which is why two such moves beat one planned pass with its fixed setup.
+`removeRangesIndividually` calls `removeRange`, the same range-level code a single `insertRange` or `removeRange` runs.
+In the case the benchmarks measure, a private set and a range that lands between two entries, each call is a binary
+search and one `System.arraycopy` to open or close a gap, moving about half the entries. That block move is cheap, about
+0.02-0.05 ns per entry moved, which is why two such moves beat one planned pass with its fixed setup. A contained
+range, a coalescing one, a growing array or a shared set each do different work in those calls.
 
 Copy-on-write: `removeRange` handles a shared receiver itself. `addRangeInternal(..., writeCheck)` does too, but
 returns the receiver *unchanged and still shared* when the range is already contained, so the loop keeps `writeCheck`
@@ -237,7 +239,7 @@ per-key insertion by 84% on 2000-key slots to beating it by 13%.
 Each of these produced a wrong answer or a failing test at least once while the strategies were built; the tests
 named cover them.
 
-- **Scratch state on the set.** A shared set is read by several update-graph threads at once. Returning two values
+- **Scratch state on the set.** A shared set is read by several `UpdateGraph` threads at once. Returning two values
   from a helper through instance fields raced and produced `Index -1` failures in the join tests while every rowset
   unit test passed. Scratch lives on the thread-local plan.
 - **Copy-on-write through a no-op.** See individual edits above; `containedFirstRangeKeepsSharedCopyIsolated`.
@@ -255,3 +257,6 @@ named cover them.
 - **Small arguments are not the only arguments.** The first cut of the planned strategy had no upper bound and was
   up to 2.3x slower than the merge for arguments near the set's own size; `planEdits` is the result. Any change to
   these strategies should be measured across the whole `k` axis of both benchmarks, not only the small end.
+- **The argument may be the receiver.** `rowSet.remove(rowSet)` hands the individual remove loop the set it is
+  reading its ranges from; the merge handled it, the loop would cut and re-read. `remove` returns the empty set for
+  its own receiver before choosing a strategy. Inserting a set into itself is a no-op on every path.

@@ -189,6 +189,42 @@ public class SortedRangesBulkInsertTest {
     }
 
     /**
+     * Removing a set from itself must empty it, and inserting a set into itself must change nothing, on every strategy
+     * and whether or not the set is shared.
+     */
+    @Test
+    public void editingASetWithItself() {
+        for (final int keys : new int[] {2, 40, 3_000}) {
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+            for (long key = 0; key < keys * 4L; key += 4) {
+                builder.appendKey(key);
+            }
+            try (final WritableRowSet set = builder.build()) {
+                try (final WritableRowSet inserted = snapshot(set)) {
+                    inserted.insert(inserted);
+                    assertTrue("keys=" + keys, set.equals(inserted));
+                }
+                try (final WritableRowSet shared = set.copy();
+                        final WritableRowSet snapshotBefore = snapshot(set)) {
+                    shared.insert(shared);
+                    assertTrue("keys=" + keys, snapshotBefore.equals(shared));
+                    assertTrue("keys=" + keys, snapshotBefore.equals(set));
+                }
+                try (final WritableRowSet removed = snapshot(set)) {
+                    removed.remove(removed);
+                    assertTrue("keys=" + keys, removed.isEmpty());
+                }
+                try (final WritableRowSet shared = set.copy();
+                        final WritableRowSet snapshotBefore = snapshot(set)) {
+                    shared.remove(shared);
+                    assertTrue("keys=" + keys, shared.isEmpty());
+                    assertTrue("keys=" + keys, snapshotBefore.equals(set));
+                }
+            }
+        }
+    }
+
+    /**
      * An independent copy of {@code rowSet}, sharing no state with it. Inserting into an empty row set would instead
      * take a shared reference to the argument's inner set.
      */
