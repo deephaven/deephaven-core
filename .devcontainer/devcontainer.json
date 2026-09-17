@@ -132,16 +132,15 @@
         // the CLI rather than a widening.
         "claudeCode.allowDangerouslySkipPermissions": true,
 
-        // Copilot Chat (GitHub.copilot-chat) ships built-in with the VS Code server and
-        // cannot be removed from here, so the chat.* settings below are live whether or not
-        // it is listed in "extensions".
-        "chat.agent.maxRequests": 50,
-        "chat.tools.terminal.autoApprove": { "/.*/": true },
-        // VS Code's built-in rules take precedence over the autoApprove /.*/ rule. They
-        // downgrade a command to a confirmation prompt rather than blocking it, so nothing
-        // becomes unreachable — approve it in chat, or loosen the rules further in
-        // "Preferences: Open Remote Settings (JSON)".
-        "chat.tools.terminal.ignoreDefaultAutoApproveRules": false,
+        // Copilot Chat ships built-in with the VS Code server and cannot be removed from here,
+        // so these chat.* settings are live whether or not it is listed in "extensions".
+        //
+        // Runs Copilot without per-command approval prompts; the container is the boundary
+        // instead. See README.md for more details on permissions.
+        "chat.tools.global.autoApprove": true,
+
+        // The default, 50, halts the agent partway through a Gradle task.
+        "chat.agent.maxRequests": 500,
         "editor.formatOnSave": true,
         // Auto-discovery only scans the workspace root, and the venv lives outside it — so
         // point Pylance and the test explorer at it explicitly.
