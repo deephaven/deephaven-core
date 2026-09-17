@@ -82,9 +82,12 @@ The Feature adds **no capabilities** beyond Docker's default set — in particul
   complete and unmodified, with **one rule added**: an unconditional allow for
   `unshare setns clone clone3 mount umount2 pivot_root mount_setattr open_tree open_tree_attr
 move_mount fsopen fsconfig fsmount fspick sethostname setdomainname keyctl`.
-  The kernel still enforces its own rules on these: without `CAP_SYS_ADMIN` they only work inside
-  a user namespace the process created itself, which is how rootless podman works on any ordinary
-  Linux desktop. Everything else Docker's default blocks stays blocked.
+  The kernel's own checks still apply. For the mount and namespace calls that means
+  `CAP_SYS_ADMIN`, which an unprivileged process holds only inside a user namespace it created
+  itself — how rootless podman works on any ordinary Linux desktop. Two are broader:
+  `clone`/`clone3` lose the argument filter that rejects `CLONE_NEW*`, which is what lets podman
+  create that namespace, and `keyctl` becomes callable at all — Docker blocks it because the
+  kernel keyring is not namespaced. Everything else Docker's default blocks stays blocked.
 - **`systempaths=unconfined`** (declared by the Feature, not here): without it the nested
   container runtime cannot mount its own `/proc`. Without `CAP_SYS_ADMIN` this mostly exposes
   read-only kernel information; the kernel's permission checks on `/proc/sys` still apply.

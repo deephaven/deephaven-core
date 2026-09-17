@@ -53,12 +53,24 @@ if ! flock -w 1800 9 2> /dev/null; then
   exit 0
 fi
 
+# --- the venv post-create.sh should have created -----------------------------------------
+#
+# post-create.sh exits 0 even when `python3 -m venv` fails, so $VIRTUAL_ENV may not exist. Its
+# bin/ is first on PATH, so a bare `pip` would resolve to the image's global python instead —
+# which carries no PEP 668 marker, so the install below would succeed in the wrong place and
+# the success message would name a venv that is not there.
+PIP="${VIRTUAL_ENV:-}/bin/pip"
+if [ ! -x "$PIP" ]; then
+  say "no venv at ${VIRTUAL_ENV:-<unset>} — rerun .devcontainer/post-create.sh (see $LOG)"
+  exit 0
+fi
+
 # --- already installed? -----------------------------------------------------------------
 #
 # Install-once: a start hook cannot cheaply tell whether py/server changed. That also blocks a
 # deliberate rerun after editing py/server, which is what the AGENTS.md build-and-install
 # command is for.
-if pip show deephaven-core > /dev/null 2>&1; then
+if "$PIP" show deephaven-core > /dev/null 2>&1; then
   log "deephaven-core already installed — nothing to do"
   log "hint: edited py/server? this installs once — see build-and-install in AGENTS.md."
   exit 0
@@ -103,8 +115,8 @@ fi
 log "installing $WHEEL"
 
 t1=$SECONDS
-if pip install "./${WHEEL}[autocomplete]" >> "$LOG" 2>&1; then
-  say "installed $(pip show deephaven-core 2> /dev/null | awk '/^Version:/{print $2}') into $VIRTUAL_ENV ($((SECONDS - t1))s)"
+if "$PIP" install "./${WHEEL}[autocomplete]" >> "$LOG" 2>&1; then
+  say "installed $("$PIP" show deephaven-core 2> /dev/null | awk '/^Version:/{print $2}') into $VIRTUAL_ENV ($((SECONDS - t1))s)"
 else
   say "pip install FAILED after $((SECONDS - t1))s — see $LOG"
 fi
