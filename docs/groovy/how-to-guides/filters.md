@@ -89,7 +89,7 @@ Range filters evaluate to true if the column value is within a specified range. 
 source = emptyTable(10).update("X = ii")
 resultGreaterThan = source.where("X > 5")
 resultLessThan = source.where("X < 5")
-resultRange = source.where("X >= 2 && X < 6")
+resultRange = source.where("X >= 2 && X <= 6")
 resultInRange = source.where("inRange(X, 2, 6)")
 ```
 

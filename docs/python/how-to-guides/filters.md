@@ -104,7 +104,7 @@ from deephaven import empty_table
 source = empty_table(10).update("X = ii")
 result_greaterthan = source.where("X > 5")
 result_lessthan = source.where("X < 5")
-result_range = source.where("X >= 2 && X < 6")
+result_range = source.where("X >= 2 && X <= 6")
 result_inrange = source.where("inRange(X, 2, 6)")
 ```
 
@@ -129,8 +129,8 @@ You can also filter for data that is not in a range by using the `!` operator or
 from deephaven import empty_table
 
 source = empty_table(10).update("X = ii")
-result_not_in_range_disjunctive = source.where("X < 2 || X >= 6")
-result_not_in_range_where_one_of = source.where_one_of(["X < 2", "X >= 6"])
+result_not_in_range_disjunctive = source.where("X < 2 || X > 6")
+result_not_in_range_where_one_of = source.where_one_of(["X < 2", "X > 6"])
 result_not_in_range = source.where("!inRange(X, 2, 6)")
 ```
 
