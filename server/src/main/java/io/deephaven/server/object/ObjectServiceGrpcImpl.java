@@ -182,16 +182,22 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
                     if (dispatcher.isClosed()) {
                         return;
                     }
-                    // Run the specified work. Note that we're not concerned about exceptions, the stream will
-                    // be dead (via onError) and won't be used again.
+                    boolean succeeded = false;
                     try {
                         wrapped.run();
+                        succeeded = true;
                     } catch (ObjectCommunicationException e) {
                         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                 "Error performing MessageStream operation");
+                    } finally {
+                        if (succeeded) {
+                            dispatcher.operationComplete();
+                        } else {
+                            // The stream is failing and will be torn down via onError; keep the dispatcher terminal
+                            // rather than starting the operations queued behind this one.
+                            dispatcher.close();
+                        }
                     }
-
-                    dispatcher.operationComplete();
                 });
             }
         }
