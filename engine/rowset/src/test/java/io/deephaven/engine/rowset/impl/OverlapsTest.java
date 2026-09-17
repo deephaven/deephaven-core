@@ -308,6 +308,39 @@ public class OverlapsTest {
         }
     }
 
+    /**
+     * Both sides with keys in the same blocks but never the same key, so the block search hits every time and the
+     * answer is decided on low bits. Neither side ever has a gap to seek over.
+     */
+    @Test
+    public void testSameBlocksDifferentLowBits() {
+        for (final int blocks : new int[] {1, 2, 64, 700}) {
+            for (final int perBlock : new int[] {1, 3, 40}) {
+                final long[] a = new long[2 * blocks * perBlock];
+                final long[] b = new long[2 * blocks * perBlock];
+                for (int k = 0; k < blocks; ++k) {
+                    for (int j = 0; j < perBlock; ++j) {
+                        final int r = perBlock * k + j;
+                        // Two apart so the sides never coincide, and shifted by the block so the low bits move.
+                        final long low = 4L * j + 2L * (k % 100);
+                        a[2 * r] = a[2 * r + 1] = k * (long) BLOCK_SIZE + low;
+                        b[2 * r] = b[2 * r + 1] = k * (long) BLOCK_SIZE + low + 1;
+                    }
+                }
+                final Shape sa = shape("same blocks a " + blocks + "x" + perBlock, a);
+                check(sa, shape("same blocks b " + blocks + "x" + perBlock, b));
+                // Now let them touch on the very last key, which is the far end of the walk.
+                final long[] hit = b.clone();
+                hit[hit.length - 1] = hit[hit.length - 2] = a[a.length - 2];
+                check(sa, shape("same blocks b touching " + blocks + "x" + perBlock, hit));
+                // And on the first key, which is the near end.
+                final long[] hitFirst = b.clone();
+                hitFirst[0] = hitFirst[1] = a[0];
+                check(sa, shape("same blocks b touching first " + blocks + "x" + perBlock, hitFirst));
+            }
+        }
+    }
+
     @Test
     public void testRandomShapes() {
         final Random rand = new Random(0xD0FA11L);

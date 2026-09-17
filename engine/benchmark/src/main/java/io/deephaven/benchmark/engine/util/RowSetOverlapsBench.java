@@ -52,6 +52,9 @@ public class RowSetOverlapsBench {
     /** Keys per block on the sparse side of {@link Pattern#DENSE_VS_SPARSE}. */
     private static final int KEYS_PER_SPARSE_BLOCK = 8;
 
+    /** Keys each side puts in each shared block in {@link Pattern#SAME_BLOCK_CONTAINERS}. */
+    private static final int KEYS_PER_SHARED_BLOCK = 8;
+
     /** Clusters, and the keys each one has to itself, for {@link Pattern#CLUSTERED}. */
     private static final int CLUSTERS = 8;
     private static final long CLUSTER_SPAN = 64L * BLOCK_SIZE;
@@ -87,6 +90,17 @@ public class RowSetOverlapsBench {
          * per key too.
          */
         CLUSTERED_BLOCKS,
+        /**
+         * A key in every block on both sides, one apart inside the block, with the last key shared. The block search
+         * hits every time and the answer comes down to the low bits, so neither side ever has a gap to seek over. This
+         * is the case a seek cannot help and must not hurt.
+         */
+        SAME_BLOCK_KEYS,
+        /**
+         * {@link #SAME_BLOCK_KEYS} with several keys in each shared block instead of one, so the spans are containers
+         * rather than singletons and the low-bit comparison is a container overlap rather than a value equality.
+         */
+        SAME_BLOCK_CONTAINERS,
         /** Interleaved keys a block apart, with the last key of each side shared. */
         TOUCH_AT_END,
         /** Interleaved keys a block apart, with the middle key of each side shared. */
@@ -157,6 +171,37 @@ public class RowSetOverlapsBench {
                         side[2 * r] = side[2 * r + 1] = c * clusterSpan + j * keyStride;
                     }
                 }
+                break;
+            }
+            case SAME_BLOCK_CONTAINERS: {
+                // Both sides fill the same blocks with KEYS_PER_SHARED_BLOCK keys apiece, offset inside the block so
+                // they interleave without meeting, and the last key shared.
+                final int blocks = Math.max(1, size / KEYS_PER_SHARED_BLOCK);
+                final int keys = blocks * KEYS_PER_SHARED_BLOCK;
+                a = new long[2 * keys];
+                b = new long[2 * keys];
+                for (int k = 0; k < blocks; ++k) {
+                    for (int j = 0; j < KEYS_PER_SHARED_BLOCK; ++j) {
+                        final int r = KEYS_PER_SHARED_BLOCK * k + j;
+                        final long low = 4L * j;
+                        a[2 * r] = a[2 * r + 1] = k * (long) BLOCK_SIZE + low;
+                        b[2 * r] = b[2 * r + 1] = k * (long) BLOCK_SIZE + low + 2;
+                    }
+                }
+                b[2 * (keys - 1)] = b[2 * keys - 1] = a[2 * (keys - 1)];
+                break;
+            }
+            case SAME_BLOCK_KEYS: {
+                // Both sides put one key in block i, a pair of low-bit positions apart so they never coincide, and the
+                // low bits move with the block so the comparison is not always against the same value.
+                a = new long[2 * size];
+                b = new long[2 * size];
+                for (int i = 0; i < size; ++i) {
+                    final long low = 2L * (i % (BLOCK_SIZE / 4));
+                    a[2 * i] = a[2 * i + 1] = i * (long) BLOCK_SIZE + low;
+                    b[2 * i] = b[2 * i + 1] = i * (long) BLOCK_SIZE + low + 1;
+                }
+                b[2 * (size - 1)] = b[2 * size - 1] = a[2 * (size - 1)];
                 break;
             }
             case SEPARATED:
