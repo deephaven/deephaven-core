@@ -474,15 +474,6 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
     }
 
     /**
-     * When a set table fails on the same cycle the source ticks, the {@code wouldMatch} result fails exactly once, on
-     * that cycle, with the set's error. The source update must not be applied to a result whose set is gone, and it
-     * must not produce a second notification of any kind.
-     * <p>
-     * This is the {@code where} scenario of {@code QueryTableWhereTest} again, because {@code wouldMatch} answers a
-     * filter's recompute and failure requests through its own listener implementation, a match column and its own
-     * merged listener, rather than through a {@code FilteredTable} and a {@code WhereListener}.
-     */
-    /**
      * A {@code wouldMatch} over a static source with a refreshing set is driven by the static listener, which has no
      * recorder and hears only from its filters. When the set fails, that listener must fail the result exactly once,
      * with the set's error.
@@ -552,6 +543,15 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         }
     }
 
+    /**
+     * When a set table fails on the same cycle the source ticks, the {@code wouldMatch} result fails exactly once, on
+     * that cycle, with the set's error. The source update must not be applied to a result whose set is gone, and it
+     * must not produce a second notification of any kind.
+     * <p>
+     * This is the {@code where} scenario of {@code QueryTableWhereTest} again, because {@code wouldMatch} answers a
+     * filter's recompute and failure requests through its own listener implementation, a match column and its own
+     * merged listener, rather than through a {@code FilteredTable} and a {@code WhereListener}.
+     */
     public void testMatchSetFailureWhileSourceTicksFailsResultOnce() {
         final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
         final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
