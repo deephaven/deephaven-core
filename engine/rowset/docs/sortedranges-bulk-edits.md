@@ -22,7 +22,8 @@ valid state, it is `10..12`. The array is packed as shorts or ints relative to a
 capacity. The merge-based paths choose the result's packing afresh, by span, density and capacity, as described under
 the merge below. The append path keeps our packing, repacking only into a narrower one when our capacity runs out, and
 converts straight to an `RspBitmap` when the result lies outside a short or int packing's span from our offset or no
-packing has room for it. A result no packing can hold, or one the merge judges dense, becomes an `RspBitmap`.
+packing has room for it. In the merge, a result becomes an `RspBitmap` when the packing its span selects cannot hold
+it, or when the merge judges it dense; it does not try a wider packing for room.
 
 Two consequences shape everything below. First, the number of *ranges* and the number of *entries* differ by up to
 2x, and the code is explicit about which one it is counting. Second, an edit that changes no entry count can still
@@ -130,8 +131,9 @@ re-inserting or re-removing them is idempotent.
 
 ### Planned edits
 
-Two passes. The first plans every edit without moving anything; the second moves each untouched stretch of entries
-exactly once. All scratch state lives in a thread-local `EditPlan`.
+Two passes. The first plans every edit without moving anything; the second moves each untouched stretch of entries at
+most once, and not at all when the edits before it net to no shift. All scratch state lives in a thread-local
+`EditPlan`.
 
 **Plan pass, insert (`insertPlanned`).** For each range `[s, e]` of the argument, in order:
 
@@ -199,8 +201,9 @@ at 2000 into 6000 2.3x slower.
 
 The merge is also the fallback for the individual and planned strategies' capacity failures, because it can change the
 packing: a dense `SortedRangesLong` caps at 256 entries by default (`SortedRanges.longDenseMaxCapacity`) where the same
-content repacked as shorts holds thousands (`SortedRanges.shortMaxCapacity`, 4090 by default). The result becomes an
-`RspBitmap` only when the merge's packing rules above say so: dense, or beyond the chosen packing's capacity.
+content, when its span fits a short, repacked as shorts holds thousands (`SortedRanges.shortMaxCapacity`, 4090 by
+default); with a wider span the density branch produces a bitmap instead. The result becomes an `RspBitmap` only when
+the merge's packing rules above say so: dense, or beyond the span-selected packing's capacity.
 
 ### Convert to RspBitmap
 
