@@ -17,7 +17,7 @@ jobs:
     steps:
       # Unfortunately, the official actions/download-artifact action is very limited in scope.
       # Can't use it yet in this context, https://github.com/actions/download-artifact/issues/60
-      - name: Download artifact
+      - name: Download artifacts
         id: download
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -26,30 +26,43 @@ jobs:
                owner: context.repo.owner,
                repo: context.repo.repo,
                run_id: ${{ github.event.workflow_run.id }},
+               per_page: 100,
             });
-            var matchArtifact = artifacts.data.artifacts.filter((artifact) => {
-              return artifact.name == "check-ci-results"
-            })[0];
-            if (!matchArtifact) {
-              // The "checks" job in Check CI is skipped for docs-only changes (and similar
-              // path-filtered cases), so it never uploads this artifact. That's expected, not
-              // an error, so just skip publishing instead of crashing on `matchArtifact.id`.
-              console.log('No check-ci-results artifact found for this run; the checks job was likely skipped. Nothing to publish.');
+            // One "check-ci-<gradle task>-results" artifact per suite that ran: "checks" always,
+            // and the categorized suites only on engine/ and coverage/ pull requests. The
+            // "-jvm-err" artifacts are deliberately not matched here.
+            var matchArtifacts = artifacts.data.artifacts.filter((artifact) => {
+              return artifact.name.startsWith("check-ci-") && artifact.name.endsWith("-results")
+            });
+            if (matchArtifacts.length == 0) {
+              // The jobs in Check CI are skipped for docs-only changes (and similar
+              // path-filtered cases), so nothing uploads results. That's expected, not an
+              // error, so just skip publishing instead of reporting an empty run.
+              console.log('No check-ci-*-results artifacts found for this run; the check jobs were likely skipped. Nothing to publish.');
               core.setOutput('found', 'false');
               return;
             }
-            var download = await github.rest.actions.downloadArtifact({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               artifact_id: matchArtifact.id,
-               archive_format: 'zip',
-            });
             var fs = require('fs');
-            fs.writeFileSync('${{github.workspace}}/check-ci-results.zip', Buffer.from(download.data));
+            fs.mkdirSync('${{ github.workspace }}/artifacts', { recursive: true });
+            for (const matchArtifact of matchArtifacts) {
+              console.log(`Downloading ${matchArtifact.name}`);
+              var download = await github.rest.actions.downloadArtifact({
+                 owner: context.repo.owner,
+                 repo: context.repo.repo,
+                 artifact_id: matchArtifact.id,
+                 archive_format: 'zip',
+              });
+              fs.writeFileSync(`${{ github.workspace }}/artifacts/${matchArtifact.name}.zip`, Buffer.from(download.data));
+            }
             core.setOutput('found', 'true');
-      - name: Unzip artifact
+      # Each suite is unzipped into its own directory so that two suites cannot collide on a
+      # path; the report globs through them either way.
+      - name: Unzip artifacts
         if: steps.download.outputs.found == 'true'
-        run: unzip check-ci-results.zip
+        run: |
+          for zip in artifacts/*.zip; do
+            unzip -q -o "$zip" -d "results/$(basename "$zip" .zip)"
+          done
       - name: Publish Test Results
         if: steps.download.outputs.found == 'true'
         uses: scacap/action-surefire-report@c38a2d74b9840ae8950a4387ae02b637421d0f39 # v1.13.0
