@@ -79,7 +79,7 @@ The number of rows to include per partition.
 
 ## Returns
 
-A table containing each partition's most recent values as of initialization. If the source table is refreshing, the result is too, and every row appended to the source afterward is included in the result — the trimming applies only to the table's initial state, not to an ongoing rolling window.
+A table containing each partition's most recent values as of initialization. If the source table is refreshing, the result is too, and every row added to the source afterward is included in the result — the trimming applies only to the table's initial state, not to an ongoing rolling window.
 
 ## How it works
 

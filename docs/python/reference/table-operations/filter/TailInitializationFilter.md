@@ -8,7 +8,7 @@ title: TailInitializationFilter
 
 `most_recent_rows` never reads `ts_col` and does not require sorted timestamps. Since it has no timestamp argument, it detects partitions the same way `most_recent` does, but checks whether any column in the table is regioned rather than the timestamp column specifically. It keeps the trailing rows of each partition by row position.
 
-Once initialized, the filter passes through all new rows appended to the source. Rows that have already been filtered are not removed or modified.
+Once initialized, the filter passes through all new rows added to the source. Rows that have already been filtered are not removed or modified.
 
 ## Syntax
 
@@ -58,7 +58,7 @@ The number of most-recent rows to keep per partition.
 
 ## Returns
 
-A new [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) containing each partition's most recent values as of initialization. If the source table is refreshing, the result is too, and every row appended to the source afterward is included in the result — the trimming applies only to the table's initial state, not to an ongoing rolling window.
+A new [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) containing each partition's most recent values as of initialization. If the source table is refreshing, the result is too, and every row added to the source afterward is included in the result — the trimming applies only to the table's initial state, not to an ongoing rolling window.
 
 ## Errors
 
