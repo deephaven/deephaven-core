@@ -21,9 +21,10 @@ valid state, it is `10..12`. The array is packed as shorts or ints relative to a
 `SortedRangesInt`, via `SortedRangesPacked`) or as raw longs with no offset (`SortedRangesLong`). Each packing has a
 capacity. The merge-based paths choose the result's packing afresh, by span, density and capacity, as described under
 the merge below. The append path keeps our packing, repacking only into a narrower one when our capacity runs out, and
-converts straight to an `RspBitmap` when the result lies outside a short or int packing's span from our offset or no
-packing has room for it. In the merge, a result becomes an `RspBitmap` when the packing its span selects cannot hold
-it, or when the merge judges it dense; it does not try a wider packing for room.
+converts straight to an `RspBitmap` when the result lies outside a short or int packing's span from our offset or when
+neither our packing nor a narrower one can hold it; it never tries a wider packing. In the merge, a result becomes an
+`RspBitmap` when the packing its span selects cannot hold it, or when the merge judges it dense; it does not try a wider
+packing for room.
 
 Two consequences shape everything below. First, the number of *ranges* and the number of *entries* differ by up to
 2x, and the code is explicit about which one it is counting. Second, an edit that changes no entry count can still
@@ -178,7 +179,8 @@ or shrinks its entry count.
     written over it;
   - all edits shrink or hold: `applyPlanForward`, from the first edit, so each stretch moves left into vacated space.
 - Otherwise into a new set of the same type and offset (`applyPlanToNew`), sized by `capacityForLastIndex`; our own
-  array is returned to the array pool if we owned it. Mixed grow-and-shrink edits, a common shape for removals that
+  array is returned to the array pool when arrays are pooled (`SortedRanges.poolArrays`, off by default) and we owned
+  it. Mixed grow-and-shrink edits, a common shape for removals that
   split some ranges and delete others, take this path. If no capacity of our type can hold the result, the strategy
   returns null and the caller falls through to the merge.
 
@@ -207,9 +209,9 @@ the merge's packing rules above say so: dense, or beyond the span-selected packi
 
 ### Convert to RspBitmap
 
-When the merge's packing rules produce a bitmap, or an append's result lies outside our packing's span or finds no
-packing with room, the set becomes an `RspBitmap` and the argument is applied there. This is the terminal case of every
-branch; it is not a performance strategy.
+When the merge's packing rules produce a bitmap, or an append's result lies outside our packing's span or fits neither
+our packing nor a narrower one, the set becomes an `RspBitmap` and the argument is applied there. This is the terminal
+case of every branch; it is not a performance strategy.
 
 ## Measured behaviour
 
@@ -249,7 +251,7 @@ named cover them.
 - **Copy-on-write through a no-op.** See individual edits above; `containedFirstRangeKeepsSharedCopyIsolated`.
 - **Testing "private" sets that are shared.** `RowSetFactory.empty().insert(set)` takes a shared reference to `set`
   rather than copying it, so a test that meant to exercise in-place edits exercised only the copy-to-new path. Private
-  copies in tests are built key by key.
+  copies in tests are rebuilt range by range through a fresh sequential builder.
 - **Entry count as a proxy for "unchanged".** Bridging two singles keeps the entry count; compare the encoding.
 - **`e + 1` at `Long.MAX_VALUE`.** Wraps negative; every adjacency test guards it.
 - **Capacity is per type.** A planned result that outgrows a dense `SortedRangesLong` must fall back to the merge,

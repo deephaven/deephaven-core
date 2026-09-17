@@ -63,15 +63,15 @@ public class SortedRangesBulkInsertTest {
                 try (final WritableRowSet expected = target.copy()) {
                     added.forAllRowKeyRanges(expected::insertRange);
 
-                    // A private copy, built key by key so it shares nothing, that is written in place.
+                    // A private copy, rebuilt by a fresh builder so it shares nothing, that is written in place.
                     try (final WritableRowSet actual = snapshot(target)) {
                         actual.insert(added);
                         check(trial, expected, actual);
                     }
 
-                    // A shared copy: the insert must leave the original untouched. The snapshot is built key by key
-                    // so it shares nothing with the original and still holds its prior contents if the original is
-                    // wrongly written in place.
+                    // A shared copy: the insert must leave the original untouched. The snapshot is rebuilt by a fresh
+                    // builder so it shares nothing with the original and still holds its prior contents if the
+                    // original is wrongly written in place.
                     try (final WritableRowSet snapshot = snapshot(target);
                             final WritableRowSet shared = target.copy()) {
                         shared.insert(added);
