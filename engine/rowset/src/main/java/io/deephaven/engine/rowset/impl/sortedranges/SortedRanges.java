@@ -2286,6 +2286,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 cursor = pos;
                 continue;
             } else {
+                // Entry pos starts a range or single whose first key lies within [removedStart, removedEnd], so the cut
+                // begins at or before our range and nothing of it survives on the left. The walk absorbs it and every
+                // following range that starts within removedEnd, leaving a right remainder only if the last of them
+                // reaches past removedEnd.
                 groupStart = pos;
                 plan.addEdit(groupStart);
                 groupEnd = absorbCut(plan, pos, removedEnd);
