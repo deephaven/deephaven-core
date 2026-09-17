@@ -5,7 +5,7 @@ Configuration for running a development environment in a devcontainer. This prov
 - Tool installation for developing Deephaven Core
 - A sandbox environment for allowing AI agents more autonomy to accomplish tasks without constant approval prompts
 
-> IMPORTANT: it is not recommended to use Linux rootfull Docker setups with this config due to the seccomp filter settings required to run nested podman without `--privileged`.
+> IMPORTANT: it is not recommended to use Linux rootful Docker setups with this config due to the seccomp filter settings required to run nested podman without `--privileged`.
 
 ## Git worktrees
 
