@@ -88,8 +88,9 @@ A result that comes back empty is normalized to `OrderedLongSet.EMPTY`.
 `other` and `n` our entry count, true when `(r - 2)^2 * n <= 400`, where 400 is the default of
 `SortedRanges.individualEditThreshold`, which admits a handful of ranges on a tiny set. Ranges are counted from their
 start entries, stopping as soon as the inequality fails, so the count is cheap. This is where the planned
-strategy's fixed cost of a few tens of nanoseconds does not pay: measured, individual edits win for one or two ranges
-everywhere and for up to about six ranges on a 20-entry set.
+strategy's fixed cost of a few tens of nanoseconds does not pay: measured (on the machine described under
+[Measured behaviour](#measured-behaviour), as is every timing in this document), individual edits win for one or two
+ranges everywhere and for up to about six ranges on a 20-entry set.
 
 **`planEdits(other)`**: `other.count * 8 <= count`, on entries, where 8 is the default of
 `SortedRanges.plannedEditMaxSizeRatio`. A planned edit costs a binary search and a small block
@@ -214,6 +215,20 @@ our packing nor a narrower one, the set becomes an `RspBitmap` and the argument 
 case of every branch; it is not a performance strategy.
 
 ## Measured behaviour
+
+All timings in this document come from one machine, measured in September 2026:
+
+| | |
+|---|---|
+| **CPU** | Intel Core i9-14900KS, one socket, 32 hardware threads, 36 MiB L3; `performance` frequency governor |
+| **Memory** | 128 GiB |
+| **OS** | Ubuntu 26.04 LTS in an LXC container on a Proxmox VE host, Linux 7.0.14-14-pve x86_64; 24 threads visible to the container |
+| **JVM** | Temurin OpenJDK 21.0.11 (Gradle toolchain), 64-bit server VM, with the engine's standard benchmark options: G1, 8 GiB heap, `dh-tests.prop` configuration |
+| **Harness** | JMH 1.37, one fork, two 1-second warmup and three 2-second measurement iterations, average time per operation, one thread |
+| **Benchmarks** | `RowSetSmallInsertBench` and `RowSetSmallRemoveBench` via `jmhRunRowSetSmallInsert` / `jmhRunRowSetSmallRemove` |
+
+The absolute numbers will move with hardware, OS and JIT; what the design rests on is the ratios between strategies and
+where they cross over, which is what to reproduce with those benchmarks before re-tuning either threshold.
 
 Microseconds per bulk insert into a target of scattered single keys; `forAll` is the comparison baseline, the same keys
 inserted one at a time through `forAllRowKeys`. The aim was for the bulk call to be no slower than that baseline beyond
