@@ -276,6 +276,9 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided ticket.
+     * <p>
+     * If the id has already been released, the result is a placeholder in the RELEASED state that rejects reuse and
+     * fails dependents as DEPENDENCY_RELEASED.
      *
      * @param ticket the export ticket
      * @param logId an end-user friendly identification of the ticket should an error occur
@@ -287,6 +290,9 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided ticket.
+     * <p>
+     * If the id has already been released, the result is a placeholder in the RELEASED state that rejects reuse and
+     * fails dependents as DEPENDENCY_RELEASED.
      *
      * @param ticket the export ticket
      * @param logId an end-user friendly identification of the ticket should an error occur
@@ -298,6 +304,9 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided id.
+     * <p>
+     * If the id has already been released, the result is a placeholder in the RELEASED state that rejects reuse and
+     * fails dependents as DEPENDENCY_RELEASED.
      *
      * @param exportId the export handle id
      * @return a future-like object that represents this export
@@ -344,6 +353,9 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided id if it already exists, otherwise return null.
+     * <p>
+     * An id that has already been released is not null: the result is a placeholder in the RELEASED state that rejects
+     * reuse and fails dependents as DEPENDENCY_RELEASED.
      *
      * @param exportId the export handle id
      * @return a future-like object that represents this export
@@ -376,6 +388,9 @@ public class SessionState {
 
     /**
      * Grab the ExportObject for the provided id if it already exists, otherwise return null.
+     * <p>
+     * An id that has already been released is not null: the result is a placeholder in the RELEASED state that rejects
+     * reuse and fails dependents as DEPENDENCY_RELEASED.
      *
      * @param ticket the export ticket
      * @param logId an end-user friendly identification of the ticket should an error occur
@@ -470,6 +485,10 @@ public class SessionState {
 
     /**
      * Create an ExportBuilder to create the export after dependencies are satisfied.
+     * <p>
+     * Failures, including reuse of an already-released id, are reported only to the builder's
+     * {@link ExportBuilder#onError onError} handler, so one should always be set. Fallible work belongs in
+     * {@link ExportBuilder#submit submit}; {@link ExportBuilder#onSuccess onSuccess} only delivers the result.
      *
      * @param ticket the grpc {@link Flight.Ticket} for this export
      * @param logId an end-user friendly identification of the ticket should an error occur
@@ -482,6 +501,10 @@ public class SessionState {
 
     /**
      * Create an ExportBuilder to create the export after dependencies are satisfied.
+     * <p>
+     * Failures, including reuse of an already-released id, are reported only to the builder's
+     * {@link ExportBuilder#onError onError} handler, so one should always be set. Fallible work belongs in
+     * {@link ExportBuilder#submit submit}; {@link ExportBuilder#onSuccess onSuccess} only delivers the result.
      *
      * @param ticket the grpc {@link Ticket} for this export
      * @param logId an end-user friendly identification of the ticket should an error occur
@@ -494,6 +517,10 @@ public class SessionState {
 
     /**
      * Create an ExportBuilder to create the export after dependencies are satisfied.
+     * <p>
+     * Failures, including reuse of an already-released id, are reported only to the builder's
+     * {@link ExportBuilder#onError onError} handler, so one should always be set. Fallible work belongs in
+     * {@link ExportBuilder#submit submit}; {@link ExportBuilder#onSuccess onSuccess} only delivers the result.
      *
      * @param exportId the export id
      * @param <T> the export type that the callable will return
@@ -1641,7 +1668,9 @@ public class SessionState {
          * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may
          * be set. Exactly one of the onError and onSuccess handlers will be invoked.
          * <p>
-         * Not synchronized, it is expected that the provided callback handles thread safety itself.
+         * The handler must not throw: the export is already in its final state, so an exception here cannot affect it
+         * or reach the client, and is treated as fatal to the server. It runs while holding the export's monitor and
+         * must not release, cancel, or look up exports; queue such work via {@link SessionState#nonExport()}.
          *
          * @param errorHandler the error handler to be notified
          * @return this builder
@@ -1690,7 +1719,8 @@ public class SessionState {
          * Invoke this method to set the onSuccess handler to be notified if this export succeeds. Only one success
          * handler may be set. Exactly one of the onError and onSuccess handlers will be invoked.
          * <p>
-         * Not synchronized, it is expected that the provided callback handles thread safety itself.
+         * Same contract as {@link #onError(ExportErrorHandler)}. Do fallible work in {@link #submit}; use this only to
+         * deliver an already-computed result.
          *
          * @param successHandler the onSuccess handler to be notified
          * @return this builder
