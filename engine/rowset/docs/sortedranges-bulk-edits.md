@@ -20,8 +20,9 @@ as `3, 10, -12, 20`: four entries for three ranges. Ranges are never adjacent or
 valid state, it is `10..12`. The array is packed as shorts or ints relative to an offset (`SortedRangesShort`,
 `SortedRangesInt`, via `SortedRangesPacked`) or as raw longs with no offset (`SortedRangesLong`). Each packing has a
 capacity. The merge-based paths choose the result's packing afresh, by span, density and capacity, as described under
-the merge below; the append path does not, and converts straight to an `RspBitmap` when its result does not fit our
-own packing. A result no packing can hold, or one the merge judges dense, becomes an `RspBitmap`.
+the merge below. The append path keeps our packing, repacking only into a narrower one when our capacity runs out, and
+converts straight to an `RspBitmap` when the result lies outside a short or int packing's span from our offset or no
+packing has room for it. A result no packing can hold, or one the merge judges dense, becomes an `RspBitmap`.
 
 Two consequences shape everything below. First, the number of *ranges* and the number of *entries* differ by up to
 2x, and the code is explicit about which one it is counting. Second, an edit that changes no entry count can still
@@ -141,12 +142,12 @@ exactly once. All scratch state lives in a thread-local `EditPlan`.
    - the start of a range beyond `e + 1`, or nothing at all: `[s, e]` touches none of ours and goes in before it.
 2. Absorb every following range of ours that starts within `e + 1` (`absorbTouching`), extending the group's end and
    summing the cardinality the absorbed ranges held.
-3. The group is now the old entries `[groupStart, groupEnd)` and the single range they become. A following argument range that starts
-   within one key of the group's end joins the same group and absorbs further.
+3. The group is now the old entries `[groupStart, groupEnd)` and the single range they become. A following argument
+   range that starts within one key of the group's end joins the same group and absorbs further.
 4. When the group closes (`recordInsertGroup`), it is dropped if the old entries already encode exactly its range: a
    contained range changes nothing. The encoding test is exact, not an entry count: two singles bridged by a new key
-   keep two entries but become a start and a negative end. Otherwise the edit is recorded: replace `[groupStart, groupEnd)` with one
-   piece `[first, last]`.
+   keep two entries but become a start and a negative end. Otherwise the edit is recorded: replace
+   `[groupStart, groupEnd)` with one piece `[first, last]`.
 
 **Plan pass, remove (`removePlanned`).** For each range `[s, e]` of the argument:
 
@@ -161,8 +162,8 @@ exactly once. All scratch state lives in a thread-local `EditPlan`.
    `s - 1`, and either a new right remainder is added or, when `e` reaches past it, absorption continues. The argument's
    ranges are neither overlapping nor adjacent, so `s` is at least one key past the remainder's first key and a left
    part always survives; the code asserts this rather than handling a case that cannot occur.
-4. When the group closes, the edit replaces `[groupStart, groupEnd)` with zero, one or two pieces (or more, when several argument
-   ranges carve one of ours).
+4. When the group closes, the edit replaces `[groupStart, groupEnd)` with zero, one or two pieces (or more, when several
+   argument ranges carve one of ours).
 
 Both plan passes guard the `+ 1` arithmetic for a range ending at `Long.MAX_VALUE`, which otherwise wraps negative
 and stops absorption early.
@@ -203,9 +204,9 @@ content repacked as shorts holds thousands (`SortedRanges.shortMaxCapacity`, 409
 
 ### Convert to RspBitmap
 
-When the merge's packing rules produce a bitmap, or an append's result does not fit our own packing, the set becomes
-an `RspBitmap` and the argument is applied there. This is the terminal case of every branch; it is not a performance
-strategy.
+When the merge's packing rules produce a bitmap, or an append's result lies outside our packing's span or finds no
+packing with room, the set becomes an `RspBitmap` and the argument is applied there. This is the terminal case of every
+branch; it is not a performance strategy.
 
 ## Measured behaviour
 
@@ -231,8 +232,8 @@ the benchmark's own run-to-run noise. Before is the merge for every argument; af
 Removal shows the same shape. The 20- and 200-entry rows are sub-microsecond operations whose cells moved by up to
 about 80 ns between otherwise identical runs; the `200 / 20` cell, for instance, measured between 0.32 and 0.46 µs for
 bulk against 0.38 to 0.39 µs for `forAll` across runs of the same build. Differences of that size in those rows are not
-evidence either way; the larger rows are well outside it. For the join, accumulation of a slot's row keys per cycle went from losing to
-per-key insertion by 84% on 2000-key slots to beating it by 13%.
+evidence either way; the larger rows are well outside it. For the join, accumulation of a slot's row keys per cycle went
+from losing to per-key insertion by 84% on 2000-key slots to beating it by 13%.
 
 ## Traps this code has already fallen into
 
