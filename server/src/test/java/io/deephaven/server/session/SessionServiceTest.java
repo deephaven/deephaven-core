@@ -9,12 +9,22 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
+import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.StatusRuntimeException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -271,5 +281,172 @@ public class SessionServiceTest {
         // this one should not have made it
         final StatusRuntimeException tleaf = transformer.transform(leaf);
         Assert.notEquals(t0.getMessage(), "t0.getMessage()", tleaf.getMessage(), "tleaf.getMessage()");
+    }
+
+    /**
+     * A shutdown or fatal-error notification sends to every termination listener while holding the SessionService
+     * monitor; each send locks the listener's stream observer. A gRPC thread that is closing a call holds that same
+     * observer monitor while it refreshes the session token, which locks the SessionService when the token rotates.
+     * Both orders must be able to complete.
+     */
+    @Test
+    public void testShutdownNotificationDoesNotDeadlockWithTokenRotation() throws InterruptedException {
+        final SessionState session = sessionService.newSession(AUTH_CONTEXT);
+        // age the token so that the next refresh rotates it, which is the path that locks the SessionService
+        scheduler.runUntil(scheduler.timeAfterMs(TOKEN_EXPIRE_MS / 3));
+
+        final RecordingTerminationObserver observer = new RecordingTerminationObserver();
+        sessionService.addTerminationListener(session, observer);
+
+        final CountDownLatch observerLocked = new CountDownLatch(1);
+        final CountDownLatch shutdownStarted = new CountDownLatch(1);
+        final AtomicReference<Throwable> rotationFailure = new AtomicReference<>();
+        final Thread shutdownThread = new Thread(() -> {
+            shutdownStarted.countDown();
+            sessionService.onShutdown();
+        }, "SessionServiceTest-shutdown");
+        shutdownThread.setDaemon(true);
+        // mirrors a gRPC thread inside GrpcUtil.safelyError, which holds the observer's monitor while the call's close
+        // path refreshes the session token
+        final Thread rotationThread = new Thread(() -> {
+            synchronized (observer) {
+                observerLocked.countDown();
+                try {
+                    shutdownStarted.await();
+                    awaitBlockedOnMonitorHeldByCurrentThreadOrFinished(shutdownThread);
+                    sessionService.refreshToken(session);
+                } catch (final Throwable t) {
+                    rotationFailure.set(t);
+                }
+            }
+        }, "SessionServiceTest-rotation");
+        rotationThread.setDaemon(true);
+
+        rotationThread.start();
+        observerLocked.await();
+        shutdownThread.start();
+
+        shutdownThread.join(TimeUnit.SECONDS.toMillis(10));
+        rotationThread.join(TimeUnit.SECONDS.toMillis(10));
+        if (shutdownThread.isAlive() || rotationThread.isAlive()) {
+            final long[] deadlocked = ManagementFactory.getThreadMXBean().findDeadlockedThreads();
+            throw new AssertionFailure("shutdown notification and token rotation did not both complete; deadlocked "
+                    + "threads: " + (deadlocked == null ? "none detected" : Arrays.toString(deadlocked)));
+        }
+        Assert.eqNull(rotationFailure.get(), "rotationFailure.get()");
+        Assert.eqTrue(observer.completed, "observer.completed");
+        Assert.eqTrue(session.isExpired(), "session.isExpired()");
+    }
+
+    private static void awaitBlockedOnMonitorHeldByCurrentThreadOrFinished(final Thread thread) {
+        final ThreadMXBean threads = ManagementFactory.getThreadMXBean();
+        final long currentThreadId = Thread.currentThread().getId();
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (thread.isAlive() && System.nanoTime() < deadlineNanos) {
+            final ThreadInfo info = threads.getThreadInfo(thread.getId());
+            if (info != null && info.getThreadState() == Thread.State.BLOCKED
+                    && info.getLockOwnerId() == currentThreadId) {
+                return;
+            }
+            Thread.onSpinWait();
+        }
+    }
+
+    /**
+     * Every token ever issued maps to its session for as long as the SessionService lives. Once the session has expired
+     * and all of its tokens are past their deadline, nothing in the service may keep the session reachable.
+     */
+    @Test
+    public void testExpiredSessionIsNotRetainedAfterItsTokensExpire() throws InterruptedException {
+        final WeakReference<SessionState> sessionRef = createRotateAndExpireSession();
+        for (int i = 0; i < 100 && sessionRef.get() != null; ++i) {
+            System.gc();
+            Thread.sleep(10);
+        }
+        Assert.eqNull(sessionRef.get(), "sessionRef.get()");
+    }
+
+    @Test
+    public void testClosedSessionIsNotRetained() throws InterruptedException {
+        final WeakReference<SessionState> sessionRef = createRotateAndCloseSession();
+        for (int i = 0; i < 100 && sessionRef.get() != null; ++i) {
+            System.gc();
+            Thread.sleep(10);
+        }
+        Assert.eqNull(sessionRef.get(), "sessionRef.get()");
+    }
+
+    private WeakReference<SessionState> createRotateAndCloseSession() {
+        final SessionState session;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            session = sessionService.newSession(AUTH_CONTEXT);
+        }
+        scheduler.runUntil(scheduler.timeAfterMs(TOKEN_EXPIRE_MS / 3));
+        Assert.neqNull(sessionService.refreshToken(session), "sessionService.refreshToken(session)");
+        // an explicit close must not wait for the tokens to age out
+        sessionService.closeSession(session);
+        Assert.eqTrue(session.isExpired(), "session.isExpired()");
+        return new WeakReference<>(session);
+    }
+
+    private WeakReference<SessionState> createRotateAndExpireSession() {
+        final SessionState session;
+        // a throw-away scope, so that this test's liveness scope does not keep anything of the session alive
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            session = sessionService.newSession(AUTH_CONTEXT);
+        }
+        // rotate a few times so that several tokens map to this session
+        for (int i = 0; i < 3; ++i) {
+            scheduler.runUntil(scheduler.timeAfterMs(TOKEN_EXPIRE_MS / 3));
+            Assert.neqNull(sessionService.refreshToken(session), "sessionService.refreshToken(session)");
+        }
+        // let the newest token expire; the cleanup job expires the session and forgets its tokens
+        scheduler.runThrough(session.getExpiration().deadlineMillis);
+        Assert.eqTrue(session.isExpired(), "session.isExpired()");
+        return new WeakReference<>(session);
+    }
+
+    private static final class RecordingTerminationObserver
+            extends ServerCallStreamObserver<TerminationNotificationResponse> {
+        volatile boolean completed;
+
+        @Override
+        public void onNext(final TerminationNotificationResponse value) {}
+
+        @Override
+        public void onError(final Throwable t) {}
+
+        @Override
+        public void onCompleted() {
+            completed = true;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public void setOnCancelHandler(final Runnable onCancelHandler) {}
+
+        @Override
+        public void setCompression(final String compression) {}
+
+        @Override
+        public boolean isReady() {
+            return true;
+        }
+
+        @Override
+        public void setOnReadyHandler(final Runnable onReadyHandler) {}
+
+        @Override
+        public void disableAutoInboundFlowControl() {}
+
+        @Override
+        public void request(final int count) {}
+
+        @Override
+        public void setMessageCompression(final boolean enable) {}
     }
 }

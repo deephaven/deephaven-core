@@ -33,15 +33,17 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -153,7 +155,12 @@ public class SessionService {
     private final long tokenRotateMs;
 
     private final Map<UUID, TokenExpiration> tokenToSession = new ConcurrentHashMap<>();
-    private final Deque<TokenExpiration> outstandingCookies = new ConcurrentLinkedDeque<>();
+    /** every token that has not passed its deadline, ordered by deadline; the cleanup job sweeps it from the front */
+    private final NavigableSet<TokenExpiration> outstandingCookies = new ConcurrentSkipListSet<>(
+            Comparator.comparingLong((TokenExpiration expiration) -> expiration.deadlineMillis)
+                    .thenComparing(expiration -> expiration.token));
+    /** the tokens issued to each session that have not passed their deadline, so that a close can forget them */
+    private final Map<SessionState, List<TokenExpiration>> tokensBySession = new ConcurrentHashMap<>();
     private boolean cleanupJobInstalled = false;
     private final SessionCleanupJob sessionCleanupJob = new SessionCleanupJob();
 
@@ -193,7 +200,7 @@ public class SessionService {
         this.sessionListener = new DelegatingSessionListener(sessionListeners);
     }
 
-    private synchronized void onFatalError(
+    private void onFatalError(
             @NotNull String message,
             @NotNull Throwable throwable,
             boolean isFromUncaught) {
@@ -209,9 +216,24 @@ public class SessionService {
             throwable = throwable.getCause();
         }
 
-        final TerminationNotificationResponse notification = builder.build();
-        terminationListeners.forEach(listener -> listener.sendMessage(notification));
-        terminationListeners.clear();
+        notifyTerminationListeners(builder.build());
+    }
+
+    /**
+     * Sends {@code notification} to every registered termination listener exactly once.
+     * <p>
+     * The listeners are detached under the list's own monitor, which registration shares, and then notified without
+     * holding any lock of this service: sending locks the listener's stream observer, and a gRPC thread that is closing
+     * that same call already holds the observer while it refreshes the session token, which locks this service when the
+     * token rotates.
+     */
+    private void notifyTerminationListeners(final TerminationNotificationResponse notification) {
+        final List<TerminationNotificationListener> toNotify;
+        synchronized (terminationListeners) {
+            toNotify = new ArrayList<>(terminationListeners);
+            terminationListeners.clear();
+        }
+        toNotify.forEach(listener -> listener.sendMessage(notification));
     }
 
     private static TerminationNotificationResponse.StackTrace transformToProtoBuf(@NotNull final Throwable throwable) {
@@ -225,12 +247,10 @@ public class SessionService {
                 .build();
     }
 
-    public synchronized void onShutdown() {
-        final TerminationNotificationResponse notification = TerminationNotificationResponse.newBuilder()
+    public void onShutdown() {
+        notifyTerminationListeners(TerminationNotificationResponse.newBuilder()
                 .setAbnormalTermination(false)
-                .build();
-        terminationListeners.forEach(listener -> listener.sendMessage(notification));
-        terminationListeners.clear();
+                .build());
 
         closeAllSessions();
     }
@@ -245,7 +265,9 @@ public class SessionService {
     public void addTerminationListener(
             final SessionState session,
             final StreamObserver<TerminationNotificationResponse> responseObserver) {
-        terminationListeners.add(new TerminationNotificationListener(session, responseObserver));
+        synchronized (terminationListeners) {
+            terminationListeners.add(new TerminationNotificationListener(session, responseObserver));
+        }
     }
 
     /**
@@ -296,13 +318,31 @@ public class SessionService {
                 expiration = new TokenExpiration(newUUID, nowMillis + tokenExpireMs, session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
-            if (initialToken) {
-                session.initializeExpiration(expiration);
-            } else {
-                session.updateExpiration(expiration);
+            try {
+                if (initialToken) {
+                    session.initializeExpiration(expiration);
+                } else {
+                    session.updateExpiration(expiration);
+                }
+            } catch (final RuntimeException err) {
+                // the session expired before the new token could be installed; a token that never reaches
+                // outstandingCookies would otherwise retain the session for the life of this service
+                tokenToSession.remove(newUUID, expiration);
+                throw err;
             }
+            final TokenExpiration issued = expiration;
+            tokensBySession.compute(session, (ignored, tokens) -> {
+                final List<TokenExpiration> result = tokens == null ? new ArrayList<>() : tokens;
+                result.add(issued);
+                return result;
+            });
         }
-        outstandingCookies.addLast(expiration);
+        outstandingCookies.add(expiration);
+        if (session.isExpired()) {
+            // the session was closed or expired between installing the token and recording it here; an explicit close
+            // forgets the tokens it can see, so a token it could not see yet must forget itself
+            forgetToken(expiration);
+        }
 
         synchronized (this) {
             if (!cleanupJobInstalled) {
@@ -312,6 +352,29 @@ public class SessionService {
         }
 
         return expiration;
+    }
+
+    /**
+     * Forgets a token that can no longer authenticate, because it passed its deadline or its session was closed.
+     */
+    private void forgetToken(final TokenExpiration expiration) {
+        tokenToSession.remove(expiration.token, expiration);
+        outstandingCookies.remove(expiration);
+        tokensBySession.computeIfPresent(expiration.session, (ignored, tokens) -> {
+            tokens.remove(expiration);
+            return tokens.isEmpty() ? null : tokens;
+        });
+    }
+
+    /**
+     * @return the outstanding token with the nearest deadline, or null if there is none
+     */
+    private TokenExpiration peekNextExpiration() {
+        try {
+            return outstandingCookies.first();
+        } catch (final NoSuchElementException e) {
+            return null;
+        }
     }
 
     /**
@@ -428,10 +491,13 @@ public class SessionService {
      * @param session the session to close
      */
     public void closeSession(final SessionState session) {
-        if (session.isExpired()) {
-            return;
-        }
+        // onExpired is idempotent, and a session whose deadline has passed may not have been swept yet
         session.onExpired();
+        // the session's tokens can never authenticate again; forget them now instead of when they age out
+        final List<TokenExpiration> tokens = tokensBySession.remove(session);
+        if (tokens != null) {
+            tokens.forEach(this::forgetToken);
+        }
     }
 
     public void closeAllSessions() {
@@ -469,29 +535,38 @@ public class SessionService {
         public void run() {
             final long nowMillis = scheduler.currentTimeMillis();
 
-            do {
-                final TokenExpiration next = outstandingCookies.peek();
-                if (next == null || next.deadlineMillis > nowMillis) {
-                    break;
+            try {
+                for (final TokenExpiration next : outstandingCookies) {
+                    if (next.deadlineMillis > nowMillis) {
+                        break;
+                    }
+
+                    // Permanently forget the token as it is officially expired, note that other tokens may exist for
+                    // this session, so the session itself does not expire. We allow multiple tokens to co-exist to
+                    // best support out of order requests and thus allow any reasonable client behavior that respects a
+                    // given token expiration time. Forgetting the token is what lets an expired session become
+                    // unreachable.
+                    forgetToken(next);
+
+                    if (next.session.isExpired()) {
+                        try {
+                            next.session.onExpired();
+                        } catch (final RuntimeException err) {
+                            // an exception escaping a scheduled task is fatal to the process; one session that cannot
+                            // be expired must cost neither the process nor the other sessions waiting in this sweep
+                            log.error().append("failed to expire session ").append(next.session.getSessionId())
+                                    .append(": ").append(err).endl();
+                        }
+                    }
                 }
-
-                // Permanently remove the first token as it is officially expired, note that other tokens may exist for
-                // this session, so the session itself does not expire. We allow multiple tokens to co-exist to best
-                // support out of order requests and thus allow any reasonable client behavior that respects a given
-                // token expiration time.
-                outstandingCookies.poll();
-
-                if (next.session.isExpired()) {
-                    next.session.onExpired();
-                }
-            } while (true);
-
-            synchronized (SessionService.this) {
-                final TokenExpiration next = outstandingCookies.peek();
-                if (next == null) {
-                    cleanupJobInstalled = false;
-                } else {
-                    scheduler.runAtTime(next.deadlineMillis, this);
+            } finally {
+                synchronized (SessionService.this) {
+                    final TokenExpiration next = peekNextExpiration();
+                    if (next == null) {
+                        cleanupJobInstalled = false;
+                    } else {
+                        scheduler.runAtTime(next.deadlineMillis, this);
+                    }
                 }
             }
         }

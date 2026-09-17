@@ -119,6 +119,11 @@ public class BrowserStream<T> implements Closeable {
     private StreamData queuedStreamData;
     private T queuedMessage;
 
+    /** the session export that keeps this stream reachable for follow-up messages, once it has been created */
+    private SessionState.ExportObject<?> export;
+    /** whether this stream has ended: completed, failed, cancelled by the client, or closed with the session */
+    private boolean ended;
+
     private BrowserStream(final Mode mode, final SessionState session, final Marshaller<T> marshaller) {
         this.mode = mode;
         this.logIdentity = "BrowserStream(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
@@ -130,6 +135,10 @@ public class BrowserStream<T> implements Closeable {
 
     public void onMessageReceived(T message, StreamData streamData) {
         synchronized (this) {
+            if (ended) {
+                // the stream is over (the client abandoned it, or it failed); there is nothing left to deliver to
+                return;
+            }
             if (halfClosedSeq != -1 && streamData.getSequence() > halfClosedSeq) {
                 throw Exceptions.statusRuntimeException(Code.ABORTED, "Sequence sent after half close: closed seq="
                         + halfClosedSeq + " recv seq=" + streamData.getSequence());
@@ -192,6 +201,11 @@ public class BrowserStream<T> implements Closeable {
 
         do {
             synchronized (this) {
+                if (ended) {
+                    // the stream ended while the previous message was being delivered; drop whatever is still queued
+                    processingMessage = false;
+                    return;
+                }
                 if (streamData.isHalfClose()) {
                     onComplete();
                     processingMessage = false;
@@ -237,22 +251,90 @@ public class BrowserStream<T> implements Closeable {
         } while (true);
     }
 
+    /**
+     * Records the export that holds this stream for follow-up messages. The export is released once the stream ends; if
+     * the stream has ended already, it is released right away.
+     *
+     * @param export the export whose result is this stream
+     */
+    public void setExport(final SessionState.ExportObject<?> export) {
+        final boolean releaseNow;
+        synchronized (this) {
+            this.export = export;
+            releaseNow = ended;
+        }
+        if (releaseNow) {
+            export.cancel();
+        }
+    }
+
     public void onError(final RuntimeException e) {
-        if (session.removeOnCloseCallback(this)) {
-            log.error().append(logIdentity).append("closing browser stream on unexpected exception: ").append(e).endl();
-            this.marshaller.onError(e);
+        final SessionState.ExportObject<?> toRelease = markEnded();
+        try {
+            if (session.removeOnCloseCallback(this)) {
+                log.error().append(logIdentity).append("closing browser stream on unexpected exception: ").append(e)
+                        .endl();
+                this.marshaller.onError(e);
+            }
+        } finally {
+            releaseExport(toRelease);
+        }
+    }
+
+    /**
+     * The client abandoned the call that opened this stream.
+     */
+    public void onCancel() {
+        final SessionState.ExportObject<?> toRelease = markEnded();
+        try {
+            if (session.removeOnCloseCallback(this)) {
+                log.debug().append(logIdentity).append("browser stream cancelled by client").endl();
+                this.marshaller.onCancel();
+            }
+        } finally {
+            releaseExport(toRelease);
         }
     }
 
     @Override
     public void close() {
-        this.marshaller.onCancel();
+        final SessionState.ExportObject<?> toRelease = markEnded();
+        try {
+            this.marshaller.onCancel();
+        } finally {
+            releaseExport(toRelease);
+        }
     }
 
     private void onComplete() {
-        if (session.removeOnCloseCallback(this)) {
-            log.debug().append(logIdentity).append("browser stream completed").endl();
-            this.marshaller.onCompleted();
+        final SessionState.ExportObject<?> toRelease = markEnded();
+        try {
+            if (session.removeOnCloseCallback(this)) {
+                log.debug().append(logIdentity).append("browser stream completed").endl();
+                this.marshaller.onCompleted();
+            }
+        } finally {
+            releaseExport(toRelease);
+        }
+    }
+
+    /**
+     * Marks this stream as ended before its end is reported, so that no further message is delivered to it, and
+     * detaches the export that holds it.
+     *
+     * @return the export to release once the end has been reported, or null if there is none
+     */
+    private synchronized SessionState.ExportObject<?> markEnded() {
+        ended = true;
+        final SessionState.ExportObject<?> toRelease = export;
+        export = null;
+        return toRelease;
+    }
+
+    private static void releaseExport(final SessionState.ExportObject<?> toRelease) {
+        if (toRelease != null) {
+            // cancel rather than release: the export may not have run yet, and the session may already be expired
+            toRelease.cancel();
         }
     }
 

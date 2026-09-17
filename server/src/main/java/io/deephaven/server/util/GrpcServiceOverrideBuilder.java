@@ -236,15 +236,165 @@ public class GrpcServiceOverrideBuilder {
                         "no x-deephaven-stream headers, cannot handle open request");
             }
 
-            BrowserStream<ReqT> browserStream = factory.create(session, responseObserver);
-            browserStream.onMessageReceived(request, streamData);
+            final OpenCallObserver<RespT> openCall = responseObserver instanceof ServerCallStreamObserver
+                    ? new OpenCallObserver<>((ServerCallStreamObserver<RespT>) responseObserver)
+                    : null;
+            final BrowserStream<ReqT> browserStream =
+                    factory.create(session, openCall != null ? openCall : responseObserver);
+            if (openCall != null) {
+                openCall.setStreamOnCancel(browserStream::onCancel);
+            }
+            try {
+                browserStream.onMessageReceived(request, streamData);
+            } catch (final RuntimeException err) {
+                browserStream.onError(err);
+                throw err;
+            }
 
             if (!streamData.isHalfClose()) {
                 // if this isn't a half-close, we should export it for later calls - if it is, the client won't send
                 // more messages
-                session.newExport(streamData.getRpcTicket(), "rpcTicket")
-                        // not setting an onError here, failure can only happen if the session ends
-                        .submit(() -> browserStream);
+                final SessionState.ExportObject<BrowserStream<ReqT>> export;
+                try {
+                    export = session.<BrowserStream<ReqT>>newExport(streamData.getRpcTicket(), "rpcTicket")
+                            // not setting an onError here, failure can only happen if the session ends
+                            .submit(() -> browserStream);
+                } catch (final RuntimeException err) {
+                    // the session expired, or the ticket is already taken; either way the stream cannot be reached
+                    browserStream.onError(err);
+                    throw err;
+                }
+                // the stream releases this export when it completes, fails, or is cancelled
+                browserStream.setExport(export);
+            }
+        }
+
+        /**
+         * Wraps the observer of the call that opened an emulated stream, so that a client abort ends the browser stream
+         * in addition to running whatever cancel handler the underlying service installs.
+         */
+        private static final class OpenCallObserver<RespT> extends ServerCallStreamObserver<RespT> {
+            private final ServerCallStreamObserver<RespT> delegate;
+            /** cancellation is one-shot: a handler registered after it runs at once instead of never */
+            private boolean cancelled;
+            private Runnable serviceOnCancel;
+            private Runnable streamOnCancel;
+
+            private OpenCallObserver(final ServerCallStreamObserver<RespT> delegate) {
+                this.delegate = delegate;
+                delegate.setOnCancelHandler(this::onCancel);
+            }
+
+            private void setStreamOnCancel(final Runnable onCancel) {
+                final boolean runNow;
+                synchronized (this) {
+                    runNow = cancelled;
+                    if (!runNow) {
+                        streamOnCancel = onCancel;
+                    }
+                }
+                if (runNow) {
+                    onCancel.run();
+                }
+            }
+
+            @Override
+            public void setOnCancelHandler(final Runnable onCancelHandler) {
+                final boolean runNow;
+                synchronized (this) {
+                    runNow = cancelled;
+                    if (!runNow) {
+                        serviceOnCancel = onCancelHandler;
+                    }
+                }
+                if (runNow) {
+                    onCancelHandler.run();
+                }
+            }
+
+            private void onCancel() {
+                final Runnable service;
+                final Runnable stream;
+                synchronized (this) {
+                    if (cancelled) {
+                        return;
+                    }
+                    cancelled = true;
+                    service = serviceOnCancel;
+                    stream = streamOnCancel;
+                    serviceOnCancel = null;
+                    streamOnCancel = null;
+                }
+                // the service's handler is arbitrary cleanup code; the stream must end even if that handler throws
+                try {
+                    if (service != null) {
+                        service.run();
+                    }
+                } finally {
+                    if (stream != null) {
+                        stream.run();
+                    }
+                }
+            }
+
+            @Override
+            public void onNext(final RespT value) {
+                delegate.onNext(value);
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                delegate.onError(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                delegate.onCompleted();
+            }
+
+            @Override
+            public boolean isCancelled() {
+                return delegate.isCancelled();
+            }
+
+            @Override
+            public void setCompression(final String compression) {
+                delegate.setCompression(compression);
+            }
+
+            @Override
+            public boolean isReady() {
+                return delegate.isReady();
+            }
+
+            @Override
+            public void setOnReadyHandler(final Runnable onReadyHandler) {
+                delegate.setOnReadyHandler(onReadyHandler);
+            }
+
+            @Override
+            public void setOnReadyThreshold(final int numBytes) {
+                delegate.setOnReadyThreshold(numBytes);
+            }
+
+            @Override
+            public void setOnCloseHandler(final Runnable onCloseHandler) {
+                delegate.setOnCloseHandler(onCloseHandler);
+            }
+
+            @Override
+            public void disableAutoInboundFlowControl() {
+                delegate.disableAutoInboundFlowControl();
+            }
+
+            @Override
+            public void request(final int count) {
+                delegate.request(count);
+            }
+
+            @Override
+            public void setMessageCompression(final boolean enable) {
+                delegate.setMessageCompression(enable);
             }
         }
 
