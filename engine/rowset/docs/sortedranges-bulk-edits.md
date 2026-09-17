@@ -141,11 +141,11 @@ exactly once. All scratch state lives in a thread-local `EditPlan`.
    - the start of a range beyond `e + 1`, or nothing at all: `[s, e]` touches none of ours and goes in before it.
 2. Absorb every following range of ours that starts within `e + 1` (`absorbTouching`), extending the group's end and
    summing the cardinality the absorbed ranges held.
-3. The group is now the old entries `[g0, g1)` and the single range they become. A following argument range that starts
+3. The group is now the old entries `[groupStart, groupEnd)` and the single range they become. A following argument range that starts
    within one key of the group's end joins the same group and absorbs further.
 4. When the group closes (`recordInsertGroup`), it is dropped if the old entries already encode exactly its range: a
    contained range changes nothing. The encoding test is exact, not an entry count: two singles bridged by a new key
-   keep two entries but become a start and a negative end. Otherwise the edit is recorded: replace `[g0, g1)` with one
+   keep two entries but become a start and a negative end. Otherwise the edit is recorded: replace `[groupStart, groupEnd)` with one
    piece `[first, last]`.
 
 **Plan pass, remove (`removePlanned`).** For each range `[s, e]` of the argument:
@@ -161,7 +161,7 @@ exactly once. All scratch state lives in a thread-local `EditPlan`.
    `s - 1`, and either a new right remainder is added or, when `e` reaches past it, absorption continues. The argument's
    ranges are neither overlapping nor adjacent, so `s` is at least one key past the remainder's first key and a left
    part always survives; the code asserts this rather than handling a case that cannot occur.
-4. When the group closes, the edit replaces `[g0, g1)` with zero, one or two pieces (or more, when several argument
+4. When the group closes, the edit replaces `[groupStart, groupEnd)` with zero, one or two pieces (or more, when several argument
    ranges carve one of ours).
 
 Both plan passes guard the `+ 1` arithmetic for a range ending at `Long.MAX_VALUE`, which otherwise wraps negative
