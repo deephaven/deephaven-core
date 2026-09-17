@@ -150,9 +150,7 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
     }
 
     /**
-     * Record the source's last notification step and each aware extra's last state change step. The commit requires
-     * both to be as recorded: the source through {@link #subscribeForUpdates}, the extras through
-     * {@link #maybeSubscribeDependencies}.
+     * Record the source's last notification step and each aware extra's last state change step.
      */
     private void recordDependencyState() {
         lastNotificationStep = sourceTable.getLastNotificationStep();
