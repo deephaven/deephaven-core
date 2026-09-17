@@ -189,34 +189,28 @@ public class SortedRangesBulkInsertTest {
     }
 
     /**
-     * Removing a set from itself must empty it, and inserting a set into itself must change nothing, on every strategy
-     * and whether or not the set is shared.
+     * Two row sets sharing one inner {@code SortedRanges} hand the bulk operations their own receiver as the argument,
+     * which the row set wrapper's own {@code == this} checks do not intercept. Inserting must change nothing and leave
+     * the other wrapper untouched; it takes the individual path at two ranges and the merge at the larger sizes, since
+     * the argument is as large as the set. Removing must empty the receiver through the identity guard and leave the
+     * other wrapper untouched.
      */
     @Test
-    public void editingASetWithItself() {
+    public void aliasedArgumentThroughSharedInnerSet() {
         for (final int keys : new int[] {2, 40, 3_000}) {
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
             for (long key = 0; key < keys * 4L; key += 4) {
                 builder.appendKey(key);
             }
-            try (final WritableRowSet set = builder.build()) {
-                try (final WritableRowSet inserted = snapshot(set)) {
-                    inserted.insert(inserted);
-                    assertTrue("keys=" + keys, set.equals(inserted));
-                }
-                try (final WritableRowSet shared = set.copy();
-                        final WritableRowSet snapshotBefore = snapshot(set)) {
-                    shared.insert(shared);
+            try (final WritableRowSet set = builder.build();
+                    final WritableRowSet snapshotBefore = snapshot(set)) {
+                try (final WritableRowSet shared = set.copy()) {
+                    shared.insert(set);
                     assertTrue("keys=" + keys, snapshotBefore.equals(shared));
                     assertTrue("keys=" + keys, snapshotBefore.equals(set));
                 }
-                try (final WritableRowSet removed = snapshot(set)) {
-                    removed.remove(removed);
-                    assertTrue("keys=" + keys, removed.isEmpty());
-                }
-                try (final WritableRowSet shared = set.copy();
-                        final WritableRowSet snapshotBefore = snapshot(set)) {
-                    shared.remove(shared);
+                try (final WritableRowSet shared = set.copy()) {
+                    shared.remove(set);
                     assertTrue("keys=" + keys, shared.isEmpty());
                     assertTrue("keys=" + keys, snapshotBefore.equals(set));
                 }

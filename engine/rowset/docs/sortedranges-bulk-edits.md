@@ -10,7 +10,7 @@ be 40-68x slower than key-by-key insertion for the small arguments incremental `
 | **Strategies** | append, individual edits, planned edits, merge, convert to `RspBitmap` |
 | **What decides** | whether the argument lies past our last key, how many ranges it has, how big it is relative to us, and whether the result still fits our packing and capacity |
 | **Benchmarks** | `RowSetSmallInsertBench`, `RowSetSmallRemoveBench` (`jmhRunRowSetSmallInsert`, `jmhRunRowSetSmallRemove`) |
-| **Tests** | `SortedRangesBulkInsertTest` (randomized against key-by-key, plus the named corner cases below) |
+| **Tests** | `SortedRangesBulkInsertTest` (randomized against range-by-range `insertRange` / `removeRange` on an independent copy, plus the named corner cases below) |
 
 ## The representation the strategies edit
 
@@ -257,6 +257,8 @@ named cover them.
 - **Small arguments are not the only arguments.** The first cut of the planned strategy had no upper bound and was
   up to 2.3x slower than the merge for arguments near the set's own size; `planEdits` is the result. Any change to
   these strategies should be measured across the whole `k` axis of both benchmarks, not only the small end.
-- **The argument may be the receiver.** `rowSet.remove(rowSet)` hands the individual remove loop the set it is
-  reading its ranges from; the merge handled it, the loop would cut and re-read. `remove` returns the empty set for
-  its own receiver before choosing a strategy. Inserting a set into itself is a no-op on every path.
+- **The argument may be the receiver.** `WritableRowSetImpl` checks `removed == this` for `rowSet.remove(rowSet)`
+  itself, but two row sets sharing one inner set copy-on-write reach `SortedRanges.remove` with the receiver as the
+  argument. The merge handled that; the individual loop would cut the set it is reading its ranges from. `remove`
+  returns the empty set for its own receiver before choosing a strategy; inserting a set into itself is a no-op on
+  the individual and merge paths, which are the ones an argument of the set's own size selects.
