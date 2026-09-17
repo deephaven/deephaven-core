@@ -73,12 +73,29 @@ public class BaseTableAwaitUpdateTest {
     @Test
     public void testNonPositiveTimeoutDoesNotWait() {
         for (final long timeoutMillis : new long[] {0, -1}) {
-            final Waiter waiter = Waiter.timed(source, timeoutMillis);
-            waiter.join();
-            assertEquals("timeoutMillis=" + timeoutMillis, Boolean.FALSE, waiter.result);
-            assertTrue("timeoutMillis=" + timeoutMillis + ", elapsedNanos=" + waiter.elapsedNanos,
-                    waiter.elapsedNanos < TimeUnit.MILLISECONDS.toNanos(ELAPSING_TIMEOUT_MILLIS));
+            assertDidNotWait(timeoutMillis);
         }
+    }
+
+    /**
+     * A non-positive timeout must never wait, and so must not be delayed by (or contend for) the exclusive lock, even
+     * when another thread is holding it.
+     */
+    @Test
+    public void testNonPositiveTimeoutDoesNotWaitWhileLockHeld() throws InterruptedException {
+        whileExclusiveLockHeld(() -> {
+            for (final long timeoutMillis : new long[] {0, -1}) {
+                assertDidNotWait(timeoutMillis);
+            }
+        });
+    }
+
+    private void assertDidNotWait(final long timeoutMillis) {
+        final Waiter waiter = Waiter.timed(source, timeoutMillis);
+        waiter.join();
+        assertEquals("timeoutMillis=" + timeoutMillis, Boolean.FALSE, waiter.result);
+        assertTrue("timeoutMillis=" + timeoutMillis + ", elapsedNanos=" + waiter.elapsedNanos,
+                waiter.elapsedNanos < TimeUnit.MILLISECONDS.toNanos(ELAPSING_TIMEOUT_MILLIS));
     }
 
     @Test
@@ -146,6 +163,20 @@ public class BaseTableAwaitUpdateTest {
      */
     @Test
     public void testLockWaitIsChargedAgainstTimeout() throws InterruptedException {
+        whileExclusiveLockHeld(() -> {
+            // The holder thread keeps the exclusive lock for the duration of this action, so the waiter can never
+            // acquire it. It must nonetheless return (false) once its timeout has elapsed.
+            final Waiter waiter = Waiter.timed(source, ELAPSING_TIMEOUT_MILLIS);
+            waiter.join();
+            assertEquals(Boolean.FALSE, waiter.result);
+            assertWaitedForTimeout(waiter, ELAPSING_TIMEOUT_MILLIS);
+        });
+    }
+
+    /**
+     * Run {@code action} on the calling thread while a separate thread holds the update graph's exclusive lock.
+     */
+    private void whileExclusiveLockHeld(final Runnable action) throws InterruptedException {
         final CountDownLatch locked = new CountDownLatch(1);
         final CountDownLatch release = new CountDownLatch(1);
         final Thread holder = new Thread(() -> {
@@ -161,12 +192,7 @@ public class BaseTableAwaitUpdateTest {
         holder.start();
         try {
             locked.await();
-            // The holder thread will keep the exclusive lock until we count down release, below, so the waiter can
-            // never acquire it. It must nonetheless return (false) once its timeout has elapsed.
-            final Waiter waiter = Waiter.timed(source, ELAPSING_TIMEOUT_MILLIS);
-            waiter.join();
-            assertEquals(Boolean.FALSE, waiter.result);
-            assertWaitedForTimeout(waiter, ELAPSING_TIMEOUT_MILLIS);
+            action.run();
         } finally {
             release.countDown();
             holder.join(JOIN_TIMEOUT_MILLIS);

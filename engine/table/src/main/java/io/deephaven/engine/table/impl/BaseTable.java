@@ -605,9 +605,15 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             // call did not time out, since the terminal notification either has been or will be delivered.
             return true;
         }
+        if (timeoutMillis <= 0) {
+            // Do no waiting at all for non-positive timeouts, and don't disturb the exclusive lock. This case is
+            // worth handling explicitly: Condition.await(0, unit) and Object.wait(0) instead wait forever, and as
+            // zero-timeout tryLock still makes an untimed acquisition attempt, which would acquire (and immediately
+            // release) the update graph's exclusive lock whenever it happens to be uncontended.
+            return isFailed || startLastNotificationStep != lastNotificationStep;
+        }
 
-        // Clamp the timeout, so that the deadline arithmetic used by tryLock and awaitNanos cannot overflow. No need
-        // to validate non-positive timeouts: if remainingNanos <= 0, tryLock is guaranteed to not wait at all.
+        // Clamp the timeout, so that the deadline arithmetic used by tryLock and awaitNanos cannot overflow.
         long remainingNanos = Math.min(TimeUnit.MILLISECONDS.toNanos(timeoutMillis), MAXIMUM_TIMEOUT_NANOS);
         if (!updateGraph.exclusiveLock().tryLock(remainingNanos, TimeUnit.NANOSECONDS)) {
             // Usually, callers will already be holding the exclusive lock when they invoke this method. If they are
