@@ -181,9 +181,13 @@ or shrinks its entry count.
   - all edits shrink or hold: `applyPlanForward`, from the first edit, so each stretch moves left into vacated space.
 - Otherwise into a new set of the same type and offset (`applyPlanToNew`), sized by `capacityForLastIndex`; our own
   array is returned to the array pool when arrays are pooled (`SortedRanges.poolArrays`, off by default) and we owned
-  it. Mixed grow-and-shrink edits, a common shape for removals that
-  split some ranges and delete others, take this path. If no capacity of our type can hold the result, the strategy
-  returns null and the caller falls through to the merge.
+  it. Mixed grow-and-shrink edits, a common shape for removals that split some ranges and delete others, take this
+  path. If no capacity of our type can hold the result, the strategy returns null and the caller falls through to the
+  merge. That capacity depends on whether the result counts as dense, judged from its entry count and the bounds the
+  caller passes: the union's bounds for an insert, our current bounds for a removal. A removal that drops our first or
+  last range while splitting others is therefore judged against a wider span than it ends with and may keep a long
+  packing that a fresh judgement would have sent to the merge to repack. The single-range path judges with its current
+  bounds in the same way, and either outcome is a valid set; only its compactness differs.
 
 Each untouched stretch is moved by one `System.arraycopy` at most, so the pass costs O(n) entries moved plus O(k) edits,
 against the O(k log n) searches of the plan pass.
