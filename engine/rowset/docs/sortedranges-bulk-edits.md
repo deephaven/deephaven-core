@@ -1,0 +1,232 @@
+# SortedRanges bulk insert and remove
+
+How `SortedRanges` applies a whole `RowSet` of additions or removals, which of its five strategies each shape of input
+takes, and why. Written alongside DH-23690, which added the planned strategies after the merge-based one turned out to
+be 40-68x slower than key-by-key insertion for the small arguments incremental `naturalJoin` produces.
+
+| | |
+|---|---|
+| **Entry points** | `WritableRowSet.insert(RowSet)` / `remove(RowSet)` → `SortedRanges.ixInsert` / `ixRemove` → `insertImpl` / `remove(OrderedLongSet)` |
+| **Strategies** | append, individual edits, planned edits, merge, convert to `RspBitmap` |
+| **What decides** | whether the argument lies past our last key, how many ranges it has, how big it is relative to us, and whether the result still fits our packing and capacity |
+| **Benchmarks** | `RowSetSmallInsertBench`, `RowSetSmallRemoveBench` (`jmhRunRowSetSmallInsert`, `jmhRunRowSetSmallRemove`) |
+| **Tests** | `SortedRangesBulkInsertTest` (randomized against key-by-key, plus the named corner cases below) |
+
+## The representation the strategies edit
+
+A `SortedRanges` is one sorted array of *entries*. A non-negative entry is a key that starts a range or stands alone
+as a single; a negative entry is the (negated) end of the range whose start precedes it. So `{3, 10..12, 20}` is stored
+as `3, 10, -12, 20`: four entries for three ranges. Ranges are never adjacent or overlapping; `{10} {11..12}` is not a
+valid state, it is `10..12`. The array is packed as shorts, ints or longs (`SortedRangesShort/Int/Long`) relative to an
+offset, and each packing has a capacity beyond which the set must become an `RspBitmap`.
+
+Two consequences shape everything below. First, the number of *ranges* and the number of *entries* differ by up to
+2x, and the code is explicit about which one it is counting. Second, an edit that changes no entry count can still
+change the encoding: inserting `11` into `{10} {12}` leaves two entries but turns two singles into the range `10..12`.
+
+A set may be shared copy-on-write (`RefCountedCow`). Every strategy either writes in place because it holds the only
+reference, or produces a new set and leaves the shared one untouched. Shared sets are read concurrently by update-graph
+threads, so no strategy keeps scratch state on the set itself.
+
+## The decision tree
+
+For `insert(other)`, in the order the code asks the questions:
+
+```
+ixInsert(added)
+├─ added is empty ................................... return this (or EMPTY if we are empty too)
+├─ we are empty ..................................... return a shared reference to added, no copy
+├─ added is a SingleRange ........................... addRange: one in-place open/coalesce
+│                                                     (null → convert to RspBitmap)
+├─ added is an RspBitmap ............................ convert to RspBitmap, or the two together
+└─ added is a SortedRanges .......................... insertImpl(added):
+   ├─ our last key < added.first .................... APPEND: mergeAppend copies added onto our tail
+   │                                                  (null on capacity → convert to RspBitmap)
+   └─ otherwise
+      ├─ added does not fit our packing ............. MERGE (see below)
+      ├─ editIndividually(added) .................... INDIVIDUAL: addRangeInternal per range
+      ├─ planEdits(added) ........................... PLANNED: insertPlanned
+      └─ otherwise, or INDIVIDUAL/PLANNED returned null
+         └─ MERGE: union into the long work buffer, repack into the narrowest
+            type that holds the result (null on capacity → convert to RspBitmap)
+```
+
+For `remove(removed)`:
+
+```
+ixRemove(removed)
+├─ we are empty ..................................... return EMPTY
+├─ removed is empty ................................. return this
+├─ removed is a SingleRange ......................... removeRange: one in-place cut
+│                                                     (null → convert to RspBitmap)
+└─ otherwise ........................................ remove(removed):
+   ├─ removed is a SortedRanges
+   │  ├─ editIndividually(removed) ................. INDIVIDUAL: removeRange per range
+   │  ├─ planEdits(removed) ........................ PLANNED: removePlanned
+   │  └─ otherwise, or either returned null ......... fall through
+   └─ MERGE: intersect with the complement into the long work buffer, repack
+      (null on capacity → convert to RspBitmap)
+```
+
+A result that comes back empty is normalized to `OrderedLongSet.EMPTY`.
+
+### The two predicates
+
+**`editIndividually(other)`**: true for one or two ranges at any size, and for a handful of ranges on a tiny set;
+precisely, with `r` the number of ranges in `other` and `n` our entry count, `(r - 2)^2 * n <= 400`. Ranges are counted
+from their start entries, stopping as soon as the inequality fails, so the count is cheap. This is where the planned
+strategy's fixed cost of a few tens of nanoseconds does not pay: measured, individual edits win for one or two ranges
+everywhere and for up to about six ranges on a 20-entry set.
+
+**`planEdits(other)`**: `other.count * 8 <= count`, on entries. A planned edit costs a binary search and a small block
+move, about 20 ns; the merge costs about 2 ns per entry of either set. Measured, planning wins while the argument has
+up to about a twelfth as many entries as we do and loses from about a quarter, so the boundary sits at an eighth.
+Counting entries rather than ranges only sends a range-heavy argument to the merge a little early.
+
+The two predicates are shared by insert and remove; the remove benchmark showed the same crossovers within noise.
+
+## The strategies
+
+### Append
+
+Our last key is below the argument's first key, so the argument goes on the end. `mergeAppend` copies its entries
+after ours, coalescing when its first key is adjacent to our last. It fails only on capacity, and the caller then
+converts to an `RspBitmap`. This is the path every append-only workload takes, including the release phase of an
+incremental join, and it was never the problem.
+
+### Individual edits
+
+`insertRangesIndividually` walks the argument's ranges and calls `addRangeInternal` for each;
+`removeRangesIndividually` calls `removeRange`. Each call is the same code a single-key insert or remove runs: a binary
+search and one `System.arraycopy` to open or close a gap, moving about half the entries. That block move is cheap,
+about 0.02-0.05 ns per entry moved, which is why two such moves beat one planned pass with its fixed setup.
+
+Copy-on-write: `removeRange` handles a shared receiver itself. `addRangeInternal(..., writeCheck)` does too, but
+returns the receiver *unchanged and still shared* when the range is already contained, so the loop keeps `writeCheck`
+on until a call returns a different object, which is the private copy. Clearing it after the first call let a later
+range write into a shared set; `containedFirstRangeKeepsSharedCopyIsolated` covers the sequence.
+
+A null from either loop means a range outgrew the set's type. The loop may already have applied earlier ranges in
+place; the caller falls through to the merge, for which re-inserting or re-removing them is idempotent.
+
+### Planned edits
+
+Two passes. The first plans every edit without moving anything; the second moves each untouched stretch of entries
+exactly once. All scratch state lives in a thread-local `EditPlan`.
+
+**Plan pass, insert (`insertPlanned`).** For each range `[s, e]` of the argument, in order:
+
+1. Find the first of our entries whose key is at least `s - 1` (`absRawBinarySearch`, from a cursor that never moves
+   backward). That entry is one of three things:
+   - the *end* of a range that reaches `s - 1` or beyond: it started before `s - 1`, so it touches `[s, e]`;
+   - the *start* of a range or single within `e + 1`: it touches `[s, e]`;
+   - the start of a range beyond `e + 1`, or nothing at all: `[s, e]` touches none of ours and goes in before it.
+2. Absorb every following range of ours that starts within `e + 1` (`absorbTouching`), extending the group's end and
+   summing the cardinality the absorbed ranges held.
+3. The group is now the old entries `[g0, g1)` and the single range they become. A following argument range that starts
+   within one key of the group's end joins the same group and absorbs further.
+4. When the group closes (`recordInsertGroup`), it is dropped if the old entries already encode exactly its range: a
+   contained range changes nothing. The encoding test is exact, not an entry count: two singles bridged by a new key
+   keep two entries but become a start and a negative end. Otherwise the edit is recorded: replace `[g0, g1)` with one
+   piece `[first, last]`.
+
+**Plan pass, remove (`removePlanned`).** For each range `[s, e]` of the argument:
+
+1. Find the first of our entries whose key is at least `s`.
+   - If it is a range *end*, `s` falls inside that range, which started before `s`; a left remainder
+     `[start, s - 1]` always survives and is the edit's first piece.
+   - If it is a range *start* beyond `e`, the argument range holds none of our keys; nothing is recorded.
+   - Otherwise it starts a range or single at or beyond `s` that the cut reaches.
+2. Absorb every range of ours that starts at or before `e` (`absorbCut`). If the last absorbed range reaches past `e`,
+   its right remainder `[e + 1, end]` becomes a piece.
+3. A following argument range that starts inside that right remainder carves it: the remainder is shortened to end at
+   `s - 1`, and either a new right remainder is added or, when `e` reaches past it, absorption continues. The argument's
+   ranges are neither overlapping nor adjacent, so `s` is at least one key past the remainder's first key and a left
+   part always survives; the code asserts this rather than handling a case that cannot occur.
+4. When the group closes, the edit replaces `[g0, g1)` with zero, one or two pieces (or more, when several argument
+   ranges carve one of ours).
+
+Both plan passes guard the `+ 1` arithmetic for a range ending at `Long.MAX_VALUE`, which otherwise wraps negative
+and stops absorption early.
+
+**Apply pass (`applyPlan`).** The plan knows the net change in entries and in cardinality, and whether any edit grows
+or shrinks its entry count.
+
+- In place, when we hold the only reference, the result fits our array, and no edit grows while another shrinks:
+  - all edits grow or hold: `applyPlanBackward`, from the last edit, so each stretch moves right before anything is
+    written over it;
+  - all edits shrink or hold: `applyPlanForward`, from the first edit, so each stretch moves left into vacated space.
+- Otherwise into a new set of the same type and offset (`applyPlanToNew`), sized by `capacityForLastIndex`; our own
+  array is returned to the array pool if we owned it. Mixed grow-and-shrink edits, a common shape for removals that
+  split some ranges and delete others, take this path. If no capacity of our type can hold the result, the strategy
+  returns null and the caller falls through to the merge.
+
+Each untouched stretch is moved by one `System.arraycopy` at most, so the pass costs O(n) entries moved plus O(k) edits,
+against the O(k log n) searches of the plan pass.
+
+### Merge
+
+The original strategy and still the right one for large arguments and for arguments that do not fit our packing.
+`union` (or `intersect` with the complement, for removal) walks both sets through range iterators into a thread-local
+long work buffer, then `makeOrderedLongSetFromLongRangesArray` repacks the result into the narrowest type that can
+hold it, reusing our array when we own it. It visits every entry of both sets, at about 2 ns each, which is what made
+it 40-68x slower than key-by-key insertion at two keys into 2000 entries, and it is also what makes it the fastest
+choice once the argument is a sizeable fraction of the set: at 500 keys into 2000 the planned pass was 1.6x slower,
+at 2000 into 6000 2.3x slower.
+
+The merge is also the fallback for every capacity failure above, because it can change the packing: a dense
+`SortedRangesLong` caps at 256 entries where the same content repacked as shorts holds thousands.
+
+### Convert to RspBitmap
+
+When even the merge's repack cannot hold the result, the set becomes an `RspBitmap` and the argument is applied
+there. This is the terminal case of every branch; it is not a performance strategy.
+
+## Measured behaviour
+
+Microseconds per bulk insert into a target of scattered single keys; `forAll` is the same keys inserted one at a
+time, the bound the bulk call should never be slower than. Before is the merge for every argument; after is the tree
+above.
+
+```
+ target    k   before    after   forAll
+     20    2    0.080    0.040    0.042
+     20   20    0.142    0.137    0.265
+    200   20    0.458    0.463    0.380
+   2000    2    4.233    0.105    0.103
+   2000    5    4.531    0.208    0.265
+   2000   20    4.555    0.522    0.969
+   2000  100    5.329    2.792    5.149
+   6000    2   13.006    0.149    0.193
+   6000   20   15.151    2.174    4.204
+   6000  100   15.381    4.226   12.283
+   6000 2000   23.222   23.044      n/a   (merge, via planEdits)
+```
+
+Removal shows the same shape. Differences under about 30 ns, which is where the 20- and 200-entry rows sit, are inside
+the benchmark's own run-to-run noise. For the join, accumulation of a slot's row keys per cycle went from losing to
+per-key insertion by 84% on 2000-key slots to beating it by 13%.
+
+## Traps this code has already fallen into
+
+Each of these produced a wrong answer or a failing test at least once while the strategies were built; the tests
+named cover them.
+
+- **Scratch state on the set.** A shared set is read by several update-graph threads at once. Returning two values
+  from a helper through instance fields raced and produced `Index -1` failures in the join tests while every rowset
+  unit test passed. Scratch lives on the thread-local plan.
+- **Copy-on-write through a no-op.** See individual edits above; `containedFirstRangeKeepsSharedCopyIsolated`.
+- **Testing "private" sets that are shared.** `RowSetFactory.empty().insert(set)` takes a shared reference to `set`
+  rather than copying it, so a test that meant to exercise in-place edits exercised only the copy-to-new path. Private
+  copies in tests are built key by key.
+- **Entry count as a proxy for "unchanged".** Bridging two singles keeps the entry count; compare the encoding.
+- **`e + 1` at `Long.MAX_VALUE`.** Wraps negative; every adjacency test guards it.
+- **Capacity is per type.** A planned result that outgrows a dense `SortedRangesLong` must fall back to the merge,
+  which repacks, rather than to the bitmap.
+- **Removing from a set an earlier removal emptied.** `removeRange` on an empty set fails; the individual loop stops
+  when the result is empty.
+- **The argument is a normalized set.** Its ranges never touch, which is what makes the carve invariant hold and what
+  made a proposed test case (`{10} {11..12}`) impossible rather than uncovered.
+- **Small arguments are not the only arguments.** The first cut of the planned strategy had no upper bound and was
+  up to 2.3x slower than the merge for arguments near the set's own size; `planEdits` is the result. Any change to
+  these strategies should be measured across the whole `k` axis of both benchmarks, not only the small end.
