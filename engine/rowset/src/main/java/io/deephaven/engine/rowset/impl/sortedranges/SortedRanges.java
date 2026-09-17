@@ -2430,23 +2430,27 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
     }
 
-    /** Apply a plan by copying this set's untouched stretches and the edits' ranges into {@code ans}, in order. */
+    /**
+     * Apply a plan by copying this set's untouched stretches and the edits' ranges into {@code ans}, in order. A
+     * stretch starting at position {@code sourceStretchStart} in this set lands at {@code sourceStretchStart + shift}
+     * in {@code ans}, where {@code shift} is the net entry change of the edits before it.
+     */
     private void applyPlanToNew(final EditPlan plan, final SortedRanges ans) {
-        int stretchStart = 0;
+        int sourceStretchStart = 0;
         int shift = 0;
         for (int ei = 0; ei < plan.size; ++ei) {
             final int editStart = plan.start[ei];
-            final int length = editStart - stretchStart;
+            final int length = editStart - sourceStretchStart;
             if (length > 0) {
-                ans.copyDataFrom(this, stretchStart, stretchStart + shift, length);
+                ans.copyDataFrom(this, sourceStretchStart, sourceStretchStart + shift, length);
             }
             writePieces(ans, plan, ei, editStart + shift);
             shift += plan.newLength(ei) - (plan.end[ei] - editStart);
-            stretchStart = plan.end[ei];
+            sourceStretchStart = plan.end[ei];
         }
-        final int length = count - stretchStart;
+        final int length = count - sourceStretchStart;
         if (length > 0) {
-            ans.copyDataFrom(this, stretchStart, stretchStart + shift, length);
+            ans.copyDataFrom(this, sourceStretchStart, sourceStretchStart + shift, length);
         }
     }
 
