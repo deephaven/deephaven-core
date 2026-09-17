@@ -83,7 +83,7 @@ source = empty_table(20).update(
 result = TailInitializationFilter.most_recent(source, "Timestamp", "PT00:00:10")
 ```
 
-`source` spans 20 seconds of history; `result` keeps only the rows within 10 seconds of the newest timestamp in the partition.
+`source` contains 20 rows spanning seconds 0 through 19 (19 seconds of elapsed history). The newest timestamp is second 19, so a 10-second window keeps rows from second 9 onward, inclusive; `result` contains 11 rows.
 
 ### Filter by a `timedelta`
 
