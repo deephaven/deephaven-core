@@ -1817,20 +1817,44 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      * nothing, a remainder on either side, or both sides of a split. The plan also totals what its edits amount to.
      */
     private static final class EditPlan {
+        /** How many edits the plan holds; the edit arrays are filled up to this index. */
         int size;
+        /** Per edit, the position of the first old entry it replaces. Edits are in ascending order of position. */
         int[] start = new int[16];
+        /**
+         * Per edit, the position after the last old entry it replaces, so the edit replaces {@code [start, end)}. Equal
+         * to {@code start} for an edit that inserts between two old entries. Set when the edit is finished.
+         */
         int[] end = new int[16];
+        /**
+         * Per edit, the index into {@link #first} and {@link #last} of its first piece; its pieces run from there to
+         * the next edit's {@code pieceStart}, or to {@link #pieces} for the last edit.
+         */
         int[] pieceStart = new int[16];
+        /** How many pieces the plan holds across all edits; the piece arrays are filled up to this index. */
         int pieces;
+        /** Per piece, the first key of the range the piece writes. */
         long[] first = new long[16];
+        /** Per piece, the last key of the range the piece writes; equal to {@link #first} for a single. */
         long[] last = new long[16];
-        /** Net change in entries and in keys over all edits, and whether any edit grows or shrinks its entries. */
+        /**
+         * Net change in the set's entry count over all edits: the sum of each edit's piece entries minus old entries.
+         */
         int entryDelta;
+        /** Net change in the set's cardinality over all edits: keys the pieces hold minus keys the old entries held. */
         long cardinalityDelta;
+        /** Whether any edit writes more entries than it replaces. */
         boolean grows;
+        /**
+         * Whether any edit writes fewer entries than it replaces. Both flags set means the plan cannot apply in place.
+         */
         boolean shrinks;
-        /** What the last absorbing walk found: the keys the absorbed ranges held and the last key they reached. */
+        /** Keys held by the ranges the most recent absorbing walk took into the current edit. */
         long absorbedCardinality;
+        /**
+         * The last key the most recent absorbing walk reached: the end of the last range it absorbed, or the bound it
+         * was given when it absorbed nothing.
+         */
         long absorbedLastEnd;
 
         void reset() {
