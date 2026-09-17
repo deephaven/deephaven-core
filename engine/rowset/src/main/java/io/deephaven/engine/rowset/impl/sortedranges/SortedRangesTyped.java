@@ -174,4 +174,17 @@ public abstract class SortedRangesTyped<ArrayType> extends SortedRanges {
     protected final void moveData(final int srcPos, final int dstPos, final int len) {
         System.arraycopy(data, srcPos, data, dstPos, len);
     }
+
+    @Override
+    protected final void copyDataFrom(final SortedRanges src, final int srcPos, final int dstPos, final int len) {
+        // noinspection unchecked
+        System.arraycopy(((SortedRangesTyped<ArrayType>) src).data, srcPos, data, dstPos, len);
+    }
+
+    @Override
+    protected final void recycleDataIfOwned() {
+        if (POOL_ARRAYS && canWrite()) {
+            freeArray(data);
+        }
+    }
 }
