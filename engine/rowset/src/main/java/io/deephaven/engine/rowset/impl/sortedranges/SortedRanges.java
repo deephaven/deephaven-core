@@ -2143,10 +2143,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     /**
-     * Walk our ranges from entry {@code j} while they start at or before {@code otherEnd + 1}, all of which touch a
-     * range ending at {@code otherEnd}. Sets the plan's {@code absorbedCardinality} to the keys those ranges held and
-     * {@code absorbedLastEnd} to the last key any of them or {@code otherEnd} reaches. The plan is thread-local
-     * scratch; this set may be shared between threads and is never written here.
+     * Walk our ranges from entry {@code ii} while they start at or before {@code bound + 1}, all of which touch a
+     * range ending at {@code bound}. Sets the plan's {@code absorbedCardinality} to the keys those ranges held and
+     * {@code absorbedLastEnd} to the last key any of them or {@code bound} reaches. The plan is thread-local scratch;
+     * this set may be shared between threads and is never written here.
      *
      * @return the entry after the last range absorbed
      */
@@ -2305,12 +2305,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     /**
-     * Walk our ranges from entry {@code j} while they start at or before {@code removedEnd}, all of which the removal
-     * of keys up to {@code removedEnd} cuts; when the last of them reaches past {@code removedEnd}, its remainder
-     * becomes a piece of the current edit. Sets the plan's {@code absorbedCardinality} to the keys those ranges held
-     * and {@code absorbedLastEnd} to the end key of the last of them, or to {@code removedEnd} when there was none,
-     * past which nothing of the edit remains either way. The plan is thread-local scratch; this set may be shared
-     * between threads and is never written here.
+     * Walk our ranges from entry {@code ii} while they start at or before {@code bound}, all of which the removal of
+     * keys up to {@code bound} cuts; when the last of them reaches past {@code bound}, its remainder becomes a piece
+     * of the current edit. Sets the plan's {@code absorbedCardinality} to the keys those ranges held and
+     * {@code absorbedLastEnd} to the end key of the last of them, or to {@code bound} when there was none, past which
+     * nothing of the edit remains either way. The plan is thread-local scratch; this set may be shared between
+     * threads and is never written here.
      *
      * @return the entry after the last range absorbed
      */
