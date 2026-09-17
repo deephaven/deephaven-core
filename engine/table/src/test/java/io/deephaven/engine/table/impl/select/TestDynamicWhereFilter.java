@@ -1714,5 +1714,78 @@ public class TestDynamicWhereFilter {
         assertTableEquals(newTable(intCol(KEY, 1, 2, 3), booleanCol("M", true, true, false)), result);
     }
 
+    /**
+     * Run {@code operation} with its attempt parked in its previous-values read of the source, and fail the set while
+     * it is parked.
+     * <p>
+     * The attempt read a set that then died on its own step, so its completion check refuses it, the same way it
+     * refuses a set change on that step. The retry reads current values and is refused at its commit, because no result
+     * over a dead set can follow it, so the caller is told by the operation throwing. Nothing is left registered with
+     * the set, and the caller never receives a table that would silently stop following its set.
+     */
+    private void assertSetFailureDuringTheReadFailsTheOperation(
+            @NotNull final BiFunction<QueryTable, DynamicWhereFilter, Table> operation) throws Exception {
+        final Gate sourceGate = new Gate();
+        final GatedIntegerArraySource sourceKey = new GatedIntegerArraySource(sourceGate);
+        final QueryTable source = sourceTable(sourceKey, true, 1, 2, 3);
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 1));
+        final QueryTable indexTable = registerSetIndex(setTable, new Gate());
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, pairs());
+
+        updateGraph.startCycleForUnitTests(false);
+        final long step = updateGraph.clock().currentStep();
+        try {
+            // Nothing is satisfied yet, so this attempt reads previous values.
+            sourceGate.arm();
+            final Future<Table> future = pool.submit(() -> operation.apply(source, filter));
+            assertTrue("the attempt began its previous-values read",
+                    sourceGate.awaitReached(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS)));
+
+            final RuntimeException setError = new RuntimeException("set table failure");
+            try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+                indexTable.notifyListenersOnError(setError, null);
+                updateGraph.markSourcesRefreshedForUnitTests();
+                while (!filter.satisfied(step)) {
+                    assertTrue(updateGraph.flushOneNotificationForUnitTests());
+                }
+            }
+            assertEquals("a failure is a state change on its step", step, filter.lastStateChangeStep());
+
+            sourceGate.release();
+            pumpUntilDone(future);
+
+            final ExecutionException failure = assertThrows(ExecutionException.class, future::get);
+            assertTrue("the operation must fail because its set failed: " + failure.getCause(),
+                    hasCause(failure, TableAlreadyFailedException.class));
+            assertEquals("the refused attempt was retried once, and that retry was refused at its commit", 2,
+                    sourceKey.chunkReads.get());
+            assertEquals("an operation that could not be built follows nothing", 0,
+                    filter.sharedSet().registeredFilterCount());
+            updateGraph.completeCycleForUnitTests();
+
+            for (final Throwable reported : base.getUpdateErrors()) {
+                assertSame("only the set's own failure may be reported", setError, reported);
+            }
+        } finally {
+            endCycleIfOpen();
+        }
+    }
+
+    /**
+     * A {@code where} whose set fails while it is reading throws, rather than handing back a table built from a set
+     * that can never again notify it.
+     */
+    @Test
+    public void testSetFailureDuringTheReadFailsTheWhere() throws Exception {
+        assertSetFailureDuringTheReadFailsTheOperation(QueryTable::where);
+    }
+
+    /** The same guarantee for {@code wouldMatch}. */
+    @Test
+    public void testSetFailureDuringTheReadFailsTheWouldMatch() throws Exception {
+        assertSetFailureDuringTheReadFailsTheOperation(
+                (source, filter) -> source.wouldMatch(new WouldMatchPair("M", filter)));
+    }
+
     // endregion Attempts that cannot commit over the set they read (DH-23666)
 }

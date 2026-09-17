@@ -1174,6 +1174,32 @@ public abstract class QueryTableWhereTest {
     }
 
     /**
+     * A {@code where} over a static source with a refreshing set is driven by a where listener with no recorder, which
+     * hears only from its filters. When the set fails, that listener must fail the result exactly once, with the set's
+     * error.
+     */
+    @Test
+    public void testStaticSourceSetFailureFailsResultOnce() {
+        final QueryTable source = testTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final Table result = source.where(keyIn(setTable));
+        assertTrue("a static source filtered by a refreshing set is refreshing", result.isRefreshing());
+        final FailureRecordingListener failures = new FailureRecordingListener(result);
+        assertFalse(result.isFailed());
+
+        final RuntimeException setError = new RuntimeException("set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> setTable.notifyListenersOnError(setError, null));
+        }
+
+        assertTrue("the result must fail on the cycle its set failed", result.isFailed());
+        failures.assertFailedOnceWith(setError);
+        assertOnlyReportedErrors(setError);
+    }
+
+    /**
      * A filter error fails the result from outside its listener's notification. When the set table fails afterwards,
      * the failure request that reaches the listener must leave the already-failed result alone, rather than failing it
      * a second time, and must not surface as an engine error.
