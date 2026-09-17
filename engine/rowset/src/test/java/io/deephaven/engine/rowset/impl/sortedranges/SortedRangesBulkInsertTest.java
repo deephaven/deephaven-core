@@ -247,7 +247,7 @@ public class SortedRangesBulkInsertTest {
     private static WritableRowSet randomSet(final Random random, final long base, final long span, final int ranges,
             final int maxRunLength) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-        for (int i = 0; i < ranges; ++i) {
+        for (int ii = 0; ii < ranges; ++ii) {
             final long start = base + (long) (random.nextDouble() * span);
             final long end = start + random.nextInt(maxRunLength);
             builder.addRange(start, end);
@@ -262,7 +262,7 @@ public class SortedRangesBulkInsertTest {
     private static WritableRowSet randomSetNear(final Random random, final WritableRowSet target, final long base,
             final long span, final int ranges) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-        for (int i = 0; i < ranges; ++i) {
+        for (int ii = 0; ii < ranges; ++ii) {
             long start;
             if (target.isEmpty() || random.nextInt(4) == 0) {
                 start = base + (long) (random.nextDouble() * span);

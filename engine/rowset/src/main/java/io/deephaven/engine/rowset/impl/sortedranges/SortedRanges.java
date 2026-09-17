@@ -1911,8 +1911,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         /** Entries the edit's pieces occupy. */
         int newLength(final int edit) {
             int length = 0;
-            for (int p = pieceStart[edit]; p < pieceEnd(edit); ++p) {
-                length += first[p] == last[p] ? 1 : 2;
+            for (int pi = pieceStart[edit]; pi < pieceEnd(edit); ++pi) {
+                length += first[pi] == last[pi] ? 1 : 2;
             }
             return length;
         }
@@ -1920,8 +1920,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         /** Keys the edit's pieces hold. */
         long newCardinality(final int edit) {
             long cardinality = 0;
-            for (int p = pieceStart[edit]; p < pieceEnd(edit); ++p) {
-                cardinality += last[p] - first[p] + 1;
+            for (int pi = pieceStart[edit]; pi < pieceEnd(edit); ++pi) {
+                cardinality += last[pi] - first[pi] + 1;
             }
             return cardinality;
         }
@@ -1957,8 +1957,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         // A range takes one entry as a single and two as a start and an end, so ranges are counted from their
         // starts, stopping as soon as there are enough of them for planning to pay.
         long ranges = 0;
-        for (int i = 0; i < other.count; ++i) {
-            if (other.unpackedGet(i) >= 0) {
+        for (int ii = 0; ii < other.count; ++ii) {
+            if (other.unpackedGet(ii) >= 0) {
                 final long extraRanges = ++ranges - 2;
                 if (extraRanges > 0 && extraRanges * extraRanges * count > INDIVIDUAL_EDIT_THRESHOLD) {
                     return false;
@@ -1992,14 +1992,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         // A shared set is checked until an insert returns a different set: that one is a private, writable copy. A
         // range already contained in this set returns this set itself, unchanged and still shared.
         boolean check = writeCheck;
-        for (int i = 0; i < other.count;) {
-            final long start = other.unpackedGet(i++);
+        for (int ii = 0; ii < other.count;) {
+            final long start = other.unpackedGet(ii++);
             long end = start;
-            if (i < other.count) {
-                final long next = other.unpackedGet(i);
+            if (ii < other.count) {
+                final long next = other.unpackedGet(ii);
                 if (next < 0) {
                     end = -next;
-                    ++i;
+                    ++ii;
                 }
             }
             result = result.addRangeInternal(start, end, check);
@@ -2021,14 +2021,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      */
     private SortedRanges removeRangesIndividually(final SortedRanges removed) {
         SortedRanges result = this;
-        for (int i = 0; i < removed.count;) {
-            final long start = removed.unpackedGet(i++);
+        for (int ii = 0; ii < removed.count;) {
+            final long start = removed.unpackedGet(ii++);
             long end = start;
-            if (i < removed.count) {
-                final long next = removed.unpackedGet(i);
+            if (ii < removed.count) {
+                final long next = removed.unpackedGet(ii);
                 if (next < 0) {
                     end = -next;
-                    ++i;
+                    ++ii;
                 }
             }
             result = result.removeRange(start, end);
@@ -2070,20 +2070,21 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         int cursor = 0;
 
         for (int oi = 0; oi < other.count;) {
-            final long s = other.unpackedGet(oi++);
-            long e = s;
+            final long otherStart = other.unpackedGet(oi++);
+            long otherEnd = otherStart;
             if (oi < other.count) {
                 final long next = other.unpackedGet(oi);
                 if (next < 0) {
-                    e = -next;
+                    otherEnd = -next;
                     ++oi;
                 }
             }
 
-            if (pending && (groupLast == Long.MAX_VALUE || s <= groupLast + 1)) {
-                // [s, e] touches the group's range, so it joins the group, along with any ranges of ours it reaches.
-                if (e > groupLast) {
-                    groupEnd = absorbTouching(plan, groupEnd, e);
+            if (pending && (groupLast == Long.MAX_VALUE || otherStart <= groupLast + 1)) {
+                // [otherStart, otherEnd] touches the group's range, so it joins the group, along with any ranges of
+                // ours it reaches.
+                if (otherEnd > groupLast) {
+                    groupEnd = absorbTouching(plan, groupEnd, otherEnd);
                     groupOldCardinality += plan.absorbedCardinality;
                     groupLast = plan.absorbedLastEnd;
                 }
@@ -2094,35 +2095,38 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 cursor = groupEnd;
             }
 
-            // Start a group for [s, e] at the first of our entries whose key is at least s - 1: the end of a range
-            // reaching s - 1 or beyond, or the start of a range or single at s - 1 or beyond.
-            final int p = cursor >= count ? count : absRawBinarySearch(pack(s == 0 ? 0 : s - 1), cursor, count - 1);
-            if (p == count) {
+            // Start a group for [otherStart, otherEnd] at the first of our entries whose key is at least
+            // otherStart - 1: the end of a range reaching otherStart - 1 or beyond, or the start of a range or single
+            // at otherStart - 1 or beyond.
+            final int pos = cursor >= count ? count
+                    : absRawBinarySearch(pack(otherStart == 0 ? 0 : otherStart - 1), cursor, count - 1);
+            if (pos == count) {
                 groupStart = count;
                 groupEnd = count;
-                groupFirst = s;
-                groupLast = e;
+                groupFirst = otherStart;
+                groupLast = otherEnd;
                 groupOldCardinality = 0;
             } else {
-                final long data = unpackedGet(p);
+                final long data = unpackedGet(pos);
                 if (data < 0) {
-                    // The range ending here started before s - 1 and reaches at least s - 1: it touches [s, e].
-                    final long rangeStart = unpackedGet(p - 1);
-                    groupStart = p - 1;
-                    groupEnd = p + 1;
-                    groupFirst = Math.min(rangeStart, s);
-                    groupLast = Math.max(-data, e);
+                    // The range ending here started before otherStart - 1 and reaches at least otherStart - 1: it
+                    // touches [otherStart, otherEnd].
+                    final long rangeStart = unpackedGet(pos - 1);
+                    groupStart = pos - 1;
+                    groupEnd = pos + 1;
+                    groupFirst = Math.min(rangeStart, otherStart);
+                    groupLast = Math.max(-data, otherEnd);
                     groupOldCardinality = -data - rangeStart + 1;
                 } else {
-                    // Entry p starts a range or single at s - 1 or beyond; the walk below absorbs it when it lies
-                    // within e + 1, and otherwise [s, e] goes in before it.
-                    groupStart = p;
-                    groupEnd = p;
-                    groupFirst = Math.min(data, s);
-                    groupLast = e;
+                    // Entry pos starts a range or single at otherStart - 1 or beyond; the walk below absorbs it when
+                    // it lies within otherEnd + 1, and otherwise [otherStart, otherEnd] goes in before it.
+                    groupStart = pos;
+                    groupEnd = pos;
+                    groupFirst = Math.min(data, otherStart);
+                    groupLast = otherEnd;
                     groupOldCardinality = 0;
                 }
-                groupEnd = absorbTouching(plan, groupEnd, e);
+                groupEnd = absorbTouching(plan, groupEnd, otherEnd);
                 groupOldCardinality += plan.absorbedCardinality;
                 groupLast = Math.max(groupLast, plan.absorbedLastEnd);
             }
@@ -2139,25 +2143,25 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     /**
-     * Walk our ranges from entry {@code j} while they start at or before {@code e + 1}, all of which touch a range
-     * ending at {@code e}. Sets the plan's {@code absorbedCardinality} to the keys those ranges held and
-     * {@code absorbedLastEnd} to the last key any of them or {@code e} reaches. The plan is thread-local scratch; this
-     * set may be shared between threads and is never written here.
+     * Walk our ranges from entry {@code j} while they start at or before {@code otherEnd + 1}, all of which touch a
+     * range ending at {@code otherEnd}. Sets the plan's {@code absorbedCardinality} to the keys those ranges held and
+     * {@code absorbedLastEnd} to the last key any of them or {@code otherEnd} reaches. The plan is thread-local
+     * scratch; this set may be shared between threads and is never written here.
      *
      * @return the entry after the last range absorbed
      */
-    private int absorbTouching(final EditPlan plan, int j, final long e) {
+    private int absorbTouching(final EditPlan plan, int ii, final long bound) {
         long absorbed = 0;
-        long lastEnd = e;
-        while (j < count) {
-            final long rangeStart = unpackedGet(j);
-            if (e != Long.MAX_VALUE && rangeStart > e + 1) {
+        long lastEnd = bound;
+        while (ii < count) {
+            final long rangeStart = unpackedGet(ii);
+            if (bound != Long.MAX_VALUE && rangeStart > bound + 1) {
                 break;
             }
             long rangeEnd = rangeStart;
             int step = 1;
-            if (j + 1 < count) {
-                final long next = unpackedGet(j + 1);
+            if (ii + 1 < count) {
+                final long next = unpackedGet(ii + 1);
                 if (next < 0) {
                     rangeEnd = -next;
                     step = 2;
@@ -2165,11 +2169,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
             absorbed += rangeEnd - rangeStart + 1;
             lastEnd = Math.max(lastEnd, rangeEnd);
-            j += step;
+            ii += step;
         }
         plan.absorbedCardinality = absorbed;
         plan.absorbedLastEnd = lastEnd;
-        return j;
+        return ii;
     }
 
     /**
@@ -2216,28 +2220,28 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         int cursor = 0;
 
         for (int ri = 0; ri < removed.count;) {
-            final long s = removed.unpackedGet(ri++);
-            long e = s;
+            final long removedStart = removed.unpackedGet(ri++);
+            long removedEnd = removedStart;
             if (ri < removed.count) {
                 final long next = removed.unpackedGet(ri);
                 if (next < 0) {
-                    e = -next;
+                    removedEnd = -next;
                     ++ri;
                 }
             }
 
-            if (pending && s <= groupLastOldEnd) {
-                // [s, e] cuts the remainder [pieceFirst, groupLastOldEnd] the previous removal left of our last range.
-                // The
-                // removed set's ranges are neither overlapping nor adjacent, so s lies at least one key past the
-                // remainder's first key and a left part of the remainder always survives.
+            if (pending && removedStart <= groupLastOldEnd) {
+                // [removedStart, removedEnd] cuts the remainder [pieceFirst, groupLastOldEnd] the previous removal
+                // left of our last range. The removed set's ranges are neither overlapping nor adjacent, so
+                // removedStart lies at least one key past the remainder's first key and a left part of the remainder
+                // always survives.
                 final int piece = plan.pieces - 1;
-                Assert.geq(s - 1, "s - 1", plan.first[piece], "plan.first[piece]");
-                plan.last[piece] = s - 1;
-                if (e < groupLastOldEnd) {
-                    plan.addPiece(e + 1, groupLastOldEnd);
+                Assert.geq(removedStart - 1, "removedStart - 1", plan.first[piece], "plan.first[piece]");
+                plan.last[piece] = removedStart - 1;
+                if (removedEnd < groupLastOldEnd) {
+                    plan.addPiece(removedEnd + 1, groupLastOldEnd);
                 } else {
-                    groupEnd = absorbCut(plan, groupEnd, e);
+                    groupEnd = absorbCut(plan, groupEnd, removedEnd);
                     groupOldCardinality += plan.absorbedCardinality;
                     groupLastOldEnd = plan.absorbedLastEnd;
                 }
@@ -2252,38 +2256,39 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             if (cursor >= count) {
                 break;
             }
-            // The first of our entries whose key is at least s: the end of a range that s falls in, or the start of a
-            // range or single at or beyond s.
-            final int p = absRawBinarySearch(pack(s), cursor, count - 1);
-            if (p == count) {
+            // The first of our entries whose key is at least removedStart: the end of a range that removedStart
+            // falls in, or the start of a range or single at or beyond removedStart.
+            final int pos = absRawBinarySearch(pack(removedStart), cursor, count - 1);
+            if (pos == count) {
                 break;
             }
-            final long data = unpackedGet(p);
+            final long data = unpackedGet(pos);
             if (data < 0) {
-                // s falls inside the range ending here, which started before s, so a left remainder always survives.
-                final long rangeStart = unpackedGet(p - 1);
+                // removedStart falls inside the range ending here, which started before removedStart, so a left
+                // remainder always survives.
+                final long rangeStart = unpackedGet(pos - 1);
                 final long rangeEnd = -data;
-                groupStart = p - 1;
-                groupEnd = p + 1;
+                groupStart = pos - 1;
+                groupEnd = pos + 1;
                 plan.addEdit(groupStart);
-                plan.addPiece(rangeStart, s - 1);
+                plan.addPiece(rangeStart, removedStart - 1);
                 groupOldCardinality = rangeEnd - rangeStart + 1;
                 groupLastOldEnd = rangeEnd;
-                if (e < rangeEnd) {
-                    plan.addPiece(e + 1, rangeEnd);
+                if (removedEnd < rangeEnd) {
+                    plan.addPiece(removedEnd + 1, rangeEnd);
                 } else {
-                    groupEnd = absorbCut(plan, groupEnd, e);
+                    groupEnd = absorbCut(plan, groupEnd, removedEnd);
                     groupOldCardinality += plan.absorbedCardinality;
                     groupLastOldEnd = plan.absorbedLastEnd;
                 }
-            } else if (data > e) {
-                // [s, e] holds none of our keys.
-                cursor = p;
+            } else if (data > removedEnd) {
+                // [removedStart, removedEnd] holds none of our keys.
+                cursor = pos;
                 continue;
             } else {
-                groupStart = p;
+                groupStart = pos;
                 plan.addEdit(groupStart);
-                groupEnd = absorbCut(plan, p, e);
+                groupEnd = absorbCut(plan, pos, removedEnd);
                 groupOldCardinality = plan.absorbedCardinality;
                 groupLastOldEnd = plan.absorbedLastEnd;
             }
@@ -2300,26 +2305,27 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     /**
-     * Walk our ranges from entry {@code j} while they start at or before {@code e}, all of which the removal of keys up
-     * to {@code e} cuts; when the last of them reaches past {@code e}, its remainder becomes a piece of the current
-     * edit. Sets the plan's {@code absorbedCardinality} to the keys those ranges held and {@code absorbedLastEnd} to
-     * the end key of the last of them, or to {@code e} when there was none, past which nothing of the edit remains
-     * either way. The plan is thread-local scratch; this set may be shared between threads and is never written here.
+     * Walk our ranges from entry {@code j} while they start at or before {@code removedEnd}, all of which the removal
+     * of keys up to {@code removedEnd} cuts; when the last of them reaches past {@code removedEnd}, its remainder
+     * becomes a piece of the current edit. Sets the plan's {@code absorbedCardinality} to the keys those ranges held
+     * and {@code absorbedLastEnd} to the end key of the last of them, or to {@code removedEnd} when there was none,
+     * past which nothing of the edit remains either way. The plan is thread-local scratch; this set may be shared
+     * between threads and is never written here.
      *
      * @return the entry after the last range absorbed
      */
-    private int absorbCut(final EditPlan plan, int j, final long e) {
+    private int absorbCut(final EditPlan plan, int ii, final long bound) {
         long absorbed = 0;
-        long lastEnd = e;
-        while (j < count) {
-            final long rangeStart = unpackedGet(j);
-            if (rangeStart > e) {
+        long lastEnd = bound;
+        while (ii < count) {
+            final long rangeStart = unpackedGet(ii);
+            if (rangeStart > bound) {
                 break;
             }
             long rangeEnd = rangeStart;
             int step = 1;
-            if (j + 1 < count) {
-                final long next = unpackedGet(j + 1);
+            if (ii + 1 < count) {
+                final long next = unpackedGet(ii + 1);
                 if (next < 0) {
                     rangeEnd = -next;
                     step = 2;
@@ -2327,15 +2333,15 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
             absorbed += rangeEnd - rangeStart + 1;
             lastEnd = rangeEnd;
-            j += step;
-            if (rangeEnd > e) {
-                plan.addPiece(e + 1, rangeEnd);
+            ii += step;
+            if (rangeEnd > bound) {
+                plan.addPiece(bound + 1, rangeEnd);
                 break;
             }
         }
         plan.absorbedCardinality = absorbed;
         plan.absorbedLastEnd = lastEnd;
-        return j;
+        return ii;
     }
 
     /**
@@ -2382,10 +2388,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     /** Write an edit's pieces into {@code sr} starting at entry {@code pos}. */
     private static void writePieces(final SortedRanges sr, final EditPlan plan, final int edit, int pos) {
-        for (int p = plan.pieceStart[edit]; p < plan.pieceEnd(edit); ++p) {
-            sr.unpackedSet(pos++, plan.first[p]);
-            if (plan.first[p] != plan.last[p]) {
-                sr.unpackedSet(pos++, -plan.last[p]);
+        for (int pi = plan.pieceStart[edit]; pi < plan.pieceEnd(edit); ++pi) {
+            sr.unpackedSet(pos++, plan.first[pi]);
+            if (plan.first[pi] != plan.last[pi]) {
+                sr.unpackedSet(pos++, -plan.last[pi]);
             }
         }
     }
@@ -2396,27 +2402,27 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     private void applyPlanBackward(final EditPlan plan) {
         int stretchEnd = count;
         int shift = plan.entryDelta;
-        for (int i = plan.size - 1; i >= 0; --i) {
-            final int editEnd = plan.end[i];
+        for (int ei = plan.size - 1; ei >= 0; --ei) {
+            final int editEnd = plan.end[ei];
             final int length = stretchEnd - editEnd;
             if (length > 0 && shift != 0) {
                 moveData(editEnd, editEnd + shift, length);
             }
-            shift -= plan.newLength(i) - (editEnd - plan.start[i]);
-            writePieces(this, plan, i, plan.start[i] + shift);
-            stretchEnd = plan.start[i];
+            shift -= plan.newLength(ei) - (editEnd - plan.start[ei]);
+            writePieces(this, plan, ei, plan.start[ei] + shift);
+            stretchEnd = plan.start[ei];
         }
     }
 
     /** Apply a plan whose edits never grow, in place: from the front, so every stretch moves into vacated space. */
     private void applyPlanForward(final EditPlan plan) {
         int shift = 0;
-        for (int i = 0; i < plan.size; ++i) {
-            final int editStart = plan.start[i];
-            final int editEnd = plan.end[i];
-            writePieces(this, plan, i, editStart + shift);
-            shift += plan.newLength(i) - (editEnd - editStart);
-            final int stretchEnd = i + 1 < plan.size ? plan.start[i + 1] : count;
+        for (int ei = 0; ei < plan.size; ++ei) {
+            final int editStart = plan.start[ei];
+            final int editEnd = plan.end[ei];
+            writePieces(this, plan, ei, editStart + shift);
+            shift += plan.newLength(ei) - (editEnd - editStart);
+            final int stretchEnd = ei + 1 < plan.size ? plan.start[ei + 1] : count;
             final int length = stretchEnd - editEnd;
             if (length > 0 && shift != 0) {
                 moveData(editEnd, editEnd + shift, length);
@@ -2428,15 +2434,15 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     private void applyPlanToNew(final EditPlan plan, final SortedRanges ans) {
         int stretchStart = 0;
         int shift = 0;
-        for (int i = 0; i < plan.size; ++i) {
-            final int editStart = plan.start[i];
+        for (int ei = 0; ei < plan.size; ++ei) {
+            final int editStart = plan.start[ei];
             final int length = editStart - stretchStart;
             if (length > 0) {
                 ans.copyDataFrom(this, stretchStart, stretchStart + shift, length);
             }
-            writePieces(ans, plan, i, editStart + shift);
-            shift += plan.newLength(i) - (plan.end[i] - editStart);
-            stretchStart = plan.end[i];
+            writePieces(ans, plan, ei, editStart + shift);
+            shift += plan.newLength(ei) - (plan.end[ei] - editStart);
+            stretchStart = plan.end[ei];
         }
         final int length = count - stretchStart;
         if (length > 0) {

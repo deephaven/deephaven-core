@@ -76,19 +76,19 @@ public class RowSetSmallRemoveBench {
         targetSortedKeys = distinctSortedKeys(random, targetKeys);
         // A uniformly random subset of the target's keys, by a partial Fisher-Yates shuffle of their positions.
         final int[] positions = new int[targetKeys];
-        for (int i = 0; i < targetKeys; ++i) {
-            positions[i] = i;
+        for (int ii = 0; ii < targetKeys; ++ii) {
+            positions[ii] = ii;
         }
         final int chosen = removeKeys;
-        for (int i = 0; i < chosen; ++i) {
-            final int j = i + random.nextInt(targetKeys - i);
-            final int tmp = positions[i];
-            positions[i] = positions[j];
-            positions[j] = tmp;
+        for (int ii = 0; ii < chosen; ++ii) {
+            final int jj = ii + random.nextInt(targetKeys - ii);
+            final int tmp = positions[ii];
+            positions[ii] = positions[jj];
+            positions[jj] = tmp;
         }
         final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
-        for (int i = 0; i < chosen; ++i) {
-            removedBuilder.addKey(targetSortedKeys[positions[i]]);
+        for (int ii = 0; ii < chosen; ++ii) {
+            removedBuilder.addKey(targetSortedKeys[positions[ii]]);
         }
         removed = removedBuilder.build();
         removedKeys = new long[chosen];
