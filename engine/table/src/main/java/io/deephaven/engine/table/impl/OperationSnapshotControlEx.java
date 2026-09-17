@@ -65,11 +65,7 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
     @Override
     @SuppressWarnings("AutoBoxing")
     public synchronized Boolean usePreviousValues(final long beforeClockValue) {
-        lastNotificationStep = sourceTable.getLastNotificationStep();
-        // Record what each aware extra's state was before this attempt reads it.
-        for (int ei = 0; ei < notificationAwareExtras.length; ++ei) {
-            notificationAwareChangeSteps[ei] = notificationAwareExtras[ei].lastStateChangeStep();
-        }
+        recordDependencyState();
 
         final long beforeStep = LogicalClock.getStep(beforeClockValue);
         final LogicalClock.State beforeState = LogicalClock.getState(beforeClockValue);
@@ -130,6 +126,11 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
             }
         }
 
+        if (usePrev != null && usePrev == false) {
+            // Everything is satisfied for this step, record how it is *now* rather than as it was before the wait.
+            recordDependencyState();
+        }
+
         if (DEBUG) {
             log.info().append("OperationSnapshotControlEx {source=").append(System.identityHashCode(sourceTable))
                     .append(", extras=").append(Arrays.stream(extras)
@@ -146,6 +147,18 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
                     .endl();
         }
         return usePrev;
+    }
+
+    /**
+     * Record the source's last notification step and each aware extra's last state change step. The commit requires
+     * both to be as recorded: the source through {@link #subscribeForUpdates}, the extras through
+     * {@link #maybeSubscribeDependencies}.
+     */
+    private void recordDependencyState() {
+        lastNotificationStep = sourceTable.getLastNotificationStep();
+        for (int ei = 0; ei < notificationAwareExtras.length; ++ei) {
+            notificationAwareChangeSteps[ei] = notificationAwareExtras[ei].lastStateChangeStep();
+        }
     }
 
     @Override

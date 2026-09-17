@@ -133,7 +133,14 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
             // There were dependencies that could not be subscribed consistently. Fail the snapshot.
             return false;
         }
-        if (eventualListener != null && !subscribeForUpdates(eventualListener)) {
+        final boolean sourceSubscribed;
+        try {
+            sourceSubscribed = eventualListener == null || subscribeForUpdates(eventualListener);
+        } catch (RuntimeException e) {
+            maybeUnsubscribeDependencies();
+            throw e;
+        }
+        if (!sourceSubscribed) {
             // The source table could not be subscribed consistently. Unwind the dependency subscriptions and fail the
             // snapshot.
             maybeUnsubscribeDependencies();

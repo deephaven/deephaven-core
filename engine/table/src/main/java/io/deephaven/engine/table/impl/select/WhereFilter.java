@@ -96,9 +96,11 @@ public interface WhereFilter extends Filter {
         }
 
         /**
-         * Get the table underlying this listener.
+         * Get the result table of the operation that installed this listener, which is the table that
+         * {@link #requestRecompute() recompute} and {@link #requestFailure failure} requests act on. It is never one of
+         * the filter's inputs; a filter reaches those through its own state.
          *
-         * @return the underlying table
+         * @return The operation's result table
          */
         @NotNull
         QueryTable getTable();

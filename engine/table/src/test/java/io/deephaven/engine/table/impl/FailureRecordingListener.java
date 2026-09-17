@@ -20,11 +20,11 @@ import static org.junit.Assert.assertSame;
  * Tables hold their listeners weakly, so the test must keep a strong reference to this listener for as long as it
  * expects deliveries.
  */
-final class FailureRecordingListener extends InstrumentedTableUpdateListenerAdapter {
+public final class FailureRecordingListener extends InstrumentedTableUpdateListenerAdapter {
 
     private final List<Throwable> failures = new ArrayList<>();
 
-    FailureRecordingListener(@NotNull final Table result) {
+    public FailureRecordingListener(@NotNull final Table result) {
         super("failure recorder", result, false);
         result.addUpdateListener(this);
     }
@@ -40,7 +40,7 @@ final class FailureRecordingListener extends InstrumentedTableUpdateListenerAdap
     /**
      * @return How many failures have been delivered so far
      */
-    int failureCount() {
+    public int failureCount() {
         return failures.size();
     }
 
@@ -48,7 +48,7 @@ final class FailureRecordingListener extends InstrumentedTableUpdateListenerAdap
      * Assert that exactly one failure was delivered, and that it was {@code expected} itself rather than a wrapper or
      * an unrelated error raised while propagating it.
      */
-    void assertFailedOnceWith(@NotNull final Throwable expected) {
+    public void assertFailedOnceWith(@NotNull final Throwable expected) {
         assertEquals("failures delivered: " + failures, 1, failures.size());
         assertSame(expected, failures.get(0));
     }

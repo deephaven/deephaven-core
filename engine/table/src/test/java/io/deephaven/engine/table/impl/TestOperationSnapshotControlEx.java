@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -32,6 +33,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -218,6 +220,95 @@ public class TestOperationSnapshotControlEx {
             assertFalse(control.snapshotCompletedConsistently(clockValue, true));
             assertEquals("the extra subscribed before the refusal was undone", 0, first.subscriptions);
             assertEquals(0, second.subscriptions);
+        } finally {
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
+
+    /**
+     * An aware extra can finish changing its state on the step an attempt begins, between the attempt recording that
+     * state and finding the extra satisfied. The attempt then reads current values, which include the change, so its
+     * commit must subscribe against the changed state rather than refuse it.
+     */
+    @Test
+    public void testCommitAcceptsAChangeCompletedBeforeTheAwareExtraWasSatisfied() throws Exception {
+        final QueryTable source = refreshingSource();
+        final TestAwareDependency aware = new TestAwareDependency() {
+            @Override
+            public boolean satisfied(final long step) {
+                // The change lands as the attempt asks: the extra's listener has just finished for this step.
+                recordedStep = step;
+                return true;
+            }
+        };
+        final OperationSnapshotControlEx control = new OperationSnapshotControlEx(source, aware);
+        control.setListenerAndResult(null, refreshingSource());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutorService pool = Executors.newSingleThreadExecutor();
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            final long clockValue = updateGraph.clock().currentValue();
+            source.setLastNotificationStep(LogicalClock.getStep(clockValue));
+
+            // Decided off-thread with a timeout, so that a wait shows up as a failure rather than a hang.
+            final Future<Boolean> decision = pool.submit(() -> control.usePreviousValues(clockValue));
+            assertEquals(Boolean.FALSE, decision.get(5, TimeUnit.SECONDS));
+
+            assertTrue("the commit must accept the state the attempt read",
+                    control.snapshotCompletedConsistently(clockValue, false));
+            assertEquals(1, aware.subscriptions);
+        } finally {
+            pool.shutdownNow();
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
+
+    /**
+     * A source that fails after an attempt has read it refuses that attempt's subscription by throwing, because nothing
+     * can listen to it again. The dependencies subscribed just before must be undone all the same, so that what they
+     * guard cannot reach a result that is about to be released.
+     */
+    @Test
+    public void testAThrowingSourceSubscriptionUndoesTheDependencies() {
+        final QueryTable source = refreshingSource();
+        final QueryTable result = refreshingSource();
+        final int[] subscribedDependencies = new int[1];
+        final OperationSnapshotControl control = new OperationSnapshotControl(source) {
+            @Override
+            boolean maybeSubscribeDependencies() {
+                ++subscribedDependencies[0];
+                return true;
+            }
+
+            @Override
+            void maybeUnsubscribeDependencies() {
+                --subscribedDependencies[0];
+            }
+
+            @Override
+            protected boolean isInInitialNotificationWindow() {
+                // The source failed after this attempt's read, which is for the subscription to discover.
+                return true;
+            }
+        };
+        control.setListenerAndResult(new ListenerRecorder("recorder", source, result), result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            final long clockValue = updateGraph.clock().currentValue();
+            control.usePreviousValues(clockValue);
+            try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+                source.notifyListenersOnError(new RuntimeException("source failure"), null);
+            }
+
+            assertThrows(TableAlreadyFailedException.class,
+                    () -> control.snapshotCompletedConsistently(clockValue, true));
+            assertEquals("the dependencies subscribed before the source threw were undone", 0,
+                    subscribedDependencies[0]);
         } finally {
             updateGraph.markSourcesRefreshedForUnitTests();
             updateGraph.completeCycleForUnitTests();
