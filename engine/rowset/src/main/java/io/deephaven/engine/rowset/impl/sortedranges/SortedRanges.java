@@ -1309,9 +1309,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      * <p>
      * Which side gets walked matters, because a probe costs a span search and a span view where a step of
      * {@link #overlaps(RowSet.RangeIterator) the walk over other} amortizes both over the ranges it reads out of one
-     * container. We walk ourselves while {@code other} holds at least as many spans as we could hold ranges, since a
-     * span covers one block and cannot then be hiding more ranges per probe than we would step over; below that we walk
-     * {@code other} instead.
+     * container. Span count is the cheap proxy for how much a probe can miss, so we walk ourselves while {@code other}
+     * has at least {@code count / 2} spans, that being the fewest ranges our own array can hold, and walk {@code other}
+     * below that. It is a heuristic and not a bound: a container span can hold many disjoint ranges inside its one
+     * block, and a full block span can cover many blocks, so a span is not a ceiling on what a probe steps over.
      *
      * @param other The ranges to test against
      * @return true if some range of ours overlaps some range of {@code other}
