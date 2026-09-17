@@ -1911,7 +1911,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         /** Entries the edit's pieces occupy. */
         int newLength(final int edit) {
             int length = 0;
-            for (int pi = pieceStart[edit]; pi < pieceEnd(edit); ++pi) {
+            final int end = pieceEnd(edit);
+            for (int pi = pieceStart[edit]; pi < end; ++pi) {
                 length += first[pi] == last[pi] ? 1 : 2;
             }
             return length;
@@ -1920,7 +1921,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         /** Keys the edit's pieces hold. */
         long newCardinality(final int edit) {
             long cardinality = 0;
-            for (int pi = pieceStart[edit]; pi < pieceEnd(edit); ++pi) {
+            final int end = pieceEnd(edit);
+            for (int pi = pieceStart[edit]; pi < end; ++pi) {
                 cardinality += last[pi] - first[pi] + 1;
             }
             return cardinality;
@@ -2392,7 +2394,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     /** Write an edit's pieces into {@code sr} starting at entry {@code pos}. */
     private static void writePieces(final SortedRanges sr, final EditPlan plan, final int edit, int pos) {
-        for (int pi = plan.pieceStart[edit]; pi < plan.pieceEnd(edit); ++pi) {
+        final int end = plan.pieceEnd(edit);
+        for (int pi = plan.pieceStart[edit]; pi < end; ++pi) {
             sr.unpackedSet(pos++, plan.first[pi]);
             if (plan.first[pi] != plan.last[pi]) {
                 sr.unpackedSet(pos++, -plan.last[pi]);
@@ -2470,8 +2473,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
         } else {
             if (fits(other.first(), other.last())) {
-                final SortedRanges sr = editIndividually(other) ? insertRangesIndividually(other, writeCheck)
-                        : planEdits(other) ? insertPlanned(other, writeCheck) : null;
+                final SortedRanges sr;
+                if (editIndividually(other)) {
+                    sr = insertRangesIndividually(other, writeCheck);
+                } else if (planEdits(other)) {
+                    sr = insertPlanned(other, writeCheck);
+                } else {
+                    sr = null;
+                }
                 if (sr != null) {
                     return sr;
                 }
@@ -4771,8 +4780,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
         if (removed instanceof SortedRanges) {
             final SortedRanges removedSar = (SortedRanges) removed;
-            final SortedRanges ans = editIndividually(removedSar) ? removeRangesIndividually(removedSar)
-                    : planEdits(removedSar) ? removePlanned(removedSar) : null;
+            final SortedRanges ans;
+            if (editIndividually(removedSar)) {
+                ans = removeRangesIndividually(removedSar);
+            } else if (planEdits(removedSar)) {
+                ans = removePlanned(removedSar);
+            } else {
+                ans = null;
+            }
             if (ans != null) {
                 return ans.isEmpty() ? OrderedLongSet.EMPTY : ans;
             }
