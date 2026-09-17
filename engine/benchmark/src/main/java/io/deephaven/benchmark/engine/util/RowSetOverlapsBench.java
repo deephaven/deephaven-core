@@ -81,6 +81,12 @@ public class RowSetOverlapsBench {
          * the two never meet but interleave only a few times. A walk pays per range here; a seek pays per cluster.
          */
         CLUSTERED,
+        /**
+         * {@link #CLUSTERED} with each cluster spread over one block per key instead of packed into a single block, so
+         * an {@link RspBitmap} side holds a span per key rather than a span per cluster and a walk over its spans pays
+         * per key too.
+         */
+        CLUSTERED_BLOCKS,
         /** Interleaved keys a block apart, with the last key of each side shared. */
         TOUCH_AT_END,
         /** Interleaved keys a block apart, with the middle key of each side shared. */
@@ -129,12 +135,18 @@ public class RowSetOverlapsBench {
                 a = runs(0, RUN_STRIDE, RUN_LEN, size);
                 b = runs(RUN_LEN, RUN_STRIDE, RUN_LEN, size);
                 break;
-            case CLUSTERED: {
+            case CLUSTERED:
+            case CLUSTERED_BLOCKS: {
                 // Cluster c belongs to one side or the other by parity, and each cluster starts far enough into its
                 // own key region that no cluster reaches the next. Each side owns half the clusters, so the keys are
                 // spread over that half to leave it with `size` of them.
                 final int clustersPerSide = CLUSTERS / 2;
                 final int per = Math.max(1, size / clustersPerSide);
+                // CLUSTERED packs a cluster's keys two apart inside one block; CLUSTERED_BLOCKS gives each key a block
+                // of its own, and the cluster then has to be as wide as the keys it holds.
+                final boolean perBlock = pattern == Pattern.CLUSTERED_BLOCKS;
+                final long keyStride = perBlock ? BLOCK_SIZE : 2L;
+                final long clusterSpan = perBlock ? per * (long) BLOCK_SIZE : CLUSTER_SPAN;
                 a = new long[2 * per * clustersPerSide];
                 b = new long[2 * per * clustersPerSide];
                 for (int c = 0; c < CLUSTERS; ++c) {
@@ -142,7 +154,7 @@ public class RowSetOverlapsBench {
                     final int base = per * (c / 2);
                     for (int j = 0; j < per; ++j) {
                         final int r = base + j;
-                        side[2 * r] = side[2 * r + 1] = c * CLUSTER_SPAN + 2L * j;
+                        side[2 * r] = side[2 * r + 1] = c * clusterSpan + j * keyStride;
                     }
                 }
                 break;

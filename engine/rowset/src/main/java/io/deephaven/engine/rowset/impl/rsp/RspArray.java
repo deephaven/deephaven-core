@@ -3031,6 +3031,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     if (p2 >= r2.size) {
                         return false;
                     }
+                    i1 = spanIndexBeforeKey(r1, i1, r2.getKey(p2));
                     continue;
                 }
                 // s1 is a Container, and its block key is not an exact match in r2.
@@ -3040,9 +3041,30 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (p2 >= r2.size) {
                     return false;
                 }
+                i1 = spanIndexBeforeKey(r1, i1, r2.getKey(p2));
             }
         }
         return false;
+    }
+
+    /**
+     * The index one before the first span of {@code r} after {@code i} that reaches {@code key}'s block, so that the
+     * caller's own {@code ++i} lands on it.
+     * <p>
+     * Both sides of {@link #overlaps(RspArray, RspArray)} can search, and a miss tells the walked side where the probed
+     * side's next span begins. Every span of the walked side below that block ends beneath it and cannot match, so the
+     * walk skips them rather than borrowing a view and searching for each. The result is never below {@code i}, so the
+     * loop always moves on.
+     */
+    private static int spanIndexBeforeKey(final RspArray r, final int i, final long key) {
+        final int next = i + 1;
+        if (next >= r.size || r.getKey(next) >= highBits(key)) {
+            // Nothing to skip: the next span already reaches key's block. Sides that alternate span by span are here
+            // every time, and a search would cost more than the step it replaces.
+            return i;
+        }
+        final int j = r.getSpanIndex(next, key);
+        return (j >= 0 ? j : ~j) - 1;
     }
 
     /**

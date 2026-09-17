@@ -263,6 +263,51 @@ public class OverlapsTest {
         }
     }
 
+    /**
+     * Runs covering several whole blocks each, which an {@link RspBitmap} holds as one multi-block full span. A walk
+     * that skips ahead has to treat such a span as covering everything between its first and last block.
+     */
+    @Test
+    public void testMultiBlockFullSpans() {
+        for (final int blocksPerRun : new int[] {1, 2, 5, 17}) {
+            final long len = (long) blocksPerRun * BLOCK_SIZE;
+            final Shape spans = runs("full spans x" + blocksPerRun, 0, 2 * len, len, 8);
+            check(spans, singletons("comb in the gaps", len, 2 * len, 8));
+            check(spans, singletons("comb inside the runs", len / 2, 2 * len, 8));
+            check(spans, shape("key just past the last run", 15 * len, 15 * len));
+            check(spans, shape("key inside the last run", 14 * len + 1, 14 * len + 1));
+            check(spans, shape("range spanning a whole gap", len, 2 * len - 1));
+        }
+    }
+
+    /**
+     * Clusters of keys one block apart, the clusters alternating between the sides. The answer is a few alternations
+     * away but each cluster is many blocks wide, so a side held as an {@link RspBitmap} has a span per key.
+     */
+    @Test
+    public void testClusteredAcrossBlocks() {
+        for (final int per : new int[] {1, 4, 64, 500}) {
+            final int clusters = 8;
+            final long[] a = new long[2 * (clusters / 2) * per];
+            final long[] b = new long[2 * (clusters / 2) * per];
+            for (int c = 0; c < clusters; ++c) {
+                final long[] side = (c & 1) == 0 ? a : b;
+                final int base = per * (c / 2);
+                for (int j = 0; j < per; ++j) {
+                    final int r = base + j;
+                    side[2 * r] = side[2 * r + 1] = (c * (long) per + j) * BLOCK_SIZE;
+                }
+            }
+            final Shape sa = shape("clustered blocks a per=" + per, a);
+            check(sa, shape("clustered blocks b per=" + per, b));
+            // Move a's last key onto b's last key, so the only overlap is as far from the start as it can be.
+            final long[] hit = a.clone();
+            hit[hit.length - 1] = hit[hit.length - 2] = b[b.length - 1];
+            check(shape("clustered blocks a hitting per=" + per, hit),
+                    shape("clustered blocks b per=" + per, b));
+        }
+    }
+
     @Test
     public void testRandomShapes() {
         final Random rand = new Random(0xD0FA11L);
