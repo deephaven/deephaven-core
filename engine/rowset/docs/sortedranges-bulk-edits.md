@@ -41,7 +41,9 @@ ixInsert(added)
 ├─ added is an RspBitmap ............................ convert to RspBitmap, or the two together
 └─ added is a SortedRanges .......................... insertImpl(added):
    ├─ our last key < added.first .................... APPEND: mergeAppend copies added onto our tail
-   │                                                  (null on capacity → convert to RspBitmap)
+   │                                                  (null when added.last is outside our packing or no
+   │                                                  capacity of our type holds the result → convert to
+   │                                                  RspBitmap directly; the merge below is not tried)
    └─ otherwise
       ├─ added does not fit our packing ............. MERGE (see below)
       ├─ editIndividually(added) .................... INDIVIDUAL: addRangeInternal per range
@@ -90,9 +92,11 @@ The two predicates are shared by insert and remove; the remove benchmark showed 
 ### Append
 
 Our last key is below the argument's first key, so the argument goes on the end. `mergeAppend` copies its entries
-after ours, coalescing when its first key is adjacent to our last. It fails only on capacity, and the caller then
-converts to an `RspBitmap`. This is the path every append-only workload takes, including the release phase of an
-incremental join, and it was never the problem.
+after ours, coalescing when its first key is adjacent to our last. It fails (`ensureCanAppend` returns null) in two
+cases: the argument's last key lies outside what our packing can represent from our offset, or no capacity of our type
+holds the result and it cannot be repacked smaller. Either way `insertImpl` converts to an `RspBitmap` at once; the
+append and the merge are alternatives, so a failed append does not fall through to the merge's repack. This is the path
+every append-only workload takes, including the release phase of an incremental join, and it was never the problem.
 
 ### Individual edits
 
@@ -174,8 +178,9 @@ it 40-68x slower than key-by-key insertion at two keys into 2000 entries, and it
 choice once the argument is a sizeable fraction of the set: at 500 keys into 2000 the planned pass was 1.6x slower,
 at 2000 into 6000 2.3x slower.
 
-The merge is also the fallback for every capacity failure above, because it can change the packing: a dense
-`SortedRangesLong` caps at 256 entries where the same content repacked as shorts holds thousands.
+The merge is also the fallback for the individual and planned strategies' capacity failures, because it can change the
+packing: a dense `SortedRangesLong` caps at 256 entries by default (`SortedRanges.longDenseMaxCapacity`) where the same
+content repacked as shorts holds thousands (`SortedRanges.shortMaxCapacity`, 4090 by default).
 
 ### Convert to RspBitmap
 
