@@ -3077,6 +3077,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
          * Ranges must be presented in ascending order: the search resumes where the last one stopped.
          */
         public boolean overlapsRange(final long start, final long end) {
+            if (arr.size == 0) {
+                // Also keeps spanIdx at a real index: arr.size - 1 below would leave it negative, and the next probe
+                // would search from there.
+                return false;
+            }
             final long startHighBits = highBits(start);
             int i = arr.getSpanIndex(spanIdx, startHighBits);
             if (i < 0) {

@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
@@ -16,6 +17,7 @@ import java.util.Random;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Cross-checks {@link OrderedLongSet#ixOverlaps} against a linear merge of the same ranges, for every pair of
@@ -343,6 +345,21 @@ public class OverlapsTest {
                 hitFirst[0] = hitFirst[1] = a[0];
                 check(sa, shape("same blocks b touching first " + blocks + "x" + perBlock, hitFirst));
             }
+        }
+    }
+
+    /**
+     * {@link RspArray.OverlapProbe} is public API and its contract allows any number of ascending probes, so an empty
+     * array has to stay answerable rather than only surviving the first call.
+     */
+    @Test
+    public void testProbeOnEmptyArray() {
+        final RspBitmap empty = RspBitmap.makeEmpty();
+        try (final RspArray.OverlapProbe probe = empty.overlapProbe()) {
+            for (int i = 0; i < 4; ++i) {
+                assertFalse("probe " + i, probe.overlapsRange(10L * i, 10L * i + 5));
+            }
+            assertEquals(-1, probe.resumeBlockKey());
         }
     }
 
