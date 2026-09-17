@@ -2400,17 +2400,17 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      * Apply a plan whose edits never shrink, in place: from the back, so every stretch moves before it is overwritten.
      */
     private void applyPlanBackward(final EditPlan plan) {
-        int stretchEnd = count;
+        int sourceStretchEnd = count;
         int shift = plan.entryDelta;
         for (int ei = plan.size - 1; ei >= 0; --ei) {
             final int editEnd = plan.end[ei];
-            final int length = stretchEnd - editEnd;
+            final int length = sourceStretchEnd - editEnd;
             if (length > 0 && shift != 0) {
                 moveData(editEnd, editEnd + shift, length);
             }
             shift -= plan.newLength(ei) - (editEnd - plan.start[ei]);
             writePieces(this, plan, ei, plan.start[ei] + shift);
-            stretchEnd = plan.start[ei];
+            sourceStretchEnd = plan.start[ei];
         }
     }
 
@@ -2422,8 +2422,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             final int editEnd = plan.end[ei];
             writePieces(this, plan, ei, editStart + shift);
             shift += plan.newLength(ei) - (editEnd - editStart);
-            final int stretchEnd = ei + 1 < plan.size ? plan.start[ei + 1] : count;
-            final int length = stretchEnd - editEnd;
+            final int sourceStretchEnd = ei + 1 < plan.size ? plan.start[ei + 1] : count;
+            final int length = sourceStretchEnd - editEnd;
             if (length > 0 && shift != 0) {
                 moveData(editEnd, editEnd + shift, length);
             }
