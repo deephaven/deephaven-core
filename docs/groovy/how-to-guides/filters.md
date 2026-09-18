@@ -117,6 +117,9 @@ resultNotInRangeFilterOr = source.where(Filter.or(Filter.from("X < 2", "X > 6"))
 resultNotInRange = source.where("!inRange(X, 2, 6)")
 ```
 
+> [!NOTE]
+> These forms are only equivalent for non-`NaN` values. `inRange` returns `false` for `NaN` (per standard IEEE 754 comparison rules), so `!inRange(X, 2, 6)` includes `NaN` rows, while `X < 2 || X > 6` excludes them.
+
 ### String filters
 
 String filters return only rows that match the specified criteria for [string](./work-with-strings.md) columns. As such, string filters can use any [`java.lang.String`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/String.html) methods.

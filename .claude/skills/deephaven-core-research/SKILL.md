@@ -280,8 +280,11 @@ Report comprehensively:
 - `.proto` files define all client-server communication
 
 ### plugin/ — Server-side plugin system
-- **Entry points**: `plugin/src/main/java/io/deephaven/plugin/`
-- **Key classes**: Object type plugins, figure plugins, hierarchical/partitioned table plugins
+- **Entry points**: `plugin/src/main/java/io/deephaven/plugin/` (core `Plugin`/`Registration` and the
+  `type.ObjectType` API); the figure, hierarchical-table, and partitioned-table plugins are separate
+  submodules: `plugin/figure/`, `plugin/hierarchicaltable/`, `plugin/partitionedtable/`
+- **Key classes**: `Plugin`, `ObjectType` (core); `FigureWidgetTypePlugin` (`plugin/figure/`);
+  `HierarchicalTableTypePlugin` (`plugin/hierarchicaltable/`)
 - **Uses Dagger**: See `plugin/dagger/` for DI wiring
 
 ## Extensions
