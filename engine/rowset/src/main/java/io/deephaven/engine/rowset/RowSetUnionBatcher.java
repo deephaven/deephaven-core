@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset;
 
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -88,11 +89,17 @@ public final class RowSetUnionBatcher implements SafeCloseable {
      *        once, and over it, or where the count is only an upper bound or no bound at all, the cap takes over and
      *        the count costs nothing to have passed. Taken as a {@code long} so that a caller counting rows rather than
      *        objects has nothing to narrow and no reason to know the cap. The cap is taken as configured.
+     * @throws IllegalArgumentException If the resulting batch size is not positive, or twice it would not fit an array,
+     *         since the entries list must be able to hold the batch and the collapsed groups together
      */
     public RowSetUnionBatcher(final long batchSize) {
         this.batchSize = (int) Math.min(Math.max(1L, batchSize), maxBatchSize);
+        if (this.batchSize <= 0 || this.batchSize > ArrayUtil.MAX_ARRAY_SIZE / 2) {
+            throw new IllegalArgumentException("batch size " + this.batchSize + " from configured maxBatchSize "
+                    + maxBatchSize + " must be in [1, " + ArrayUtil.MAX_ARRAY_SIZE / 2 + "]");
+        }
         // Bounded by the clamp above, so this is the list's greatest extent and not just a starting point.
-        entries = new ArrayList<>((int) Math.min(2L * this.batchSize, Integer.MAX_VALUE - 8));
+        entries = new ArrayList<>(2 * this.batchSize);
     }
 
     /**

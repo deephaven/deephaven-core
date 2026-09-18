@@ -393,6 +393,14 @@ public class RowSetUnionBatcherTest {
             try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(100)) {
                 assertThat(batcher.batchSize()).isEqualTo(100);
             }
+            // A batch the entries list could not hold, or an empty one, is refused rather than clamped.
+            assertThatThrownBy(() -> new RowSetUnionBatcher(Long.MAX_VALUE).close())
+                    .isInstanceOf(IllegalArgumentException.class);
+            for (final int cap : new int[] {0, -5}) {
+                RowSetUnionBatcher.maxBatchSize = cap;
+                assertThatThrownBy(() -> new RowSetUnionBatcher(100).close())
+                        .isInstanceOf(IllegalArgumentException.class);
+            }
             // A request above the cap is held to it.
             RowSetUnionBatcher.maxBatchSize = 300;
             try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(Long.MAX_VALUE)) {
