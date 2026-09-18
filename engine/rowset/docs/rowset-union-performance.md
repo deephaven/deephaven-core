@@ -348,13 +348,6 @@ over the block range when the blocks are indexed densely; past 2^20 blocks a has
 their sort take over, so the cost follows the touched blocks and not the range. The scratch bitmap and run array are 8 KB and
 256 KB per call.
 
-### A counting sort's off-by-one is silent
-
-The first radix build stored block `b`'s count at `b + 1` and then took an exclusive prefix sum over the shifted
-array, so every block's slice began one block early and about a seventh of the rows were lost. Nothing threw. The
-setup-time equality check both benchmarks make against the insert loop caught it before a timing was reported;
-that check is not optional.
-
 ## Pitfalls
 
 Each of these produced a confident, plausible, wrong conclusion first. They are the parts of this work least likely to
