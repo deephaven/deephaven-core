@@ -657,14 +657,21 @@ public abstract class RowSetFactory {
      * discovery order and ranked into block order once counting is complete.
      */
     private static final class HashedBlockIndex extends BlockIndex {
+        /** Block to slot; a block gets the next slot the first time a piece lands in it. */
         private final Long2IntOpenHashMap slotOf = new Long2IntOpenHashMap();
+        /** The block each slot stands for, so the blocks can be sorted without walking the map. */
         private long[] slotBlock = new long[64];
+        /** Pieces counted in each slot's block. */
         private int[] slotCount = new int[64];
+        /** Slots handed out so far, and so the number of blocks that received pieces. */
         private int slots;
         /** Where each slot's block falls in block order, once counting is complete. */
         private int[] rankOf;
+        /** The blocks that received pieces, sorted; block order is the order the result's spans are written in. */
         private long[] blocksInOrder;
+        /** Where the pieces of the block at each rank begin, with the total at the end, once counting is complete. */
         private int[] offsets;
+        /** Where the next piece of the block at each rank goes, advanced as the second walk places them. */
         private int[] next;
 
         HashedBlockIndex() {
