@@ -154,14 +154,14 @@ public class RowSetIncrementalInsertBench {
         bucketAffectedRowSets = Arrays.copyOf(bucketAffectedRowSets, dirtyCount);
         bucketAffectedSets = Arrays.copyOf(bucketAffectedSets, dirtyCount);
         // Buckets go dirty in an order unrelated to their keys.
-        for (int i = dirtyCount - 1; i > 0; --i) {
-            final int j = random.nextInt(i + 1);
-            final OrderedLongSet set = bucketAffectedSets[i];
-            bucketAffectedSets[i] = bucketAffectedSets[j];
-            bucketAffectedSets[j] = set;
-            final WritableRowSet rs = bucketAffectedRowSets[i];
-            bucketAffectedRowSets[i] = bucketAffectedRowSets[j];
-            bucketAffectedRowSets[j] = rs;
+        for (int ii = dirtyCount - 1; ii > 0; --ii) {
+            final int jj = random.nextInt(ii + 1);
+            final OrderedLongSet set = bucketAffectedSets[ii];
+            bucketAffectedSets[ii] = bucketAffectedSets[jj];
+            bucketAffectedSets[jj] = set;
+            final WritableRowSet rs = bucketAffectedRowSets[ii];
+            bucketAffectedRowSets[ii] = bucketAffectedRowSets[jj];
+            bucketAffectedRowSets[jj] = rs;
         }
         System.out.println("buckets=" + buckets + " dirtyBuckets=" + dirtyCount
                 + " keysPerDirtyBucket=" + (totalKeys / dirtyCount) + " keysInsertedPerCycle=" + totalKeys

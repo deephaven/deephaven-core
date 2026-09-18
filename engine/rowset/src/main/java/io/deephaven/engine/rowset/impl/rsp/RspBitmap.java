@@ -102,18 +102,18 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         final int maxSpans = Math.max(1, blockCount + fullRunCount);
         rb.spanInfos = new long[maxSpans];
         rb.spans = new Object[maxSpans];
-        int i = 0;
+        int spanIndex = 0;
         // The full block span being accumulated, if any: its first block and its length in blocks.
         long fullFirst = -1;
         long fullLen = 0;
-        int r = 0; // next full run not yet emitted
-        for (int k = 0; k < blockCount; ++k) {
-            final long block = blocks[k];
+        int runIndex = 0; // next full run not yet emitted
+        for (int blockIndex = 0; blockIndex < blockCount; ++blockIndex) {
+            final long block = blocks[blockIndex];
             // Emit every full run that ends before this block, and note whether the block lies inside one.
             boolean covered = false;
-            while (r < fullRunCount) {
-                final long runFirst = fullRuns[2 * r];
-                final long runLast = fullRuns[2 * r + 1];
+            while (runIndex < fullRunCount) {
+                final long runFirst = fullRuns[2 * runIndex];
+                final long runLast = fullRuns[2 * runIndex + 1];
                 if (runFirst > block) {
                     break;
                 }
@@ -125,33 +125,33 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                     fullLen += runLast - runFirst + 1;
                 } else {
                     if (fullLen > 0) {
-                        setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+                        setFullBlockSpanRaw(spanIndex++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
                     }
                     fullFirst = runFirst;
                     fullLen = runLast - runFirst + 1;
                 }
-                ++r;
+                ++runIndex;
             }
             if (covered) {
                 continue; // the run it lies in is emitted when the loop passes its last block
             }
-            final int from = offsets[k];
-            final int to = offsets[k + 1];
+            final int from = offsets[blockIndex];
+            final int to = offsets[blockIndex + 1];
             final int runCount;
             if (to - from <= FEW_PIECES) {
                 // Too few pieces to be worth clearing and scanning a block's bitmap: sort them and coalesce.
                 runCount = collectRunsFromFewPieces(pieces, from, to, runs);
             } else {
                 Arrays.fill(scratch, 0L);
-                for (int p = from; p < to; ++p) {
-                    final int piece = pieces[p];
+                for (int pieceIndex = from; pieceIndex < to; ++pieceIndex) {
+                    final int piece = pieces[pieceIndex];
                     setScratchRange(scratch, piece >>> 16, piece & 0xFFFF);
                 }
                 runCount = collectRuns(scratch, runs);
             }
             int cardinality = 0;
-            for (int q = 0; q < runCount; ++q) {
-                cardinality += runs[2 * q + 1] - runs[2 * q] + 1;
+            for (int run = 0; run < runCount; ++run) {
+                cardinality += runs[2 * run + 1] - runs[2 * run] + 1;
             }
             if (cardinality == BLOCK_SIZE) {
                 // Filled up: it joins the full block span being accumulated when adjacent, else starts one.
@@ -159,7 +159,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                     ++fullLen;
                 } else {
                     if (fullLen > 0) {
-                        setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+                        setFullBlockSpanRaw(spanIndex++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
                     }
                     fullFirst = block;
                     fullLen = 1;
@@ -167,43 +167,44 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 continue;
             }
             if (fullLen > 0) {
-                setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+                setFullBlockSpanRaw(spanIndex++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
                 fullLen = 0;
             }
             final long key = block << BITS_PER_BLOCK;
             if (cardinality == 1) {
-                setSingletonSpanRaw(rb.spanInfos, rb.spans, i++, key | runs[0]);
+                setSingletonSpanRaw(rb.spanInfos, rb.spans, spanIndex++, key | runs[0]);
             } else {
-                setContainerSpanRaw(rb.spanInfos, rb.spans, i++, key, containerFromRuns(runs, runCount, cardinality));
+                setContainerSpanRaw(rb.spanInfos, rb.spans, spanIndex++, key,
+                        containerFromRuns(runs, runCount, cardinality));
             }
         }
         // Full runs past the last partial block.
-        while (r < fullRunCount) {
-            final long runFirst = fullRuns[2 * r];
-            final long runLast = fullRuns[2 * r + 1];
+        while (runIndex < fullRunCount) {
+            final long runFirst = fullRuns[2 * runIndex];
+            final long runLast = fullRuns[2 * runIndex + 1];
             if (fullLen > 0 && fullFirst + fullLen == runFirst) {
                 fullLen += runLast - runFirst + 1;
             } else {
                 if (fullLen > 0) {
-                    setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+                    setFullBlockSpanRaw(spanIndex++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
                 }
                 fullFirst = runFirst;
                 fullLen = runLast - runFirst + 1;
             }
-            ++r;
+            ++runIndex;
         }
         if (fullLen > 0) {
-            setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+            setFullBlockSpanRaw(spanIndex++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
         }
-        rb.size = i;
+        rb.size = spanIndex;
         rb.ensureCardinalityCache();
         return rb;
     }
 
-    private static void setSingletonSpanRaw(final long[] spanInfos, final Object[] spans, final int i,
+    private static void setSingletonSpanRaw(final long[] spanInfos, final Object[] spans, final int spanIndex,
             final long value) {
-        spans[i] = null;
-        spanInfos[i] = value;
+        spans[spanIndex] = null;
+        spanInfos[spanIndex] = value;
     }
 
     /**
@@ -220,15 +221,15 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * @return The number of runs
      */
     private static int collectRunsFromFewPieces(final int[] pieces, final int from, final int to, final int[] runs) {
-        for (int p = from; p < to; ++p) {
-            pieces[p] ^= Integer.MIN_VALUE;
+        for (int pieceIndex = from; pieceIndex < to; ++pieceIndex) {
+            pieces[pieceIndex] ^= Integer.MIN_VALUE;
         }
         Arrays.sort(pieces, from, to);
         int count = 0;
         int runStart = -1;
         int runEnd = -1;
-        for (int p = from; p < to; ++p) {
-            final int piece = pieces[p] ^ Integer.MIN_VALUE;
+        for (int pieceIndex = from; pieceIndex < to; ++pieceIndex) {
+            final int piece = pieces[pieceIndex] ^ Integer.MIN_VALUE;
             final int start = piece >>> 16;
             final int end = piece & 0xFFFF;
             if (runStart >= 0 && start <= runEnd + 1) {
@@ -262,8 +263,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             return;
         }
         scratch[firstWord] |= firstMask;
-        for (int w = firstWord + 1; w < lastWord; ++w) {
-            scratch[w] = -1L;
+        for (int word = firstWord + 1; word < lastWord; ++word) {
+            scratch[word] = -1L;
         }
         scratch[lastWord] |= lastMask;
     }
@@ -276,9 +277,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     private static int collectRuns(final long[] scratch, final int[] runs) {
         int count = 0;
         int runStart = -1;
-        for (int w = 0; w < scratch.length; ++w) {
-            long word = scratch[w];
-            final int base = w << 6;
+        for (int wordIndex = 0; wordIndex < scratch.length; ++wordIndex) {
+            long word = scratch[wordIndex];
+            final int base = wordIndex << 6;
             if (word == 0L) {
                 if (runStart >= 0) {
                     runs[2 * count] = runStart;
@@ -333,11 +334,11 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * the build is linear in the runs.
      */
     private static Container containerFromRuns(final int[] runs, final int runCount, final int cardinality) {
-        Container c = Container.emptySizedFor(cardinality, runCount);
-        for (int r = 0; r < runCount; ++r) {
-            c = c.iappend(runs[2 * r], runs[2 * r + 1] + 1);
+        Container container = Container.emptySizedFor(cardinality, runCount);
+        for (int run = 0; run < runCount; ++run) {
+            container = container.iappend(runs[2 * run], runs[2 * run + 1] + 1);
         }
-        return c;
+        return container;
     }
 
     public static RspBitmap makeSingle(final long v) {

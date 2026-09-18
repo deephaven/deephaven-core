@@ -120,11 +120,11 @@ public class UnionBenchmark {
                     previousLast = lastKey - 1;
                 }
                 if (shape == Shape.BLOCKS_SHUFFLED) {
-                    for (int i = nToUnion - 1; i > 0; --i) {
-                        final int j = randy.nextInt(i + 1);
-                        final RowSet swap = toUnion[i];
-                        toUnion[i] = toUnion[j];
-                        toUnion[j] = swap;
+                    for (int ii = nToUnion - 1; ii > 0; --ii) {
+                        final int jj = randy.nextInt(ii + 1);
+                        final RowSet swap = toUnion[ii];
+                        toUnion[ii] = toUnion[jj];
+                        toUnion[jj] = swap;
                     }
                 }
                 break;
@@ -158,7 +158,7 @@ public class UnionBenchmark {
                 final int regionBits = 43;
                 for (int indexNo = 0; indexNo < nToUnion; indexNo++) {
                     final RowSetBuilderRandom sb = RowSetFactory.builderRandom();
-                    for (int k = 0; k < 50; ++k) {
+                    for (int keyNo = 0; keyNo < 50; ++keyNo) {
                         final long key = ((long) randy.nextInt(regions) << regionBits)
                                 + (long) (randy.nextDouble() * regionRows);
                         sb.addKey(key);

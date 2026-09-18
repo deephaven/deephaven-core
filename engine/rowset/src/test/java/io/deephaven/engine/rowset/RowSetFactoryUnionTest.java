@@ -223,13 +223,13 @@ public class RowSetFactoryUnionTest {
 
     @Test
     public void presentationOrderDoesNotMatter() {
-        for (final int n : new int[] {2, 3, 17, 41}) {
-            final List<RowSet> ascending = orderedDisjoint(n);
+        for (final int count : new int[] {2, 3, 17, 41}) {
+            final List<RowSet> ascending = orderedDisjoint(count);
             try {
                 final List<RowSet> descending = new ArrayList<>(ascending);
                 Collections.reverse(descending);
                 final List<RowSet> shuffled = new ArrayList<>(ascending);
-                Collections.shuffle(shuffled, new Random(n));
+                Collections.shuffle(shuffled, new Random(count));
                 checkSameResult(ascending, descending);
                 checkSameResult(ascending, shuffled);
                 check(descending);
@@ -268,9 +268,9 @@ public class RowSetFactoryUnionTest {
     public void randomized() {
         final Random random = new Random(20260914L);
         for (int trial = 0; trial < 60; ++trial) {
-            final int n = 1 + random.nextInt(12);
-            final List<RowSet> rowSets = new ArrayList<>(n);
-            for (int ii = 0; ii < n; ++ii) {
+            final int count = 1 + random.nextInt(12);
+            final List<RowSet> rowSets = new ArrayList<>(count);
+            for (int ii = 0; ii < count; ++ii) {
                 final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
                 final int entries = random.nextInt(20);
                 for (int jj = 0; jj < entries; ++jj) {

@@ -563,18 +563,18 @@ public abstract class RowSetFactory {
             }
             final long[] firsts = new long[fullRunCount];
             final long[] lasts = new long[fullRunCount];
-            for (int r = 0; r < fullRunCount; ++r) {
-                firsts[r] = fullRuns[2 * r];
-                lasts[r] = fullRuns[2 * r + 1];
+            for (int run = 0; run < fullRunCount; ++run) {
+                firsts[run] = fullRuns[2 * run];
+                lasts[run] = fullRuns[2 * run + 1];
             }
             LongArrays.quickSort(firsts, lasts);
             int out = 0;
-            for (int r = 0; r < fullRunCount; ++r) {
-                if (out > 0 && firsts[r] <= fullRuns[2 * out - 1] + 1) {
-                    fullRuns[2 * out - 1] = Math.max(fullRuns[2 * out - 1], lasts[r]);
+            for (int run = 0; run < fullRunCount; ++run) {
+                if (out > 0 && firsts[run] <= fullRuns[2 * out - 1] + 1) {
+                    fullRuns[2 * out - 1] = Math.max(fullRuns[2 * out - 1], lasts[run]);
                 } else {
-                    fullRuns[2 * out] = firsts[r];
-                    fullRuns[2 * out + 1] = lasts[r];
+                    fullRuns[2 * out] = firsts[run];
+                    fullRuns[2 * out + 1] = lasts[run];
                     ++out;
                 }
             }
@@ -587,7 +587,7 @@ public abstract class RowSetFactory {
     private static final class DenseBlockIndex extends BlockIndex {
         private final long firstBlock;
         private final int blockSpan;
-        /** Piece counts at {@code b + 1} while counting; where block {@code b}'s pieces begin once finished. */
+        /** Piece counts at {@code bi + 1} while counting; where block {@code bi}'s pieces begin once finished. */
         private final int[] offsets;
         private int[] next;
 
@@ -604,10 +604,11 @@ public abstract class RowSetFactory {
 
         @Override
         int[] finishCounting() {
-            // Block b's count sits at b + 1, so the running sum in place leaves offsets[b] as where block b's pieces
-            // begin and offsets[b + 1] as where they end.
-            for (int b = 0; b < blockSpan; ++b) {
-                offsets[b + 1] += offsets[b];
+            // Block bi's count sits at bi + 1, so the running sum in place leaves offsets[bi] as where block bi's
+            // pieces
+            // begin and offsets[bi + 1] as where they end.
+            for (int bi = 0; bi < blockSpan; ++bi) {
+                offsets[bi + 1] += offsets[bi];
             }
             next = Arrays.copyOf(offsets, blockSpan);
             return new int[offsets[blockSpan]];
@@ -622,19 +623,19 @@ public abstract class RowSetFactory {
         RspBitmap build(final int[] pieces) {
             // Compact to the blocks that received pieces: their indices in order, and their slices.
             int touched = 0;
-            for (int b = 0; b < blockSpan; ++b) {
-                if (offsets[b + 1] > offsets[b]) {
+            for (int bi = 0; bi < blockSpan; ++bi) {
+                if (offsets[bi + 1] > offsets[bi]) {
                     ++touched;
                 }
             }
             final long[] blocks = new long[touched];
             final int[] compact = new int[touched + 1];
-            int k = 0;
-            for (int b = 0; b < blockSpan; ++b) {
-                if (offsets[b + 1] > offsets[b]) {
-                    blocks[k] = firstBlock + b;
-                    compact[k] = offsets[b];
-                    ++k;
+            int compactIndex = 0;
+            for (int bi = 0; bi < blockSpan; ++bi) {
+                if (offsets[bi + 1] > offsets[bi]) {
+                    blocks[compactIndex] = firstBlock + bi;
+                    compact[compactIndex] = offsets[bi];
+                    ++compactIndex;
                 }
             }
             compact[touched] = offsets[blockSpan];
@@ -688,8 +689,8 @@ public abstract class RowSetFactory {
                 rankOf[slot] = rank;
                 offsets[rank + 1] = slotCount[slot];
             }
-            for (int k = 0; k < slots; ++k) {
-                offsets[k + 1] += offsets[k];
+            for (int rank = 0; rank < slots; ++rank) {
+                offsets[rank + 1] += offsets[rank];
             }
             next = Arrays.copyOf(offsets, slots);
             return new int[offsets[slots]];
