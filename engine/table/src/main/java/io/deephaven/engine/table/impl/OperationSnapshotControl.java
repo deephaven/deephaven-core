@@ -48,13 +48,15 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
     }
 
     /**
-     * Starts a snapshot.
+     * Starts a snapshot. Overriding methods must call {@link #clearListenerAndResult()} in order to discard any
+     * listener and result left behind by a previous attempt.
      *
      * @param beforeClockValue the logical clock value we are starting a snapshot on
      * @return true if we should use previous values, false if we should use current values.
      */
     @Override
     public synchronized Boolean usePreviousValues(final long beforeClockValue) {
+        clearListenerAndResult();
         lastNotificationStep = sourceTable.getLastNotificationStep();
 
         final long beforeStep = LogicalClock.getStep(beforeClockValue);
@@ -180,6 +182,16 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
      */
     boolean subscribeForUpdates(@NotNull final TableUpdateListener listener) {
         return sourceTable.addUpdateListener(listener, lastNotificationStep);
+    }
+
+    /**
+     * Discard the listener and result recorded by a previous attempt. Every attempt runs the snapshot function again
+     * and must set them afresh, so an attempt whose function fails without setting them must not commit an earlier
+     * attempt's already-discarded result.
+     */
+    synchronized void clearListenerAndResult() {
+        eventualListener = null;
+        eventualResult = null;
     }
 
     /**

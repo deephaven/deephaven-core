@@ -174,13 +174,15 @@ public class TestOperationSnapshotControlEx {
         final TestAwareDependency first = new TestAwareDependency();
         final TestAwareDependency second = new TestAwareDependency();
         final OperationSnapshotControlEx control = new OperationSnapshotControlEx(source, first, second);
-        control.setListenerAndResult(null, refreshingSource());
+        final QueryTable result = refreshingSource();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.startCycleForUnitTests(false);
         try {
             final long clockValue = updateGraph.clock().currentValue();
             assertEquals(Boolean.TRUE, control.usePreviousValues(clockValue));
+            // Set as the snapshot function would, after the attempt has begun.
+            control.setListenerAndResult(null, result);
 
             assertTrue(control.snapshotCompletedConsistently(clockValue, true));
             assertEquals(1, first.subscriptions);
@@ -205,13 +207,15 @@ public class TestOperationSnapshotControlEx {
         final TestAwareDependency first = new TestAwareDependency();
         final TestAwareDependency second = new TestAwareDependency();
         final OperationSnapshotControlEx control = new OperationSnapshotControlEx(source, first, second);
-        control.setListenerAndResult(null, refreshingSource());
+        final QueryTable result = refreshingSource();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.startCycleForUnitTests(false);
         try {
             final long clockValue = updateGraph.clock().currentValue();
             assertEquals(Boolean.TRUE, control.usePreviousValues(clockValue));
+            // Set as the snapshot function would, after the attempt has begun.
+            control.setListenerAndResult(null, result);
 
             second.recordedStep = LogicalClock.getStep(clockValue) - 1;
             assertTrue("a change on an earlier step is not what the completion check looks for",
@@ -243,7 +247,7 @@ public class TestOperationSnapshotControlEx {
             }
         };
         final OperationSnapshotControlEx control = new OperationSnapshotControlEx(source, aware);
-        control.setListenerAndResult(null, refreshingSource());
+        final QueryTable result = refreshingSource();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         final ExecutorService pool = Executors.newSingleThreadExecutor();
@@ -255,6 +259,8 @@ public class TestOperationSnapshotControlEx {
             // Decided off-thread with a timeout, so that a wait shows up as a failure rather than a hang.
             final Future<Boolean> decision = pool.submit(() -> control.usePreviousValues(clockValue));
             assertEquals(Boolean.FALSE, decision.get(5, TimeUnit.SECONDS));
+            // Set as the snapshot function would, after the attempt has begun.
+            control.setListenerAndResult(null, result);
 
             assertTrue("the commit must accept the state the attempt read",
                     control.snapshotCompletedConsistently(clockValue, false));
@@ -294,13 +300,14 @@ public class TestOperationSnapshotControlEx {
                 return true;
             }
         };
-        control.setListenerAndResult(new ListenerRecorder("recorder", source, result), result);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.startCycleForUnitTests(false);
         try {
             final long clockValue = updateGraph.clock().currentValue();
             control.usePreviousValues(clockValue);
+            // Set as the snapshot function would, after the attempt has begun.
+            control.setListenerAndResult(new ListenerRecorder("recorder", source, result), result);
             try (final SafeCloseable ignored = base.new ErrorExpectation()) {
                 source.notifyListenersOnError(new RuntimeException("source failure"), null);
             }
@@ -309,6 +316,42 @@ public class TestOperationSnapshotControlEx {
                     () -> control.snapshotCompletedConsistently(clockValue, true));
             assertEquals("the dependencies subscribed before the source threw were undone", 0,
                     subscribedDependencies[0]);
+        } finally {
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
+
+    /**
+     * A control is reused across attempts, so a new attempt must forget the listener and result the previous one set.
+     * Otherwise an attempt whose function fails without setting them would commit its predecessor's result, which has
+     * already been released: stamping its last notification step, subscribing its listener, and registering whatever
+     * else the commit registers on its behalf.
+     */
+    @Test
+    public void testANewAttemptForgetsThePreviousAttemptsListenerAndResult() {
+        final QueryTable source = refreshingSource();
+        final QueryTable result = refreshingSource();
+        final OperationSnapshotControl control = new OperationSnapshotControl(source);
+        // Recorded in place of the result table, whose own notification step cannot show whether the commit stamped it.
+        final long[] stampedStep = {NotificationStepReceiver.NULL_NOTIFICATION_STEP};
+        final NotificationStepReceiver stampRecorder = step -> stampedStep[0] = step;
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            final long clockValue = updateGraph.clock().currentValue();
+
+            // An attempt whose function set the listener and result, but which is not committed.
+            assertEquals(Boolean.TRUE, control.usePreviousValues(clockValue));
+            control.setListenerAndResult(new ListenerRecorder("recorder", source, result), stampRecorder);
+
+            // The next attempt's function fails before setting them, so this attempt has nothing to commit.
+            assertEquals(Boolean.TRUE, control.usePreviousValues(clockValue));
+            assertThrows(IllegalStateException.class, () -> control.snapshotCompletedConsistently(clockValue, true));
+            assertFalse("the previous attempt's listener was not subscribed", source.hasListeners());
+            assertEquals("the previous attempt's result was not stamped",
+                    NotificationStepReceiver.NULL_NOTIFICATION_STEP, stampedStep[0]);
         } finally {
             updateGraph.markSourcesRefreshedForUnitTests();
             updateGraph.completeCycleForUnitTests();
@@ -359,13 +402,14 @@ public class TestOperationSnapshotControlEx {
         final TestAwareDependency aware = new TestAwareDependency();
         final OperationSnapshotControlEx control = new OperationSnapshotControlEx(source, aware);
         final ListenerRecorder listener = new ListenerRecorder("test", source, result);
-        control.setListenerAndResult(listener, result);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.startCycleForUnitTests(false);
         try {
             final long clockValue = updateGraph.clock().currentValue();
             assertEquals(Boolean.TRUE, control.usePreviousValues(clockValue));
+            // Set as the snapshot function would, after the attempt has begun.
+            control.setListenerAndResult(listener, result);
 
             aware.recordedStep = LogicalClock.getStep(clockValue);
             assertFalse(control.snapshotCompletedConsistently(clockValue, true));

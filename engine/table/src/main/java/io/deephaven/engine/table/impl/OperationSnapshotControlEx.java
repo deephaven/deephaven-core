@@ -65,6 +65,7 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
     @Override
     @SuppressWarnings("AutoBoxing")
     public synchronized Boolean usePreviousValues(final long beforeClockValue) {
+        clearListenerAndResult();
         recordDependencyState();
 
         final long beforeStep = LogicalClock.getStep(beforeClockValue);
