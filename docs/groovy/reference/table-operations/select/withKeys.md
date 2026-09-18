@@ -27,7 +27,7 @@ The key column name(s). Must name at least one existing column in the source tab
 A table that shares the underlying data and schema with the source table, with the `keyColumns` attribute set to the specified column names. If the source table already has this exact set of key columns, the source table itself may be returned.
 
 > [!NOTE]
-> `withKeys` only sets `keyColumns`; it does not clear an existing `uniqueKeys` attribute. If the source table was previously marked with [`withUniqueKeys`](./withUniqueKeys.md), `uniqueKeys` remains `true` after calling `withKeys`, even though the new key columns may no longer be unique. To fully convert such a table, also remove the attribute: `table.withKeys(columns).withoutAttributes(["uniqueKeys"])`.
+> `withKeys` only sets `keyColumns`; it does not clear an existing `uniqueKeys` attribute. If the source table was previously marked with [`withUniqueKeys`](./withUniqueKeys.md), `uniqueKeys` remains `true` after calling `withKeys`, even though the new key columns may no longer be unique. To fully convert such a table, also remove the attribute with [`withoutAttributes`](../create/withoutAttributes.md): `table.withKeys(columns).withoutAttributes(["uniqueKeys"])`.
 
 ## Preserved through table operations
 
@@ -40,7 +40,9 @@ The `keyColumns` and `uniqueKeys` attributes are preserved by:
 - [`updateView`](./update-view.md) and [`lazyUpdate`](./lazy-update.md)
 - [`naturalJoin`](../join/natural-join.md) and [`exactJoin`](../join/exact-join.md)
 
-Every other operation, including [`select`](./select.md), [`update`](./update.md), [`view`](./view.md), [`join`](../join/join.md), and [`dropColumns`](./drop-columns.md), clears both attributes. Call `withKeys` or `withUniqueKeys` again on the result to restore them.
+Other operations that build a new result from the table's data — including [`select`](./select.md), [`update`](./update.md), [`view`](./view.md), [`join`](../join/join.md), and [`dropColumns`](./drop-columns.md) — clear both attributes. Call `withKeys` or `withUniqueKeys` again on the result to restore them.
+
+[`withAttributes`](./withAttributes.md) and [`withoutAttributes`](../create/withoutAttributes.md) are a separate case: they preserve every attribute they aren't explicitly asked to add or remove, so `keyColumns` and `uniqueKeys` survive them unless you target those specific keys. [`retainingAttributes`](./retainingAttributes.md) works the other way around — it drops every attribute except the ones you name, so `keyColumns` and `uniqueKeys` only survive it if you explicitly include them.
 
 ## Examples
 

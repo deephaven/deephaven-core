@@ -39,7 +39,9 @@ The `keyColumns` and `uniqueKeys` attributes are preserved by:
 - [`update_view`](../select/update-view.md) and [`lazy_update`](../select/lazy-update.md)
 - [`natural_join`](../join/natural-join.md) and [`exact_join`](../join/exact-join.md)
 
-Every other operation, including [`select`](../select/select.md), [`update`](../select/update.md), [`view`](../select/view.md), [`join`](../join/join.md), and [`drop_columns`](../select/drop-columns.md), clears both attributes. Call `with_keys` or `with_unique_keys` again on the result to restore them.
+Other operations that build a new result from the table's data — including [`select`](../select/select.md), [`update`](../select/update.md), [`view`](../select/view.md), [`join`](../join/join.md), and [`drop_columns`](../select/drop-columns.md) — clear both attributes. Call `with_keys` or `with_unique_keys` again on the result to restore them.
+
+[`with_attributes`](./withAttributes.md) and [`without_attributes`](./withoutAttributes.md) are a separate case: they preserve every attribute they aren't explicitly asked to add or remove, so `keyColumns` and `uniqueKeys` survive them unless you target those specific keys.
 
 ## Examples
 
