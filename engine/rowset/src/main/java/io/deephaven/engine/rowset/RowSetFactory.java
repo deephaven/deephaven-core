@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset;
 
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom;
 import io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential;
@@ -470,7 +471,7 @@ public abstract class RowSetFactory {
      * through a hash of the block index otherwise, so a union whose inputs are far apart in the key space costs what
      * its touched blocks cost and no more.
      *
-     * @return The union of the small inputs, or null when the piece count does not fit an int
+     * @return The union of the small inputs, or null when the pieces would not fit one array
      */
     private static RspBitmap radixSeed(
             final RowSet[] rowSets,
@@ -489,10 +490,12 @@ public abstract class RowSetFactory {
                 rowSet.forAllRowKeyRanges(bucketer);
             }
         }
-        final int[] pieces = index.finishCounting();
-        if (pieces == null) {
+        if (index.totalPieces > ArrayUtil.MAX_ARRAY_SIZE) {
+            // More pieces than one array holds: a union of hundreds of thousands of maximal SortedRanges. Legal, and
+            // beyond any radix layout, so it merges in passes instead.
             return null;
         }
+        final int[] pieces = index.finishCounting();
         bucketer.startPlacing(pieces);
         for (int ii = 0; ii < count; ++ii) {
             final RowSet rowSet = rowSets[ii];
@@ -513,8 +516,19 @@ public abstract class RowSetFactory {
         long[] fullRuns = new long[16];
         int fullRunCount;
 
+        /**
+         * Pieces counted so far, in a long: the per-block counts are ints, and this is what says whether they and the
+         * piece array they size can hold the total before any of them could wrap.
+         */
+        long totalPieces;
+
         /** Called only on the first walk. */
-        abstract void countPiece(long block);
+        final void countPiece(final long block) {
+            ++totalPieces;
+            countPieceInBlock(block);
+        }
+
+        abstract void countPieceInBlock(long block);
 
         void addFullRun(final long first, final long last) {
             if (2 * fullRunCount + 2 > fullRuns.length) {
@@ -526,9 +540,9 @@ public abstract class RowSetFactory {
         }
 
         /**
-         * Turn the counts into placement positions.
+         * Turn the counts into placement positions. Only called once {@link #totalPieces} is known to fit an int.
          *
-         * @return The piece array to place into, or null when the piece count does not fit an int
+         * @return The piece array to place into
          */
         abstract int[] finishCounting();
 
@@ -584,7 +598,7 @@ public abstract class RowSetFactory {
         }
 
         @Override
-        void countPiece(final long block) {
+        void countPieceInBlock(final long block) {
             ++offsets[(int) (block - firstBlock) + 1];
         }
 
@@ -593,11 +607,7 @@ public abstract class RowSetFactory {
             // Block b's count sits at b + 1, so the running sum in place leaves offsets[b] as where block b's pieces
             // begin and offsets[b + 1] as where they end.
             for (int b = 0; b < blockSpan; ++b) {
-                final long sum = (long) offsets[b + 1] + offsets[b];
-                if (sum > Integer.MAX_VALUE - 8) {
-                    return null;
-                }
-                offsets[b + 1] = (int) sum;
+                offsets[b + 1] += offsets[b];
             }
             next = Arrays.copyOf(offsets, blockSpan);
             return new int[offsets[blockSpan]];
@@ -653,7 +663,7 @@ public abstract class RowSetFactory {
         }
 
         @Override
-        void countPiece(final long block) {
+        void countPieceInBlock(final long block) {
             int slot = slotOf.get(block);
             if (slot < 0) {
                 slot = slots++;
@@ -679,11 +689,7 @@ public abstract class RowSetFactory {
                 offsets[rank + 1] = slotCount[slot];
             }
             for (int k = 0; k < slots; ++k) {
-                final long sum = (long) offsets[k + 1] + offsets[k];
-                if (sum > Integer.MAX_VALUE - 8) {
-                    return null;
-                }
-                offsets[k + 1] = (int) sum;
+                offsets[k + 1] += offsets[k];
             }
             next = Arrays.copyOf(offsets, slots);
             return new int[offsets[slots]];
