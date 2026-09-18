@@ -77,9 +77,14 @@ Capitalize:
 - Whitespace for readability: `"A = 4"` not `"A=4"`
 - Null: prose = "will not include null values"; parameter descriptions = `NULL`; code = language-appropriate null.
 
-**Method names in prose:** No leading dot and no parentheses in prose, only in code.
+**Method names in prose:** No leading dot in prose, only in code. Empty parentheses add no value in
+prose, so a bare method reference never carries them. Parentheses *with* an argument are allowed
+when the argument itself conveys useful information to the reader (e.g. `isNaN(value)` shows what's
+being tested) — that's a small usage example, not just a method name, so the empty-parens rule
+doesn't apply to it.
 
 - Correct prose: "Use `with_serial` when your formula has side effects"
+- Correct prose: "Use `isNaN(value)` to explicitly test for `NaN`"
 - Correct code: `col.with_serial()`
 - Incorrect prose: "Use `.with_serial` when your formula has side effects" or "Use `with_serial()` when your formula has side effects"
 
