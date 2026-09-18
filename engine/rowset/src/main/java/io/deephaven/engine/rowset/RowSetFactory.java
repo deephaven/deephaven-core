@@ -546,9 +546,17 @@ public abstract class RowSetFactory {
         }
 
         /**
-         * Turn the counts into placement positions. Only called once {@link #totalPieces} is known to fit an int.
+         * Turn the counts into placement positions and allocate the piece array they lay out. Only called once
+         * {@link #totalPieces} is known to fit an int.
          *
-         * @return The piece array to place into
+         * <p>
+         * The array holds every piece grouped by block, blocks in key order: the block at rank {@code k} owns the slice
+         * {@code [offsets[k], offsets[k + 1])}, where the offsets are the running sum of the counts and the last one is
+         * the total. Within a block's slice the pieces sit in the order the second walk places them, which is input
+         * order, not key order; the builder sorts or bitmaps each slice on its own. A piece is
+         * {@code (startLow << 16) | endLow}, the range's two inclusive block-local ends.
+         *
+         * @return The piece array to place into, sized to the total count
          */
         abstract int[] finishCounting();
 

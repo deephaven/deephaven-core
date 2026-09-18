@@ -277,6 +277,67 @@ Abutting pieces from different inputs meet in the block-local reduction, a sort 
 for many, and become one run before any container exists, which is what the pairwise tree achieved only through its
 passes; that is why the coalescing layouts come back.
 
+#### A worked example
+
+Four `SortedRanges` inputs, with keys written as `block:offset` (block `b` holds keys `b * 65536` through
+`b * 65536 + 65535`, offsets in hex):
+
+| Input | Ranges |
+|---|---|
+| R0 | `0:0010`–`0:0020`, `0:FF00`–`2:00FF` |
+| R1 | `0:0015`–`0:0030`, `2:0100`–`2:FFFF` |
+| R2 | `1:0005` |
+| R3 | `0:0031`–`0:0035`, `5:0007` |
+
+The pre-pass finds the first block is 0 and the last is 5, a span of six blocks, so the dense index is used with an
+`offsets` array of seven ints. The first walk visits every range once. A range within one block is one piece. R0's
+second range crosses blocks: its ends are two pieces, `0:FF00`–`0:FFFF` and `2:0000`–`2:00FF`, and the block between
+them is a full run, `[1, 1]`. R2's single key is one piece in block 1. Counting stores block `bi`'s count at `bi + 1`:
+
+```
+block:            0  1  2  3  4  5
+pieces counted:   4  1  2  0  0  1     full runs: [1, 1]     totalPieces: 8
+offsets:       [0, 4, 1, 2, 0, 0, 1]
+```
+
+The running sum in place turns that into where each block's slice begins, with the total at the end, and a copy of the
+first six entries becomes the placement cursors:
+
+```
+offsets:       [0, 4, 5, 7, 7, 7, 8]     block bi's pieces are pieces[offsets[bi] .. offsets[bi + 1])
+next:          [0, 4, 5, 7, 7, 7]
+```
+
+The second walk visits the same ranges in the same order and writes each piece, packed as `(startLow << 16) | endLow`,
+at its block's cursor, advancing it. Full runs are not revisited. The slices fill in input order, not key order:
+
+```
+position:  0            1            2            3            4            5            6            7
+pieces:    0010-0020    FF00-FFFF    0015-0030    0031-0035    0005-0005    0000-00FF    0100-FFFF    0007-0007
+           |------------------ block 0 -------------------|  |- block 1 -|  |------ block 2 ------|  |- block 5 -|
+           R0           R0           R1           R3           R2           R0           R1           R3
+```
+
+`build` compacts to the four blocks that received pieces, `[0, 1, 2, 5]`, with slice bounds `[0, 4, 5, 7, 8]`, and
+hands them with the one full run to `RspBitmap.makeFromBlockPieces`, which allocates room for five spans (four blocks
+plus one run, an upper bound) and walks the blocks in order:
+
+1. **Block 0.** No full run starts at or before it. Its four pieces are sorted, `0010-0020`, `0015-0030`, `0031-0035`,
+   `FF00-FFFF`, and coalesced into two runs, `0010–0035` and `FF00–FFFF`. R0's and R1's overlapping ranges and R3's
+   abutting one meet here and become one run before any container exists. Cardinality 294 with two runs: a run
+   container is sized for it and the two runs appended. Span 0 is that container at key `0:0000`.
+2. **Block 1.** The full run `[1, 1]` covers it, so R2's piece is skipped: the key is already in the run. The run is
+   not emitted yet; that happens when the walk passes its last block.
+3. **Block 2.** The run `[1, 1]` ends before this block, so it starts a full block span at block 1, length 1. The two
+   pieces `0000-00FF` and `0100-FFFF` coalesce into one run covering the whole block, cardinality 65536, so the block
+   is full and, being adjacent, extends that span to length 2 rather than getting a container.
+4. **Block 5.** No runs remain, so the pending full block span is written first: span 1 covers blocks 1–2. The one
+   piece has cardinality 1, so span 2 is a singleton at key `5:0007` with no container at all.
+
+Three of the five slots are used, so `size` is 3 and the cardinality cache is built once at the end. The result is
+`0:0010`–`0:0035`, `0:FF00`–`2:FFFF`, and `5:0007`: 131,367 rows in three spans, with one container, none of which was
+inserted into anything.
+
 ### Measured, ms per union, one build of the final code
 
 | Case | Insert loop | Merge in passes | Radix | Radix vs merge | Radix vs insert loop |
