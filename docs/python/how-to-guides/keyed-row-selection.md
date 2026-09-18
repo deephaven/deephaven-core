@@ -9,7 +9,7 @@ By default, Deephaven has no notion of which column or columns make a row unique
 
 ## Select every row with a matching key
 
-Use `with_keys` when rows can legitimately share the same key value, such as several rows that belong to the same group, and you want selecting one of them to select all of them.
+Use [`with_keys`](../reference/table-operations/create/withKeys.md) when rows can legitimately share the same key value, such as several rows that belong to the same group, and you want selecting one of them to select all of them.
 
 ```python test-set=1 order=null
 from deephaven import empty_table
@@ -32,7 +32,7 @@ See [`with_keys`](../reference/table-operations/create/withKeys.md) for the full
 
 ## Select a single row
 
-If your key columns identify exactly one row apiece, a true primary key, use `with_unique_keys` instead. It sets the same key-column metadata as `with_keys`, but also tells the UI that no two rows share a key, so selecting a row never pulls in any others.
+If each combination of your key columns' values identifies exactly one row, a true primary key, use [`with_unique_keys`](../reference/table-operations/create/withUniqueKeys.md) instead. It sets the same key-column metadata as `with_keys`, but also tells the UI that no two rows share a key, so selecting a row never pulls in any others.
 
 ```python test-set=2 order=null
 from deephaven import empty_table
@@ -56,7 +56,7 @@ See [`with_unique_keys`](../reference/table-operations/create/withUniqueKeys.md)
 
 ## Keep key columns through later operations
 
-Key columns are just table attributes, so only specific operations carry them forward automatically. [`where`](../reference/table-operations/filter/where.md), [`sort`](../reference/table-operations/sort/sort.md), [`reverse`](../reference/table-operations/sort/reverse.md), [`flatten`](../reference/table-operations/select/flatten.md), [`update_view`](../reference/table-operations/select/update-view.md), [`natural_join`](../reference/table-operations/join/natural-join.md), and [`exact_join`](../reference/table-operations/join/exact-join.md) all preserve them. Most other operations, including [`select`](../reference/table-operations/select/select.md), [`update`](../reference/table-operations/select/update.md), [`join`](../reference/table-operations/join/join.md), and [`drop_columns`](../reference/table-operations/select/drop-columns.md), do not.
+Key columns are just table attributes, so only specific operations carry them forward automatically — among them [`where`](../reference/table-operations/filter/where.md), [`sort`](../reference/table-operations/sort/sort.md), [`reverse`](../reference/table-operations/sort/reverse.md), [`flatten`](../reference/table-operations/select/flatten.md), [`update_view`](../reference/table-operations/select/update-view.md), [`natural_join`](../reference/table-operations/join/natural-join.md), and [`exact_join`](../reference/table-operations/join/exact-join.md). Most other operations, including [`select`](../reference/table-operations/select/select.md), [`update`](../reference/table-operations/select/update.md), [`join`](../reference/table-operations/join/join.md), and [`drop_columns`](../reference/table-operations/select/drop-columns.md), do not.
 
 [`view`](../reference/table-operations/select/view.md) is an easy one to trip over: it looks like `update_view`'s sibling, but it does _not_ preserve key columns, while `update_view` does.
 
