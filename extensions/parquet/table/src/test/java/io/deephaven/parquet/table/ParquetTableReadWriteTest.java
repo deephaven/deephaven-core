@@ -120,6 +120,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -4767,6 +4768,31 @@ public final class ParquetTableReadWriteTest {
         checkSingleTable(groupedTableToSave, groupedTableDest);
 
         assertTableStatistics(groupedTableToSave, groupedTableDest);
+    }
+
+    /**
+     * Round-trips pre-Epoch {@link LocalDateTime} and {@link LocalDate} columns, both as a sweep that straddles the
+     * Epoch and as the exact values adjacent to it.
+     */
+    @Test
+    public void readWritePreEpochDateTimeTest() {
+        // pre-Epoch values with a non-zero sub-second component used to fail to read back, because the materializer
+        // divided towards zero and produced a negative nano-of-second.
+        final int NUM_ROWS = 1000;
+        final Table table = TableTools.emptyTable(NUM_ROWS).view(
+                // 1900 through 2039, so the sweep straddles the Epoch.
+                "someLocalDateTimeColumn = java.time.LocalDateTime.of(1900 + i%140, i%12+1, i%28+1, (i+4)%24, (i+5)%60, (i+6)%60, i*1_000_000 + i)",
+                "someDateColumn = java.time.LocalDate.ofEpochDay(i - 500)").select();
+        writeReadTableTest(table, new File(rootFile, "readWritePreEpochDateTimeTest.parquet"));
+
+        // The exact values on either side of the Epoch, where the flooring correction changes the second.
+        final Table boundaries = TableTools.newTable(TableTools.col("Ldt",
+                LocalDateTime.parse("1900-06-15T12:30:00.123456789"),
+                LocalDateTime.parse("1969-12-31T23:59:59.999999999"),
+                LocalDateTime.parse("1969-12-31T23:59:59"),
+                LocalDateTime.parse("1970-01-01T00:00:00"),
+                LocalDateTime.parse("1970-01-01T00:00:00.000000001")));
+        writeReadTableTest(boundaries, new File(rootFile, "readWritePreEpochBoundariesTest.parquet"));
     }
 
     @Test
