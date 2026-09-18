@@ -65,7 +65,7 @@ jobs:
           done
       - name: Publish Test Results
         if: steps.download.outputs.found == 'true'
-        uses: scacap/action-surefire-report@c38a2d74b9840ae8950a4387ae02b637421d0f39 # v1.13.0
+        uses: ScalableCapital/action-surefire-report@4004a71652495d6ed111f5b717c2cf9aa0f37627 # v2.0.5
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
         with:
