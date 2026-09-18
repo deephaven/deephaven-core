@@ -28,9 +28,19 @@ public abstract class RowSetFactory {
 
     /**
      * How {@link #union(Collection)} builds its result, selected by the {@code RowSetFactory.unionStrategy}
-     * configuration property. {@link #RADIX} is the default; {@link #MERGE_IN_PASSES} is the merge it replaced.
+     * configuration property. {@link #RADIX} is the default; the others are what it replaced, kept for comparison.
      */
     public enum UnionStrategy {
+        /**
+         * Copy the first row set and insert the rest into it in the order given: what {@link #unionInsert} did before
+         * any of the others existed. Quadratic when the inputs are disjoint and arrive out of key order.
+         */
+        SEQUENTIAL,
+        /**
+         * {@link #SEQUENTIAL} after sorting the inputs by first row key, so that disjoint inputs append in turn
+         * whatever order the caller supplied them in.
+         */
+        SEQUENTIAL_SORTED,
         /**
          * Merge in passes: an accumulator keeps absorbing the next row set while it appends or while the previous one
          * duplicated rows already held, otherwise a new group starts. See {@link #mergeInPasses}.
@@ -179,8 +189,8 @@ public abstract class RowSetFactory {
 
     /**
      * Union {@code rowSets[0, size)}, which this method owns and may reorder and clear. Empty inputs are compacted
-     * away, the rest are sorted by first row key, and the union is built by the strategy in force:
-     * {@link #unionWithRadix} by default, {@link #mergeInPasses} under {@link UnionStrategy#MERGE_IN_PASSES}.
+     * away, the rest are sorted by first row key unless the strategy in force is {@link UnionStrategy#SEQUENTIAL}, and
+     * the union is built by that strategy: {@link #unionWithRadix} by default.
      */
     private static WritableRowSet union(final RowSet[] rowSets, final int size) {
         // Compact away the empty inputs so that first and last row key are meaningful for every remaining row set.
@@ -199,11 +209,37 @@ public abstract class RowSetFactory {
         if (count == 0) {
             return empty();
         }
-        Arrays.sort(rowSets, 0, count, Comparator.comparingLong(RowSet::firstRowKey));
-        if (unionStrategy == UnionStrategy.RADIX) {
-            return unionWithRadix(rowSets, count);
+        final UnionStrategy strategy = unionStrategy;
+        if (strategy == UnionStrategy.SEQUENTIAL) {
+            return insertSequentially(rowSets, count);
         }
-        return mergeInPasses(rowSets, count);
+        Arrays.sort(rowSets, 0, count, Comparator.comparingLong(RowSet::firstRowKey));
+        switch (strategy) {
+            case SEQUENTIAL_SORTED:
+                return insertSequentially(rowSets, count);
+            case MERGE_IN_PASSES:
+                return mergeInPasses(rowSets, count);
+            case RADIX:
+                return unionWithRadix(rowSets, count);
+            default:
+                throw new IllegalStateException(strategy.toString());
+        }
+    }
+
+    /**
+     * Copy {@code rowSets[0]} and insert {@code rowSets[1, count)} into it in order. The inputs are borrowed.
+     */
+    private static WritableRowSet insertSequentially(final RowSet[] rowSets, final int count) {
+        final WritableRowSet accumulator = rowSets[0].copy();
+        try {
+            for (int ii = 1; ii < count; ++ii) {
+                accumulator.insert(rowSets[ii]);
+            }
+        } catch (final RuntimeException | Error e) {
+            accumulator.close();
+            throw e;
+        }
+        return accumulator;
     }
 
     /**
