@@ -24,7 +24,12 @@ public interface BarrageSubscriptionPerformanceLogger {
     final class StatType {
         /** Time to record the changes that occurred during a single update graph cycle. */
         public static final String ENQUEUE_NANOS = "EnqueueNanos";
-        /** Time to aggregate multiple updates within the same interval. */
+        /**
+         * Time to coalesce multiple updates within the same interval into one. A producer may do this many times per
+         * interval: once for each compaction of the pending queue, and once more when it propagates. Every such
+         * coalesce is recorded here, so the count is the number of coalesces in the window rather than the number of
+         * propagations.
+         */
         public static final String AGGREGATE_NANOS = "AggregateNanos";
         /** Time to deliver an aggregated message to all subscribers. */
         public static final String PROPAGATE_NANOS = "PropagateNanos";
@@ -46,8 +51,6 @@ public interface BarrageSubscriptionPerformanceLogger {
          * producer holds on behalf of subscribers that have not yet been served.
          */
         public static final String PENDING_DELTA_BYTES = "PendingDeltaBytes";
-        /** Time to compact the pending updates into one, off the update graph thread, ahead of the next propagation. */
-        public static final String COMPACTION_NANOS = "CompactionNanos";
         /** Time to read and deserialize an update from the wire. */
         public static final String DESERIALIZATION_NANOS = "DeserializationNanos";
         /** Time to apply a single update during the update graph cycle. */

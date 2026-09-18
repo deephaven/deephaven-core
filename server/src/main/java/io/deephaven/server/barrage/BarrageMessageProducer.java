@@ -1035,7 +1035,11 @@ public class BarrageMessageProducer extends LivenessArtifact
         recordMetric(stats -> stats.pendingDeltaBytes, pendingDeltaBytes);
 
         if (shouldCompact()) {
-            compactionJob.maybeSchedule();
+            if (BarrageMessageDelta.allAddOnly(pendingDeltas)) {
+                markCompactionDeclined();
+            } else {
+                compactionJob.maybeSchedule();
+            }
         }
     }
 
@@ -1074,7 +1078,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         deltasSinceCompaction = 0;
     }
 
-    private void resetCompactionState() {
+    private void markFlushed() {
         compactedHeadBytes = 0;
         rawBytesSinceCompaction = 0;
         deltasSinceCompaction = 0;
@@ -1170,7 +1174,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         final RowSet baseRowSet;
         synchronized (this) {
             if (!shouldCompact()) {
-                // flushed since this job was scheduled
+                // flushed, or already compacted, since this job was scheduled
                 return;
             }
             // Only one generation is ever pending outside a propagation run, which the run lock excludes; take the
@@ -1189,6 +1193,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         final BarrageMessageDelta compacted;
         try (final SafeCloseable ignored = baseRowSet) {
+            // Compaction and splicing might create add-only deltas from mixed deltas. Decline additional compaction.
             if (BarrageMessageDelta.allAddOnly(run)) {
                 synchronized (this) {
                     markCompactionDeclined();
@@ -1197,7 +1202,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             }
             final long startTm = System.nanoTime();
             compacted = BarrageMessageDelta.coalesce(run, baseRowSet, chunkSources);
-            recordMetric(stats -> stats.compaction, System.nanoTime() - startTm);
+            recordMetric(stats -> stats.aggregate, System.nanoTime() - startTm);
         }
 
         boolean spliced = false;
@@ -1705,7 +1710,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             blinkTableUpdateSize = 0;
             pendingDeltas.clear();
             pendingDeltaBytes = 0;
-            resetCompactionState();
+            markFlushed();
         }
 
         // now, propagate updates
@@ -2392,7 +2397,6 @@ public class BarrageMessageProducer extends LivenessArtifact
         public final Histogram writeBytes = new Histogram(NUM_SIG_FIGS);
         public final Histogram pendingDeltaCount = new Histogram(NUM_SIG_FIGS);
         public final Histogram pendingDeltaBytes = new Histogram(NUM_SIG_FIGS);
-        public final Histogram compaction = new Histogram(NUM_SIG_FIGS);
 
         private volatile boolean running = true;
 
@@ -2424,7 +2428,6 @@ public class BarrageMessageProducer extends LivenessArtifact
                 flush(now, logger, writeBytes, StatType.WRITE_BYTES);
                 flush(now, logger, pendingDeltaCount, StatType.PENDING_DELTA_COUNT);
                 flush(now, logger, pendingDeltaBytes, StatType.PENDING_DELTA_BYTES);
-                flush(now, logger, compaction, StatType.COMPACTION_NANOS);
             }
         }
 
