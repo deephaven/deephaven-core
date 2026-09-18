@@ -103,7 +103,7 @@ Both `resultRange` and `resultInRange` can instead be implemented by [conjunctiv
 
 ```groovy order=source,resultRangeConjunctive
 source = emptyTable(10).update("X = ii")
-resultRangeConjunctive = source.where("X >= 2", "X < 6")
+resultRangeConjunctive = source.where("X >= 2", "X <= 6")
 ```
 
 You can also filter for data that is not in a range by using the `!` operator or by [disjunctively](#disjunctive) combining two separate range filters:

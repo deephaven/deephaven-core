@@ -27,7 +27,7 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    For standalone spot-checks, apply these rules to the changed lines only (don't scan the whole file):
    - Method names in prose: no leading dot, no parentheses (`update`, not `.update()`)
    - Active voice preferred
-   - Straight quotes only (`"`, not `"`)
+   - Straight quotes only (`"`, not `"` or `"`)
    - Em dashes with spaces (` — `)
    - Proper noun capitalization (Deephaven, RowSet, ColumnSource, etc.)
    

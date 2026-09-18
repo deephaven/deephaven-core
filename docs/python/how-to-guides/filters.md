@@ -120,7 +120,7 @@ Both `result_range` and `result_inrange` can instead be implemented by [conjunct
 from deephaven import empty_table
 
 source = empty_table(10).update("X = ii")
-result_range_conjunctive = source.where(["X >= 2", "X < 6"])
+result_range_conjunctive = source.where(["X >= 2", "X <= 6"])
 ```
 
 You can also filter for data that is not in a range by using the `!` operator or by [disjunctively](#disjunctive) combining two separate range filters:

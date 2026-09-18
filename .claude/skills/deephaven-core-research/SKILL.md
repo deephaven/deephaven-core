@@ -197,7 +197,7 @@ Report comprehensively:
 | Table API/interfaces | `engine/api/src/main/java/io/deephaven/engine/table/` |
 | Live updates | `engine/updategraph/src/main/java/io/deephaven/engine/updategraph/` |
 | Row/column data | `engine/chunk/`, `engine/rowset/`, `engine/vector/` |
-| Liveness/ref counting | `engine/liveness/` |
+| Liveness/ref counting | `engine/updategraph/src/main/java/io/deephaven/engine/liveness/` |
 | Query syntax tree | `qst/` (immutable, serializable query representation) |
 | Fluent table API | `table-api/` (provider-agnostic `TableOperations`) |
 | SQL front-end | `engine/sql/`, `sql/` |
@@ -247,9 +247,9 @@ Report comprehensively:
 - **Entry points**: `engine/rowset/src/main/java/io/deephaven/engine/rowset/`
 - **Key classes**: `RowSet`, `WritableRowSet`, `RowSetFactory`, `RowSequence`
 
-### engine/liveness/ — Reference counting and cleanup
-- **Entry points**: `engine/liveness/src/main/java/io/deephaven/engine/liveness/`
-- **Key classes**: `LivenessNode`, `LivenessReferent`, `ReferenceCounted`, `LivenessScope`
+### io.deephaven.engine.liveness (in engine/updategraph/) — Reference counting and cleanup
+- **Entry points**: `engine/updategraph/src/main/java/io/deephaven/engine/liveness/`
+- **Key classes**: `LivenessNode`, `LivenessReferent`, `LivenessScope`, plus `ReferenceCounted` (`Util/src/main/java/io/deephaven/util/referencecounting/`)
 - **Purpose**: Keeps upstream dependencies alive, ensures timely cleanup
 
 ### table-api/ — Provider-agnostic fluent API
