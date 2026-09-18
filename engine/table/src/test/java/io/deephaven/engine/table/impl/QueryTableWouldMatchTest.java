@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.vectors.ColumnVectors;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import junit.framework.TestCase;
@@ -24,6 +25,7 @@ import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.show;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
@@ -471,4 +473,109 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(result, "M", Boolean.class).toArray());
     }
 
+    /**
+     * A {@code wouldMatch} over a static source with a refreshing set is driven by the static listener, which has no
+     * recorder and hears only from its filters. When the set fails, that listener must fail the result exactly once,
+     * with the set's error.
+     */
+    public void testMatchStaticSourceSetFailureFailsResultOnce() {
+        final QueryTable source = testTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, new MatchPair("Key", "Key"));
+        final Table result = source.wouldMatch(new WouldMatchPair("A", filter));
+        assertTrue("a static source filtered by a refreshing set is refreshing", result.isRefreshing());
+        final FailureRecordingListener failures = new FailureRecordingListener(result);
+        assertFalse(result.isFailed());
+
+        final RuntimeException setError = new RuntimeException("set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> setTable.notifyListenersOnError(setError, null));
+        }
+
+        assertTrue("the result must fail on the cycle its set failed", result.isFailed());
+        failures.assertFailedOnceWith(setError);
+        for (final Throwable reported : getUpdateErrors()) {
+            assertSame("unexpected error reported: " + reported, setError, reported);
+        }
+    }
+
+    /**
+     * When two set tables fail on the same cycle, a {@code wouldMatch} with a match column over each fails exactly
+     * once, and a {@code wouldMatch} over only the second set still fails. Every match column routes its failure
+     * request through the one merged listener, which must deliver the first and ignore the second.
+     */
+    public void testMatchSetFailuresFailEveryResultOnceWhenTwoSetsFailInOneCycle() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable firstSet = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+        final QueryTable secondSet = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final DynamicWhereFilter firstSetFilter = new DynamicWhereFilter(firstSet, true, new MatchPair("Key", "Key"));
+        // Copies of one filter share a single set listener, so both results hear about the second set from it.
+        final DynamicWhereFilter secondSetFilter =
+                new DynamicWhereFilter(secondSet, true, new MatchPair("Key", "Key"));
+        final Table bothSets = source.wouldMatch(
+                new WouldMatchPair("A", firstSetFilter), new WouldMatchPair("B", secondSetFilter.copy()));
+        final Table secondSetOnly = source.wouldMatch(new WouldMatchPair("B", secondSetFilter.copy()));
+        final FailureRecordingListener bothSetsFailures = new FailureRecordingListener(bothSets);
+        final FailureRecordingListener secondSetOnlyFailures = new FailureRecordingListener(secondSetOnly);
+        assertFalse(bothSets.isFailed());
+        assertFalse(secondSetOnly.isFailed());
+
+        final RuntimeException firstError = new RuntimeException("first set table failure");
+        final RuntimeException secondError = new RuntimeException("second set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                firstSet.notifyListenersOnError(firstError, null);
+                secondSet.notifyListenersOnError(secondError, null);
+            });
+        }
+
+        assertTrue("the result over both sets must fail", bothSets.isFailed());
+        assertTrue("the result over the second set alone must fail", secondSetOnly.isFailed());
+        // Whichever set's failure arrives first is the one the shared result fails with; there must be only one.
+        assertEquals(1, bothSetsFailures.failureCount());
+        secondSetOnlyFailures.assertFailedOnceWith(secondError);
+        for (final Throwable reported : getUpdateErrors()) {
+            assertTrue("unexpected error reported: " + reported, reported == firstError || reported == secondError);
+        }
+    }
+
+    /**
+     * When a set table fails on the same cycle the source ticks, the {@code wouldMatch} result fails exactly once, on
+     * that cycle, with the set's error. The source update must not be applied to a result whose set is gone, and it
+     * must not produce a second notification of any kind.
+     * <p>
+     * This is the {@code where} scenario of {@code QueryTableWhereTest} again, because {@code wouldMatch} answers a
+     * filter's recompute and failure requests through its own listener implementation, a match column and its own
+     * merged listener, rather than through a {@code FilteredTable} and a {@code WhereListener}.
+     */
+    public void testMatchSetFailureWhileSourceTicksFailsResultOnce() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final DynamicWhereFilter filter = new DynamicWhereFilter(setTable, true, new MatchPair("Key", "Key"));
+        final Table result = source.wouldMatch(new WouldMatchPair("A", filter));
+        final FailureRecordingListener failures = new FailureRecordingListener(result);
+        assertFalse(result.isFailed());
+
+        final RuntimeException setError = new RuntimeException("set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                setTable.notifyListenersOnError(setError, null);
+                addToTable(source, i(8), intCol("Key", 1));
+                source.notifyListeners(i(8), i(), i());
+            });
+        }
+
+        assertTrue("the result must fail on the cycle its set failed", result.isFailed());
+        failures.assertFailedOnceWith(setError);
+        // The only error anyone reported is the set's own; an engine error raised while propagating it would be a bug.
+        for (final Throwable reported : getUpdateErrors()) {
+            assertSame("unexpected error reported: " + reported, setError, reported);
+        }
+    }
 }
