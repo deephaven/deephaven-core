@@ -30,7 +30,7 @@ See [`withKeys`](../reference/table-operations/select/withKeys.md) for the full 
 
 ## Select a single row
 
-If each combination of your key columns' values identifies exactly one row, a true primary key, use [`withUniqueKeys`](../reference/table-operations/select/withUniqueKeys.md) instead. It sets the same key-column metadata as `withKeys`, but also tells the UI that no two rows share a key, so selecting a row never pulls in any others.
+Your key columns form a true primary key when each combination of their values identifies exactly one row. Use [`withUniqueKeys`](../reference/table-operations/select/withUniqueKeys.md) for these keys instead of `withKeys`. It sets the same key-column metadata, but also tells the UI that no two rows share a key, so selecting a row never pulls in any others.
 
 ```groovy test-set=2 order=null
 notKeyed = emptyTable(100).update("Key1=i", "Key2=i+1", "Value=i*2")

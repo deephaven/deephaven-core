@@ -32,7 +32,7 @@ See [`with_keys`](../reference/table-operations/create/withKeys.md) for the full
 
 ## Select a single row
 
-If each combination of your key columns' values identifies exactly one row, a true primary key, use [`with_unique_keys`](../reference/table-operations/create/withUniqueKeys.md) instead. It sets the same key-column metadata as `with_keys`, but also tells the UI that no two rows share a key, so selecting a row never pulls in any others.
+Your key columns form a true primary key when each combination of their values identifies exactly one row. Use [`with_unique_keys`](../reference/table-operations/create/withUniqueKeys.md) for these keys instead of `with_keys`. It sets the same key-column metadata, but also tells the UI that no two rows share a key, so selecting a row never pulls in any others.
 
 ```python test-set=2 order=null
 from deephaven import empty_table
