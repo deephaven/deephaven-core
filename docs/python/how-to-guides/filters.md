@@ -104,7 +104,7 @@ from deephaven import empty_table
 source = empty_table(10).update("X = ii")
 result_greaterthan = source.where("X > 5")
 result_lessthan = source.where("X < 5")
-result_range = source.where("X >= 2 && X < 6")
+result_range = source.where("X >= 2 && X <= 6")
 result_inrange = source.where("inRange(X, 2, 6)")
 ```
 
@@ -120,7 +120,7 @@ Both `result_range` and `result_inrange` can instead be implemented by [conjunct
 from deephaven import empty_table
 
 source = empty_table(10).update("X = ii")
-result_range_conjunctive = source.where(["X >= 2", "X < 6"])
+result_range_conjunctive = source.where(["X >= 2", "X <= 6"])
 ```
 
 You can also filter for data that is not in a range by using the `!` operator or by [disjunctively](#disjunctive) combining two separate range filters:
@@ -129,10 +129,13 @@ You can also filter for data that is not in a range by using the `!` operator or
 from deephaven import empty_table
 
 source = empty_table(10).update("X = ii")
-result_not_in_range_disjunctive = source.where("X < 2 || X >= 6")
-result_not_in_range_where_one_of = source.where_one_of(["X < 2", "X >= 6"])
+result_not_in_range_disjunctive = source.where("X < 2 || X > 6")
+result_not_in_range_where_one_of = source.where_one_of(["X < 2", "X > 6"])
 result_not_in_range = source.where("!inRange(X, 2, 6)")
 ```
+
+> [!NOTE]
+> These forms are only equivalent for non-`NaN` values. `inRange` returns `false` for `NaN` (per standard IEEE 754 comparison rules), so `!inRange(X, 2, 6)` includes `NaN` rows, while `X < 2 || X > 6` excludes them.
 
 ### String filters
 
