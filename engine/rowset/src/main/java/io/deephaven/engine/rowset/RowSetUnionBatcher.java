@@ -95,16 +95,13 @@ public final class RowSetUnionBatcher implements SafeCloseable {
 
     /**
      * @param batchSize The number of row sets to gather before merging, which a caller passes as the number it expects
-     *        to produce. Clamped to {@code [1, }{@link #maxBatchSize}{@code ]}: under the cap the whole input merges at
-     *        once, and over it, or where the count is only an upper bound or no bound at all, the cap takes over and
-     *        the count costs nothing to have passed. Taken as a {@code long} so that a caller counting rows rather than
-     *        objects has nothing to narrow and no reason to know the cap.
+     *        to produce. Clamped to {@code [1, }{@link #effectiveMaxBatchSize()}{@code ]}: under the cap the whole
+     *        input merges at once, and over it, or where the count is only an upper bound or no bound at all, the cap
+     *        takes over and the count costs nothing to have passed. Taken as a {@code long} so that a caller counting
+     *        rows rather than objects has nothing to narrow and no reason to know the cap.
      */
     public RowSetUnionBatcher(final long batchSize) {
-        // The cap itself is configured, so it is held to [1, MAX_MAX_BATCH_SIZE] before it is trusted as a clamp and
-        // as the list's size.
-        final int cap = (int) Math.min(Math.max(1L, maxBatchSize), MAX_MAX_BATCH_SIZE);
-        this.batchSize = (int) Math.min(Math.max(1L, batchSize), cap);
+        this.batchSize = (int) Math.min(Math.max(1L, batchSize), effectiveMaxBatchSize());
         // Bounded by the clamp above, so this is the list's greatest extent and not just a starting point.
         entries = new ArrayList<>(2 * this.batchSize);
     }
@@ -217,6 +214,15 @@ public final class RowSetUnionBatcher implements SafeCloseable {
     @VisibleForTesting
     int batchSize() {
         return batchSize;
+    }
+
+    /**
+     * The cap in force: {@link #maxBatchSize} held to {@code [1, }{@link #MAX_MAX_BATCH_SIZE}{@code ]}, since it is
+     * configured and is trusted both as a clamp and as the size of the entry list.
+     */
+    @VisibleForTesting
+    static int effectiveMaxBatchSize() {
+        return (int) Math.min(Math.max(1L, maxBatchSize), MAX_MAX_BATCH_SIZE);
     }
 
     /**

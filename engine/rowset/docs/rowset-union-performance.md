@@ -12,7 +12,7 @@ confident wrong answers, so that none of it has to be rediscovered.
 | **What shipped first** | `RowSetFactory.union` — sort by first row key, then merge in passes on an append-or-duplication rule. |
 | **What replaced it** | The radix build below: when the inputs' `SortedRanges` entries would overflow one, bucket every range by block and build each block's container once into an `RspBitmap`, compacted afterwards if the inputs coalesced. The merge in passes remains for `RspBitmap` inputs and for inputs whose entries together fit a `SortedRanges`. |
 | **Best case of the merge** | 25.7x — 1B rows, 1000 disjoint blocks in reverse order. |
-| **Worst case of the merge** | 0.58x against the same insert-loop baseline — the 100K random-bucket comb bucketed `updateBy` produces every cycle, 245 ms against the loop's 142. See below. |
+| **Worst case of the merge** | 0.57x against the same insert-loop baseline — the 100K random-bucket comb bucketed `updateBy` produces every cycle, 238 ms against the loop's 135. See the radix build's table below. |
 
 ## Why sequential insertion falls over
 
@@ -295,6 +295,50 @@ which is what the pairwise tree achieved only through its passes; that is why th
 The last row's inputs are `RspBitmap`s and take the merge in passes under both, by construction. `ADJACENT` is the one
 cell where the merge's coalescing was already as good as the radix build's.
 
+### Through the batcher
+
+`RowSetUnionBatcher` hands the union at most `maxBatchSize` inputs at a time and folds the batch results together;
+`DynamicWhereFilter`, `DataIndexPushdownManager`, `SyncTableFilter` and `LeaderTableFilter` reach the union that way.
+Ms per union, same build as the table above, cap at its default of 8192:
+
+| Shape, n=1000 unless noted | Union, merge | Union, radix | Batcher, merge | Batcher, radix |
+|---|---:|---:|---:|---:|
+| `REDUNDANT` | 2.74 | 2.77 | 2.82 | 2.75 |
+| `PARTIAL` | 27.3 | 27.1 | 26.9 | 27.2 |
+| `BLOCKS_SHUFFLED` | 2.40 | 2.37 | 2.87 | 2.87 |
+| `ADJACENT` | 18.2 | 19.5 | 18.2 | 19.4 |
+| `INTERLEAVED` | 110 | **43.7** | 111 | **43.0** |
+| `REGIONED` | 5.17 | **2.66** | 5.13 | **2.69** |
+| `NEW_BLOCKS`, 10K sets | 1.43 | **0.39** | 1.60 | **0.85** |
+| `NEW_BLOCKS`, 100K sets | 22.7 | **3.32** | 24.0 | **16.7** |
+
+Up to the cap the batcher is one batch and a thin wrapper. Above it each batch's result is an `RspBitmap` and the batch
+results merge in passes among themselves, which is the whole gap between the union and batcher columns on `NEW_BLOCKS`
+under radix: two batches at 10K sets, thirteen at 100K.
+
+The cap was 1024, sized for a merge whose cost grew with the inputs held; the radix build wants them all at once.
+Sweeping it (an earlier build, before the hashed block index; ms per union under radix, n=10,000 sets unless noted):
+
+| Shape | Union | Batcher 1K | 2K | 4K | 8K | 16K |
+|---|---:|---:|---:|---:|---:|---:|
+| `REDUNDANT` | 50.9 | 54.6 | 50.6 | 44.9 | 45.1 | 44.6 |
+| `PARTIAL` | 96.5 | 95.3 | 96.1 | 95.5 | 96.0 | 96.9 |
+| `BLOCKS_SHUFFLED` | 117 | 169 | 152 | 155 | 151 | 151 |
+| `ADJACENT` | 21.2 | 22.7 | 21.7 | 21.5 | 21.5 | 21.7 |
+| `INTERLEAVED` | 43.7 | 48.2 | 45.8 | 45.0 | 44.3 | 44.2 |
+| `NEW_BLOCKS`, 10K sets | 0.37 | 1.30 | 1.21 | 1.33 | 0.72 | 0.50 |
+| `NEW_BLOCKS`, 100K sets | 3.4-4.2 | 11.7 | 11.8 | 24.2 | 18.4 | 14.8 |
+| `updateBy` comb, `RANDOM`, 10K buckets | 4.1 | 7.5 | 6.2 | 6.1 | 5.1 | 4.4 |
+| `updateBy` comb, `RANDOM`, 100K buckets | 39-42 | 79 | 64 | 60 | 49 | 46 |
+| `updateBy` comb, `ROUND_ROBIN`, 100K buckets | 60-63 | 99 | 90 | 94 | 76 | 75 |
+
+The cap matters only once it is below the input count, and raising it costs nothing measurable on the shapes it was
+protecting, so it is now the `RowSetUnionBatcher.maxBatchSize` property with a default of 8192. Beyond the cap the
+fold of batch results is still a pairwise merge of bitmaps, which is why 100K inputs stay behind the direct union at
+every cap tried. `BLOCKS_SHUFFLED` is worse through the batcher at every cap, and `NEW_BLOCKS` at 100K is not monotonic
+in it, peaking at 4K; neither is explained. The `updateBy` rows are what routing that call site through the batcher
+would cost; it calls the union directly.
+
 ### Costs
 
 The piece array is four bytes a piece, about 20 MB transient for the 100K comb, plus eight bytes a block of offsets
@@ -397,7 +441,7 @@ plausible-sounding optimization was for a cost that did not exist.
 | `SortedRanges.MAX_CAPACITY` | 8193 | Entries, so roughly 4096 ranges. Above it a set becomes an `RspBitmap` and the insert path changes character — the cause of a non-monotonic result that looked like a measurement error. |
 | RSP block size | 65,536 | Keys per span. Whether an incoming range starts a new block decides whether a pre-pass can pay for itself. |
 | `MixedBuilderRandom.addAsIndexThreshold` | 65,536 | Gates the builder's whole-set path on the *incoming* range count alone, ignoring the accumulator. Still open — the same class of mistake as pitfall 4. |
-| `RowSetUnionBatcher.maxBatchSize` | 8192 (property `RowSetUnionBatcher.maxBatchSize`; was the constant 1024) | The most row sets gathered into one batch, whatever count a caller asks for. Callers pass their own count; this is the ceiling that keeps data-driven input from holding an unbounded number of row sets. It caps the batch, not every merge — the final `build` also hands over the collapsed groups, up to `2 * batchSize - 1` row sets. Raised for the radix build, which merges a batch of small row sets in one linear pass: see the cap sweep under the radix build. |
+| `RowSetUnionBatcher.maxBatchSize` | 8192 (property `RowSetUnionBatcher.maxBatchSize`; was the constant 1024) | The most row sets gathered into one batch, whatever count a caller asks for. Callers pass their own count; this is the ceiling that keeps data-driven input from holding an unbounded number of row sets. It caps the batch, not every merge — the final `build` also hands over the collapsed groups, up to `2 * batchSize - 1` row sets. Raised for the radix build, which merges a batch of small row sets in one pass: see "Through the batcher" under the radix build. |
 
 ## Still unresolved
 

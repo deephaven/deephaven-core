@@ -391,16 +391,23 @@ public class RowSetUnionBatcherTest {
             // A cap at or below zero means a batch of one.
             for (final int cap : new int[] {0, -5, Integer.MIN_VALUE}) {
                 RowSetUnionBatcher.maxBatchSize = cap;
+                assertThat(RowSetUnionBatcher.effectiveMaxBatchSize()).isEqualTo(1);
                 try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(100)) {
                     assertThat(batcher.batchSize()).isEqualTo(1);
                 }
             }
-            // A cap past the hard maximum is held there, whatever the caller asks for.
-            for (final int cap : new int[] {RowSetUnionBatcher.MAX_MAX_BATCH_SIZE + 1, Integer.MAX_VALUE}) {
+            // A cap past the hard maximum is held there. Checked on the cap alone: a batcher at that cap would
+            // allocate an entry list of 2^25 references.
+            for (final int cap : new int[] {RowSetUnionBatcher.MAX_MAX_BATCH_SIZE,
+                    RowSetUnionBatcher.MAX_MAX_BATCH_SIZE + 1,
+                    Integer.MAX_VALUE}) {
                 RowSetUnionBatcher.maxBatchSize = cap;
-                try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(Long.MAX_VALUE)) {
-                    assertThat(batcher.batchSize()).isEqualTo(RowSetUnionBatcher.MAX_MAX_BATCH_SIZE);
-                }
+                assertThat(RowSetUnionBatcher.effectiveMaxBatchSize()).isEqualTo(RowSetUnionBatcher.MAX_MAX_BATCH_SIZE);
+            }
+            // In between the cap is taken as configured, and a request above it is held to it.
+            RowSetUnionBatcher.maxBatchSize = 300;
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(Long.MAX_VALUE)) {
+                assertThat(batcher.batchSize()).isEqualTo(300);
             }
             // With a batch of one every add merges, and the union is still right.
             RowSetUnionBatcher.maxBatchSize = 0;
