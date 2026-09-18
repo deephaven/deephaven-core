@@ -9,7 +9,7 @@ Configuration for running a development environment in a devcontainer. This prov
 
 ## Git worktrees
 
-Running this config in a git worktree branch requires that the git repo be configured using `worktree.useRelativePaths`. This is due to worktree branches `.git` file being a pointer to the main checkout which sits outside of the folder mount for the project.
+Running this config in a git worktree branch requires that the git repo be configured using `worktree.useRelativePaths`. This is due to worktree branches' `.git` file being a pointer to the main checkout which sits outside of the folder mount for the project.
 
 In git 2.48+ you can configure relative paths in git repos via:
 
