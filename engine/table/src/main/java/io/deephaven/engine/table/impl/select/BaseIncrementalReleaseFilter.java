@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Base class for filters that will release more rows of a table on each UGP cycle.
@@ -200,23 +201,28 @@ public abstract class BaseIncrementalReleaseFilter
         if (releaseAllNanos != QueryConstants.NULL_LONG) {
             return;
         }
-        final long end = System.currentTimeMillis() + timeoutMillis;
-        updateGraph.exclusiveLock().doLocked(() -> {
+        // Compute the deadline from nanoTime, which is monotonic, rather than from currentTimeMillis, so that waiting
+        // is insensitive to wall clock adjustments. nanoTime's origin is arbitrary, so this addition may overflow;
+        // that is both unavoidable (no clamp can prevent it) and harmless, because the remaining-time subtraction
+        // below wraps in the same way and recovers the correct signed difference.
+        final long deadlineNanos = hasTimeout ? System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis) : 0;
+        updateGraph.exclusiveLock().doLockedInterruptibly(() -> {
             while (releaseAllNanos == QueryConstants.NULL_LONG) {
                 if (listener.getTable().isFailed()) {
+                    // A failed table will never deliver another notification, and awaitUpdate returns immediately
+                    // for one, so we must test for failure ourselves rather than wait forever.
                     throw new IllegalStateException(
                             "Table failed before all rows were released, cannot wait for completion");
                 }
                 // This only works because we will never actually filter out a row from the result; in the general
                 // WhereFilter case, the result table may not update if not all rows are passed through
-                if (hasTimeout) {
-                    final long remainingTimeout = Math.max(0, end - System.currentTimeMillis());
-                    if (remainingTimeout == 0) {
-                        return;
-                    }
-                    listener.getTable().awaitUpdate(remainingTimeout);
-                } else {
+                if (!hasTimeout) {
                     listener.getTable().awaitUpdate();
+                } else if (!listener.getTable()
+                        .awaitUpdate(TimeUnit.NANOSECONDS.toMillis(deadlineNanos - System.nanoTime()))) {
+                    // Timed out. Note that awaitUpdate does no waiting at all for a non-positive timeout, so there's
+                    // no need to check the remaining time before calling it.
+                    return;
                 }
             }
         });

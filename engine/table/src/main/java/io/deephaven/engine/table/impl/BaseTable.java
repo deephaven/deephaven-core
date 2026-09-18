@@ -75,12 +75,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     private static final Logger log = LoggerFactory.getLogger(BaseTable.class);
 
-    /**
-     * Maximum timeout accepted by {@link #awaitUpdate(long)}; longer timeouts are clamped to this value in order to
-     * avoid overflowing the deadline arithmetic used by the underlying lock and condition.
-     */
-    private static final long MAXIMUM_TIMEOUT_NANOS = TimeUnit.DAYS.toNanos(365);
-
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<BaseTable, Condition> CONDITION_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Condition.class, "updateGraphCondition");
@@ -607,14 +601,16 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         }
         if (timeoutMillis <= 0) {
             // Do no waiting at all for non-positive timeouts, and don't disturb the exclusive lock. This case is
-            // worth handling explicitly: Condition.await(0, unit) and Object.wait(0) instead wait forever, and as
+            // worth handling explicitly: Condition.await(0, unit) and Object.wait(0) instead wait forever, and a
             // zero-timeout tryLock still makes an untimed acquisition attempt, which would acquire (and immediately
             // release) the update graph's exclusive lock whenever it happens to be uncontended.
             return isFailed || startLastNotificationStep != lastNotificationStep;
         }
 
-        // Clamp the timeout, so that the deadline arithmetic used by tryLock and awaitNanos cannot overflow.
-        long remainingNanos = Math.min(TimeUnit.MILLISECONDS.toNanos(timeoutMillis), MAXIMUM_TIMEOUT_NANOS);
+        // Note that MILLISECONDS.toNanos saturates rather than overflowing, and that no clamping of the timeout is
+        // required: the deadline arithmetic inside tryLock and awaitNanos wraps, but their remaining-time subtraction
+        // wraps with it, so the recovered difference is correct regardless of nanoTime's arbitrary origin.
+        long remainingNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
         if (!updateGraph.exclusiveLock().tryLock(remainingNanos, TimeUnit.NANOSECONDS)) {
             // Usually, callers will already be holding the exclusive lock when they invoke this method. If they are
             // not, and cannot acquire it within the timeout, we've timed out unless a notification was delivered while
