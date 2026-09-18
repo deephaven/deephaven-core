@@ -288,6 +288,22 @@ result_separate = source.where(["Symbol == `AAPL`", "Price > 100 && Price < 150"
 result_combined = source.where("Symbol == `AAPL` && Price > 100 && Price < 150")
 ```
 
+## Filter utilities
+
+Deephaven provides several advanced filter utilities that can improve performance in specific scenarios. `TailInitializationFilter` has a first-class Python wrapper in `deephaven.table`, and `WindowCheck` has a Python wrapper in `deephaven.experimental`. `SyncTableFilter` and `LeaderTableFilter` are Java-only and are accessed from Python through [`jpy`](./use-jpy.md).
+
+### `TailInitializationFilter`
+
+[`TailInitializationFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/TailInitializationFilter.html) reduces the input size for downstream operations by limiting initialization to only the most recent rows. This is particularly useful when working with large historical datasets where you're primarily interested in the tail of the data. See the [`TailInitializationFilter`](../reference/table-operations/filter/TailInitializationFilter.md) reference page for usage examples.
+
+### `SyncTableFilter` and `LeaderTableFilter`
+
+[`SyncTableFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/util/SyncTableFilter.html) and [`LeaderTableFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/LeaderTableFilter.html) help synchronize table updates across multiple dependent tables. These utilities ensure that filtered results stay consistent when dealing with related tables that update at different rates. See [Synchronize multiple tables](./synchronizing-tables.md) for usage examples and guidance on choosing between these utilities.
+
+### `WindowCheck`
+
+[`WindowCheck`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/WindowCheck.html) doesn't filter rows itself. It adds a Boolean column that indicates whether each row's timestamp falls within a specified time window, updating as rows age out of the window. You can filter on that column yourself if you want to remove out-of-window rows. It is exposed in Python as [`time_window`](../reference/time/time-window.md). See the [`time_window`](../reference/time/time-window.md) reference page for usage examples.
+
 ## Related documentation
 
 - [Built-in constants](./built-in-constants.md)
