@@ -49,6 +49,14 @@ public final class RowSetUnionBatcher implements SafeCloseable {
     /** Default for {@link #maxBatchSize}. */
     public static final int DEFAULT_MAX_BATCH_SIZE = 8192;
 
+    /**
+     * The default cap, kept for source compatibility with code written when the cap was this constant.
+     *
+     * @deprecated The cap is configured; read {@link #maxBatchSize} for the cap in force.
+     */
+    @Deprecated(forRemoval = true)
+    public static final int MAX_BATCH_SIZE = DEFAULT_MAX_BATCH_SIZE;
+
     /** Largest value {@link #maxBatchSize} is honoured at; the list it sizes holds twice this many references. */
     public static final int MAX_MAX_BATCH_SIZE = 1 << 24;
 

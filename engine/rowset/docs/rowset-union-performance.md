@@ -264,8 +264,9 @@ covers whole as first, last pairs, the second places each piece, its two 16-bit 
 of one array. `RspBitmap.makeFromBlockPieces` then walks the blocks in order and builds each container exactly once:
 up to 64 pieces are sorted and coalesced directly, more go through an 8KB scratch bitmap whose runs are read off;
 the container is whichever of run, array and bitmap is smallest for that cardinality and run count; a block that
-comes out all ones joins a full block span; a single row is a singleton span. The span array is laid out once at its
-final size and nothing is ever inserted. `RspBitmap` inputs, whose insert is a walk of both span arrays, still merge
+comes out all ones joins a full block span; a single row is a singleton span. The span array is allocated once, at an
+upper bound on its size since a block that fills up or lies within a full run takes no slot, and nothing is ever
+inserted. `RspBitmap` inputs, whose insert is a walk of both span arrays, still merge
 in passes, and the two results are combined by inserting the smaller into the larger. Blocks are indexed by offset from the first block when the
 inputs' block range is at most 2^20 blocks, and through a hash of the block index when it is wider, which any union
 spanning two regions of a table addressed by region is: regions sit 2^43 keys, or 2^27 blocks, apart.

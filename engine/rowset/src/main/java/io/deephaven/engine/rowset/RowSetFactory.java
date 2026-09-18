@@ -290,22 +290,26 @@ public abstract class RowSetFactory {
      * Union {@code rowSets[0, count)}, nonempty and sorted by first row key, by a radix pass on the block bits.
      *
      * <p>
-     * One pass over the inputs sums their {@link SortedRanges} entries, counting an {@link RspBitmap} input as more
-     * than a {@link SortedRanges} holds, since it already did not fit one. When the total fits a {@link SortedRanges}
-     * the result may too, and at that size the merge is cheap whichever way it is done, so it goes through
-     * {@link #mergeInPasses}. Otherwise the result is built as an {@link RspBitmap} directly. The sum is an upper
-     * bound, since overlapping and abutting inputs coalesce, so this is the heuristic that chooses the bitmap build
-     * rather than proof of what the union needs; a result the bitmap is oversized for is compacted at the end. Every
-     * {@link SingleRange} and {@link SortedRanges} input is split into block-local pieces bucketed by block, and each
-     * block's container is built once from its own pieces, see {@link RspBitmap#makeFromBlockPieces}. That is linear in
-     * the input, lays the span array out exactly once, and coalesces pieces that abut whichever inputs they came from,
-     * which a merge in passes achieves only through its passes. {@link RspBitmap} inputs, whose insert walks both span
-     * arrays, still merge in passes, and the two results are combined by inserting the smaller into the larger. Inputs
-     * whose implementation cannot be read merge in passes as well. Blocks are indexed by offset from the first block
-     * when the inputs' block range is narrow, and through a hash of the block index when it is wide, as it is for any
-     * union spanning two regions of a table addressed by region, so the cost follows the blocks touched.
+     * One pass over the inputs sums the {@link SingleRange} and {@link SortedRanges} inputs' entries. When the total
+     * fits a {@link SortedRanges} those inputs are few or small, and at that size the merge is cheap whichever way it
+     * is done, so everything goes through {@link #mergeInPasses}; {@link RspBitmap} inputs do not count, since they
+     * merge in passes either way and the build only pays off over many small inputs. Otherwise the result is built as
+     * an {@link RspBitmap} directly. The sum is an upper bound, since overlapping and abutting inputs coalesce, so this
+     * is the heuristic that chooses the bitmap build rather than proof of what the union needs; a result the bitmap is
+     * oversized for is compacted at the end. Every {@link SingleRange} and {@link SortedRanges} input is split into
+     * block-local pieces bucketed by block, and each block's container is built once from its own pieces, see
+     * {@link RspBitmap#makeFromBlockPieces}. That is linear in the input, lays the span array out exactly once, and
+     * coalesces pieces that abut whichever inputs they came from, which a merge in passes achieves only through its
+     * passes. {@link RspBitmap} inputs, whose insert walks both span arrays, still merge in passes, and the two results
+     * are combined by inserting the smaller into the larger. Inputs whose implementation cannot be read merge in passes
+     * as well. Blocks are indexed by offset from the first block when the inputs' block range is narrow, and through a
+     * hash of the block index when it is wide, as it is for any union spanning two regions of a table addressed by
+     * region, so the cost follows the blocks touched.
      */
     private static WritableRowSet unionWithRadix(final RowSet[] rowSets, final int count) {
+        // Only the small inputs are built by radix; bitmap inputs merge in passes whatever else is present. So the
+        // decision counts the small inputs' entries alone: a bitmap beside a handful of small ranges is a merge, not a
+        // build.
         long entries = 0;
         for (int ii = 0; ii < count; ++ii) {
             final OrderedLongSet inner = innerSet(rowSets[ii]);
@@ -313,8 +317,6 @@ public abstract class RowSetFactory {
                 entries += 2;
             } else if (inner instanceof SortedRanges) {
                 entries += ((SortedRanges) inner).count();
-            } else {
-                entries += SortedRanges.MAX_CAPACITY + 1;
             }
             if (entries > SortedRanges.MAX_CAPACITY) {
                 break;
