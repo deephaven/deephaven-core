@@ -7,7 +7,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import io.deephaven.time.DateTimeUtils;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
@@ -22,12 +22,12 @@ public class InstantNanosFromInt96Materializer extends LongMaterializerBase impl
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new InstantNanosFromInt96Materializer(dataReader, (long) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new InstantNanosFromInt96Materializer(dataReader, numValues);
         }
     };
@@ -46,13 +46,13 @@ public class InstantNanosFromInt96Materializer extends LongMaterializerBase impl
         setReferenceTimeZone(referenceTimeZone);
     }
 
-    private final ValuesReader dataReader;
+    private final PageValueReader dataReader;
 
-    private InstantNanosFromInt96Materializer(ValuesReader dataReader, int numValues) {
+    private InstantNanosFromInt96Materializer(PageValueReader dataReader, int numValues) {
         this(dataReader, 0, numValues);
     }
 
-    private InstantNanosFromInt96Materializer(ValuesReader dataReader, long nullValue, int numValues) {
+    private InstantNanosFromInt96Materializer(PageValueReader dataReader, long nullValue, int numValues) {
         super(nullValue, numValues);
         this.dataReader = dataReader;
     }

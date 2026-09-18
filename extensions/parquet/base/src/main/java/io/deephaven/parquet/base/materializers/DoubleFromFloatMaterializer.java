@@ -9,33 +9,29 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 public class DoubleFromFloatMaterializer extends DoubleMaterializerBase implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new DoubleFromFloatMaterializer(dataReader, (double) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new DoubleFromFloatMaterializer(dataReader, numValues);
         }
     };
 
-    public static double convertValue(float value) {
-        return value;
-    }
+    private final PageValueReader dataReader;
 
-    private final ValuesReader dataReader;
-
-    private DoubleFromFloatMaterializer(ValuesReader dataReader, int numValues) {
+    private DoubleFromFloatMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, 0, numValues);
     }
 
-    private DoubleFromFloatMaterializer(ValuesReader dataReader, double nullValue, int numValues) {
+    private DoubleFromFloatMaterializer(PageValueReader dataReader, double nullValue, int numValues) {
         super(nullValue, numValues);
         this.dataReader = dataReader;
     }
@@ -43,7 +39,7 @@ public class DoubleFromFloatMaterializer extends DoubleMaterializerBase implemen
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = convertValue(dataReader.readFloat());
+            data[ii] = dataReader.readFloat();
         }
     }
 }

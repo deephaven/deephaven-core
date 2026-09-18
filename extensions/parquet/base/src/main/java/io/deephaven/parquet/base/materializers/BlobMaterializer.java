@@ -5,7 +5,7 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 import org.apache.parquet.io.api.Binary;
 
 /**
@@ -15,23 +15,23 @@ public class BlobMaterializer extends ObjectMaterializerBase<Binary> implements 
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new BlobMaterializer(dataReader, (Binary) nullValue, numValues);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new BlobMaterializer(dataReader, numValues);
         }
     };
 
-    private final ValuesReader dataReader;
+    private final PageValueReader dataReader;
 
-    private BlobMaterializer(ValuesReader dataReader, int numValues) {
+    private BlobMaterializer(PageValueReader dataReader, int numValues) {
         this(dataReader, null, numValues);
     }
 
-    private BlobMaterializer(ValuesReader dataReader, Binary nullValue, int numValues) {
+    private BlobMaterializer(PageValueReader dataReader, Binary nullValue, int numValues) {
         super(nullValue, new Binary[numValues]);
         this.dataReader = dataReader;
     }

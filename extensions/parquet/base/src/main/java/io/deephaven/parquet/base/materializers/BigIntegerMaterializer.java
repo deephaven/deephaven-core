@@ -10,7 +10,7 @@ package io.deephaven.parquet.base.materializers;
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import io.deephaven.util.codec.ObjectCodec;
-import org.apache.parquet.column.values.ValuesReader;
+import io.deephaven.parquet.base.PageValueReader;
 
 import java.math.BigInteger;
 
@@ -25,25 +25,25 @@ public class BigIntegerMaterializer extends ObjectMaterializerBase<BigInteger> i
         }
 
         @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
+        public PageMaterializer makeMaterializerWithNulls(PageValueReader dataReader, Object nullValue, int numValues) {
             return new BigIntegerMaterializer(dataReader, (BigInteger) nullValue, numValues, codec);
         }
 
         @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
+        public PageMaterializer makeMaterializerNonNull(PageValueReader dataReader, int numValues) {
             return new BigIntegerMaterializer(dataReader, numValues, codec);
         }
     }
 
-    private final ValuesReader dataReader;
+    private final PageValueReader dataReader;
     private final ObjectCodec<BigInteger> codec;
 
-    private BigIntegerMaterializer(ValuesReader dataReader, int numValues,
+    private BigIntegerMaterializer(PageValueReader dataReader, int numValues,
             ObjectCodec<BigInteger> codec) {
         this(dataReader, null, numValues, codec);
     }
 
-    private BigIntegerMaterializer(ValuesReader dataReader, BigInteger nullValue, int numValues,
+    private BigIntegerMaterializer(PageValueReader dataReader, BigInteger nullValue, int numValues,
             ObjectCodec<BigInteger> codec) {
         super(nullValue, new BigInteger[numValues]);
         this.dataReader = dataReader;
