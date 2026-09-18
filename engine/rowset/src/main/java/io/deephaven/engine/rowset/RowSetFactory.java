@@ -383,9 +383,7 @@ public abstract class RowSetFactory {
                 lastBlock = Math.max(lastBlock, rowSet.lastRowKey() >> RspArray.BITS_PER_BLOCK);
             }
         }
-        if (lastBlock < 0) {
-            return mergeInPasses(rowSets, count);
-        }
+        // Only small inputs count toward the threshold, so at least one exists and the block range is well defined.
         final RspBitmap radix = radixSeed(rowSets, count, firstBlock, lastBlock);
         if (radix == null) {
             return mergeInPasses(rowSets, count);

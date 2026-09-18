@@ -464,4 +464,60 @@ public class RowSetFactoryUnionTest {
         Collections.shuffle(rowSets, random);
         checkAgainstShipped(rowSets);
     }
+
+    @Test
+    public void radixResultLargerThanBitmapInputs() {
+        // The small inputs' union outweighs the bitmap inputs', so the bitmap side is inserted into the radix side.
+        final Random random = new Random(20260922L);
+        final List<RowSet> rowSets = scatteredCombs(random, 6000, 8, 40);
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+        for (int jj = 0; jj < 9000; ++jj) {
+            builder.addKey(random.nextInt(40 * BLOCK));
+        }
+        rowSets.add(builder.build());
+        checkAndClose(rowSets);
+    }
+
+    @Test
+    public void fullBlockRunsMeetAndBlocksFillBetweenThem() {
+        // Whole blocks from single ranges on either side of blocks that fill up from pieces, so runs of full blocks
+        // are extended by a filled block and by the run after it, and runs that touch coalesce into one span.
+        final List<RowSet> rowSets = new ArrayList<>();
+        rowSets.add(RowSetFactory.fromRange(0, 2L * BLOCK - 1)); // blocks 0-1 full
+        rowSets.add(RowSetFactory.fromRange(3L * BLOCK, 4L * BLOCK - 1)); // block 3 full
+        rowSets.add(RowSetFactory.fromRange(4L * BLOCK, 6L * BLOCK - 1)); // blocks 4-5 full, touching block 3's run
+        // Block 2 tiled full by 8192 eight-key ranges, one per set, and block 6 tiled the same way.
+        for (int ii = 0; ii < 8192; ++ii) {
+            final RowSetBuilderSequential sb = RowSetFactory.builderSequential();
+            sb.appendRange(2L * BLOCK + ii * 8L, 2L * BLOCK + ii * 8L + 7);
+            sb.appendRange(6L * BLOCK + ii * 8L, 6L * BLOCK + ii * 8L + 7);
+            rowSets.add(sb.build());
+        }
+        // Block 8 gets more than 64 pieces, some of them wide enough to cover whole words of the scratch bitmap.
+        for (int ii = 0; ii < 100; ++ii) {
+            rowSets.add(RowSetFactory.fromRange(8L * BLOCK + ii * 600L, 8L * BLOCK + ii * 600L + 200 + ii));
+        }
+        checkAndClose(rowSets);
+    }
+
+    @Test
+    public void fullBlockRunsApartAndAfterTheLastPartialBlock() {
+        // Runs of full blocks that do not touch, before a partial block and after the last one, so each is emitted as
+        // its own span; and a block filled by pieces immediately before a trailing run, so the two join.
+        final List<RowSet> rowSets = new ArrayList<>();
+        rowSets.add(RowSetFactory.fromRange(0, BLOCK - 1)); // block 0 full
+        rowSets.add(RowSetFactory.fromRange(2L * BLOCK, 3L * BLOCK - 1)); // block 2 full, apart from block 0
+        rowSets.add(RowSetFactory.fromRange(4L * BLOCK + 5, 4L * BLOCK + 9)); // block 4 partial
+        for (int ii = 0; ii < 8192; ++ii) { // block 5 tiled full by pieces
+            rowSets.add(RowSetFactory.fromRange(5L * BLOCK + ii * 8L, 5L * BLOCK + ii * 8L + 7));
+        }
+        rowSets.add(RowSetFactory.fromRange(6L * BLOCK, 7L * BLOCK - 1)); // block 6 full, joins block 5
+        rowSets.add(RowSetFactory.fromRange(9L * BLOCK, 10L * BLOCK - 1)); // block 9 full, apart from block 6's run
+        for (int ii = 0; ii < 8192; ++ii) { // block 11 tiled full by pieces, apart from block 9's run
+            rowSets.add(RowSetFactory.fromRange(11L * BLOCK + ii * 8L, 11L * BLOCK + ii * 8L + 7));
+        }
+        rowSets.add(RowSetFactory.fromRange(12L * BLOCK, 13L * BLOCK - 1)); // block 12 full, joins block 11, trailing
+        rowSets.add(RowSetFactory.fromRange(14L * BLOCK, 15L * BLOCK - 1)); // block 14 full, apart, trailing
+        checkAndClose(rowSets);
+    }
 }
