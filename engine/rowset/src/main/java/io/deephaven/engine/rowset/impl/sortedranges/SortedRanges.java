@@ -257,16 +257,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (start == end) {
             return true;
         }
-        if (pos == count - 1) {
-            return false;
-        }
-        final long data = unpackedGet(pos + 1);
-        final boolean neg = data < 0;
-        if (!neg) {
-            return false;
-        }
-        final long value = -data;
-        return end <= value;
+        return pack(end) <= packedRangeEnd(pos, packedGet(pos));
     }
 
     public final long find(final long v) {
@@ -1173,20 +1164,16 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     /**
-     * The array position of the first of our ranges that ends at or after {@code packedKey}, or {@link #count} if every
-     * range of ours ends before it. The returned position always holds a non-negative packed value, ie, the start of a
-     * range or a singleton.
-     *
-     * @param startIdx A position at or before the answer, to begin the search from
-     * @param packedKey The key to seek, packed; must be non-negative
+     * {@link #packedGallopingSearch}'s answer as a plain array position: the start of the range holding
+     * {@code packedTarget}, the position where it would be inserted if we do not hold it, or {@link #count}.
+     * <p>
+     * Callers that only want the position use this rather than normalizing the sign themselves. Doing it inline costs
+     * {@link #overlaps(SortedRanges)} half its speed on some shapes: the two extra statements are enough to push that
+     * loop past a threshold the JIT compiles it differently on either side of.
      */
-    private int seekRangeStartIdx(final int startIdx, final long packedKey) {
-        final int i = absRawGallopingSearch(packedKey, startIdx, count - 1);
-        if (i >= count) {
-            return count;
-        }
-        // A negative value at i is the end of the range that starts at i - 1, and that range covers packedKey.
-        return packedGet(i) < 0 ? i - 1 : i;
+    private int packedGallopingSearchPos(final long packedTarget, final int startPos) {
+        final int p = packedGallopingSearch(packedTarget, startPos);
+        return (p >= 0) ? p : ~p;
     }
 
     /**
@@ -1276,7 +1263,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         int i1 = 0;
         int i2 = 0;
         while (true) {
-            i1 = r1.seekRangeStartIdx(i1, r1.pack(key));
+            i1 = r1.packedGallopingSearchPos(r1.pack(key), i1);
             if (i1 >= r1.count) {
                 return false;
             }
@@ -1333,7 +1320,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         int i = 0;
         try (final RspArray.OverlapProbe probe = other.overlapProbe()) {
             while (true) {
-                i = seekRangeStartIdx(i, pack(key));
+                i = packedGallopingSearchPos(pack(key), i);
                 if (i >= count) {
                     return false;
                 }
@@ -2013,16 +2000,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     if (end == start || pos == maxPosition) {
                         return SingleRange.make(pos, pos);
                     }
-                    if (i + 1 >= count) {
-                        return null;
-                    }
-                    final long nextData = packedGet(i + 1);
-                    if (nextData > 0) {
-                        return null;
-                    }
-                    final long nextValue = -nextData;
+                    // end > start here, so a singleton or a short range fails this just as the explicit
+                    // "not a range" checks used to.
                     final long packedEnd = pack(end);
-                    if (packedEnd > nextValue) {
+                    if (packedEnd > packedRangeEnd(i, data)) {
                         return null;
                     }
                     return SingleRange.make(
@@ -2110,16 +2091,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                             return true;
                         }
                     } else {
-                        if (i + 1 >= count) {
-                            return false;
-                        }
-                        final long nextData = packedGet(i + 1);
-                        if (nextData > 0) {
-                            return false;
-                        }
-                        final long nextValue = -nextData;
                         final long packedEnd = pack(end);
-                        if (packedEnd > nextValue) {
+                        if (packedEnd > packedRangeEnd(i, data)) {
                             return false;
                         }
                         final long resultEnd = pos + packedEnd - data;
@@ -2760,6 +2733,28 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
 
         return maxPosNeg ? maxPos - 1 : ~maxPos;
+    }
+
+    /**
+     * As {@link #packedBinarySearch(long, int)}, but bracketing the answer by doubling steps from {@code startPos}
+     * before searching inside the bracket, for callers seeking ascending targets from a carried position.
+     *
+     * @param packedTarget The (packed) target value to search for; must be non-negative
+     * @param startPos A position in our array pointing to the start of a range from where to start the search
+     * @return r &gt;= 0 if the target value is present, r being the position of the start of a range containing it; r
+     *         &lt; 0 if it is not, with {@code ~r} the position where it would be inserted, possibly {@link #count}
+     */
+    final int packedGallopingSearch(final long packedTarget, final int startPos) {
+        final int i = absRawGallopingSearch(packedTarget, startPos, count - 1);
+        if (i >= count) {
+            return ~count;
+        }
+        final long value = packedGet(i);
+        if (value < 0) {
+            // A negative value at i ends the range that starts at i - 1, so the target falls inside that range.
+            return i - 1;
+        }
+        return value == packedTarget ? i : ~i;
     }
 
     /**
