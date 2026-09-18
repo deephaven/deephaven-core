@@ -4782,7 +4782,7 @@ public final class ParquetTableReadWriteTest {
         final Table table = TableTools.emptyTable(NUM_ROWS).view(
                 // 1900 through 2039, so the sweep straddles the Epoch.
                 "someLocalDateTimeColumn = java.time.LocalDateTime.of(1900 + i%140, i%12+1, i%28+1, (i+4)%24, (i+5)%60, (i+6)%60, i*1_000_000 + i)",
-                "someDateColumn = java.time.LocalDate.ofEpochDay(i - 500)").select();
+                "someDateColumn = java.time.LocalDate.ofEpochDay(i - 500)");
         writeReadTableTest(table, new File(rootFile, "readWritePreEpochDateTimeTest.parquet"));
 
         // The exact values on either side of the Epoch, where the flooring correction changes the second.
