@@ -445,17 +445,16 @@ plausible-sounding optimization was for a cost that did not exist.
 - **Redundant input at n=1000** costs ~19%, about 240 ns per input set of decision overhead on a shape where nothing
   ever appends, so every step pays the full test. A latch on first duplication would remove most of it, since the
   duplication count is monotonic within a group.
-- **The nightly bucketed `updateBy` benchmarks** have not yet run against the radix build. The end-to-end reproducer
-  from the regression report has: 10M rows, 90,900 random-key buckets through `AutoTuningIncrementalReleaseFilter`
-  into a bucketed `RollingMax`, median of five reps, two fresh JVMs a side, measured 6.65 s and 7.38 s against 8.55 s
-  before the merge shipped and 13.8 s and 14.7 s with it. The nightly is the remaining check, as it was the one that
-  caught the merge's 2x in isolation turning into -54% in place.
 - **Interleaved input at n=1000** remains 2.5 seconds however it is merged. Nothing tried helps meaningfully; the
   result genuinely has 38M ranges.
 
 ## Methodology
 
-Measurements come from a single sandboxed machine on JDK 21, not from CI. The four-strategy shape sweeps and the
-three-pattern tables come from standalone harnesses; the `updateBy` cycle numbers are JMH
-(`RowSetIncrementalInsertBench`), as are the `UnionBenchmark` strategy comparisons. Treat sub-2x differences on cells
+None of this came from CI. The merge study's numbers, the strategy sweeps and the three-pattern tables, came from a
+single sandboxed machine on JDK 21 through standalone harnesses. The radix build's numbers, the layout matrix, the
+shape and batcher tables and the end-to-end reproducer, came from one workstation: an Intel Core i9-14900KS (8
+performance and 16 efficiency cores, 32 threads, 36 MiB L3), 128 GB of RAM, Linux 7.0, Temurin JDK 21.0.11, with
+nothing else running. The `updateBy` cycle numbers are JMH 1.37 (`RowSetIncrementalInsertBench`), as are the
+`UnionBenchmark` strategy comparisons, one fork each; the end-to-end reproducer ran the Groovy server from a
+`server-jetty-app:installDist` build with `-Xmx24g` and G1, one fresh JVM per side. Treat sub-2x differences on cells
 under 3 ms as noise.
