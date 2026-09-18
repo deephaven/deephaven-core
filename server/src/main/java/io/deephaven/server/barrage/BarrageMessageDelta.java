@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.extensions.barrage.chunk.BarrageCopyKernel;
 import io.deephaven.util.SafeCloseable;
@@ -28,10 +29,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.IntFunction;
-import java.util.function.Supplier;
 
 import static io.deephaven.server.barrage.BarrageMessageProducer.DELTA_CHUNK_SIZE;
 
@@ -39,8 +38,8 @@ import static io.deephaven.server.barrage.BarrageMessageProducer.DELTA_CHUNK_SIZ
  * One update graph cycle's worth of change to a table, as recorded by a {@link BarrageMessageProducer} for the
  * subscribers it had at the time: the {@link TableUpdate}, the rows whose data was recorded, and that data as chunks. A
  * producer queues these until its subscribers' update interval elapses, then coalesces the queue into one
- * {@link io.deephaven.engine.table.impl.util.BarrageMessage}; {@link #compact} is that coalescing, and the producer
- * also applies it early, in place, so the queue does not grow with the number of cycles per interval.
+ * {@link BarrageMessage}; {@link #compact} is that coalescing, and the producer also applies it early, in place, so the
+ * queue does not grow with the number of cycles per interval.
  */
 final class BarrageMessageDelta implements SafeCloseable {
     /**
@@ -67,7 +66,8 @@ final class BarrageMessageDelta implements SafeCloseable {
      * Coalescing a run breaks that sharing, because different cycles modify different columns: if one cycle modifies
      * column A on rows 10 and 11 and the next modifies column B on rows 20 and 21, no single set describes both. So a
      * compacted delta needs one row set per column, and {@link #recordedMods} becomes their union so that "does this
-     * carry modified data" still works. Non-null exactly for {@link #modifiedColumns}.
+     * carry modified data" still works. Non-null exactly for {@link #modifiedColumns}. Columns that shared a mapping at
+     * compaction share one set; {@link #close} closes each distinct set once.
      */
     @Nullable
     final RowSet[] perColumnRecordedMods;
@@ -84,8 +84,7 @@ final class BarrageMessageDelta implements SafeCloseable {
     final WritableChunk<Values>[][] addChunks;
 
     /**
-     * Per-column chunk storage for modified rows. {@code modChunks[columnIndex]} is an array of {@link WritableChunk
-     * WritableChunks}, each holding up to {@code DELTA_CHUNK_SIZE} rows of data. Null for columns not in
+     * Per-column chunk storage for modified rows, laid out like {@link #addChunks}. Null for columns not in
      * {@code modifiedColumns}. Slots may be set to null after detachment for zero-copy transfer.
      */
     final WritableChunk<Values>[][] modChunks;
@@ -152,7 +151,7 @@ final class BarrageMessageDelta implements SafeCloseable {
      * <p>
      * This is the only place a run of deltas is coalesced. Propagation calls it to build the message for a run, and
      * compaction calls it to replace a run in place; the result is the same delta either way. The surviving data is
-     * copied into fresh chunks, and the run's deltas are left intact.
+     * copied into fresh chunks, and the run's deltas are left intact. If it fails, everything it allocated is released.
      *
      * @param deltas the run, in recording order, at least two deltas; still owned by the caller
      * @param baseRowSet the propagated row set as of immediately before the run
@@ -168,276 +167,360 @@ final class BarrageMessageDelta implements SafeCloseable {
         }
         final int numColumns = chunkSources.length;
 
-        final UpdateCoalescer coalescer = new UpdateCoalescer(baseRowSet, deltas.get(0).update);
-        for (int i = 1; i < numDeltas; ++i) {
-            coalescer.update(deltas.get(i).update);
+        final TableUpdate update = coalesceUpdates(deltas, baseRowSet);
+        final RunSummary run = RunSummary.of(deltas);
+        // Columns the run modified upstream are candidates; only those with surviving recorded rows keep data.
+        if (update.modifiedColumnSet() == ModifiedColumnSet.ALL) {
+            run.modColumnSet.set(0, numColumns);
+        } else {
+            run.modColumnSet.or(update.modifiedColumnSet().extractAsBitSet());
         }
 
-        // We need to build our included additions and included modifications in addition to the coalesced update.
+        // noinspection unchecked
+        final WritableChunk<Values>[][] addChunks = new WritableChunk[numColumns][];
+        // noinspection unchecked
+        final WritableChunk<Values>[][] modChunks = new WritableChunk[numColumns][];
+        final RowSet[] perColumnRecordedMods = new RowSet[numColumns];
+        final BitSet modifiedColumns = new BitSet();
+        final WritableRowSet recordedMods = RowSetFactory.empty();
+        boolean success = false;
+        try (final ColumnMappingCache mappings = new ColumnMappingCache(deltas, run.added, update.added())) {
+            for (int ci = run.addColumnSet.nextSetBit(0); ci >= 0; ci = run.addColumnSet.nextSetBit(ci + 1)) {
+                final ColumnMapping mapping = mappings.get(ci);
+                addChunks[ci] = copyColumn(mapping.addedRuns, mapping.addedRows, chunkSources[ci].getChunkType(),
+                        deltas, ci);
+            }
+
+            for (int ci = run.modColumnSet.nextSetBit(0); ci >= 0; ci = run.modColumnSet.nextSetBit(ci + 1)) {
+                final ColumnMapping mapping = mappings.get(ci);
+                if (mapping.recordedMods.isEmpty()) {
+                    // modified upstream, but nothing we recorded survived the run
+                    continue;
+                }
+                modChunks[ci] = copyColumn(mapping.modifiedRuns, mapping.modifiedRows,
+                        chunkSources[ci].getChunkType(), deltas, ci);
+                perColumnRecordedMods[ci] = mapping.recordedMods;
+                modifiedColumns.set(ci);
+                final RowSet extracted = mappings.extractRecordedMods(mapping);
+                if (extracted != null) {
+                    recordedMods.insert(extracted);
+                }
+            }
+
+            // Every contributing delta shares one column set within a generation (RunSummary asserts it), so the
+            // run's first delta speaks for the result: with surviving adds their data exists for exactly these
+            // columns, and without any the result still compacts with what follows it.
+            final BarrageMessageDelta compacted = new BarrageMessageDelta(deltas.get(0).generation,
+                    deltas.get(0).firstStep, deltas.get(numDeltas - 1).lastStep,
+                    update, run.added, recordedMods, perColumnRecordedMods,
+                    (BitSet) deltas.get(0).subscribedColumns.clone(), modifiedColumns, addChunks, modChunks);
+            success = true;
+            return compacted;
+        } finally {
+            if (!success) {
+                // Nothing owns these yet; the cache has already closed the mappings it still owned.
+                closeChunkArrays(addChunks);
+                closeChunkArrays(modChunks);
+                closeDistinct(perColumnRecordedMods);
+                recordedMods.close();
+                run.added.close();
+                update.release();
+            }
+        }
+    }
+
+    /** The run's updates as one, starting from the row set as of immediately before it. The caller owns the result. */
+    private static TableUpdate coalesceUpdates(final List<BarrageMessageDelta> deltas, final RowSet baseRowSet) {
+        final UpdateCoalescer coalescer = new UpdateCoalescer(baseRowSet, deltas.get(0).update);
+        for (int i = 1; i < deltas.size(); ++i) {
+            coalescer.update(deltas.get(i).update);
+        }
+        return coalescer.coalesce();
+    }
+
+    /**
+     * What a run adds: the rows recorded as added that are still present at its end, the columns their data was
+     * recorded for, and the columns some delta recorded modified data for.
+     */
+    private static final class RunSummary {
+        /** Surviving recorded adds, in the key space at the end of the run; owned by the caller of {@link #of}. */
+        final WritableRowSet added = RowSetFactory.empty();
         final BitSet addColumnSet = new BitSet();
         final BitSet modColumnSet = new BitSet();
 
-        final WritableRowSet localAdded = RowSetFactory.empty();
-        for (int i = 0; i < numDeltas; ++i) {
-            final BarrageMessageDelta delta = deltas.get(i);
-            localAdded.remove(delta.update.removed());
-            delta.update.shifted().apply(localAdded);
+        static RunSummary of(final List<BarrageMessageDelta> deltas) {
+            final RunSummary result = new RunSummary();
+            for (final BarrageMessageDelta delta : deltas) {
+                result.added.remove(delta.update.removed());
+                delta.update.shifted().apply(result.added);
 
-            // reset the add column set if we do not have any adds from previous updates
-            if (localAdded.isEmpty()) {
-                addColumnSet.clear();
-            }
-
-            if (delta.recordedAdds.isNonempty()) {
-                if (addColumnSet.isEmpty()) {
-                    addColumnSet.or(delta.subscribedColumns);
-                } else {
-                    // It pays to be certain that all of the data we look up was written down.
-                    Assert.equals(delta.subscribedColumns, "delta.subscribedColumns", addColumnSet, "addColumnSet");
+                // reset the add column set if we do not have any adds from previous updates
+                if (result.added.isEmpty()) {
+                    result.addColumnSet.clear();
                 }
 
-                localAdded.insert(delta.recordedAdds);
-            }
+                if (delta.recordedAdds.isNonempty()) {
+                    if (result.addColumnSet.isEmpty()) {
+                        result.addColumnSet.or(delta.subscribedColumns);
+                    } else {
+                        // It pays to be certain that all of the data we look up was written down.
+                        Assert.equals(delta.subscribedColumns, "delta.subscribedColumns", result.addColumnSet,
+                                "addColumnSet");
+                    }
+                    result.added.insert(delta.recordedAdds);
+                }
 
-            if (delta.recordedMods.isNonempty()) {
-                modColumnSet.or(delta.modifiedColumns);
+                if (delta.recordedMods.isNonempty()) {
+                    result.modColumnSet.or(delta.modifiedColumns);
+                }
+            }
+            return result;
+        }
+    }
+
+    /**
+     * The four passes of the mapping over one delta, in the order they run: which side of the output is being filled,
+     * and which side of the delta supplies it.
+     */
+    private enum MappingPass {
+        /** Output adds from the delta's recorded adds. */
+        ADDS_FROM_RECORDED_ADDS(true, true),
+        /** Output mods from the delta's recorded adds: a row scoped into a viewport is recorded as an add. */
+        MODS_FROM_RECORDED_ADDS(false, true),
+        /** Output adds from the delta's recorded mods: a row added earlier in the run and modified in this delta. */
+        ADDS_FROM_RECORDED_MODS(true, false),
+        /** Output mods from the delta's recorded mods. */
+        MODS_FROM_RECORDED_MODS(false, false);
+
+        final boolean fillsAdds;
+        final boolean fromRecordedAdds;
+
+        MappingPass(final boolean fillsAdds, final boolean fromRecordedAdds) {
+            this.fillsAdds = fillsAdds;
+            this.fromRecordedAdds = fromRecordedAdds;
+        }
+    }
+
+    /**
+     * Where each surviving row of one column comes from. Adds must carry data for every subscribed column, but a
+     * modification is recorded only for the columns it touched, so the mapping is per column; columns that the same
+     * deltas modified with the same recorded rows share one (see {@link MappingKey}).
+     */
+    static final class ColumnMapping {
+        /**
+         * Surviving modified rows for this column; ownership passes to the compacted delta via
+         * {@link ColumnMappingCache#extractRecordedMods}.
+         */
+        final WritableRowSet recordedMods = RowSetFactory.empty();
+        final Runs addedRuns = new Runs();
+        final Runs modifiedRuns = new Runs();
+        long addedRows;
+        long modifiedRows;
+
+        /**
+         * @param deltasThatModify which deltas of the run modified this column
+         * @param localAdded the run's surviving recorded adds, which every column shares
+         * @param coalescedAdded the coalesced update's added rows; a row added within the run is not also modified
+         */
+        void compute(final List<BarrageMessageDelta> deltas, final int columnIndex, final BitSet deltasThatModify,
+                final RowSet localAdded, final RowSet coalescedAdded) {
+            final int numDeltas = deltas.size();
+            for (int i = 0; i < numDeltas; ++i) {
+                final BarrageMessageDelta delta = deltas.get(i);
+                recordedMods.remove(delta.update.removed());
+                delta.update.shifted().apply(recordedMods);
+                if (deltasThatModify.get(i)) {
+                    recordedMods.insert(delta.getRecordedMods(columnIndex));
+                }
+            }
+            recordedMods.remove(coalescedAdded);
+            addedRows = localAdded.size();
+            modifiedRows = recordedMods.size();
+
+            // Walk the run latest first so each surviving row takes its value from the last delta that recorded it.
+            // "Remaining" holds the surviving rows not yet sourced, as keys in the current delta's key space;
+            // "unfilled" holds their output positions. Both shrink in step, so the k-th of one is the k-th of the
+            // other.
+            try (final WritableRowSet addedRemaining = localAdded.copy();
+                    final WritableRowSet modifiedRemaining = recordedMods.copy();
+                    final WritableRowSet unfilledAdds = RowSetFactory.flat(addedRows);
+                    final WritableRowSet unfilledMods = RowSetFactory.flat(modifiedRows)) {
+                for (int i = numDeltas - 1; i >= 0; --i) {
+                    if (addedRemaining.isEmpty() && modifiedRemaining.isEmpty()) {
+                        break;
+                    }
+                    final BarrageMessageDelta delta = deltas.get(i);
+                    for (final MappingPass pass : MappingPass.values()) {
+                        if (!pass.fromRecordedAdds && !deltasThatModify.get(i)) {
+                            continue;
+                        }
+                        mapPass(pass, delta, i, columnIndex,
+                                pass.fillsAdds ? addedRemaining : modifiedRemaining,
+                                pass.fillsAdds ? unfilledAdds : unfilledMods,
+                                pass.fillsAdds ? addedRuns : modifiedRuns);
+                    }
+                    delta.update.shifted().unapply(addedRemaining);
+                    delta.update.shifted().unapply(modifiedRemaining);
+                }
+
+                if (!unfilledAdds.isEmpty()) {
+                    Assert.assertion(false, "Error: added:" + coalescedAdded + " unfilled:" + unfilledAdds
+                            + " missing:" + coalescedAdded.subSetForPositions(unfilledAdds));
+                }
+                Assert.eq(unfilledMods.size(), "unfilledMods.size()", 0);
             }
         }
 
-        // One drawback of the ModifiedColumnSet, is that our adds must include data for all columns. However,
-        // column specific data may be updated and we only write down that single changed column. So, the
-        // computation of mapping output rows to input data may be different per Column. We can re-use calculations
-        // where the set of deltas that modify column A are the same as column B.
-        //
-        // The mapping arrays store encoded source references (see below for details).
-        // This allows reuse of the mapping across columns sharing the same modification pattern.
-        final class ColumnInfo {
-            final WritableRowSet recordedMods = RowSetFactory.empty();
-            /** Where each surviving added / modified row's value comes from, as runs; see {@link Runs}. */
-            final Runs addedRuns = new Runs();
-            final Runs modifiedRuns = new Runs();
-            long addedRows;
-            long modifiedRows;
+        /**
+         * Source every row of {@code remaining} that {@code delta} recorded on the pass's side, removing it from
+         * {@code remaining} and its output position from {@code unfilled}, and emit the resulting runs.
+         */
+        private static void mapPass(final MappingPass pass, final BarrageMessageDelta delta, final int deltaIndex,
+                final int columnIndex, final WritableRowSet remaining, final WritableRowSet unfilled, final Runs out) {
+            final RowSet deltaRecorded =
+                    pass.fromRecordedAdds ? delta.recordedAdds : delta.getRecordedMods(columnIndex);
+            try (final RowSet recorded = remaining.intersect(deltaRecorded);
+                    final WritableRowSet sourceRows = deltaRecorded.invert(recorded);
+                    final RowSet destinationsInPosSpace = remaining.invert(recorded);
+                    final RowSet rowsToFill = unfilled.subSetForPositions(destinationsInPosSpace)) {
+                // sourceRows are positions within the delta's chunks for this side; tag them with the delta and side
+                sourceRows.shiftInPlace(encodeSource(deltaIndex, !pass.fromRecordedAdds));
+                remaining.remove(recorded);
+                unfilled.remove(rowsToFill);
+                emitRuns(rowsToFill, sourceRows, out);
+            }
+        }
+    }
+
+    /**
+     * The per-column mappings of one compaction, shared between columns with the same {@link MappingKey}. Owns every
+     * mapping's {@link ColumnMapping#recordedMods} until {@link #extractRecordedMods extracted}; {@link #close}
+     * releases the rest.
+     */
+    private static final class ColumnMappingCache implements SafeCloseable {
+        private final List<BarrageMessageDelta> deltas;
+        private final RowSet localAdded;
+        private final RowSet coalescedAdded;
+        private final Map<MappingKey, ColumnMapping> byKey = new HashMap<>();
+        private final List<ColumnMapping> all = new ArrayList<>();
+        private final Set<ColumnMapping> extracted = Collections.newSetFromMap(new IdentityHashMap<>());
+
+        ColumnMappingCache(final List<BarrageMessageDelta> deltas, final RowSet localAdded,
+                final RowSet coalescedAdded) {
+            this.deltas = deltas;
+            this.localAdded = localAdded;
+            this.coalescedAdded = coalescedAdded;
         }
 
-        // Two columns may share a ColumnInfo only if every contributing delta recorded the same modified rows for
-        // both. A recorded delta always did, so for it the pattern of which deltas modify the column is enough. A
-        // compacted delta keeps one set per column (see perColumnRecordedMods) but hands the same set to every column
-        // that shared a ColumnInfo when it was built, so the key also carries the identity of those sets: columns
-        // that shared before go on sharing, and columns that diverged are kept apart.
-        final HashMap<MappingKey, ColumnInfo> infoCache = new HashMap<>();
-        final List<ColumnInfo> allColumnInfos = new ArrayList<>();
-        final IntFunction<ColumnInfo> getColumnInfo = (columnIndex) -> {
-            final BitSet deltasThatModifyThisColumn = new BitSet();
+        ColumnMapping get(final int columnIndex) {
+            final MappingKey key = MappingKey.forColumn(deltas, columnIndex);
+            ColumnMapping mapping = byKey.get(key);
+            if (mapping == null) {
+                mapping = new ColumnMapping();
+                // registered before it is computed, so close() covers a failure part way through
+                all.add(mapping);
+                byKey.put(key, mapping);
+                mapping.compute(deltas, columnIndex, key.deltasThatModify, localAdded, coalescedAdded);
+            }
+            return mapping;
+        }
+
+        /**
+         * Pass ownership of the mapping's {@link ColumnMapping#recordedMods} to the caller.
+         *
+         * @return the row set, or null if it was already extracted for a column that shares this mapping
+         */
+        @Nullable
+        RowSet extractRecordedMods(final ColumnMapping mapping) {
+            return extracted.add(mapping) ? mapping.recordedMods : null;
+        }
+
+        @Override
+        public void close() {
+            for (final ColumnMapping mapping : all) {
+                if (!extracted.contains(mapping)) {
+                    mapping.recordedMods.close();
+                }
+            }
+        }
+    }
+
+    /**
+     * Cache key for {@link ColumnMappingCache}: which deltas of the run modify the column, and for each of those that
+     * is itself compacted, the identity of the row set it recorded for the column.
+     *
+     * <p>
+     * Two columns may share a mapping only if every contributing delta recorded the same modified rows for both. A
+     * recorded delta always did, so for it the pattern of which deltas modify the column is enough. A compacted delta
+     * keeps one set per column but hands the same set to every column that shared a mapping when it was built, so the
+     * identity of those sets tells columns that shared before, and go on sharing, from columns that diverged.
+     */
+    private static final class MappingKey {
+        final BitSet deltasThatModify;
+        private final RowSet[] compactedMods;
+        private final int hash;
+
+        static MappingKey forColumn(final List<BarrageMessageDelta> deltas, final int columnIndex) {
+            final int numDeltas = deltas.size();
+            final BitSet deltasThatModify = new BitSet();
             final RowSet[] compactedMods = new RowSet[numDeltas];
             for (int i = 0; i < numDeltas; ++i) {
                 final BarrageMessageDelta delta = deltas.get(i);
                 if (delta.modifiedColumns.get(columnIndex)) {
-                    deltasThatModifyThisColumn.set(i);
+                    deltasThatModify.set(i);
                     if (delta.perColumnRecordedMods != null) {
                         compactedMods[i] = delta.perColumnRecordedMods[columnIndex];
                     }
                 }
             }
-
-            final MappingKey key = new MappingKey(deltasThatModifyThisColumn, compactedMods);
-            final ColumnInfo cached = infoCache.get(key);
-            if (cached != null) {
-                return cached;
-            }
-
-            final ColumnInfo retval = new ColumnInfo();
-            allColumnInfos.add(retval);
-            infoCache.put(key, retval);
-            for (int i = 0; i < numDeltas; ++i) {
-                final BarrageMessageDelta delta = deltas.get(i);
-                retval.recordedMods.remove(delta.update.removed());
-                delta.update.shifted().apply(retval.recordedMods);
-
-                if (deltasThatModifyThisColumn.get(i)) {
-                    retval.recordedMods.insert(delta.recordedMods(columnIndex));
-                }
-            }
-            retval.recordedMods.remove(coalescer.added);
-
-            retval.addedRows = localAdded.size();
-            retval.modifiedRows = retval.recordedMods.size();
-
-            final WritableRowSet unfilledAdds = localAdded.isEmpty() ? RowSetFactory.empty()
-                    : RowSetFactory.flat(localAdded.size());
-            final WritableRowSet unfilledMods = retval.recordedMods.isEmpty() ? RowSetFactory.empty()
-                    : RowSetFactory.flat(retval.recordedMods.size());
-
-            final WritableRowSet addedRemaining = localAdded.copy();
-            final WritableRowSet modifiedRemaining = retval.recordedMods.copy();
-            for (int i = numDeltas - 1; i >= 0; --i) {
-                if (addedRemaining.isEmpty() && modifiedRemaining.isEmpty()) {
-                    break;
-                }
-
-                final BarrageMessageDelta delta = deltas.get(i);
-
-                // Encode (fromMods, deltaIndex) into the high bits of sourceRows values so that a run's source
-                // identifies the delta, the side and the position in one long.
-                final long encodedAddBase = ((long) i) << BarrageCopyKernel.DELTA_INDEX_SHIFT;
-                final long encodedModBase = encodedAddBase | (1L << BarrageCopyKernel.DELTA_MOD_FLAG_BIT);
-
-                final BiConsumer<Boolean, Boolean> applyMapping = (addedMapping, recordedAdds) -> {
-                    final WritableRowSet remaining = addedMapping ? addedRemaining : modifiedRemaining;
-                    final RowSet deltaRecorded =
-                            recordedAdds ? delta.recordedAdds : delta.recordedMods(columnIndex);
-                    try (final RowSet recorded = remaining.intersect(deltaRecorded);
-                            final WritableRowSet sourceRows = deltaRecorded.invert(recorded);
-                            final RowSet destinationsInPosSpace = remaining.invert(recorded);
-                            final RowSet rowsToFill = (addedMapping ? unfilledAdds : unfilledMods)
-                                    .subSetForPositions(destinationsInPosSpace)) {
-                        // Shift sourceRows so each value encodes (deltaIndex | fromMods | srcPos).
-                        sourceRows.shiftInPlace(recordedAdds ? encodedAddBase : encodedModBase);
-
-                        remaining.remove(recorded);
-                        if (addedMapping) {
-                            unfilledAdds.remove(rowsToFill);
-                        } else {
-                            unfilledMods.remove(rowsToFill);
-                        }
-
-                        emitRuns(rowsToFill, sourceRows, addedMapping ? retval.addedRuns : retval.modifiedRuns);
-                    }
-                };
-
-                applyMapping.accept(true, true); // map recorded adds
-                applyMapping.accept(false, true); // map recorded mods that might have a scoped add
-
-                if (deltasThatModifyThisColumn.get(i)) {
-                    applyMapping.accept(true, false); // map recorded mods that propagate as adds
-                    applyMapping.accept(false, false); // map recorded mods
-                }
-
-                delta.update.shifted().unapply(addedRemaining);
-                delta.update.shifted().unapply(modifiedRemaining);
-            }
-
-            if (!unfilledAdds.isEmpty()) {
-                Assert.assertion(false, "Error: added:" + coalescer.added + " unfilled:" + unfilledAdds
-                        + " missing:" + coalescer.added.subSetForPositions(unfilledAdds));
-            }
-            Assert.eq(unfilledAdds.size(), "unfilledAdds.size()", 0);
-            Assert.eq(unfilledMods.size(), "unfilledMods.size()", 0);
-            return retval;
-        };
-
-        // Columns the run modified upstream are candidates; only those with surviving recorded rows keep data.
-        if (coalescer.modifiedColumnSet == ModifiedColumnSet.ALL) {
-            modColumnSet.set(0, numColumns);
-        } else {
-            modColumnSet.or(coalescer.modifiedColumnSet.extractAsBitSet());
+            return new MappingKey(deltasThatModify, compactedMods);
         }
 
-        // Kernel contexts, created only for columns whose runs are too short for range copies; see copyColumn.
-        final BarrageCopyKernel.BarrageCopyKernelContext[] contexts =
-                new BarrageCopyKernel.BarrageCopyKernelContext[numColumns];
-        final IntFunction<BarrageCopyKernel.BarrageCopyKernelContext> contextFor = (columnIndex) -> {
-            if (contexts[columnIndex] == null) {
-                // noinspection unchecked
-                final WritableChunk<Values>[][] colAddChunks = new WritableChunk[numDeltas][];
-                // noinspection unchecked
-                final WritableChunk<Values>[][] colModChunks = new WritableChunk[numDeltas][];
-                for (int di = 0; di < numDeltas; ++di) {
-                    final BarrageMessageDelta d = deltas.get(di);
-                    colAddChunks[di] = d.addChunks[columnIndex];
-                    colModChunks[di] = d.modChunks[columnIndex];
-                }
-                contexts[columnIndex] =
-                        BarrageCopyKernel.makeBarrageCopyKernel(chunkSources[columnIndex].getChunkType())
-                                .makeContext(colAddChunks, colModChunks, DELTA_CHUNK_SIZE);
+        private MappingKey(final BitSet deltasThatModify, final RowSet[] compactedMods) {
+            this.deltasThatModify = deltasThatModify;
+            this.compactedMods = compactedMods;
+            int h = deltasThatModify.hashCode();
+            for (final RowSet mods : compactedMods) {
+                h = 31 * h + System.identityHashCode(mods);
             }
-            return contexts[columnIndex];
-        };
-
-        // noinspection unchecked
-        final WritableChunk<Values>[][] addChunks = new WritableChunk[numColumns][];
-        for (int ci = addColumnSet.nextSetBit(0); ci >= 0; ci = addColumnSet.nextSetBit(ci + 1)) {
-            final ColumnInfo info = getColumnInfo.apply(ci);
-            final int columnIndex = ci;
-            addChunks[ci] = copyColumn(info.addedRuns, info.addedRows, chunkSources[ci].getChunkType(), deltas, ci,
-                    () -> contextFor.apply(columnIndex));
+            this.hash = h;
         }
 
-        final RowSet[] perColumnRecordedMods = new RowSet[numColumns];
-        final BitSet modifiedColumns = new BitSet();
-        final WritableRowSet recordedMods = RowSetFactory.empty();
-        final Set<ColumnInfo> handedOff = Collections.newSetFromMap(new IdentityHashMap<>());
-        // noinspection unchecked
-        final WritableChunk<Values>[][] modChunks = new WritableChunk[numColumns][];
-        for (int ci = modColumnSet.nextSetBit(0); ci >= 0; ci = modColumnSet.nextSetBit(ci + 1)) {
-            final ColumnInfo info = getColumnInfo.apply(ci);
-            if (info.recordedMods.isEmpty()) {
-                // modified upstream, but nothing we recorded survived the run
-                continue;
-            }
-            final int columnIndex = ci;
-            modChunks[ci] = copyColumn(info.modifiedRuns, info.modifiedRows, chunkSources[ci].getChunkType(), deltas,
-                    ci, () -> contextFor.apply(columnIndex));
-            // Columns that share a ColumnInfo share its row set; the delta closes each distinct set once.
-            perColumnRecordedMods[ci] = info.recordedMods;
-            modifiedColumns.set(ci);
-            if (handedOff.add(info)) {
-                recordedMods.insert(info.recordedMods);
-            }
-        }
-
-        for (final ColumnInfo info : allColumnInfos) {
-            if (!handedOff.contains(info)) {
-                info.recordedMods.close();
-            }
-        }
-
-        // Add data exists exactly for addColumnSet, so that is what this delta subscribes to; with no surviving
-        // adds it inherits the run's column set so it still compacts with what follows it.
-        final BitSet subscribedColumns =
-                localAdded.isEmpty() ? (BitSet) deltas.get(0).subscribedColumns.clone() : addColumnSet;
-
-        return new BarrageMessageDelta(deltas.get(0).generation, deltas.get(0).firstStep,
-                deltas.get(numDeltas - 1).lastStep,
-                coalescer.coalesce(), localAdded, recordedMods, perColumnRecordedMods,
-                subscribedColumns, modifiedColumns, addChunks, modChunks);
-    }
-
-    /** Whether this delta only adds rows: nothing removed, modified or shifted, and no modified data recorded. */
-    boolean supersedesNothing() {
-        return update.removed().isEmpty() && update.modified().isEmpty() && update.shifted().empty()
-                && recordedMods.isEmpty() && modifiedColumns.isEmpty();
-    }
-
-    /**
-     * Whether nothing in the run supersedes anything recorded earlier in it: no removals, no modifications, no shifts.
-     * Coalescing such a run cannot drop a single row, so compacting it would copy the whole run's data and save
-     * nothing; the producer declines such runs.
-     */
-    static boolean nothingSuperseded(final List<BarrageMessageDelta> deltas) {
-        for (final BarrageMessageDelta delta : deltas) {
-            if (!delta.supersedesNothing()) {
+        @Override
+        public boolean equals(final Object other) {
+            if (!(other instanceof MappingKey)) {
                 return false;
             }
+            final MappingKey that = (MappingKey) other;
+            if (hash != that.hash || !deltasThatModify.equals(that.deltasThatModify)) {
+                return false;
+            }
+            for (int i = 0; i < compactedMods.length; ++i) {
+                if (compactedMods[i] != that.compactedMods[i]) {
+                    return false;
+                }
+            }
+            return true;
         }
-        return true;
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
     }
 
     /**
-     * Allocate storage for {@code size} rows of one column of a delta, from the pool. A full chunk of
-     * {@link BarrageMessageProducer#DELTA_CHUNK_SIZE} rows is exactly a pool capacity. The last chunk of a column asks
-     * for exactly the rows that remain and receives the next power of two at or above that, never more than
-     * {@code DELTA_CHUNK_SIZE}; {@link #chunkBytes} counts that capacity, not the rows, so the rounding is visible in
-     * the producer's pending-bytes figures.
+     * The encoded source for position zero of one side of one delta, in the {@link BarrageCopyKernel} bit layout: delta
+     * index, add-or-mod flag and position in one long. Add a position within that side's chunks to it.
      */
-    static WritableChunk<Values> makeDeltaChunk(final ChunkType chunkType, final int size) {
-        return chunkType.makeWritableChunk(size);
+    private static long encodeSource(final int deltaIndex, final boolean fromMods) {
+        final long base = ((long) deltaIndex) << BarrageCopyKernel.DELTA_INDEX_SHIFT;
+        return fromMods ? base | (1L << BarrageCopyKernel.DELTA_MOD_FLAG_BIT) : base;
     }
 
     /**
-     * The result of the mapping pass for one column pattern: for each stretch of surviving rows that is contiguous both
-     * in the output and in the delta it comes from, one run of destination position, encoded source (delta index,
-     * add-or-mod flag and source position, in the {@link BarrageCopyKernel} bit layout) and length. Row sets are
+     * The result of the mapping pass for one column: for each stretch of surviving rows that is contiguous both in the
+     * output and in the delta it comes from, one run of destination position, encoded source and length. Row sets are
      * range-compressed and updates arrive in ranges, so a run usually covers many rows and the mapping pass costs
      * proportionally to ranges rather than rows.
      */
@@ -506,11 +589,10 @@ final class BarrageMessageDelta implements SafeCloseable {
      * row through the range API, which is what the typed {@link BarrageCopyKernel} was built to avoid, so for them the
      * runs are expanded into the kernel's per-row mapping and the kernel gathers cell by cell.
      *
-     * @return the output chunks, or null if there are no rows
+     * @return the output chunks, or null if there are no rows; nothing is left allocated if the copy fails
      */
     private static WritableChunk<Values>[] copyColumn(final Runs runs, final long totalRows, final ChunkType chunkType,
-            final List<BarrageMessageDelta> deltas, final int columnIndex,
-            final Supplier<BarrageCopyKernel.BarrageCopyKernelContext> context) {
+            final List<BarrageMessageDelta> deltas, final int columnIndex) {
         final int numChunks = LongSizedDataStructure.intSize("BarrageMessageDelta",
                 (totalRows + DELTA_CHUNK_SIZE - 1) / DELTA_CHUNK_SIZE);
         if (numChunks == 0) {
@@ -518,37 +600,56 @@ final class BarrageMessageDelta implements SafeCloseable {
         }
         // noinspection unchecked
         final WritableChunk<Values>[] dest = new WritableChunk[numChunks];
-        for (int mi = 0; mi < numChunks; ++mi) {
-            final int rows = (mi < numChunks - 1 || totalRows % DELTA_CHUNK_SIZE == 0)
-                    ? DELTA_CHUNK_SIZE
-                    : (int) (totalRows % DELTA_CHUNK_SIZE);
-            dest[mi] = makeDeltaChunk(chunkType, rows);
-        }
-
-        if (totalRows / runs.count >= AbstractColumnSource.USE_RANGES_AVERAGE_RUN_LENGTH) {
-            copyRuns(runs, deltas, columnIndex, dest);
-        } else {
-            final long[][] mapping = mappingFromRuns(runs, numChunks, dest);
-            final BarrageCopyKernel kernel = BarrageCopyKernel.makeBarrageCopyKernel(chunkType);
-            final BarrageCopyKernel.BarrageCopyKernelContext ctx = context.get();
+        boolean success = false;
+        try {
             for (int mi = 0; mi < numChunks; ++mi) {
-                kernel.copyFromDeltaChunks(mapping[mi], dest[mi], ctx);
+                final int rows = (mi < numChunks - 1 || totalRows % DELTA_CHUNK_SIZE == 0)
+                        ? DELTA_CHUNK_SIZE
+                        : (int) (totalRows % DELTA_CHUNK_SIZE);
+                dest[mi] = makeDeltaChunk(chunkType, rows);
+            }
+
+            // this column's chunks from every delta of the run, indexed by the delta index encoded in the runs
+            final int numDeltas = deltas.size();
+            // noinspection unchecked
+            final WritableChunk<Values>[][] colAddChunks = new WritableChunk[numDeltas][];
+            // noinspection unchecked
+            final WritableChunk<Values>[][] colModChunks = new WritableChunk[numDeltas][];
+            for (int di = 0; di < numDeltas; ++di) {
+                final BarrageMessageDelta delta = deltas.get(di);
+                colAddChunks[di] = delta.addChunks[columnIndex];
+                colModChunks[di] = delta.modChunks[columnIndex];
+            }
+
+            if (totalRows / runs.count >= AbstractColumnSource.USE_RANGES_AVERAGE_RUN_LENGTH) {
+                copyRuns(runs, colAddChunks, colModChunks, dest);
+            } else {
+                final long[][] mapping = mappingFromRuns(runs, dest);
+                final BarrageCopyKernel kernel = BarrageCopyKernel.makeBarrageCopyKernel(chunkType);
+                final BarrageCopyKernel.BarrageCopyKernelContext context =
+                        kernel.makeContext(colAddChunks, colModChunks, DELTA_CHUNK_SIZE);
+                for (int mi = 0; mi < numChunks; ++mi) {
+                    kernel.copyFromDeltaChunks(mapping[mi], dest[mi], context);
+                }
+            }
+            success = true;
+            return dest;
+        } finally {
+            if (!success) {
+                closeChunks(dest);
             }
         }
-        return dest;
     }
 
     /** Copy every run with array copies, splitting a run wherever it crosses a source or destination chunk boundary. */
-    private static void copyRuns(final Runs runs, final List<BarrageMessageDelta> deltas, final int columnIndex,
-            final WritableChunk<Values>[] dest) {
+    private static void copyRuns(final Runs runs, final WritableChunk<Values>[][] colAddChunks,
+            final WritableChunk<Values>[][] colModChunks, final WritableChunk<Values>[] dest) {
         for (int ri = 0; ri < runs.count; ++ri) {
             final long encoded = runs.src[ri];
             final int deltaIdx =
                     (int) ((encoded >>> BarrageCopyKernel.DELTA_INDEX_SHIFT) & BarrageCopyKernel.DELTA_INDEX_MASK);
             final boolean fromMods = (encoded & (1L << BarrageCopyKernel.DELTA_MOD_FLAG_BIT)) != 0;
-            final BarrageMessageDelta delta = deltas.get(deltaIdx);
-            final WritableChunk<Values>[] srcChunks =
-                    fromMods ? delta.modChunks[columnIndex] : delta.addChunks[columnIndex];
+            final WritableChunk<Values>[] srcChunks = fromMods ? colModChunks[deltaIdx] : colAddChunks[deltaIdx];
 
             long srcPos = encoded & BarrageCopyKernel.DELTA_POSITION_MASK;
             long destPos = runs.dest[ri];
@@ -568,9 +669,9 @@ final class BarrageMessageDelta implements SafeCloseable {
     }
 
     /** Expand runs into the copy kernel's per-row mapping, one array per output chunk, sized like {@code dest}. */
-    private static long[][] mappingFromRuns(final Runs runs, final int numChunks, final WritableChunk<Values>[] dest) {
-        final long[][] mapping = new long[numChunks][];
-        for (int mi = 0; mi < numChunks; ++mi) {
+    private static long[][] mappingFromRuns(final Runs runs, final WritableChunk<Values>[] dest) {
+        final long[][] mapping = new long[dest.length][];
+        for (int mi = 0; mi < dest.length; ++mi) {
             mapping[mi] = new long[dest[mi].size()];
         }
         for (int ri = 0; ri < runs.count; ++ri) {
@@ -585,11 +686,42 @@ final class BarrageMessageDelta implements SafeCloseable {
         return mapping;
     }
 
+    /** Whether this delta only adds rows: nothing removed, modified or shifted, and no modified data recorded. */
+    boolean isAddOnly() {
+        return update.removed().isEmpty() && update.modified().isEmpty() && update.shifted().empty()
+                && recordedMods.isEmpty() && modifiedColumns.isEmpty();
+    }
+
+    /**
+     * Whether every delta in the run only adds rows: no removals, no modifications, no shifts anywhere in it.
+     * Coalescing such a run cannot drop a single row, so compacting it would copy the whole run's data and save
+     * nothing; the producer declines such runs.
+     */
+    static boolean allAddOnly(final List<BarrageMessageDelta> deltas) {
+        for (final BarrageMessageDelta delta : deltas) {
+            if (!delta.isAddOnly()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Allocate storage for {@code size} rows of one column of a delta, from the pool. A full chunk of
+     * {@link BarrageMessageProducer#DELTA_CHUNK_SIZE} rows is exactly a pool capacity. The last chunk of a column asks
+     * for exactly the rows that remain and receives the next power of two at or above that, never more than
+     * {@code DELTA_CHUNK_SIZE}; {@link #chunkBytes} counts that capacity, not the rows, so the rounding is visible in
+     * the producer's pending-bytes figures.
+     */
+    static WritableChunk<Values> makeDeltaChunk(final ChunkType chunkType, final int size) {
+        return chunkType.makeWritableChunk(size);
+    }
+
     /**
      * The rows this delta recorded modified data for in {@code columnIndex}. Only meaningful for a column in
      * {@link #modifiedColumns}; every caller is already guarded by that test.
      */
-    RowSet recordedMods(final int columnIndex) {
+    RowSet getRecordedMods(final int columnIndex) {
         if (perColumnRecordedMods == null) {
             return recordedMods;
         }
@@ -623,17 +755,22 @@ final class BarrageMessageDelta implements SafeCloseable {
         update.release();
         recordedAdds.close();
         recordedMods.close();
-        if (perColumnRecordedMods != null) {
-            // Columns that shared a ColumnInfo at compaction share one row set; close each distinct set once.
-            final Set<RowSet> closed = Collections.newSetFromMap(new IdentityHashMap<>());
-            for (final RowSet columnMods : perColumnRecordedMods) {
-                if (columnMods != null && closed.add(columnMods)) {
-                    columnMods.close();
-                }
-            }
-        }
+        closeDistinct(perColumnRecordedMods);
         closeChunkArrays(addChunks);
         closeChunkArrays(modChunks);
+    }
+
+    /** Close each distinct row set in {@code rowSets} once; slots may be null or repeat. */
+    static void closeDistinct(@Nullable final RowSet[] rowSets) {
+        if (rowSets == null) {
+            return;
+        }
+        final Set<RowSet> closed = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (final RowSet rowSet : rowSets) {
+            if (rowSet != null && closed.add(rowSet)) {
+                rowSet.close();
+            }
+        }
     }
 
     static void closeChunkArrays(final WritableChunk<Values>[][] chunkArrays) {
@@ -641,55 +778,18 @@ final class BarrageMessageDelta implements SafeCloseable {
             return;
         }
         for (final WritableChunk<Values>[] chunks : chunkArrays) {
-            if (chunks == null) {
-                continue;
-            }
-            for (final WritableChunk<Values> chunk : chunks) {
-                try (final SafeCloseable ignored = chunk) {
-                }
-            }
+            closeChunks(chunks);
         }
     }
 
-    /**
-     * Cache key for the per-column mapping computation in {@link #compact}: which deltas of the run modify the column,
-     * and for each of those that is itself compacted, the identity of the row set it recorded for the column.
-     */
-    private static final class MappingKey {
-        private final BitSet deltasThatModify;
-        private final RowSet[] compactedMods;
-        private final int hash;
-
-        private MappingKey(final BitSet deltasThatModify, final RowSet[] compactedMods) {
-            this.deltasThatModify = deltasThatModify;
-            this.compactedMods = compactedMods;
-            int h = deltasThatModify.hashCode();
-            for (final RowSet mods : compactedMods) {
-                h = 31 * h + System.identityHashCode(mods);
-            }
-            this.hash = h;
+    static void closeChunks(final WritableChunk<Values>[] chunks) {
+        if (chunks == null) {
+            return;
         }
-
-        @Override
-        public boolean equals(final Object other) {
-            if (!(other instanceof MappingKey)) {
-                return false;
+        for (final WritableChunk<Values> chunk : chunks) {
+            if (chunk != null) {
+                chunk.close();
             }
-            final MappingKey that = (MappingKey) other;
-            if (hash != that.hash || !deltasThatModify.equals(that.deltasThatModify)) {
-                return false;
-            }
-            for (int i = 0; i < compactedMods.length; ++i) {
-                if (compactedMods[i] != that.compactedMods[i]) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return hash;
         }
     }
 }

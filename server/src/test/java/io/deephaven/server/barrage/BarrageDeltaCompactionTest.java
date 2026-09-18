@@ -33,9 +33,9 @@ import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 /**
- * Correctness coverage for {@link BarrageMessageProducer#compactPendingDeltas}, which folds a run of queued per-cycle
- * updates into a single equivalent update so that a producer serving slow subscribers does not hold one delta per
- * update graph cycle (DH-21949).
+ * Correctness coverage for {@link BarrageMessageProducer#compactPendingDeltasInline}, which folds a run of queued
+ * per-cycle updates into a single equivalent update so that a producer serving slow subscribers does not hold one delta
+ * per update graph cycle (DH-21949).
  *
  * <p>
  * The property under test is that compaction is invisible: coalescing a run of deltas early and then coalescing the
@@ -124,7 +124,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
                 for (final RemoteNugget nugget : nuggets) {
                     final BarrageMessageProducer producer = nugget.barrageMessageProducer;
                     assertEquals(compactEvery, producer.getPendingDeltaCount());
-                    assertTrue(producer.compactPendingDeltas(compactEvery));
+                    assertTrue(producer.compactPendingDeltasInline(compactEvery));
                     assertEquals(1, producer.getPendingDeltaCount());
                 }
 
@@ -181,7 +181,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
             }
             // fold the new updates in with whatever compaction left behind on the previous round
             final int pending = producer.getPendingDeltaCount();
-            assertTrue(producer.compactPendingDeltas(pending));
+            assertTrue(producer.compactPendingDeltasInline(pending));
             assertEquals(1, producer.getPendingDeltaCount());
         }
 
@@ -216,7 +216,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
 
         final BarrageMessageProducer producer = nugget.barrageMessageProducer;
         assertEquals(4, producer.getPendingDeltaCount());
-        assertTrue(producer.compactPendingDeltas(4));
+        assertTrue(producer.compactPendingDeltasInline(4));
         assertEquals(1, producer.getPendingDeltaCount());
 
         // more per-column modifications on top of the compacted delta
@@ -231,7 +231,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
         fixture.modifyInt(10, 19, 3000);
         fixture.modifyString(0, 9, "second");
         fixture.modifyDouble(15, 24, 13.5);
-        assertTrue(producer.compactPendingDeltas(3));
+        assertTrue(producer.compactPendingDeltasInline(3));
         flushProducerTable();
         flushClients(nuggets);
         nugget.validate("per-column modifications after a second compaction");
@@ -347,7 +347,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
 
         final long bytesBefore = producer.getPendingDeltaBytes();
         assertEquals(numCycles, producer.getPendingDeltaCount());
-        assertTrue(producer.compactPendingDeltas(numCycles));
+        assertTrue(producer.compactPendingDeltasInline(numCycles));
         final long bytesAfter = producer.getPendingDeltaBytes();
 
         assertEquals(1, producer.getPendingDeltaCount());
@@ -380,12 +380,12 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
         final BarrageMessageProducer producer = nugget.barrageMessageProducer;
         final ModifiedColumnSet intOnly = sourceTable.newModifiedColumnSet("intCol");
 
-        assertFalse("nothing queued", producer.compactPendingDeltas(2));
+        assertFalse("nothing queued", producer.compactPendingDeltasInline(2));
 
         modifyIntColumn(sourceTable, 0, 9, intOnly, 10);
         assertEquals(1, producer.getPendingDeltaCount());
-        assertFalse("a single delta is already compact", producer.compactPendingDeltas(1));
-        assertFalse("cannot compact more than is queued", producer.compactPendingDeltas(2));
+        assertFalse("a single delta is already compact", producer.compactPendingDeltasInline(1));
+        assertFalse("cannot compact more than is queued", producer.compactPendingDeltasInline(2));
         assertEquals(1, producer.getPendingDeltaCount());
 
         flushProducerTable();
@@ -420,7 +420,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
         for (int ii = 0; ii < 4; ++ii) {
             modifyIntColumn(sourceTable, 0, 19, intOnly, 500 + ii);
         }
-        assertTrue(producer.compactPendingDeltas(4));
+        assertTrue(producer.compactPendingDeltasInline(4));
         assertEquals(1, producer.getPendingDeltaCount());
 
         // the newcomer's snapshot splits the queue; the compacted delta is pre-snapshot and is not sent to it
@@ -438,7 +438,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
         for (int ii = 0; ii < 3; ++ii) {
             modifyIntColumn(sourceTable, 10, 29, intOnly, 900 + ii);
         }
-        assertTrue(producer.compactPendingDeltas(3));
+        assertTrue(producer.compactPendingDeltasInline(3));
         flushProducerTable();
         flushClients(nuggets);
         nugget.validate("after compaction with both subscribers");
@@ -472,7 +472,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
         for (int ii = 0; ii < 3; ++ii) {
             modifyIntColumn(sourceTable, 0, numRows - 1, intOnly, 1_000_000 * (ii + 1));
         }
-        assertTrue(producer.compactPendingDeltas(3));
+        assertTrue(producer.compactPendingDeltasInline(3));
         assertEquals(1, producer.getPendingDeltaCount());
 
         // a further cycle so the compacted multi-chunk delta is itself read back by the copy kernel
@@ -523,7 +523,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
             final long copiedBefore = producer.getCompactionCopiedBytes();
 
             // fold only the oldest four, leaving two recorded deltas behind the compacted one
-            assertTrue(producer.compactPendingDeltas(4));
+            assertTrue(producer.compactPendingDeltasInline(4));
             assertEquals(3, producer.getPendingDeltaCount());
 
             // The tail's bytes are untouched, and the compacted delta was copied in full, so what was counted as
@@ -577,7 +577,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
         long bytesBefore = producer.getPendingDeltaBytes();
         final long copiedBefore = producer.getCompactionCopiedBytes();
         assertEquals(4, producer.getPendingDeltaCount());
-        assertFalse("append-only run has nothing to gain from compaction", producer.compactPendingDeltas(4));
+        assertFalse("append-only run has nothing to gain from compaction", producer.compactPendingDeltasInline(4));
         assertEquals(4, producer.getPendingDeltaCount());
         assertEquals(bytesBefore, producer.getPendingDeltaBytes());
         assertEquals(copiedBefore, producer.getCompactionCopiedBytes());
@@ -593,7 +593,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
         nextKey += 75;
         bytesBefore = producer.getPendingDeltaBytes();
         assertEquals(3, producer.getPendingDeltaCount());
-        assertFalse("out-of-order adds have nothing to gain from compaction", producer.compactPendingDeltas(3));
+        assertFalse("out-of-order adds have nothing to gain from compaction", producer.compactPendingDeltasInline(3));
         assertEquals(3, producer.getPendingDeltaCount());
         assertEquals(bytesBefore, producer.getPendingDeltaBytes());
         assertEquals(copiedBefore, producer.getCompactionCopiedBytes());
@@ -607,7 +607,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
         appendRows(sourceTable, nextKey, 25, 4000);
         modifyIntColumn(sourceTable, 0, 9, sourceTable.newModifiedColumnSet("intCol"), 77);
         assertEquals(3, producer.getPendingDeltaCount());
-        assertTrue(producer.compactPendingDeltas(3));
+        assertTrue(producer.compactPendingDeltasInline(3));
         assertEquals(1, producer.getPendingDeltaCount());
         assertTrue(producer.getCompactionCopiedBytes() > copiedBefore);
 
@@ -652,7 +652,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
         modifyIntColumn(sourceTable, 0, size - 1, intOnly, 200_000);
         modifyIntColumn(sourceTable, BarrageMessageProducer.DELTA_CHUNK_SIZE - 10,
                 BarrageMessageProducer.DELTA_CHUNK_SIZE + 10, intOnly, 300_000);
-        assertTrue(producer.compactPendingDeltas(3));
+        assertTrue(producer.compactPendingDeltasInline(3));
         flushProducerTable();
         flushClients(nuggets);
         nugget.validate("run copies across a chunk boundary");
@@ -660,7 +660,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
         // every third row, twice with different phases: single-row runs, cell path
         modifyEveryNth(sourceTable, 0, size - 1, 3, intOnly, 7);
         modifyEveryNth(sourceTable, 1, size - 1, 3, intOnly, 11);
-        assertTrue(producer.compactPendingDeltas(2));
+        assertTrue(producer.compactPendingDeltasInline(2));
         flushProducerTable();
         flushClients(nuggets);
         nugget.validate("cell copies for scattered rows");
@@ -669,7 +669,7 @@ public class BarrageDeltaCompactionTest extends BarrageMessageRoundTripTestBase 
         appendRows(sourceTable, size, 3000, 500_000);
         modifyIntColumn(sourceTable, size + 1000, size + 1999, intOnly, 600_000);
         modifyEveryNth(sourceTable, 10, size + 2999, 5, intOnly, 13);
-        assertTrue(producer.compactPendingDeltas(3));
+        assertTrue(producer.compactPendingDeltasInline(3));
         flushProducerTable();
         flushClients(nuggets);
         nugget.validate("adds from add and mod chunks");

@@ -267,7 +267,7 @@ public class BarrageProducerPendingDeltaBenchmark {
                 // on top of what was pending.
                 final long copiedBefore = producer.getCompactionCopiedBytes();
                 if (strategy == CompactionStrategy.COMPACT_EVERY_CYCLE && pendingDeltaCount() >= 2) {
-                    if (producer.compactPendingDeltas(pendingDeltaCount())) {
+                    if (producer.compactPendingDeltasInline(pendingDeltaCount())) {
                         ++numCompactions;
                         peak = Math.max(peak, pending + (producer.getCompactionCopiedBytes() - copiedBefore));
                     }

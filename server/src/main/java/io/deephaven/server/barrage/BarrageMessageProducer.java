@@ -259,7 +259,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     private final List<BarrageMessageDelta> pendingDeltas = new ArrayList<>();
     /** Running total of {@link BarrageMessageDelta#chunkBytes} over {@link #pendingDeltas}. */
     private long pendingDeltaBytes = 0;
-    /** Total bytes of chunk data that {@link #compactPendingDeltas} has allocated for compacted deltas. */
+    /** Total bytes of chunk data that compaction has allocated for compacted deltas. */
     private long compactionCopiedBytes = 0;
 
     // Compaction policy; the parameters are instance fields so a test can force compaction (see setCompactionPolicy).
@@ -268,7 +268,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     private double compactionGrowthFactor = COMPACTION_GROWTH_FACTOR;
     private int compactionMaxPendingDeltas = COMPACTION_MAX_PENDING_DELTAS;
     /** Test hook: compact on the update graph thread, inside {@link #enqueueUpdate}, instead of on the scheduler. */
-    private boolean compactInline = false;
+    private boolean inlineCompactionForTests = false;
     /** Chunk bytes recorded since the last compaction, declined compaction, or flush. */
     private long rawBytesSinceCompaction = 0;
     /** Deltas recorded since the last compaction, declined compaction, or flush. */
@@ -277,7 +277,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      * Size of the compacted delta at the head of the queue, or after a declined compaction the size of the whole queue
      * (so the next attempt waits for it to double), or zero after a flush.
      */
-    private long compactedBytes = 0;
+    private long compactedHeadBytes = 0;
     private final CompactionJob compactionJob = new CompactionJob();
     /**
      * Bumped by {@link #promoteSnapshotToActive}, which is the only place {@link #activeViewport},
@@ -1045,10 +1045,10 @@ public class BarrageMessageProducer extends LivenessArtifact
         recordMetric(stats -> stats.pendingDeltaBytes, pendingDeltaBytes);
 
         if (shouldCompact()) {
-            if (compactInline) {
-                compactPendingDeltas(pendingDeltas.size());
+            if (inlineCompactionForTests) {
+                compactPendingDeltasInline(pendingDeltas.size());
             } else {
-                compactionJob.schedule();
+                compactionJob.maybeSchedule();
             }
         }
     }
@@ -1068,25 +1068,27 @@ public class BarrageMessageProducer extends LivenessArtifact
         if (compactionMaxPendingDeltas > 0 && deltasSinceCompaction >= compactionMaxPendingDeltas) {
             return true;
         }
-        final double threshold = Math.max(compactionFloorBytes, compactionGrowthFactor * compactedBytes);
+        final double threshold = Math.max(compactionFloorBytes, compactionGrowthFactor * compactedHeadBytes);
         return rawBytesSinceCompaction >= threshold;
     }
 
-    private void noteCompacted(final BarrageMessageDelta compacted) {
-        compactedBytes = compacted.chunkBytes;
-        rawBytesSinceCompaction = 0;
-        deltasSinceCompaction = 0;
+    /** Called after the splice, when {@link #pendingDeltas} and {@link #pendingDeltaBytes} describe the new queue. */
+    private void markCompacted(final BarrageMessageDelta compacted) {
+        compactedHeadBytes = compacted.chunkBytes;
+        // Whatever was appended behind the run while it was being compacted is still raw.
+        rawBytesSinceCompaction = pendingDeltaBytes - compactedHeadBytes;
+        deltasSinceCompaction = pendingDeltas.size() - 1;
     }
 
-    private void noteCompactionDeclined() {
+    private void markCompactionDeclined() {
         // Nothing in the queue is superseded, so treat the whole queue as already compact and wait for it to double.
-        compactedBytes = pendingDeltaBytes;
+        compactedHeadBytes = pendingDeltaBytes;
         rawBytesSinceCompaction = 0;
         deltasSinceCompaction = 0;
     }
 
     private void resetCompactionState() {
-        compactedBytes = 0;
+        compactedHeadBytes = 0;
         rawBytesSinceCompaction = 0;
         deltasSinceCompaction = 0;
     }
@@ -1103,20 +1105,22 @@ public class BarrageMessageProducer extends LivenessArtifact
         compactionFloorBytes = floorBytes;
         compactionGrowthFactor = growthFactor;
         compactionMaxPendingDeltas = maxPendingDeltas;
-        compactInline = inline;
+        inlineCompactionForTests = inline;
     }
 
     /**
      * Compacts the pending queue off the update graph thread. Holds the propagation job's run lock while it works so
-     * that the two never run together: the propagation job closes and moves the deltas this job reads. The update graph
-     * thread is not blocked; it keeps appending to the queue under the monitor, which this job takes only to copy out
-     * the run and later to swap the result in. A propagation run that found the lock held returned without running and
-     * relies on the holder to check for it on the way out.
+     * that the two never run together: the propagation job closes and moves the deltas this job reads. If the
+     * propagation job already holds the lock it is about to flush the queue, which makes this compaction moot, so the
+     * job gives up rather than hold a scheduler thread until the flush is done; the next enqueue re-evaluates the
+     * policy. The update graph thread is never blocked; it keeps appending to the queue under the monitor, which this
+     * job takes only to copy out the run and later to swap the result in. A propagation run that found the lock held
+     * returned without running and relies on the holder to check for it on the way out.
      */
     private class CompactionJob implements Runnable {
         private final AtomicBoolean scheduled = new AtomicBoolean();
 
-        void schedule() {
+        void maybeSchedule() {
             if (scheduled.compareAndSet(false, true)) {
                 scheduler.runImmediately(this);
             }
@@ -1126,9 +1130,11 @@ public class BarrageMessageProducer extends LivenessArtifact
         public void run() {
             scheduled.set(false);
             final ReentrantLock runLock = updatePropagationJob.runLock;
-            runLock.lock();
+            if (!runLock.tryLock()) {
+                return;
+            }
             try {
-                compactPendingDeltasOffMonitor();
+                compactLeadingRun();
             } catch (final Exception exception) {
                 log.error().append(logPrefix).append("compaction failed; disabling compaction for this producer: ")
                         .append(exception).endl();
@@ -1149,7 +1155,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      * coalesce without it, swap in under it. Must hold the propagation job's run lock, which is what guarantees the
      * run's deltas are neither closed nor split at a snapshot while they are being read.
      */
-    private void compactPendingDeltasOffMonitor() {
+    private void compactLeadingRun() {
         Assert.assertion(updatePropagationJob.runLock.isHeldByCurrentThread(),
                 "updatePropagationJob.runLock.isHeldByCurrentThread()");
 
@@ -1176,9 +1182,9 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         final BarrageMessageDelta compacted;
         try (final SafeCloseable ignored = baseRowSet) {
-            if (BarrageMessageDelta.nothingSuperseded(run)) {
+            if (BarrageMessageDelta.allAddOnly(run)) {
                 synchronized (this) {
-                    noteCompactionDeclined();
+                    markCompactionDeclined();
                 }
                 return;
             }
@@ -1187,13 +1193,22 @@ public class BarrageMessageProducer extends LivenessArtifact
             recordMetric(stats -> stats.compaction, System.nanoTime() - startTm);
         }
 
-        synchronized (this) {
-            // The update graph thread only appends, and the propagation job is excluded, so the run is still the head.
-            Assert.geq(pendingDeltas.size(), "pendingDeltas.size()", run.size(), "run.size()");
-            for (int di = 0; di < run.size(); ++di) {
-                Assert.eq(pendingDeltas.get(di), "pendingDeltas.get(di)", run.get(di), "run.get(di)");
+        boolean spliced = false;
+        try {
+            synchronized (this) {
+                // The update graph thread only appends, and the propagation job is excluded, so the run is still the
+                // head.
+                Assert.geq(pendingDeltas.size(), "pendingDeltas.size()", run.size(), "run.size()");
+                for (int di = 0; di < run.size(); ++di) {
+                    Assert.eq(pendingDeltas.get(di), "pendingDeltas.get(di)", run.get(di), "run.get(di)");
+                }
+                spliceCompacted(run.size(), compacted);
+                spliced = true;
             }
-            spliceCompacted(run.size(), compacted);
+        } finally {
+            if (!spliced) {
+                compacted.close();
+            }
         }
     }
 
@@ -1959,7 +1974,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      * @return whether the deltas were compacted
      */
     @VisibleForTesting
-    public synchronized boolean compactPendingDeltas(final int numDeltasToCompact) {
+    public synchronized boolean compactPendingDeltasInline(final int numDeltasToCompact) {
         if (numDeltasToCompact < 2 || numDeltasToCompact > pendingDeltas.size()) {
             return false;
         }
@@ -1980,14 +1995,22 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
 
         final List<BarrageMessageDelta> run = pendingDeltas.subList(0, numDeltasToCompact);
-        if (BarrageMessageDelta.nothingSuperseded(run)) {
-            noteCompactionDeclined();
+        if (BarrageMessageDelta.allAddOnly(run)) {
+            markCompactionDeclined();
             return false;
         }
         final long startTm = System.nanoTime();
         final BarrageMessageDelta compacted = BarrageMessageDelta.compact(run, propagationRowSet, chunkSources);
         recordMetric(stats -> stats.compaction, System.nanoTime() - startTm);
-        spliceCompacted(numDeltasToCompact, compacted);
+        boolean spliced = false;
+        try {
+            spliceCompacted(numDeltasToCompact, compacted);
+            spliced = true;
+        } finally {
+            if (!spliced) {
+                compacted.close();
+            }
+        }
         return true;
     }
 
@@ -2011,7 +2034,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         for (final BarrageMessageDelta delta : pendingDeltas) {
             pendingDeltaBytes += delta.chunkBytes;
         }
-        noteCompacted(compacted);
+        markCompacted(compacted);
 
         if (log.isDebugEnabled()) {
             log.debug().append(logPrefix).append("compacted ").append(numDeltas)
@@ -2160,7 +2183,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             downstream.modColumnData[ci] = mods;
 
             if (modColumnSet.get(ci)) {
-                mods.rowsModified = source.recordedMods(ci).copy();
+                mods.rowsModified = source.getRecordedMods(ci).copy();
                 // Detach chunks from the delta; BarrageMessage.close() returns them to the pool.
                 final WritableChunk<Values>[] chunks = source.extractModChunks(ci);
                 if (chunks != null) {
