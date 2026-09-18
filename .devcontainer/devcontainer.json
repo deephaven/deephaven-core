@@ -45,7 +45,7 @@
     // on rootful daemons — `id` still says uid 1000 on a Mac.
     "ghcr.io/devc-tools/features/rootless-remap:0": {},
 
-    // Nested containers via podman, with no capability granted to this devcontainer.
+    // Nested containers via podman, adding no capabilities beyond Docker’s default set.
     // slirp4netns gives nested containers their own networks with name DNS, which the gradle
     // deephaven-in-docker tests (:py-client, :go, :R, :cpp-client, web/client-api) rely on to
     // reach the server container by name. Requires the tun device and the seccomp profile in
@@ -58,7 +58,7 @@
   // Both required by podman-as-docker, and both things a Feature cannot declare:
   //  - the seccomp profile: Docker's default profile with one added rule allowing the namespace
   //    and mount syscalls inside user namespaces the container owns. It is read by the Docker
-  //    CLI on the *host*, hence a file in this repo. Grants no capability; see the Feature's
+  //    CLI on the *host*, hence a file in this repo. Adds no capabilities; see the Feature's
   //    README for what it does open.
   //  - /dev/net/tun: slirp4netns opens it, and it is not in the container's /dev by default.
   "runArgs": [

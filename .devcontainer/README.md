@@ -27,14 +27,14 @@ devcontainer exec --mount-git-worktree-common-dir bash
 
 ## What is in this folder
 
-| File                     | Purpose                                                                                                                                                                                                                                          |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `devcontainer.json`      | The configuration. Base image plus Features for Java, Node, Python, git-lfs, coding-agent CLIs, git identity, and nested containers via podman.                                                                                                  |
-| `devcontainer-lock.json` | Pins every Feature to a digest, so a rebuild gets the same Features until someone updates it deliberately.                                                                                                                                       |
-| `initialize-command.sh`  | Runs on the **host** before the container is created. Copies your git `user.name`/`user.email` into `~/.config/devc/gitconfig-identity`, which is bind-mounted read-only for the identity Feature.                                               |
-| `post-create.sh`         | Runs once per container as the remote user: creates the Python venv that `remoteEnv` points at, and fixes ownership of the Gradle cache and `node_modules` volumes.                                                                              |
-| `post-start.sh`          | Runs on every start: builds the Deephaven Python wheels (inside a nested container, via podman) and installs them into the venv, so `./gradlew server-jetty-app:run` works with no manual step. Idempotent; steady-state cost is one `pip show`. |
-| `seccomp-podman.json`    | The seccomp profile that lets podman run inside the devcontainer without granting it any capability. See below.                                                                                                                                  |
+| File                     | Purpose                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `devcontainer.json`      | The configuration. Base image plus Features for Java, Node, Python, git-lfs, coding-agent CLIs, git identity, and nested containers via podman.                                                                                                                                                                                                                                                                   |
+| `devcontainer-lock.json` | Pins every Feature to a digest, so a rebuild gets the same Features until someone updates it deliberately.                                                                                                                                                                                                                                                                                                        |
+| `initialize-command.sh`  | Runs on the **host** before the container is created _or started_ — the spec allows it more than once per session. Copies your git `user.name`/`user.email` into `~/.config/devc/gitconfig-identity`, which is bind-mounted read-only for the identity Feature.                                                                                                                                                   |
+| `post-create.sh`         | Runs once per container as the remote user: creates the Python venv that `remoteEnv` points at, and fixes ownership of the Gradle cache and `node_modules` volumes.                                                                                                                                                                                                                                               |
+| `post-start.sh`          | Runs on every start: builds the Deephaven Python wheels (inside a nested container, via podman) and installs them into the venv, so `./gradlew server-jetty-app:run` works with no manual step. Install-once: it exits as soon as `pip show` finds an install, so a restart does not pick up `py/server` edits — use the build-and-install command in `AGENTS.md` for those. Steady-state cost is one `pip show`. |
+| `seccomp-podman.json`    | The seccomp profile that lets podman run inside the devcontainer without adding capabilities beyond Docker’s default set. See below.                                                                                                                                                                                                                                                                              |
 
 ## Agent permissions
 
@@ -47,8 +47,8 @@ There is no egress filtering: whatever an agent can read, it can send somewhere.
 - **This repo** — and, in a worktree, the main checkout's `.git`. That includes `.git/hooks`,
   shared with the main checkout, so a hook written from inside runs on the **host** the next time
   you commit or push there. Inherent to bind-mounting a repo you also use outside a container.
-- **`.devcontainer/`**, as part of the repo. `initialize-command.sh` runs on the **host** at every
-  rebuild.
+- **`.devcontainer/`**, as part of the repo. `initialize-command.sh` runs on the **host** — not
+  only on rebuild: the spec runs it on subsequent starts too, possibly more than once a session.
 - **Agent config** — `~/.claude`, `~/.copilot`, `~/.pi` mounted under `~/.config/devc/` on host. The intent is that any devcontainer can use the same mounts and share agent config + login credentials and that configuration persists across container rebuilds. By default the CLIs run in container will populate with their default config. e.g. Claude CLI defaults to `auto` mode by default. Users can modify on host according to their preferences.
   > Note: agent configs can contain hooks, and this is writable inside the devcontainer. The `~/.config/devc` host folder is not intended to be shared with host agents, so it's not directly a risk to the host, but an agent modifying a hook in devcontainer would be shared with any other devcontainers that share the same bind mount. Mitigation here is to not share the bind mount across devcontainers you don't want in the same blast radius.
 - **Your git name and email**, read-only. Nothing else from your host git config.
@@ -74,7 +74,8 @@ devcontainer, `docker` is podman (the `podman-as-docker` Feature), and those con
 host's Docker socket.
 
 The Feature adds **no capabilities** beyond Docker's default set — in particular not
-`CAP_SYS_ADMIN`. Two things make that possible, and both are in this folder or the Feature:
+`CAP_SYS_ADMIN`. Three things make that possible, all in this folder or the Feature — the third
+only on rootful Linux:
 
 - **`seccomp-podman.json`**, referenced from `runArgs`. Docker's default seccomp filter blocks the
   syscalls that create user namespaces and mount filesystems unless the container holds
@@ -91,6 +92,12 @@ move_mount fsopen fsconfig fsmount fspick sethostname setdomainname keyctl`.
 - **`systempaths=unconfined`** (declared by the Feature, not here): without it the nested
   container runtime cannot mount its own `/proc`. Without `CAP_SYS_ADMIN` this mostly exposes
   read-only kernel information; the kernel's permission checks on `/proc/sys` still apply.
+- **`apparmor=unconfined`** (declared by the Feature, not here): inert on every host this config
+  supports. Docker Desktop's VM kernel has no AppArmor, and a rootless daemon cannot apply
+  profiles, so there is nothing to opt out of. It exists for rootful native Linux — the setup the
+  note at the top recommends against — where `docker-default`'s blanket `deny mount` would block
+  podman's storage setup. There it is a real relaxation, and a silent one: the container loses
+  AppArmor confinement rather than failing.
 
 The file is long because a seccomp profile cannot say "the defaults plus X". **Do not hand-edit
 it** — regenerate by prepending that one rule to the upstream default
@@ -117,7 +124,8 @@ stock Linux desktop can do. That is a larger kernel attack surface than a defaul
 since unprivileged user namespaces have been an entry point for privilege-escalation bugs; it is
 not a capability grant, and escaping still takes a kernel bug rather than a known technique. The
 blast radius is unchanged by anything in this folder: your own account on rootless Linux, the
-Docker Desktop VM on macOS.
+Docker Desktop VM on macOS. On rootful native Linux the AppArmor relaxation applies on top of
+that, which is one more reason for the recommendation against rootful at the top of this file.
 
 Two alternatives were rejected for being worse: `docker-in-docker` needs `--privileged`, and
 `docker-outside-of-docker` hands the devcontainer control of your host's Docker daemon with no
