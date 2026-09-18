@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset;
 
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom;
 import io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
@@ -26,8 +27,8 @@ import java.util.Comparator;
 public abstract class RowSetFactory {
 
     /**
-     * How {@link #union(Collection)} builds its result. {@link #RADIX} is the default; {@link #MERGE_IN_PASSES} is the
-     * merge it replaced, kept selectable so the two can be compared in one build.
+     * How {@link #union(Collection)} builds its result, selected by the {@code RowSetFactory.unionStrategy}
+     * configuration property. {@link #RADIX} is the default; {@link #MERGE_IN_PASSES} is the merge it replaced.
      */
     public enum UnionStrategy {
         /**
@@ -44,8 +45,14 @@ public abstract class RowSetFactory {
         RADIX
     }
 
+    /**
+     * The strategy in force, read from the {@code RowSetFactory.unionStrategy} configuration property as the name of a
+     * {@link UnionStrategy}, default {@link UnionStrategy#RADIX}. Writable so that a benchmark can compare strategies
+     * in one build.
+     */
     @VisibleForTesting
-    public static UnionStrategy unionStrategy = UnionStrategy.RADIX;
+    public static UnionStrategy unionStrategy = UnionStrategy.valueOf(Configuration.getInstance()
+            .getStringForClassWithDefault(RowSetFactory.class, "unionStrategy", UnionStrategy.RADIX.name()));
 
     private RowSetFactory() {}
 
