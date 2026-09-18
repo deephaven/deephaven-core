@@ -299,7 +299,7 @@ Deephaven provides several advanced filter utilities that can improve performanc
 
 ### `WindowCheck`
 
-[`WindowCheck`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/WindowCheck.html) doesn't filter rows itself. It adds a Boolean column that indicates whether each row's timestamp falls within a specified time window, updating as rows age out of the window, so you can filter on that column yourself if you want to remove out-of-window rows. It is exposed in Python as [`time_window`](../reference/time/time-window.md). See the [`time_window`](../reference/time/time-window.md) reference page for usage examples.
+[`WindowCheck`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/util/WindowCheck.html) doesn't filter rows itself. It adds a Boolean column that indicates whether each row's timestamp falls within a specified time window, updating as rows age out of the window. You can filter on that column yourself if you want to remove out-of-window rows. It is exposed in Python as [`time_window`](../reference/time/time-window.md). See the [`time_window`](../reference/time/time-window.md) reference page for usage examples.
 
 ## Related documentation
 

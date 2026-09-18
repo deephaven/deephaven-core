@@ -198,7 +198,7 @@ filtered_messages = Table(result.get("messages"))
 In this example:
 
 - The `sync_log` leader table controls which trades and messages appear. Only the most recent leader row per key is shown once its IDs are matched in every follower table.
-- For `ClientA/S1`, the leader has two rows: (`TradeId` 100, `MessageId` 1) and (`TradeId` 101, `MessageId` 2). Both are fully matched by `trade_log` and `message_log`. However, only the most recent match, `TradeId` 101 and `MessageId` 2, appears in the synchronized results.
+- For `ClientA/S1`, the leader has two rows: (`TradeId` 100, `MessageId` 1) and (`TradeId` 101, `MessageId` 2). Both are fully matched by `trade_log` and `message_log`. However, only the most recent match — `TradeId` 101 and `MessageId` 2 — appears in the synchronized results.
 - Even though `trade_log` has `Id` 102 and `message_log` has `MsgId` 3, they don't appear because the leader hasn't referenced them yet.
 - For `ClientB/S2`, only trade 200 and message 5 appear.
 
