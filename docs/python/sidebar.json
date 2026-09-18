@@ -360,6 +360,10 @@
                 "path": "how-to-guides/sort.md"
               },
               {
+                "label": "Keyed row selection",
+                "path": "how-to-guides/keyed-row-selection.md"
+              },
+              {
                 "label": "Transpose",
                 "items": [
                   {
@@ -1380,6 +1384,14 @@
                       {
                         "label": "without_attributes",
                         "path": "reference/table-operations/create/withoutAttributes.md"
+                      },
+                      {
+                        "label": "with_keys",
+                        "path": "reference/table-operations/create/withKeys.md"
+                      },
+                      {
+                        "label": "with_unique_keys",
+                        "path": "reference/table-operations/create/withUniqueKeys.md"
                       }
                     ]
                   },
