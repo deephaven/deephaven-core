@@ -4,7 +4,7 @@ Notes from DH-23676, in two parts. The first replaced sequential row set inserti
 merge in passes chosen from eight strategies measured against seven input shapes. The second, under "The radix
 build" below, is what replaced that merge after it regressed bucketed `updateBy`, with the shapes that were added to
 catch it. Both parts record what the measurements said, which intuitions were wrong, and the traps that produced
-confident wrong answers, so that none of it has to be rediscovered.
+confident wrong conclusions, so that none of it has to be rediscovered.
 
 | | |
 |---|---|
@@ -96,7 +96,7 @@ cannot duplicate anything, so the append path makes no size query at all.
 ## The shape matrix
 
 No single strategy wins everywhere, so the only way to choose was to name the shapes that separate them. Each shape
-exists because it discriminates against a specific wrong answer.
+exists because it makes a specific strategy slow where the others are not; every strategy here produces the same union.
 
 | Shape | Construction | Catches |
 |---|---|---|
@@ -238,7 +238,7 @@ matrix; none is in the code.
 - **Per-step density estimates** from first and last keys, sizes and span counts: matched the threshold on the target
   shape, but still a greedy pairwise decision, and a rule that let a `SortedRanges` accumulator keep absorbing was
   quadratic per group on inputs of two keys (845 ms against 21 ms on `NEW_BLOCKS` below). Removed.
-- **A pre-pass** summing `SortedRanges` entries to know the result is an `RspBitmap`, then starting from an empty one and
+- **A pre-pass** summing `SortedRanges` entries to select an `RspBitmap` build, then starting from an empty one and
   inserting every small input: 158 ms on `RANDOM` 100K, the first result under the insert loop. It gives back the
   coalescing win on `ROUND_ROBIN` (105 ms against 73).
 - **A planned span array** from the blocks the inputs touch, so no insert splices: 15 ms against 21 on `NEW_BLOCKS`
@@ -273,8 +273,9 @@ in passes, and the two results are combined by inserting the smaller into the la
 inputs' block range is at most 2^20 blocks, and through a hash of the block index when it is wider, which any union
 spanning two regions of a table addressed by region is: regions sit 2^43 keys, or 2^27 blocks, apart.
 
-Abutting pieces from different inputs meet in the scratch bitmap and become one run before any container exists,
-which is what the pairwise tree achieved only through its passes; that is why the coalescing layouts come back.
+Abutting pieces from different inputs meet in the block-local reduction, a sort of a few pieces or the scratch bitmap
+for many, and become one run before any container exists, which is what the pairwise tree achieved only through its
+passes; that is why the coalescing layouts come back.
 
 ### Measured, ms per union, one build of the final code
 

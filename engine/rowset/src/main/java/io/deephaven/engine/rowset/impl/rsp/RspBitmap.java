@@ -327,23 +327,15 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     }
 
     /**
-     * Build the smallest container for a block from its runs: run containers cost four bytes a run, array containers
-     * two bytes a row, bitmap containers a fixed eight kilobytes.
+     * Build a block's container from its runs, which are sorted, coalesced and non-adjacent.
+     * {@link Container#emptySizedFor} picks the representation that holds this cardinality and run count most cheaply
+     * and sizes it once, and {@link Container#iappend} extends it in order without the search an insert would make, so
+     * the build is linear in the runs.
      */
     private static Container containerFromRuns(final int[] runs, final int runCount, final int cardinality) {
-        final int runBytes = 4 * runCount;
-        final int arrayBytes = 2 * cardinality;
-        final int bitmapBytes = BLOCK_SIZE / 8;
-        Container c;
-        if (runBytes <= arrayBytes && runBytes <= bitmapBytes) {
-            c = new RunContainer(runCount);
-        } else if (arrayBytes <= bitmapBytes) {
-            c = new ArrayContainer(cardinality);
-        } else {
-            c = new BitmapContainer();
-        }
+        Container c = Container.emptySizedFor(cardinality, runCount);
         for (int r = 0; r < runCount; ++r) {
-            c = c.iadd(runs[2 * r], runs[2 * r + 1] + 1);
+            c = c.iappend(runs[2 * r], runs[2 * r + 1] + 1);
         }
         return c;
     }
