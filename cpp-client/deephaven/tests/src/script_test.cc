@@ -68,7 +68,7 @@ TEST_CASE("Invalid session type does not cause error until RunScript", "[script]
     Catch::Matchers::Contains("'invalid-session-type-for-test' is not supported"));
 }
 
-TEST_CASE("Console is reused across scripts", "[script]") {
+TEST_CASE("Variables persist across scripts", "[script]") {
   auto client = TableMakerForTests::CreateClient();
   auto thm = client.GetManager();
 
@@ -76,7 +76,10 @@ TEST_CASE("Console is reused across scripts", "[script]") {
   auto t1 = thm.FetchTable("t1");
   CHECK(t1.NumRows() == 3);
 
-  // t1 is only in scope if both scripts hit the same console.
+  // The second script sees t1, so lazily starting the console did not lose
+  // the query scope. This does not prove the console ticket was reused: the
+  // server wraps one shared ScriptSession in a new DelegatingScriptSession per
+  // StartConsole, so the scope would survive a second console anyway.
   thm.RunScript("t2 = t1.update([\"x = ii\"])");
   auto t2 = thm.FetchTable("t2");
   CHECK(t2.NumRows() == 3);
