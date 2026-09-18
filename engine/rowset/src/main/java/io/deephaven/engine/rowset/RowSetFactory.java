@@ -417,8 +417,8 @@ public abstract class RowSetFactory {
         // TODO: DH-23732: the bitmap inputs merge in passes and the result is then inserted here, walking the larger
         // side's spans. Bucketing their spans by block and OR-ing each block's containers once, as the radix build does
         // for ranges, would fold them in one pass instead.
-        // Insert the smaller into the larger: a bitmap insert walks the accumulator's spans. Whatever happens, each of
-        // the two is closed exactly once: the one inserted from always, the one inserted into only on failure.
+        // Insert the smaller into the larger: a bitmap insert walks the accumulator's spans. The one inserted from is
+        // closed here; the one inserted into is the result.
         final WritableRowSet into;
         final WritableRowSet from;
         if (small.size() >= merged.size()) {
@@ -430,9 +430,6 @@ public abstract class RowSetFactory {
         }
         try (from) {
             into.insert(from);
-        } catch (final RuntimeException | Error e) {
-            into.close();
-            throw e;
         }
         return into;
     }
