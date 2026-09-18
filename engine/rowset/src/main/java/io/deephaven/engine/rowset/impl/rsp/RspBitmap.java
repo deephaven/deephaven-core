@@ -2076,20 +2076,41 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         if (first() < sr.first() || sr.last() < last()) {
             return false;
         }
+        // Two walks, and which is cheaper depends on whose ranges are more numerous: walking ours costs a search per
+        // range of ours, walking sr's gaps costs a span probe per range of sr's. Neither count is available in
+        // constant time -- ours would need the runs in every container, which is a scan of the keys for an array or
+        // bitmap container, and sr's would need a scan of its array. So bound them instead: our cardinality is an
+        // upper bound on our range count, and sr's array holds one or two positions per range, so its range count is
+        // at least half its length. Taking our ranges to be the cheaper side only when our cardinality is below that
+        // length bounds how wrong this can be -- our ranges are then at worst twice sr's, never the thousandfold gap
+        // a span count would allow when many of our ranges share one span. Cardinality itself has to be already
+        // cached: computing it walks the spans, which is the cost we are trying to avoid.
+        if (isCardinalityCached() && getCardinality() < sr.count()) {
+            // Walk our ranges and ask sr to cover each, carrying a cursor into its array.
+            try (final RspRangeIterator it = getRangeIterator()) {
+                int pos = 0;
+                while (it.hasNext()) {
+                    it.next();
+                    pos = sr.containsRangeFrom(pos, it.start(), it.end());
+                    if (pos < 0) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
         long pendingLast = -1;
         // The walk stops as soon as one of our keys turns up in a gap, with the rest of sr's ranges unread; closing
-        // the iterator is what returns the reference it holds on sr.
-        try (final RowSet.RangeIterator it = sr.getRangeIterator()) {
-            int i = 0;
+        // the iterator is what returns the reference it holds on sr. The probe carries its span cursor and its span
+        // view across every gap, where the one-shot overlapsRange would take a view from the thread's work data and
+        // give it back on each one.
+        try (final RowSet.RangeIterator it = sr.getRangeIterator();
+                final OverlapProbe probe = overlapProbe()) {
             while (it.hasNext()) {
                 it.next();
                 final long start = it.currentRangeStart();
-                if (pendingLast != -1) {
-                    i = overlapsRange(i, pendingLast + 1, start - 1);
-                    if (i >= 0) {
-                        return false;
-                    }
-                    i = ~i;
+                if (pendingLast != -1 && probe.overlapsRange(pendingLast + 1, start - 1)) {
+                    return false;
                 }
                 pendingLast = it.currentRangeEnd();
             }

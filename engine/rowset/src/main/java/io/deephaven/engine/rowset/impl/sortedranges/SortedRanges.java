@@ -261,6 +261,30 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return pack(end) <= packedRangeEnd(pos, packedGet(pos));
     }
 
+    /**
+     * Whether we cover every key in {@code [start, end]}, resuming the search at {@code startPos}.
+     * <p>
+     * For callers testing a run of ascending ranges against us, as {@link RspBitmap#subsetOf(SortedRanges)} does. The
+     * search gallops from the carried position, so a caller whose ranges advance in step with ours pays a constant per
+     * range rather than a search of the whole array.
+     *
+     * @param startPos a position at or before the answer, holding a non-negative packed value
+     * @param start the first key that must be covered
+     * @param end the last key that must be covered
+     * @return the position of the range covering {@code [start, end]}, to pass back as {@code startPos} for the next
+     *         range, or -1 if we do not cover it
+     */
+    public final int containsRangeFrom(final int startPos, final long start, final long end) {
+        if (startPos >= count || start < first() || last() < end) {
+            return -1;
+        }
+        final int p = packedGallopingSearch(pack(start), startPos);
+        if (p < 0) {
+            return -1;
+        }
+        return pack(end) <= packedRangeEnd(p, packedGet(p)) ? p : -1;
+    }
+
     public final long find(final long v) {
         if (count == 0) {
             return -1;
