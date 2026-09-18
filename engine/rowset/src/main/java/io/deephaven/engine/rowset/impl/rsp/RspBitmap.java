@@ -259,7 +259,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         final long firstMask = -1L << (start & 63);
         final long lastMask = -1L >>> (63 - (end & 63));
         if (firstWord == lastWord) {
-            scratch[firstWord] |= firstMask & lastMask;
+            scratch[firstWord] |= (firstMask & lastMask);
             return;
         }
         scratch[firstWord] |= firstMask;
