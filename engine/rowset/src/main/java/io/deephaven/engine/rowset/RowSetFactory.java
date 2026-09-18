@@ -488,12 +488,13 @@ public abstract class RowSetFactory {
             final OrderedLongSet inner = innerSet(rowSet);
             if (inner instanceof SingleRange || inner instanceof SortedRanges) {
                 rowSet.forAllRowKeyRanges(bucketer);
+                if (index.totalPieces > ArrayUtil.MAX_ARRAY_SIZE) {
+                    // More pieces than one array holds: a union of hundreds of thousands of maximal SortedRanges.
+                    // Legal, and beyond any radix layout, so it merges in passes instead. Checked per input so the walk
+                    // stops as soon as the total is over, one input's pieces past the limit at most.
+                    return null;
+                }
             }
-        }
-        if (index.totalPieces > ArrayUtil.MAX_ARRAY_SIZE) {
-            // More pieces than one array holds: a union of hundreds of thousands of maximal SortedRanges. Legal, and
-            // beyond any radix layout, so it merges in passes instead.
-            return null;
         }
         final int[] pieces = index.finishCounting();
         bucketer.startPlacing(pieces);
@@ -518,7 +519,8 @@ public abstract class RowSetFactory {
 
         /**
          * Pieces counted so far, in a long: the per-block counts are ints, and this is what says whether they and the
-         * piece array they size can hold the total before any of them could wrap.
+         * piece array they size can hold the total. Checked after every input, so it never runs more than one input's
+         * pieces past the array limit and no int count comes near wrapping.
          */
         long totalPieces;
 
