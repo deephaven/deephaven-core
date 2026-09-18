@@ -33,7 +33,7 @@ A table that shares the underlying data and schema with the source table, with t
 
 The `keyColumns` and `uniqueKeys` attributes are preserved by:
 
-- [`where`](../filter/where.md), [`whereIn`](../filter/where-in.md), [`whereNotIn`](../filter/where-not-in.md), and [`wouldMatch`](../filter/would-match.md)
+- [`where`](../filter/where.md), [`whereIn`](../filter/where-in.md), and [`whereNotIn`](../filter/where-not-in.md)
 - [`sort`](../sort/sort.md) and [`sortDescending`](../sort/sort-descending.md)
 - [`reverse`](../sort/reverse.md)
 - [`flatten`](../create/flatten.md)
