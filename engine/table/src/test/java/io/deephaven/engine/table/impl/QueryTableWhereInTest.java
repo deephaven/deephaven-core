@@ -639,6 +639,50 @@ public class QueryTableWhereInTest {
         assertEquals(0, uncoalesced.selectDistinctColumns.size());
     }
 
+    /**
+     * When filtering through a data index, the set keys are iterated rather than the source rows, and the kernel's
+     * generation is checked once per chunk of those keys rather than once per key. A set larger than that chunk
+     * therefore exercises the mid-iteration check as well as the final one.
+     */
+    @Test
+    public void testWhereInSetLargerThanOneKernelChunk() {
+        // More set keys than the 1 << 16 the filter checks the kernel's generation at.
+        final int setSize = (1 << 16) + 100;
+        // Few enough distinct source keys that the source is more than 1 / DATA_INDEX_FOR_WHERE_THRESHOLD times the
+        // size of its index table, which is what makes the filter use the index rather than filtering linearly.
+        final int distinctSourceKeys = 100;
+        final Table source = TableTools.emptyTable(10_000).update("Z = (int) (ii % " + distinctSourceKeys + ")");
+        final Table sourceIndexTable = DataIndexer.getOrCreateDataIndex(source, "Z").table();
+        // Only the even keys, so that half of the source's keys are in the set and half are not. A set that covered
+        // every source key would pass even if the filter ignored the keys entirely.
+        final Table setTable = TableTools.emptyTable(setSize).update("Z = (int) (ii * 2)");
+
+        final boolean oldUseDataIndex = QueryTable.USE_DATA_INDEX_FOR_WHERE;
+        final double oldThreshold = QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD;
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = true;
+        try {
+            // Assert the conditions the filter itself tests, so that this cannot quietly become a linear filter test.
+            assertTrue("the source must be large enough relative to its index for the index path to be taken",
+                    source.size() > sourceIndexTable.size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+            assertTrue("the set must be larger than one kernel chunk", setTable.size() > (1 << 16));
+
+            final Table expectedIncluded = source.where("Z % 2 == 0");
+            final Table expectedExcluded = source.where("Z % 2 != 0");
+            assertEquals(source.size(), expectedIncluded.size() + expectedExcluded.size());
+            assertTrue("both sides must be non-empty for this to test anything",
+                    expectedIncluded.size() > 0 && expectedExcluded.size() > 0);
+
+            final Table included = source.whereIn(setTable, "Z");
+            assertTableEquals(expectedIncluded, included);
+
+            final Table excluded = source.whereNotIn(setTable, "Z");
+            assertTableEquals(expectedExcluded, excluded);
+        } finally {
+            QueryTable.USE_DATA_INDEX_FOR_WHERE = oldUseDataIndex;
+            QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD = oldThreshold;
+        }
+    }
+
     @Test
     public void testWhereNotInEmpty() {
         final Table x = newTable(intCol("X", 1, 2, 3));

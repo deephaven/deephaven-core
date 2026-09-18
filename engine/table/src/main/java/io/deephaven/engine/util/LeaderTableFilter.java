@@ -375,15 +375,19 @@ public class LeaderTableFilter {
         Assert.eqZero(processPendingResult.keysWithNewCurrent.size(), "hashSetPair.keysWithNewCurrent.size()");
         Assert.eqZero(processPendingResult.leaderRemoved.size(), "processPendingResult.leaderRemoved.size()");
         for (int tt = 0; tt < tableCount; tt++) {
-            final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
-            for (Object key : processPendingResult.keysToRefilter) {
-                final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
-                if (state != null) {
-                    doMatch(tt, state);
-                    addedBuilder.addRowSet(state.matchedRows);
+            try (final RowSetUnionBatcher addedBatch =
+                    new RowSetUnionBatcher(processPendingResult.keysToRefilter.size())) {
+                for (Object key : processPendingResult.keysToRefilter) {
+                    final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
+                    if (state != null) {
+                        doMatch(tt, state);
+                        addedBatch.add(state.matchedRows.copy());
+                    }
+                }
+                try (final WritableRowSet added = addedBatch.build()) {
+                    followerResultRowSets[tt].insert(added);
                 }
             }
-            followerResultRowSets[tt].insert(addedBuilder.build());
         }
         leaderResultRowSet.insert(processPendingResult.leaderMatches);
         leaderResultRowSet.initializePreviousValue();
@@ -448,53 +452,62 @@ public class LeaderTableFilter {
 
             final ProcessPendingResult processPendingResult = processPendingKeys();
             for (int tt = 0; tt < followerKeyStateMap.size(); tt++) {
-                final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
-                final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
-                for (final Object key : processPendingResult.keysToRefilter) {
-                    final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
-                    if (state == null) {
-                        // we have never seen anything for this key on this table, which means that we must have a
-                        // NULL_LONG identifier in the leader table.
-                        continue;
-                    }
-                    final boolean removeMatches = state.lastMatchedId != state.activeId;
-                    final RowSet lastMatched;
-                    if (removeMatches) {
-                        removedBuilder.addRowSet(state.matchedRows);
-                        lastMatched = null;
-                    } else {
-                        lastMatched = state.matchedRows.copy();
-                    }
-                    doMatch(tt, state);
-                    if (removeMatches) {
-                        addedBuilder.addRowSet(state.matchedRows);
-                    } else {
-                        try (final RowSet ignored = lastMatched;
-                                final RowSet newlyMatched = state.matchedRows.minus(lastMatched)) {
-                            addedBuilder.addRowSet(newlyMatched);
+                WritableRowSet removed = null;
+                WritableRowSet added = null;
+                try (final RowSetUnionBatcher removedBatch =
+                        new RowSetUnionBatcher(processPendingResult.keysToRefilter.size());
+                        final RowSetUnionBatcher addedBatch = new RowSetUnionBatcher(
+                                (long) processPendingResult.keysToRefilter.size()
+                                        + processPendingResult.keysWithNewCurrent.size())) {
+                    for (final Object key : processPendingResult.keysToRefilter) {
+                        final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
+                        if (state == null) {
+                            // we have never seen anything for this key on this table, which means that we must
+                            // have a NULL_LONG identifier in the leader table.
+                            continue;
+                        }
+                        final boolean removeMatches = state.lastMatchedId != state.activeId;
+                        final RowSet lastMatched;
+                        if (removeMatches) {
+                            // The matched rows are snapshotted on the way past; doMatch replaces them below.
+                            removedBatch.add(state.matchedRows.copy());
+                            lastMatched = null;
+                        } else {
+                            lastMatched = state.matchedRows.copy();
+                        }
+                        doMatch(tt, state);
+                        if (removeMatches) {
+                            addedBatch.add(state.matchedRows.copy());
+                        } else {
+                            try (final RowSet ignored = lastMatched) {
+                                addedBatch.add(state.matchedRows.minus(lastMatched));
+                            }
                         }
                     }
-                }
 
-                for (final Object key : processPendingResult.keysWithNewCurrent) {
-                    final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
-                    if (state == null || state.currentIdBuilder == null) {
-                        continue;
-                    }
-                    if (!processPendingResult.keysToRefilter.contains(key)) {
-                        // if we did not refilter this key; then we should add the currently matched values,
-                        // otherwise we ignore them because they have already been superseded
-                        try (final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build()) {
-                            state.matchedRows.insert(newlyMatchedRows);
-                            newlyMatchedRows.remove(followerResultRowSets[tt]);
-                            addedBuilder.addRowSet(newlyMatchedRows);
+                    for (final Object key : processPendingResult.keysWithNewCurrent) {
+                        final FollowerKeyState state = followerKeyStateMap.get(tt).get(key);
+                        if (state == null || state.currentIdBuilder == null) {
+                            continue;
                         }
+                        if (!processPendingResult.keysToRefilter.contains(key)) {
+                            // if we did not refilter this key; then we should add the currently matched values,
+                            // otherwise we ignore them because they have already been superseded
+                            try (final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build()) {
+                                state.matchedRows.insert(newlyMatchedRows);
+                                newlyMatchedRows.remove(followerResultRowSets[tt]);
+                                addedBatch.add(newlyMatchedRows.copy());
+                            }
+                        }
+                        state.currentIdBuilder = null;
                     }
-                    state.currentIdBuilder = null;
-                }
 
-                final RowSet removed = removedBuilder.build();
-                final RowSet added = addedBuilder.build();
+                    removed = removedBatch.build();
+                    added = addedBatch.build();
+                } catch (final RuntimeException | Error e) {
+                    SafeCloseable.closeAll(removed, added);
+                    throw e;
+                }
                 followerResultRowSets[tt].remove(removed);
                 followerResultRowSets[tt].insert(added);
 

@@ -169,13 +169,16 @@ public class SyncTableFilter {
         final HashSet<Object> keysToRefilter = hashSetPair.first;
         Assert.eqZero(hashSetPair.second.size(), "hashSetPair.second.size()");
         for (int tt = 0; tt < tableCount; tt++) {
-            final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
-            for (Object key : keysToRefilter) {
-                final KeyState state = objectToState.get(tt).get(key);
-                doMatch(tt, state, minimumid.getLong(key));
-                addedBuilder.addRowSet(state.matchedRows);
+            try (final RowSetUnionBatcher addedBatch = new RowSetUnionBatcher(keysToRefilter.size())) {
+                for (Object key : keysToRefilter) {
+                    final KeyState state = objectToState.get(tt).get(key);
+                    doMatch(tt, state, minimumid.getLong(key));
+                    addedBatch.add(state.matchedRows.copy());
+                }
+                try (final WritableRowSet added = addedBatch.build()) {
+                    resultRowSet[tt].insert(added);
+                }
             }
-            resultRowSet[tt].insert(addedBuilder.build());
         }
         keysToRefilter.clear();
     }
@@ -209,34 +212,42 @@ public class SyncTableFilter {
             final HashSet<Object> keysToRefilter = hashSetPair.first;
             final HashSet<Object> keysWithNewCurrentRows = hashSetPair.second;
             for (int tt = 0; tt < objectToState.size(); tt++) {
-                final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
-                final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
-                for (Object key : keysToRefilter) {
-                    final KeyState state = objectToState.get(tt).get(key);
-                    removedBuilder.addRowSet(state.matchedRows);
-                    doMatch(tt, state, minimumid.getLong(key));
-                    addedBuilder.addRowSet(state.matchedRows);
-                }
-
-                for (Object key : keysWithNewCurrentRows) {
-                    final KeyState state = objectToState.get(tt).get(key);
-                    if (state.currentIdBuilder == null) {
-                        continue;
+                WritableRowSet removed = null;
+                WritableRowSet added = null;
+                try (final RowSetUnionBatcher removedBatch = new RowSetUnionBatcher(keysToRefilter.size());
+                        final RowSetUnionBatcher addedBatch = new RowSetUnionBatcher(
+                                (long) keysToRefilter.size() + keysWithNewCurrentRows.size())) {
+                    for (Object key : keysToRefilter) {
+                        final KeyState state = objectToState.get(tt).get(key);
+                        // The matched rows are snapshotted on the way past; doMatch replaces them below.
+                        removedBatch.add(state.matchedRows.copy());
+                        doMatch(tt, state, minimumid.getLong(key));
+                        addedBatch.add(state.matchedRows.copy());
                     }
-                    if (!keysToRefilter.contains(key)) {
-                        // if we did not refilter this key; then we should add the currently matched values,
-                        // otherwise we ignore them because they have already been superseded
-                        try (final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build()) {
-                            state.matchedRows.insert(newlyMatchedRows);
-                            newlyMatchedRows.remove(resultRowSet[tt]);
-                            addedBuilder.addRowSet(newlyMatchedRows);
+
+                    for (Object key : keysWithNewCurrentRows) {
+                        final KeyState state = objectToState.get(tt).get(key);
+                        if (state.currentIdBuilder == null) {
+                            continue;
                         }
+                        if (!keysToRefilter.contains(key)) {
+                            // if we did not refilter this key; then we should add the currently matched values,
+                            // otherwise we ignore them because they have already been superseded
+                            try (final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build()) {
+                                state.matchedRows.insert(newlyMatchedRows);
+                                newlyMatchedRows.remove(resultRowSet[tt]);
+                                addedBatch.add(newlyMatchedRows.copy());
+                            }
+                        }
+                        state.currentIdBuilder = null;
                     }
-                    state.currentIdBuilder = null;
-                }
 
-                final RowSet removed = removedBuilder.build();
-                final RowSet added = addedBuilder.build();
+                    removed = removedBatch.build();
+                    added = addedBatch.build();
+                } catch (final RuntimeException | Error e) {
+                    SafeCloseable.closeAll(removed, added);
+                    throw e;
+                }
                 resultRowSet[tt].remove(removed);
                 resultRowSet[tt].insert(added);
 

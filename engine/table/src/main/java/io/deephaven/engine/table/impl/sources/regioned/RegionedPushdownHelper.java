@@ -53,12 +53,10 @@ public class RegionedPushdownHelper {
         if (totalMatchSize == 0 && totalMaybeMatchSize == 0) {
             return PushdownResult.noneMatch(selection);
         }
-        // Note: it's not obvious what the best approach for building these RowSets is; that is, sequential
-        // insertion vs sequential builder. We know that the individual results are ordered and non-overlapping.
-        // If this becomes important, we can do more benchmarking.
+        // The per region results are ordered and non-overlapping, which RowSetFactory.union merges by appending.
         try (
-                final WritableRowSet match = RowSetFactory.unionInsert(Arrays.asList(matches));
-                final WritableRowSet maybeMatch = RowSetFactory.unionInsert(Arrays.asList(maybeMatches))) {
+                final WritableRowSet match = RowSetFactory.union(matches);
+                final WritableRowSet maybeMatch = RowSetFactory.union(maybeMatches)) {
             return PushdownResult.of(selection, match, maybeMatch);
         }
     }

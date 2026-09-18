@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 
@@ -11,7 +12,7 @@ import io.deephaven.engine.rowset.RowSetBuilderRandom;
  */
 public class AdaptiveRowSetBuilderRandom implements RowSetBuilderRandom {
 
-    private final OrderedLongSet.BuilderRandom builder = new AdaptiveOrderedLongSetBuilderRandom();
+    private final AdaptiveOrderedLongSetBuilderRandom builder = new AdaptiveOrderedLongSetBuilderRandom();
 
     @Override
     public WritableRowSet build() {
@@ -26,5 +27,11 @@ public class AdaptiveRowSetBuilderRandom implements RowSetBuilderRandom {
     @Override
     public void addRange(final long firstRowKey, final long lastRowKey) {
         builder.addRange(firstRowKey, lastRowKey);
+    }
+
+    @Override
+    public void addRowSet(final RowSet rowSet) {
+        // The inner builder can take the row set's implementation whole, rather than walking it range by range.
+        builder.addRowSet(rowSet);
     }
 }

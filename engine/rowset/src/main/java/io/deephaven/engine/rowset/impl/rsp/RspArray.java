@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.impl.rsp.container.*;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesInt;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
@@ -2951,8 +2952,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return false;
         }
         int p2 = 0;
+        int i1 = 0;
         final WorkData wd = workDataPerThread.get();
-        for (int i1 = 0; i1 < r1.size; ++i1) {
+        while (i1 < r1.size) {
             try (SpanView view1 = wd.borrowSpanView(r1, i1)) {
                 final long k1 = view1.getKey();
                 final long flen1 = view1.getFullBlockSpanLen();
@@ -2992,10 +2994,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                                 return true;
                             }
                         }
-                        ++p2;
+                        // Both spans cover only block k1: r1's is neither a full block span (returned above) nor
+                        // able to reach another block, and r2's likewise, so r2's cannot match a later span of ours.
+                        // Resuming past it skips whatever of r2 lay between p2 and the match.
+                        p2 = i2 + 1;
                         if (p2 >= r2.size) {
                             return false;
                         }
+                        ++i1;
                         continue;
                     }
                 }
@@ -3016,6 +3022,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     if (p2 >= r2.size) {
                         return false;
                     }
+                    i1 = spanIndexAtOrAfter(r1, i1 + 1, r2.getKey(p2));
                     continue;
                 }
                 // s1 is a Container, and its block key is not an exact match in r2.
@@ -3025,9 +3032,162 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (p2 >= r2.size) {
                     return false;
                 }
+                i1 = spanIndexAtOrAfter(r1, i1 + 1, r2.getKey(p2));
             }
         }
         return false;
+    }
+
+    /**
+     * A probe for callers that test many ascending ranges against this array, as
+     * {@link io.deephaven.engine.rowset.impl.sortedranges.SortedRanges#overlaps(RspBitmap)} does.
+     *
+     * @return a probe over this array; the caller closes it
+     */
+    public OverlapProbe overlapProbe() {
+        return new OverlapProbe(this);
+    }
+
+    /**
+     * A resumable form of {@link #overlapsRange(int, long, long)}, carrying both cursors a caller would otherwise
+     * re-establish on every call.
+     * <p>
+     * The one-shot form has nowhere to keep a span view, so it takes one from the thread's work data and gives it back
+     * on each call. A caller testing one key per span pays that for every key, which is what makes probing lose to
+     * simply walking this array's ranges. This holds a view of its own, as {@link RspRangeIterator} does, and
+     * re-initializes it only on moving to a different span; it also carries the span index, so an ascending caller
+     * searches from where the last probe stopped.
+     * <p>
+     * A probe reads the array directly and takes no reference on it, as {@link #overlaps(RspArray, RspArray)} does not
+     * either: it belongs to one operation and is closed before that operation returns, so the array cannot be mutated
+     * while one is open. Cursors that do outlive their caller, such as {@link SpanCursorForwardImpl}, acquire instead,
+     * which marks the array shared and makes the next mutation of it copy.
+     */
+    public static final class OverlapProbe implements SafeCloseable {
+        private final RspArray<?> arr;
+        /** Allocated on first use, since probes answered from block keys alone never need one. */
+        private SpanView view;
+        /** The span {@link #view} holds, or -1 when it holds none. */
+        private int viewIdx = -1;
+        /** Where the next probe begins searching. */
+        private int spanIdx;
+
+        private OverlapProbe(final RspArray<?> arr) {
+            this.arr = arr;
+        }
+
+        /**
+         * Whether the array holds any key in {@code [start, end]}.
+         * <p>
+         * Ranges must be presented in ascending order: the search resumes where the last one stopped.
+         */
+        public boolean overlapsRange(final long start, final long end) {
+            if (arr.size == 0) {
+                // Also keeps spanIdx at a real index: arr.size - 1 below would leave it negative, and the next probe
+                // would search from there.
+                return false;
+            }
+            final long startHighBits = highBits(start);
+            int i = arr.getSpanIndex(spanIdx, startHighBits);
+            if (i < 0) {
+                i = ~i;
+                if (i >= arr.size) {
+                    spanIdx = arr.size - 1;
+                    return false;
+                }
+            }
+            final long endHighBits = highBits(end);
+            long keyBlock = arr.getKey(i);
+            if (endHighBits < keyBlock) {
+                spanIdx = i;
+                return false;
+            }
+            while (true) {
+                final long sk = Math.max(start, keyBlock);
+                final long ek = Math.min(end, keyBlock + BLOCK_LAST);
+                if (sk == keyBlock && ek == keyBlock + BLOCK_LAST) {
+                    spanIdx = i;
+                    return true;
+                }
+                final SpanView v = viewAt(i);
+                if (v.isSingletonSpan()) {
+                    final long value = v.getSingletonSpanValue();
+                    if (start <= value && value <= end) {
+                        spanIdx = i;
+                        return true;
+                    }
+                } else {
+                    if (v.getFullBlockSpanLen() > 0) {
+                        spanIdx = i;
+                        return true;
+                    }
+                    final Container c = v.getContainer();
+                    if (c.overlapsRange(lowBitsAsInt(sk), lowBitsAsInt(ek) + 1)) {
+                        spanIdx = i;
+                        return true;
+                    }
+                }
+                ++i;
+                if (i >= arr.size) {
+                    spanIdx = arr.size - 1;
+                    return false;
+                }
+                keyBlock = arr.getKey(i);
+                if (endHighBits < keyBlock) {
+                    // Resume on the span just read, not on i: it can still hold keys above the range just tested.
+                    spanIdx = i - 1;
+                    return false;
+                }
+            }
+        }
+
+        /**
+         * The first key of the block the next probe will start on. Every key this array still has to offer is at or
+         * above it, so a caller that has just missed can skip its own keys below that point.
+         */
+        public long resumeBlockKey() {
+            return arr.size == 0 ? -1 : arr.getKey(spanIdx);
+        }
+
+        private SpanView viewAt(final int i) {
+            if (viewIdx != i) {
+                if (view == null) {
+                    view = new SpanView(null);
+                }
+                view.init(arr, i);
+                viewIdx = i;
+            }
+            return view;
+        }
+
+        @Override
+        public void close() {
+            if (view != null) {
+                view.reset();
+                viewIdx = -1;
+            }
+        }
+    }
+
+    /**
+     * Both sides of {@link #overlaps(RspArray, RspArray)} can search, and a miss tells the walked side where the probed
+     * side's next span begins. Every span of the walked side below that block ends beneath it and cannot match, so the
+     * walk skips them rather than borrowing a view and searching for each.
+     *
+     * @param r the array being walked
+     * @param fromIndex the span index to resume from, never below the one just read
+     * @param blockKey a block key, as {@link #getKey} returns
+     * @return the span index of {@code r} where the walk should continue: the first span at or after {@code fromIndex}
+     *         that reaches {@code blockKey}'s block, or {@code r.size} if it has none
+     */
+    private static int spanIndexAtOrAfter(final RspArray r, final int fromIndex, final long blockKey) {
+        if (fromIndex >= r.size || r.getKey(fromIndex) >= blockKey) {
+            // Nothing to skip: the next span already reaches that block. Sides that alternate span by span are here
+            // every time, and a search would cost more than the step it replaces.
+            return fromIndex;
+        }
+        final int j = r.getSpanIndex(fromIndex, blockKey);
+        return j >= 0 ? j : ~j;
     }
 
     /**

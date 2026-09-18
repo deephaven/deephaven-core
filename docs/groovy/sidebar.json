@@ -340,6 +340,10 @@
                 "path": "how-to-guides/sort.md"
               },
               {
+                "label": "Keyed row selection",
+                "path": "how-to-guides/keyed-row-selection.md"
+              },
+              {
                 "label": "Transpose",
                 "items": [
                   {
@@ -1267,6 +1271,14 @@
                       {
                         "label": "withoutAttributes",
                         "path": "reference/table-operations/create/withoutAttributes.md"
+                      },
+                      {
+                        "label": "withKeys",
+                        "path": "reference/table-operations/select/withKeys.md"
+                      },
+                      {
+                        "label": "withUniqueKeys",
+                        "path": "reference/table-operations/select/withUniqueKeys.md"
                       }
                     ]
                   },
@@ -2687,6 +2699,14 @@
                   {
                     "label": "Arrays",
                     "path": "reference/query-language/types/arrays.md"
+                  },
+                  {
+                    "label": "Barrier",
+                    "path": "reference/query-language/types/Barrier.md"
+                  },
+                  {
+                    "label": "ConcurrencyControl",
+                    "path": "reference/query-language/types/ConcurrencyControl.md"
                   },
                   {
                     "label": "DateTime",
