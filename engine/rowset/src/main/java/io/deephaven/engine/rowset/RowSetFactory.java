@@ -3,10 +3,20 @@
 //
 package io.deephaven.engine.rowset;
 
+import io.deephaven.base.ArrayUtil;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom;
 import io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
+import io.deephaven.engine.rowset.impl.OrderedLongSet;
+import io.deephaven.engine.rowset.impl.rsp.RspArray;
+import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
+import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
+import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.datastructures.LongRangeConsumer;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrays;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,6 +26,45 @@ import java.util.Comparator;
  * Repository of factory methods for constructing {@link WritableRowSet row sets}.
  */
 public abstract class RowSetFactory {
+
+    /**
+     * How {@link #union(Collection)} builds its result, selected by the {@code RowSetFactory.unionStrategy}
+     * configuration property. {@link #RADIX} is the default; the others are what it replaced, kept for comparison.
+     */
+    public enum UnionStrategy {
+        /**
+         * Copy the first row set and insert the rest into it in the order given: what {@link #unionInsert} did before
+         * any of the others existed. Quadratic when the inputs are disjoint and arrive out of key order.
+         */
+        SEQUENTIAL,
+        /**
+         * {@link #SEQUENTIAL} after sorting the inputs by first row key, so that disjoint inputs append in turn
+         * whatever order the caller supplied them in.
+         */
+        SEQUENTIAL_SORTED,
+        /**
+         * Merge in passes: an accumulator keeps absorbing the next row set while it appends or while the previous one
+         * duplicated rows already held, otherwise a new group starts. See {@link #mergeInPasses}.
+         */
+        MERGE_IN_PASSES,
+        /**
+         * When the inputs together hold more entries than a {@link SortedRanges} can, build an {@link RspBitmap} by a
+         * radix pass on the block bits: every range of the small inputs is split into block-local pieces bucketed by
+         * block, and each block's container is built once from its own pieces; bitmap-sized inputs are merged in passes
+         * and combined at the end. Below the threshold, or when the pieces would not fit one array, the whole union
+         * merges in passes instead. See {@link #unionWithRadix}.
+         */
+        RADIX
+    }
+
+    /**
+     * The strategy in force, read from the {@code RowSetFactory.unionStrategy} configuration property as the name of a
+     * {@link UnionStrategy}, default {@link UnionStrategy#RADIX}. Writable so that a benchmark can compare strategies
+     * in one build.
+     */
+    @VisibleForTesting
+    public static UnionStrategy unionStrategy = UnionStrategy.valueOf(Configuration.getInstance()
+            .getStringForClassWithDefault(RowSetFactory.class, "unionStrategy", UnionStrategy.RADIX.name()));
 
     private RowSetFactory() {}
 
@@ -141,23 +190,9 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Union {@code rowSets[0, size)}, which this method owns and may reorder and clear.
-     *
-     * <p>
-     * Row sets are merged in passes. Within a pass an accumulator keeps absorbing the next row set while that row set
-     * only appends to it, and while the row set before it duplicated rows the accumulator already held, which means the
-     * inputs are covering each other and further insertion stays cheap. A new accumulator is started as soon as the
-     * next row set overlaps and the one before it brought nothing the accumulator already had, which is where inserting
-     * everything into a single accumulator would become quadratic. Only the most recent insertion counts: a cumulative
-     * count would let one early overlapping pair license absorbing an unbounded run of disjoint row sets afterwards.
-     * Every accumulator takes at least one partner, so a pass at least halves the count and the merge terminates; where
-     * nothing duplicates anything this is a balanced pairwise merge, and where the inputs are disjoint and ordered the
-     * first pass consumes all of them by appending.
-     *
-     * <p>
-     * Sorting by first row key is what makes the append case reachable regardless of the order the caller supplies.
-     * Cardinality and endpoints are O(1) to query; range counts, which drive the real cost, are linear in the span
-     * count and too expensive to consult per decision.
+     * Union {@code rowSets[0, size)}, which this method owns and may reorder and clear. Empty inputs are compacted
+     * away, the rest are sorted by first row key unless the strategy in force is {@link UnionStrategy#SEQUENTIAL}, and
+     * the union is built by that strategy: {@link #unionWithRadix} by default.
      */
     private static WritableRowSet union(final RowSet[] rowSets, final int size) {
         // Compact away the empty inputs so that first and last row key are meaningful for every remaining row set.
@@ -176,7 +211,60 @@ public abstract class RowSetFactory {
         if (count == 0) {
             return empty();
         }
+        final UnionStrategy strategy = unionStrategy;
+        if (strategy == UnionStrategy.SEQUENTIAL) {
+            return insertSequentially(rowSets, count);
+        }
         Arrays.sort(rowSets, 0, count, Comparator.comparingLong(RowSet::firstRowKey));
+        switch (strategy) {
+            case SEQUENTIAL_SORTED:
+                return insertSequentially(rowSets, count);
+            case MERGE_IN_PASSES:
+                return mergeInPasses(rowSets, count);
+            case RADIX:
+                return unionWithRadix(rowSets, count);
+            default:
+                throw new IllegalStateException(strategy.toString());
+        }
+    }
+
+    /**
+     * Copy {@code rowSets[0]} and insert {@code rowSets[1, count)} into it in order. The inputs are borrowed.
+     */
+    private static WritableRowSet insertSequentially(final RowSet[] rowSets, final int count) {
+        final WritableRowSet accumulator = rowSets[0].copy();
+        try {
+            for (int ii = 1; ii < count; ++ii) {
+                accumulator.insert(rowSets[ii]);
+            }
+        } catch (final RuntimeException | Error e) {
+            accumulator.close();
+            throw e;
+        }
+        return accumulator;
+    }
+
+    /**
+     * Merge {@code rowSets[0, count)}, nonempty and sorted by first row key, in passes. The array is cleared as its
+     * entries are consumed.
+     *
+     * <p>
+     * Row sets are merged in passes. Within a pass an accumulator keeps absorbing the next row set while that row set
+     * only appends to it, and while the row set before it duplicated rows the accumulator already held, which means the
+     * inputs are covering each other and further insertion stays cheap. A new accumulator is started as soon as the
+     * next row set overlaps and the one before it brought nothing the accumulator already had, which is where inserting
+     * everything into a single accumulator would become quadratic. Only the most recent insertion counts: a cumulative
+     * count would let one early overlapping pair license absorbing an unbounded run of disjoint row sets afterwards.
+     * Every accumulator takes at least one partner, so a pass at least halves the count and the merge terminates; where
+     * nothing duplicates anything this is a balanced pairwise merge, and where the inputs are disjoint and ordered the
+     * first pass consumes all of them by appending.
+     *
+     * <p>
+     * Sorting by first row key is what makes the append case reachable regardless of the order the caller supplies.
+     * Cardinality and endpoints are O(1) to query; range counts, which drive the real cost, are linear in the span
+     * count and too expensive to consult per decision.
+     */
+    private static WritableRowSet mergeInPasses(final RowSet[] rowSets, final int count) {
 
         // Each group but the last takes at least two row sets.
         final WritableRowSet[] groups = new WritableRowSet[(count + 1) / 2];
@@ -246,11 +334,494 @@ public abstract class RowSetFactory {
     }
 
     /**
+     * Union {@code rowSets[0, count)}, nonempty and sorted by first row key, by a radix pass on the block bits.
+     *
+     * <p>
+     * One pass over the inputs sums the {@link SingleRange} and {@link SortedRanges} inputs' entries. When the total
+     * fits a {@link SortedRanges} those inputs are few or small, and at that size the merge is cheap whichever way it
+     * is done, so everything goes through {@link #mergeInPasses}. {@link RspBitmap} inputs do not count toward that
+     * total: this method never builds them by radix, it hands them to {@link #mergeInPasses} on both branches, so their
+     * presence says nothing about whether the build pays off, which it does only over many small inputs. Otherwise the
+     * small inputs are built into an {@link RspBitmap} directly. The sum is an upper bound, since overlapping and
+     * abutting inputs coalesce, so this is the heuristic that chooses the bitmap build rather than proof of what the
+     * union needs; a result the bitmap is oversized for is compacted at the end. Every {@link SingleRange} and
+     * {@link SortedRanges} input is split into block-local pieces bucketed by block, and each block's container is
+     * built once from its own pieces, see {@link RspBitmap#makeFromBlockPieces}. That is linear in the input apart from
+     * sorting the runs of full blocks and, when the blocks are indexed by hash, the touched blocks; it lays the span
+     * array out exactly once, and coalesces pieces that abut whichever inputs they came from, which a merge in passes
+     * achieves only through its passes. {@link RspBitmap} inputs, whose insert walks both span arrays, still merge in
+     * passes, and the two results are combined by inserting the smaller into the larger. Inputs whose implementation
+     * cannot be read merge in passes as well. Blocks are indexed by offset from the first block when the inputs' block
+     * range is narrow, and through a hash of the block index when it is wide, as it is for any union spanning two
+     * regions of a table addressed by region, so the cost follows the blocks touched.
+     */
+    private static WritableRowSet unionWithRadix(final RowSet[] rowSets, final int count) {
+        // Only the small inputs are built by radix; bitmap inputs merge in passes whatever else is present. So the
+        // decision counts the small inputs' entries alone: a bitmap beside a handful of small ranges is a merge, not a
+        // build.
+        long entries = 0;
+        for (int ii = 0; ii < count; ++ii) {
+            final OrderedLongSet inner = innerSet(rowSets[ii]);
+            if (inner instanceof SingleRange) {
+                entries += 2;
+            } else if (inner instanceof SortedRanges) {
+                entries += ((SortedRanges) inner).count();
+            }
+            if (entries > SortedRanges.MAX_CAPACITY) {
+                break;
+            }
+        }
+        if (entries <= SortedRanges.MAX_CAPACITY) {
+            return mergeInPasses(rowSets, count);
+        }
+
+        long firstBlock = Long.MAX_VALUE;
+        long lastBlock = -1;
+        for (int ii = 0; ii < count; ++ii) {
+            final RowSet rowSet = rowSets[ii];
+            final OrderedLongSet inner = innerSet(rowSet);
+            if (inner instanceof SingleRange || inner instanceof SortedRanges) {
+                firstBlock = Math.min(firstBlock, rowSet.firstRowKey() >> RspArray.BITS_PER_BLOCK);
+                lastBlock = Math.max(lastBlock, rowSet.lastRowKey() >> RspArray.BITS_PER_BLOCK);
+            }
+        }
+        // Only small inputs count toward the threshold, so at least one exists and the block range is well defined.
+        final RspBitmap radix = radixSeed(rowSets, count, firstBlock, lastBlock);
+        if (radix == null) {
+            return mergeInPasses(rowSets, count);
+        }
+
+        final WritableRowSet small = new WritableRowSetImpl(radix);
+        // The entry sum that chose the bitmap build is an upper bound; where the inputs coalesced into something a
+        // smaller representation holds, take it. This is O(1) unless the result is small enough to convert.
+        small.compact();
+        // Bitmap inputs, and any implementation that cannot be read, stay in first-key order at the front.
+        int large = 0;
+        for (int ii = 0; ii < count; ++ii) {
+            final RowSet rowSet = rowSets[ii];
+            rowSets[ii] = null;
+            final OrderedLongSet inner = innerSet(rowSet);
+            if (!(inner instanceof SingleRange || inner instanceof SortedRanges)) {
+                rowSets[large++] = rowSet;
+            }
+        }
+        if (large == 0) {
+            return small;
+        }
+        final WritableRowSet merged;
+        try {
+            merged = mergeInPasses(rowSets, large);
+        } catch (final RuntimeException | Error e) {
+            small.close();
+            throw e;
+        }
+        // TODO: DH-23732: the bitmap inputs merge in passes and the result is then inserted here, walking the larger
+        // side's spans. Bucketing their spans by block and OR-ing each block's containers once, as the radix build does
+        // for ranges, would fold them in one pass instead.
+        // Insert the smaller into the larger: a bitmap insert walks the accumulator's spans. The one inserted from is
+        // closed here; the one inserted into is the result.
+        final WritableRowSet into;
+        final WritableRowSet from;
+        if (small.size() >= merged.size()) {
+            into = small;
+            from = merged;
+        } else {
+            into = merged;
+            from = small;
+        }
+        try (from) {
+            into.insert(from);
+        }
+        return into;
+    }
+
+    /**
      * Whether inserting {@code next} into {@code accumulator} only extends it past its last row key, which the row set
      * implementations satisfy by splicing rather than by merging range by range.
      */
     private static boolean appends(final RowSet accumulator, final RowSet next) {
         return next.firstRowKey() > accumulator.lastRowKey();
+    }
+
+    private static OrderedLongSet innerSet(final RowSet rowSet) {
+        return rowSet instanceof WritableRowSetImpl ? ((WritableRowSetImpl) rowSet).getInnerSet() : null;
+    }
+
+    /**
+     * Widest block range indexed by block offset from the first block, at two ints a block: 8 MB at the limit. Wider
+     * ranges, which a table addressed by region produces as soon as its inputs span two regions, index the blocks
+     * touched through a hash instead, so their cost follows the blocks touched and not the span between them.
+     */
+    private static final long RADIX_DENSE_MAX_BLOCKS = 1L << 20;
+
+    /**
+     * Build the union of the small inputs by a radix pass on the block bits. One walk over their ranges counts the
+     * block-local pieces each block receives and records the runs of blocks a range covers whole; a second walk places
+     * every piece in its block's slice of one array; and {@link RspBitmap#makeFromBlockPieces} then builds every
+     * block's container once from that slice. Every range is visited twice and every piece written once, which is
+     * linear in the input apart from two sorts: of the runs of full blocks, and, when the block range is too wide for
+     * arrays, of the touched blocks with a binary search per slot to rank them. The result's span array is laid out
+     * exactly once.
+     *
+     * <p>
+     * A piece is a range clipped to one block, held as its two 16-bit block-local ends in one int. A range that spans
+     * blocks contributes at most two pieces, its ends, and one run of full blocks between them.
+     *
+     * <p>
+     * Blocks are indexed by offset from the first block when the range of blocks is narrow enough for arrays, and
+     * through a hash of the block index otherwise, so a union whose inputs are far apart in the key space costs what
+     * its touched blocks cost and no more.
+     *
+     * @return The union of the small inputs, or null when the pieces would not fit one array
+     */
+    private static RspBitmap radixSeed(
+            final RowSet[] rowSets,
+            final int count,
+            final long firstBlock,
+            final long lastBlock) {
+        final long blockSpan = lastBlock - firstBlock + 1;
+        final BlockIndex index = blockSpan <= RADIX_DENSE_MAX_BLOCKS
+                ? new DenseBlockIndex(firstBlock, (int) blockSpan)
+                : new HashedBlockIndex();
+        final PieceCounter counter = new PieceCounter(index);
+        for (int ii = 0; ii < count; ++ii) {
+            final RowSet rowSet = rowSets[ii];
+            final OrderedLongSet inner = innerSet(rowSet);
+            if (inner instanceof SingleRange || inner instanceof SortedRanges) {
+                rowSet.forAllRowKeyRanges(counter);
+                if (index.totalPieces > ArrayUtil.MAX_ARRAY_SIZE) {
+                    // More pieces than one array holds: a union of hundreds of thousands of maximal SortedRanges.
+                    // Legal, and beyond any radix layout, so it merges in passes instead. Checked per input so the walk
+                    // stops as soon as the total is over, one input's pieces past the limit at most.
+                    return null;
+                }
+            }
+        }
+        final int[] pieces = index.finishCounting();
+        final PiecePlacer placer = new PiecePlacer(index, pieces);
+        for (int ii = 0; ii < count; ++ii) {
+            final RowSet rowSet = rowSets[ii];
+            final OrderedLongSet inner = innerSet(rowSet);
+            if (inner instanceof SingleRange || inner instanceof SortedRanges) {
+                rowSet.forAllRowKeyRanges(placer);
+            }
+        }
+        return index.build(pieces);
+    }
+
+    /**
+     * Where a block's pieces go. Counts pieces per block and records full runs during the first walk, hands out
+     * placement positions during the second, and finally lays the blocks out in order for the builder.
+     */
+    private abstract static class BlockIndex {
+        /**
+         * Runs of full blocks as first, last pairs, in the order the ranges were seen until {@link #coalesceFullRuns()}
+         * sorts and merges them in place.
+         */
+        long[] fullRuns = new long[16];
+        /** Runs recorded in {@link #fullRuns}; pairs in use are the first {@code 2 * fullRunCount} entries. */
+        int fullRunCount;
+
+        /**
+         * Pieces counted so far, in a long: the per-block counts are ints, and this is what says whether they and the
+         * piece array they size can hold the total. Checked after every input, so it never runs more than one input's
+         * pieces past the array limit and no int count comes near wrapping.
+         */
+        long totalPieces;
+
+        /** One more piece for {@code block}, counted in the total and in the block. */
+        final void countPiece(final long block) {
+            ++totalPieces;
+            countPieceInBlock(block);
+        }
+
+        abstract void countPieceInBlock(long block);
+
+        void addFullRun(final long first, final long last) {
+            if (2 * fullRunCount + 2 > fullRuns.length) {
+                fullRuns = Arrays.copyOf(fullRuns, fullRuns.length * 2);
+            }
+            fullRuns[2 * fullRunCount] = first;
+            fullRuns[2 * fullRunCount + 1] = last;
+            ++fullRunCount;
+        }
+
+        /**
+         * Turn the counts into placement positions and allocate the piece array they lay out. Only called once
+         * {@link #totalPieces} is known to fit an int.
+         *
+         * <p>
+         * The array holds every piece grouped by block, blocks in key order: the block at rank {@code k} owns the slice
+         * {@code [offsets[k], offsets[k + 1])}, where the offsets are the running sum of the counts and the last one is
+         * the total. Within a block's slice the pieces sit in the order the second walk places them, which is input
+         * order, not key order; the builder sorts or bitmaps each slice on its own. A piece is
+         * {@code (startLow << 16) | endLow}, the range's two inclusive block-local ends.
+         *
+         * @return The piece array to place into, sized to the total count
+         */
+        abstract int[] finishCounting();
+
+        /** Where the next piece of {@code block} goes; only meaningful once counting is finished. */
+        abstract int nextPosition(long block);
+
+        /**
+         * Build the result once every piece is placed. Each block that received pieces is reduced to its runs and gets
+         * one container, or joins a full block span when its pieces cover it; the full runs are coalesced with
+         * {@link #coalesceFullRuns()} and interleaved with those blocks in key order, so the bitmap is written once,
+         * front to back, with no per-input inserts.
+         *
+         * @param pieces The pieces placed by the second walk, grouped by block at the positions this index handed out
+         * @return The union of every input this index counted
+         */
+        abstract RspBitmap build(int[] pieces);
+
+        /**
+         * Sort the runs by first block and coalesce runs that overlap or touch, in place. The runs are the ranges that
+         * covered whole blocks, so this is O(F log F) in their number, not in the rows or pieces.
+         *
+         * @return The number of runs left
+         */
+        final int coalesceFullRuns() {
+            if (fullRunCount <= 1) {
+                return fullRunCount;
+            }
+            final long[] firsts = new long[fullRunCount];
+            final long[] lasts = new long[fullRunCount];
+            for (int run = 0; run < fullRunCount; ++run) {
+                firsts[run] = fullRuns[2 * run];
+                lasts[run] = fullRuns[2 * run + 1];
+            }
+            LongArrays.quickSort(firsts, lasts);
+            int out = 0;
+            for (int run = 0; run < fullRunCount; ++run) {
+                if (out > 0 && firsts[run] <= fullRuns[2 * out - 1] + 1) {
+                    fullRuns[2 * out - 1] = Math.max(fullRuns[2 * out - 1], lasts[run]);
+                } else {
+                    fullRuns[2 * out] = firsts[run];
+                    fullRuns[2 * out + 1] = lasts[run];
+                    ++out;
+                }
+            }
+            fullRunCount = out;
+            return out;
+        }
+    }
+
+    /** Blocks indexed by offset from the first block, in arrays over the whole block range. */
+    private static final class DenseBlockIndex extends BlockIndex {
+        /** The lowest block any small input touches; block {@code firstBlock + bi} is at index {@code bi}. */
+        private final long firstBlock;
+        /** Blocks from the first to the last touched, inclusive, whether or not each received a piece. */
+        private final int blockSpan;
+        /** Piece counts at {@code bi + 1} while counting; where block {@code bi}'s pieces begin once finished. */
+        private final int[] offsets;
+        /** Where the next piece of block {@code bi} goes, advanced as the second walk places them. */
+        private int[] next;
+
+        DenseBlockIndex(final long firstBlock, final int blockSpan) {
+            this.firstBlock = firstBlock;
+            this.blockSpan = blockSpan;
+            offsets = new int[blockSpan + 1];
+        }
+
+        @Override
+        void countPieceInBlock(final long block) {
+            ++offsets[(int) (block - firstBlock) + 1];
+        }
+
+        @Override
+        int[] finishCounting() {
+            // Block bi's count sits at bi + 1, so the running sum in place leaves offsets[bi] as where block bi's
+            // pieces begin and offsets[bi + 1] as where they end.
+            for (int bi = 0; bi < blockSpan; ++bi) {
+                offsets[bi + 1] += offsets[bi];
+            }
+            next = Arrays.copyOf(offsets, blockSpan);
+            return new int[offsets[blockSpan]];
+        }
+
+        @Override
+        int nextPosition(final long block) {
+            return next[(int) (block - firstBlock)]++;
+        }
+
+        @Override
+        RspBitmap build(final int[] pieces) {
+            // Compact to the blocks that received pieces: their indices in order, and their slices.
+            int touched = 0;
+            for (int bi = 0; bi < blockSpan; ++bi) {
+                if (offsets[bi + 1] > offsets[bi]) {
+                    ++touched;
+                }
+            }
+            final long[] blocks = new long[touched];
+            final int[] compact = new int[touched + 1];
+            int compactIndex = 0;
+            for (int bi = 0; bi < blockSpan; ++bi) {
+                if (offsets[bi + 1] > offsets[bi]) {
+                    blocks[compactIndex] = firstBlock + bi;
+                    compact[compactIndex] = offsets[bi];
+                    ++compactIndex;
+                }
+            }
+            compact[touched] = offsets[blockSpan];
+            final int runCount = coalesceFullRuns();
+            return RspBitmap.makeFromBlockPieces(blocks, touched, compact, pieces, fullRuns, runCount);
+        }
+    }
+
+    /**
+     * Blocks indexed through a hash of the block index, for a block range too wide for arrays. Slots are handed out in
+     * discovery order and ranked into block order once counting is complete.
+     */
+    private static final class HashedBlockIndex extends BlockIndex {
+        /** Block to slot; a block gets the next slot the first time a piece lands in it. */
+        private final Long2IntOpenHashMap slotOf = new Long2IntOpenHashMap();
+        /** The block each slot stands for, so the blocks can be sorted without walking the map. */
+        private long[] slotBlock = new long[64];
+        /** Pieces counted in each slot's block. */
+        private int[] slotCount = new int[64];
+        /** Slots handed out so far, and so the number of blocks that received pieces. */
+        private int slots;
+        /** Where each slot's block falls in block order, once counting is complete. */
+        private int[] rankOf;
+        /** The blocks that received pieces, sorted; block order is the order the result's spans are written in. */
+        private long[] blocksInOrder;
+        /** Where the pieces of the block at each rank begin, with the total at the end, once counting is complete. */
+        private int[] offsets;
+        /** Where the next piece of the block at each rank goes, advanced as the second walk places them. */
+        private int[] next;
+
+        HashedBlockIndex() {
+            slotOf.defaultReturnValue(-1);
+        }
+
+        @Override
+        void countPieceInBlock(final long block) {
+            int slot = slotOf.get(block);
+            if (slot < 0) {
+                slot = slots++;
+                slotOf.put(block, slot);
+                if (slot == slotBlock.length) {
+                    slotBlock = Arrays.copyOf(slotBlock, 2 * slot);
+                    slotCount = Arrays.copyOf(slotCount, 2 * slot);
+                }
+                slotBlock[slot] = block;
+            }
+            ++slotCount[slot];
+        }
+
+        @Override
+        int[] finishCounting() {
+            blocksInOrder = Arrays.copyOf(slotBlock, slots);
+            Arrays.sort(blocksInOrder);
+            rankOf = new int[slots];
+            offsets = new int[slots + 1];
+            for (int slot = 0; slot < slots; ++slot) {
+                final int rank = Arrays.binarySearch(blocksInOrder, slotBlock[slot]);
+                rankOf[slot] = rank;
+                offsets[rank + 1] = slotCount[slot];
+            }
+            for (int rank = 0; rank < slots; ++rank) {
+                offsets[rank + 1] += offsets[rank];
+            }
+            next = Arrays.copyOf(offsets, slots);
+            return new int[offsets[slots]];
+        }
+
+        @Override
+        int nextPosition(final long block) {
+            return next[rankOf[slotOf.get(block)]]++;
+        }
+
+        @Override
+        RspBitmap build(final int[] pieces) {
+            final int runCount = coalesceFullRuns();
+            return RspBitmap.makeFromBlockPieces(blocksInOrder, slots, offsets, pieces, fullRuns, runCount);
+        }
+    }
+
+    /**
+     * Splits ranges into block-local pieces and runs of full blocks. A range within one block is one piece, unless it
+     * covers the block, which is a run of one; a range that crosses blocks is a piece for each end that stops short of
+     * the block's edge and a run of the blocks it covers whole. What is done with a piece or a run is left to the walk:
+     * {@link PieceCounter} counts on the first, {@link PiecePlacer} places on the second.
+     */
+    private abstract static class RangeSplitter implements LongRangeConsumer {
+        @Override
+        public final void accept(final long start, final long end) {
+            final long firstBlock = start >> RspArray.BITS_PER_BLOCK;
+            final long lastBlock = end >> RspArray.BITS_PER_BLOCK;
+            final int startLow = (int) (start & RspArray.BLOCK_LAST);
+            final int endLow = (int) (end & RspArray.BLOCK_LAST);
+            if (firstBlock == lastBlock) {
+                if (startLow == 0 && endLow == RspArray.BLOCK_LAST) {
+                    full(firstBlock, firstBlock);
+                } else {
+                    piece(firstBlock, startLow, endLow);
+                }
+                return;
+            }
+            // The blocks strictly between the ends are full; each end is full only if the range reaches its edge.
+            final long firstFull = startLow == 0 ? firstBlock : firstBlock + 1;
+            final long lastFull = endLow == RspArray.BLOCK_LAST ? lastBlock : lastBlock - 1;
+            if (firstFull <= lastFull) {
+                full(firstFull, lastFull);
+            }
+            if (startLow != 0) {
+                piece(firstBlock, startLow, RspArray.BLOCK_LAST);
+            }
+            if (endLow != RspArray.BLOCK_LAST) {
+                piece(lastBlock, 0, endLow);
+            }
+        }
+
+        /** A run of blocks {@code [firstBlock, lastBlock]} covered whole by one range. */
+        abstract void full(long firstBlock, long lastBlock);
+
+        /** A range clipped to {@code block}, with its inclusive block-local ends. */
+        abstract void piece(long block, int startLow, int endLow);
+    }
+
+    /** The first walk: counts each block's pieces and records the runs of full blocks. */
+    private static final class PieceCounter extends RangeSplitter {
+        private final BlockIndex index;
+
+        PieceCounter(final BlockIndex index) {
+            this.index = index;
+        }
+
+        @Override
+        void full(final long firstBlock, final long lastBlock) {
+            index.addFullRun(firstBlock, lastBlock);
+        }
+
+        @Override
+        void piece(final long block, final int startLow, final int endLow) {
+            index.countPiece(block);
+        }
+    }
+
+    /**
+     * The second walk: writes each piece, packed as {@code (startLow << 16) | endLow}, at the position its block's
+     * cursor hands out. The full runs were recorded on the first walk and need nothing more.
+     */
+    private static final class PiecePlacer extends RangeSplitter {
+        private final BlockIndex index;
+        private final int[] pieces;
+
+        PiecePlacer(final BlockIndex index, final int[] pieces) {
+            this.index = index;
+            this.pieces = pieces;
+        }
+
+        @Override
+        void full(final long firstBlock, final long lastBlock) {}
+
+        @Override
+        void piece(final long block, final int startLow, final int endLow) {
+            pieces[index.nextPosition(block)] = (startLow << 16) | endLow;
+        }
     }
 
     /**

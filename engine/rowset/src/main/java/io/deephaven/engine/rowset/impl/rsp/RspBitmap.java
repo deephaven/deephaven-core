@@ -21,6 +21,7 @@ import io.deephaven.util.datastructures.LongRangeConsumer;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
@@ -59,6 +60,288 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     public static RspBitmap makeSingleRange(final long start, final long end) {
         return new RspBitmap(start, end);
+    }
+
+    /**
+     * Make a bitmap from row key ranges already bucketed by block: a radix pass on the high bits has split every range
+     * into block-local pieces and grouped the pieces of each block together, and has collected the runs of blocks some
+     * range covers whole. The bitmap is built in one pass over the blocks in order, so the span array is laid out
+     * exactly once and no span is ever spliced or grown.
+     *
+     * <p>
+     * Each partial block's pieces are reduced to runs: at most {@value #FEW_PIECES} pieces are sorted and coalesced in
+     * place, since clearing and scanning a block's bitmap would cost more than sorting that many ints; more are
+     * accumulated into a scratch bitmap of one block, whose runs are then read off. Either way pieces that abut or
+     * overlap coalesce whatever their source, and the block's container is built from the runs as whichever
+     * representation is smallest for its cardinality and run count: a run container, an array container, or a bitmap
+     * container; a single row becomes a singleton span, and a block that came out all ones joins the full block spans.
+     * Consecutive full blocks become one span.
+     *
+     * @param blocks Ascending block indices that received pieces; {@code blocks[0, blockCount)}
+     * @param blockCount How many of {@code blocks} are used
+     * @param offsets For {@code blocks[k]}, its pieces are {@code pieces[offsets[k], offsets[k + 1])}
+     * @param pieces Block-local pieces, each the low 16 bits of its first row in the high half of the int and of its
+     *        last row in the low half
+     * @param fullRuns Runs of block indices some range covers whole, as inclusive first, last pairs, ascending, with no
+     *        two runs overlapping or touching; {@code fullRuns[0, 2 * fullRunCount)}. A block in {@code blocks} that
+     *        lies within a run is full whatever its pieces say.
+     * @param fullRunCount How many runs {@code fullRuns} holds
+     */
+    public static RspBitmap makeFromBlockPieces(
+            final long[] blocks,
+            final int blockCount,
+            final int[] offsets,
+            final int[] pieces,
+            final long[] fullRuns,
+            final int fullRunCount) {
+        final long[] scratch = new long[BLOCK_SIZE / 64];
+        final int[] runs = new int[BLOCK_SIZE]; // start, end pairs; at most BLOCK_SIZE / 2 runs
+        final RspBitmap rb = new RspBitmap();
+        // Every partial block and every full run is at most one span; blocks that fill up or lie within a run leave
+        // slots unused.
+        final int maxSpans = Math.max(1, blockCount + fullRunCount);
+        rb.spanInfos = new long[maxSpans];
+        rb.spans = new Object[maxSpans];
+        int spanIndex = 0;
+        // The full block span being accumulated, if any: its first block and its length in blocks.
+        long fullFirst = -1;
+        long fullLen = 0;
+        int fullRunIndex = 0; // next full run not yet emitted
+        for (int blockIndex = 0; blockIndex < blockCount; ++blockIndex) {
+            final long block = blocks[blockIndex];
+            // Emit every full run that ends before this block, and note whether the block lies inside one.
+            boolean covered = false;
+            while (fullRunIndex < fullRunCount) {
+                final long runFirst = fullRuns[2 * fullRunIndex];
+                final long runLast = fullRuns[2 * fullRunIndex + 1];
+                if (runFirst > block) {
+                    break;
+                }
+                if (runLast >= block) {
+                    covered = true;
+                    break;
+                }
+                if (fullLen > 0 && fullFirst + fullLen == runFirst) {
+                    fullLen += runLast - runFirst + 1;
+                } else {
+                    if (fullLen > 0) {
+                        setFullBlockSpanRaw(spanIndex++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+                    }
+                    fullFirst = runFirst;
+                    fullLen = runLast - runFirst + 1;
+                }
+                ++fullRunIndex;
+            }
+            if (covered) {
+                continue; // the run it lies in is emitted when the loop passes its last block
+            }
+            final int from = offsets[blockIndex];
+            final int to = offsets[blockIndex + 1];
+            final int runCount;
+            if (to - from <= FEW_PIECES) {
+                // Too few pieces to be worth clearing and scanning a block's bitmap: sort them and coalesce.
+                runCount = collectRunsFromFewPieces(pieces, from, to, runs);
+            } else {
+                Arrays.fill(scratch, 0L);
+                for (int pieceIndex = from; pieceIndex < to; ++pieceIndex) {
+                    final int piece = pieces[pieceIndex];
+                    setScratchRange(scratch, piece >>> 16, piece & 0xFFFF);
+                }
+                runCount = collectRuns(scratch, runs);
+            }
+            int cardinality = 0;
+            for (int run = 0; run < runCount; ++run) {
+                cardinality += runs[2 * run + 1] - runs[2 * run] + 1;
+            }
+            if (cardinality == BLOCK_SIZE) {
+                // Filled up: it joins the full block span being accumulated when adjacent, else starts one.
+                if (fullLen > 0 && fullFirst + fullLen == block) {
+                    ++fullLen;
+                } else {
+                    if (fullLen > 0) {
+                        setFullBlockSpanRaw(spanIndex++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+                    }
+                    fullFirst = block;
+                    fullLen = 1;
+                }
+                continue;
+            }
+            if (fullLen > 0) {
+                setFullBlockSpanRaw(spanIndex++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+                fullLen = 0;
+            }
+            final long key = block << BITS_PER_BLOCK;
+            if (cardinality == 1) {
+                setSingletonSpanRaw(rb.spanInfos, rb.spans, spanIndex++, key | runs[0]);
+            } else {
+                setContainerSpanRaw(rb.spanInfos, rb.spans, spanIndex++, key,
+                        containerFromRuns(runs, runCount, cardinality));
+            }
+        }
+        // Full runs past the last partial block.
+        while (fullRunIndex < fullRunCount) {
+            final long runFirst = fullRuns[2 * fullRunIndex];
+            final long runLast = fullRuns[2 * fullRunIndex + 1];
+            if (fullLen > 0 && fullFirst + fullLen == runFirst) {
+                fullLen += runLast - runFirst + 1;
+            } else {
+                if (fullLen > 0) {
+                    setFullBlockSpanRaw(spanIndex++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+                }
+                fullFirst = runFirst;
+                fullLen = runLast - runFirst + 1;
+            }
+            ++fullRunIndex;
+        }
+        if (fullLen > 0) {
+            setFullBlockSpanRaw(spanIndex++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+        }
+        rb.size = spanIndex;
+        rb.ensureCardinalityCache();
+        return rb;
+    }
+
+    private static void setSingletonSpanRaw(final long[] spanInfos, final Object[] spans, final int spanIndex,
+            final long value) {
+        spans[spanIndex] = null;
+        spanInfos[spanIndex] = value;
+    }
+
+    /**
+     * Piece count at or below which a block's runs come from sorting its pieces rather than from a scratch bitmap;
+     * clearing and scanning the bitmap costs about as much as sorting this many ints.
+     */
+    private static final int FEW_PIECES = 64;
+
+    /**
+     * Collect the runs of {@code pieces[from, to)}, sorted and coalesced, into {@code runs} as inclusive start, end
+     * pairs. Sorts the pieces in place.
+     *
+     * @return The number of runs
+     */
+    private static int collectRunsFromFewPieces(final int[] pieces, final int from, final int to, final int[] runs) {
+        // A piece with a start of 0x8000 or more has bit 31 set and is negative as a signed int, so a plain sort would
+        // put every piece from the upper half of the block before every piece from the lower half. Flipping the sign
+        // bit makes the signed order the unsigned order of the packed value: by start, then by end.
+        for (int pieceIndex = from; pieceIndex < to; ++pieceIndex) {
+            pieces[pieceIndex] ^= Integer.MIN_VALUE;
+        }
+        Arrays.sort(pieces, from, to);
+        int count = 0;
+        int runStart = -1;
+        int runEnd = -1;
+        for (int pieceIndex = from; pieceIndex < to; ++pieceIndex) {
+            // XOR with the same constant undoes the flip. The slice is scratch by now, so the flipped value can stay.
+            final int piece = pieces[pieceIndex] ^ Integer.MIN_VALUE;
+            final int start = piece >>> 16;
+            final int end = piece & 0xFFFF;
+            if (runStart >= 0 && start <= runEnd + 1) {
+                runEnd = Math.max(runEnd, end);
+                continue;
+            }
+            if (runStart >= 0) {
+                runs[2 * count] = runStart;
+                runs[2 * count + 1] = runEnd;
+                ++count;
+            }
+            runStart = start;
+            runEnd = end;
+        }
+        if (runStart >= 0) {
+            runs[2 * count] = runStart;
+            runs[2 * count + 1] = runEnd;
+            ++count;
+        }
+        return count;
+    }
+
+    /** Set bits {@code [start, end]} of a one-block scratch bitmap. */
+    private static void setScratchRange(final long[] scratch, final int start, final int end) {
+        final int firstWord = start >>> 6;
+        final int lastWord = end >>> 6;
+        final long firstMask = -1L << (start & 63);
+        final long lastMask = -1L >>> (63 - (end & 63));
+        if (firstWord == lastWord) {
+            scratch[firstWord] |= (firstMask & lastMask);
+            return;
+        }
+        scratch[firstWord] |= firstMask;
+        for (int word = firstWord + 1; word < lastWord; ++word) {
+            scratch[word] = -1L;
+        }
+        scratch[lastWord] |= lastMask;
+    }
+
+    /**
+     * Collect the runs of set bits of a one-block scratch bitmap into {@code runs} as inclusive start, end pairs.
+     *
+     * @return The number of runs
+     */
+    private static int collectRuns(final long[] scratch, final int[] runs) {
+        int count = 0;
+        int runStart = -1;
+        for (int wordIndex = 0; wordIndex < scratch.length; ++wordIndex) {
+            long word = scratch[wordIndex];
+            final int base = wordIndex << 6;
+            if (word == 0L) {
+                if (runStart >= 0) {
+                    runs[2 * count] = runStart;
+                    runs[2 * count + 1] = base - 1;
+                    ++count;
+                    runStart = -1;
+                }
+                continue;
+            }
+            if (word == -1L) {
+                if (runStart < 0) {
+                    runStart = base;
+                }
+                continue;
+            }
+            int bit = 0;
+            while (bit < 64) {
+                if (runStart < 0) {
+                    // Skip zeros to the next set bit.
+                    final long shifted = word >>> bit;
+                    if (shifted == 0L) {
+                        break;
+                    }
+                    bit += Long.numberOfTrailingZeros(shifted);
+                    runStart = base + bit;
+                } else {
+                    // Skip ones to the next clear bit.
+                    final long shifted = ~word >>> bit;
+                    if (shifted == 0L) {
+                        break;
+                    }
+                    bit += Long.numberOfTrailingZeros(shifted);
+                    runs[2 * count] = runStart;
+                    runs[2 * count + 1] = base + bit - 1;
+                    ++count;
+                    runStart = -1;
+                }
+            }
+        }
+        if (runStart >= 0) {
+            runs[2 * count] = runStart;
+            runs[2 * count + 1] = BLOCK_SIZE - 1;
+            ++count;
+        }
+        return count;
+    }
+
+    /**
+     * Build a block's container from its runs, which are sorted, coalesced and non-adjacent.
+     * {@link Container#emptySizedFor} picks the representation that holds this cardinality and run count most cheaply
+     * and sizes it once, and {@link Container#iappend} extends it in order without the search an insert would make, so
+     * the build is linear in the runs.
+     */
+    private static Container containerFromRuns(final int[] runs, final int runCount, final int cardinality) {
+        Container container = Container.emptySizedFor(cardinality, runCount);
+        for (int run = 0; run < runCount; ++run) {
+            container = container.iappend(runs[2 * run], runs[2 * run + 1] + 1);
+        }
+        return container;
     }
 
     public static RspBitmap makeSingle(final long v) {
