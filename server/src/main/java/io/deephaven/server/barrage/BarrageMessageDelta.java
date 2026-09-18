@@ -38,8 +38,8 @@ import static io.deephaven.server.barrage.BarrageMessageProducer.DELTA_CHUNK_SIZ
  * One update graph cycle's worth of change to a table, as recorded by a {@link BarrageMessageProducer} for the
  * subscribers it had at the time: the {@link TableUpdate}, the rows whose data was recorded, and that data as chunks. A
  * producer queues these until its subscribers' update interval elapses, then coalesces the queue into one
- * {@link BarrageMessage}; {@link #compact} is that coalescing, and the producer also applies it early, in place, so the
- * queue does not grow with the number of cycles per interval.
+ * {@link BarrageMessage}; {@link #coalesce} is that algorithm. Compaction applies it early, in place on the pending
+ * queue, so the queue does not grow with the number of cycles per interval.
  */
 final class BarrageMessageDelta implements SafeCloseable {
     /**
@@ -158,12 +158,12 @@ final class BarrageMessageDelta implements SafeCloseable {
      * @param chunkSources the producer's column sources, for each column's chunk type
      * @return a new delta, which the caller owns
      */
-    static BarrageMessageDelta compact(final List<BarrageMessageDelta> deltas, final RowSet baseRowSet,
+    static BarrageMessageDelta coalesce(final List<BarrageMessageDelta> deltas, final RowSet baseRowSet,
             final ChunkSource.WithPrev<Values>[] chunkSources) {
         final int numDeltas = deltas.size();
         if (numDeltas < 2) {
             throw new IllegalArgumentException(
-                    "compact requires at least two deltas; a run of one is already compact");
+                    "coalesce requires at least two deltas; a run of one is already coalesced");
         }
         final int numColumns = chunkSources.length;
 
@@ -209,13 +209,13 @@ final class BarrageMessageDelta implements SafeCloseable {
 
             // Every contributing delta shares one column set within a generation (RunSummary asserts it), so the
             // run's first delta speaks for the result: with surviving adds their data exists for exactly these
-            // columns, and without any the result still compacts with what follows it.
-            final BarrageMessageDelta compacted = new BarrageMessageDelta(deltas.get(0).generation,
+            // columns, and without any the result still coalesces with what follows it.
+            final BarrageMessageDelta result = new BarrageMessageDelta(deltas.get(0).generation,
                     deltas.get(0).firstStep, deltas.get(numDeltas - 1).lastStep,
                     update, run.added, recordedMods, perColumnRecordedMods,
                     (BitSet) deltas.get(0).subscribedColumns.clone(), modifiedColumns, addChunks, modChunks);
             success = true;
-            return compacted;
+            return result;
         } finally {
             if (!success) {
                 // Nothing owns these yet; the cache has already closed the mappings it still owned.
@@ -393,7 +393,7 @@ final class BarrageMessageDelta implements SafeCloseable {
     }
 
     /**
-     * The per-column mappings of one compaction, shared between columns with the same {@link MappingKey}. Owns every
+     * The per-column mappings of one coalesce, shared between columns with the same {@link MappingKey}. Owns every
      * mapping's {@link ColumnMapping#recordedMods} until {@link #extractRecordedMods extracted}; {@link #close}
      * releases the rest.
      */

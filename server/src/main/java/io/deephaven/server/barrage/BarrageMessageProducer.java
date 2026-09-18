@@ -108,7 +108,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      * (or flushed). Producers whose subscribers are served often enough to stay under it never pay for compaction.
      */
     public static final long COMPACTION_FLOOR_BYTES = Configuration.getInstance()
-            .getLongForClassWithDefault(BarrageMessageProducer.class, "compactionFloorBytes", 32L << 20);
+            .getLongForClassWithDefault(BarrageMessageProducer.class, "compactionFloorBytes", 4L << 20);
     /**
      * Once past the floor, a producer compacts when the bytes recorded since the last compaction exceed this multiple
      * of the compacted delta's size. Each compaction then copies at most about {@code (1 + 1/factor)} times the new
@@ -123,7 +123,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      * the count trigger.
      */
     public static final int COMPACTION_MAX_PENDING_DELTAS = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageMessageProducer.class, "compactionMaxPendingDeltas", 256);
+            .getIntegerForClassWithDefault(BarrageMessageProducer.class, "compactionMaxPendingDeltas", 32);
 
     private long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
     private double snapshotNanosPerCell = 0;
@@ -259,16 +259,6 @@ public class BarrageMessageProducer extends LivenessArtifact
     private final List<BarrageMessageDelta> pendingDeltas = new ArrayList<>();
     /** Running total of {@link BarrageMessageDelta#chunkBytes} over {@link #pendingDeltas}. */
     private long pendingDeltaBytes = 0;
-    /** Total bytes of chunk data that compaction has allocated for compacted deltas. */
-    private long compactionCopiedBytes = 0;
-
-    // Compaction policy; the parameters are instance fields so a test can force compaction (see setCompactionPolicy).
-    private boolean compactionEnabled = COMPACTION_ENABLED;
-    private long compactionFloorBytes = COMPACTION_FLOOR_BYTES;
-    private double compactionGrowthFactor = COMPACTION_GROWTH_FACTOR;
-    private int compactionMaxPendingDeltas = COMPACTION_MAX_PENDING_DELTAS;
-    /** Test hook: compact on the update graph thread, inside {@link #enqueueUpdate}, instead of on the scheduler. */
-    private boolean inlineCompactionForTests = false;
     /** Chunk bytes recorded since the last compaction, declined compaction, or flush. */
     private long rawBytesSinceCompaction = 0;
     /** Deltas recorded since the last compaction, declined compaction, or flush. */
@@ -1045,11 +1035,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         recordMetric(stats -> stats.pendingDeltaBytes, pendingDeltaBytes);
 
         if (shouldCompact()) {
-            if (inlineCompactionForTests) {
-                compactPendingDeltasInline(pendingDeltas.size());
-            } else {
-                compactionJob.maybeSchedule();
-            }
+            compactionJob.maybeSchedule();
         }
     }
 
@@ -1061,14 +1047,15 @@ public class BarrageMessageProducer extends LivenessArtifact
      */
     private boolean shouldCompact() {
         Assert.assertion(Thread.holdsLock(this), "shouldCompact must hold lock!");
-        if (!compactionEnabled || isBlinkTable || pendingDeltas.size() < 2) {
+        if (!COMPACTION_ENABLED || isBlinkTable || pendingDeltas.size() < 2) {
             // A blink table's deltas are all new rows; nothing supersedes anything, so there is nothing to compact.
             return false;
         }
-        if (compactionMaxPendingDeltas > 0 && deltasSinceCompaction >= compactionMaxPendingDeltas) {
+        if (COMPACTION_MAX_PENDING_DELTAS > 0 && deltasSinceCompaction >= COMPACTION_MAX_PENDING_DELTAS) {
             return true;
         }
-        final double threshold = Math.max(compactionFloorBytes, compactionGrowthFactor * compactedHeadBytes);
+        final double threshold =
+                Math.max(COMPACTION_FLOOR_BYTES, COMPACTION_GROWTH_FACTOR * compactedHeadBytes);
         return rawBytesSinceCompaction >= threshold;
     }
 
@@ -1094,18 +1081,21 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     /**
-     * Override the compaction policy for this producer. Tests use it to force compaction after every {@code
-     * maxPendingDeltas} recorded deltas, and to run it on the update graph thread so that it interleaves with the
-     * cycles deterministically; benchmarks use it to disable the policy for the arms that drive compaction themselves.
+     * Terminal failure of the producer: every subscriber is told, and no further work is done for any of them. Both
+     * scheduler jobs use this, because both run {@link BarrageMessageDelta#coalesce} under the propagation run lock and
+     * a failure there leaves the pending queue -- the subscribers' only record of what changed -- with nothing safe to
+     * send.
      */
-    @VisibleForTesting
-    public synchronized void setCompactionPolicy(final boolean enabled, final long floorBytes,
-            final double growthFactor, final int maxPendingDeltas, final boolean inline) {
-        compactionEnabled = enabled;
-        compactionFloorBytes = floorBytes;
-        compactionGrowthFactor = growthFactor;
-        compactionMaxPendingDeltas = maxPendingDeltas;
-        inlineCompactionForTests = inline;
+    private void failAllSubscriptions(final Exception exception) {
+        synchronized (this) {
+            final StatusRuntimeException apiError = errorTransformer.transform(exception);
+
+            Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
+                    .forEach(sub -> GrpcUtil.safelyError(sub.listener, apiError));
+
+            activeSubscriptions.clear();
+            pendingSubscriptions.clear();
+        }
     }
 
     /**
@@ -1136,11 +1126,9 @@ public class BarrageMessageProducer extends LivenessArtifact
             try {
                 compactLeadingRun();
             } catch (final Exception exception) {
-                log.error().append(logPrefix).append("compaction failed; disabling compaction for this producer: ")
-                        .append(exception).endl();
-                synchronized (BarrageMessageProducer.this) {
-                    compactionEnabled = false;
-                }
+                // Coalescing failed. Propagation would have hit the same failure on the same thread when the update
+                // interval elapsed; compaction only reached it sooner, so it gets the same treatment.
+                failAllSubscriptions(exception);
             } finally {
                 runLock.unlock();
             }
@@ -1151,9 +1139,28 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     /**
-     * The two-phase compaction run by {@link CompactionJob}: copy the run and a row set snapshot out under the monitor,
-     * coalesce without it, swap in under it. Must hold the propagation job's run lock, which is what guarantees the
-     * run's deltas are neither closed nor split at a snapshot while they are being read.
+     * Replace the leading run of same-generation pending deltas with a single equivalent delta.
+     *
+     * <p>
+     * This is how a producer stops holding one delta per update graph cycle for the whole of a slow subscriber's update
+     * interval. The replacement carries the same information as the run it replaces -- a later re-aggregation of the
+     * pending list produces the same message either way -- but only the data that survived coalescing: rows modified
+     * repeatedly are stored once, and rows added and then removed are stored not at all. The surviving data is copied
+     * into fresh chunks; the replaced deltas are then closed and their chunks returned to the pool. A run in which
+     * nothing is superseded -- pure adds -- is declined, since every recorded row survives and copying would cost the
+     * whole run's data and save no memory.
+     *
+     * <p>
+     * Only a prefix may be compacted, because the coalescing has to start from {@link #propagationRowSet}, which is the
+     * row set as of the last propagation. {@link #propagationRowSet} is deliberately left where it is: compaction
+     * changes how the pending updates are stored, not what subscribers have been told. Deltas recorded under different
+     * subscription generations describe different viewports or column sets and must not be merged, because the
+     * propagation job splits them at the snapshot step to send them to different populations of subscribers.
+     *
+     * <p>
+     * The work is done in two phases: copy the run and a row set snapshot out under the monitor, coalesce without it,
+     * swap the result in under it. Must hold the propagation job's run lock, which is what guarantees the run's deltas
+     * are neither closed nor split at a snapshot while they are being read.
      */
     private void compactLeadingRun() {
         Assert.assertion(updatePropagationJob.runLock.isHeldByCurrentThread(),
@@ -1163,7 +1170,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         final RowSet baseRowSet;
         synchronized (this) {
             if (!shouldCompact()) {
-                // flushed, or compacted inline, since this job was scheduled
+                // flushed since this job was scheduled
                 return;
             }
             // Only one generation is ever pending outside a propagation run, which the run lock excludes; take the
@@ -1189,7 +1196,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 return;
             }
             final long startTm = System.nanoTime();
-            compacted = BarrageMessageDelta.compact(run, baseRowSet, chunkSources);
+            compacted = BarrageMessageDelta.coalesce(run, baseRowSet, chunkSources);
             recordMetric(stats -> stats.compaction, System.nanoTime() - startTm);
         }
 
@@ -1210,31 +1217,6 @@ public class BarrageMessageProducer extends LivenessArtifact
                 compacted.close();
             }
         }
-    }
-
-    /** The number of update graph cycles recorded but not yet propagated. */
-    @VisibleForTesting
-    public synchronized int getPendingDeltaCount() {
-        return pendingDeltas.size();
-    }
-
-    /**
-     * Heap footprint, in bytes, of the chunk storage owned by the not-yet-propagated updates. See
-     * {@link BarrageMessageDelta#chunkArrayBytes}.
-     */
-    @VisibleForTesting
-    public synchronized long getPendingDeltaBytes() {
-        return pendingDeltaBytes;
-    }
-
-    /**
-     * Total bytes of chunk data that compaction has allocated over this producer's lifetime, each compaction adding the
-     * size of the delta it produced. The difference between two readings around one compaction is that compaction's
-     * transient memory, since the originals are held until the copy is complete.
-     */
-    @VisibleForTesting
-    public synchronized long getCompactionCopiedBytes() {
-        return compactionCopiedBytes;
     }
 
     private void schedulePropagation() {
@@ -1299,15 +1281,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                         recordMetric(stats -> stats.updateJob, System.nanoTime() - startTm);
                     }
                 } catch (final Exception exception) {
-                    synchronized (BarrageMessageProducer.this) {
-                        final StatusRuntimeException apiError = errorTransformer.transform(exception);
-
-                        Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
-                                .forEach(sub -> GrpcUtil.safelyError(sub.listener, apiError));
-
-                        activeSubscriptions.clear();
-                        pendingSubscriptions.clear();
-                    }
+                    failAllSubscriptions(exception);
                 } finally {
                     runLock.unlock();
                 }
@@ -1950,70 +1924,6 @@ public class BarrageMessageProducer extends LivenessArtifact
         subscription.pendingInitialSnapshot = false;
     }
 
-    /**
-     * Replace the first {@code numDeltasToCompact} pending deltas with a single equivalent delta.
-     *
-     * <p>
-     * This is how a producer stops holding one delta per update graph cycle for the whole of a slow subscriber's update
-     * interval. The replacement carries the same information as the run it replaces -- a later re-aggregation of the
-     * pending list produces the same message either way -- but only the data that survived coalescing: rows modified
-     * repeatedly are stored once, and rows added and then removed are stored not at all.
-     *
-     * <p>
-     * Only a prefix may be compacted, because the coalescing has to start from {@link #propagationRowSet}, which is the
-     * row set as of the last propagation. {@link #propagationRowSet} is deliberately left where it is: compaction
-     * changes how the pending updates are stored, not what subscribers have been told.
-     *
-     * <p>
-     * The surviving data is copied into fresh chunks; the replaced deltas are then closed and their chunks returned to
-     * the pool. A run in which nothing is superseded -- pure adds -- is declined: every recorded row survives, so
-     * copying would cost the whole run's data and save no memory.
-     *
-     * @param numDeltasToCompact how many of the leading pending deltas to fold together; must be at least two for there
-     *        to be anything to do
-     * @return whether the deltas were compacted
-     */
-    @VisibleForTesting
-    public synchronized boolean compactPendingDeltasInline(final int numDeltasToCompact) {
-        if (numDeltasToCompact < 2 || numDeltasToCompact > pendingDeltas.size()) {
-            return false;
-        }
-        if (isBlinkTable) {
-            // A blink table's deltas are concatenated rather than coalesced -- every row is new and nothing supersedes
-            // anything -- so there is no redundancy for compaction to remove.
-            return false;
-        }
-
-        // Deltas recorded under different subscription generations describe different viewports or column sets, and
-        // the propagation job must be able to send them to different populations of subscribers. It splits them at the
-        // snapshot step, so they must not be merged.
-        final long generation = pendingDeltas.get(0).generation;
-        for (int di = 1; di < numDeltasToCompact; ++di) {
-            if (pendingDeltas.get(di).generation != generation) {
-                return false;
-            }
-        }
-
-        final List<BarrageMessageDelta> run = pendingDeltas.subList(0, numDeltasToCompact);
-        if (BarrageMessageDelta.allAddOnly(run)) {
-            markCompactionDeclined();
-            return false;
-        }
-        final long startTm = System.nanoTime();
-        final BarrageMessageDelta compacted = BarrageMessageDelta.compact(run, propagationRowSet, chunkSources);
-        recordMetric(stats -> stats.compaction, System.nanoTime() - startTm);
-        boolean spliced = false;
-        try {
-            spliceCompacted(numDeltasToCompact, compacted);
-            spliced = true;
-        } finally {
-            if (!spliced) {
-                compacted.close();
-            }
-        }
-        return true;
-    }
-
     /** Replace the first {@code numDeltas} pending deltas with {@code compacted}, which describes the same change. */
     private void spliceCompacted(final int numDeltas, final BarrageMessageDelta compacted) {
         Assert.assertion(Thread.holdsLock(this), "spliceCompacted must hold lock!");
@@ -2029,7 +1939,6 @@ public class BarrageMessageProducer extends LivenessArtifact
         run.clear();
         pendingDeltas.add(0, compacted);
 
-        compactionCopiedBytes += compacted.chunkBytes;
         pendingDeltaBytes = 0;
         for (final BarrageMessageDelta delta : pendingDeltas) {
             pendingDeltaBytes += delta.chunkBytes;
@@ -2050,9 +1959,9 @@ public class BarrageMessageProducer extends LivenessArtifact
      *
      * <p>
      * Whatever the run looks like, the message is packaged from a single delta: the one pending delta itself when there
-     * is only one, a synthetic concatenation for a blink table, or the run {@link BarrageMessageDelta#compact
-     * compacted} into one. Packaging moves the delta's chunks into the message rather than copying them, so the
-     * coalescing copy done by compaction is the only copy on this path.
+     * is only one, a synthetic concatenation for a blink table, or the run {@link BarrageMessageDelta#coalesce
+     * coalesced} into one. Packaging moves the delta's chunks into the message rather than copying them, so the copy
+     * made while coalescing is the only copy on this path.
      */
     private BarrageMessage aggregateUpdatesInRange(final int startDelta, final int endDelta) {
         Assert.assertion(Thread.holdsLock(this), "aggregateUpdatesInRange must hold lock!");
@@ -2137,11 +2046,11 @@ public class BarrageMessageProducer extends LivenessArtifact
             // store our update size to remove on the next update
             lastBlinkTableUpdateSize = size;
         } else if (endDelta - startDelta == 1) {
-            // already compact; packaged directly and still owned by pendingDeltas
+            // a single delta needs no coalescing; packaged directly and still owned by pendingDeltas
             source = pendingDeltas.get(startDelta);
             closeSource = false;
         } else {
-            source = BarrageMessageDelta.compact(pendingDeltas.subList(startDelta, endDelta), propagationRowSet,
+            source = BarrageMessageDelta.coalesce(pendingDeltas.subList(startDelta, endDelta), propagationRowSet,
                     chunkSources);
             closeSource = true;
         }
