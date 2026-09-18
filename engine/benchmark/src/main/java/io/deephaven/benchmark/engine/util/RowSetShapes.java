@@ -60,45 +60,95 @@ public final class RowSetShapes {
     }
 
     public enum Pattern {
-        /** Alternating single keys one apart, never meeting. The tightest interleaving there is. */
+        /**
+         * Alternating single keys one apart, never meeting. The tightest interleaving there is.
+         * <p>
+         * {@code a: 0, 2, 4, 6, ...}<br>
+         * {@code b: 1, 3, 5, 7, ...}
+         */
         INTERLEAVED_KEYS,
-        /** Alternating single keys a block apart, never meeting, so every step crosses an RSP span. */
+        /**
+         * Alternating single keys a block apart, never meeting, so every step crosses an RSP span.
+         * <p>
+         * {@code a: 0, 131072, 262144, ...}<br>
+         * {@code b: 65536, 196608, 327680, ...}
+         */
         INTERLEAVED_BLOCKS,
-        /** Alternating runs of {@value #RUN_LEN} keys, never meeting. */
+        /**
+         * Alternating runs of {@value #RUN_LEN} keys, never meeting.
+         * <p>
+         * {@code a: 0-63, 16384-16447, 32768-32831, ...}<br>
+         * {@code b: 64-127, 16448-16511, 32832-32895, ...}
+         */
         INTERLEAVED_RUNS,
-        /** Key spaces that do not even abut: the whole of one side lies below the whole of the other. */
+        /**
+         * Key spaces that do not even abut: the whole of one side lies below the whole of the other.
+         * <p>
+         * {@code a: 0, 131072, 262144, ...}<br>
+         * {@code b: 1048576, 1179648, 1310720, ...}
+         */
         SEPARATED,
         /**
          * Both sides hold all their ranges in a handful of clusters, and the clusters alternate between the sides, so
          * the two never meet but interleave only a few times. A walk pays per range here; a seek pays per cluster.
+         * <p>
+         * {@code a: 0, 2, 8388608, 8388610, ...}<br>
+         * {@code b: 4194304, 4194306, 12582912, 12582914, ...}
          */
         CLUSTERED,
         /**
          * {@link #CLUSTERED} with each cluster spread over one block per key instead of packed into a single block, so
          * an {@link RspBitmap} side holds a span per key rather than a span per cluster and a walk over its spans pays
          * per key too.
+         * <p>
+         * {@code a: 0, 65536, 262144, 327680, ...}<br>
+         * {@code b: 131072, 196608, 393216, 458752, ...}
          */
         CLUSTERED_BLOCKS,
         /**
          * A key in every block on both sides, one apart inside the block, with the last key shared. The block search
          * hits every time and the answer comes down to the low bits, so neither side ever has a gap to seek over. This
          * is the case a seek cannot help and must not hurt.
+         * <p>
+         * {@code a: 0, 65538, 131076, 196614, ...}<br>
+         * {@code b: 1, 65539, 131077, 196615, ...}
          */
         SAME_BLOCK_KEYS,
         /**
          * {@link #SAME_BLOCK_KEYS} with several keys in each shared block instead of one, so the spans are containers
          * rather than singletons and the low-bit comparison is a container overlap rather than a value equality.
+         * <p>
+         * {@code a: 0, 4, 8, 12, ...}<br>
+         * {@code b: 2, 6, 10, 14, ...}
          */
         SAME_BLOCK_CONTAINERS,
-        /** Interleaved keys a block apart, with the last key of each side shared. */
+        /**
+         * Interleaved keys a block apart, with the last key of each side shared.
+         * <p>
+         * {@code a: 0, 131072, 262144, 393216, ...}<br>
+         * {@code b: 65536, 196608, 327680, 393216, ...}
+         */
         TOUCH_AT_END,
-        /** Interleaved keys a block apart, with the middle key of each side shared. */
+        /**
+         * Interleaved keys a block apart, with the middle key of each side shared.
+         * <p>
+         * {@code a: 0, 131072, 262144, 393216, 524288, ...}<br>
+         * {@code b: 65536, 196608, 327680, 458752, 524288, ...}
+         */
         TOUCH_IN_MIDDLE,
-        /** Interleaved keys a block apart, with the first key of each side shared. */
+        /**
+         * Interleaved keys a block apart, with the first key of each side shared.
+         * <p>
+         * {@code a: 0, 131072, 262144, 393216, ...}<br>
+         * {@code b: 0, 196608, 327680, 458752, ...}
+         */
         TOUCH_AT_START,
         /**
          * Whole blocks against a comb of single keys over the same key span, so one side holds eight times the ranges
          * of the other. Which side gets walked is what the size normalization decides.
+         * <p>
+         * {@code a: 0-65535, 131072-196607, ...}<br>
+         * {@code b: 65536, 65538, 65540, ...}
          */
         DENSE_VS_SPARSE
     }
