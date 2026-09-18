@@ -165,10 +165,32 @@ final class BarrageMessageDelta implements SafeCloseable {
             throw new IllegalArgumentException(
                     "coalesce requires at least two deltas; a run of one is already coalesced");
         }
+
+        // Paranoid cleanup on exception.
+        final TableUpdate update = coalesceUpdates(deltas, baseRowSet);
+        try {
+            final RunSummary run = RunSummary.of(deltas);
+            try {
+                return build(deltas, chunkSources, update, run);
+            } catch (final Throwable err) {
+                run.added.close();
+                throw err;
+            }
+        } catch (final Throwable err) {
+            update.release();
+            throw err;
+        }
+    }
+
+    /**
+     * Copy the surviving data into fresh chunks and assemble the result, which takes ownership of {@code update} and
+     * {@code run.added}. Anything this allocates is released if it fails.
+     */
+    private static BarrageMessageDelta build(final List<BarrageMessageDelta> deltas,
+            final ChunkSource.WithPrev<Values>[] chunkSources, final TableUpdate update, final RunSummary run) {
+        final int numDeltas = deltas.size();
         final int numColumns = chunkSources.length;
 
-        final TableUpdate update = coalesceUpdates(deltas, baseRowSet);
-        final RunSummary run = RunSummary.of(deltas);
         // Columns the run modified upstream are candidates; only those with surviving recorded rows keep data.
         if (update.modifiedColumnSet() == ModifiedColumnSet.ALL) {
             run.modColumnSet.set(0, numColumns);
@@ -176,6 +198,7 @@ final class BarrageMessageDelta implements SafeCloseable {
             run.modColumnSet.or(update.modifiedColumnSet().extractAsBitSet());
         }
 
+        // The arrays hold nothing to release until the mapping below fills them.
         // noinspection unchecked
         final WritableChunk<Values>[][] addChunks = new WritableChunk[numColumns][];
         // noinspection unchecked
@@ -183,7 +206,6 @@ final class BarrageMessageDelta implements SafeCloseable {
         final RowSet[] perColumnRecordedMods = new RowSet[numColumns];
         final BitSet modifiedColumns = new BitSet();
         final WritableRowSet recordedMods = RowSetFactory.empty();
-        boolean success = false;
         try (final ColumnMappingCache mappings = new ColumnMappingCache(deltas, run.added, update.added())) {
             for (int ci = run.addColumnSet.nextSetBit(0); ci >= 0; ci = run.addColumnSet.nextSetBit(ci + 1)) {
                 final ColumnMapping mapping = mappings.get(ci);
@@ -210,32 +232,34 @@ final class BarrageMessageDelta implements SafeCloseable {
             // Every contributing delta shares one column set within a generation (RunSummary asserts it), so the
             // run's first delta speaks for the result: with surviving adds their data exists for exactly these
             // columns, and without any the result still coalesces with what follows it.
-            final BarrageMessageDelta result = new BarrageMessageDelta(deltas.get(0).generation,
+            return new BarrageMessageDelta(deltas.get(0).generation,
                     deltas.get(0).firstStep, deltas.get(numDeltas - 1).lastStep,
                     update, run.added, recordedMods, perColumnRecordedMods,
                     (BitSet) deltas.get(0).subscribedColumns.clone(), modifiedColumns, addChunks, modChunks);
-            success = true;
-            return result;
-        } finally {
-            if (!success) {
-                // Nothing owns these yet; the cache has already closed the mappings it still owned.
-                closeChunkArrays(addChunks);
-                closeChunkArrays(modChunks);
-                closeDistinct(perColumnRecordedMods);
-                recordedMods.close();
-                run.added.close();
-                update.release();
-            }
+        } catch (final Throwable err) {
+            // the cache has already closed the mappings it still owned
+            closeChunkArrays(addChunks);
+            closeChunkArrays(modChunks);
+            closeDistinct(perColumnRecordedMods);
+            recordedMods.close();
+            throw err;
         }
     }
 
     /** The run's updates as one, starting from the row set as of immediately before it. The caller owns the result. */
     private static TableUpdate coalesceUpdates(final List<BarrageMessageDelta> deltas, final RowSet baseRowSet) {
         final UpdateCoalescer coalescer = new UpdateCoalescer(baseRowSet, deltas.get(0).update);
-        for (int i = 1; i < deltas.size(); ++i) {
-            coalescer.update(deltas.get(i).update);
+        try {
+            for (int i = 1; i < deltas.size(); ++i) {
+                coalescer.update(deltas.get(i).update);
+            }
+            return coalescer.coalesce();
+        } catch (final Throwable err) {
+            // The coalescer has no close(); release what it exposes. Its private pre-shift row set is not
+            // reachable from here and is left to the garbage collector.
+            SafeCloseable.closeAll(coalescer.added, coalescer.removed, coalescer.modified);
+            throw err;
         }
-        return coalescer.coalesce();
     }
 
     /**
@@ -250,31 +274,38 @@ final class BarrageMessageDelta implements SafeCloseable {
 
         static RunSummary of(final List<BarrageMessageDelta> deltas) {
             final RunSummary result = new RunSummary();
-            for (final BarrageMessageDelta delta : deltas) {
-                result.added.remove(delta.update.removed());
-                delta.update.shifted().apply(result.added);
+            // The column-set assertion below can throw, so this cleans up after itself rather than leaving the
+            // caller to release a row set it has not been handed yet.
+            try {
+                for (final BarrageMessageDelta delta : deltas) {
+                    result.added.remove(delta.update.removed());
+                    delta.update.shifted().apply(result.added);
 
-                // reset the add column set if we do not have any adds from previous updates
-                if (result.added.isEmpty()) {
-                    result.addColumnSet.clear();
-                }
-
-                if (delta.recordedAdds.isNonempty()) {
-                    if (result.addColumnSet.isEmpty()) {
-                        result.addColumnSet.or(delta.subscribedColumns);
-                    } else {
-                        // It pays to be certain that all of the data we look up was written down.
-                        Assert.equals(delta.subscribedColumns, "delta.subscribedColumns", result.addColumnSet,
-                                "addColumnSet");
+                    // reset the add column set if we do not have any adds from previous updates
+                    if (result.added.isEmpty()) {
+                        result.addColumnSet.clear();
                     }
-                    result.added.insert(delta.recordedAdds);
-                }
 
-                if (delta.recordedMods.isNonempty()) {
-                    result.modColumnSet.or(delta.modifiedColumns);
+                    if (delta.recordedAdds.isNonempty()) {
+                        if (result.addColumnSet.isEmpty()) {
+                            result.addColumnSet.or(delta.subscribedColumns);
+                        } else {
+                            // It pays to be certain that all of the data we look up was written down.
+                            Assert.equals(delta.subscribedColumns, "delta.subscribedColumns", result.addColumnSet,
+                                    "addColumnSet");
+                        }
+                        result.added.insert(delta.recordedAdds);
+                    }
+
+                    if (delta.recordedMods.isNonempty()) {
+                        result.modColumnSet.or(delta.modifiedColumns);
+                    }
                 }
+                return result;
+            } catch (final Throwable err) {
+                result.added.close();
+                throw err;
             }
-            return result;
         }
     }
 
@@ -600,7 +631,6 @@ final class BarrageMessageDelta implements SafeCloseable {
         }
         // noinspection unchecked
         final WritableChunk<Values>[] dest = new WritableChunk[numChunks];
-        boolean success = false;
         try {
             for (int mi = 0; mi < numChunks; ++mi) {
                 final int rows = (mi < numChunks - 1 || totalRows % DELTA_CHUNK_SIZE == 0)
@@ -632,12 +662,10 @@ final class BarrageMessageDelta implements SafeCloseable {
                     kernel.copyFromDeltaChunks(mapping[mi], dest[mi], context);
                 }
             }
-            success = true;
             return dest;
-        } finally {
-            if (!success) {
-                closeChunks(dest);
-            }
+        } catch (final Throwable err) {
+            closeChunks(dest);
+            throw err;
         }
     }
 
@@ -765,12 +793,13 @@ final class BarrageMessageDelta implements SafeCloseable {
         if (rowSets == null) {
             return;
         }
-        final Set<RowSet> closed = Collections.newSetFromMap(new IdentityHashMap<>());
+        final Set<RowSet> distinct = Collections.newSetFromMap(new IdentityHashMap<>());
         for (final RowSet rowSet : rowSets) {
-            if (rowSet != null && closed.add(rowSet)) {
-                rowSet.close();
+            if (rowSet != null) {
+                distinct.add(rowSet);
             }
         }
+        SafeCloseable.closeAll(distinct);
     }
 
     static void closeChunkArrays(final WritableChunk<Values>[][] chunkArrays) {
@@ -782,14 +811,9 @@ final class BarrageMessageDelta implements SafeCloseable {
         }
     }
 
-    static void closeChunks(final WritableChunk<Values>[] chunks) {
-        if (chunks == null) {
-            return;
-        }
-        for (final WritableChunk<Values> chunk : chunks) {
-            if (chunk != null) {
-                chunk.close();
-            }
+    static void closeChunks(@Nullable final WritableChunk<Values>[] chunks) {
+        if (chunks != null) {
+            SafeCloseable.closeAll(chunks);
         }
     }
 }

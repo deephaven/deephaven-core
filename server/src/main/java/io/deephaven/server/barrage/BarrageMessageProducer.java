@@ -1036,7 +1036,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         if (shouldCompact()) {
             if (BarrageMessageDelta.allAddOnly(pendingDeltas)) {
-                markCompactionDeclined();
+                markCompactionDeclined(pendingDeltaBytes, pendingDeltas.size());
             } else {
                 compactionJob.maybeSchedule();
             }
@@ -1063,6 +1063,15 @@ public class BarrageMessageProducer extends LivenessArtifact
         return rawBytesSinceCompaction >= threshold;
     }
 
+    /** Total {@link BarrageMessageDelta#chunkBytes} over {@code deltas}. */
+    private static long totalChunkBytes(final List<BarrageMessageDelta> deltas) {
+        long bytes = 0;
+        for (final BarrageMessageDelta delta : deltas) {
+            bytes += delta.chunkBytes;
+        }
+        return bytes;
+    }
+
     /** Called after the splice, when {@link #pendingDeltas} and {@link #pendingDeltaBytes} describe the new queue. */
     private void markCompacted(final BarrageMessageDelta compacted) {
         compactedHeadBytes = compacted.chunkBytes;
@@ -1071,11 +1080,31 @@ public class BarrageMessageProducer extends LivenessArtifact
         deltasSinceCompaction = pendingDeltas.size() - 1;
     }
 
-    private void markCompactionDeclined() {
-        // Nothing in the queue is superseded, so treat the whole queue as already compact and wait for it to double.
-        compactedHeadBytes = pendingDeltaBytes;
-        rawBytesSinceCompaction = 0;
-        deltasSinceCompaction = 0;
+    /**
+     * Called when a run was examined and found to supersede nothing. That run is treated as already compact, so the
+     * next attempt waits for it to double; whatever was appended behind it was never examined and is still raw.
+     *
+     * @param runBytes total {@link BarrageMessageDelta#chunkBytes} over the examined run
+     * @param runSize how many deltas were examined
+     */
+    private void markCompactionDeclined(final long runBytes, final int runSize) {
+        compactedHeadBytes = runBytes;
+        rawBytesSinceCompaction = pendingDeltaBytes - runBytes;
+        deltasSinceCompaction = pendingDeltas.size() - runSize;
+    }
+
+    /**
+     * Close and drop every pending delta, returning their chunks to the pool, and reset the queue accounting. Each
+     * delta leaves the list before it is closed, so a drain that fails part way through cannot be repeated onto deltas
+     * that were already released.
+     */
+    private void discardPendingDeltasAndFlush() {
+        Assert.assertion(Thread.holdsLock(this), "discardPendingDeltasAndFlush must hold lock!");
+        final List<BarrageMessageDelta> discarded = new ArrayList<>(pendingDeltas);
+        pendingDeltas.clear();
+        pendingDeltaBytes = 0;
+        markFlushed();
+        SafeCloseable.closeAll(discarded);
     }
 
     private void markFlushed() {
@@ -1099,6 +1128,10 @@ public class BarrageMessageProducer extends LivenessArtifact
 
             activeSubscriptions.clear();
             pendingSubscriptions.clear();
+            // With no subscriptions left, nothing will schedule a propagation, and its flush is the only other
+            // thing that drains the queue. destroy() does not close these either, so without this they would be
+            // held until the producer is collected and their chunks would never return to the pool.
+            discardPendingDeltasAndFlush();
         }
     }
 
@@ -1196,7 +1229,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             // Compaction and splicing might create add-only deltas from mixed deltas. Decline additional compaction.
             if (BarrageMessageDelta.allAddOnly(run)) {
                 synchronized (this) {
-                    markCompactionDeclined();
+                    markCompactionDeclined(totalChunkBytes(run), run.size());
                 }
                 return;
             }
@@ -1205,23 +1238,14 @@ public class BarrageMessageProducer extends LivenessArtifact
             recordMetric(stats -> stats.aggregate, System.nanoTime() - startTm);
         }
 
-        boolean spliced = false;
-        try {
-            synchronized (this) {
-                // The update graph thread only appends, and the propagation job is excluded, so the run is still the
-                // head.
-                Assert.geq(pendingDeltas.size(), "pendingDeltas.size()", run.size(), "run.size()");
-                for (int di = 0; di < run.size(); ++di) {
-                    Assert.eq(pendingDeltas.get(di), "pendingDeltas.get(di)", run.get(di), "run.get(di)");
-                }
-                spliceCompacted(run.size(), compacted);
-                spliced = true;
-            }
-        } finally {
-            if (!spliced) {
-                compacted.close();
-            }
+        final List<BarrageMessageDelta> replaced;
+        // While we are holding this lock, we could block the UGP (through enqueueUpdate which also synchronizes on
+        // this). Releasing chunks isn't always free (for Object, must null out references), so do it outside the
+        // synchronized block.
+        synchronized (this) {
+            replaced = spliceCompacted(run, compacted);
         }
+        SafeCloseable.closeAll(replaced);
     }
 
     private void schedulePropagation() {
@@ -1704,13 +1728,8 @@ public class BarrageMessageProducer extends LivenessArtifact
             }
 
             // cleanup for next iteration, BarrageMessageDelta.close() releases any un-transferred chunks
-            for (final BarrageMessageDelta delta : pendingDeltas) {
-                delta.close();
-            }
             blinkTableUpdateSize = 0;
-            pendingDeltas.clear();
-            pendingDeltaBytes = 0;
-            markFlushed();
+            discardPendingDeltasAndFlush();
         }
 
         // now, propagate updates
@@ -1929,25 +1948,45 @@ public class BarrageMessageProducer extends LivenessArtifact
         subscription.pendingInitialSnapshot = false;
     }
 
-    /** Replace the first {@code numDeltas} pending deltas with {@code compacted}, which describes the same change. */
-    private void spliceCompacted(final int numDeltas, final BarrageMessageDelta compacted) {
+    /**
+     * Replace the pending deltas that {@code run} captured with {@code compacted}, which describes the same change.
+     * Takes ownership of {@code compacted}: either the queue holds it on return, or it is closed here.
+     *
+     * <p>
+     * Only bounded work happens here. Closing a delta returns its chunks to the pool, which clears their backing arrays
+     * and so costs time proportional to the data being discarded; that is left to the caller, once it has released the
+     * monitor, so the update graph thread is not blocked behind it.
+     *
+     * @return the replaced deltas, which the caller must close
+     */
+    private List<BarrageMessageDelta> spliceCompacted(final List<BarrageMessageDelta> run,
+            final BarrageMessageDelta compacted) {
         Assert.assertion(Thread.holdsLock(this), "spliceCompacted must hold lock!");
-        final long firstStep = pendingDeltas.get(0).firstStep;
-        final long lastStep = pendingDeltas.get(numDeltas - 1).lastStep;
-        Assert.eq(compacted.firstStep, "compacted.firstStep", firstStep, "firstStep");
-        Assert.eq(compacted.lastStep, "compacted.lastStep", lastStep, "lastStep");
+        final int numDeltas = run.size();
+        final long firstStep;
+        final long lastStep;
+        final List<BarrageMessageDelta> replaced;
+        try {
+            // The update graph thread only appends, and the propagation job is excluded, so the run is still the
+            // head; a flush that slipped in would have replaced the head with something else.
+            Assert.geq(pendingDeltas.size(), "pendingDeltas.size()", numDeltas, "run.size()");
+            Assert.eq(pendingDeltas.get(0), "pendingDeltas.get(0)", run.get(0), "run.get(0)");
+            firstStep = pendingDeltas.get(0).firstStep;
+            lastStep = pendingDeltas.get(numDeltas - 1).lastStep;
+            Assert.eq(compacted.firstStep, "compacted.firstStep", firstStep, "firstStep");
+            Assert.eq(compacted.lastStep, "compacted.lastStep", lastStep, "lastStep");
 
-        final List<BarrageMessageDelta> run = pendingDeltas.subList(0, numDeltas);
-        for (final BarrageMessageDelta original : run) {
-            original.close();
+            final List<BarrageMessageDelta> head = pendingDeltas.subList(0, numDeltas);
+            replaced = new ArrayList<>(head);
+            head.clear();
+            pendingDeltas.add(0, compacted);
+        } catch (final Throwable err) {
+            // The queue never took it, so nothing else will ever release it.
+            compacted.close();
+            throw err;
         }
-        run.clear();
-        pendingDeltas.add(0, compacted);
 
-        pendingDeltaBytes = 0;
-        for (final BarrageMessageDelta delta : pendingDeltas) {
-            pendingDeltaBytes += delta.chunkBytes;
-        }
+        pendingDeltaBytes += compacted.chunkBytes - totalChunkBytes(replaced);
         markCompacted(compacted);
 
         if (log.isDebugEnabled()) {
@@ -1956,6 +1995,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                     .append("]; pendingDeltas=").append(pendingDeltas.size())
                     .append(", pendingDeltaBytes=").append(pendingDeltaBytes).endl();
         }
+        return replaced;
     }
 
     /**
