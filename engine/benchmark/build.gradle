@@ -77,6 +77,8 @@ createJmhTask('jmhRunMatchHistorical',
 createJmhTask('jmhRunRowSetGetFind', 'RowSetGetFindBench', ['-DMetricsManager.enabled=true'])
 createJmhTask('jmhRunRowSetIncrementalInsert', 'RowSetIncrementalInsertBench')
 createJmhTask('jmhRunRspSortedRangesInsertShape', 'RspSortedRangesInsertShapeBench')
+createJmhTask('jmhRunRowSetOverlaps', 'RowSetOverlapsBench')
+createJmhTask('jmhRunRowSetSubsetOf', 'RowSetSubsetOfBench')
 createJmhTask('jmhRunRowSetSmallInsert', 'RowSetSmallInsertBench')
 createJmhTask('jmhRunRowSetSmallRemove', 'RowSetSmallRemoveBench')
 
