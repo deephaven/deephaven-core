@@ -23,7 +23,9 @@ import jsinterop.base.Js;
  * callbacks later, or in a conditional nature, than LazyPromise is for you!
  *
  */
-public class LazyPromise<T> implements PromiseLike<T> {
+public class LazyPromise<T> {
+    public static final String CANCELLATION_MESSAGE = "User cancelled request";
+
     public static native Throwable ofObject(Object obj) /*-{
       return @java.lang.Throwable::of(*)(obj);
     }-*/;
@@ -179,7 +181,6 @@ public class LazyPromise<T> implements PromiseLike<T> {
         });
     }
 
-    @Override
     public void onSuccess(JsConsumer<T> success) {
         if (isFailure()) {
             return;
@@ -190,7 +191,6 @@ public class LazyPromise<T> implements PromiseLike<T> {
         }
     }
 
-    @Override
     public void onFailure(JsConsumer<Object> failure) {
         if (isSuccess()) {
             return;
