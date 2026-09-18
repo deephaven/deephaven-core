@@ -213,6 +213,12 @@ public final class RowSetUnionBatcher implements SafeCloseable {
         return groupCount;
     }
 
+    /** The batch size in force after clamping. */
+    @VisibleForTesting
+    int batchSize() {
+        return batchSize;
+    }
+
     /**
      * Close everything not yet handed over by {@link #build()}.
      */

@@ -171,23 +171,9 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Union {@code rowSets[0, size)}, which this method owns and may reorder and clear.
-     *
-     * <p>
-     * Row sets are merged in passes. Within a pass an accumulator keeps absorbing the next row set while that row set
-     * only appends to it, and while the row set before it duplicated rows the accumulator already held, which means the
-     * inputs are covering each other and further insertion stays cheap. A new accumulator is started as soon as the
-     * next row set overlaps and the one before it brought nothing the accumulator already had, which is where inserting
-     * everything into a single accumulator would become quadratic. Only the most recent insertion counts: a cumulative
-     * count would let one early overlapping pair license absorbing an unbounded run of disjoint row sets afterwards.
-     * Every accumulator takes at least one partner, so a pass at least halves the count and the merge terminates; where
-     * nothing duplicates anything this is a balanced pairwise merge, and where the inputs are disjoint and ordered the
-     * first pass consumes all of them by appending.
-     *
-     * <p>
-     * Sorting by first row key is what makes the append case reachable regardless of the order the caller supplies.
-     * Cardinality and endpoints are O(1) to query; range counts, which drive the real cost, are linear in the span
-     * count and too expensive to consult per decision.
+     * Union {@code rowSets[0, size)}, which this method owns and may reorder and clear. Empty inputs are compacted
+     * away, the rest are sorted by first row key, and the union is built by the strategy in force:
+     * {@link #unionWithRadix} by default, {@link #mergeInPasses} under {@link UnionStrategy#SHIPPED}.
      */
     private static WritableRowSet union(final RowSet[] rowSets, final int size) {
         // Compact away the empty inputs so that first and last row key are meaningful for every remaining row set.
@@ -216,6 +202,22 @@ public abstract class RowSetFactory {
     /**
      * Merge {@code rowSets[0, count)}, nonempty and sorted by first row key, in passes. The array is cleared as its
      * entries are consumed.
+     *
+     * <p>
+     * Row sets are merged in passes. Within a pass an accumulator keeps absorbing the next row set while that row set
+     * only appends to it, and while the row set before it duplicated rows the accumulator already held, which means the
+     * inputs are covering each other and further insertion stays cheap. A new accumulator is started as soon as the
+     * next row set overlaps and the one before it brought nothing the accumulator already had, which is where inserting
+     * everything into a single accumulator would become quadratic. Only the most recent insertion counts: a cumulative
+     * count would let one early overlapping pair license absorbing an unbounded run of disjoint row sets afterwards.
+     * Every accumulator takes at least one partner, so a pass at least halves the count and the merge terminates; where
+     * nothing duplicates anything this is a balanced pairwise merge, and where the inputs are disjoint and ordered the
+     * first pass consumes all of them by appending.
+     *
+     * <p>
+     * Sorting by first row key is what makes the append case reachable regardless of the order the caller supplies.
+     * Cardinality and endpoints are O(1) to query; range counts, which drive the real cost, are linear in the span
+     * count and too expensive to consult per decision.
      */
     private static WritableRowSet mergeInPasses(final RowSet[] rowSets, final int count) {
 

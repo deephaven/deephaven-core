@@ -170,7 +170,7 @@ public class UnionBenchmark {
             }
             case NEW_BLOCKS: {
                 for (int indexNo = 0; indexNo < nToUnion; indexNo++) {
-                    final long low = indexNo == 0 ? 1 : (long) indexNo << 16;
+                    final long low = (long) indexNo << 16;
                     final long high = (1L << 30) + ((long) (nToUnion + indexNo) << 16);
                     final RowSetBuilderSequential sb = RowSetFactory.builderSequential();
                     sb.appendKey(low);

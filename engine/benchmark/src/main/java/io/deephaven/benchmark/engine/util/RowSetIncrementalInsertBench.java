@@ -51,8 +51,8 @@ import java.util.concurrent.TimeUnit;
  * pairwise merge coalesces ranges; the merge tree's later passes are over ever fewer ranges. Under
  * {@link Layout#RANDOM} each row lands in a uniformly random bucket, which is how the nightly {@code updateBy}
  * benchmarks generate their keys and what keyed data generally looks like: a bucket's rows are still single keys, but
- * no two buckets' keys are ever adjacent, so nothing coalesces and every pass over the merge tree walks every range
- * again.
+ * adjacent keys land in unrelated buckets, so the sets that are neighbours after sorting by first key rarely have keys
+ * that touch, far less coalesces, and the merge tree's passes stay close to the full range count throughout.
  *
  * <p>
  * {@link #rspIxInsert} is the current {@link RspBitmap#ixInsert} path, which for a {@link SortedRanges} runs a pre-pass
@@ -217,7 +217,7 @@ public class RowSetIncrementalInsertBench {
             accumulator = accumulator.ixInsert(affected);
             maxSpans = Math.max(maxSpans, accumulator.size());
         }
-        System.out.println("rangesPerBucketSet=" + (ranges / buckets)
+        System.out.println("rangesPerBucketSet=" + (ranges / bucketAffectedSets.length)
                 + " rangesInSameBlockAsPrevious=" + (100 * rangesInSameBlockAsPrevious / ranges) + "%"
                 + " accumulatorSpansMax=" + maxSpans + " accumulatorSpansFinal=" + accumulator.size()
                 + " accumulatorBlocks=" + ((rows - 1) / RspBitmap.BLOCK_SIZE

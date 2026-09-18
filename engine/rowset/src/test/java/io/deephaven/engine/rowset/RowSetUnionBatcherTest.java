@@ -383,4 +383,43 @@ public class RowSetUnionBatcherTest {
     private static int refCount(final RowSet rowSet) {
         return ((WritableRowSetImpl) rowSet).getInnerSet().ixRefCount();
     }
+
+    @Test
+    public void configuredCapIsHeldToItsBounds() {
+        final int saved = RowSetUnionBatcher.maxBatchSize;
+        try {
+            // A cap at or below zero means a batch of one.
+            for (final int cap : new int[] {0, -5, Integer.MIN_VALUE}) {
+                RowSetUnionBatcher.maxBatchSize = cap;
+                try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(100)) {
+                    assertThat(batcher.batchSize()).isEqualTo(1);
+                }
+            }
+            // A cap past the hard maximum is held there, whatever the caller asks for.
+            for (final int cap : new int[] {RowSetUnionBatcher.MAX_MAX_BATCH_SIZE + 1, Integer.MAX_VALUE}) {
+                RowSetUnionBatcher.maxBatchSize = cap;
+                try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(Long.MAX_VALUE)) {
+                    assertThat(batcher.batchSize()).isEqualTo(RowSetUnionBatcher.MAX_MAX_BATCH_SIZE);
+                }
+            }
+            // With a batch of one every add merges, and the union is still right.
+            RowSetUnionBatcher.maxBatchSize = 0;
+            final List<RowSet> rowSets = interleaved(10, 2);
+            try (final WritableRowSet expected = RowSetFactory.union(rowSets);
+                    final RowSetUnionBatcher batcher = new RowSetUnionBatcher(rowSets.size())) {
+                for (final RowSet rowSet : rowSets) {
+                    batcher.add(rowSet.copy());
+                }
+                try (final WritableRowSet actual = batcher.build()) {
+                    assertThat(actual).isEqualTo(expected);
+                }
+            } finally {
+                for (final RowSet rowSet : rowSets) {
+                    rowSet.close();
+                }
+            }
+        } finally {
+            RowSetUnionBatcher.maxBatchSize = saved;
+        }
+    }
 }

@@ -8,9 +8,9 @@ and the traps that produced confident wrong answers, so that none of it has to b
 |---|---|
 | **Problem** | Inserting N row sets into one growing accumulator is quadratic when the inputs are disjoint and arrive out of key order. |
 | **What shipped first** | `RowSetFactory.union` — sort by first row key, then merge in passes on an append-or-duplication rule. |
-| **What replaced it** | The radix build below: when the inputs' `SortedRanges` entries would overflow one, bucket every range by block and build each block's container once into an `RspBitmap`, compacted afterwards if the inputs coalesced. The merge in passes remains for bitmap-sized inputs and small results. |
+| **What replaced it** | The radix build below: when the inputs' `SortedRanges` entries would overflow one, bucket every range by block and build each block's container once into an `RspBitmap`, compacted afterwards if the inputs coalesced. The merge in passes remains for `RspBitmap` inputs and for inputs whose entries together fit a `SortedRanges`. |
 | **Best case of the merge** | 25.7x — 1B rows, 1000 disjoint blocks in reverse order. |
-| **Worst case of the merge** | 0.16x — 100K per-bucket combs of ~50 random keys, the shape bucketed `updateBy` produces every cycle. See below. |
+| **Worst case of the merge** | 0.58x against the same insert-loop baseline — the 100K random-bucket comb bucketed `updateBy` produces every cycle, 245 ms against the loop's 142. See below. |
 
 ## Why sequential insertion falls over
 
@@ -221,7 +221,7 @@ models it, and its `layout` parameter is the whole story:
 | Layout | Insert loop (before) | Merge in passes | Why |
 |---|---:|---:|---|
 | `ROUND_ROBIN`, 100K buckets | 165 ms | **73 ms** | Sorted neighbours have adjacent keys; every pairwise merge coalesces ranges, so each pass is half the previous one. |
-| `RANDOM`, 100K buckets | 190 ms | **345 ms** | Nothing coalesces; every one of log2(100K) = 17 passes walks every range again. (Measured before the benchmark was corrected to union only the buckets that received an added row, ~63K of 100K under this layout; the corrected cells are in the radix table below.) |
+| `RANDOM`, 100K buckets | 190 ms | **345 ms** | Sorted neighbours rarely have keys that touch, so far less coalesces and each of the log2(100K) = 17 passes walks close to the full range count. (Measured before the benchmark was corrected to union only the buckets that received an added row, ~63K of 100K under this layout; the corrected cells are in the radix table below.) |
 
 The 2x claim in the original change was measured on `ROUND_ROBIN` alone. The nightly benchmarks deal keys randomly,
 and so does most keyed data. The result is the same dense region either way, so no measure of the result can tell
@@ -255,8 +255,8 @@ Two things came out of those that matter beyond this change:
 
 ### What the radix build does
 
-Once the pre-pass finds the inputs' `SortedRanges` entries exceed one's capacity (an `RspBitmap` input counting as
-more than that), the result is built as an `RspBitmap`. That sum is an upper bound, since overlapping inputs coalesce,
+Once the pre-pass finds the `SingleRange` and `SortedRanges` inputs' entries exceed one `SortedRanges`'s capacity
+(`RspBitmap` inputs do not count: they merge in passes either way), the result is built as an `RspBitmap`. That sum is an upper bound, since overlapping inputs coalesce,
 so it is the heuristic that selects the build and not proof of the result's representation; a result the bitmap turns
 out oversized for is compacted at the end. Two walks over the `SingleRange` and `SortedRanges` inputs bucket their
 ranges by block: the first counts the block-local pieces each block receives and records the runs of blocks some range
