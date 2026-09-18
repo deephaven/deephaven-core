@@ -215,12 +215,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     /**
      * Collect the runs of {@code pieces[from, to)}, sorted and coalesced, into {@code runs} as inclusive start, end
-     * pairs. Sorts the pieces in place; a piece's start is its high half, so with the sign bit flipped the natural int
-     * order is the order of starts.
+     * pairs. Sorts the pieces in place.
      *
      * @return The number of runs
      */
     private static int collectRunsFromFewPieces(final int[] pieces, final int from, final int to, final int[] runs) {
+        // A piece with a start of 0x8000 or more has bit 31 set and is negative as a signed int, so a plain sort would
+        // put every piece from the upper half of the block before every piece from the lower half. Flipping the sign
+        // bit makes the signed order the unsigned order of the packed value: by start, then by end.
         for (int pieceIndex = from; pieceIndex < to; ++pieceIndex) {
             pieces[pieceIndex] ^= Integer.MIN_VALUE;
         }
@@ -229,6 +231,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         int runStart = -1;
         int runEnd = -1;
         for (int pieceIndex = from; pieceIndex < to; ++pieceIndex) {
+            // XOR with the same constant undoes the flip. The slice is scratch by now, so the flipped value can stay.
             final int piece = pieces[pieceIndex] ^ Integer.MIN_VALUE;
             final int start = piece >>> 16;
             final int end = piece & 0xFFFF;
