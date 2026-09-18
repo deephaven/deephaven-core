@@ -600,16 +600,17 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             return true;
         }
         if (timeoutMillis <= 0) {
-            // Do no waiting at all for non-positive timeouts, and don't disturb the exclusive lock. This case is
-            // worth handling explicitly: Condition.await(0, unit) and Object.wait(0) instead wait forever, and a
-            // zero-timeout tryLock still makes an untimed acquisition attempt, which would acquire (and immediately
-            // release) the update graph's exclusive lock whenever it happens to be uncontended.
+            // Do no waiting at all, and don't touch the exclusive lock. Both halves need stating: Condition.await(0,
+            // unit) and Object.wait(0) would instead wait forever, and a zero-timeout tryLock still makes an untimed
+            // acquisition attempt, so it would acquire (and immediately release) the update graph's exclusive lock
+            // whenever that lock happens to be uncontended.
             return isFailed || startLastNotificationStep != lastNotificationStep;
         }
 
-        // Note that MILLISECONDS.toNanos saturates rather than overflowing, and that no clamping of the timeout is
-        // required: the deadline arithmetic inside tryLock and awaitNanos wraps, but their remaining-time subtraction
-        // wraps with it, so the recovered difference is correct regardless of nanoTime's arbitrary origin.
+        // No clamping is needed here, and none would help: MILLISECONDS.toNanos saturates rather than overflowing,
+        // and while the System.nanoTime() + nanos deadlines inside tryLock and awaitNanos may overflow (nanoTime's
+        // origin is arbitrary, so no maximum can prevent that), their remaining-time subtraction wraps in the same
+        // way and recovers the correct signed difference.
         long remainingNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
         if (!updateGraph.exclusiveLock().tryLock(remainingNanos, TimeUnit.NANOSECONDS)) {
             // Usually, callers will already be holding the exclusive lock when they invoke this method. If they are

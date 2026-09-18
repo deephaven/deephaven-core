@@ -372,9 +372,8 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                 // concurrent destroys. This covers validation, update processing, and error propagation, all of
                 // which touch state owned by this listener.
                 if (!tryRetainReference()) {
-                    // This listener is no longer live, there's no point to doing any work for this notification.
-                    // Record the notification step anyway, as we would have below, so that a subsequent notification
-                    // cannot mistake this skipped step for a missing one.
+                    // This listener is no longer live, there's no point to doing any work for this notification. The
+                    // notification step is still recorded, so that a skipped step is not mistaken for a missing one.
                     synchronized (MergedListener.this) {
                         notificationStep = lastEnqueuedStep;
                     }

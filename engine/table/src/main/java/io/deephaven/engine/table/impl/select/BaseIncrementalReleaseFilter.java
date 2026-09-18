@@ -201,16 +201,14 @@ public abstract class BaseIncrementalReleaseFilter
         if (releaseAllNanos != QueryConstants.NULL_LONG) {
             return;
         }
-        // Compute the deadline from nanoTime, which is monotonic, rather than from currentTimeMillis, so that waiting
-        // is insensitive to wall clock adjustments. nanoTime's origin is arbitrary, so this addition may overflow;
-        // that is both unavoidable (no clamp can prevent it) and harmless, because the remaining-time subtraction
-        // below wraps in the same way and recovers the correct signed difference.
+        // nanoTime is monotonic, so the deadline is insensitive to wall clock adjustments. Its origin is arbitrary,
+        // so this addition may overflow; that's harmless, because the remaining-time subtraction below wraps in the
+        // same way and recovers the correct signed difference.
         final long deadlineNanos = hasTimeout ? System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis) : 0;
         updateGraph.exclusiveLock().doLockedInterruptibly(() -> {
             while (releaseAllNanos == QueryConstants.NULL_LONG) {
                 if (listener.getTable().isFailed()) {
-                    // A failed table will never deliver another notification, and awaitUpdate returns immediately
-                    // for one, so we must test for failure ourselves rather than wait forever.
+                    // awaitUpdate returns immediately for a failed table, so without this check the loop would spin.
                     throw new IllegalStateException(
                             "Table failed before all rows were released, cannot wait for completion");
                 }

@@ -78,14 +78,15 @@ public class BaseTableAwaitUpdateTest {
     }
 
     /**
-     * A non-positive timeout must never wait, and so must not be delayed by (or contend for) the exclusive lock, even
-     * when another thread is holding it.
+     * A non-positive timeout must not touch the exclusive lock at all, since there is nothing to wait for. Polling from
+     * a thread that holds the shared lock demonstrates this: the exclusive lock rejects upgrade attempts, so merely
+     * offering the timeout to {@code tryLock} would throw rather than report "no update".
      */
     @Test
-    public void testNonPositiveTimeoutDoesNotWaitWhileLockHeld() throws InterruptedException {
-        whileExclusiveLockHeld(() -> {
+    public void testNonPositiveTimeoutDoesNotTouchExclusiveLock() throws InterruptedException {
+        updateGraph.sharedLock().doLockedInterruptibly(() -> {
             for (final long timeoutMillis : new long[] {0, -1}) {
-                assertDidNotWait(timeoutMillis);
+                assertFalse("timeoutMillis=" + timeoutMillis, source.awaitUpdate(timeoutMillis));
             }
         });
     }
