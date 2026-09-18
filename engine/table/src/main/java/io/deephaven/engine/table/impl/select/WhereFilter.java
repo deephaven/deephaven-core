@@ -80,20 +80,15 @@ public interface WhereFilter extends Filter {
         /**
          * Notify that the filter's inputs have failed, so that the result must fail too.
          * <p>
-         * The default fails {@link #getTable() the table} directly, which is only safe if nothing else can notify that
-         * table on the same step. An implementation that notifies its own table must instead override this to route the
-         * failure through that notification, ignoring repeats and requests that arrive before it has anything to
-         * notify.
+         * Route the failure through whatever notifies {@link #getTable() the result}, rather than failing that table
+         * directly, so that it fails exactly once and from inside that notification, where the failure cannot collide
+         * with an update the same notifier might otherwise deliver for this step. Drop a request that arrives before
+         * there is anything to notify: there is no result to fail yet.
          *
          * @param error The error that the filter's inputs failed with
          * @param sourceEntry The entry that the error is attributed to, if any
          */
-        default void requestFailure(@NotNull final Throwable error, @Nullable final TableListener.Entry sourceEntry) {
-            final QueryTable table = getTable();
-            if (!table.isFailed()) {
-                table.notifyListenersOnError(error, sourceEntry);
-            }
-        }
+        void requestFailure(@NotNull Throwable error, @Nullable TableListener.Entry sourceEntry);
 
         /**
          * Get the result table of the operation that installed this listener, which is the table that

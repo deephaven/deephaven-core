@@ -355,9 +355,11 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationQueu
         synchronized (filters) {
             throwIfFailed();
             if (lastStateChangeStep != requiredLastStateChangeStep) {
+                // We thought we were consistent, but the set has begun changing since we read it.
+                // Must refuse this filter addition (and the current snapshot attempt).
                 return false;
             }
-            // Previous attempts might have added this filter already, remove first to be sure.
+            // Previous attempts might have added this filter already, remove then add.
             filters.remove(filter);
             filters.add(filter);
             return true;

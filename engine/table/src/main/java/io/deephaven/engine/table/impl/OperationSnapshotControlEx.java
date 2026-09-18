@@ -101,8 +101,11 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
         final boolean sourceUpdated = sourceTable.isRefreshing() && sourceSatisfied;
         final boolean nothingUpdated = !sourceUpdated && extrasNotSatisfied.length == extras.length;
 
+        // Dependency states might change after the first call to recordDependencyState(). We might re-record, so
+        // the subscription tests won't fail because of stale state information.
         final Boolean usePrev;
         if (sourceSatisfied && extrasNotSatisfied.length == 0) {
+            recordDependencyState();
             usePrev = false;
         } else if (getUpdateGraph().currentThreadProcessesUpdates()) {
             throw new IllegalStateException(String.format(
@@ -116,19 +119,16 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
             final boolean waitSuccessful = WaitNotification.waitForSatisfaction(beforeStep,
                     notYetSatisfied(sourceSatisfied, extrasNotSatisfied));
             if (waitSuccessful) {
+                recordDependencyState();
                 usePrev = false;
             } else if (getUpdateGraph().clock().currentStep() == beforeStep) {
-                // Refused on the same step: the step must have completed, so every dependency is satisfied for it.
+                // Refused on the same step, so the updating phase has ended and everything is satisfied for it.
+                recordDependencyState();
                 usePrev = false;
             } else {
                 // Refused and a later step has begun: this attempt cannot be judged, the caller retries.
                 usePrev = null;
             }
-        }
-
-        if (usePrev != null && usePrev == false) {
-            // Everything is satisfied for this step, record how it is *now* rather than as it was before the wait.
-            recordDependencyState();
         }
 
         if (DEBUG) {
@@ -202,6 +202,8 @@ public final class OperationSnapshotControlEx extends OperationSnapshotControl {
         }
         final long step = LogicalClock.getStep(clockValue);
         for (final NotificationAwareDependency extra : notificationAwareExtras) {
+            // Did a mutation begin on this step? Not comparing against recorded values, because we might have
+            // recorded after the change step was published but before the keys actually moved.
             if (extra.lastStateChangeStep() == step) {
                 return false;
             }
