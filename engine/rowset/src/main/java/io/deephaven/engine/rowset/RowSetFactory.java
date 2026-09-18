@@ -482,12 +482,12 @@ public abstract class RowSetFactory {
         final BlockIndex index = blockSpan <= RADIX_DENSE_MAX_BLOCKS
                 ? new DenseBlockIndex(firstBlock, (int) blockSpan)
                 : new HashedBlockIndex();
-        final PieceBucketer bucketer = new PieceBucketer(index);
+        final PieceCounter counter = new PieceCounter(index);
         for (int ii = 0; ii < count; ++ii) {
             final RowSet rowSet = rowSets[ii];
             final OrderedLongSet inner = innerSet(rowSet);
             if (inner instanceof SingleRange || inner instanceof SortedRanges) {
-                rowSet.forAllRowKeyRanges(bucketer);
+                rowSet.forAllRowKeyRanges(counter);
                 if (index.totalPieces > ArrayUtil.MAX_ARRAY_SIZE) {
                     // More pieces than one array holds: a union of hundreds of thousands of maximal SortedRanges.
                     // Legal, and beyond any radix layout, so it merges in passes instead. Checked per input so the walk
@@ -497,12 +497,12 @@ public abstract class RowSetFactory {
             }
         }
         final int[] pieces = index.finishCounting();
-        bucketer.startPlacing(pieces);
+        final PiecePlacer placer = new PiecePlacer(index, pieces);
         for (int ii = 0; ii < count; ++ii) {
             final RowSet rowSet = rowSets[ii];
             final OrderedLongSet inner = innerSet(rowSet);
             if (inner instanceof SingleRange || inner instanceof SortedRanges) {
-                rowSet.forAllRowKeyRanges(bucketer);
+                rowSet.forAllRowKeyRanges(placer);
             }
         }
         return index.build(pieces);
@@ -528,7 +528,7 @@ public abstract class RowSetFactory {
          */
         long totalPieces;
 
-        /** Called only on the first walk. */
+        /** One more piece for {@code block}, counted in the total and in the block. */
         final void countPiece(final long block) {
             ++totalPieces;
             countPieceInBlock(block);
@@ -560,7 +560,7 @@ public abstract class RowSetFactory {
          */
         abstract int[] finishCounting();
 
-        /** Called only on the second walk: where the next piece of {@code block} goes. */
+        /** Where the next piece of {@code block} goes; only meaningful once counting is finished. */
         abstract int nextPosition(long block);
 
         /**
@@ -741,23 +741,14 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Splits ranges into block-local pieces. Counts pieces per block until {@link #startPlacing} hands it the array to
-     * place them in, then places them.
+     * Splits ranges into block-local pieces and runs of full blocks. A range within one block is one piece, unless it
+     * covers the block, which is a run of one; a range that crosses blocks is a piece for each end that stops short of
+     * the block's edge and a run of the blocks it covers whole. What is done with a piece or a run is left to the walk:
+     * {@link PieceCounter} counts on the first, {@link PiecePlacer} places on the second.
      */
-    private static final class PieceBucketer implements LongRangeConsumer {
-        private final BlockIndex index;
-        private int[] pieces;
-
-        PieceBucketer(final BlockIndex index) {
-            this.index = index;
-        }
-
-        void startPlacing(final int[] pieces) {
-            this.pieces = pieces;
-        }
-
+    private abstract static class RangeSplitter implements LongRangeConsumer {
         @Override
-        public void accept(final long start, final long end) {
+        public final void accept(final long start, final long end) {
             final long firstBlock = start >> RspArray.BITS_PER_BLOCK;
             final long lastBlock = end >> RspArray.BITS_PER_BLOCK;
             final int startLow = (int) (start & RspArray.BLOCK_LAST);
@@ -784,17 +775,50 @@ public abstract class RowSetFactory {
             }
         }
 
-        private void full(final long firstBlock, final long lastBlock) {
-            if (pieces == null) {
-                index.addFullRun(firstBlock, lastBlock); // recorded on the first walk only
-            }
+        /** A run of blocks {@code [firstBlock, lastBlock]} covered whole by one range. */
+        abstract void full(long firstBlock, long lastBlock);
+
+        /** A range clipped to {@code block}, with its inclusive block-local ends. */
+        abstract void piece(long block, int startLow, int endLow);
+    }
+
+    /** The first walk: counts each block's pieces and records the runs of full blocks. */
+    private static final class PieceCounter extends RangeSplitter {
+        private final BlockIndex index;
+
+        PieceCounter(final BlockIndex index) {
+            this.index = index;
         }
 
-        private void piece(final long block, final int startLow, final int endLow) {
-            if (pieces == null) {
-                index.countPiece(block);
-                return;
-            }
+        @Override
+        void full(final long firstBlock, final long lastBlock) {
+            index.addFullRun(firstBlock, lastBlock);
+        }
+
+        @Override
+        void piece(final long block, final int startLow, final int endLow) {
+            index.countPiece(block);
+        }
+    }
+
+    /**
+     * The second walk: writes each piece, packed as {@code (startLow << 16) | endLow}, at the position its block's
+     * cursor hands out. The full runs were recorded on the first walk and need nothing more.
+     */
+    private static final class PiecePlacer extends RangeSplitter {
+        private final BlockIndex index;
+        private final int[] pieces;
+
+        PiecePlacer(final BlockIndex index, final int[] pieces) {
+            this.index = index;
+            this.pieces = pieces;
+        }
+
+        @Override
+        void full(final long firstBlock, final long lastBlock) {}
+
+        @Override
+        void piece(final long block, final int startLow, final int endLow) {
             pieces[index.nextPosition(block)] = (startLow << 16) | endLow;
         }
     }
