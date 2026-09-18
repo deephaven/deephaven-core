@@ -2952,8 +2952,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return false;
         }
         int p2 = 0;
+        int i1 = 0;
         final WorkData wd = workDataPerThread.get();
-        for (int i1 = 0; i1 < r1.size; ++i1) {
+        while (i1 < r1.size) {
             try (SpanView view1 = wd.borrowSpanView(r1, i1)) {
                 final long k1 = view1.getKey();
                 final long flen1 = view1.getFullBlockSpanLen();
@@ -2997,6 +2998,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                         if (p2 >= r2.size) {
                             return false;
                         }
+                        ++i1;
                         continue;
                     }
                 }
@@ -3017,7 +3019,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     if (p2 >= r2.size) {
                         return false;
                     }
-                    i1 = spanIndexBeforeKey(r1, i1, r2.getKey(p2));
+                    i1 = spanIndexAtOrAfter(r1, i1 + 1, r2.getKey(p2));
                     continue;
                 }
                 // s1 is a Container, and its block key is not an exact match in r2.
@@ -3027,7 +3029,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (p2 >= r2.size) {
                     return false;
                 }
-                i1 = spanIndexBeforeKey(r1, i1, r2.getKey(p2));
+                i1 = spanIndexAtOrAfter(r1, i1 + 1, r2.getKey(p2));
             }
         }
         return false;
@@ -3165,23 +3167,24 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * The index one before the first span of {@code r} after {@code i} that reaches {@code key}'s block, so that the
-     * caller's own {@code ++i} lands on it.
-     * <p>
      * Both sides of {@link #overlaps(RspArray, RspArray)} can search, and a miss tells the walked side where the probed
      * side's next span begins. Every span of the walked side below that block ends beneath it and cannot match, so the
-     * walk skips them rather than borrowing a view and searching for each. The result is never below {@code i}, so the
-     * loop always moves on.
+     * walk skips them rather than borrowing a view and searching for each.
+     *
+     * @param r the array being walked
+     * @param fromIndex the span index to resume from, never below the one just read
+     * @param blockKey a block key, as {@link #getKey} returns
+     * @return the span index of {@code r} where the walk should continue: the first span at or after {@code fromIndex}
+     *         that reaches {@code blockKey}'s block, or {@code r.size} if it has none
      */
-    private static int spanIndexBeforeKey(final RspArray r, final int i, final long key) {
-        final int next = i + 1;
-        if (next >= r.size || r.getKey(next) >= highBits(key)) {
-            // Nothing to skip: the next span already reaches key's block. Sides that alternate span by span are here
+    private static int spanIndexAtOrAfter(final RspArray r, final int fromIndex, final long blockKey) {
+        if (fromIndex >= r.size || r.getKey(fromIndex) >= blockKey) {
+            // Nothing to skip: the next span already reaches that block. Sides that alternate span by span are here
             // every time, and a search would cost more than the step it replaces.
-            return i;
+            return fromIndex;
         }
-        final int j = r.getSpanIndex(next, key);
-        return (j >= 0 ? j : ~j) - 1;
+        final int j = r.getSpanIndex(fromIndex, blockKey);
+        return j >= 0 ? j : ~j;
     }
 
     /**
