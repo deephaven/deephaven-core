@@ -100,7 +100,7 @@ public class RowSetIncrementalInsertBench {
     }
 
     /** {@link RowSetFactory#unionStrategy} for the {@link #rowSetApiUnion} and {@link #rowSetApiUnionBatcher} cells. */
-    @Param({"SHIPPED", "RADIX"})
+    @Param({"MERGE_IN_PASSES", "RADIX"})
     private RowSetFactory.UnionStrategy unionStrategy;
 
     /** {@link RowSetUnionBatcher#maxBatchSize} for the {@link #rowSetApiUnionBatcher} cells. */

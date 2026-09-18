@@ -385,32 +385,21 @@ public class RowSetUnionBatcherTest {
     }
 
     @Test
-    public void configuredCapIsHeldToItsBounds() {
+    public void configuredCapIsTakenAsIs() {
         final int saved = RowSetUnionBatcher.maxBatchSize;
         try {
-            // A cap at or below zero means a batch of one.
-            for (final int cap : new int[] {0, -5, Integer.MIN_VALUE}) {
-                RowSetUnionBatcher.maxBatchSize = cap;
-                assertThat(RowSetUnionBatcher.effectiveMaxBatchSize()).isEqualTo(1);
-                try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(100)) {
-                    assertThat(batcher.batchSize()).isEqualTo(1);
-                }
+            // Any configured cap is honoured, however large; a request under it is what sizes the batch.
+            RowSetUnionBatcher.maxBatchSize = Integer.MAX_VALUE;
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(100)) {
+                assertThat(batcher.batchSize()).isEqualTo(100);
             }
-            // A cap past the hard maximum is held there. Checked on the cap alone: a batcher at that cap would
-            // allocate an entry list of 2^25 references.
-            for (final int cap : new int[] {RowSetUnionBatcher.MAX_MAX_BATCH_SIZE,
-                    RowSetUnionBatcher.MAX_MAX_BATCH_SIZE + 1,
-                    Integer.MAX_VALUE}) {
-                RowSetUnionBatcher.maxBatchSize = cap;
-                assertThat(RowSetUnionBatcher.effectiveMaxBatchSize()).isEqualTo(RowSetUnionBatcher.MAX_MAX_BATCH_SIZE);
-            }
-            // In between the cap is taken as configured, and a request above it is held to it.
+            // A request above the cap is held to it.
             RowSetUnionBatcher.maxBatchSize = 300;
             try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(Long.MAX_VALUE)) {
                 assertThat(batcher.batchSize()).isEqualTo(300);
             }
-            // With a batch of one every add merges, and the union is still right.
-            RowSetUnionBatcher.maxBatchSize = 0;
+            // With a cap of one every add merges, and the union is still right.
+            RowSetUnionBatcher.maxBatchSize = 1;
             final List<RowSet> rowSets = interleaved(10, 2);
             try (final WritableRowSet expected = RowSetFactory.union(rowSets);
                     final RowSetUnionBatcher batcher = new RowSetUnionBatcher(rowSets.size())) {

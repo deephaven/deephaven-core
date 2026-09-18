@@ -26,15 +26,15 @@ import java.util.Comparator;
 public abstract class RowSetFactory {
 
     /**
-     * How {@link #union(Collection)} builds its result. {@link #RADIX} is the default; {@link #SHIPPED} is the merge it
-     * replaced, kept selectable so the two can be compared in one build.
+     * How {@link #union(Collection)} builds its result. {@link #RADIX} is the default; {@link #MERGE_IN_PASSES} is the
+     * merge it replaced, kept selectable so the two can be compared in one build.
      */
     public enum UnionStrategy {
         /**
          * Merge in passes: an accumulator keeps absorbing the next row set while it appends or while the previous one
          * duplicated rows already held, otherwise a new group starts. See {@link #mergeInPasses}.
          */
-        SHIPPED,
+        MERGE_IN_PASSES,
         /**
          * When the inputs together hold more entries than a {@link SortedRanges} can, build an {@link RspBitmap} by a
          * radix pass on the block bits: every range of the small inputs is split into block-local pieces bucketed by
@@ -173,7 +173,7 @@ public abstract class RowSetFactory {
     /**
      * Union {@code rowSets[0, size)}, which this method owns and may reorder and clear. Empty inputs are compacted
      * away, the rest are sorted by first row key, and the union is built by the strategy in force:
-     * {@link #unionWithRadix} by default, {@link #mergeInPasses} under {@link UnionStrategy#SHIPPED}.
+     * {@link #unionWithRadix} by default, {@link #mergeInPasses} under {@link UnionStrategy#MERGE_IN_PASSES}.
      */
     private static WritableRowSet union(final RowSet[] rowSets, final int size) {
         // Compact away the empty inputs so that first and last row key are meaningful for every remaining row set.

@@ -64,7 +64,7 @@ public class UnionBenchmark {
     private Shape shape;
 
     /** {@link RowSetFactory#unionStrategy} for the {@link #union} and {@link #unionBatcher} cells. */
-    @Param({"SHIPPED", "RADIX"})
+    @Param({"MERGE_IN_PASSES", "RADIX"})
     private RowSetFactory.UnionStrategy strategy;
 
     /** {@link RowSetUnionBatcher#maxBatchSize} for the {@link #unionBatcher} cells. */

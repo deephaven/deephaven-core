@@ -410,7 +410,7 @@ public class RowSetFactoryUnionTest {
     private static void checkAgainstShipped(final List<RowSet> rowSets) {
         final RowSetFactory.UnionStrategy defaultStrategy = RowSetFactory.unionStrategy;
         try {
-            RowSetFactory.unionStrategy = RowSetFactory.UnionStrategy.SHIPPED;
+            RowSetFactory.unionStrategy = RowSetFactory.UnionStrategy.MERGE_IN_PASSES;
             try (final WritableRowSet expected = RowSetFactory.union(rowSets)) {
                 checkAgainst(rowSets, expected);
             }

@@ -50,17 +50,6 @@ public final class RowSetUnionBatcher implements SafeCloseable {
     public static final int DEFAULT_MAX_BATCH_SIZE = 8192;
 
     /**
-     * The default cap, kept for source compatibility with code written when the cap was this constant.
-     *
-     * @deprecated The cap is configured; read {@link #maxBatchSize} for the cap in force.
-     */
-    @Deprecated(forRemoval = true)
-    public static final int MAX_BATCH_SIZE = DEFAULT_MAX_BATCH_SIZE;
-
-    /** Largest value {@link #maxBatchSize} is honoured at; the list it sizes holds twice this many references. */
-    public static final int MAX_MAX_BATCH_SIZE = 1 << 24;
-
-    /**
      * The most row sets gathered into one batch, whatever count a caller asks for: large enough that each merge
      * amortizes the pass it costs, small enough that input driven by data rather than by the shape of the query cannot
      * make this hold an unbounded number of row sets. This caps the batch rather than every merge: {@link #build()}
@@ -95,15 +84,15 @@ public final class RowSetUnionBatcher implements SafeCloseable {
 
     /**
      * @param batchSize The number of row sets to gather before merging, which a caller passes as the number it expects
-     *        to produce. Clamped to {@code [1, }{@link #effectiveMaxBatchSize()}{@code ]}: under the cap the whole
-     *        input merges at once, and over it, or where the count is only an upper bound or no bound at all, the cap
-     *        takes over and the count costs nothing to have passed. Taken as a {@code long} so that a caller counting
-     *        rows rather than objects has nothing to narrow and no reason to know the cap.
+     *        to produce. Clamped to {@code [1, }{@link #maxBatchSize}{@code ]}: under the cap the whole input merges at
+     *        once, and over it, or where the count is only an upper bound or no bound at all, the cap takes over and
+     *        the count costs nothing to have passed. Taken as a {@code long} so that a caller counting rows rather than
+     *        objects has nothing to narrow and no reason to know the cap. The cap is taken as configured.
      */
     public RowSetUnionBatcher(final long batchSize) {
-        this.batchSize = (int) Math.min(Math.max(1L, batchSize), effectiveMaxBatchSize());
+        this.batchSize = (int) Math.min(Math.max(1L, batchSize), maxBatchSize);
         // Bounded by the clamp above, so this is the list's greatest extent and not just a starting point.
-        entries = new ArrayList<>(2 * this.batchSize);
+        entries = new ArrayList<>((int) Math.min(2L * this.batchSize, Integer.MAX_VALUE - 8));
     }
 
     /**
@@ -214,15 +203,6 @@ public final class RowSetUnionBatcher implements SafeCloseable {
     @VisibleForTesting
     int batchSize() {
         return batchSize;
-    }
-
-    /**
-     * The cap in force: {@link #maxBatchSize} held to {@code [1, }{@link #MAX_MAX_BATCH_SIZE}{@code ]}, since it is
-     * configured and is trusted both as a clamp and as the size of the entry list.
-     */
-    @VisibleForTesting
-    static int effectiveMaxBatchSize() {
-        return (int) Math.min(Math.max(1L, maxBatchSize), MAX_MAX_BATCH_SIZE);
     }
 
     /**
