@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetUnionBatcher;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
@@ -98,9 +99,13 @@ public class RowSetIncrementalInsertBench {
         RANDOM
     }
 
-    /** {@link RowSetFactory#unionStrategy} for the {@link #rowSetApiUnion} cells. */
+    /** {@link RowSetFactory#unionStrategy} for the {@link #rowSetApiUnion} and {@link #rowSetApiUnionBatcher} cells. */
     @Param({"SHIPPED", "RADIX"})
     private RowSetFactory.UnionStrategy unionStrategy;
+
+    /** {@link RowSetUnionBatcher#maxBatchSize} for the {@link #rowSetApiUnionBatcher} cells. */
+    @Param({"8192"})
+    private int batchCap;
 
     private long frontier;
     private OrderedLongSet[] bucketAffectedSets;
@@ -109,6 +114,7 @@ public class RowSetIncrementalInsertBench {
     @Setup
     public void setup() {
         RowSetFactory.unionStrategy = unionStrategy;
+        RowSetUnionBatcher.maxBatchSize = batchCap;
         frontier = rows - addedPerCycle;
         final long windowStart = Math.max(0, frontier - (long) windowRows * buckets);
         bucketAffectedSets = new OrderedLongSet[buckets];
@@ -241,6 +247,24 @@ public class RowSetIncrementalInsertBench {
             toUnion.add(seed);
             toUnion.addAll(Arrays.asList(bucketAffectedRowSets));
             try (final WritableRowSet accumulator = RowSetFactory.union(toUnion)) {
+                return accumulator.size();
+            }
+        }
+    }
+
+    /**
+     * The same accumulation through {@link RowSetUnionBatcher}, as the call sites other than {@code updateBy} reach the
+     * union: each set handed over as a copy, {@link #batchCap} to a batch. {@code updateBy} itself calls the union on
+     * the whole list, so this measures what routing it through the batcher would cost.
+     */
+    @Benchmark
+    public long rowSetApiUnionBatcher() {
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(bucketAffectedRowSets.length + 1)) {
+            batcher.add(RowSetFactory.fromRange(frontier, rows - 1));
+            for (final WritableRowSet affected : bucketAffectedRowSets) {
+                batcher.add(affected.copy());
+            }
+            try (final WritableRowSet accumulator = batcher.build()) {
                 return accumulator.size();
             }
         }

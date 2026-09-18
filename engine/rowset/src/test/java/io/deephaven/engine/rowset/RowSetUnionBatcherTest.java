@@ -113,7 +113,7 @@ public class RowSetUnionBatcherTest {
 
     @Test
     public void buildWithNothingAddedIsEmpty() {
-        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.MAX_BATCH_SIZE);
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.maxBatchSize);
                 final WritableRowSet built = batcher.build()) {
             assertThat(built.isEmpty()).isTrue();
         }
@@ -158,12 +158,12 @@ public class RowSetUnionBatcherTest {
         // A caller whose count is a table size can hand it straight over; what the count buys is merging once when it
         // is small, not an unbounded batch when it is not. Two ranges each, so the sets genuinely interleave and none
         // of them appends to the one before it.
-        final List<RowSet> rowSets = interleaved(RowSetUnionBatcher.MAX_BATCH_SIZE + 1, 2);
+        final List<RowSet> rowSets = interleaved(RowSetUnionBatcher.maxBatchSize + 1, 2);
         // A row count, which is what a caller with a table rather than a collection has to offer.
         try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(Long.MAX_VALUE)) {
             for (int ii = 0; ii < rowSets.size(); ++ii) {
                 batcher.add(rowSets.get(ii).copy());
-                assertThat(batcher.pendingBatchSize()).isLessThanOrEqualTo(RowSetUnionBatcher.MAX_BATCH_SIZE);
+                assertThat(batcher.pendingBatchSize()).isLessThanOrEqualTo(RowSetUnionBatcher.maxBatchSize);
             }
             // The row set after the maximum found the batch already collapsed rather than still gathering.
             assertThat(batcher.groupCount()).isEqualTo(1);
@@ -269,7 +269,7 @@ public class RowSetUnionBatcherTest {
         final List<RowSet> rowSets = interleaved(6, 4);
         try {
             final WritableRowSet built;
-            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.MAX_BATCH_SIZE)) {
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.maxBatchSize)) {
                 rowSets.forEach(rowSet -> batcher.add(rowSet.copy()));
                 // Nothing appends here, so every input is held as a copy-on-write reference to it.
                 assertThat(batcher.pendingBatchSize()).isEqualTo(6);
@@ -318,7 +318,7 @@ public class RowSetUnionBatcherTest {
 
     @Test
     public void buildLeavesTheBatcherReusable() {
-        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.MAX_BATCH_SIZE)) {
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.maxBatchSize)) {
             batcher.add(RowSetFactory.fromRange(0, 9));
             try (final WritableRowSet first = batcher.build();
                     final WritableRowSet expectedFirst = RowSetFactory.fromRange(0, 9)) {

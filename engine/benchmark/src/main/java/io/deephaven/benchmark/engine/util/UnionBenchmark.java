@@ -60,6 +60,10 @@ public class UnionBenchmark {
     @Param({"SHIPPED", "RADIX"})
     private RowSetFactory.UnionStrategy strategy;
 
+    /** {@link RowSetUnionBatcher#maxBatchSize} for the {@link #unionBatcher} cells. */
+    @Param({"8192"})
+    private int batchCap;
+
     private RowSet[] toUnion;
     private WritableRowSet actual;
     private RowSet expected;
@@ -67,6 +71,7 @@ public class UnionBenchmark {
     @Setup(Level.Trial)
     public void setupTrial() {
         RowSetFactory.unionStrategy = strategy;
+        RowSetUnionBatcher.maxBatchSize = batchCap;
         final int targetIndexSize = totalRows / nToUnion;
         final Random randy = new Random(nToUnion ^ targetIndexSize);
         final RowSetBuilderRandom rb = RowSetFactory.builderRandom();
@@ -198,7 +203,7 @@ public class UnionBenchmark {
 
     /**
      * The same union through {@link RowSetUnionBatcher}, as the converted call sites reach it: every input handed over
-     * as a copy, at most {@link RowSetUnionBatcher#MAX_BATCH_SIZE} to a batch, each batch merged under the
+     * as a copy, at most {@link RowSetUnionBatcher#maxBatchSize} to a batch, each batch merged under the
      * {@link #strategy} in force and the batches folded together at the end.
      */
     @Benchmark

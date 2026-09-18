@@ -164,7 +164,7 @@ folded into one `SafeCloseable`. A caller hands it row sets and calls `build` fo
 between, so a traversal that throws part way through abandons what it gathered instead of handing back half a union.
 
 The batch size is the caller's own count — `indexRowKeys.size`, `filteredTable.size`, `keysToRefilter.size`,
-`matchColumns.size` — taken as a `long` and clamped by the constructor to `[1, MAX_BATCH_SIZE]`, so a caller
+`matchColumns.size` — taken as a `long` and clamped by the constructor to `[1, maxBatchSize]`, so a caller
 counting rows rather than objects has nothing to narrow and no reason to name the cap. Under the cap that count merges the whole
 input at once; over it, or where it is only an upper bound, it costs nothing to pass and the cap takes over. The clamp
 is also what makes `2 * batchSize` the list's greatest extent rather than just its starting capacity.
@@ -174,14 +174,14 @@ the two that ultimately insert into a long-lived one — `SyncTableFilter` and `
 tracking row sets behind their results — do it with a single insert at the end rather than one per batch.
 
 **Batches are not merged into one running result.** That would reintroduce exactly the problem this whole document is
-about, one level up: one pass over a growing result per batch instead of per row set, which at 1024 to a batch is still
-`n/1024` passes over something that keeps getting bigger. Instead the entries live in two regions of a list of
+about, one level up: one pass over a growing result per batch instead of per row set, which at `maxBatchSize` to a batch
+is still `n/maxBatchSize` passes over something that keeps getting bigger. Instead the entries live in two regions of a list of
 `2 * batchSize` slots. A full batch collapses into a single row set that stays where it is, so the front fills with
 collapsed groups while the back gathers the next batch. The groups are allowed to fill their half of the list; the
 batch that would need a slot past it folds everything into one instead. A result is merged into again once per `batchSize` batches rather than once per batch — the same tree
 the multi-pass merge inside `union` builds, one level up, and for the same reason.
 
-The list is all this holds onto: at most `2 * MAX_BATCH_SIZE` references. Each collapse still allocates what
+The list is all this holds onto: at most `2 * maxBatchSize` references. Each collapse still allocates what
 `union` allocates — an array of its inputs and a groups array about half that size — but so did every batch under the
 old hand-rolled loop, so that part is unchanged. What is *held* is unchanged for the
 callers that produce a row set per key or per index entry — those inputs are disjoint, so the groups sum to the result.
@@ -344,7 +344,7 @@ ordered, which is the case sequential insert is good at anyway.
 
 ### 5. Bounded batching is not free, and not always right
 
-Merging in batches of 1024 bounds the row sets held at once, which matters where each entry is a freshly materialized
+Merging in bounded batches bounds the row sets held at once, which matters where each entry is a freshly materialized
 intersection or copy. Applied where entries are merely borrowed references, it trades a real speedup for a memory
 saving that was never needed.
 
@@ -387,7 +387,7 @@ plausible-sounding optimization was for a cost that did not exist.
 | `SortedRanges.MAX_CAPACITY` | 8193 | Entries, so roughly 4096 ranges. Above it a set becomes an `RspBitmap` and the insert path changes character — the cause of a non-monotonic result that looked like a measurement error. |
 | RSP block size | 65,536 | Keys per span. Whether an incoming range starts a new block decides whether a pre-pass can pay for itself. |
 | `MixedBuilderRandom.addAsIndexThreshold` | 65,536 | Gates the builder's whole-set path on the *incoming* range count alone, ignoring the accumulator. Still open — the same class of mistake as pitfall 4. |
-| `RowSetUnionBatcher.MAX_BATCH_SIZE` | 1024 | The most row sets gathered into one batch, whatever count a caller asks for. Callers pass their own count; this is the ceiling that keeps data-driven input from holding an unbounded number of row sets. It caps the batch, not every merge — the final `build` also hands over the collapsed groups, up to `2 * batchSize - 1` row sets. |
+| `RowSetUnionBatcher.maxBatchSize` | 8192 (property `RowSetUnionBatcher.maxBatchSize`; was the constant 1024) | The most row sets gathered into one batch, whatever count a caller asks for. Callers pass their own count; this is the ceiling that keeps data-driven input from holding an unbounded number of row sets. It caps the batch, not every merge — the final `build` also hands over the collapsed groups, up to `2 * batchSize - 1` row sets. Raised for the radix build, which merges a batch of small row sets in one linear pass: see the cap sweep under the radix build. |
 
 ## Still unresolved
 
