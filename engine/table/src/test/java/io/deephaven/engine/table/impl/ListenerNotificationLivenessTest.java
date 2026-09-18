@@ -8,7 +8,6 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -61,7 +60,7 @@ public class ListenerNotificationLivenessTest {
     public void testUpdateNotificationIsSkippedWhenListenerIsNotLive() {
         final AtomicBoolean updated = new AtomicBoolean();
         final LivenessScope scope = new LivenessScope();
-        final TableUpdateListener listener;
+        final InstrumentedTableUpdateListenerAdapter listener;
         try (final SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
             listener = new InstrumentedTableUpdateListenerAdapter(source, false) {
                 @Override
@@ -73,6 +72,7 @@ public class ListenerNotificationLivenessTest {
         }
 
         updateGraph.startCycleForUnitTests();
+        final long step = updateGraph.clock().currentStep();
         try {
             addRowAndNotify();
             // Drop the listener's last reference after its notification has been enqueued, but before the update
@@ -83,6 +83,10 @@ public class ListenerNotificationLivenessTest {
         }
 
         assertFalse("onUpdate ran for a listener that was no longer live", updated.get());
+        // A skipped notification must still record its completed step. satisfied(step) never becomes true for a
+        // notification that was enqueued for a step and did not record its completion, so a dependent of this
+        // listener would wait forever and the cycle would fail to drain its notification queue.
+        assertTrue("skipped notification did not record its completed step", listener.satisfied(step));
     }
 
     @Test
@@ -98,6 +102,7 @@ public class ListenerNotificationLivenessTest {
         }
 
         updateGraph.startCycleForUnitTests();
+        final long step = updateGraph.clock().currentStep();
         try {
             addRowAndNotify();
             scope.release();
@@ -106,6 +111,7 @@ public class ListenerNotificationLivenessTest {
         }
 
         assertFalse("process ran for a merged listener that was no longer live", processed.get());
+        assertTrue("skipped notification did not record its completed step", listener.satisfied(step));
     }
 
     /**
