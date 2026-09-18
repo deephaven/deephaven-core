@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrays;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -409,7 +410,8 @@ public abstract class RowSetFactory {
      * block-local pieces each block receives and records the runs of blocks a range covers whole; a second walk places
      * every piece in its block's slice of one array; and {@link RspBitmap#makeFromBlockPieces} then builds every
      * block's container once from that slice. Every range is visited twice and every piece written once, which is
-     * linear in the input, and the result's span array is laid out exactly once.
+     * linear in the input apart from sorting the runs of full blocks, and the result's span array is laid out exactly
+     * once.
      *
      * <p>
      * A piece is a range clipped to one block, held as its two 16-bit block-local ends in one int. A range that spans
@@ -488,7 +490,8 @@ public abstract class RowSetFactory {
         abstract RspBitmap build(int[] pieces);
 
         /**
-         * Sort the runs by first block and coalesce runs that overlap or touch, in place.
+         * Sort the runs by first block and coalesce runs that overlap or touch, in place. The runs are the ranges that
+         * covered whole blocks, so this is O(F log F) in their number, not in the rows or pieces.
          *
          * @return The number of runs left
          */
@@ -496,29 +499,23 @@ public abstract class RowSetFactory {
             if (fullRunCount <= 1) {
                 return fullRunCount;
             }
-            // Sort pairs by first block: sort the pair indices through a long that carries the first block in its
-            // high bits and the index in its low bits. Block indices are under 2^47, indices under 2^31, so the two
-            // do not fit one long; sort by first block only, on a copy, and re-pair by binary search of the sorted
-            // firsts would lose duplicates. Simplest correct approach: sort an index array with a comparator.
-            final Integer[] order = new Integer[fullRunCount];
+            final long[] firsts = new long[fullRunCount];
+            final long[] lasts = new long[fullRunCount];
             for (int r = 0; r < fullRunCount; ++r) {
-                order[r] = r;
+                firsts[r] = fullRuns[2 * r];
+                lasts[r] = fullRuns[2 * r + 1];
             }
-            Arrays.sort(order, (x, y) -> Long.compare(fullRuns[2 * x], fullRuns[2 * y]));
-            final long[] sorted = new long[2 * fullRunCount];
+            LongArrays.quickSort(firsts, lasts);
             int out = 0;
             for (int r = 0; r < fullRunCount; ++r) {
-                final long first = fullRuns[2 * order[r]];
-                final long last = fullRuns[2 * order[r] + 1];
-                if (out > 0 && first <= sorted[2 * out - 1] + 1) {
-                    sorted[2 * out - 1] = Math.max(sorted[2 * out - 1], last);
+                if (out > 0 && firsts[r] <= fullRuns[2 * out - 1] + 1) {
+                    fullRuns[2 * out - 1] = Math.max(fullRuns[2 * out - 1], lasts[r]);
                 } else {
-                    sorted[2 * out] = first;
-                    sorted[2 * out + 1] = last;
+                    fullRuns[2 * out] = firsts[r];
+                    fullRuns[2 * out + 1] = lasts[r];
                     ++out;
                 }
             }
-            fullRuns = sorted;
             fullRunCount = out;
             return out;
         }

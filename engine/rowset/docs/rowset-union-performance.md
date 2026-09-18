@@ -8,7 +8,7 @@ and the traps that produced confident wrong answers, so that none of it has to b
 |---|---|
 | **Problem** | Inserting N row sets into one growing accumulator is quadratic when the inputs are disjoint and arrive out of key order. |
 | **What shipped first** | `RowSetFactory.union` — sort by first row key, then merge in passes on an append-or-duplication rule. |
-| **What replaced it** | The radix build below: when the result must be an `RspBitmap`, bucket every range by block and build each block's container once. The merge in passes remains for bitmap-sized inputs and small results. |
+| **What replaced it** | The radix build below: when the inputs' `SortedRanges` entries would overflow one, bucket every range by block and build each block's container once into an `RspBitmap`, compacted afterwards if the inputs coalesced. The merge in passes remains for bitmap-sized inputs and small results. |
 | **Best case of the merge** | 25.7x — 1B rows, 1000 disjoint blocks in reverse order. |
 | **Worst case of the merge** | 0.16x — 100K per-bucket combs of ~50 random keys, the shape bucketed `updateBy` produces every cycle. See below. |
 
@@ -209,12 +209,13 @@ input that arrives in ascending order; it makes the good case cheaper, not the b
 
 The merge in passes shipped on the measurements above and cost bucketed incremental `updateBy` half its throughput in
 the next nightly. Everything below was learned finding out why, and is the reason `RowSetFactory.union` now builds
-its result by a radix pass on the block bits whenever the result must be an `RspBitmap`.
+its result by a radix pass on the block bits whenever the inputs' entries would overflow a `SortedRanges`.
 
 ### What the merge got wrong
 
-The shape `updateBy` hands over is one row set per dirty bucket per cycle: for 100K buckets, 100K sets of ~50 single
-keys each, every set spanning the whole recently added region, no two sharing a key. `RowSetIncrementalInsertBench`
+The shape `updateBy` hands over is one row set per dirty bucket per cycle: for 100K buckets, one set of ~50 single
+keys per bucket that received an added row (all 100K under the round-robin layout, about 63K of them under the random
+one), every set spanning the whole recently added region, no two sharing a key. `RowSetIncrementalInsertBench`
 models it, and its `layout` parameter is the whole story:
 
 | Layout | Insert loop (before) | Merge in passes | Why |
@@ -254,10 +255,12 @@ Two things came out of those that matter beyond this change:
 
 ### What the radix build does
 
-Once the pre-pass knows the result is an `RspBitmap` (the inputs' `SortedRanges` entries exceed one's capacity, an
-`RspBitmap` input counting as more than that), two walks over the `SingleRange` and `SortedRanges` inputs bucket their
-ranges by block: the first counts the block-local pieces each block receives and marks in a bitset the blocks some
-range covers whole, the second places each piece, its two 16-bit block-local ends in one int, into its block's slice
+Once the pre-pass finds the inputs' `SortedRanges` entries exceed one's capacity (an `RspBitmap` input counting as
+more than that), the result is built as an `RspBitmap`. That sum is an upper bound, since overlapping inputs coalesce,
+so it is the heuristic that selects the build and not proof of the result's representation; a result the bitmap turns
+out oversized for is compacted at the end. Two walks over the `SingleRange` and `SortedRanges` inputs bucket their
+ranges by block: the first counts the block-local pieces each block receives and records the runs of blocks some range
+covers whole as first, last pairs, the second places each piece, its two 16-bit block-local ends in one int, into its block's slice
 of one array. `RspBitmap.makeFromBlockPieces` then walks the blocks in order and builds each container exactly once:
 up to 64 pieces are sorted and coalesced directly, more go through an 8KB scratch bitmap whose runs are read off;
 the container is whichever of run, array and bitmap is smallest for that cardinality and run count; a block that
@@ -398,8 +401,11 @@ plausible-sounding optimization was for a cost that did not exist.
 - **Redundant input at n=1000** costs ~19%, about 240 ns per input set of decision overhead on a shape where nothing
   ever appends, so every step pays the full test. A latch on first duplication would remove most of it, since the
   duplication count is monotonic within a group.
-- **Cycle-level `updateBy` confirmation of the radix build.** The numbers above are the row set work in isolation; the
-  nightly bucketed benchmarks are the real check, as they were for the merge, whose 2x in isolation was -54% there.
+- **The nightly bucketed `updateBy` benchmarks** have not yet run against the radix build. The end-to-end reproducer
+  from the regression report has: 10M rows, 90,900 random-key buckets through `AutoTuningIncrementalReleaseFilter`
+  into a bucketed `RollingMax`, median of five reps, two fresh JVMs a side, measured 6.65 s and 7.38 s against 8.55 s
+  before the merge shipped and 13.8 s and 14.7 s with it. The nightly is the remaining check, as it was the one that
+  caught the merge's 2x in isolation turning into -54% in place.
 - **Interleaved input at n=1000** remains 2.5 seconds however it is merged. Nothing tried helps meaningfully; the
   result genuinely has 38M ranges.
 
