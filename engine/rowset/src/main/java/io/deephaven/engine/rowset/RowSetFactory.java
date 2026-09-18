@@ -51,7 +51,8 @@ public abstract class RowSetFactory {
          * When the inputs together hold more entries than a {@link SortedRanges} can, build an {@link RspBitmap} by a
          * radix pass on the block bits: every range of the small inputs is split into block-local pieces bucketed by
          * block, and each block's container is built once from its own pieces; bitmap-sized inputs are merged in passes
-         * and combined at the end. See {@link #unionWithRadix}.
+         * and combined at the end. Below the threshold, or when the pieces would not fit one array, the whole union
+         * merges in passes instead. See {@link #unionWithRadix}.
          */
         RADIX
     }
