@@ -1270,6 +1270,12 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      * both by binary search from a carried position. A probe that misses reports the other side's next candidate key,
      * which is used to skip ahead on the walked side, so disjoint inputs that interleave coarsely cost a search per
      * alternation rather than a step per range.
+     * <p>
+     * Choosing by array length takes the caller's argument order out of it when the two lengths differ, which is the
+     * common case. It does not when they are equal: the receiver is walked, so the two orders can still cost different
+     * amounts. Nor is array length the same as range count -- {@code 2n} singletons and {@code n} longer ranges both
+     * occupy {@code 2n} positions -- so even the unequal case is a proxy rather than a measure. Deciding these properly
+     * needs a range count neither representation keeps.
      *
      * @param other The ranges to test against
      * @return true if some range of ours overlaps some range of {@code other}
@@ -1278,14 +1284,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (isEmpty() || other.isEmpty()) {
             return false;
         }
-        if (count != other.count) {
-            return (count < other.count) ? overlaps(this, other) : overlaps(other, this);
-        }
-        // Equal array lengths do not mean equal range counts -- 2n singletons and n longer ranges both take 2n
-        // positions -- so there is nothing here to say which side is cheaper to walk. Break the tie on something the
-        // argument order cannot change, so that at least both orders make the same choice and the answer costs the
-        // same either way.
-        return (first() <= other.first()) ? overlaps(this, other) : overlaps(other, this);
+        return (count <= other.count) ? overlaps(this, other) : overlaps(other, this);
     }
 
     // Walks r1's ranges, probing r2 for each. Neither is empty on entry.
