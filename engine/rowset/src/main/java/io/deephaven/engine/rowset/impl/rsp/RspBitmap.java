@@ -106,14 +106,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         // The full block span being accumulated, if any: its first block and its length in blocks.
         long fullFirst = -1;
         long fullLen = 0;
-        int runIndex = 0; // next full run not yet emitted
+        int fullRunIndex = 0; // next full run not yet emitted
         for (int blockIndex = 0; blockIndex < blockCount; ++blockIndex) {
             final long block = blocks[blockIndex];
             // Emit every full run that ends before this block, and note whether the block lies inside one.
             boolean covered = false;
-            while (runIndex < fullRunCount) {
-                final long runFirst = fullRuns[2 * runIndex];
-                final long runLast = fullRuns[2 * runIndex + 1];
+            while (fullRunIndex < fullRunCount) {
+                final long runFirst = fullRuns[2 * fullRunIndex];
+                final long runLast = fullRuns[2 * fullRunIndex + 1];
                 if (runFirst > block) {
                     break;
                 }
@@ -130,7 +130,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                     fullFirst = runFirst;
                     fullLen = runLast - runFirst + 1;
                 }
-                ++runIndex;
+                ++fullRunIndex;
             }
             if (covered) {
                 continue; // the run it lies in is emitted when the loop passes its last block
@@ -179,9 +179,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             }
         }
         // Full runs past the last partial block.
-        while (runIndex < fullRunCount) {
-            final long runFirst = fullRuns[2 * runIndex];
-            final long runLast = fullRuns[2 * runIndex + 1];
+        while (fullRunIndex < fullRunCount) {
+            final long runFirst = fullRuns[2 * fullRunIndex];
+            final long runLast = fullRuns[2 * fullRunIndex + 1];
             if (fullLen > 0 && fullFirst + fullLen == runFirst) {
                 fullLen += runLast - runFirst + 1;
             } else {
@@ -191,7 +191,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 fullFirst = runFirst;
                 fullLen = runLast - runFirst + 1;
             }
-            ++runIndex;
+            ++fullRunIndex;
         }
         if (fullLen > 0) {
             setFullBlockSpanRaw(spanIndex++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
