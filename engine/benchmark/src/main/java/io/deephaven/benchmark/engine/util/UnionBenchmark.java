@@ -158,7 +158,7 @@ public class UnionBenchmark {
                 final int regionBits = 43;
                 for (int indexNo = 0; indexNo < nToUnion; indexNo++) {
                     final RowSetBuilderRandom sb = RowSetFactory.builderRandom();
-                    for (int keyNo = 0; keyNo < 50; ++keyNo) {
+                    for (int ii = 0; ii < 50; ++ii) {
                         final long key = ((long) randy.nextInt(regions) << regionBits)
                                 + (long) (randy.nextDouble() * regionRows);
                         sb.addKey(key);
