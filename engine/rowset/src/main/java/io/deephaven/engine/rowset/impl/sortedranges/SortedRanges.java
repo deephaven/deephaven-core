@@ -1168,16 +1168,17 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         }
         final long packedStart = pack(Math.max(start, first));
         final long packedEnd = pack(Math.min(end, last));
-        return overlapsRangeInternal(0, packedStart, packedEnd) == -1;
+        return overlapsRangeAt(absRawBinarySearch(packedStart, 0, count - 1), packedStart, packedEnd) == -1;
     }
 
-    // startIdx is the array position index where to begin the search for packedStart.
-    // returns -1 if this array overlaps the provided range, or if it doesn't, returns the array position index
-    // where to begin a subsequent call for a later range that might overlap.
+    // Reads a search for packedStart as an overlap answer: -1 if we overlap [packedStart, packedEnd], otherwise the
+    // array position where a subsequent call for a later range should begin its own search.
+    // The search is the caller's to choose. A caller carrying a cursor across ascending ranges gallops, since its
+    // answer is usually a position or two along; the one-shot entry points below search the whole array once, where
+    // a gallop would only add probes on the way to a far answer.
     // packedStart must be within [0, absPackedGet(count - 1)] -- the last value is negated when it ends a range --
     // which is what keeps the search result inside the array.
-    private int overlapsRangeInternal(final int startIdx, final long packedStart, final long packedEnd) {
-        final int iStart = absRawGallopingSearch(packedStart, startIdx, count - 1);
+    private int overlapsRangeAt(final int iStart, final long packedStart, final long packedEnd) {
         final long iStartData = packedGet(iStart);
         if (iStartData < 0 || iStartData == packedStart) {
             return -1;
@@ -1245,7 +1246,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     return false;
                 }
                 final long end = rangeIter.currentRangeEnd();
-                i = overlapsRangeInternal(i, pack(Math.max(start, first)), pack(Math.min(end, last)));
+                final long packedStart = pack(Math.max(start, first));
+                final long packedEnd = pack(Math.min(end, last));
+                i = overlapsRangeAt(absRawGallopingSearch(packedStart, i, count - 1), packedStart, packedEnd);
                 if (i < 0) {
                     return true;
                 }
@@ -1275,7 +1278,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (isEmpty() || other.isEmpty()) {
             return false;
         }
-        return (count <= other.count) ? overlaps(this, other) : overlaps(other, this);
+        if (count != other.count) {
+            return (count < other.count) ? overlaps(this, other) : overlaps(other, this);
+        }
+        // Equal array lengths do not mean equal range counts -- 2n singletons and n longer ranges both take 2n
+        // positions -- so there is nothing here to say which side is cheaper to walk. Break the tie on something the
+        // argument order cannot change, so that at least both orders make the same choice and the answer costs the
+        // same either way.
+        return (first() <= other.first()) ? overlaps(this, other) : overlaps(other, this);
     }
 
     // Walks r1's ranges, probing r2 for each. Neither is empty on entry.
@@ -1298,7 +1308,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return false;
             }
             final long end = Math.min(r1.unpack(r1.packedRangeEnd(i1, packedStart)), lastKey);
-            i2 = r2.overlapsRangeInternal(i2, r2.pack(start), r2.pack(end));
+            final long packedStart2 = r2.pack(start);
+            final long packedEnd2 = r2.pack(end);
+            i2 = r2.overlapsRangeAt(r2.absRawGallopingSearch(packedStart2, i2, r2.count - 1), packedStart2, packedEnd2);
             if (i2 < 0) {
                 return true;
             }

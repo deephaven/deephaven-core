@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
  * representations.
  * <p>
  * {@link RspBitmap#subsetOf(SortedRanges)} picks between two walks by comparing its cardinality against the other
- * side's array length, so the shapes here are chosen to land on both sides of that choice; {@link #testBothWalks}
+ * side's array length, so the shapes here are chosen to land on both sides of that choice, and {@link #testShapes}
  * fails if a run stops covering either one.
  */
 public class SubsetOfTest {
@@ -84,16 +84,22 @@ public class SubsetOfTest {
         return impls;
     }
 
-    /** Which walk {@link RspBitmap#subsetOf(SortedRanges)} takes for this pair, mirroring its guard. */
-    private static boolean walksOwnRanges(final long[] sub, final long[] sup) {
-        final SortedRanges sr = sortedRanges(sup);
-        return sr != null && rsp(sub).getCardinality() < sr.count();
-    }
-
-    private static void check(final String m, final long[] sub, final long[] sup) {
+    /**
+     * Checks one pair against the oracle in every representation.
+     *
+     * @return which walk {@link RspBitmap#subsetOf(SortedRanges)} took for it, mirroring its guard, or null when that
+     *         pairing does not arise; read off the representations built here rather than building a second pair
+     */
+    private static Boolean check(final String m, final long[] sub, final long[] sup) {
         final boolean want = expected(sub, sup);
-        for (final OrderedLongSet a : representations(sub)) {
-            for (final OrderedLongSet b : representations(sup)) {
+        final List<OrderedLongSet> as = representations(sub);
+        final List<OrderedLongSet> bs = representations(sup);
+        Boolean walksOwnRanges = null;
+        for (final OrderedLongSet a : as) {
+            for (final OrderedLongSet b : bs) {
+                if (a instanceof RspBitmap && b instanceof SortedRanges) {
+                    walksOwnRanges = ((RspBitmap) a).getCardinality() < ((SortedRanges) b).count();
+                }
                 final String at = m + ": " + a.getClass().getSimpleName() + " in " + b.getClass().getSimpleName();
                 assertEquals(at, want, a.ixSubsetOf(b));
                 // ixMinusOnNew is the independent oracle: everything of ours outside them must be nothing.
@@ -105,33 +111,29 @@ public class SubsetOfTest {
                 }
             }
         }
+        return walksOwnRanges;
     }
 
     /**
-     * The shapes below have to exercise both of {@link RspBitmap#subsetOf(SortedRanges)}'s walks, or the coverage they
-     * look like they give is not the coverage they give.
+     * Every pair against the oracle, and an assertion that the shapes reach both of
+     * {@link RspBitmap#subsetOf(SortedRanges)}'s walks: without it the coverage they look like they give is not the
+     * coverage they give, and a later change to the guard could quietly strand one of the two.
      */
     @Test
-    public void testBothWalks() {
+    public void testShapes() {
         boolean sawOwnRanges = false;
         boolean sawGaps = false;
+        int i = 0;
         for (final long[][] pair : pairs()) {
-            if (walksOwnRanges(pair[0], pair[1])) {
-                sawOwnRanges = true;
-            } else {
-                sawGaps = true;
+            final Boolean walked = check("pair " + i++, pair[0], pair[1]);
+            if (walked == null) {
+                continue;
             }
+            sawOwnRanges |= walked;
+            sawGaps |= !walked;
         }
         assertTrue("no shape reaches the walk over our own ranges", sawOwnRanges);
         assertTrue("no shape reaches the walk over the other side's gaps", sawGaps);
-    }
-
-    @Test
-    public void testShapes() {
-        int i = 0;
-        for (final long[][] pair : pairs()) {
-            check("pair " + i++, pair[0], pair[1]);
-        }
     }
 
     /**
