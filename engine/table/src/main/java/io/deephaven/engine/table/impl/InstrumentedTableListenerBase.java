@@ -260,10 +260,19 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
             final long currentStep = getUpdateGraph().clock().currentStep();
             try {
                 beforeRunNotification(currentStep);
-                onFailure(originalException, sourceEntry);
+                // Retain a reference while propagating the failure, in order to prevent interference from concurrent
+                // destroys. Failure propagation touches the same listener-owned state as update processing.
+                if (tryRetainReference()) {
+                    try {
+                        onFailure(originalException, sourceEntry);
+                    } finally {
+                        dropReference();
+                    }
+                }
             } catch (Exception e) {
                 log.error().append("Error propagating failure from ").append(sourceEntry).append(": ").append(e).endl();
             } finally {
+                // Record the completed step on every path, including the skipped one; see NotificationBase#doRun.
                 afterRunNotification(currentStep);
             }
         }
@@ -317,7 +326,26 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
         void doRun(final Runnable invokeOnUpdate) {
             try {
-                doRunInternal(invokeOnUpdate);
+                final long currentStep = getUpdateGraph().clock().currentStep();
+                try {
+                    beforeRunNotification(currentStep);
+                    // Retain a reference for the duration of update processing, in order to prevent interference
+                    // from concurrent destroys.
+                    if (!tryRetainReference()) {
+                        // This listener is no longer live, there's no point to doing any work for this notification
+                        return;
+                    }
+                    try {
+                        doRunInternal(invokeOnUpdate);
+                    } finally {
+                        dropReference();
+                    }
+                } finally {
+                    // Record the completed step on every path, including the skipped one. Dependents consult
+                    // satisfied(step), which never becomes true once a notification has been enqueued for a step
+                    // but has not recorded its completion, so failing to record here hangs the cycle.
+                    afterRunNotification(currentStep);
+                }
             } finally {
                 update.release();
             }
@@ -332,9 +360,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 entry.onUpdateStart(update.added(), update.removed(), update.modified(), update.shifted());
             }
 
-            final long currentStep = getUpdateGraph().clock().currentStep();
             try {
-                beforeRunNotification(currentStep);
                 invokeOnUpdate.run();
             } catch (Exception e) {
                 final LogEntry en = log.error().append("Uncaught exception for entry ");
@@ -370,7 +396,6 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 failed = true;
                 onFailure(e, entry);
             } finally {
-                afterRunNotification(currentStep);
                 if (entry != null) {
                     entry.onUpdateEnd();
                 }

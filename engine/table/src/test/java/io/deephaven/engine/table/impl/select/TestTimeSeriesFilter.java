@@ -5,6 +5,9 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -26,10 +29,7 @@ import java.lang.ref.WeakReference;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -160,7 +160,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final TimeSeriesFilter exclusionFilter =
                 TimeSeriesFilter.newBuilder().columnName("Date").period("PT01:00:00").clock(testClock).invert(true)
                         .build();
-        final ArrayList<WeakReference<TimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
+        final List<FilterReference> filtersToRefresh = new ArrayList<>();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         EvalNugget[] en = makeNuggets(table, inclusionFilter, filtersToRefresh, updateGraph, exclusionFilter);
@@ -202,7 +202,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final TimeSeriesFilter exclusionFilter =
                 TimeSeriesFilter.newBuilder().columnName("Date").period("PT01:00:00").clock(testClock).invert(true)
                         .build();
-        final ArrayList<WeakReference<TimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
+        final List<FilterReference> filtersToRefresh = new ArrayList<>();
 
         EvalNugget[] en = makeNuggets(table, inclusionFilter, filtersToRefresh, updateGraph, exclusionFilter);
 
@@ -223,43 +223,94 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         }
     }
 
+    /**
+     * A weak reference to a filter we should refresh, paired with a liveness sentinel that removes this reference from
+     * the list of filters to refresh as soon as the filter is destroyed, rather than waiting for the garbage collector
+     * to clear the weak reference.
+     */
+    private static class FilterReference extends WeakReference<TimeSeriesFilter> {
+
+        /**
+         * The sentinel, held strongly. {@link io.deephaven.engine.liveness.LivenessManager#manage manage} only retains
+         * its referents weakly, so without this the sentinel could be collected (and hence never destroyed) before the
+         * filter it watches is released.
+         */
+        @ReferentialIntegrity
+        private LivenessReferent sentinel;
+
+        private FilterReference(final TimeSeriesFilter filter) {
+            super(filter);
+        }
+    }
+
+    /**
+     * Arrange for {@code filter} to be refreshed by {@link #refreshFilters} until it is destroyed.
+     */
+    private static void trackFilter(
+            @NotNull final TimeSeriesFilter filter,
+            @NotNull final List<FilterReference> filtersToRefresh) {
+        final FilterReference filterReference = new FilterReference(filter);
+        filterReference.sentinel = new ReferenceCountedLivenessReferent() {
+            @Override
+            public void destroy() {
+                super.destroy();
+                synchronized (filtersToRefresh) {
+                    filtersToRefresh.remove(filterReference);
+                }
+            }
+        };
+        filter.manage(filterReference.sentinel);
+        synchronized (filtersToRefresh) {
+            filtersToRefresh.add(filterReference);
+        }
+    }
+
     private static EvalNugget @NotNull [] makeNuggets(QueryTable table, TimeSeriesFilter inclusionFilter,
-            ArrayList<WeakReference<TimeSeriesFilter>> filtersToRefresh, ControlledUpdateGraph updateGraph,
+            List<FilterReference> filtersToRefresh, ControlledUpdateGraph updateGraph,
             TimeSeriesFilter exclusionFilter) {
         final Table withInstant = table.update("Date=DateTimeUtils.epochNanosToInstant(Date.getTime() * 1000000L)");
         return new EvalNugget[] {
                 EvalNugget.from(() -> {
                     final TimeSeriesFilter inclusionCopy = inclusionFilter.copy();
-                    filtersToRefresh.add(new WeakReference<>(inclusionCopy));
+                    trackFilter(inclusionCopy, filtersToRefresh);
                     return updateGraph.exclusiveLock().computeLocked(() -> withInstant.where(inclusionCopy));
                 }),
                 EvalNugget.from(() -> {
                     final TimeSeriesFilter exclusionCopy = exclusionFilter.copy();
-                    filtersToRefresh.add(new WeakReference<>(exclusionCopy));
+                    trackFilter(exclusionCopy, filtersToRefresh);
                     return updateGraph.exclusiveLock().computeLocked(() -> withInstant.where(exclusionCopy));
                 }),
         };
     }
 
     private static void refreshFilters(final TestClock testClock,
-            final List<WeakReference<TimeSeriesFilter>> filtersToRefresh, final int millisToAdvance) {
+            final List<FilterReference> filtersToRefresh, final int millisToAdvance) {
         testClock.addMillis(millisToAdvance);
 
-        final List<WeakReference<TimeSeriesFilter>> collectedRefs = new ArrayList<>();
-        for (WeakReference<TimeSeriesFilter> ref : filtersToRefresh) {
+        // Snapshot under the monitor: a concurrent destroy may remove entries while we work, and synchronizedList
+        // does not make iteration safe.
+        final List<FilterReference> toRefresh;
+        synchronized (filtersToRefresh) {
+            toRefresh = new ArrayList<>(filtersToRefresh);
+        }
+
+        final List<FilterReference> deadRefs = new ArrayList<>();
+        for (final FilterReference ref : toRefresh) {
             final TimeSeriesFilter refreshFilter = ref.get();
             if (refreshFilter == null) {
-                collectedRefs.add(ref);
+                deadRefs.add(ref);
             } else {
                 if (refreshFilter.tryRetainReference()) {
                     refreshFilter.runForUnitTests();
                     refreshFilter.dropReference();
                 } else {
-                    collectedRefs.add(ref);
+                    deadRefs.add(ref);
                 }
             }
         }
-        filtersToRefresh.removeAll(collectedRefs);
+        synchronized (filtersToRefresh) {
+            filtersToRefresh.removeAll(deadRefs);
+        }
     }
 
     private static class CountingFilter extends WhereFilterImpl {
