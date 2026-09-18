@@ -2096,8 +2096,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                         return false;
                     }
                 }
-                return true;
             }
+            return true;
         }
         long pendingLast = -1;
         // The walk stops as soon as one of our keys turns up in a gap, with the rest of sr's ranges unread; closing
