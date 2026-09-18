@@ -56,6 +56,18 @@ TEST_CASE("Table operations do not need a console", "[script]") {
   CHECK(t.NumRows() == 10);
 }
 
+TEST_CASE("Invalid session type does not cause error until RunScript", "[script]") {
+  auto client = TableMakerForTests::CreateClient(ClientOptions().SetSessionType("invalid-session-type-for-test"));
+  auto thm = client.GetManager();
+
+  auto t = thm.EmptyTable(10);
+  CHECK(t.NumRows() == 10);
+
+  CHECK_THROWS_WITH(
+    thm.RunScript("from deephaven import empty_table\nt1 = empty_table(3)"),
+    Catch::Matchers::Contains("'invalid-session-type-for-test' is not supported"));
+}
+
 TEST_CASE("Console is reused across scripts", "[script]") {
   auto client = TableMakerForTests::CreateClient();
   auto thm = client.GetManager();

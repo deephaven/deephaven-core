@@ -147,8 +147,24 @@ const Ticket &TableHandleManagerImpl::EnsureConsoleId() {
     auto message = DEEPHAVEN_LOCATION_STR("Client was created without specifying a script language");
     throw std::runtime_error(message);
   }
-  std::unique_lock guard(consoleMutex_);
-  if (!consoleId_.has_value()) {
+  std::unique_lock guard(mutex_);
+  // Has the future been set up yet, or are we the first thread here?
+  if (consoleId_.valid()) {
+    // We're not the first one here. The future was set up by another thread.
+    // Our job is to wait (but not under lock) for the value or exception to show up.
+    guard.unlock();
+    return consoleId_.get();
+  }
+
+  // We're the first thread to arrive here. Set up the future, then release
+  // the lock.
+  std::promise<Ticket> promise;
+  consoleId_ = promise.get_future().share();
+  guard.unlock();
+
+  // Then (no longer holding the lock), do the RPC, and populate the future with
+  // the result or an exception.
+  try {
     StartConsoleRequest req;
     *req.mutable_result_id() = server_->NewTicket();
     *req.mutable_session_type() = sessionType_;
@@ -156,9 +172,11 @@ const Ticket &TableHandleManagerImpl::EnsureConsoleId() {
     server_->SendRpc([&](grpc::ClientContext *ctx) {
       return server_->ConsoleStub()->StartConsole(ctx, req, &resp);
     });
-    consoleId_ = std::move(*resp.mutable_result_id());
+    promise.set_value(std::move(*resp.mutable_result_id()));
+  } catch (...) {
+    promise.set_exception(std::current_exception());
   }
-  return *consoleId_;
+  return consoleId_.get();
 }
 
 void TableHandleManagerImpl::RunScript(std::string code) {

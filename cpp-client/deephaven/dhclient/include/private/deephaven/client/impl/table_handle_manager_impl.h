@@ -3,8 +3,8 @@
  */
 #pragma once
 
+#include <future>
 #include <memory>
-#include <optional>
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/executor.h"
@@ -85,12 +85,10 @@ private:
   std::shared_ptr<ServerType> server_;
   std::shared_ptr<ExecutorType> executor_;
   std::shared_ptr<ExecutorType> flightExecutor_;
-  // Guards consoleId_. Not mutex_: starting the console makes an RPC under this lock.
-  std::mutex consoleMutex_;
-  // Lazily set by EnsureConsoleId(); never reset.
-  std::optional<Ticket> consoleId_;
   // Protects the below for concurrent access.
   std::mutex mutex_;
+  // Lazily set by EnsureConsoleId()
+  std::shared_future<Ticket> consoleId_;
   // The SubscriptionHandles for the tables we have subscribed to. We keep these at the TableHandleManagerImpl level
   // so we can cleanly shut them all down when the TableHandleManagerImpl::shutdown() is called.
   std::set<std::shared_ptr<SubscriptionHandle>> subscriptions_;
