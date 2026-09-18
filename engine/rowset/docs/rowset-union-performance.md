@@ -1,8 +1,10 @@
 # Unioning N row sets
 
-Notes from DH-23676, which replaced sequential row set insertion with `RowSetFactory.union`. Eight strategies were
-built and measured against seven input shapes. This records what the measurements said, which intuitions were wrong,
-and the traps that produced confident wrong answers, so that none of it has to be rediscovered.
+Notes from DH-23676, in two parts. The first replaced sequential row set insertion with `RowSetFactory.union`, a
+merge in passes chosen from eight strategies measured against seven input shapes. The second, under "The radix
+build" below, is what replaced that merge after it regressed bucketed `updateBy`, with the shapes that were added to
+catch it. Both parts record what the measurements said, which intuitions were wrong, and the traps that produced
+confident wrong answers, so that none of it has to be rediscovered.
 
 | | |
 |---|---|
@@ -221,7 +223,7 @@ models it, and its `layout` parameter is the whole story:
 | Layout | Insert loop (before) | Merge in passes | Why |
 |---|---:|---:|---|
 | `ROUND_ROBIN`, 100K buckets | 165 ms | **73 ms** | Sorted neighbours have adjacent keys; every pairwise merge coalesces ranges, so each pass is half the previous one. |
-| `RANDOM`, 100K buckets | 190 ms | **345 ms** | Sorted neighbours rarely have keys that touch, so far less coalesces and each of the log2(100K) = 17 passes walks close to the full range count. (Measured before the benchmark was corrected to union only the buckets that received an added row, ~63K of 100K under this layout; the corrected cells are in the radix table below.) |
+| `RANDOM`, 100K buckets | 190 ms | **345 ms** | Sorted neighbours rarely have keys that touch, so little coalescing happens and each of the log2(100K) = 17 passes walks close to the full range count. (Measured before the benchmark was corrected to union only the buckets that received an added row, ~63K of 100K under this layout; the corrected cells are in the radix table below.) |
 
 The 2x claim in the original change was measured on `ROUND_ROBIN` alone. The nightly benchmarks deal keys randomly,
 and so does most keyed data. The result is the same dense region either way, so no measure of the result can tell
@@ -274,19 +276,21 @@ spanning two regions of a table addressed by region is: regions sit 2^43 keys, o
 Abutting pieces from different inputs meet in the scratch bitmap and become one run before any container exists,
 which is what the pairwise tree achieved only through its passes; that is why the coalescing layouts come back.
 
-### Measured, ms per union, one build
+### Measured, ms per union, one build of the final code
 
 | Case | Insert loop | Merge in passes | Radix | Radix vs merge | Radix vs insert loop |
 |---|---:|---:|---:|---:|---:|
-| `updateBy` comb, `RANDOM`, 10K buckets (all dirty) | 15.6 | 28.1 | **4.1** | 6.9x | 3.8x |
-| `updateBy` comb, `RANDOM`, 100K buckets (63K dirty) | 142 | 245 | **38.8** | 6.3x | 3.7x |
-| `updateBy` comb, `ROUND_ROBIN`, 10K | 15.0 | 6.9 | **3.5** | 2.0x | 4.3x |
-| `updateBy` comb, `ROUND_ROBIN`, 100K | 171 | 80 | **59** | 1.4x | 2.9x |
-| `NEW_BLOCKS`, 10K sets | 77 | 1.56 | **0.37** | 4.2x | 208x |
-| `NEW_BLOCKS`, 100K sets | 128 | 22.9 | **4.1** | 5.6x | 31x |
-| `INTERLEAVED`, n=1000, 100M rows | 102 | 118 | **42** | 2.8x | 2.4x |
-| `ADJACENT`, n=1000, 100M rows | 16 | 18.3 | 19.0 | 0.96x | 0.84x |
-| `REDUNDANT`, `PARTIAL`, `BLOCKS_SHUFFLED`, n=1000 | | 2.8, 28.3, 2.4 | 2.8, 28.4, 2.4 | 1.0x | |
+| `updateBy` comb, `RANDOM`, 10K buckets (all dirty) | 15.0 | 27.2 | **4.35** | 6.2x | 3.4x |
+| `updateBy` comb, `RANDOM`, 100K buckets (63K dirty) | 135 | 238 | **37.6** | 6.3x | 3.6x |
+| `updateBy` comb, `ROUND_ROBIN`, 10K | 14.9 | 7.0 | **3.56** | 2.0x | 4.2x |
+| `updateBy` comb, `ROUND_ROBIN`, 100K | 167 | 77.5 | **51.2** | 1.5x | 3.3x |
+| `NEW_BLOCKS`, 10K sets | 28.8 | 1.43 | **0.39** | 3.7x | 74x |
+| `NEW_BLOCKS`, 100K sets | 2,797 | 22.7 | **3.32** | 6.8x | 840x |
+| `REGIONED`, 1,000 sets | 29.0 | 5.17 | **2.66** | 1.9x | 11x |
+| `REGIONED`, 10,000 sets | 209 | 65.0 | **20.1** | 3.2x | 10x |
+| `INTERLEAVED`, n=1000, 100M rows | 97.1 | 110 | **43.7** | 2.5x | 2.2x |
+| `ADJACENT`, n=1000, 100M rows | 15.9 | 18.2 | 19.5 | 0.94x | 0.81x |
+| `REDUNDANT`, `PARTIAL`, `BLOCKS_SHUFFLED`, n=1000 | 2.45, 27.0, 10.1 | 2.74, 27.3, 2.40 | 2.77, 27.1, 2.37 | 1.0x | |
 
 The last row's inputs are `RspBitmap`s and take the merge in passes under both, by construction. `ADJACENT` is the one
 cell where the merge's coalescing was already as good as the radix build's.
@@ -298,7 +302,7 @@ over the block range when the blocks are indexed densely; past 2^20 blocks a has
 their sort take over, so the cost follows the touched blocks and not the range. The scratch bitmap and run array are 8 KB and
 256 KB per call.
 
-### Pitfall 9. A counting sort's off-by-one is silent
+### A counting sort's off-by-one is silent
 
 The first radix build stored block `b`'s count at `b + 1` and then took an exclusive prefix sum over the shifted
 array, so every block's slice began one block early and about a seventh of the rows were lost. Nothing threw. The

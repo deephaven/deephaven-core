@@ -52,10 +52,10 @@ public class UnionBenchmark {
          */
         NEW_BLOCKS,
         /**
-         * Sets of 50 single keys each, scattered over 64 regions of 10M rows addressed as a table with regioned column
-         * sources addresses them: region index in the high bits, 2^43 keys apart. The blocks touched are dense within
-         * each region and the block range between regions is empty, so this is what per-region or per-key row sets of a
-         * partitioned table look like to the union. Ignores {@code totalRows}.
+         * Sets of 50 single keys each, scattered over 64 regions of 10M rows, addressed as regioned column sources
+         * address them: region index in the high bits, 2^43 keys apart. The blocks touched are dense within each region
+         * and the block range between regions is empty, so this is what per-region or per-key row sets of a partitioned
+         * table look like to the union. Ignores {@code totalRows}.
          */
         REGIONED
     }
@@ -188,11 +188,28 @@ public class UnionBenchmark {
         expected = rb.build();
     }
 
-    @TearDown
+    /** Every invocation's result is checked and closed, so no result outlives the invocation that built it. */
+    @TearDown(Level.Invocation)
     public void validateResult() {
-        if (!actual.equals(expected)) {
-            throw new IllegalStateException();
+        if (actual == null) {
+            return;
         }
+        try {
+            if (!actual.equals(expected)) {
+                throw new IllegalStateException();
+            }
+        } finally {
+            actual.close();
+            actual = null;
+        }
+    }
+
+    @TearDown(Level.Trial)
+    public void closeInputs() {
+        for (final RowSet rowSet : toUnion) {
+            rowSet.close();
+        }
+        expected.close();
     }
 
     @Benchmark
