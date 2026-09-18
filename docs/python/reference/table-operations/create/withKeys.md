@@ -27,7 +27,7 @@ The key column name(s). Must name at least one existing column in the source tab
 A table that shares the underlying data and schema with the source table, with the `keyColumns` attribute set to the specified column names. If the source table already has this exact set of key columns, the source table itself may be returned.
 
 > [!NOTE]
-> `with_keys` only sets `keyColumns`; it does not clear an existing `uniqueKeys` attribute. If the source table was previously marked with [`with_unique_keys`](./withUniqueKeys.md), `uniqueKeys` remains `True` after calling `with_keys`, even though the new key columns may no longer be unique. To fully convert such a table, also remove the attribute with [`without_attributes`](./withoutAttributes.md): `table.with_keys(cols).without_attributes("uniqueKeys")`.
+> `with_keys` only sets `keyColumns`; it does not clear an existing `uniqueKeys` attribute. If the source table was previously marked with [`with_unique_keys`](./withUniqueKeys.md), `uniqueKeys` remains `True` after calling `with_keys`, even though the new key columns may no longer be unique. To fully convert such a table, also remove the attribute with [`without_attributes`](./withoutAttributes.md): `table.with_keys(cols).without_attributes("uniqueKeys")`, where `cols` is the same key column name(s) passed to `with_keys`.
 
 ## Preserved through table operations
 
