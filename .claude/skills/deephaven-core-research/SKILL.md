@@ -198,7 +198,7 @@ Report comprehensively:
 | Live updates | `engine/updategraph/src/main/java/io/deephaven/engine/updategraph/` |
 | Row/column data | `engine/chunk/`, `engine/rowset/`, `engine/vector/` |
 | Liveness/ref counting | `engine/updategraph/src/main/java/io/deephaven/engine/liveness/` |
-| Query syntax tree | `qst/` (immutable, serializable query representation) |
+| Query syntax tree | `qst/` (immutable, declarative query representation) |
 | Fluent table API | `table-api/` (provider-agnostic `TableOperations`) |
 | SQL front-end | `engine/sql/`, `sql/` |
 | Server/gRPC | `server/src/main/java/io/deephaven/server/` |
@@ -257,10 +257,12 @@ Report comprehensively:
 - **Key classes**: `TableOperations`, `Filter`, `Selectable`, `SortColumn`
 - **Purpose**: Defines fluent table operations independent of implementation
 
-### qst/ — Query Snapshot Table (immutable query syntax tree)
+### qst/ — Query syntax tree (immutable, declarative query representation)
 - **Entry points**: `qst/src/main/java/io/deephaven/qst/`
 - **Key classes**: `TableSpec`, `TableCreator`
-- **Purpose**: Serializable query representation — basis for gRPC remote execution
+- **Purpose**: A `TableSpec` can be replayed against a fluent `TableCreator` backend; this
+  decouples query construction from execution. (A proper serialization format for `TableSpec`
+  is future work — see `ParentsVisitor`.)
 
 ### engine/sql/ and sql/ — SQL front-end
 - **Entry points**: `engine/sql/src/main/java/io/deephaven/engine/sql/`, `sql/src/main/java/io/deephaven/sql/`
