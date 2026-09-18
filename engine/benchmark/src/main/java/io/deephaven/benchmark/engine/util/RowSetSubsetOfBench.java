@@ -24,8 +24,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * {@link OrderedLongSet#ixSubsetOf} across the same shapes, sizes and representations as {@link RowSetOverlapsBench},
- * which it shares its generators with through {@link RowSetShapes}.
+ * {@link OrderedLongSet#ixSubsetOf} across the same shapes and representations as {@link RowSetOverlapsBench}, which it
+ * shares its generators with through {@link RowSetShapes}. The sizes are its own, and smaller; see {@link #size}.
  *
  * <p>
  * Subset testing is not symmetric, and unlike overlapping it cannot skip: every range of the subject has to be found in
@@ -80,8 +80,13 @@ public class RowSetSubsetOfBench {
     private Pattern pattern;
 
     /**
-     * Ranges per side before the union. The superset holds up to twice as many, which is why this stops short of the
-     * sizes {@link RowSetOverlapsBench} uses: it has to fit in a {@link SortedRanges} as well.
+     * Ranges per side before the union, except on {@link Pattern#DENSE_VS_SPARSE}, where it is the count on the sparse
+     * side and the subject holds an eighth as many.
+     * <p>
+     * The superset is the union of the two sides, so for the patterns whose sides stay disjoint it holds about twice as
+     * many ranges as the subject, and for those that merge (adjacent or overlapping ranges) rather fewer. It has to fit
+     * in a {@link SortedRanges} too, which is why these sizes stop short of the 2048 {@link RowSetOverlapsBench}
+     * reaches.
      */
     @Param({"64", "512", "1024"})
     private int size;

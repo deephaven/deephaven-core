@@ -11,10 +11,12 @@ import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
  * The shapes the row set benchmarks in this package are built from, and the representations they are built as.
  *
  * <p>
- * A {@link Pattern} says how two sides of the same size interleave; {@link #build} turns one into a pair of key sets,
- * each a flat array of inclusive {@code [start, end]} pairs. What a benchmark then asks of the pair is its own
- * business: {@link RowSetOverlapsBench} tests the two against each other, while {@link RowSetSubsetOfBench} derives a
- * superset from them. Sharing the generators keeps the two measuring the same shapes.
+ * A {@link Pattern} says how two sides interleave; {@link #build} turns one into a pair of key sets, each a flat array
+ * of inclusive {@code [start, end]} pairs. Most patterns give the two sides the same number of ranges, but
+ * {@link Pattern#DENSE_VS_SPARSE} deliberately does not -- that asymmetry is what it is for. What a benchmark then asks
+ * of the pair is its own business: {@link RowSetOverlapsBench} tests the two against each other, while
+ * {@link RowSetSubsetOfBench} derives a superset from them. Sharing the generators keeps the two measuring the same
+ * shapes.
  *
  * <p>
  * {@link SortedRanges} holds one array position per single key and two per longer range, so a benchmark's sizes have to
@@ -102,8 +104,10 @@ public final class RowSetShapes {
     }
 
     /**
-     * The two sides of {@code pattern} at {@code size} ranges each.
+     * The two sides of {@code pattern}.
      *
+     * @param size ranges per side, except on {@link Pattern#DENSE_VS_SPARSE}, where it is the count on the sparse
+     *        second side and the dense first side holds an eighth as many
      * @return {@code {a, b}}, each a flat array of inclusive {@code [start, end]} pairs
      */
     public static long[][] build(final Pattern pattern, final int size) {
