@@ -24,32 +24,24 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Message stream implementation for RemoteFileSource bidirectional communication. Each instance represents a file
- * source provider for one client connection and implements RemoteFileSourceProvider so it can be registered with the
- * RemoteFileSourceClassLoader. Only one MessageStream can be "active" at a time (determined by the execution context).
- * The RemoteFileSourceClassLoader checks isActive() on each registered provider to find the active one.
+ * source provider for one client connection and implements RemoteFileSourceProvider so the RemoteFileSourceClassLoader
+ * can fetch resources through it.
+ *
+ * <p>
+ * The client declares the resources it will serve before each script run; see {@link RemoteFileSourceClassLoader} for
+ * how a declaration is claimed by the run it was made for.
  */
 public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, RemoteFileSourceProvider {
     private static final Logger log = LoggerFactory.getLogger(RemoteFileSourceMessageStream.class);
-
-    /**
-     * The current execution context containing the active message stream and configuration. Null when no execution
-     * context is active. Read via {@link #activeContextIfOwned()} to determine if this provider should handle resource
-     * requests from RemoteFileSourceClassLoader. Atomic so that a closing stream can relinquish ownership without
-     * disturbing an execution context another stream has since installed; see {@link #clearExecutionContextIfOwned()}.
-     */
-    private static final AtomicReference<RemoteFileSourceExecutionContext> executionContext = new AtomicReference<>();
-
 
     private final ObjectType.MessageStream connection;
     private final Map<String, CompletableFuture<byte[]>> pendingRequests = new ConcurrentHashMap<>();
 
     /**
-     * Creates a new RemoteFileSourceMessageStream for the given connection. Automatically registers this instance as a
-     * provider with the RemoteFileSourceClassLoader.
+     * Creates a new RemoteFileSourceMessageStream for the given connection.
      *
      * @param connection the message stream connection to the client
      * @throws ObjectCommunicationException if the initial message cannot be sent to the client
@@ -59,37 +51,6 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         this.connection = connection;
         // Send initial empty message to client as required by the ObjectType contract
         connection.onData(ByteBuffer.allocate(0));
-        // Register this instance as a provider with the RemoteFileSourceClassLoader
-        registerWithClassLoader();
-    }
-
-    /**
-     * Determines if this provider can source the specified resource. Only returns true if this message stream is
-     * active, the resource is a .groovy file, and the resource path matches one of the configured resource paths.
-     *
-     * @param resourceName the name of the resource to check
-     * @return true if this provider can source the resource, false otherwise
-     */
-    @Override
-    public boolean canSourceResource(String resourceName) {
-        final RemoteFileSourceExecutionContext context = activeContextIfOwned();
-        if (context == null) {
-            return false;
-        }
-
-        // Only handle .groovy source files, not compiled .class files
-        if (!resourceName.endsWith(".groovy")) {
-            return false;
-        }
-
-        for (String contextResourcePath : context.getResourcePaths()) {
-            if (resourceName.equals(contextResourcePath)) {
-                log.debug().append("Can source: ").append(resourceName).endl();
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -103,13 +64,6 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      */
     @Override
     public CompletableFuture<byte[]> requestResource(String resourceName) {
-        // Only service requests if this instance is active
-        if (!isActive()) {
-            log.warn().append("Request for resource ").append(resourceName)
-                    .append(" on inactive message stream").endl();
-            return CompletableFuture.failedFuture(new IllegalStateException("Inactive message stream"));
-        }
-
         log.info().append("Requesting resource: ").append(resourceName).endl();
 
         String requestId = UUID.randomUUID().toString();
@@ -148,100 +102,17 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     }
 
     /**
-     * Checks if this message stream is currently active. A message stream is active when the execution context is set
-     * and this instance is the active stream.
+     * Declares this connection's resources with the class loader, for the evaluation that begins next.
      *
-     * @return true if this message stream is active, false otherwise
+     * @param resourcePaths resource paths (e.g., "package/MyScript.groovy") to resolve from this connection
+     * @param dirty whether remote sources have changed and the cache should be cleared
      */
-    @Override
-    public boolean isActive() {
-        return activeContextIfOwned() != null;
-    }
-
-    /**
-     * Returns the execution context if it is currently owned by this message stream, otherwise null.
-     *
-     * <p>
-     * The context is read into a local so that callers observe a single, consistent snapshot. The context is nulled by
-     * {@link #clearExecutionContextIfOwned()} on the transport thread when the client stream closes, which can happen
-     * while a script evaluation is still resolving resources on another thread; checking the field and then reading
-     * through it separately would leave a window for a NullPointerException.
-     *
-     * @return the execution context owned by this message stream, or null if this stream is not the active one
-     */
-    private RemoteFileSourceExecutionContext activeContextIfOwned() {
-        final RemoteFileSourceExecutionContext context = executionContext.get();
-        return context != null && context.getActiveMessageStream() == this ? context : null;
-    }
-
-    /**
-     * Checks if this provider has any resource paths configured.
-     *
-     * @return true if this provider is active and has non-empty resource paths, false otherwise
-     */
-    @Override
-    public boolean hasConfiguredResources() {
-        final RemoteFileSourceExecutionContext context = activeContextIfOwned();
-        return context != null && !context.getResourcePaths().isEmpty();
-    }
-
-    /**
-     * Checks if this provider's execution context is dirty.
-     *
-     * @return true if this provider is active and the execution context is dirty, false otherwise
-     */
-    @Override
-    public boolean isDirty() {
-        final RemoteFileSourceExecutionContext context = activeContextIfOwned();
-        return context != null && context.isDirty();
-    }
-
-    /**
-     * Sets the execution context with the active message stream and resource paths.
-     *
-     * <p>
-     * This static method establishes which message stream instance should be considered "active" for resource requests,
-     * and which resource paths should be resolved from that remote source. Only one execution context can be active at
-     * a time across all instances.
-     *
-     * <p>
-     * In multi-client scenarios (Community Core), this ensures that only the message stream for the currently executing
-     * script is active, preventing resource requests from being serviced by the wrong client connection.
-     *
-     * <p>
-     * <b>Typical Usage:</b> Called at the beginning of script execution to establish which .groovy files should be
-     * sourced from the remote client rather than the local classpath.
-     *
-     * @param messageStream the message stream to set as active (must not be null)
-     * @param resourcePaths list of resource paths (e.g., "package/MyScript.groovy") to resolve from remote source
-     * @param isDirty whether remote sources have changed and cache should be cleared
-     * @throws IllegalArgumentException if messageStream is null
-     */
-    public static void setExecutionContext(RemoteFileSourceMessageStream messageStream, List<String> resourcePaths,
-            boolean isDirty) {
-        if (messageStream == null) {
-            throw new IllegalArgumentException("messageStream must not be null");
-        }
-
-        executionContext.set(new RemoteFileSourceExecutionContext(messageStream, resourcePaths, isDirty));
-        log.info().append("Set execution context with ")
+    private void declareExecutionContext(final List<String> resourcePaths, final boolean dirty) {
+        RemoteFileSourceClassLoader.getInstance().declareExecutionContext(this, resourcePaths, dirty);
+        log.info().append("Declared execution context with ")
                 .append(resourcePaths.size()).append(" resource paths")
-                .append(", isDirty: ").append(isDirty).endl();
+                .append(", isDirty: ").append(dirty).endl();
     }
-
-    /**
-     * Clears the execution context if it is still owned by this message stream at the moment of the clear. Checking
-     * ownership first and then clearing is not enough: closes arrive on the transport error path while
-     * {@link #setExecutionContext} runs on the message stream's executor, so a stream can be superseded in between and
-     * would otherwise discard the new owner's execution context.
-     */
-    private void clearExecutionContextIfOwned() {
-        final RemoteFileSourceExecutionContext context = activeContextIfOwned();
-        if (context != null && executionContext.compareAndSet(context, null)) {
-            log.info().append("Cleared execution context").endl();
-        }
-    }
-
 
     /**
      * Handles incoming data from the client. Parses RemoteFileSourceClientMessage messages and processes meta responses
@@ -319,10 +190,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         boolean isDirty = setExecutionContext.getIsDirty();
         List<String> resourcePaths = setExecutionContext.getResourcePathsList();
 
-        setExecutionContext(this, resourcePaths, isDirty);
-        log.info().append("Client set execution context for this message stream with ")
-                .append(resourcePaths.size()).append(" resource paths")
-                .append(", isDirty: ").append(isDirty).endl();
+        declareExecutionContext(resourcePaths, isDirty);
 
         sendExecutionContextAcknowledgment(requestId);
     }
@@ -348,93 +216,15 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     }
 
     /**
-     * Handles cleanup when the message stream is closed. Unregisters this provider from the
-     * RemoteFileSourceClassLoader, clears the execution context if this was active, and cancels all pending resource
-     * requests.
+     * Handles cleanup when the message stream is closed. Drops any declaration this connection made or is serving, and
+     * cancels all pending resource requests.
      */
     @Override
     public void onClose() {
-        // Unregister this provider from the RemoteFileSourceClassLoader
-        unregisterFromClassLoader();
-
-        // Clear the execution context, but only if this stream still owns it
-        clearExecutionContextIfOwned();
+        RemoteFileSourceClassLoader.getInstance().providerClosed(this);
 
         // Cancel all pending requests
         pendingRequests.values().forEach(future -> future.cancel(true));
         pendingRequests.clear();
     }
-
-    /**
-     * Register this message stream instance as a provider with the RemoteFileSourceClassLoader.
-     */
-    private void registerWithClassLoader() {
-        RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
-        classLoader.registerProvider(this);
-        log.info().append("Registered RemoteFileSourceMessageStream provider with RemoteFileSourceClassLoader").endl();
-    }
-
-    /**
-     * Unregister this message stream instance from the RemoteFileSourceClassLoader.
-     */
-    private void unregisterFromClassLoader() {
-        RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
-        classLoader.unregisterProvider(this);
-        log.info().append("Unregistered RemoteFileSourceMessageStream provider from RemoteFileSourceClassLoader")
-                .endl();
-    }
-
-
-    /**
-     * Encapsulates the execution context for remote file source operations. This includes the currently active message
-     * stream and the resource paths that should be resolved from the remote source. This class is immutable - a new
-     * instance is created each time the context changes.
-     */
-    public static class RemoteFileSourceExecutionContext {
-        private final RemoteFileSourceMessageStream activeMessageStream;
-        private final List<String> resourcePaths;
-        private final boolean isDirty;
-
-        /**
-         * Creates a new execution context.
-         *
-         * @param activeMessageStream the active message stream
-         * @param resourcePaths list of resource paths to resolve from remote source
-         * @param isDirty whether remote sources have changed and cache should be cleared
-         */
-        public RemoteFileSourceExecutionContext(RemoteFileSourceMessageStream activeMessageStream,
-                List<String> resourcePaths, boolean isDirty) {
-            this.activeMessageStream = activeMessageStream;
-            this.resourcePaths = resourcePaths;
-            this.isDirty = isDirty;
-        }
-
-        /**
-         * Gets the currently active message stream.
-         *
-         * @return the active message stream
-         */
-        public RemoteFileSourceMessageStream getActiveMessageStream() {
-            return activeMessageStream;
-        }
-
-        /**
-         * Gets the resource paths that should be resolved from the remote source.
-         *
-         * @return the list of resource paths
-         */
-        public List<String> getResourcePaths() {
-            return resourcePaths;
-        }
-
-        /**
-         * Gets whether remote sources have changed and cache should be cleared.
-         *
-         * @return true if dirty, false otherwise
-         */
-        public boolean isDirty() {
-            return isDirty;
-        }
-    }
 }
-

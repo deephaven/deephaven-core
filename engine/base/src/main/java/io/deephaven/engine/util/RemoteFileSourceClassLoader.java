@@ -10,27 +10,47 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A custom ClassLoader that fetches source files from remote clients via registered RemoteFileSourceProvider instances.
- * This is designed to support Groovy script imports where the source files are provided by remote clients.
+ * A custom ClassLoader that fetches source files from remote clients via a {@link RemoteFileSourceProvider}. This is
+ * designed to support Groovy script imports where the source files are provided by remote clients.
+ *
+ * <p>
+ * Sourcing is scoped to a single script evaluation. A client declares the resources it will serve via
+ * {@link #declareExecutionContext}, and {@link #beginEvaluation()} consumes that declaration for the run that is about
+ * to start. A run that was not preceded by a declaration therefore sources nothing, even while another client is
+ * connected, and a declaration arriving mid-run cannot retarget the run already underway.
  *
  * <p>
  * When a resource is requested (e.g., for a Groovy import), this class loader:
  * <ol>
- * <li>Checks registered providers to see if they can source the resource</li>
- * <li>Returns a custom URL with protocol "remotefile://" if a provider can handle it</li>
- * <li>When that URL is opened, fetches the resource bytes from the provider</li>
+ * <li>Checks the evaluation's declaration to see whether the resource should be sourced remotely</li>
+ * <li>Returns a custom URL with protocol "remotefile://" if it should</li>
+ * <li>When that URL is opened, fetches the resource bytes from the declaring provider</li>
  * </ol>
  */
 public class RemoteFileSourceClassLoader extends ClassLoader {
     private static final long RESOURCE_TIMEOUT_SECONDS = 5;
 
     private static volatile RemoteFileSourceClassLoader instance;
-    private final CopyOnWriteArrayList<RemoteFileSourceProvider> providers = new CopyOnWriteArrayList<>();
 
+    /**
+     * The most recent declaration, awaiting the evaluation it was made for. Consumed by {@link #beginEvaluation()}.
+     */
+    private final AtomicReference<RemoteFileSourceExecutionContext> pendingContext = new AtomicReference<>();
+
+    /**
+     * The declaration serving the evaluation currently underway, or null if that evaluation sources nothing remotely.
+     */
+    private volatile RemoteFileSourceExecutionContext evaluationContext;
+
+    /**
+     * The provider that served the previous evaluation, or null if it sourced nothing.
+     */
+    private volatile RemoteFileSourceProvider previousProvider;
 
     /**
      * Constructs a new RemoteFileSourceClassLoader with the specified parent class loader.
@@ -78,73 +98,89 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     }
 
     /**
-     * Registers a new provider that can source remote resources.
+     * Declares the resources a client will serve for its next script evaluation, replacing any declaration not yet
+     * consumed. Clients declare before each run; the declaration is claimed by whichever evaluation begins next.
      *
-     * @param provider the provider to register
+     * @param provider the provider that will service resource requests
+     * @param resourcePaths resource paths (e.g., "package/MyScript.groovy") to resolve from the provider
+     * @param dirty whether the remote sources have changed and caches must be cleared
      */
-    public void registerProvider(RemoteFileSourceProvider provider) {
-        providers.add(provider);
+    public void declareExecutionContext(final RemoteFileSourceProvider provider, final List<String> resourcePaths,
+            final boolean dirty) {
+        pendingContext.set(new RemoteFileSourceExecutionContext(provider, resourcePaths, dirty));
     }
 
     /**
-     * Unregisters a previously registered provider.
-     *
-     * @param provider the provider to unregister
-     */
-    public void unregisterProvider(RemoteFileSourceProvider provider) {
-        providers.remove(provider);
-    }
-
-    /**
-     * Returns whether there are any active providers with non-empty resource paths configured. This indicates that
-     * remote sources are actually configured, not just that the execution context is set.
-     *
-     * @return true if any provider is active and has resource paths configured, false otherwise
-     */
-    public boolean hasConfiguredRemoteSources() {
-        for (RemoteFileSourceProvider candidate : providers) {
-            if (candidate.isActive() && candidate.hasConfiguredResources()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Returns whether the current execution context is dirty, indicating that remote sources have changed and the cache
-     * should be cleared. This method is used by GroovyDeephavenSession to determine when to refresh the class cache.
-     *
-     * @return true if there is a dirty execution context, false otherwise
-     */
-    public boolean isDirty() {
-        for (RemoteFileSourceProvider candidate : providers) {
-            if (candidate.isActive() && candidate.isDirty()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Gets the resource with the specified name by checking registered providers.
+     * Claims the pending declaration, if any, for the evaluation that is about to start, and reports whether the
+     * sources it resolves against differ from the previous evaluation's. Must be called before every evaluation,
+     * including those with no declaration to claim, since claiming nothing is what makes such a run resolve locally.
      *
      * <p>
-     * This method iterates through all registered providers to see if any can source the requested resource. If a
-     * provider can handle the resource, a custom URL with protocol "remotefile://" is returned. If no provider can
-     * handle the resource, the request is delegated to the parent class loader.
+     * The result is true when the claimed declaration is dirty, meaning the client's sources changed, or when a
+     * different client is serving this evaluation - a client's dirty flag describes only its own sources, and says
+     * nothing about classes compiled from another client's.
+     *
+     * @return true if compiled output from the previous evaluation must be discarded
+     */
+    public boolean beginEvaluation() {
+        final RemoteFileSourceExecutionContext claimed = pendingContext.getAndSet(null);
+        // A declaration with no paths serves nothing, so it is no different from not having declared
+        final RemoteFileSourceExecutionContext context =
+                claimed != null && claimed.hasConfiguredResources() ? claimed : null;
+        final RemoteFileSourceProvider provider = context != null ? context.getProvider() : null;
+
+        final boolean sourcingChanged = (claimed != null && claimed.isDirty()) || provider != previousProvider;
+        previousProvider = provider;
+        evaluationContext = context;
+
+        return sourcingChanged;
+    }
+
+    /**
+     * Discards any declaration made or claimed by the given provider, for use when its connection closes. A provider
+     * that has since been superseded leaves the newer declaration untouched.
+     *
+     * @param provider the provider whose declarations should be dropped
+     */
+    public void providerClosed(final RemoteFileSourceProvider provider) {
+        final RemoteFileSourceExecutionContext pending = pendingContext.get();
+        if (pending != null && pending.getProvider() == provider) {
+            pendingContext.compareAndSet(pending, null);
+        }
+
+        final RemoteFileSourceExecutionContext current = evaluationContext;
+        if (current != null && current.getProvider() == provider) {
+            evaluationContext = null;
+        }
+    }
+
+    /**
+     * Returns whether the evaluation underway claimed a declaration with resource paths.
+     *
+     * @return true if this evaluation sources any resources remotely, false otherwise
+     */
+    public boolean hasConfiguredRemoteSources() {
+        return evaluationContext != null;
+    }
+
+    /**
+     * Gets the resource with the specified name, sourcing it remotely when this evaluation declared it.
+     *
+     * <p>
+     * This method consults the declaration claimed for the evaluation underway. If it covers the requested resource, a
+     * custom URL with protocol "remotefile://" is returned. Otherwise the request is delegated to the parent class
+     * loader.
      *
      * @param name the resource name
      * @return a URL for reading the resource, or null if the resource could not be found
      */
     @Override
     public URL getResource(String name) {
-        RemoteFileSourceProvider provider = null;
-        for (RemoteFileSourceProvider candidate : providers) {
-            if (candidate.isActive() && candidate.canSourceResource(name)) {
-                provider = candidate;
-                break;
-            }
-        }
+        // Snapshot the declaration so that resolution and the later fetch through the returned URL agree, even if
+        // the next evaluation begins in between
+        final RemoteFileSourceExecutionContext context = evaluationContext;
+        final RemoteFileSourceProvider provider =
+                context != null && context.canSourceResource(name) ? context.getProvider() : null;
 
         if (provider != null) {
             try {

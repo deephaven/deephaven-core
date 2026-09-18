@@ -168,7 +168,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private DeephavenGroovyShell groovyShell;
 
-    private boolean previousEvalHadRemoteSources = false;
 
     public static GroovyDeephavenSession of(
             final UpdateGraph updateGraph,
@@ -374,22 +373,16 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     @Override
     protected void prepareForEvaluation() {
         final RemoteFileSourceClassLoader remoteLoader = RemoteFileSourceClassLoader.getInstance();
-        final boolean hasRemoteSources = remoteLoader.hasConfiguredRemoteSources();
-        final boolean isDirty = remoteLoader.isDirty();
 
-        // Clear the cache in two cases:
-        // 1. isDirty flag is set - remote sources have changed
-        // 2. Previous eval had remote sources but current does not - catches edge case where script is run
-        // without providing execution context at all, and we need to clear from previous remote source scenario
-        if (isDirty || (previousEvalHadRemoteSources && !hasRemoteSources)) {
-            log.debug().append("Clearing class cache. isDirty: ").append(isDirty)
-                    .append(", previousEvalHadRemoteSources: ").append(previousEvalHadRemoteSources)
-                    .append(", hasRemoteSources: ").append(hasRemoteSources).endl();
+        // Claim the declaration made for this run, if there is one; a run without one resolves everything locally
+        final boolean sourcesChanged = remoteLoader.beginEvaluation();
+
+        // Cached classes were compiled against the previous evaluation's sources, so they can only be reused while
+        // those sources still apply
+        if (sourcesChanged) {
+            log.debug().append("Remote sourcing changed for this evaluation. Clearing class cache.").endl();
             resetGroovyShell();
         }
-
-        // Update state tracker for next execution
-        previousEvalHadRemoteSources = hasRemoteSources;
     }
 
     @Override

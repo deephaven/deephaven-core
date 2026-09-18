@@ -6,41 +6,12 @@ package io.deephaven.engine.util;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Interface for providing remote resources to the ClassLoader. Plugins can implement this interface and register with
- * RemoteFileSourceClassLoader to provide resources from remote sources.
+ * Fetches remote resources on behalf of the {@link RemoteFileSourceClassLoader}. Plugins implement this and declare the
+ * resources they can serve via
+ * {@link RemoteFileSourceClassLoader#declareExecutionContext(RemoteFileSourceProvider, java.util.List, boolean)}. The
+ * class loader decides which provider serves a given evaluation, from the declaration it claimed for that run.
  */
 public interface RemoteFileSourceProvider {
-    /**
-     * Check if this provider can source the given resource.
-     *
-     * @param resourceName the name of the resource to check (e.g., "com/example/MyClass.groovy")
-     * @return true if this provider can handle the resource, false otherwise
-     */
-    boolean canSourceResource(String resourceName);
-
-    /**
-     * Check if this provider is currently active and should be used for resource requests.
-     *
-     * @return true if this provider is active, false otherwise
-     */
-    boolean isActive();
-
-    /**
-     * Check if this provider has any resource paths configured. A provider can be active (execution context set) but
-     * have no resource paths configured.
-     *
-     * @return true if this provider has resource paths configured, false otherwise
-     */
-    boolean hasConfiguredResources();
-
-    /**
-     * Check if this provider's execution context is dirty, indicating that remote sources have changed and the cache
-     * should be cleared.
-     *
-     * @return true if this provider is active and dirty, false otherwise
-     */
-    boolean isDirty();
-
     /**
      * Request a resource from the remote source.
      *
@@ -51,4 +22,3 @@ public interface RemoteFileSourceProvider {
      */
     CompletableFuture<byte[]> requestResource(String resourceName);
 }
-

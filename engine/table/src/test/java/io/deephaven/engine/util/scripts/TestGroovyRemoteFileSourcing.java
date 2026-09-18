@@ -20,9 +20,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
 
@@ -42,7 +42,6 @@ public class TestGroovyRemoteFileSourcing {
     private GroovyDeephavenSession session;
 
     private final Map<String, String> remoteSources = new HashMap<>();
-    private final AtomicBoolean providerDirty = new AtomicBoolean(false);
     private RemoteFileSourceProvider provider;
 
     @Before
@@ -55,12 +54,11 @@ public class TestGroovyRemoteFileSourcing {
                 GroovyDeephavenSession.RunScripts.none());
 
         provider = createProvider();
-        RemoteFileSourceClassLoader.getInstance().registerProvider(provider);
     }
 
     @After
     public void teardown() {
-        RemoteFileSourceClassLoader.getInstance().unregisterProvider(provider);
+        RemoteFileSourceClassLoader.getInstance().providerClosed(provider);
         session.cleanup();
         LivenessScopeStack.pop(livenessScope);
         livenessScope.release();
@@ -68,34 +66,11 @@ public class TestGroovyRemoteFileSourcing {
     }
 
     private RemoteFileSourceProvider createProvider() {
-        return new RemoteFileSourceProvider() {
-            @Override
-            public boolean canSourceResource(String resourceName) {
-                return remoteSources.containsKey(resourceName);
-            }
-
-            @Override
-            public boolean isActive() {
-                return true;
-            }
-
-            @Override
-            public boolean hasConfiguredResources() {
-                return !remoteSources.isEmpty();
-            }
-
-            @Override
-            public boolean isDirty() {
-                return providerDirty.get();
-            }
-
-            @Override
-            public CompletableFuture<byte[]> requestResource(String resourceName) {
-                String source = remoteSources.get(resourceName);
-                return source != null
-                        ? CompletableFuture.completedFuture(source.getBytes())
-                        : CompletableFuture.completedFuture(null);
-            }
+        return resourceName -> {
+            String source = remoteSources.get(resourceName);
+            return source != null
+                    ? CompletableFuture.completedFuture(source.getBytes())
+                    : CompletableFuture.completedFuture(null);
         };
     }
 
@@ -156,7 +131,10 @@ public class TestGroovyRemoteFileSourcing {
             String expectedVersion, int expectedValue) {
         remoteSources.clear();
         remoteSources.putAll(remoteSourceMap);
-        providerDirty.set(isDirty);
+
+        // Declare this run's remote sources the way a client does, before each evaluation
+        RemoteFileSourceClassLoader.getInstance().declareExecutionContext(
+                provider, List.copyOf(remoteSources.keySet()), isDirty);
 
         ScriptSession.Changes c = session.evaluateScript(script);
         c.throwIfError();
@@ -272,7 +250,7 @@ public class TestGroovyRemoteFileSourcing {
         // classloader is refreshed before the script is evaluated, so the import check at the top of evaluate()
         // sees the refreshed loader and rejects the script before it reaches the Groovy compiler.
         remoteSources.clear();
-        providerDirty.set(true);
+        RemoteFileSourceClassLoader.getInstance().declareExecutionContext(provider, List.of(), true);
 
         final ScriptSession.Changes c2 = session.evaluateScript(SCRIPT_IMPORT_REMOTE_ONLY);
         assertNotNull("Script should fail when remote-only class is removed", c2.error);
