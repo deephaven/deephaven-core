@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit;
  * {@link Layout#RANDOM} each row lands in a uniformly random bucket, which is how the nightly {@code updateBy}
  * benchmarks generate their keys and what keyed data generally looks like: a bucket's rows are still single keys, but
  * adjacent keys land in unrelated buckets, so the sets that are neighbours after sorting by first key rarely have keys
- * that touch, far less coalesces, and the merge tree's passes stay close to the full range count throughout.
+ * that touch, little coalescing happens, and the merge tree's passes stay close to the full range count throughout.
  *
  * <p>
  * {@link #rspIxInsert} is the current {@link RspBitmap#ixInsert} path, which for a {@link SortedRanges} runs a pre-pass

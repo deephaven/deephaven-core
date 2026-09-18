@@ -69,8 +69,10 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * exactly once and no span is ever spliced or grown.
      *
      * <p>
-     * Each partial block's pieces are accumulated into a scratch bitmap of one block, which coalesces pieces that abut
-     * or overlap whatever their source, and the block's container is then built from that bitmap's runs as whichever
+     * Each partial block's pieces are reduced to runs: at most {@value #FEW_PIECES} pieces are sorted and coalesced in
+     * place, since clearing and scanning a block's bitmap would cost more than sorting that many ints; more are
+     * accumulated into a scratch bitmap of one block, whose runs are then read off. Either way pieces that abut or
+     * overlap coalesce whatever their source, and the block's container is built from the runs as whichever
      * representation is smallest for its cardinality and run count: a run container, an array container, or a bitmap
      * container; a single row becomes a singleton span, and a block that came out all ones joins the full block spans.
      * Consecutive full blocks become one span.

@@ -280,7 +280,7 @@ which is what the pairwise tree achieved only through its passes; that is why th
 
 | Case | Insert loop | Merge in passes | Radix | Radix vs merge | Radix vs insert loop |
 |---|---:|---:|---:|---:|---:|
-| `updateBy` comb, `RANDOM`, 10K buckets (all dirty) | 15.0 | 27.2 | **4.35** | 6.2x | 3.4x |
+| `updateBy` comb, `RANDOM`, 10K buckets (9,999 dirty) | 15.0 | 27.2 | **4.35** | 6.2x | 3.4x |
 | `updateBy` comb, `RANDOM`, 100K buckets (63K dirty) | 135 | 238 | **37.6** | 6.3x | 3.6x |
 | `updateBy` comb, `ROUND_ROBIN`, 10K | 14.9 | 7.0 | **3.56** | 2.0x | 4.2x |
 | `updateBy` comb, `ROUND_ROBIN`, 100K | 167 | 77.5 | **51.2** | 1.5x | 3.3x |
@@ -297,7 +297,8 @@ cell where the merge's coalescing was already as good as the radix build's.
 
 ### Through the batcher
 
-`RowSetUnionBatcher` hands the union at most `maxBatchSize` inputs at a time and folds the batch results together;
+`RowSetUnionBatcher` gathers at most `maxBatchSize` inputs before merging them, and its final `build` hands the union
+the collapsed groups together with the pending batch, up to `2 * maxBatchSize - 1` row sets;
 `DynamicWhereFilter`, `DataIndexPushdownManager`, `SyncTableFilter` and `LeaderTableFilter` reach the union that way.
 Ms per union, same build as the table above, cap at its default of 8192:
 
