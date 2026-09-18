@@ -1263,6 +1263,14 @@
                       {
                         "label": "withoutAttributes",
                         "path": "reference/table-operations/create/withoutAttributes.md"
+                      },
+                      {
+                        "label": "withKeys",
+                        "path": "reference/table-operations/select/withKeys.md"
+                      },
+                      {
+                        "label": "withUniqueKeys",
+                        "path": "reference/table-operations/select/withUniqueKeys.md"
                       }
                     ]
                   },

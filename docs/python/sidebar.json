@@ -1376,6 +1376,14 @@
                       {
                         "label": "without_attributes",
                         "path": "reference/table-operations/create/withoutAttributes.md"
+                      },
+                      {
+                        "label": "with_keys",
+                        "path": "reference/table-operations/create/withKeys.md"
+                      },
+                      {
+                        "label": "with_unique_keys",
+                        "path": "reference/table-operations/create/withUniqueKeys.md"
                       }
                     ]
                   },

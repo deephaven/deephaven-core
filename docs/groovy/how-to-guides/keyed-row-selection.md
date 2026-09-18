@@ -3,95 +3,78 @@ title: Keyed row selection
 sidebar_label: Keyed row selection
 ---
 
-This guide shows you how to use key columns to enable row-level selection in the Deephaven UI. Key columns annotate a table so that the UI knows which columns uniquely (or non-uniquely) identify each row. This allows users to select and track individual rows as the table updates.
+This guide shows you how to control what happens when a user selects a row in the Deephaven UI: whether the selection follows just that one row, or every row that shares its identity.
 
-Key columns are metadata — they do not change the data in the table, only how the UI interacts with it.
+By default, Deephaven has no notion of which column or columns make a row unique, so the UI can't tell when two rows represent the same real-world entity. Marking one or more columns as _key columns_ closes that gap. Key columns are metadata: setting them doesn't change any data in the table, only how the UI interprets a row selection.
 
-## `withKeys`
+## Select every row with a matching key
 
-`withKeys` sets one or more columns as the key columns for a table. Multiple rows may share the same key values. When a user selects a row, the UI tracks _all_ rows with the same key column values.
+Use `withKeys` when rows can legitimately share the same key value, such as several rows that belong to the same group, and you want selecting one of them to select all of them.
 
-### Syntax
-
-```groovy syntax
-table.withKeys(columns...)
-```
-
-### Parameters
-
-| Parameter | Type     | Description                                     |
-| --------- | -------- | ----------------------------------------------- |
-| `columns` | `String` | One or more column names to use as key columns. |
-
-### Returns
-
-A copy of the table with the key columns attribute set.
-
-### Example
-
-```groovy order=null
+```groovy test-set=1 order=null
 notKeyed = emptyTable(100).update("Key1=i%3", "Key2=(i+1)%3", "Value=i")
 keyedTable = notKeyed.withKeys("Key1", "Key2")
 ```
 
-In this example, `Key1` and `Key2` together form the key. Because values repeat (e.g., `Key1=0, Key2=1` appears many times), selecting any one row highlights all rows sharing that key combination.
+`Key1` and `Key2` together form the key. Because the combination `Key1=0, Key2=1` repeats across many rows, selecting any one of them in the Deephaven UI selects every row that shares that combination:
 
 ![Keyed row selection](../assets/how-to/keyed-row-selection.png)
 
-## `withUniqueKeys`
+`withKeys` records the key columns as a table attribute; it doesn't change the table's data:
 
-`withUniqueKeys` sets one or more columns as key columns _and_ declares that each combination of key values identifies exactly one row. When a user selects a row, only that single row is tracked.
-
-Use `withUniqueKeys` when your key columns form a true primary key — i.e., no two rows share the same key values.
-
-### Syntax
-
-```groovy syntax
-table.withUniqueKeys(columns...)
+```groovy test-set=1 order=:log
+println keyedTable.getAttributes()
 ```
 
-### Parameters
+See [`withKeys`](../reference/table-operations/select/withKeys.md) for the full syntax and parameter reference.
 
-| Parameter | Type     | Description                                            |
-| --------- | -------- | ------------------------------------------------------ |
-| `columns` | `String` | One or more column names to use as unique key columns. |
+## Select a single row
 
-### Returns
+If your key columns identify exactly one row apiece, a true primary key, use `withUniqueKeys` instead. It sets the same key-column metadata as `withKeys`, but also tells the UI that no two rows share a key, so selecting a row never pulls in any others.
 
-A copy of the table with the key columns and unique keys attributes set.
-
-### Example
-
-```groovy order=null
+```groovy test-set=2 order=null
 notKeyed = emptyTable(100).update("Key1=i", "Key2=i+1", "Value=i*2")
 uniqueKeyedTable = notKeyed.withUniqueKeys("Key1", "Key2")
 ```
 
-In this example, every row has a distinct `Key1` value, so selecting a row tracks only that row.
+Every row here has a distinct `Key1` value, so selecting a row tracks only that row:
 
 ![Unique keyed row selection](../assets/how-to/keyed-row-selection-unique.png)
 
-## Key column attributes
+```groovy test-set=2 order=:log
+println uniqueKeyedTable.getAttributes()
+```
 
-Under the hood, `withKeys` and `withUniqueKeys` set table attributes:
+See [`withUniqueKeys`](../reference/table-operations/select/withUniqueKeys.md) for the full syntax and parameter reference.
 
-- `KEY_COLUMNS_ATTRIBUTE` — a comma-separated list of key column names.
-- `UNIQUE_KEYS_ATTRIBUTE` — set to `true` by `withUniqueKeys` to signal that keys are unique.
+> [!NOTE]
+> `withUniqueKeys` doesn't verify that the key values are actually unique; it only records that assumption. If two rows do end up sharing a key, the UI treats them the same way `withKeys` would.
 
-These attributes are preserved through the following operations:
+## Keep key columns through later operations
 
-- `filter`
-- `sort`
-- `reverse`
-- `flatten`
-- `updateView`
-- `naturalJoin`
-- `wouldMatch`
+Key columns are just table attributes, so only specific operations carry them forward automatically. [`where`](../reference/table-operations/filter/where.md), [`sort`](../reference/table-operations/sort/sort.md), [`reverse`](../reference/table-operations/sort/reverse.md), [`flatten`](../reference/table-operations/create/flatten.md), [`updateView`](../reference/table-operations/select/update-view.md), [`naturalJoin`](../reference/table-operations/join/natural-join.md), [`exactJoin`](../reference/table-operations/join/exact-join.md), and [`wouldMatch`](../reference/table-operations/filter/would-match.md) all preserve them. Most other operations, including [`select`](../reference/table-operations/select/select.md), [`update`](../reference/table-operations/select/update.md), [`join`](../reference/table-operations/join/join.md), and [`dropColumns`](../reference/table-operations/select/drop-columns.md), do not.
 
-Any other operation (e.g., `select`, `update`, `join`, `dropColumns`) will drop the key column attributes. If you need key columns after such an operation, call `withKeys` or `withUniqueKeys` again on the result.
+[`view`](../reference/table-operations/select/view.md) is an easy one to trip over: it looks like `updateView`'s sibling, but it does _not_ preserve key columns, while `updateView` does.
+
+If an operation you need drops the key columns, call `withKeys` or `withUniqueKeys` again on the result:
+
+```groovy order=:log
+source = emptyTable(10).update("Key=i", "Value=i*2").withUniqueKeys("Key")
+println source.getAttributes()
+
+afterSelect = source.select("Key", "Value")
+println afterSelect.getAttributes()
+
+restored = afterSelect.withUniqueKeys("Key")
+println restored.getAttributes()
+```
+
+See [`withKeys`](../reference/table-operations/select/withKeys.md) and [`withUniqueKeys`](../reference/table-operations/select/withUniqueKeys.md) for the exhaustive list of operations that preserve these attributes.
 
 ## Related documentation
 
+- [Access table metadata](./metadata.md)
 - [`withAttributes`](../reference/table-operations/select/withAttributes.md)
-- [`getAttribute`](../reference/table-operations/metadata/getAttribute.md)
+- [`withKeys`](../reference/table-operations/select/withKeys.md)
+- [`withUniqueKeys`](../reference/table-operations/select/withUniqueKeys.md)
 - [`getAttributes`](../reference/table-operations/metadata/getAttributes.md)
