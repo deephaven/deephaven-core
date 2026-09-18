@@ -513,8 +513,12 @@ public abstract class RowSetFactory {
      * placement positions during the second, and finally lays the blocks out in order for the builder.
      */
     private abstract static class BlockIndex {
-        /** Runs of full blocks as first, last pairs, in the order the ranges were seen. */
+        /**
+         * Runs of full blocks as first, last pairs, in the order the ranges were seen until {@link #coalesceFullRuns()}
+         * sorts and merges them in place.
+         */
         long[] fullRuns = new long[16];
+        /** Runs recorded in {@link #fullRuns}; pairs in use are the first {@code 2 * fullRunCount} entries. */
         int fullRunCount;
 
         /**
@@ -596,10 +600,13 @@ public abstract class RowSetFactory {
 
     /** Blocks indexed by offset from the first block, in arrays over the whole block range. */
     private static final class DenseBlockIndex extends BlockIndex {
+        /** The lowest block any small input touches; block {@code firstBlock + bi} is at index {@code bi}. */
         private final long firstBlock;
+        /** Blocks from the first to the last touched, inclusive, whether or not each received a piece. */
         private final int blockSpan;
         /** Piece counts at {@code bi + 1} while counting; where block {@code bi}'s pieces begin once finished. */
         private final int[] offsets;
+        /** Where the next piece of block {@code bi} goes, advanced as the second walk places them. */
         private int[] next;
 
         DenseBlockIndex(final long firstBlock, final int blockSpan) {
