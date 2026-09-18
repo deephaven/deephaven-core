@@ -12,6 +12,7 @@ import io.deephaven.proto.backplane.grpc.ConfigValue;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
 import io.deephaven.web.client.api.event.HasEventHandling;
+import io.deephaven.web.client.api.remotefilesource.JsRemoteFileSourceService;
 import io.deephaven.web.client.api.storage.JsStorageService;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -93,6 +94,7 @@ public class CoreClient extends HasEventHandling {
             LOGIN_TYPE_ANONYMOUS = "anonymous";
 
     private final IdeConnection ideConnection;
+    private Promise<JsRemoteFileSourceService> remoteFileSourceServicePromise;
 
     public CoreClient(String serverUrl,
             @TsTypeRef(ConnectOptions.class) @JsOptional @JsNullable Object connectOptions) {
@@ -209,6 +211,45 @@ public class CoreClient extends HasEventHandling {
      */
     public Promise<Void> onConnected(@JsOptional @JsNullable Double timeoutInMillis) {
         return ideConnection.onConnected();
+    }
+
+    /**
+     * Returns the remote file source service for this client, fetching it on first use.
+     *
+     * <p>
+     * The service is cached, but only for as long as it is usable: its message stream does not reconnect and is not
+     * refetched when the connection is re-established (deephaven-core#3604), so the cached instance is discarded once
+     * that stream closes and the next call fetches a fresh one. A failed fetch is not cached either.
+     *
+     * @return a promise resolving to the remote file source service
+     */
+    public Promise<JsRemoteFileSourceService> getRemoteFileSourceService() {
+        if (remoteFileSourceServicePromise == null) {
+            final Promise<JsRemoteFileSourceService> pending =
+                    JsRemoteFileSourceService.fetchPlugin(ideConnection.connection.get());
+            remoteFileSourceServicePromise = pending;
+            pending.then(service -> {
+                service.setClosedHandler(() -> forgetRemoteFileSourceService(pending));
+                return null;
+            }, error -> {
+                forgetRemoteFileSourceService(pending);
+                return null;
+            });
+        }
+
+        return remoteFileSourceServicePromise;
+    }
+
+    /**
+     * Drops the cached remote file source service, provided it is still the one that was cached. A later fetch may
+     * already have replaced it, in which case the newer instance must be left alone.
+     *
+     * @param expected the promise to forget
+     */
+    private void forgetRemoteFileSourceService(final Promise<JsRemoteFileSourceService> expected) {
+        if (remoteFileSourceServicePromise == expected) {
+            remoteFileSourceServicePromise = null;
+        }
     }
 
     /**
