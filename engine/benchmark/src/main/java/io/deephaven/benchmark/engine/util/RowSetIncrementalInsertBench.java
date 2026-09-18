@@ -37,12 +37,21 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>
  * Each cycle a contiguous run of {@code addedPerCycle} rows arrives at the top of a {@code rows}-key table. Rows are
- * dealt round robin across {@code buckets} buckets, so a bucket's rows are single keys spaced {@code buckets} apart,
- * and each dirty bucket reports the added rows it received plus the {@code windowRows} rows before them as a small row
- * set: a {@link SortedRanges} when there are many buckets, an {@link RspBitmap} when there are few and each bucket's
- * rows are dense. {@code updateBy} accumulates those per-bucket sets into one row set (the modified rows, and the rows
- * each input source must supply), so the accumulator sees one small insert per dirty bucket: an {@link RspBitmap} once
- * it outgrows {@link SortedRanges}, and every insert lands well below its last block.
+ * dealt across {@code buckets} buckets according to {@code layout}, and each dirty bucket reports the added rows it
+ * received plus the {@code windowRows} rows before them as a small row set: a {@link SortedRanges} when there are many
+ * buckets, an {@link RspBitmap} when there are few and each bucket's rows are dense. {@code updateBy} accumulates those
+ * per-bucket sets into one row set (the modified rows, and the rows each input source must supply), so the accumulator
+ * sees one small insert per dirty bucket: an {@link RspBitmap} once it outgrows {@link SortedRanges}, and every insert
+ * lands well below its last block.
+ *
+ * <p>
+ * The layout decides whether merging two buckets' sets shrinks anything. Under {@link Layout#ROUND_ROBIN} a bucket's
+ * rows are single keys exactly {@code buckets} apart, so buckets adjacent in key order have adjacent keys and every
+ * pairwise merge coalesces ranges; the merge tree's later passes are over ever fewer ranges. Under
+ * {@link Layout#RANDOM} each row lands in a uniformly random bucket, which is how the nightly {@code updateBy}
+ * benchmarks generate their keys and what keyed data generally looks like: a bucket's rows are still single keys, but
+ * no two buckets' keys are ever adjacent, so nothing coalesces and every pass over the merge tree walks every range
+ * again.
  *
  * <p>
  * {@link #rspIxInsert} is the current {@link RspBitmap#ixInsert} path, which for a {@link SortedRanges} runs a pre-pass
@@ -78,31 +87,68 @@ public class RowSetIncrementalInsertBench {
     @Param({"50"})
     private int windowRows;
 
+    /** How rows are dealt to buckets; see the class comment for what each does to the merge. */
+    @Param({"ROUND_ROBIN", "RANDOM"})
+    private Layout layout;
+
+    public enum Layout {
+        /** Row {@code k} belongs to bucket {@code k % buckets}. */
+        ROUND_ROBIN,
+        /** Each row belongs to a uniformly random bucket. */
+        RANDOM
+    }
+
+    /** {@link RowSetFactory#unionStrategy} for the {@link #rowSetApiUnion} cells. */
+    @Param({"SHIPPED", "RADIX"})
+    private RowSetFactory.UnionStrategy unionStrategy;
+
     private long frontier;
     private OrderedLongSet[] bucketAffectedSets;
     private WritableRowSet[] bucketAffectedRowSets;
 
     @Setup
     public void setup() {
+        RowSetFactory.unionStrategy = unionStrategy;
         frontier = rows - addedPerCycle;
         final long windowStart = Math.max(0, frontier - (long) windowRows * buckets);
         bucketAffectedSets = new OrderedLongSet[buckets];
         bucketAffectedRowSets = new WritableRowSet[buckets];
+        final Random random = new Random(RANDOM_SEED);
+        // Every key from the start of the window region through the end of the added rows belongs to exactly one
+        // bucket, so each bucket's affected set averages windowRows plus addedPerCycle / buckets keys under either
+        // layout; only where those keys fall differs.
+        final RowSetBuilderSequential[] builders = new RowSetBuilderSequential[buckets];
+        for (int bucket = 0; bucket < buckets; ++bucket) {
+            builders[bucket] = RowSetFactory.builderSequential();
+        }
+        final boolean[] dirty = new boolean[buckets];
+        for (long key = windowStart; key < rows; ++key) {
+            final int bucket = layout == Layout.ROUND_ROBIN
+                    ? (int) Math.floorMod(key, (long) buckets)
+                    : random.nextInt(buckets);
+            builders[bucket].appendKey(key);
+            if (key >= frontier) {
+                dirty[bucket] = true;
+            }
+        }
+        // Only buckets that received an added row are dirty, and updateBy unions only those; under a random layout
+        // some buckets receive none this cycle and are left out, lookback rows and all.
+        int dirtyCount = 0;
         long totalKeys = 0;
         for (int bucket = 0; bucket < buckets; ++bucket) {
-            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            long key = windowStart + Math.floorMod(bucket - windowStart, (long) buckets);
-            for (; key < rows; key += buckets) {
-                builder.appendKey(key);
-                ++totalKeys;
+            final WritableRowSet affected = builders[bucket].build();
+            if (!dirty[bucket]) {
+                affected.close();
+                continue;
             }
-            final WritableRowSet affected = builder.build();
-            bucketAffectedRowSets[bucket] = affected;
-            bucketAffectedSets[bucket] = ((WritableRowSetImpl) affected).getInnerSet();
+            totalKeys += affected.size();
+            bucketAffectedRowSets[dirtyCount] = affected;
+            bucketAffectedSets[dirtyCount++] = ((WritableRowSetImpl) affected).getInnerSet();
         }
+        bucketAffectedRowSets = Arrays.copyOf(bucketAffectedRowSets, dirtyCount);
+        bucketAffectedSets = Arrays.copyOf(bucketAffectedSets, dirtyCount);
         // Buckets go dirty in an order unrelated to their keys.
-        final Random random = new Random(RANDOM_SEED);
-        for (int i = buckets - 1; i > 0; --i) {
+        for (int i = dirtyCount - 1; i > 0; --i) {
             final int j = random.nextInt(i + 1);
             final OrderedLongSet set = bucketAffectedSets[i];
             bucketAffectedSets[i] = bucketAffectedSets[j];
@@ -111,10 +157,33 @@ public class RowSetIncrementalInsertBench {
             bucketAffectedRowSets[i] = bucketAffectedRowSets[j];
             bucketAffectedRowSets[j] = rs;
         }
-        System.out.println("buckets=" + buckets + " keysPerBucket=" + (totalKeys / buckets)
-                + " keysInsertedPerCycle=" + totalKeys
+        System.out.println("buckets=" + buckets + " dirtyBuckets=" + dirtyCount
+                + " keysPerDirtyBucket=" + (totalKeys / dirtyCount) + " keysInsertedPerCycle=" + totalKeys
                 + " bucketSetType=" + bucketAffectedSets[0].getClass().getSimpleName());
         describeWorkload();
+        checkUnionAgreesWithInsert();
+    }
+
+    /**
+     * The merge under test is configurable, so make sure the configuration in force still produces the same row set as
+     * the insert loop before timing it.
+     */
+    private void checkUnionAgreesWithInsert() {
+        final List<RowSet> toUnion = new ArrayList<>(bucketAffectedRowSets.length + 1);
+        try (final WritableRowSet expected = RowSetFactory.fromRange(frontier, rows - 1);
+                final WritableRowSet seed = RowSetFactory.fromRange(frontier, rows - 1)) {
+            for (final WritableRowSet affected : bucketAffectedRowSets) {
+                expected.insert(affected);
+            }
+            toUnion.add(seed);
+            toUnion.addAll(Arrays.asList(bucketAffectedRowSets));
+            try (final WritableRowSet actual = RowSetFactory.union(toUnion)) {
+                if (!actual.equals(expected)) {
+                    throw new IllegalStateException("union disagrees with insert under " + unionStrategy + ": "
+                            + actual.size() + " vs " + expected.size());
+                }
+            }
+        }
     }
 
     /**

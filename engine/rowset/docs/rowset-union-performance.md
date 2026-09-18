@@ -7,9 +7,10 @@ and the traps that produced confident wrong answers, so that none of it has to b
 | | |
 |---|---|
 | **Problem** | Inserting N row sets into one growing accumulator is quadratic when the inputs are disjoint and arrive out of key order. |
-| **What shipped** | `RowSetFactory.union` — sort by first row key, then merge in passes on an append-or-duplication rule. |
-| **Best case** | 25.7x — 1B rows, 1000 disjoint blocks in reverse order. |
-| **Worst case** | 0.84x — fully redundant input at n=1000, a 0.44 ms absolute loss. |
+| **What shipped first** | `RowSetFactory.union` — sort by first row key, then merge in passes on an append-or-duplication rule. |
+| **What replaced it** | The radix build below: when the result must be an `RspBitmap`, bucket every range by block and build each block's container once. The merge in passes remains for bitmap-sized inputs and small results. |
+| **Best case of the merge** | 25.7x — 1B rows, 1000 disjoint blocks in reverse order. |
+| **Worst case of the merge** | 0.16x — 100K per-bucket combs of ~50 random keys, the shape bucketed `updateBy` produces every cycle. See below. |
 
 ## Why sequential insertion falls over
 
@@ -204,6 +205,100 @@ It does two things before the merge sees anything, both of which the merge would
 The ordering caveat from pitfall 5 stands. Batching still forfeits the global sort, and the collapse only fires for
 input that arrives in ascending order; it makes the good case cheaper, not the bad case good.
 
+## The radix build
+
+The merge in passes shipped on the measurements above and cost bucketed incremental `updateBy` half its throughput in
+the next nightly. Everything below was learned finding out why, and is the reason `RowSetFactory.union` now builds
+its result by a radix pass on the block bits whenever the result must be an `RspBitmap`.
+
+### What the merge got wrong
+
+The shape `updateBy` hands over is one row set per dirty bucket per cycle: for 100K buckets, 100K sets of ~50 single
+keys each, every set spanning the whole recently added region, no two sharing a key. `RowSetIncrementalInsertBench`
+models it, and its `layout` parameter is the whole story:
+
+| Layout | Insert loop (before) | Merge in passes | Why |
+|---|---:|---:|---|
+| `ROUND_ROBIN`, 100K buckets | 165 ms | **73 ms** | Sorted neighbours have adjacent keys; every pairwise merge coalesces ranges, so each pass is half the previous one. |
+| `RANDOM`, 100K buckets | 190 ms | **345 ms** | Nothing coalesces; every one of log2(100K) = 17 passes walks every range again. (Measured before the benchmark was corrected to union only the buckets that received an added row, ~63K of 100K under this layout; the corrected cells are in the radix table below.) |
+
+The 2x claim in the original change was measured on `ROUND_ROBIN` alone. The nightly benchmarks deal keys randomly,
+and so does most keyed data. The result is the same dense region either way, so no measure of the result can tell
+the two apart; only the relative alignment of the inputs does.
+
+Four attempts preceded the radix build, each tried behind a runtime switch in one build and measured on the same
+matrix; none is in the code.
+
+- **A size threshold** in the timsort spirit, absorbing any input under N rows: does nothing below the per-set size,
+  is 27% *worse* at the set size (some inputs absorb, the rest still merge pairwise), and above it collapses into the
+  insert loop in sorted order. The knob is on the wrong quantity.
+- **Per-step density estimates** from first and last keys, sizes and span counts: matched the threshold on the target
+  shape, but still a greedy pairwise decision, and a rule that let a `SortedRanges` accumulator keep absorbing was
+  quadratic per group on inputs of two keys (845 ms against 21 ms on `NEW_BLOCKS` below). Removed.
+- **A pre-pass** summing `SortedRanges` entries to know the result is an `RspBitmap`, then starting from an empty one and
+  inserting every small input: 158 ms on `RANDOM` 100K, the first result under the insert loop. It gives back the
+  coalescing win on `ROUND_ROBIN` (105 ms against 73).
+- **A planned span array** from the blocks the inputs touch, so no insert splices: 15 ms against 21 on `NEW_BLOCKS`
+  at 100K, otherwise within noise of the pre-pass.
+
+Two things came out of those that matter beyond this change:
+
+- **Finishing a mutation per input is a walk of the span array per input.** `WritableRowSetImpl.insert` calls
+  `finishMutations`, which rebuilds the cardinality cache from the lowest modified span to the last one. Over a long
+  span array that was 90% of the time on the `NEW_BLOCKS` shape, not the splices it was blamed on. Any loop inserting
+  many small sets should go through the unsafe mutators and finish once.
+- **The `NEW_BLOCKS` shape** in `UnionBenchmark`: set `i` of `n` holds `i << 16` and `(1 << 30) + ((n + i) << 16)`,
+  so every set brings two blocks nobody else touches and, inserted in first-key order, every low key splices into the
+  middle of a span array whose tail is every earlier set's high key. It is the sequential-insert hazard in its purest form and
+  belongs in any future matrix.
+
+### What the radix build does
+
+Once the pre-pass knows the result is an `RspBitmap` (the inputs' `SortedRanges` entries exceed one's capacity, an
+`RspBitmap` input counting as more than that), two walks over the `SingleRange` and `SortedRanges` inputs bucket their
+ranges by block: the first counts the block-local pieces each block receives and marks in a bitset the blocks some
+range covers whole, the second places each piece, its two 16-bit block-local ends in one int, into its block's slice
+of one array. `RspBitmap.makeFromBlockPieces` then walks the blocks in order and builds each container exactly once:
+up to 64 pieces are sorted and coalesced directly, more go through an 8KB scratch bitmap whose runs are read off;
+the container is whichever of run, array and bitmap is smallest for that cardinality and run count; a block that
+comes out all ones joins a full block span; a single row is a singleton span. The span array is laid out once at its
+final size and nothing is ever inserted. `RspBitmap` inputs, whose insert is a walk of both span arrays, still merge
+in passes, and the two results are combined by inserting the smaller into the larger. A block range wider than 2^20
+blocks falls back to the merge in passes.
+
+Abutting pieces from different inputs meet in the scratch bitmap and become one run before any container exists,
+which is what the pairwise tree achieved only through its passes; that is why the coalescing layouts come back.
+
+### Measured, ms per union, one build
+
+| Case | Insert loop | Merge in passes | Radix | Radix vs merge | Radix vs insert loop |
+|---|---:|---:|---:|---:|---:|
+| `updateBy` comb, `RANDOM`, 10K buckets (all dirty) | 15.6 | 28.1 | **4.1** | 6.9x | 3.8x |
+| `updateBy` comb, `RANDOM`, 100K buckets (63K dirty) | 142 | 245 | **38.8** | 6.3x | 3.7x |
+| `updateBy` comb, `ROUND_ROBIN`, 10K | 15.0 | 6.9 | **3.5** | 2.0x | 4.3x |
+| `updateBy` comb, `ROUND_ROBIN`, 100K | 171 | 80 | **59** | 1.4x | 2.9x |
+| `NEW_BLOCKS`, 10K sets | 77 | 1.56 | **0.37** | 4.2x | 208x |
+| `NEW_BLOCKS`, 100K sets | 128 | 22.9 | **4.1** | 5.6x | 31x |
+| `INTERLEAVED`, n=1000, 100M rows | 102 | 118 | **42** | 2.8x | 2.4x |
+| `ADJACENT`, n=1000, 100M rows | 16 | 18.3 | 19.0 | 0.96x | 0.84x |
+| `REDUNDANT`, `PARTIAL`, `BLOCKS_SHUFFLED`, n=1000 | | 2.8, 28.3, 2.4 | 2.8, 28.4, 2.4 | 1.0x | |
+
+The last row's inputs are `RspBitmap`s and take the merge in passes under both, by construction. `ADJACENT` is the one
+cell where the merge's coalescing was already as good as the radix build's.
+
+### Costs
+
+The piece array is four bytes a piece, about 20 MB transient for the 100K comb, plus eight bytes a block of offsets
+over the block range, which is what caps the radix path at 2^20 blocks. The scratch bitmap and run array are 8 KB and
+256 KB per call.
+
+### Pitfall 9. A counting sort's off-by-one is silent
+
+The first radix build stored block `b`'s count at `b + 1` and then took an exclusive prefix sum over the shifted
+array, so every block's slice began one block early and about a seventh of the rows were lost. Nothing threw. The
+setup-time equality check both benchmarks make against the insert loop caught it before a timing was reported;
+that check is not optional.
+
 ## Pitfalls
 
 Each of these produced a confident, plausible, wrong conclusion first. They are the parts of this work least likely to
@@ -301,8 +396,8 @@ plausible-sounding optimization was for a cost that did not exist.
 - **Redundant input at n=1000** costs ~19%, about 240 ns per input set of decision overhead on a shape where nothing
   ever appends, so every step pays the full test. A latch on first duplication would remove most of it, since the
   duplication count is monotonic within a group.
-- **Cycle-level `updateBy` confirmation.** The ~2x is measured on the row set work in isolation; the nightly bucketed
-  benchmarks are the real check.
+- **Cycle-level `updateBy` confirmation of the radix build.** The numbers above are the row set work in isolation; the
+  nightly bucketed benchmarks are the real check, as they were for the merge, whose 2x in isolation was -54% there.
 - **Interleaved input at n=1000** remains 2.5 seconds however it is merged. Nothing tried helps meaningfully; the
   result genuinely has 38M ranges.
 

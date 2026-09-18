@@ -42,22 +42,32 @@ public class RowSetFactoryUnionTest {
     }
 
     /**
-     * Assert that both input forms produce the union and leave their inputs intact.
+     * Assert that both input forms produce the union under every strategy and leave their inputs intact.
      */
     private static void check(final List<RowSet> rowSets) {
         try (final WritableRowSet expected = reference(rowSets)) {
-            final long[] sizesBefore = rowSets.stream().mapToLong(RowSet::size).toArray();
-
-            try (final WritableRowSet actual = RowSetFactory.union(rowSets)) {
-                assertThat(actual).isEqualTo(expected);
-            }
-            try (final WritableRowSet actual = RowSetFactory.union(rowSets.toArray(RowSet[]::new))) {
-                assertThat(actual).isEqualTo(expected);
-            }
-            // Inputs are untouched by the non-consuming form.
-            assertThat(rowSets.stream().mapToLong(RowSet::size).toArray()).isEqualTo(sizesBefore);
-
+            checkAgainst(rowSets, expected);
         }
+    }
+
+    private static void checkAgainst(final List<RowSet> rowSets, final RowSet expected) {
+        final long[] sizesBefore = rowSets.stream().mapToLong(RowSet::size).toArray();
+        final RowSetFactory.UnionStrategy defaultStrategy = RowSetFactory.unionStrategy;
+        try {
+            for (final RowSetFactory.UnionStrategy strategy : RowSetFactory.UnionStrategy.values()) {
+                RowSetFactory.unionStrategy = strategy;
+                try (final WritableRowSet actual = RowSetFactory.union(rowSets)) {
+                    assertThat(actual).as(strategy.name()).isEqualTo(expected);
+                }
+                try (final WritableRowSet actual = RowSetFactory.union(rowSets.toArray(RowSet[]::new))) {
+                    assertThat(actual).as(strategy.name()).isEqualTo(expected);
+                }
+            }
+        } finally {
+            RowSetFactory.unionStrategy = defaultStrategy;
+        }
+        // Inputs are untouched by the non-consuming form.
+        assertThat(rowSets.stream().mapToLong(RowSet::size).toArray()).isEqualTo(sizesBefore);
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -290,6 +300,134 @@ public class RowSetFactoryUnionTest {
                 @SuppressWarnings("deprecation")
                 final WritableRowSet actual = RowSetFactory.unionInsert(List.of(r1, r2))) {
             assertThat(actual).isEqualTo(expected);
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // Shapes whose entries overflow a SortedRanges, which is what sends the small inputs through the radix build.
+    // ------------------------------------------------------------------------------------------------
+
+    private static final int BLOCK = 1 << 16;
+
+    /** {@code n} sets of {@code keysPerSet} single keys each, scattered over {@code blocks} blocks. */
+    private static List<RowSet> scatteredCombs(final Random random, final int n, final int keysPerSet,
+            final int blocks) {
+        final List<RowSet> rowSets = new ArrayList<>(n);
+        for (int ii = 0; ii < n; ++ii) {
+            final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+            for (int jj = 0; jj < keysPerSet; ++jj) {
+                builder.addKey(random.nextInt(blocks * BLOCK));
+            }
+            rowSets.add(builder.build());
+        }
+        return rowSets;
+    }
+
+    /** {@code n} sets dealing every key of {@code [0, n * keysPerSet)} round robin, so sorted neighbours abut. */
+    private static List<RowSet> roundRobinCombs(final int n, final int keysPerSet) {
+        final List<RowSet> rowSets = new ArrayList<>(n);
+        for (int ii = 0; ii < n; ++ii) {
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+            for (int jj = 0; jj < keysPerSet; ++jj) {
+                builder.appendKey((long) jj * n + ii);
+            }
+            rowSets.add(builder.build());
+        }
+        return rowSets;
+    }
+
+    @Test
+    public void manySmallInputs() {
+        final Random random = new Random(20260917L);
+        // 3000 sets of four keys is 12000 entries: past a SortedRanges, and the result covers 30 blocks sparsely.
+        checkAndClose(scatteredCombs(random, 3000, 4, 30));
+        // Densely enough that blocks fill up and become full block spans as pieces coalesce.
+        checkAndClose(roundRobinCombs(5000, 40));
+        checkAndClose(scatteredCombs(random, 9000, 8, 1));
+    }
+
+    @Test
+    public void rangesSpanningBlocks() {
+        final Random random = new Random(20260918L);
+        final List<RowSet> rowSets = new ArrayList<>();
+        // Single ranges of every alignment: inside one block, across two or three, and ending or starting on a block
+        // boundary, so that whole blocks come from ranges as well as from pieces.
+        for (int ii = 0; ii < 5000; ++ii) {
+            final long start = random.nextInt(40 * BLOCK);
+            final long end;
+            switch (random.nextInt(4)) {
+                case 0:
+                    end = start + random.nextInt(100);
+                    break;
+                case 1:
+                    end = start + random.nextInt(3 * BLOCK);
+                    break;
+                case 2:
+                    end = ((start >> 16) + 1 + random.nextInt(2)) * BLOCK - 1; // ends on a block boundary
+                    break;
+                default:
+                    end = Math.min(40L * BLOCK - 1, ((start >> 16) + 1) * BLOCK + random.nextInt(BLOCK));
+                    break;
+            }
+            final long alignedStart = random.nextInt(5) == 0 ? (start >> 16) << 16 : start; // sometimes block-aligned
+            rowSets.add(RowSetFactory.fromRange(alignedStart, end));
+        }
+        checkAndClose(rowSets);
+    }
+
+    @Test
+    public void blocksFilledByPieces() {
+        // 8192 eight-key ranges tile block 0 exactly, so it must come out as a full block span from pieces alone, while
+        // the second key of every set leaves block 1 partial and blocks beyond it one piece each.
+        final List<RowSet> rowSets = new ArrayList<>();
+        for (int ii = 0; ii < 8192; ++ii) {
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+            builder.appendRange(ii * 8L, ii * 8L + 7);
+            builder.appendKey(BLOCK + (ii % 3000));
+            builder.appendKey((2L + ii) * BLOCK + 5);
+            rowSets.add(builder.build());
+        }
+        checkAndClose(rowSets);
+    }
+
+    @Test
+    public void bitmapInputsMixedWithSmallOnes() {
+        final Random random = new Random(20260919L);
+        final List<RowSet> rowSets = scatteredCombs(random, 3000, 4, 30);
+        // Two inputs too large for a SortedRanges, overlapping the small ones and each other.
+        for (int ii = 0; ii < 2; ++ii) {
+            final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+            for (int jj = 0; jj < 20000; ++jj) {
+                builder.addKey(random.nextInt(30 * BLOCK));
+            }
+            rowSets.add(builder.build());
+        }
+        Collections.shuffle(rowSets, random);
+        checkAndClose(rowSets);
+    }
+
+    @Test
+    public void wideBlockRangeFallsBackToPasses() {
+        // Keys spread over 2^40 span more blocks than the radix arrays cover, so the small inputs merge in passes. The
+        // bit set oracle cannot hold such keys; the shipped merge is the reference instead.
+        final Random random = new Random(20260920L);
+        final List<RowSet> rowSets = new ArrayList<>();
+        for (int ii = 0; ii < 3000; ++ii) {
+            final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+            for (int jj = 0; jj < 3; ++jj) {
+                builder.addKey(random.nextLong() & ((1L << 40) - 1));
+            }
+            rowSets.add(builder.build());
+        }
+        final RowSetFactory.UnionStrategy defaultStrategy = RowSetFactory.unionStrategy;
+        try {
+            RowSetFactory.unionStrategy = RowSetFactory.UnionStrategy.SHIPPED;
+            try (final WritableRowSet expected = RowSetFactory.union(rowSets)) {
+                checkAgainst(rowSets, expected);
+            }
+        } finally {
+            RowSetFactory.unionStrategy = defaultStrategy;
+            closeAll(rowSets);
         }
     }
 }
