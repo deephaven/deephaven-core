@@ -50,7 +50,14 @@ public class UnionBenchmark {
          * is ignored; the sets are {@link io.deephaven.engine.rowset.impl.sortedranges.SortedRanges}, and at
          * {@code nToUnion} above 4096 their entries overflow one.
          */
-        NEW_BLOCKS
+        NEW_BLOCKS,
+        /**
+         * Sets of 50 single keys each, scattered over 64 regions of 10M rows addressed as a table with regioned column
+         * sources addresses them: region index in the high bits, 2^43 keys apart. The blocks touched are dense within
+         * each region and the block range between regions is empty, so this is what per-region or per-key row sets of a
+         * partitioned table look like to the union. Ignores {@code totalRows}.
+         */
+        REGIONED
     }
 
     @Param({"REDUNDANT"})
@@ -142,6 +149,22 @@ public class UnionBenchmark {
                 }
                 for (int indexNo = 0; indexNo < nToUnion; indexNo++) {
                     toUnion[indexNo] = builders[indexNo].build();
+                }
+                break;
+            }
+            case REGIONED: {
+                final int regions = 64;
+                final long regionRows = 10_000_000L;
+                final int regionBits = 43;
+                for (int indexNo = 0; indexNo < nToUnion; indexNo++) {
+                    final RowSetBuilderRandom sb = RowSetFactory.builderRandom();
+                    for (int k = 0; k < 50; ++k) {
+                        final long key = ((long) randy.nextInt(regions) << regionBits)
+                                + (long) (randy.nextDouble() * regionRows);
+                        sb.addKey(key);
+                        rb.addKey(key);
+                    }
+                    toUnion[indexNo] = sb.build();
                 }
                 break;
             }

@@ -13,9 +13,9 @@ import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongRangeConsumer;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Collection;
 import java.util.Comparator;
 
@@ -300,8 +300,9 @@ public abstract class RowSetFactory {
      * the input, lays the span array out exactly once, and coalesces pieces that abut whichever inputs they came from,
      * which a merge in passes achieves only through its passes. {@link RspBitmap} inputs, whose insert walks both span
      * arrays, still merge in passes, and the two results are combined by inserting the smaller into the larger. Inputs
-     * whose block range is too wide for the radix arrays, or whose implementation cannot be read, merge in passes as
-     * well.
+     * whose implementation cannot be read merge in passes as well. Blocks are indexed by offset from the first block
+     * when the inputs' block range is narrow, and through a hash of the block index when it is wide, as it is for any
+     * union spanning two regions of a table addressed by region, so the cost follows the blocks touched.
      */
     private static WritableRowSet unionWithRadix(final RowSet[] rowSets, final int count) {
         long entries = 0;
@@ -332,10 +333,10 @@ public abstract class RowSetFactory {
                 lastBlock = Math.max(lastBlock, rowSet.lastRowKey() >> RspArray.BITS_PER_BLOCK);
             }
         }
-        if (lastBlock < 0 || lastBlock - firstBlock + 1 > RADIX_MAX_BLOCKS) {
+        if (lastBlock < 0) {
             return mergeInPasses(rowSets, count);
         }
-        final RspBitmap radix = radixSeed(rowSets, count, firstBlock, (int) (lastBlock - firstBlock + 1));
+        final RspBitmap radix = radixSeed(rowSets, count, firstBlock, lastBlock);
         if (radix == null) {
             return mergeInPasses(rowSets, count);
         }
@@ -396,19 +397,28 @@ public abstract class RowSetFactory {
         return rowSet instanceof WritableRowSetImpl ? ((WritableRowSetImpl) rowSet).getInnerSet() : null;
     }
 
-    /** Widest block range the radix build covers: two ints per block of offsets, so 8 MB at the limit. */
-    private static final long RADIX_MAX_BLOCKS = 1L << 20;
+    /**
+     * Widest block range indexed by block offset from the first block, at two ints a block: 8 MB at the limit. Wider
+     * ranges, which a table addressed by region produces as soon as its inputs span two regions, index the blocks
+     * touched through a hash instead, so their cost follows the blocks touched and not the span between them.
+     */
+    private static final long RADIX_DENSE_MAX_BLOCKS = 1L << 20;
 
     /**
      * Build the union of the small inputs by a radix pass on the block bits. One walk over their ranges counts the
-     * block-local pieces each block receives and marks the blocks a range covers whole; a second walk places every
-     * piece in its block's slice of one array; and {@link RspBitmap#makeFromBlockPieces} then builds every block's
-     * container once from that slice. Every range is visited twice and every piece written once, which is linear in the
-     * input, and the result's span array is laid out exactly once.
+     * block-local pieces each block receives and records the runs of blocks a range covers whole; a second walk places
+     * every piece in its block's slice of one array; and {@link RspBitmap#makeFromBlockPieces} then builds every
+     * block's container once from that slice. Every range is visited twice and every piece written once, which is
+     * linear in the input, and the result's span array is laid out exactly once.
      *
      * <p>
      * A piece is a range clipped to one block, held as its two 16-bit block-local ends in one int. A range that spans
-     * blocks contributes at most two pieces, its ends, and marks the blocks between them full.
+     * blocks contributes at most two pieces, its ends, and one run of full blocks between them.
+     *
+     * <p>
+     * Blocks are indexed by offset from the first block when the range of blocks is narrow enough for arrays, and
+     * through a hash of the block index otherwise, so a union whose inputs are far apart in the key space costs what
+     * its touched blocks cost and no more.
      *
      * @return The union of the small inputs, or null when the piece count does not fit an int
      */
@@ -416,12 +426,12 @@ public abstract class RowSetFactory {
             final RowSet[] rowSets,
             final int count,
             final long firstBlock,
-            final int blockSpan) {
-        final int[] offsets = new int[blockSpan + 1];
-        // Full-block coverage as a difference array: +1 where a run of full blocks begins, -1 past where it ends, so
-        // marking a range is O(1) however many blocks it spans, and one prefix sum yields the blocks with any cover.
-        final int[] fullCoverage = new int[blockSpan + 1];
-        final PieceBucketer bucketer = new PieceBucketer(firstBlock, offsets, fullCoverage);
+            final long lastBlock) {
+        final long blockSpan = lastBlock - firstBlock + 1;
+        final BlockIndex index = blockSpan <= RADIX_DENSE_MAX_BLOCKS
+                ? new DenseBlockIndex(firstBlock, (int) blockSpan)
+                : new HashedBlockIndex();
+        final PieceBucketer bucketer = new PieceBucketer(index);
         for (int ii = 0; ii < count; ++ii) {
             final RowSet rowSet = rowSets[ii];
             final OrderedLongSet inner = innerSet(rowSet);
@@ -429,17 +439,11 @@ public abstract class RowSetFactory {
                 rowSet.forAllRowKeyRanges(bucketer);
             }
         }
-        // Block b's count sits at b + 1, so the running sum in place leaves offsets[b] as where block b's pieces begin
-        // and offsets[b + 1] as where they end.
-        for (int b = 0; b < blockSpan; ++b) {
-            final long sum = (long) offsets[b + 1] + offsets[b];
-            if (sum > Integer.MAX_VALUE - 8) {
-                return null;
-            }
-            offsets[b + 1] = (int) sum;
+        final int[] pieces = index.finishCounting();
+        if (pieces == null) {
+            return null;
         }
-        final int[] pieces = new int[offsets[blockSpan]];
-        bucketer.startPlacing(pieces, Arrays.copyOf(offsets, blockSpan));
+        bucketer.startPlacing(pieces);
         for (int ii = 0; ii < count; ++ii) {
             final RowSet rowSet = rowSets[ii];
             final OrderedLongSet inner = innerSet(rowSet);
@@ -447,15 +451,209 @@ public abstract class RowSetFactory {
                 rowSet.forAllRowKeyRanges(bucketer);
             }
         }
-        final BitSet fullBlocks = new BitSet(blockSpan);
-        int cover = 0;
-        for (int b = 0; b < blockSpan; ++b) {
-            cover += fullCoverage[b];
-            if (cover > 0) {
-                fullBlocks.set(b);
+        return index.build(pieces);
+    }
+
+    /**
+     * Where a block's pieces go. Counts pieces per block and records full runs during the first walk, hands out
+     * placement positions during the second, and finally lays the blocks out in order for the builder.
+     */
+    private abstract static class BlockIndex {
+        /** Runs of full blocks as first, last pairs, in the order the ranges were seen. */
+        long[] fullRuns = new long[16];
+        int fullRunCount;
+
+        /** Called only on the first walk. */
+        abstract void countPiece(long block);
+
+        void addFullRun(final long first, final long last) {
+            if (2 * fullRunCount + 2 > fullRuns.length) {
+                fullRuns = Arrays.copyOf(fullRuns, fullRuns.length * 2);
             }
+            fullRuns[2 * fullRunCount] = first;
+            fullRuns[2 * fullRunCount + 1] = last;
+            ++fullRunCount;
         }
-        return RspBitmap.makeFromBlockPieces(firstBlock, blockSpan, fullBlocks, offsets, pieces);
+
+        /**
+         * Turn the counts into placement positions.
+         *
+         * @return The piece array to place into, or null when the piece count does not fit an int
+         */
+        abstract int[] finishCounting();
+
+        /** Called only on the second walk: where the next piece of {@code block} goes. */
+        abstract int nextPosition(long block);
+
+        abstract RspBitmap build(int[] pieces);
+
+        /**
+         * Sort the runs by first block and coalesce runs that overlap or touch, in place.
+         *
+         * @return The number of runs left
+         */
+        final int coalesceFullRuns() {
+            if (fullRunCount <= 1) {
+                return fullRunCount;
+            }
+            // Sort pairs by first block: sort the pair indices through a long that carries the first block in its
+            // high bits and the index in its low bits. Block indices are under 2^47, indices under 2^31, so the two
+            // do not fit one long; sort by first block only, on a copy, and re-pair by binary search of the sorted
+            // firsts would lose duplicates. Simplest correct approach: sort an index array with a comparator.
+            final Integer[] order = new Integer[fullRunCount];
+            for (int r = 0; r < fullRunCount; ++r) {
+                order[r] = r;
+            }
+            Arrays.sort(order, (x, y) -> Long.compare(fullRuns[2 * x], fullRuns[2 * y]));
+            final long[] sorted = new long[2 * fullRunCount];
+            int out = 0;
+            for (int r = 0; r < fullRunCount; ++r) {
+                final long first = fullRuns[2 * order[r]];
+                final long last = fullRuns[2 * order[r] + 1];
+                if (out > 0 && first <= sorted[2 * out - 1] + 1) {
+                    sorted[2 * out - 1] = Math.max(sorted[2 * out - 1], last);
+                } else {
+                    sorted[2 * out] = first;
+                    sorted[2 * out + 1] = last;
+                    ++out;
+                }
+            }
+            fullRuns = sorted;
+            fullRunCount = out;
+            return out;
+        }
+    }
+
+    /** Blocks indexed by offset from the first block, in arrays over the whole block range. */
+    private static final class DenseBlockIndex extends BlockIndex {
+        private final long firstBlock;
+        private final int blockSpan;
+        /** Piece counts at {@code b + 1} while counting; where block {@code b}'s pieces begin once finished. */
+        private final int[] offsets;
+        private int[] next;
+
+        DenseBlockIndex(final long firstBlock, final int blockSpan) {
+            this.firstBlock = firstBlock;
+            this.blockSpan = blockSpan;
+            offsets = new int[blockSpan + 1];
+        }
+
+        @Override
+        void countPiece(final long block) {
+            ++offsets[(int) (block - firstBlock) + 1];
+        }
+
+        @Override
+        int[] finishCounting() {
+            // Block b's count sits at b + 1, so the running sum in place leaves offsets[b] as where block b's pieces
+            // begin and offsets[b + 1] as where they end.
+            for (int b = 0; b < blockSpan; ++b) {
+                final long sum = (long) offsets[b + 1] + offsets[b];
+                if (sum > Integer.MAX_VALUE - 8) {
+                    return null;
+                }
+                offsets[b + 1] = (int) sum;
+            }
+            next = Arrays.copyOf(offsets, blockSpan);
+            return new int[offsets[blockSpan]];
+        }
+
+        @Override
+        int nextPosition(final long block) {
+            return next[(int) (block - firstBlock)]++;
+        }
+
+        @Override
+        RspBitmap build(final int[] pieces) {
+            // Compact to the blocks that received pieces: their indices in order, and their slices.
+            int touched = 0;
+            for (int b = 0; b < blockSpan; ++b) {
+                if (offsets[b + 1] > offsets[b]) {
+                    ++touched;
+                }
+            }
+            final long[] blocks = new long[touched];
+            final int[] compact = new int[touched + 1];
+            int k = 0;
+            for (int b = 0; b < blockSpan; ++b) {
+                if (offsets[b + 1] > offsets[b]) {
+                    blocks[k] = firstBlock + b;
+                    compact[k] = offsets[b];
+                    ++k;
+                }
+            }
+            compact[touched] = offsets[blockSpan];
+            final int runCount = coalesceFullRuns();
+            return RspBitmap.makeFromBlockPieces(blocks, touched, compact, pieces, fullRuns, runCount);
+        }
+    }
+
+    /**
+     * Blocks indexed through a hash of the block index, for a block range too wide for arrays. Slots are handed out in
+     * discovery order and ranked into block order once counting is complete.
+     */
+    private static final class HashedBlockIndex extends BlockIndex {
+        private final Long2IntOpenHashMap slotOf = new Long2IntOpenHashMap();
+        private long[] slotBlock = new long[64];
+        private int[] slotCount = new int[64];
+        private int slots;
+        /** Where each slot's block falls in block order, once counting is complete. */
+        private int[] rankOf;
+        private long[] blocksInOrder;
+        private int[] offsets;
+        private int[] next;
+
+        HashedBlockIndex() {
+            slotOf.defaultReturnValue(-1);
+        }
+
+        @Override
+        void countPiece(final long block) {
+            int slot = slotOf.get(block);
+            if (slot < 0) {
+                slot = slots++;
+                slotOf.put(block, slot);
+                if (slot == slotBlock.length) {
+                    slotBlock = Arrays.copyOf(slotBlock, 2 * slot);
+                    slotCount = Arrays.copyOf(slotCount, 2 * slot);
+                }
+                slotBlock[slot] = block;
+            }
+            ++slotCount[slot];
+        }
+
+        @Override
+        int[] finishCounting() {
+            blocksInOrder = Arrays.copyOf(slotBlock, slots);
+            Arrays.sort(blocksInOrder);
+            rankOf = new int[slots];
+            offsets = new int[slots + 1];
+            for (int slot = 0; slot < slots; ++slot) {
+                final int rank = Arrays.binarySearch(blocksInOrder, slotBlock[slot]);
+                rankOf[slot] = rank;
+                offsets[rank + 1] = slotCount[slot];
+            }
+            for (int k = 0; k < slots; ++k) {
+                final long sum = (long) offsets[k + 1] + offsets[k];
+                if (sum > Integer.MAX_VALUE - 8) {
+                    return null;
+                }
+                offsets[k + 1] = (int) sum;
+            }
+            next = Arrays.copyOf(offsets, slots);
+            return new int[offsets[slots]];
+        }
+
+        @Override
+        int nextPosition(final long block) {
+            return next[rankOf[slotOf.get(block)]]++;
+        }
+
+        @Override
+        RspBitmap build(final int[] pieces) {
+            final int runCount = coalesceFullRuns();
+            return RspBitmap.makeFromBlockPieces(blocksInOrder, slots, offsets, pieces, fullRuns, runCount);
+        }
     }
 
     /**
@@ -463,27 +661,21 @@ public abstract class RowSetFactory {
      * place them in, then places them.
      */
     private static final class PieceBucketer implements LongRangeConsumer {
-        private final long base;
-        private final int[] counts;
-        private final int[] fullCoverage;
+        private final BlockIndex index;
         private int[] pieces;
-        private int[] next;
 
-        PieceBucketer(final long firstBlock, final int[] counts, final int[] fullCoverage) {
-            base = firstBlock;
-            this.counts = counts;
-            this.fullCoverage = fullCoverage;
+        PieceBucketer(final BlockIndex index) {
+            this.index = index;
         }
 
-        void startPlacing(final int[] pieces, final int[] next) {
+        void startPlacing(final int[] pieces) {
             this.pieces = pieces;
-            this.next = next;
         }
 
         @Override
         public void accept(final long start, final long end) {
-            final int firstBlock = (int) ((start >> RspArray.BITS_PER_BLOCK) - base);
-            final int lastBlock = (int) ((end >> RspArray.BITS_PER_BLOCK) - base);
+            final long firstBlock = start >> RspArray.BITS_PER_BLOCK;
+            final long lastBlock = end >> RspArray.BITS_PER_BLOCK;
             final int startLow = (int) (start & RspArray.BLOCK_LAST);
             final int endLow = (int) (end & RspArray.BLOCK_LAST);
             if (firstBlock == lastBlock) {
@@ -495,8 +687,8 @@ public abstract class RowSetFactory {
                 return;
             }
             // The blocks strictly between the ends are full; each end is full only if the range reaches its edge.
-            final int firstFull = startLow == 0 ? firstBlock : firstBlock + 1;
-            final int lastFull = endLow == RspArray.BLOCK_LAST ? lastBlock : lastBlock - 1;
+            final long firstFull = startLow == 0 ? firstBlock : firstBlock + 1;
+            final long lastFull = endLow == RspArray.BLOCK_LAST ? lastBlock : lastBlock - 1;
             if (firstFull <= lastFull) {
                 full(firstFull, lastFull);
             }
@@ -508,21 +700,18 @@ public abstract class RowSetFactory {
             }
         }
 
-        private void full(final int firstBlock, final int lastBlock) {
-            if (pieces != null) {
-                return; // counted on the first walk
+        private void full(final long firstBlock, final long lastBlock) {
+            if (pieces == null) {
+                index.addFullRun(firstBlock, lastBlock); // recorded on the first walk only
             }
-            ++fullCoverage[firstBlock];
-            --fullCoverage[lastBlock + 1];
         }
 
-        private void piece(final int block, final int startLow, final int endLow) {
+        private void piece(final long block, final int startLow, final int endLow) {
             if (pieces == null) {
-                // Counting: block b's count accumulates at b + 1, so the prefix sum lands its start at b.
-                ++counts[block + 1];
+                index.countPiece(block);
                 return;
             }
-            pieces[next[block]++] = (startLow << 16) | endLow;
+            pieces[index.nextPosition(block)] = (startLow << 16) | endLow;
         }
     }
 

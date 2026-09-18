@@ -263,8 +263,9 @@ up to 64 pieces are sorted and coalesced directly, more go through an 8KB scratc
 the container is whichever of run, array and bitmap is smallest for that cardinality and run count; a block that
 comes out all ones joins a full block span; a single row is a singleton span. The span array is laid out once at its
 final size and nothing is ever inserted. `RspBitmap` inputs, whose insert is a walk of both span arrays, still merge
-in passes, and the two results are combined by inserting the smaller into the larger. A block range wider than 2^20
-blocks falls back to the merge in passes.
+in passes, and the two results are combined by inserting the smaller into the larger. Blocks are indexed by offset from the first block when the
+inputs' block range is at most 2^20 blocks, and through a hash of the block index when it is wider, which any union
+spanning two regions of a table addressed by region is: regions sit 2^43 keys, or 2^27 blocks, apart.
 
 Abutting pieces from different inputs meet in the scratch bitmap and become one run before any container exists,
 which is what the pairwise tree achieved only through its passes; that is why the coalescing layouts come back.
@@ -289,7 +290,8 @@ cell where the merge's coalescing was already as good as the radix build's.
 ### Costs
 
 The piece array is four bytes a piece, about 20 MB transient for the 100K comb, plus eight bytes a block of offsets
-over the block range, which is what caps the radix path at 2^20 blocks. The scratch bitmap and run array are 8 KB and
+over the block range when the blocks are indexed densely; past 2^20 blocks a hash map of the touched blocks and
+their sort take over, so the cost follows the touched blocks and not the range. The scratch bitmap and run array are 8 KB and
 256 KB per call.
 
 ### Pitfall 9. A counting sort's off-by-one is silent

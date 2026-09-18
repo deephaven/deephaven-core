@@ -22,7 +22,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
@@ -65,9 +64,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     /**
      * Make a bitmap from row key ranges already bucketed by block: a radix pass on the high bits has split every range
-     * into block-local pieces and grouped the pieces of each block together, and has marked the blocks some range
-     * covers whole. The bitmap is built in one pass over the blocks in order, so the span array is laid out exactly
-     * once and no span is ever spliced or grown.
+     * into block-local pieces and grouped the pieces of each block together, and has collected the runs of blocks some
+     * range covers whole. The bitmap is built in one pass over the blocks in order, so the span array is laid out
+     * exactly once and no span is ever spliced or grown.
      *
      * <p>
      * Each partial block's pieces are accumulated into a scratch bitmap of one block, which coalesces pieces that abut
@@ -76,98 +75,123 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * container; a single row becomes a singleton span, and a block that came out all ones joins the full block spans.
      * Consecutive full blocks become one span.
      *
-     * @param firstBlock The block index the piece offsets are relative to
-     * @param blockSpan The number of consecutive block indices covered, from {@code firstBlock}
-     * @param fullBlocks Relative block indices some range covers whole
-     * @param offsets For relative block {@code b}, its pieces are {@code pieces[offsets[b], offsets[b + 1])}
+     * @param blocks Ascending block indices that received pieces; {@code blocks[0, blockCount)}
+     * @param blockCount How many of {@code blocks} are used
+     * @param offsets For {@code blocks[k]}, its pieces are {@code pieces[offsets[k], offsets[k + 1])}
      * @param pieces Block-local pieces, each the low 16 bits of its first row in the high half of the int and of its
      *        last row in the low half
+     * @param fullRuns Runs of block indices some range covers whole, as inclusive first, last pairs, ascending, with no
+     *        two runs overlapping or touching; {@code fullRuns[0, 2 * fullRunCount)}. A block in {@code blocks} that
+     *        lies within a run is full whatever its pieces say.
+     * @param fullRunCount How many runs {@code fullRuns} holds
      */
     public static RspBitmap makeFromBlockPieces(
-            final long firstBlock,
-            final int blockSpan,
-            final BitSet fullBlocks,
+            final long[] blocks,
+            final int blockCount,
             final int[] offsets,
-            final int[] pieces) {
+            final int[] pieces,
+            final long[] fullRuns,
+            final int fullRunCount) {
         final long[] scratch = new long[BLOCK_SIZE / 64];
         final int[] runs = new int[BLOCK_SIZE]; // start, end pairs; at most BLOCK_SIZE / 2 runs
-        // First pass counts spans so the arrays are allocated once; a partial block that fills up is only known to be
-        // full once built, so the count is an upper bound and the arrays may end with unused slots.
-        int spanCount = 0;
-        boolean inFullRun = false;
-        for (int b = 0; b < blockSpan; ++b) {
-            final boolean full = fullBlocks.get(b);
-            final boolean partial = !full && offsets[b + 1] > offsets[b];
-            if (full) {
-                if (!inFullRun) {
-                    ++spanCount;
-                    inFullRun = true;
-                }
-            } else {
-                inFullRun = false;
-                if (partial) {
-                    ++spanCount;
-                }
-            }
-        }
         final RspBitmap rb = new RspBitmap();
-        rb.spanInfos = new long[Math.max(1, spanCount)];
-        rb.spans = new Object[Math.max(1, spanCount)];
+        // Every partial block and every full run is at most one span; blocks that fill up or lie within a run leave
+        // slots unused.
+        final int maxSpans = Math.max(1, blockCount + fullRunCount);
+        rb.spanInfos = new long[maxSpans];
+        rb.spans = new Object[maxSpans];
         int i = 0;
-        long fullRunKey = -1;
-        long fullRunLen = 0;
-        for (int b = 0; b < blockSpan; ++b) {
-            final long key = (firstBlock + b) << BITS_PER_BLOCK;
-            boolean full = fullBlocks.get(b);
-            if (!full) {
-                final int from = offsets[b];
-                final int to = offsets[b + 1];
-                if (from == to) {
-                    if (fullRunLen > 0) {
-                        setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullRunKey, fullRunLen);
-                        fullRunLen = 0;
-                    }
-                    continue;
+        // The full block span being accumulated, if any: its first block and its length in blocks.
+        long fullFirst = -1;
+        long fullLen = 0;
+        int r = 0; // next full run not yet emitted
+        for (int k = 0; k < blockCount; ++k) {
+            final long block = blocks[k];
+            // Emit every full run that ends before this block, and note whether the block lies inside one.
+            boolean covered = false;
+            while (r < fullRunCount) {
+                final long runFirst = fullRuns[2 * r];
+                final long runLast = fullRuns[2 * r + 1];
+                if (runFirst > block) {
+                    break;
                 }
-                final int runCount;
-                if (to - from <= FEW_PIECES) {
-                    // Too few pieces to be worth clearing and scanning a block's bitmap: sort them and coalesce.
-                    runCount = collectRunsFromFewPieces(pieces, from, to, runs);
+                if (runLast >= block) {
+                    covered = true;
+                    break;
+                }
+                if (fullLen > 0 && fullFirst + fullLen == runFirst) {
+                    fullLen += runLast - runFirst + 1;
                 } else {
-                    Arrays.fill(scratch, 0L);
-                    for (int p = from; p < to; ++p) {
-                        final int piece = pieces[p];
-                        setScratchRange(scratch, piece >>> 16, piece & 0xFFFF);
+                    if (fullLen > 0) {
+                        setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
                     }
-                    runCount = collectRuns(scratch, runs);
+                    fullFirst = runFirst;
+                    fullLen = runLast - runFirst + 1;
                 }
-                int cardinality = 0;
-                for (int r = 0; r < runCount; ++r) {
-                    cardinality += runs[2 * r + 1] - runs[2 * r] + 1;
+                ++r;
+            }
+            if (covered) {
+                continue; // the run it lies in is emitted when the loop passes its last block
+            }
+            final int from = offsets[k];
+            final int to = offsets[k + 1];
+            final int runCount;
+            if (to - from <= FEW_PIECES) {
+                // Too few pieces to be worth clearing and scanning a block's bitmap: sort them and coalesce.
+                runCount = collectRunsFromFewPieces(pieces, from, to, runs);
+            } else {
+                Arrays.fill(scratch, 0L);
+                for (int p = from; p < to; ++p) {
+                    final int piece = pieces[p];
+                    setScratchRange(scratch, piece >>> 16, piece & 0xFFFF);
                 }
-                if (cardinality == BLOCK_SIZE) {
-                    full = true;
+                runCount = collectRuns(scratch, runs);
+            }
+            int cardinality = 0;
+            for (int q = 0; q < runCount; ++q) {
+                cardinality += runs[2 * q + 1] - runs[2 * q] + 1;
+            }
+            if (cardinality == BLOCK_SIZE) {
+                // Filled up: it joins the full block span being accumulated when adjacent, else starts one.
+                if (fullLen > 0 && fullFirst + fullLen == block) {
+                    ++fullLen;
                 } else {
-                    if (fullRunLen > 0) {
-                        setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullRunKey, fullRunLen);
-                        fullRunLen = 0;
+                    if (fullLen > 0) {
+                        setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
                     }
-                    if (cardinality == 1) {
-                        setSingletonSpanRaw(rb.spanInfos, rb.spans, i++, key | runs[0]);
-                    } else {
-                        setContainerSpanRaw(rb.spanInfos, rb.spans, i++, key,
-                                containerFromRuns(runs, runCount, cardinality));
-                    }
-                    continue;
+                    fullFirst = block;
+                    fullLen = 1;
                 }
+                continue;
             }
-            if (fullRunLen == 0) {
-                fullRunKey = key;
+            if (fullLen > 0) {
+                setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+                fullLen = 0;
             }
-            ++fullRunLen;
+            final long key = block << BITS_PER_BLOCK;
+            if (cardinality == 1) {
+                setSingletonSpanRaw(rb.spanInfos, rb.spans, i++, key | runs[0]);
+            } else {
+                setContainerSpanRaw(rb.spanInfos, rb.spans, i++, key, containerFromRuns(runs, runCount, cardinality));
+            }
         }
-        if (fullRunLen > 0) {
-            setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullRunKey, fullRunLen);
+        // Full runs past the last partial block.
+        while (r < fullRunCount) {
+            final long runFirst = fullRuns[2 * r];
+            final long runLast = fullRuns[2 * r + 1];
+            if (fullLen > 0 && fullFirst + fullLen == runFirst) {
+                fullLen += runLast - runFirst + 1;
+            } else {
+                if (fullLen > 0) {
+                    setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
+                }
+                fullFirst = runFirst;
+                fullLen = runLast - runFirst + 1;
+            }
+            ++r;
+        }
+        if (fullLen > 0) {
+            setFullBlockSpanRaw(i++, rb.spanInfos, rb.spans, fullFirst << BITS_PER_BLOCK, fullLen);
         }
         rb.size = i;
         rb.ensureCardinalityCache();

@@ -406,19 +406,8 @@ public class RowSetFactoryUnionTest {
         checkAndClose(rowSets);
     }
 
-    @Test
-    public void wideBlockRangeFallsBackToPasses() {
-        // Keys spread over 2^40 span more blocks than the radix arrays cover, so the small inputs merge in passes. The
-        // bit set oracle cannot hold such keys; the shipped merge is the reference instead.
-        final Random random = new Random(20260920L);
-        final List<RowSet> rowSets = new ArrayList<>();
-        for (int ii = 0; ii < 3000; ++ii) {
-            final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-            for (int jj = 0; jj < 3; ++jj) {
-                builder.addKey(random.nextLong() & ((1L << 40) - 1));
-            }
-            rowSets.add(builder.build());
-        }
+    /** The shipped merge as the reference, for keys the bit set oracle cannot hold. */
+    private static void checkAgainstShipped(final List<RowSet> rowSets) {
         final RowSetFactory.UnionStrategy defaultStrategy = RowSetFactory.unionStrategy;
         try {
             RowSetFactory.unionStrategy = RowSetFactory.UnionStrategy.SHIPPED;
@@ -429,5 +418,50 @@ public class RowSetFactoryUnionTest {
             RowSetFactory.unionStrategy = defaultStrategy;
             closeAll(rowSets);
         }
+    }
+
+    @Test
+    public void wideBlockRangeIndexesBlocksByHash() {
+        // Keys spread over 2^40 span more blocks than the dense block arrays cover, so the blocks are indexed through
+        // a hash instead. The bit set oracle cannot hold such keys; the shipped merge is the reference instead.
+        final Random random = new Random(20260920L);
+        final List<RowSet> rowSets = new ArrayList<>();
+        for (int ii = 0; ii < 3000; ++ii) {
+            final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+            for (int jj = 0; jj < 3; ++jj) {
+                builder.addKey(random.nextLong() & ((1L << 40) - 1));
+            }
+            rowSets.add(builder.build());
+        }
+        checkAgainstShipped(rowSets);
+    }
+
+    @Test
+    public void regionedKeys() {
+        // Row keys as a table addressed by region produces them: region index in the high bits, 2^43 keys apart, the
+        // rows of each region dense from its first key. Every union spanning two regions has a block range far wider
+        // than the dense block arrays, so this is the hashed index over blocks that are dense within a region and
+        // absent between regions. One range crosses a region boundary, covering the 2^27 empty blocks between.
+        final Random random = new Random(20260921L);
+        final int regionBits = 43;
+        final List<RowSet> rowSets = new ArrayList<>();
+        for (int ii = 0; ii < 4000; ++ii) {
+            final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+            for (int jj = 0; jj < 3; ++jj) {
+                final long region = random.nextInt(40);
+                builder.addKey((region << regionBits) + random.nextInt(4 * BLOCK));
+            }
+            rowSets.add(builder.build());
+        }
+        rowSets.add(RowSetFactory.fromRange((7L << regionBits) + 3 * BLOCK + 17, (8L << regionBits) + 5));
+        for (int ii = 0; ii < 100; ++ii) {
+            // Whole blocks inside a region, from single ranges, some abutting the scattered keys' blocks.
+            final long region = random.nextInt(40);
+            final long block = random.nextInt(6);
+            rowSets.add(RowSetFactory.fromRange((region << regionBits) + block * BLOCK,
+                    (region << regionBits) + (block + 1 + random.nextInt(2)) * BLOCK - 1));
+        }
+        Collections.shuffle(rowSets, random);
+        checkAgainstShipped(rowSets);
     }
 }
