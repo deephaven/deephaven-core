@@ -549,6 +549,15 @@ public abstract class RowSetFactory {
         /** Called only on the second walk: where the next piece of {@code block} goes. */
         abstract int nextPosition(long block);
 
+        /**
+         * Build the result once every piece is placed. Each block that received pieces is reduced to its runs and gets
+         * one container, or joins a full block span when its pieces cover it; the full runs are coalesced with
+         * {@link #coalesceFullRuns()} and interleaved with those blocks in key order, so the bitmap is written once,
+         * front to back, with no per-input inserts.
+         *
+         * @param pieces The pieces placed by the second walk, grouped by block at the positions this index handed out
+         * @return The union of every input this index counted
+         */
         abstract RspBitmap build(int[] pieces);
 
         /**
@@ -605,8 +614,7 @@ public abstract class RowSetFactory {
         @Override
         int[] finishCounting() {
             // Block bi's count sits at bi + 1, so the running sum in place leaves offsets[bi] as where block bi's
-            // pieces
-            // begin and offsets[bi + 1] as where they end.
+            // pieces begin and offsets[bi + 1] as where they end.
             for (int bi = 0; bi < blockSpan; ++bi) {
                 offsets[bi + 1] += offsets[bi];
             }
