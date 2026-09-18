@@ -2994,7 +2994,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                                 return true;
                             }
                         }
-                        ++p2;
+                        // Both spans cover only block k1: r1's is neither a full block span (returned above) nor
+                        // able to reach another block, and r2's likewise, so r2's cannot match a later span of ours.
+                        // Resuming past it skips whatever of r2 lay between p2 and the match.
+                        p2 = i2 + 1;
                         if (p2 >= r2.size) {
                             return false;
                         }
