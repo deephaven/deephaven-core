@@ -79,6 +79,8 @@ createJmhTask('jmhRunRowSetIncrementalInsert', 'RowSetIncrementalInsertBench')
 createJmhTask('jmhRunRspSortedRangesInsertShape', 'RspSortedRangesInsertShapeBench')
 createJmhTask('jmhRunRowSetOverlaps', 'RowSetOverlapsBench')
 createJmhTask('jmhRunRowSetSubsetOf', 'RowSetSubsetOfBench')
+createJmhTask('jmhRunRowSetSmallInsert', 'RowSetSmallInsertBench')
+createJmhTask('jmhRunRowSetSmallRemove', 'RowSetSmallRemoveBench')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
