@@ -25,10 +25,11 @@ public interface BarrageSubscriptionPerformanceLogger {
         /** Time to record the changes that occurred during a single update graph cycle. */
         public static final String ENQUEUE_NANOS = "EnqueueNanos";
         /**
-         * Time to coalesce multiple updates within the same interval into one. A producer may do this many times per
-         * interval: once for each compaction of the pending queue, and once more when it propagates. Every such
-         * coalesce is recorded here, so the count is the number of coalesces in the window rather than the number of
-         * propagations.
+         * Time to aggregate the updates pending within one interval into a message. A producer may do this several
+         * times per interval: once for each compaction of the pending queue, and once for each range it packages when
+         * it propagates, which is two when a snapshot splits the queue. A range of one delta is packaged without being
+         * coalesced but is timed all the same. Every such aggregation is recorded here, so the count is the number of
+         * aggregations in the window rather than the number of propagations.
          */
         public static final String AGGREGATE_NANOS = "AggregateNanos";
         /** Time to deliver an aggregated message to all subscribers. */
