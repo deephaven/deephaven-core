@@ -202,7 +202,9 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
     /**
      * Runs one update graph cycle carrying every kind of change, so that coalescing it with its neighbors has work to
      * do: the first half of the table is modified again, the row the previous churn cycle added is removed and a new
-     * one added, and every {@link #SHIFT_EVERY} cycles the second half of the table is shifted up by one key.
+     * one added, and every {@link #SHIFT_EVERY} cycles the second half of the table is shifted up by one key. On the
+     * other cycles a slice of the second half is modified too, so that a later shift moves rows that carry recorded
+     * modifications and the mapping has to follow them.
      */
     private void churnRows(final QueryTable sourceTable) {
         final int tick = ++tickCounter;
@@ -218,12 +220,15 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
             writeRows(sourceTable, added, tick);
             lastChurnKey = addedKey;
 
-            final RowSet modified = RowSetFactory.fromRange(0, TABLE_SIZE / 2 - 1);
+            final boolean shiftCycle = churn % SHIFT_EVERY == 0;
+            final WritableRowSet modified = RowSetFactory.fromRange(0, TABLE_SIZE / 2 - 1);
+            if (!shiftCycle) {
+                // ten rows of the second half, where it currently sits; the next shift cycle moves them
+                modified.insertRange(TABLE_SIZE / 2 + shiftOffset, TABLE_SIZE / 2 + shiftOffset + 9);
+            }
             writeRows(sourceTable, modified, tick);
 
-            final RowSetShiftData shifted = churn % SHIFT_EVERY == 0
-                    ? shiftSecondHalf(sourceTable)
-                    : RowSetShiftData.EMPTY;
+            final RowSetShiftData shifted = shiftCycle ? shiftSecondHalf(sourceTable) : RowSetShiftData.EMPTY;
 
             sourceTable.notifyListeners(new TableUpdateImpl(added, removed, modified, shifted, ModifiedColumnSet.ALL));
         });
