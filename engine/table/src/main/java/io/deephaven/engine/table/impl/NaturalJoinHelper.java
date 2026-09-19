@@ -78,7 +78,9 @@ class NaturalJoinHelper {
                 final WritableRowRedirection rowRedirection =
                         jsm.buildRowRedirection(leftTable, leftRedirections, control.getRedirectionType(leftTable));
 
-                final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
+                // the right side is static, so the redirection only changes when left rows are added or re-keyed
+                final QueryTable result =
+                        makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, leftTable.isRefreshing());
                 if (leftTable.isRefreshing()) {
                     leftTable.addUpdateListener(new LeftTickingListener(bc.listenerDescription, columnsToMatch,
                             columnsToAdd, leftTable, result, rowRedirection, jsm, bc.leftSources));
