@@ -7,6 +7,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.rpc.Code;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -65,7 +66,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.*;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.extensions.barrage.util.BarrageUtil.MAX_SNAPSHOT_CELL_COUNT;
 import static io.deephaven.extensions.barrage.util.BarrageUtil.MIN_SNAPSHOT_CELL_COUNT;
 
@@ -87,14 +87,58 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.MIN_SNAPSHOT_CELL
  */
 public class BarrageMessageProducer extends LivenessArtifact
         implements DynamicNode, NotificationStepReceiver {
-    public static final int DELTA_CHUNK_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(
-            BarrageMessageProducer.class, "deltaChunkSize", ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY);
-
     private static final Logger log = LoggerFactory.getLogger(BarrageMessageProducer.class);
 
     public static final boolean SUBSCRIPTION_GROWTH_ENABLED =
             Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class,
                     "subscriptionGrowthEnabled", true);
+
+    /**
+     * The number of rows in every chunk a delta records, except the last of a column. A configured
+     * {@code deltaChunkSize} that is not a power of two is rounded up to the next one, because the copy kernel locates
+     * a row's chunk with a shift and its offset with a mask.
+     */
+    public static final int DELTA_CHUNK_SIZE = MathUtil.roundUpPowerOf2(
+            Configuration.getInstance().getIntegerForClassWithDefault(
+                    BarrageMessageProducer.class, "deltaChunkSize", ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY));
+
+    /**
+     * Whether a producer compacts its queue of pending deltas before the subscribers' update interval elapses. See
+     * {@link #shouldCompact()} for the policy and {@link #COMPACTION_FLOOR_BYTES}, {@link #COMPACTION_GROWTH_FACTOR}
+     * and {@link #COMPACTION_MAX_PENDING_DELTAS} for its parameters.
+     */
+    public static final boolean COMPACTION_ENABLED = Configuration.getInstance()
+            .getBooleanForClassWithDefault(BarrageMessageProducer.class, "compactionEnabled", true);
+    /**
+     * The byte trigger never fires while a producer has recorded fewer than this many bytes of chunk data since it last
+     * compacted (or flushed), so producers whose subscribers are served often enough to stay under it never pay for
+     * compaction on account of their size. The count trigger, {@link #COMPACTION_MAX_PENDING_DELTAS}, is independent of
+     * it.
+     */
+    public static final long COMPACTION_FLOOR_BYTES = Configuration.getInstance()
+            .getLongForClassWithDefault(BarrageMessageProducer.class, "compactionFloorBytes", 4L << 20);
+    /**
+     * Once past the floor, a producer compacts when the bytes recorded since the last compaction exceed this multiple
+     * of the compacted delta's size. Each compaction then copies at most about {@code (1 + 1/factor)} times the new
+     * data, so total copying stays linear in the data recorded, and the queue holds at most about {@code (1 + factor)}
+     * times the compacted footprint plus the transient of one compaction.
+     */
+    public static final double COMPACTION_GROWTH_FACTOR = Configuration.getInstance()
+            .getDoubleForClassWithDefault(BarrageMessageProducer.class, "compactionGrowthFactor", 1.0);
+    static {
+        // NaN or infinity would silently disable the byte trigger; zero or less would compact at the floor forever.
+        if (!(COMPACTION_GROWTH_FACTOR > 0) || Double.isInfinite(COMPACTION_GROWTH_FACTOR)) {
+            throw new IllegalArgumentException("BarrageMessageProducer.compactionGrowthFactor must be finite and "
+                    + "greater than zero, got " + COMPACTION_GROWTH_FACTOR);
+        }
+    }
+    /**
+     * A producer also compacts once this many deltas have been recorded since the last compaction, whatever their size,
+     * bounding the per-delta overhead (row sets, update descriptions) that the byte policy does not see. Zero disables
+     * the count trigger.
+     */
+    public static final int COMPACTION_MAX_PENDING_DELTAS = Configuration.getInstance()
+            .getIntegerForClassWithDefault(BarrageMessageProducer.class, "compactionMaxPendingDeltas", 32);
 
     private long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
     private double snapshotNanosPerCell = 0;
@@ -227,90 +271,32 @@ public class BarrageMessageProducer extends LivenessArtifact
     private long lastUpdateClockStep = 0;
 
     private Throwable pendingError = null;
-    private final List<Delta> pendingDeltas = new ArrayList<>();
-
-    private static final class Delta implements SafeCloseable {
-        private final long step;
-        private final TableUpdate update;
-        private final WritableRowSet recordedAdds;
-        private final RowSet recordedMods;
-        private final BitSet subscribedColumns;
-        private final BitSet modifiedColumns;
-
-        /**
-         * Per-column chunk storage for added rows. {@code addChunks[columnIndex]} is an array of {@link WritableChunk
-         * WritableChunks}, each holding up to {@code DELTA_CHUNK_SIZE} rows of data. Null for columns not in
-         * {@code subscribedColumns}. Slots may be set to null after detachment for zero-copy transfer.
-         */
-        private final WritableChunk<Values>[][] addChunks;
-
-        /**
-         * Per-column chunk storage for modified rows. {@code modChunks[columnIndex]} is an array of
-         * {@link WritableChunk WritableChunks}, each holding up to {@code DELTA_CHUNK_SIZE} rows of data. Null for
-         * columns not in {@code modifiedColumns}. Slots may be set to null after detachment for zero-copy transfer.
-         */
-        private final WritableChunk<Values>[][] modChunks;
-
-        private Delta(final long step,
-                final TableUpdate update,
-                final WritableRowSet recordedAdds, final RowSet recordedMods,
-                final BitSet subscribedColumns, final BitSet modifiedColumns,
-                final WritableChunk<Values>[][] addChunks,
-                final WritableChunk<Values>[][] modChunks) {
-            this.step = step;
-            this.update = TableUpdateImpl.copy(update);
-            this.recordedAdds = recordedAdds;
-            this.recordedMods = recordedMods;
-            this.subscribedColumns = subscribedColumns;
-            this.modifiedColumns = modifiedColumns;
-            this.addChunks = addChunks;
-            this.modChunks = modChunks;
-        }
-
-        /**
-         * Detach and return the add chunks for {@code columnIndex}, nulling out this Delta's reference to prevent
-         * double-close. Used for zero-copy transfer to a {@link BarrageMessage}.
-         */
-        WritableChunk<Values>[] extractAddChunks(final int columnIndex) {
-            final WritableChunk<Values>[] result = addChunks[columnIndex];
-            addChunks[columnIndex] = null;
-            return result;
-        }
-
-        /**
-         * Detach and return the mod chunks for {@code columnIndex}, nulling out this Delta's reference to prevent
-         * double-close. Used for zero-copy transfer to a {@link BarrageMessage}.
-         */
-        WritableChunk<Values>[] extractModChunks(final int columnIndex) {
-            final WritableChunk<Values>[] result = modChunks[columnIndex];
-            modChunks[columnIndex] = null;
-            return result;
-        }
-
-        @Override
-        public void close() {
-            update.release();
-            recordedAdds.close();
-            recordedMods.close();
-            closeChunkArrays(addChunks);
-            closeChunkArrays(modChunks);
-        }
-
-        static void closeChunkArrays(final WritableChunk<Values>[][] chunkArrays) {
-            if (chunkArrays == null) {
-                return;
-            }
-            for (final WritableChunk<Values>[] chunks : chunkArrays) {
-                if (chunks == null) {
-                    continue;
-                }
-                for (final WritableChunk<Values> chunk : chunks) {
-                    try (final SafeCloseable ignored = chunk) {
-                    }
-                }
-            }
-        }
-    }
+    private final List<BarrageMessageDelta> pendingDeltas = new ArrayList<>();
+    /** Running total of {@link BarrageMessageDelta#chunkBytes} over {@link #pendingDeltas}. */
+    private long pendingDeltaBytes = 0;
+    /** Chunk bytes recorded since the last compaction, declined compaction, or flush. */
+    private long rawBytesSinceCompaction = 0;
+    /** Deltas recorded since the last compaction, declined compaction, or flush. */
+    private int deltasSinceCompaction = 0;
+    /**
+     * How many of {@link #pendingDeltas} are not {@link BarrageMessageDelta#isAddOnly() add-only}. Maintained as deltas
+     * are appended, spliced and flushed so that the enqueue path can decline compaction of a queue that only adds rows
+     * without scanning it.
+     */
+    private int pendingNonAddOnlyDeltas = 0;
+    /**
+     * Size of the compacted delta at the head of the queue, or after a declined compaction the size of the whole queue
+     * (so the next attempt waits for it to double), or zero after a flush.
+     */
+    private long compactedHeadBytes = 0;
+    private final CompactionJob compactionJob = new CompactionJob();
+    /**
+     * Bumped by {@link #promoteSnapshotToActive}, which is the only place {@link #activeViewport},
+     * {@link #activeReverseViewport} and {@link #activeColumns} change. Every delta is stamped with the generation it
+     * was recorded under; the propagation job splits pending deltas at that boundary to serve old and new subscribers
+     * differently, so only deltas of one generation may be compacted together.
+     */
+    private long subscriptionGeneration = 0;
 
     private final UpdatePropagationJob updatePropagationJob = new UpdatePropagationJob();
 
@@ -791,8 +777,9 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     /**
      * Reads rows from {@code keysToRecord} (in parent table key-space) for the columns indicated by
-     * {@code columnsToRecord} and stores them as poolable {@link WritableChunk WritableChunks} in
-     * {@code outputChunks[columnIndex]}. Each chunk holds up to {@link #DELTA_CHUNK_SIZE} rows.
+     * {@code columnsToRecord} and stores them as {@link WritableChunk WritableChunks} in
+     * {@code outputChunks[columnIndex]}. Each chunk holds exactly {@link #DELTA_CHUNK_SIZE} rows except the last, which
+     * asks the pool for exactly the rows that remain and receives the next power of two.
      */
     @SuppressWarnings("unchecked")
     private void fillDeltaChunks(
@@ -1045,8 +1032,8 @@ public class BarrageMessageProducer extends LivenessArtifact
             chunksCreatedSuccessfully = true;
         } finally {
             if (!chunksCreatedSuccessfully) {
-                Delta.closeChunkArrays(addChunks);
-                Delta.closeChunkArrays(modChunks);
+                BarrageMessageDelta.closeChunkArrays(addChunks);
+                BarrageMessageDelta.closeChunkArrays(modChunks);
             }
         }
 
@@ -1055,9 +1042,255 @@ public class BarrageMessageProducer extends LivenessArtifact
                     .append(parent.getUpdateGraph().clock().currentStep()).endl();
         }
 
-        pendingDeltas.add(new Delta(parent.getUpdateGraph().clock().currentStep(),
-                upstream, addsToRecord, modsToRecord, (BitSet) activeColumns.clone(), modifiedColumns,
-                addChunks, modChunks));
+        final long step = parent.getUpdateGraph().clock().currentStep();
+        final BarrageMessageDelta delta = new BarrageMessageDelta(subscriptionGeneration, step, step,
+                TableUpdateImpl.copy(upstream), addsToRecord, modsToRecord, null,
+                (BitSet) activeColumns.clone(), modifiedColumns, addChunks, modChunks);
+        pendingDeltas.add(delta);
+        pendingDeltaBytes += delta.chunkBytes;
+        rawBytesSinceCompaction += delta.chunkBytes;
+        ++deltasSinceCompaction;
+        if (!delta.isAddOnly()) {
+            ++pendingNonAddOnlyDeltas;
+        }
+
+        // Gauges, not durations: the useful value over a reporting window is the maximum.
+        recordMetric(stats -> stats.pendingDeltaCount, pendingDeltas.size());
+        recordMetric(stats -> stats.pendingDeltaBytes, pendingDeltaBytes);
+
+        if (shouldCompact()) {
+            if (pendingNonAddOnlyDeltas == 0) {
+                markCompactionDeclined(pendingDeltaBytes, pendingDeltas.size());
+            } else {
+                compactionJob.maybeSchedule();
+            }
+        }
+    }
+
+    /**
+     * The geometric compaction policy. Compact when the bytes recorded since the last compaction exceed the larger of
+     * the floor and {@code growthFactor} times the compacted delta's size, or when the count of deltas recorded since
+     * then reaches the cap. Doubling the raw data between compactions is what keeps the total copying linear in the
+     * data recorded while bounding the queue to a small multiple of its compacted footprint.
+     */
+    private boolean shouldCompact() {
+        Assert.assertion(Thread.holdsLock(this), "shouldCompact must hold lock!");
+        if (!COMPACTION_ENABLED || isBlinkTable || pendingDeltas.size() < 2) {
+            // A blink table's deltas are all new rows; nothing supersedes anything, so there is nothing to compact.
+            return false;
+        }
+        if (COMPACTION_MAX_PENDING_DELTAS > 0 && deltasSinceCompaction >= COMPACTION_MAX_PENDING_DELTAS) {
+            return true;
+        }
+        final double threshold =
+                Math.max(COMPACTION_FLOOR_BYTES, COMPACTION_GROWTH_FACTOR * compactedHeadBytes);
+        return rawBytesSinceCompaction >= threshold;
+    }
+
+    /** Total {@link BarrageMessageDelta#chunkBytes} over {@code deltas}. */
+    private static long totalChunkBytes(final List<BarrageMessageDelta> deltas) {
+        long bytes = 0;
+        for (final BarrageMessageDelta delta : deltas) {
+            bytes += delta.chunkBytes;
+        }
+        return bytes;
+    }
+
+    /** How many of {@code deltas} are not {@link BarrageMessageDelta#isAddOnly() add-only}. */
+    private static int countNonAddOnly(final List<BarrageMessageDelta> deltas) {
+        int count = 0;
+        for (final BarrageMessageDelta delta : deltas) {
+            if (!delta.isAddOnly()) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    /** Called after the splice, when {@link #pendingDeltas} and {@link #pendingDeltaBytes} describe the new queue. */
+    private void markCompacted(final BarrageMessageDelta compacted) {
+        compactedHeadBytes = compacted.chunkBytes;
+        // Whatever was appended behind the run while it was being compacted is still raw.
+        rawBytesSinceCompaction = pendingDeltaBytes - compactedHeadBytes;
+        deltasSinceCompaction = pendingDeltas.size() - 1;
+    }
+
+    /**
+     * Called when a run was examined and found to supersede nothing. That run is treated as already compact, so the
+     * next attempt waits for it to double; whatever was appended behind it was never examined and is still raw.
+     *
+     * @param runBytes total {@link BarrageMessageDelta#chunkBytes} over the examined run
+     * @param runSize how many deltas were examined
+     */
+    private void markCompactionDeclined(final long runBytes, final int runSize) {
+        compactedHeadBytes = runBytes;
+        rawBytesSinceCompaction = pendingDeltaBytes - runBytes;
+        deltasSinceCompaction = pendingDeltas.size() - runSize;
+    }
+
+    /**
+     * Close and drop every pending delta, returning their chunks to the pool, and reset the queue accounting. Each
+     * delta leaves the list before it is closed, so a drain that fails part way through cannot be repeated onto deltas
+     * that were already released.
+     */
+    private void discardPendingDeltasAndFlush() {
+        Assert.assertion(Thread.holdsLock(this), "discardPendingDeltasAndFlush must hold lock!");
+        final List<BarrageMessageDelta> discarded = new ArrayList<>(pendingDeltas);
+        pendingDeltas.clear();
+        pendingDeltaBytes = 0;
+        pendingNonAddOnlyDeltas = 0;
+        markFlushed();
+        SafeCloseable.closeAll(discarded);
+    }
+
+    private void markFlushed() {
+        compactedHeadBytes = 0;
+        rawBytesSinceCompaction = 0;
+        deltasSinceCompaction = 0;
+    }
+
+    /**
+     * Terminal failure of the producer: every subscriber is told, and no further work is done for any of them. Both
+     * scheduler jobs use this, because both run {@link BarrageMessageDelta#coalesce} under the propagation run lock and
+     * a failure there leaves the pending queue -- the subscribers' only record of what changed -- with nothing safe to
+     * send.
+     */
+    private void failAllSubscriptions(final Exception exception) {
+        synchronized (this) {
+            final StatusRuntimeException apiError = errorTransformer.transform(exception);
+
+            Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
+                    .forEach(sub -> GrpcUtil.safelyError(sub.listener, apiError));
+
+            activeSubscriptions.clear();
+            pendingSubscriptions.clear();
+            // The counters describe the lists that were just emptied. Left stale, a growing count would have the
+            // next propagation reschedule itself forever over no subscriptions.
+            numFullSubscriptions = 0;
+            numGrowingSubscriptions = 0;
+            // With no subscriptions left, nothing will schedule a propagation, and its flush is the only other
+            // thing that drains the queue. destroy() does not close these either, so without this they would be
+            // held until the producer is collected and their chunks would never return to the pool.
+            discardPendingDeltasAndFlush();
+        }
+    }
+
+    /**
+     * Compacts the pending queue off the update graph thread. Holds the propagation job's run lock while it works so
+     * that the two never run together: the propagation job closes and moves the deltas this job reads. If the
+     * propagation job already holds the lock it is about to flush the queue, which makes this compaction moot, so the
+     * job gives up rather than hold a scheduler thread until the flush is done; the next enqueue re-evaluates the
+     * policy. The update graph thread is never blocked; it keeps appending to the queue under the monitor, which this
+     * job takes only to copy out the run and later to swap the result in. A propagation run that found the lock held
+     * returned without running and relies on the holder to check for it on the way out.
+     */
+    private class CompactionJob implements Runnable {
+        private final AtomicBoolean scheduled = new AtomicBoolean();
+
+        void maybeSchedule() {
+            if (scheduled.compareAndSet(false, true)) {
+                scheduler.runImmediately(this);
+            }
+        }
+
+        @Override
+        public void run() {
+            scheduled.set(false);
+            final ReentrantLock runLock = updatePropagationJob.runLock;
+            if (!runLock.tryLock()) {
+                return;
+            }
+            try {
+                compactLeadingRun();
+            } catch (final Exception exception) {
+                // Coalescing failed. Propagation would have hit the same failure on the same thread when the update
+                // interval elapsed; compaction only reached it sooner, so it gets the same treatment.
+                failAllSubscriptions(exception);
+            } finally {
+                runLock.unlock();
+            }
+            if (updatePropagationJob.needsRun.get()) {
+                scheduler.runImmediately(updatePropagationJob);
+            }
+        }
+    }
+
+    /**
+     * Replace the leading run of same-generation pending deltas with a single equivalent delta.
+     *
+     * <p>
+     * This is how a producer stops holding one delta per update graph cycle for the whole of a slow subscriber's update
+     * interval. The replacement carries the same information as the run it replaces -- a later re-aggregation of the
+     * pending list produces the same message either way -- but only the data that survived coalescing: rows modified
+     * repeatedly are stored once, and rows added and then removed are stored not at all. The surviving data is copied
+     * into fresh chunks; the replaced deltas are then closed and their chunks returned to the pool. A run in which
+     * nothing is superseded -- pure adds -- is declined, since every recorded row survives and copying would cost the
+     * whole run's data and save no memory.
+     *
+     * <p>
+     * Only a prefix may be compacted, because the coalescing has to start from {@link #propagationRowSet}, which is the
+     * row set as of the last propagation. {@link #propagationRowSet} is deliberately left where it is: compaction
+     * changes how the pending updates are stored, not what subscribers have been told. Deltas recorded under different
+     * subscription generations describe different viewports or column sets and must not be merged, because the
+     * propagation job splits them at the snapshot step to send them to different populations of subscribers.
+     *
+     * <p>
+     * The work is done in two phases: copy the run and a row set snapshot out under the monitor, coalesce without it,
+     * swap the result in under it. Must hold the propagation job's run lock, which is what guarantees the run's deltas
+     * are neither closed nor split at a snapshot while they are being read.
+     */
+    private void compactLeadingRun() {
+        Assert.assertion(updatePropagationJob.runLock.isHeldByCurrentThread(),
+                "updatePropagationJob.runLock.isHeldByCurrentThread()");
+
+        final List<BarrageMessageDelta> run;
+        final RowSet baseRowSet;
+        synchronized (this) {
+            if (!shouldCompact()) {
+                // flushed, or already compacted, since this job was scheduled
+                return;
+            }
+            // Only one generation is ever pending outside a propagation run, which the run lock excludes; take the
+            // leading run of it regardless, so this holds by construction rather than by argument.
+            final long generation = pendingDeltas.get(0).generation;
+            int numDeltas = 1;
+            while (numDeltas < pendingDeltas.size() && pendingDeltas.get(numDeltas).generation == generation) {
+                ++numDeltas;
+            }
+            if (numDeltas < 2) {
+                return;
+            }
+            run = new ArrayList<>(pendingDeltas.subList(0, numDeltas));
+            baseRowSet = propagationRowSet.copy();
+        }
+
+        // The run's totals are needed under the monitor, where a scan of the run would block the update graph
+        // thread for as long as the run is long; take them here instead.
+        final long runBytes = totalChunkBytes(run);
+        final int runNonAddOnly = countNonAddOnly(run);
+
+        final BarrageMessageDelta compacted;
+        try (final SafeCloseable ignored = baseRowSet) {
+            // Compaction and splicing might create add-only deltas from mixed deltas. Decline additional compaction.
+            if (runNonAddOnly == 0) {
+                synchronized (this) {
+                    markCompactionDeclined(runBytes, run.size());
+                }
+                return;
+            }
+            final long startTm = System.nanoTime();
+            compacted = BarrageMessageDelta.coalesce(run, baseRowSet, chunkSources);
+            recordMetric(stats -> stats.aggregate, System.nanoTime() - startTm);
+        }
+
+        final List<BarrageMessageDelta> replaced;
+        // While we are holding this lock, we could block the UGP (through enqueueUpdate which also synchronizes on
+        // this). Releasing chunks isn't always free (for Object, must null out references), so do it outside the
+        // synchronized block.
+        synchronized (this) {
+            replaced = spliceCompacted(run, runBytes, runNonAddOnly, compacted);
+        }
+        SafeCloseable.closeAll(replaced);
     }
 
     private void schedulePropagation() {
@@ -1122,15 +1355,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                         recordMetric(stats -> stats.updateJob, System.nanoTime() - startTm);
                     }
                 } catch (final Exception exception) {
-                    synchronized (BarrageMessageProducer.this) {
-                        final StatusRuntimeException apiError = errorTransformer.transform(exception);
-
-                        Stream.concat(activeSubscriptions.stream(), pendingSubscriptions.stream()).distinct()
-                                .forEach(sub -> GrpcUtil.safelyError(sub.listener, apiError));
-
-                        activeSubscriptions.clear();
-                        pendingSubscriptions.clear();
-                    }
+                    failAllSubscriptions(exception);
                 } finally {
                     runLock.unlock();
                 }
@@ -1496,11 +1721,17 @@ public class BarrageMessageProducer extends LivenessArtifact
             // prepare updates to propagate
             final long maxStep = snapshot != null ? snapshot.firstSeq : Long.MAX_VALUE;
 
+            // A delta may only precede the snapshot if every update it describes does. Compacted deltas span a range
+            // of steps, and the aggregation that produced one cannot have crossed a snapshot, so no delta should ever
+            // straddle this boundary; assert that rather than silently splitting one in half.
             int deltaSplitIdx = pendingDeltas.size();
             for (; deltaSplitIdx > 0; --deltaSplitIdx) {
-                if (pendingDeltas.get(deltaSplitIdx - 1).step <= maxStep) {
+                final BarrageMessageDelta delta = pendingDeltas.get(deltaSplitIdx - 1);
+                if (delta.lastStep <= maxStep) {
                     break;
                 }
+                Assert.assertion(delta.firstStep > maxStep,
+                        "delta.firstStep > maxStep", delta.firstStep, "delta.firstStep", maxStep, "maxStep");
             }
 
             // flip snapshot state so that we build the preSnapshot using previous viewports/columns
@@ -1541,12 +1772,9 @@ public class BarrageMessageProducer extends LivenessArtifact
                 recordMetric(stats -> stats.aggregate, System.nanoTime() - startTm);
             }
 
-            // cleanup for next iteration, Delta.close() releases any un-transferred chunks
-            for (final Delta delta : pendingDeltas) {
-                delta.close();
-            }
+            // cleanup for next iteration, BarrageMessageDelta.close() releases any un-transferred chunks
             blinkTableUpdateSize = 0;
-            pendingDeltas.clear();
+            discardPendingDeltasAndFlush();
         }
 
         // now, propagate updates
@@ -1765,23 +1993,90 @@ public class BarrageMessageProducer extends LivenessArtifact
         subscription.pendingInitialSnapshot = false;
     }
 
+    /**
+     * Replace the pending deltas that {@code run} captured with {@code compacted}, which describes the same change.
+     * Takes ownership of {@code compacted}: either the queue holds it on return, or it is closed here.
+     *
+     * <p>
+     * Only bounded work happens here, which is why the run's totals arrive as arguments rather than being taken from
+     * it. Closing a delta returns its chunks to the pool, which clears their backing arrays and so costs time
+     * proportional to the data being discarded; that is left to the caller, once it has released the monitor, so the
+     * update graph thread is not blocked behind it.
+     *
+     * @param run the deltas being replaced, still at the head of the queue
+     * @param runBytes total {@link BarrageMessageDelta#chunkBytes} over {@code run}
+     * @param runNonAddOnly how many of {@code run} are not add-only
+     * @param compacted the delta that replaces them
+     * @return the replaced deltas, which the caller must close
+     */
+    private List<BarrageMessageDelta> spliceCompacted(final List<BarrageMessageDelta> run, final long runBytes,
+            final int runNonAddOnly, final BarrageMessageDelta compacted) {
+        Assert.assertion(Thread.holdsLock(this), "spliceCompacted must hold lock!");
+        final int numDeltas = run.size();
+        final long firstStep;
+        final long lastStep;
+        final List<BarrageMessageDelta> replaced;
+        try {
+            // The update graph thread only appends, and the propagation job is excluded, so the run is still the
+            // head; a flush that slipped in would have replaced the head with something else.
+            Assert.geq(pendingDeltas.size(), "pendingDeltas.size()", numDeltas, "run.size()");
+            Assert.eq(pendingDeltas.get(0), "pendingDeltas.get(0)", run.get(0), "run.get(0)");
+            firstStep = pendingDeltas.get(0).firstStep;
+            lastStep = pendingDeltas.get(numDeltas - 1).lastStep;
+            Assert.eq(compacted.firstStep, "compacted.firstStep", firstStep, "firstStep");
+            Assert.eq(compacted.lastStep, "compacted.lastStep", lastStep, "lastStep");
+
+            final List<BarrageMessageDelta> head = pendingDeltas.subList(0, numDeltas);
+            replaced = new ArrayList<>(head);
+            head.clear();
+            pendingDeltas.add(0, compacted);
+        } catch (final Throwable err) {
+            // The queue never took it, so nothing else will ever release it.
+            compacted.close();
+            throw err;
+        }
+
+        pendingDeltaBytes += compacted.chunkBytes - runBytes;
+        // Coalescing can leave only adds behind (rows added and then modified within the run), so recount the head.
+        pendingNonAddOnlyDeltas += (compacted.isAddOnly() ? 0 : 1) - runNonAddOnly;
+        markCompacted(compacted);
+
+        if (log.isDebugEnabled()) {
+            log.debug().append(logPrefix).append("compacted ").append(numDeltas)
+                    .append(" deltas spanning steps [").append(firstStep).append(", ").append(lastStep)
+                    .append("]; pendingDeltas=").append(pendingDeltas.size())
+                    .append(", pendingDeltaBytes=").append(pendingDeltaBytes).endl();
+        }
+        return replaced;
+    }
+
+    /**
+     * Coalesce {@code pendingDeltas[startDelta, endDelta)} into the message to send to subscribers, and advance
+     * {@link #propagationRowSet} past it.
+     *
+     * <p>
+     * Whatever the run looks like, the message is packaged from a single delta: the one pending delta itself when there
+     * is only one, a synthetic concatenation for a blink table, or the run {@link BarrageMessageDelta#coalesce
+     * coalesced} into one. Packaging moves the delta's chunks into the message rather than copying them, so the copy
+     * made while coalescing is the only copy on this path.
+     */
     private BarrageMessage aggregateUpdatesInRange(final int startDelta, final int endDelta) {
-        Assert.assertion(Thread.holdsLock(this), "propagateUpdatesInRange must hold lock!");
+        Assert.assertion(Thread.holdsLock(this), "aggregateUpdatesInRange must hold lock!");
 
-        final boolean singleDelta = endDelta - startDelta == 1;
         final BarrageMessage downstream = new BarrageMessage();
-        downstream.firstSeq = startDelta < 0 ? -1 : pendingDeltas.get(startDelta).step;
-        downstream.lastSeq = endDelta < 1 ? -1 : pendingDeltas.get(endDelta - 1).step;
+        downstream.firstSeq = startDelta < 0 ? -1 : pendingDeltas.get(startDelta).firstStep;
+        downstream.lastSeq = endDelta < 1 ? -1 : pendingDeltas.get(endDelta - 1).lastStep;
 
-        final BitSet addColumnSet;
-        final BitSet modColumnSet;
-        final Delta firstDelta;
+        // The delta to package, and whether it is ours to close (a synthetic or compacted delta) or one still owned
+        // by pendingDeltas (closed in the propagation job's cleanup).
+        final BarrageMessageDelta source;
+        final boolean closeSource;
 
         if (isBlinkTable) {
             long size = 0;
             final RowSetBuilderSequential recordedBuilder = RowSetFactory.builderSequential();
             for (int ii = startDelta; ii < endDelta; ++ii) {
-                final Delta delta = pendingDeltas.get(ii);
+                final BarrageMessageDelta delta = pendingDeltas.get(ii);
 
                 try (final WritableRowSet positions = delta.update.added().invert(delta.recordedAdds)) {
                     positions.shiftInPlace(size);
@@ -1799,16 +2094,25 @@ public class BarrageMessageProducer extends LivenessArtifact
                     ModifiedColumnSet.EMPTY);
 
             final boolean hasDelta = startDelta < endDelta;
-            final Delta origDelta = hasDelta ? pendingDeltas.get(startDelta) : null;
+            final BarrageMessageDelta origDelta = hasDelta ? pendingDeltas.get(startDelta) : null;
 
             // Gather addChunks from all underlying deltas into a single array per column.
             // Each delta's addChunks contain exactly its recordedAdds rows in order, so concatenation
             // produces the correct combined add data matching the synthesized recordedAdds RowSet.
 
+            // The columns every delta recorded; a removal-only promotion mid-run narrows what the later ones hold, and
+            // the remaining subscribers need no more than that.
+            final BitSet subscribedCols = new BitSet();
+            if (hasDelta) {
+                subscribedCols.or(origDelta.subscribedColumns);
+                for (int ii = startDelta + 1; ii < endDelta; ++ii) {
+                    subscribedCols.and(pendingDeltas.get(ii).subscribedColumns);
+                }
+            }
+
             // noinspection unchecked
             final WritableChunk<Values>[][] blinkAddChunks = new WritableChunk[chunkSources.length][];
             if (hasDelta) {
-                final BitSet subscribedCols = origDelta.subscribedColumns;
                 for (int ci = subscribedCols.nextSetBit(0); ci >= 0; ci = subscribedCols.nextSetBit(ci + 1)) {
                     int totalChunks = 0;
                     for (int ii = startDelta; ii < endDelta; ++ii) {
@@ -1833,33 +2137,39 @@ public class BarrageMessageProducer extends LivenessArtifact
             }
 
             // noinspection unchecked
-            firstDelta = new Delta(
-                    -1,
+            source = new BarrageMessageDelta(
+                    subscriptionGeneration, -1, -1,
                     update,
                     recordedBuilder.build(),
                     RowSetFactory.empty(),
-                    hasDelta ? origDelta.subscribedColumns : new BitSet(),
+                    null,
+                    subscribedCols,
                     new BitSet(),
                     blinkAddChunks,
                     new WritableChunk[chunkSources.length][]);
+            closeSource = true;
 
             // store our update size to remove on the next update
             lastBlinkTableUpdateSize = size;
+        } else if (endDelta - startDelta == 1) {
+            // a single delta needs no coalescing; packaged directly and still owned by pendingDeltas
+            source = pendingDeltas.get(startDelta);
+            closeSource = false;
         } else {
-            firstDelta = pendingDeltas.get(startDelta);
+            source = BarrageMessageDelta.coalesce(pendingDeltas.subList(startDelta, endDelta), propagationRowSet,
+                    chunkSources);
+            closeSource = true;
         }
 
-        if (singleDelta || isBlinkTable) {
-            // Zero-copy fast path: transfer chunk ownership directly from the delta to the BarrageMessage.
-            // For singleDelta, firstDelta IS the real delta in pendingDeltas (closed in cleanup).
-            // For isBlinkTable, firstDelta is a synthetic local delta (closed explicitly below).
-            addColumnSet = firstDelta.recordedAdds.isEmpty() ? new BitSet() : firstDelta.subscribedColumns;
-            modColumnSet = firstDelta.modifiedColumns;
+        // Zero-copy: transfer chunk ownership directly from the delta to the BarrageMessage.
+        try {
+            final BitSet addColumnSet = source.recordedAdds.isEmpty() ? new BitSet() : source.subscribedColumns;
+            final BitSet modColumnSet = source.modifiedColumns;
 
-            downstream.rowsAdded = firstDelta.update.added().copy();
-            downstream.rowsRemoved = firstDelta.update.removed().copy();
-            downstream.shifted = firstDelta.update.shifted();
-            downstream.rowsIncluded = firstDelta.recordedAdds.copy();
+            downstream.rowsAdded = source.update.added().copy();
+            downstream.rowsRemoved = source.update.removed().copy();
+            downstream.shifted = source.update.shifted();
+            downstream.rowsIncluded = source.recordedAdds.copy();
 
             downstream.addColumnData = new BarrageMessage.AddColumnData[chunkSources.length];
             downstream.modColumnData = new BarrageMessage.ModColumnData[chunkSources.length];
@@ -1872,7 +2182,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
                 if (addColumnSet.get(ci)) {
                     // Detach chunks from the delta; BarrageMessage.close() returns them to the pool.
-                    final WritableChunk<Values>[] chunks = firstDelta.extractAddChunks(ci);
+                    final WritableChunk<Values>[] chunks = source.extractAddChunks(ci);
                     if (chunks != null) {
                         Collections.addAll(adds.data, chunks);
                     }
@@ -1889,9 +2199,9 @@ public class BarrageMessageProducer extends LivenessArtifact
                 downstream.modColumnData[ci] = mods;
 
                 if (modColumnSet.get(ci)) {
-                    mods.rowsModified = firstDelta.recordedMods.copy();
+                    mods.rowsModified = source.getRecordedMods(ci).copy();
                     // Detach chunks from the delta; BarrageMessage.close() returns them to the pool.
-                    final WritableChunk<Values>[] chunks = firstDelta.extractModChunks(ci);
+                    final WritableChunk<Values>[] chunks = source.extractModChunks(ci);
                     if (chunks != null) {
                         Collections.addAll(mods.data, chunks);
                     }
@@ -1903,286 +2213,29 @@ public class BarrageMessageProducer extends LivenessArtifact
                 mods.componentType = realColumnComponentType[ci];
             }
 
-            if (isBlinkTable) {
-                // The synthetic firstDelta is not in pendingDeltas; close it to release the
-                // synthesized update and recordedAdds. Any chunks were already detached above.
-                try (final SafeCloseable ignored = firstDelta) {
-                }
+        } catch (final Throwable err) {
+            // Nothing else can reach either of these: the message is local, and a synthetic source is not in
+            // pendingDeltas. Chunks already detached into the message go back with it; the source then releases
+            // only what it still holds.
+            downstream.close();
+            if (closeSource) {
+                source.close();
             }
-        } else {
-            // We must coalesce these updates.
-            final UpdateCoalescer coalescer =
-                    new UpdateCoalescer(propagationRowSet, firstDelta.update);
-            for (int i = startDelta + 1; i < endDelta; ++i) {
-                coalescer.update(pendingDeltas.get(i).update);
-            }
-
-            // We need to build our included additions and included modifications in addition to the coalesced update.
-            addColumnSet = new BitSet();
-            modColumnSet = new BitSet();
-
-            final WritableRowSet localAdded = RowSetFactory.empty();
-            for (int i = startDelta; i < endDelta; ++i) {
-                final Delta delta = pendingDeltas.get(i);
-                localAdded.remove(delta.update.removed());
-                delta.update.shifted().apply(localAdded);
-
-                // reset the add column set if we do not have any adds from previous updates
-                if (localAdded.isEmpty()) {
-                    addColumnSet.clear();
-                }
-
-                if (delta.recordedAdds.isNonempty()) {
-                    if (addColumnSet.isEmpty()) {
-                        addColumnSet.or(delta.subscribedColumns);
-                    } else {
-                        // It pays to be certain that all of the data we look up was written down.
-                        Assert.equals(delta.subscribedColumns, "delta.subscribedColumns", addColumnSet, "addColumnSet");
-                    }
-
-                    localAdded.insert(delta.recordedAdds);
-                }
-
-                if (delta.recordedMods.isNonempty()) {
-                    modColumnSet.or(delta.modifiedColumns);
-                }
-            }
-
-            // One drawback of the ModifiedColumnSet, is that our adds must include data for all columns. However,
-            // column specific data may be updated and we only write down that single changed column. So, the
-            // computation of mapping output rows to input data may be different per Column. We can re-use calculations
-            // where the set of deltas that modify column A are the same as column B.
-            //
-            // The mapping arrays store encoded source references (see below for details).
-            // This allows reuse of the mapping across columns sharing the same modification pattern.
-            final class ColumnInfo {
-                final WritableRowSet modified = RowSetFactory.empty();
-                final WritableRowSet recordedMods = RowSetFactory.empty();
-                long[][] addedMappings;
-                long[][] modifiedMappings;
-            }
-
-            final HashMap<BitSet, ColumnInfo> infoCache = new HashMap<>();
-            final IntFunction<ColumnInfo> getColumnInfo = (columnIndex) -> {
-                final BitSet deltasThatModifyThisColumn = new BitSet();
-                for (int i = startDelta; i < endDelta; ++i) {
-                    if (pendingDeltas.get(i).modifiedColumns.get(columnIndex)) {
-                        deltasThatModifyThisColumn.set(i);
-                    }
-                }
-
-                final ColumnInfo ci = infoCache.get(deltasThatModifyThisColumn);
-                if (ci != null) {
-                    return ci;
-                }
-
-                final ColumnInfo retval = new ColumnInfo();
-                for (int i = startDelta; i < endDelta; ++i) {
-                    final Delta delta = pendingDeltas.get(i);
-                    retval.modified.remove(delta.update.removed());
-                    retval.recordedMods.remove(delta.update.removed());
-                    delta.update.shifted().apply(retval.modified);
-                    delta.update.shifted().apply(retval.recordedMods);
-
-                    if (deltasThatModifyThisColumn.get(i)) {
-                        retval.modified.insert(delta.update.modified());
-                        retval.recordedMods.insert(delta.recordedMods);
-                    }
-                }
-                retval.modified.remove(coalescer.added);
-                retval.recordedMods.remove(coalescer.added);
-
-                retval.addedMappings = newMappingArray(localAdded.size());
-                retval.modifiedMappings = newMappingArray(retval.recordedMods.size());
-
-                final WritableRowSet unfilledAdds = localAdded.isEmpty() ? RowSetFactory.empty()
-                        : RowSetFactory.flat(localAdded.size());
-                final WritableRowSet unfilledMods = retval.recordedMods.isEmpty() ? RowSetFactory.empty()
-                        : RowSetFactory.flat(retval.recordedMods.size());
-
-                final WritableRowSet addedRemaining = localAdded.copy();
-                final WritableRowSet modifiedRemaining = retval.recordedMods.copy();
-                for (int i = endDelta - 1; i >= startDelta; --i) {
-                    if (addedRemaining.isEmpty() && modifiedRemaining.isEmpty()) {
-                        break;
-                    }
-
-                    final Delta delta = pendingDeltas.get(i);
-
-                    // Encode (fromMods, deltaIndex) into the high bits of sourceRows values so that
-                    // applyRedirMapping stores them verbatim in the mapping arrays.
-                    final long encodedAddBase = ((long) i) << BarrageCopyKernel.DELTA_INDEX_SHIFT;
-                    final long encodedModBase = encodedAddBase | (1L << BarrageCopyKernel.DELTA_MOD_FLAG_BIT);
-
-                    final BiConsumer<Boolean, Boolean> applyMapping = (addedMapping, recordedAdds) -> {
-                        final WritableRowSet remaining = addedMapping ? addedRemaining : modifiedRemaining;
-                        final RowSet deltaRecorded = recordedAdds ? delta.recordedAdds : delta.recordedMods;
-                        try (final RowSet recorded = remaining.intersect(deltaRecorded);
-                                final WritableRowSet sourceRows = deltaRecorded.invert(recorded);
-                                final RowSet destinationsInPosSpace = remaining.invert(recorded);
-                                final RowSet rowsToFill = (addedMapping ? unfilledAdds : unfilledMods)
-                                        .subSetForPositions(destinationsInPosSpace)) {
-                            // Shift sourceRows so each value encodes (deltaIndex | fromMods | srcPos).
-                            sourceRows.shiftInPlace(recordedAdds ? encodedAddBase : encodedModBase);
-
-                            remaining.remove(recorded);
-                            if (addedMapping) {
-                                unfilledAdds.remove(rowsToFill);
-                            } else {
-                                unfilledMods.remove(rowsToFill);
-                            }
-
-                            applyRedirMapping(rowsToFill, sourceRows,
-                                    addedMapping ? retval.addedMappings : retval.modifiedMappings);
-                        }
-                    };
-
-                    applyMapping.accept(true, true); // map recorded adds
-                    applyMapping.accept(false, true); // map recorded mods that might have a scoped add
-
-                    if (deltasThatModifyThisColumn.get(i)) {
-                        applyMapping.accept(true, false); // map recorded mods that propagate as adds
-                        applyMapping.accept(false, false); // map recorded mods
-                    }
-
-                    delta.update.shifted().unapply(addedRemaining);
-                    delta.update.shifted().unapply(modifiedRemaining);
-                }
-
-                if (!unfilledAdds.isEmpty()) {
-                    Assert.assertion(false, "Error: added:" + coalescer.added + " unfilled:" + unfilledAdds
-                            + " missing:" + coalescer.added.subSetForPositions(unfilledAdds));
-                }
-                Assert.eq(unfilledAdds.size(), "unfilledAdds.size()", 0);
-                Assert.eq(unfilledMods.size(), "unfilledMods.size()", 0);
-
-                infoCache.put(deltasThatModifyThisColumn, retval);
-                return retval;
-            };
-
-            if (coalescer.modifiedColumnSet == ModifiedColumnSet.ALL) {
-                modColumnSet.set(0, chunkSources.length);
-            } else {
-                modColumnSet.or(coalescer.modifiedColumnSet.extractAsBitSet());
-            }
-
-            downstream.rowsAdded = coalescer.added;
-            downstream.rowsRemoved = coalescer.removed;
-            downstream.shifted = coalescer.shifted;
-            downstream.rowsIncluded = localAdded;
-            downstream.addColumnData = new BarrageMessage.AddColumnData[chunkSources.length];
-            downstream.modColumnData = new BarrageMessage.ModColumnData[chunkSources.length];
-
-            // Helper to create the copy kernel contexts for a given column index.
-            final BiFunction<BarrageCopyKernel, Integer, BarrageCopyKernel.BarrageCopyKernelContext> contextCreator =
-                    (copyKernel, columnIndex) -> {
-                        final int numDeltas = pendingDeltas.size();
-                        // noinspection unchecked
-                        final WritableChunk<Values>[][] colAddChunks = new WritableChunk[numDeltas][];
-                        // noinspection unchecked
-                        final WritableChunk<Values>[][] colModChunks = new WritableChunk[numDeltas][];
-                        for (int di = 0; di < numDeltas; ++di) {
-                            final Delta d = pendingDeltas.get(di);
-                            colAddChunks[di] = d.addChunks[columnIndex];
-                            colModChunks[di] = d.modChunks[columnIndex];
-                        }
-                        return copyKernel.makeContext(colAddChunks, colModChunks, DELTA_CHUNK_SIZE);
-                    };
-
-            // Local cache of contexts (to avoid recreating for both adds and mods).
-            final BarrageCopyKernel.BarrageCopyKernelContext[] contexts =
-                    new BarrageCopyKernel.BarrageCopyKernelContext[chunkSources.length];
-            for (int ci = 0; ci < downstream.addColumnData.length; ++ci) {
-                final BarrageMessage.AddColumnData adds = new BarrageMessage.AddColumnData();
-                adds.data = new ArrayList<>();
-                adds.chunkType = chunkSources[ci].getChunkType();
-
-                downstream.addColumnData[ci] = adds;
-
-                if (addColumnSet.get(ci)) {
-                    final BarrageCopyKernel copyKernel = BarrageCopyKernel.makeBarrageCopyKernel(adds.chunkType);
-                    BarrageCopyKernel.BarrageCopyKernelContext localCtx = contexts[ci];
-                    if (localCtx == null) {
-                        // Cache this against mods needing it.
-                        localCtx = contexts[ci] = contextCreator.apply(copyKernel, ci);
-                    }
-                    final ColumnInfo info = getColumnInfo.apply(ci);
-                    for (long[] addedMapping : info.addedMappings) {
-                        final WritableChunk<Values> chunk = adds.chunkType.makeWritableChunk(addedMapping.length);
-                        copyKernel.copyFromDeltaChunks(addedMapping, chunk, localCtx);
-                        adds.data.add(chunk);
-                    }
-                }
-
-                adds.type = realColumnType[ci];
-                adds.componentType = realColumnComponentType[ci];
-            }
-
-            for (int ci = 0; ci < downstream.modColumnData.length; ++ci) {
-                final BarrageMessage.ModColumnData mods = new BarrageMessage.ModColumnData();
-                mods.data = new ArrayList<>();
-                mods.chunkType = chunkSources[ci].getChunkType();
-
-                downstream.modColumnData[ci] = mods;
-
-                if (modColumnSet.get(ci)) {
-                    final BarrageCopyKernel copyKernel = BarrageCopyKernel.makeBarrageCopyKernel(mods.chunkType);
-                    BarrageCopyKernel.BarrageCopyKernelContext localCtx = contexts[ci];
-                    if (localCtx == null) {
-                        localCtx = contextCreator.apply(copyKernel, ci);
-                    }
-                    final ColumnInfo info = getColumnInfo.apply(ci);
-                    mods.rowsModified = info.recordedMods.copy();
-                    for (long[] modifiedMapping : info.modifiedMappings) {
-                        final WritableChunk<Values> chunk = mods.chunkType.makeWritableChunk(modifiedMapping.length);
-                        copyKernel.copyFromDeltaChunks(modifiedMapping, chunk, localCtx);
-                        mods.data.add(chunk);
-                    }
-                } else {
-                    mods.rowsModified = RowSetFactory.empty();
-                }
-
-                mods.type = realColumnType[ci];
-                mods.componentType = realColumnComponentType[ci];
-            }
+            throw err;
+        }
+        if (closeSource) {
+            // A synthetic delta is not in pendingDeltas; its chunks were detached above, so this releases only its
+            // row sets and update.
+            source.close();
         }
 
-        // Update our propagation RowSet.
+        // Subscribers are about to be told about this, so it becomes part of what they have seen.
         propagationRowSet.remove(downstream.rowsRemoved);
         downstream.shifted.apply(propagationRowSet);
         propagationRowSet.insert(downstream.rowsAdded);
         downstream.tableSize = propagationRowSet.size();
 
         return downstream;
-    }
-
-    private static long[][] newMappingArray(final long size) {
-        final int numAddChunks = LongSizedDataStructure.intSize("BarrageMessageProducer",
-                (size + SNAPSHOT_CHUNK_SIZE - 1) / SNAPSHOT_CHUNK_SIZE);
-        final long[][] result = new long[numAddChunks][];
-        for (int ii = 0; ii < numAddChunks; ++ii) {
-            final int chunkSize = (ii < numAddChunks - 1 || size % SNAPSHOT_CHUNK_SIZE == 0)
-                    ? SNAPSHOT_CHUNK_SIZE
-                    : (int) (size % SNAPSHOT_CHUNK_SIZE);
-            final long[] newChunk = new long[chunkSize];
-            result[ii] = newChunk;
-            Arrays.fill(newChunk, RowSequence.NULL_ROW_KEY);
-        }
-        return result;
-    }
-
-    // Updates provided mapping so that mapping[i] returns values.get(i) for all i in keys.
-    private static void applyRedirMapping(final RowSet keys, final RowSet values, final long[][] mapping) {
-        Assert.eq(keys.size(), "keys.size()", values.size(), "values.size()");
-
-        final RowSet.Iterator vit = values.iterator();
-        keys.forAllRowKeys(lkey -> {
-            final int arrIdx = (int) (lkey / SNAPSHOT_CHUNK_SIZE);
-            final int keyIdx = (int) (lkey % SNAPSHOT_CHUNK_SIZE);
-            final long[] chunk = mapping[arrIdx];
-            Assert.eq(chunk[keyIdx], "chunk[keyIdx]", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
-            chunk[keyIdx] = vit.nextLong();
-        });
     }
 
     private void flipSnapshotStateForSubscriptions(
@@ -2311,6 +2364,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         activeColumns.clear();
         activeColumns.or(postSnapshotColumns);
         postSnapshotColumns.clear();
+        ++subscriptionGeneration;
     }
 
     private synchronized long getLastUpdateClockStep() {
@@ -2453,6 +2507,8 @@ public class BarrageMessageProducer extends LivenessArtifact
         public final Histogram updateJob = new Histogram(NUM_SIG_FIGS);
         public final Histogram writeTime = new Histogram(NUM_SIG_FIGS);
         public final Histogram writeBytes = new Histogram(NUM_SIG_FIGS);
+        public final Histogram pendingDeltaCount = new Histogram(NUM_SIG_FIGS);
+        public final Histogram pendingDeltaBytes = new Histogram(NUM_SIG_FIGS);
 
         private volatile boolean running = true;
 
@@ -2482,6 +2538,8 @@ public class BarrageMessageProducer extends LivenessArtifact
                 flush(now, logger, updateJob, StatType.UPDATE_JOB_NANOS);
                 flush(now, logger, writeTime, StatType.WRITE_NANOS);
                 flush(now, logger, writeBytes, StatType.WRITE_BYTES);
+                flush(now, logger, pendingDeltaCount, StatType.PENDING_DELTA_COUNT);
+                flush(now, logger, pendingDeltaBytes, StatType.PENDING_DELTA_BYTES);
             }
         }
 

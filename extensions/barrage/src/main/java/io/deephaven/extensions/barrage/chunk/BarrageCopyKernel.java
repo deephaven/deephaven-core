@@ -7,18 +7,20 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 
+import java.util.Arrays;
+
 /**
- * Typed kernel for copying individual cells from per-delta source chunks into a destination chunk, using a pre-computed
- * encoded mapping array. Each mapping entry encodes (deltaIndex, add-or-mod flag, position) in a single long using the
- * bit constants defined here.
+ * Typed kernel for gathering one column of a coalesced Barrage update out of the chunks of the per-cycle updates it was
+ * built from. The caller describes where every output row comes from as {@link Runs}; this kernel owns how the data
+ * moves.
  *
  * <p>
- * Using a typed kernel avoids the virtual dispatch and {@code System.arraycopy} overhead of calling
- * {@code WritableChunk.copyFromChunk(src, offset, pos, 1)} for each cell.
+ * Replicated per chunk type only so the loop's copy call stays monomorphic. One shared implementation would see every
+ * chunk class, go megamorphic, and stop the typed copy inlining: measured a third slower at short run lengths.
  */
 public interface BarrageCopyKernel {
 
-    // We use bit encoding for delta chunk mapping arrays to avoid binary search or iteration to determine source
+    // We use bit encoding for delta chunk origins to avoid binary search or iteration to determine source
     // chunks. The following are the bit mapping for the values (stored as long).
     // bits 0-39 = position within that delta's chunk list (up to 1,099,511,627,776 unique positions).
     long DELTA_POSITION_MASK = 0xFFFFFFFFFFL;
@@ -27,6 +29,64 @@ public interface BarrageCopyKernel {
     long DELTA_INDEX_MASK = 0x3FFFFFL;
     // bit 62 = 0 for addChunks or 1 for modChunks
     int DELTA_MOD_FLAG_BIT = 62;
+
+    /**
+     * Average run length at or above which a column is copied with an array copy per stretch rather than an element at
+     * a time. Fitted at 2^20 rows for int, double and String: the element path wins at one row per run and narrowly at
+     * two, the array copy wins from three up and is twice as fast by five. The kernel's average is an integer division,
+     * so this is compared against the floor of the true average.
+     */
+    long MIN_AVERAGE_RUN_LENGTH_FOR_ARRAY_COPY = 3;
+
+    /**
+     * Position zero of one side (adds or mods) of one delta, in the bit layout above. Add a position within that side's
+     * chunks, or shift a whole row set of positions by it, for the encoded origins {@link Runs} carries.
+     */
+    static long originOffset(final int deltaIndex, final boolean fromModChunks) {
+        final long base = ((long) deltaIndex) << DELTA_INDEX_SHIFT;
+        return fromModChunks ? base | (1L << DELTA_MOD_FLAG_BIT) : base;
+    }
+
+    /**
+     * Where every row of one output column comes from, as stretches that are contiguous in both the output and the
+     * delta chunk they come from: for each, the first output position, the encoded origin of its first row (see
+     * {@link #originOffset}) and how many rows follow contiguously.
+     *
+     * <p>
+     * Data only. The caller appends runs in output order; a kernel reads them. Row sets are range-compressed and
+     * updates arrive in ranges, so a run usually covers many rows and building this costs proportionally to ranges
+     * rather than rows.
+     */
+    final class Runs {
+        long[] dest = new long[16];
+        long[] encoded = new long[16];
+        long[] len = new long[16];
+        int count;
+        /** Sum of {@link #len}, so a kernel can size its strategy without a pass over the runs. */
+        long totalRows;
+
+        /** How many output rows these runs account for between them. */
+        public long totalRows() {
+            return totalRows;
+        }
+
+        /**
+         * Append one run: {@code length} rows starting at output position {@code destination}, whose first row is at
+         * encoded origin {@code origin} and whose remaining rows follow it contiguously.
+         */
+        public void add(final long destination, final long origin, final long length) {
+            if (count == dest.length) {
+                dest = Arrays.copyOf(dest, count * 2);
+                encoded = Arrays.copyOf(encoded, count * 2);
+                len = Arrays.copyOf(len, count * 2);
+            }
+            dest[count] = destination;
+            encoded[count] = origin;
+            len[count] = length;
+            ++count;
+            totalRows += length;
+        }
+    }
 
     static BarrageCopyKernel makeBarrageCopyKernel(final ChunkType chunkType) {
         switch (chunkType) {
@@ -61,9 +121,10 @@ public interface BarrageCopyKernel {
      *
      * @param addChunks the add delta chunks (per delta)
      * @param modChunks the mod delta chunks (per delta)
-     * @return a context that can be passed to
-     *         {@link #copyFromDeltaChunks(long[], WritableChunk, BarrageCopyKernelContext)} to drive the copy from the
-     *         add / mod delta chunks into the output chunk.
+     * @param deltaChunkSize the number of rows in every delta chunk except the last of a column, which is what makes an
+     *        encoded position locate a chunk by a shift; must be a power of two
+     * @return a context that can be passed to {@link #copy(Runs, WritableChunk[], BarrageCopyKernelContext)} to drive
+     *         the copy from the add / mod delta chunks into the output chunks.
      */
     BarrageCopyKernelContext makeContext(
             WritableChunk<Values>[][] addChunks,
@@ -71,15 +132,19 @@ public interface BarrageCopyKernel {
             int deltaChunkSize);
 
     /**
-     * Copy cells from per-delta source chunk arrays into a destination chunk.
+     * Fill one column's output chunks from the per-delta chunks the context holds, following {@code runs}.
      *
-     * @param mapping encoded source references, one per output position
-     * @param dest the output chunk to fill (sized to {@code mapping.length})
-     * @param context the context returned from {@link #makeContext(WritableChunk[][], WritableChunk[][], int)} that
-     *        contains the correctly typed add / mod delta chunks to drive the copy.
+     * <p>
+     * Chooses once per column, from the average run length against {@link #MIN_AVERAGE_RUN_LENGTH_FOR_ARRAY_COPY},
+     * between an array copy per run and an element at a time.
+     *
+     * @param runs where every output row comes from, in output order
+     * @param dest the output chunks to fill, all of {@link BarrageCopyKernelContext#deltaChunkSize()} rows except the
+     *        last, holding {@code runs.totalRows} rows between them
+     * @param context the context returned from {@link #makeContext(WritableChunk[][], WritableChunk[][], int)}
      */
-    void copyFromDeltaChunks(
-            long[] mapping,
-            WritableChunk<Values> dest,
+    void copy(
+            Runs runs,
+            WritableChunk<Values>[] dest,
             BarrageCopyKernelContext context);
 }
