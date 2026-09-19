@@ -643,55 +643,68 @@ class NaturalJoinHelper {
             }
 
             try (final Context pc = jsm.makeProbeContext(rightSources, maxSize)) {
-                final RowSet modifiedPreShift;
-
-                final boolean rightKeysChanged = upstream.modifiedColumnSet().containsAny(rightKeyColumns);
-
-                if (rightKeysChanged) {
-                    modifiedPreShift = upstream.getModifiedPreShift();
-                } else {
-                    modifiedPreShift = null;
-                }
+                // the modified rows whose key value actually changed (null when the key columns were not modified);
+                // the other modified rows keep their hash slot
+                final WritableRowSet changedKeysPreShift;
+                final WritableRowSet changedKeysPostShift;
 
                 // We must do all removes before shifting or there will be collisions in the RHS duplicate sets
                 if (upstream.removed().isNonempty()) {
                     jsm.removeRight(pc, upstream.removed(), rightSources, modifiedSlotTracker);
                 }
-                if (rightKeysChanged) {
-                    // It should make us somewhat sad that we have to add/remove, because we are doing two hash
-                    // lookups for keys that have not actually changed.
-                    // The alternative would be to do an initial pass that would filter out key columns that have
-                    // not actually changed.
-                    jsm.removeRight(pc, modifiedPreShift, rightSources, modifiedSlotTracker);
+                if (upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(rightKeyColumns)) {
+                    final RowSetBuilderSequential preShiftBuilder = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential postShiftBuilder = RowSetFactory.builderSequential();
+                    jsm.removeRightModifications(rightSources, upstream.getModifiedPreShift(), upstream.modified(),
+                            preShiftBuilder, postShiftBuilder, modifiedSlotTracker);
+                    changedKeysPreShift = preShiftBuilder.build();
+                    changedKeysPostShift = postShiftBuilder.build();
+                } else {
+                    changedKeysPreShift = null;
+                    changedKeysPostShift = null;
                 }
 
-                if (upstream.shifted().nonempty()) {
-                    try (final WritableRowSet previousToShift =
-                            getParent().getRowSet().prev().minus(upstream.removed())) {
-                        if (rightKeysChanged) {
-                            previousToShift.remove(modifiedPreShift);
-                        }
-                        upstream.shifted().apply((long beginRange, long endRange, long shiftDelta) -> {
-                            try (final WritableRowSet shiftedRowSet =
-                                    previousToShift.subSetByKeyRange(beginRange, endRange)) {
-                                shiftedRowSet.shiftInPlace(shiftDelta);
-                                jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta, modifiedSlotTracker);
+                try {
+                    if (upstream.shifted().nonempty()) {
+                        try (final WritableRowSet previousToShift =
+                                getParent().getRowSet().prev().minus(upstream.removed())) {
+                            if (changedKeysPreShift != null) {
+                                previousToShift.remove(changedKeysPreShift);
                             }
-                        });
+                            upstream.shifted().apply((long beginRange, long endRange, long shiftDelta) -> {
+                                try (final WritableRowSet shiftedRowSet =
+                                        previousToShift.subSetByKeyRange(beginRange, endRange)) {
+                                    shiftedRowSet.shiftInPlace(shiftDelta);
+                                    jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta,
+                                            modifiedSlotTracker);
+                                }
+                            });
+                        }
+                    }
+
+                    final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                    rightTransformer.clearAndTransform(upstream.modifiedColumnSet(), modifiedColumnSet);
+                    addedRightColumnsChanged = modifiedColumnSet.size() != 0;
+
+                    if (changedKeysPostShift != null) {
+                        jsm.addRightSide(pc, changedKeysPostShift, rightSources, modifiedSlotTracker);
+                        if (addedRightColumnsChanged) {
+                            try (final WritableRowSet unchangedKeys =
+                                    upstream.modified().minus(changedKeysPostShift)) {
+                                jsm.modifyByRight(pc, unchangedKeys, rightSources, modifiedSlotTracker);
+                            }
+                        }
+                    } else if (upstream.modified().isNonempty() && addedRightColumnsChanged) {
+                        jsm.modifyByRight(pc, upstream.modified(), rightSources, modifiedSlotTracker);
+                    }
+
+                    jsm.addRightSide(pc, upstream.added(), rightSources, modifiedSlotTracker);
+                } finally {
+                    if (changedKeysPostShift != null) {
+                        changedKeysPostShift.close();
+                        changedKeysPreShift.close();
                     }
                 }
-
-                final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                rightTransformer.clearAndTransform(upstream.modifiedColumnSet(), modifiedColumnSet);
-                addedRightColumnsChanged = modifiedColumnSet.size() != 0;
-
-                if (rightKeysChanged) {
-                    jsm.addRightSide(pc, upstream.modified(), rightSources, modifiedSlotTracker);
-                } else if (upstream.modified().isNonempty() && addedRightColumnsChanged) {
-                    jsm.modifyByRight(pc, upstream.modified(), rightSources, modifiedSlotTracker);
-                }
-
-                jsm.addRightSide(pc, upstream.added(), rightSources, modifiedSlotTracker);
             }
 
             final RowSetBuilderRandom modifiedLeftBuilder = RowSetFactory.builderRandom();
@@ -879,15 +892,7 @@ class NaturalJoinHelper {
                         probeSize == 0 ? null : jsm.makeProbeContext(rightSources, probeSize);
                         final Context bc =
                                 buildSize == 0 ? null : jsm.makeBuildContext(rightSources, buildSize)) {
-                    final RowSet modifiedPreShift;
-
                     final RowSetShiftData rightShifted = rightRecorder.getShifted();
-
-                    if (rightKeysModified) {
-                        modifiedPreShift = rightRecorder.getModifiedPreShift();
-                    } else {
-                        modifiedPreShift = null;
-                    }
 
                     if (rightRemoved.isNonempty()) {
                         jsm.removeRight(pc, rightRemoved, rightSources, modifiedSlotTracker);
@@ -896,39 +901,60 @@ class NaturalJoinHelper {
                     rightTransformer.transform(rightModifiedColumns, modifiedColumnSet);
                     addedRightColumnsChanged = modifiedColumnSet.size() > 0;
 
+                    // the modified rows whose key value actually changed (null when the key columns were not
+                    // modified); the other modified rows keep their hash slot
+                    final WritableRowSet changedKeysPreShift;
+                    final WritableRowSet changedKeysPostShift;
                     if (rightKeysModified) {
-                        // It should make us somewhat sad that we have to add/remove, because we are doing two hash
-                        // lookups for keys that have not actually changed.
-                        // The alternative would be to do an initial pass that would filter out key columns that have
-                        // not actually changed.
-                        jsm.removeRight(pc, modifiedPreShift, rightSources, modifiedSlotTracker);
+                        final RowSetBuilderSequential preShiftBuilder = RowSetFactory.builderSequential();
+                        final RowSetBuilderSequential postShiftBuilder = RowSetFactory.builderSequential();
+                        jsm.removeRightModifications(rightSources, rightRecorder.getModifiedPreShift(),
+                                rightModified, preShiftBuilder, postShiftBuilder, modifiedSlotTracker);
+                        changedKeysPreShift = preShiftBuilder.build();
+                        changedKeysPostShift = postShiftBuilder.build();
+                    } else {
+                        changedKeysPreShift = null;
+                        changedKeysPostShift = null;
                     }
 
-                    if (rightShifted.nonempty()) {
-                        try (final WritableRowSet previousToShift =
-                                rightRecorder.getParent().getRowSet().prev().minus(rightRemoved)) {
-                            if (rightKeysModified) {
-                                previousToShift.remove(modifiedPreShift);
-                            }
-                            rightShifted.apply((long beginRange, long endRange, long shiftDelta) -> {
-                                try (final WritableRowSet shiftedRowSet =
-                                        previousToShift.subSetByKeyRange(beginRange, endRange)) {
-                                    shiftedRowSet.shiftInPlace(shiftDelta);
-                                    jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta,
-                                            modifiedSlotTracker);
+                    try {
+                        if (rightShifted.nonempty()) {
+                            try (final WritableRowSet previousToShift =
+                                    rightRecorder.getParent().getRowSet().prev().minus(rightRemoved)) {
+                                if (changedKeysPreShift != null) {
+                                    previousToShift.remove(changedKeysPreShift);
                                 }
-                            });
+                                rightShifted.apply((long beginRange, long endRange, long shiftDelta) -> {
+                                    try (final WritableRowSet shiftedRowSet =
+                                            previousToShift.subSetByKeyRange(beginRange, endRange)) {
+                                        shiftedRowSet.shiftInPlace(shiftDelta);
+                                        jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta,
+                                                modifiedSlotTracker);
+                                    }
+                                });
+                            }
                         }
-                    }
 
-                    if (rightKeysModified) {
-                        jsm.addRightSide(bc, rightModified, rightSources, modifiedSlotTracker);
-                    } else if (rightModified.isNonempty() && addedRightColumnsChanged) {
-                        jsm.modifyByRight(pc, rightModified, rightSources, modifiedSlotTracker);
-                    }
+                        if (changedKeysPostShift != null) {
+                            jsm.addRightSide(bc, changedKeysPostShift, rightSources, modifiedSlotTracker);
+                            if (addedRightColumnsChanged) {
+                                try (final WritableRowSet unchangedKeys =
+                                        rightModified.minus(changedKeysPostShift)) {
+                                    jsm.modifyByRight(pc, unchangedKeys, rightSources, modifiedSlotTracker);
+                                }
+                            }
+                        } else if (rightModified.isNonempty() && addedRightColumnsChanged) {
+                            jsm.modifyByRight(pc, rightModified, rightSources, modifiedSlotTracker);
+                        }
 
-                    if (rightAdded.isNonempty()) {
-                        jsm.addRightSide(bc, rightAdded, rightSources, modifiedSlotTracker);
+                        if (rightAdded.isNonempty()) {
+                            jsm.addRightSide(bc, rightAdded, rightSources, modifiedSlotTracker);
+                        }
+                    } finally {
+                        if (changedKeysPostShift != null) {
+                            changedKeysPostShift.close();
+                            changedKeysPreShift.close();
+                        }
                     }
                 }
             } else {

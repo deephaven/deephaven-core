@@ -2773,6 +2773,65 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         listener.close();
     }
 
+    public void testRightKeyColumnModifiedRightIncremental() {
+        testRightKeyColumnModified(false);
+    }
+
+    public void testRightKeyColumnModifiedBothIncremental() {
+        testRightKeyColumnModified(true);
+    }
+
+    private void testRightKeyColumnModified(final boolean leftRefreshing) {
+        // a right modification that names the key column but leaves the key value unchanged must be treated like any
+        // other modification of that row, while one that changes the key value moves the row between keys
+        final QueryTable left = leftRefreshing
+                ? testRefreshingTable(i(0, 1, 2).toTracking(), col("Key", "a", "b", "c"), intCol("L", 1, 2, 3))
+                : testTable(i(0, 1, 2).toTracking(), col("Key", "a", "b", "c"), intCol("L", 1, 2, 3));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), col("Key", "a", "b"),
+                intCol("C", 100, 101), intCol("D", 1000, 1001));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "C,D");
+        assertTableEquals(newTable(col("Key", "a", "b", "c"), intCol("L", 1, 2, 3), intCol("C", 100, 101, NULL_INT),
+                intCol("D", 1000, 1001, NULL_INT)), result);
+
+        final ModifiedColumnSet cColumn = result.newModifiedColumnSet("C");
+        final ModifiedColumnSet dColumn = result.newModifiedColumnSet("D");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // the key column is marked modified on both rows, but only row 0's C actually changes
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(0, 1), col("Key", "a", "b"), intCol("C", 150, 101), intCol("D", 1000, 1001));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(0, 1), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("Key", "C")));
+        });
+        assertEquals(1, listener.getCount());
+        TableUpdate update = listener.getUpdate();
+        assertEquals(i(0, 1), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertFalse(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(col("Key", "a", "b", "c"), intCol("L", 1, 2, 3), intCol("C", 150, 101, NULL_INT),
+                intCol("D", 1000, 1001, NULL_INT)), result);
+
+        // row 1's key changes from "b" to "c": left "b" loses its match and left "c" gains one
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(1), col("Key", "c"), intCol("C", 101), intCol("D", 1001));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("Key")));
+        });
+        assertEquals(2, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertTrue(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(col("Key", "a", "b", "c"), intCol("L", 1, 2, 3), intCol("C", 150, NULL_INT, 101),
+                intCol("D", 1000, NULL_INT, 1001)), result);
+
+        listener.close();
+    }
+
     public void testNaturalJoinDuplicateRightsUniqueTable() {
         // a single boolean key selects the SimpleUniqueStaticNaturalJoinStateManager, whose duplicate right key error
         // must read like the hashed state managers' error

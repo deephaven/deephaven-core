@@ -26,7 +26,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.util.SafeCloseableArray;
+import io.deephaven.engine.table.impl.join.ChangedKeyRows;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
@@ -70,10 +70,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected final WritableColumnSource[] mainKeySources;
     protected final WritableColumnSource[] alternateKeySources;
 
-    // per key-column equality kernels, used to detect which modified left rows actually changed key value
-    private final ChunkEquals[] keyChunkEquals;
-    // per key-column compaction kernels, used to compact previous key chunks down to the changed rows
-    private final CompactKernel[] keyCompactKernels;
+    // detects which modified rows actually changed key value, on either side
+    private final ChangedKeyRows changedKeyRows;
 
     /**
      * <p>
@@ -122,16 +120,13 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         mainKeySources = new WritableColumnSource[tableKeySources.length];
         alternateKeySources = new WritableColumnSource[tableKeySources.length];
         chunkTypes = new ChunkType[tableKeySources.length];
-        keyChunkEquals = new ChunkEquals[tableKeySources.length];
-        keyCompactKernels = new CompactKernel[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
             chunkTypes[ii] = tableKeySources[ii].getChunkType();
-            keyChunkEquals[ii] = ChunkEquals.makeEqual(chunkTypes[ii]);
-            keyCompactKernels[ii] = CompactKernel.makeCompact(chunkTypes[ii]);
             mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
                     tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
+        changedKeyRows = new ChangedKeyRows(chunkTypes);
 
         this.maximumLoadFactor = maximumLoadFactor;
 
@@ -827,89 +822,27 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             final RowSet modifiedPreShift, final RowSet modifiedPostShift,
             final RowSetBuilderSequential changedPreShift, final RowSetBuilderSequential changedPostShift,
             final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        if (modifiedPostShift.isEmpty()) {
-            return;
-        }
-        final int numColumns = leftSources.length;
-        final int chunkSize = (int) Math.min(CHUNK_SIZE, modifiedPostShift.size());
-
-        final ChunkSource.FillContext[] prevContexts = new ChunkSource.FillContext[numColumns];
-        final ChunkSource.GetContext[] currentContexts = new ChunkSource.GetContext[numColumns];
-        // noinspection unchecked
-        final WritableChunk<Values>[] prevKeys = new WritableChunk[numColumns];
-
-        try (
-                final SafeCloseableArray<ChunkSource.FillContext> ignored = new SafeCloseableArray<>(prevContexts);
-                final SafeCloseableArray<ChunkSource.GetContext> ignored2 = new SafeCloseableArray<>(currentContexts);
-                final SafeCloseableArray<WritableChunk<Values>> ignored3 = new SafeCloseableArray<>(prevKeys);
-                final WritableBooleanChunk<Any> comparisonResults = WritableBooleanChunk.makeWritableChunk(chunkSize);
-                final WritableLongChunk<OrderedRowKeys> compactedPreRowKeys =
-                        WritableLongChunk.makeWritableChunk(chunkSize);
-                final SharedContext prevShared = SharedContext.makeSharedContext();
-                final SharedContext currentShared = SharedContext.makeSharedContext();
-                final RowSequence.Iterator preIt = modifiedPreShift.getRowSequenceIterator();
-                final RowSequence.Iterator postIt = modifiedPostShift.getRowSequenceIterator()) {
-            for (int cc = 0; cc < numColumns; ++cc) {
-                prevContexts[cc] = leftSources[cc].makeFillContext(chunkSize, prevShared);
-                currentContexts[cc] = leftSources[cc].makeGetContext(chunkSize, currentShared);
-                prevKeys[cc] = chunkTypes[cc].makeWritableChunk(chunkSize);
-            }
-
-            while (postIt.hasMore()) {
-                final RowSequence preChunkRows = preIt.getNextRowSequenceWithLength(chunkSize);
-                final RowSequence postChunkRows = postIt.getNextRowSequenceWithLength(chunkSize);
-
-                // Initialize comparisonResults to true if previous and current are equal (the sense inverts later)
-                final int chunkRsSize = postChunkRows.intSize();
-                for (int cc = 0; cc < numColumns; ++cc) {
-                    leftSources[cc].fillPrevChunk(prevContexts[cc], prevKeys[cc], preChunkRows);
-                    final Chunk<? extends Values> currentValues =
-                            leftSources[cc].getChunk(currentContexts[cc], postChunkRows);
-                    if (cc == 0) {
-                        keyChunkEquals[cc].equal(prevKeys[cc], currentValues, comparisonResults);
-                    } else {
-                        keyChunkEquals[cc].andEqual(prevKeys[cc], currentValues, comparisonResults);
-                    }
-                }
-
-                final LongChunk<OrderedRowKeys> preKeys = preChunkRows.asRowKeyChunk();
-                final LongChunk<OrderedRowKeys> postKeys = postChunkRows.asRowKeyChunk();
-                int changedInChunk = 0;
-                for (int ii = 0; ii < chunkRsSize; ++ii) {
-                    final boolean changed = !comparisonResults.get(ii);
-                    // Note that comparisonResults inverts meaning for the chunk compaction.
-                    comparisonResults.set(ii, changed);
-                    if (changed) {
-                        changedPreShift.appendKey(preKeys.get(ii));
-                        changedPostShift.appendKey(postKeys.get(ii));
-                        compactedPreRowKeys.set(changedInChunk++, preKeys.get(ii));
-                    }
-                }
-                comparisonResults.setSize(chunkRsSize);
-
-                if (changedInChunk > 0) {
-                    for (int cc = 0; cc < numColumns; ++cc) {
-                        keyCompactKernels[cc].compact(prevKeys[cc], comparisonResults);
-                    }
-                    compactedPreRowKeys.setSize(changedInChunk);
-                    // Accumulate the changed rows' removals into the per-slot builders in the tracker, keyed by their
-                    // (previous-key) hash slots, reusing the previous key values we already read.
-                    try (final RowSequence removeRows =
-                            RowSequenceFactory.wrapRowKeysChunkAsRowSequence(compactedPreRowKeys)) {
-                        removeLeft(removeRows, prevKeys, modifiedSlotTracker);
-                    }
-                }
-
-                prevShared.reset();
-                currentShared.reset();
-            }
-        }
+        // The changed rows' removals accumulate into the per-slot builders in the tracker, keyed by their previous-key
+        // hash slots, reusing the previous key values read for the comparison.
+        changedKeyRows.findChanged(leftSources, modifiedPreShift, modifiedPostShift, changedPreShift, changedPostShift,
+                (changedRows, previousKeys) -> removeLeft(changedRows, previousKeys, modifiedSlotTracker));
         // Perform the accumulated removals from each slot's left row set in a single bulk remove per slot.
         applyLeftRemovals(modifiedSlotTracker);
     }
 
     protected abstract void removeLeft(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+
+    @Override
+    public void removeRightModifications(
+            final ColumnSource<?>[] rightSources,
+            final RowSet modifiedPreShift, final RowSet modifiedPostShift,
+            final RowSetBuilderSequential changedPreShift, final RowSetBuilderSequential changedPostShift,
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        changedKeyRows.findChanged(rightSources, modifiedPreShift, modifiedPostShift, changedPreShift,
+                changedPostShift,
+                (changedRows, previousKeys) -> removeRight(changedRows, previousKeys, modifiedSlotTracker));
+    }
 
     @Override
     public void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta) {

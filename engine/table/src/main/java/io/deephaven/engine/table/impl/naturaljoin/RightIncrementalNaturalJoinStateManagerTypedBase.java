@@ -12,12 +12,14 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.JoinControl;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager;
+import io.deephaven.engine.table.impl.join.ChangedKeyRows;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
@@ -56,6 +58,9 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     protected LongArrayList freeDuplicateValues = new LongArrayList();
     protected ImmutableLongArraySource modifiedTrackerCookieSource = new ImmutableLongArraySource();
 
+    // detects which modified right rows actually changed key value
+    private final ChangedKeyRows changedKeyRows;
+
     protected RightIncrementalNaturalJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
             ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor,
             NaturalJoinType joinType, boolean addOnly) {
@@ -77,6 +82,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
             mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
                     tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
+        changedKeyRows = new ChangedKeyRows(chunkTypes);
 
         this.maximumLoadFactor = maximumLoadFactor;
 
@@ -441,6 +447,17 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     protected abstract void removeRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+
+    @Override
+    public void removeRightModifications(
+            final ColumnSource<?>[] rightSources,
+            final RowSet modifiedPreShift, final RowSet modifiedPostShift,
+            final RowSetBuilderSequential changedPreShift, final RowSetBuilderSequential changedPostShift,
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        changedKeyRows.findChanged(rightSources, modifiedPreShift, modifiedPostShift, changedPreShift,
+                changedPostShift,
+                (changedRows, previousKeys) -> removeRight(changedRows, previousKeys, modifiedSlotTracker));
+    }
 
     @Override
     public void addRightSide(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,
