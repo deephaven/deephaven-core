@@ -23,6 +23,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Round-trip coverage for subscribers that join a {@link BarrageMessageProducer} while other subscribers already have
@@ -84,20 +85,24 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
     }
 
     private QueryTable newSourceTable() {
+        return newSourceTable(TABLE_SIZE);
+    }
+
+    private QueryTable newSourceTable(final int size) {
         tickCounter = 0;
         churnCount = 0;
         lastChurnKey = -1;
         shiftOffset = 0;
-        final int[] intValues = new int[TABLE_SIZE];
-        final double[] doubleValues = new double[TABLE_SIZE];
-        final String[] stringValues = new String[TABLE_SIZE];
-        for (int ii = 0; ii < TABLE_SIZE; ++ii) {
+        final int[] intValues = new int[size];
+        final double[] doubleValues = new double[size];
+        final String[] stringValues = new String[size];
+        for (int ii = 0; ii < size; ++ii) {
             intValues[ii] = ii;
             doubleValues[ii] = ii * 0.5;
             stringValues[ii] = "v" + ii;
         }
         return TstUtils.testRefreshingTable(
-                RowSetFactory.flat(TABLE_SIZE).toTracking(),
+                RowSetFactory.flat(size).toTracking(),
                 TableTools.intCol("intCol", intValues),
                 TableTools.doubleCol("doubleCol", doubleValues),
                 TableTools.stringCol("strCol", stringValues));
@@ -119,6 +124,20 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
 
     /** Writes values derived from {@code tick} into every column of {@code rows}; must run inside a cycle. */
     private static void writeRows(final QueryTable sourceTable, final RowSet rows, final int tick) {
+        writeColumns(sourceTable, rows, tick, "intCol", "doubleCol", "strCol");
+    }
+
+    /**
+     * Writes values derived from {@code tick} into the named columns of {@code rows}, re-writing the other columns with
+     * the values they already hold (the test table insists every column be supplied); must run inside a cycle. Rows
+     * that do not exist yet must name every column.
+     */
+    private static void writeColumns(final QueryTable sourceTable, final RowSet rows, final int tick,
+            final String... columnNames) {
+        final Set<String> written = Set.of(columnNames);
+        final ColumnSource<?> intSource = sourceTable.getColumnSource("intCol");
+        final ColumnSource<?> doubleSource = sourceTable.getColumnSource("doubleCol");
+        final ColumnSource<?> stringSource = sourceTable.getColumnSource("strCol");
         final int numRows = rows.intSize();
         final int[] intValues = new int[numRows];
         final double[] doubleValues = new double[numRows];
@@ -126,15 +145,58 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
         int ii = 0;
         for (final RowSet.Iterator it = rows.iterator(); it.hasNext();) {
             final long rowKey = it.nextLong();
-            intValues[ii] = (int) (rowKey * 1000 + tick);
-            doubleValues[ii] = rowKey + tick / 1000.0;
-            stringValues[ii] = "v" + rowKey + "-" + tick;
+            intValues[ii] = written.contains("intCol") ? (int) (rowKey * 1000 + tick) : intSource.getInt(rowKey);
+            doubleValues[ii] =
+                    written.contains("doubleCol") ? rowKey + tick / 1000.0 : doubleSource.getDouble(rowKey);
+            stringValues[ii] =
+                    written.contains("strCol") ? "v" + rowKey + "-" + tick : (String) stringSource.get(rowKey);
             ++ii;
         }
         TstUtils.addToTable(sourceTable, rows,
                 TableTools.intCol("intCol", intValues),
                 TableTools.doubleCol("doubleCol", doubleValues),
                 TableTools.stringCol("strCol", stringValues));
+    }
+
+    /** Runs one cycle that modifies only the named columns of {@code rows}, and says so in its modified column set. */
+    private void modifyColumns(final QueryTable sourceTable, final RowSet rows, final String... columnNames) {
+        final int tick = ++tickCounter;
+        updateGraph().runWithinUnitTestCycle(() -> {
+            writeColumns(sourceTable, rows, tick, columnNames);
+            sourceTable.notifyListeners(new TableUpdateImpl(
+                    RowSetFactory.empty(), RowSetFactory.empty(), rows.copy(),
+                    RowSetShiftData.EMPTY, sourceTable.newModifiedColumnSet(columnNames)));
+        });
+    }
+
+    /**
+     * Runs one cycle modifying a subset of the columns on a row range that depends on which subset, so that over a run
+     * of cycles each column accumulates its own recorded modifications: partly overlapping between columns, and every
+     * fourth cycle identical for two of them, which is the case where columns share one recorded row set.
+     */
+    private void modifySomeColumns(final QueryTable sourceTable, final int cycle) {
+        switch (cycle % 4) {
+            case 0:
+                try (final RowSet rows = RowSetFactory.fromRange(0, 29)) {
+                    modifyColumns(sourceTable, rows, "intCol");
+                }
+                break;
+            case 1:
+                try (final RowSet rows = RowSetFactory.fromRange(20, 59)) {
+                    modifyColumns(sourceTable, rows, "doubleCol");
+                }
+                break;
+            case 2:
+                try (final RowSet rows = RowSetFactory.fromRange(50, 89)) {
+                    modifyColumns(sourceTable, rows, "strCol");
+                }
+                break;
+            default:
+                try (final RowSet rows = RowSetFactory.fromRange(10, 39)) {
+                    modifyColumns(sourceTable, rows, "intCol", "doubleCol");
+                }
+                break;
+        }
     }
 
     /**
@@ -513,6 +575,113 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
         assertNoSnapshots(lateClientName + " post-join", lateClient);
         flushClients(nugget);
         nugget.validate("after a second compaction with the newcomer subscribed");
+    }
+
+    /**
+     * Compaction of deltas that each modify a subset of the columns on their own rows. The compacted delta then carries
+     * a distinct recorded-modification row set per column, shared where two columns were modified on identical rows,
+     * and is coalesced once more with a partial-column update recorded behind it when the queue propagates.
+     */
+    public void testPartialColumnModificationsAfterCompaction() {
+        final QueryTable sourceTable = newSourceTable();
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+
+        final RemoteClient fullClient = nugget.newClient(null, allColumns(), "existing-full");
+        final RemoteClient viewportClient;
+        try (final RowSet viewport = RowSetFactory.fromRange(0, TABLE_SIZE / 2)) {
+            viewportClient = nugget.newClient(viewport.copy(), allColumns(), "existing-viewport");
+        }
+        flushProducerTable();
+        flushClients(nugget);
+        nugget.validate("existing subscriptions satisfied");
+        final BarrageMessageProducer producer = nugget.barrageMessageProducer;
+
+        final int numCycles = BarrageMessageProducer.COMPACTION_MAX_PENDING_DELTAS + 3;
+        for (int ii = 0; ii < numCycles; ++ii) {
+            modifySomeColumns(sourceTable, ii);
+        }
+        assertEquals("one delta per cycle until the compaction job runs", numCycles, pendingDeltaCount(producer));
+        runDueJobs();
+        assertEquals("compaction replaced the run with one delta", 1, pendingDeltaCount(producer));
+
+        // a partial-column update behind the compacted head, coalesced with it when the newcomer forces propagation
+        try (final RowSet rows = RowSetFactory.fromRange(30, 69)) {
+            modifyColumns(sourceTable, rows, "doubleCol");
+        }
+        assertEquals("a delta appended behind the compacted head", 2, pendingDeltaCount(producer));
+
+        final RemoteClient lateClient = nugget.newClient(null, allColumns(), "late-full");
+        flushProducerTable();
+        assertNoSnapshots("existing-full", fullClient);
+        assertNoSnapshots("existing-viewport", viewportClient);
+        assertSnapshotFirst("late-full", lateClient);
+        flushClients(nugget);
+        nugget.validate("after per-column compaction and a late join");
+
+        try (final RowSet rows = RowSetFactory.fromRange(0, 99)) {
+            modifyColumns(sourceTable, rows, "intCol", "strCol");
+        }
+        flushProducerTable();
+        flushClients(nugget);
+        nugget.validate("after a post-join partial-column update");
+    }
+
+    /**
+     * Compaction whose surviving mapping spans several source and destination chunks, in runs that are contiguous in
+     * neither. The table holds three chunks' worth of rows; two large deltas modify overlapping, gapped ranges, then
+     * small ones carry the queue over the count trigger, so the compacted delta draws the first chunk and a half and
+     * the last half chunk from the first delta and the two chunks between them from the second.
+     */
+    public void testMultiChunkMappingsAfterCompaction() {
+        final int chunk = BarrageMessageProducer.DELTA_CHUNK_SIZE;
+        final int tableSize = 3 * chunk;
+        final QueryTable sourceTable = newSourceTable(tableSize);
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+
+        final RemoteClient fullClient = nugget.newClient(null, allColumns(), "existing-full");
+        final RemoteClient viewportClient;
+        try (final RowSet viewport = RowSetFactory.fromRange(chunk - 100, chunk + 100)) {
+            viewportClient = nugget.newClient(viewport.copy(), allColumns(), "existing-viewport");
+        }
+        flushProducerTable();
+        flushClients(nugget);
+        nugget.validate("existing subscriptions satisfied");
+        final BarrageMessageProducer producer = nugget.barrageMessageProducer;
+
+        try (final RowSet head = RowSetFactory.fromRange(0, chunk + chunk / 2 - 1);
+                final RowSet tail = RowSetFactory.fromRange(2L * chunk, tableSize - 1);
+                final RowSet gapped = head.union(tail);
+                final RowSet middle = RowSetFactory.fromRange(chunk / 2, 2L * chunk + chunk / 2 - 1)) {
+            modifyRows(sourceTable, gapped);
+            modifyRows(sourceTable, middle);
+        }
+        final int numCycles = BarrageMessageProducer.COMPACTION_MAX_PENDING_DELTAS + 3;
+        for (int ii = 2; ii < numCycles; ++ii) {
+            try (final RowSet rows = RowSetFactory.fromKeys(ii, chunk + ii, 2L * chunk + ii)) {
+                modifyRows(sourceTable, rows);
+            }
+        }
+        assertEquals("one delta per cycle until the compaction job runs", numCycles, pendingDeltaCount(producer));
+        runDueJobs();
+        assertEquals("compaction replaced the run with one delta", 1, pendingDeltaCount(producer));
+
+        final RemoteClient lateClient;
+        try (final RowSet viewport = RowSetFactory.fromRange(chunk + chunk / 2 - 50, chunk + chunk / 2 + 50)) {
+            lateClient = nugget.newClient(viewport.copy(), allColumns(), "late-viewport");
+        }
+        flushProducerTable();
+        assertNoSnapshots("existing-full", fullClient);
+        assertNoSnapshots("existing-viewport", viewportClient);
+        assertSnapshotFirst("late-viewport", lateClient);
+        flushClients(nugget);
+        nugget.validate("after multi-chunk compaction and a late join");
+
+        try (final RowSet rows = RowSetFactory.fromRange(chunk / 4, 2L * chunk + chunk / 4)) {
+            modifyRows(sourceTable, rows);
+        }
+        flushProducerTable();
+        flushClients(nugget);
+        nugget.validate("after a post-join multi-chunk update");
     }
 
     /**
