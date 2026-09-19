@@ -119,6 +119,13 @@ public class BarrageMessageProducer extends LivenessArtifact
      */
     public static final double COMPACTION_GROWTH_FACTOR = Configuration.getInstance()
             .getDoubleForClassWithDefault(BarrageMessageProducer.class, "compactionGrowthFactor", 1.0);
+    static {
+        // NaN or infinity would silently disable the byte trigger; zero or less would compact at the floor forever.
+        if (!(COMPACTION_GROWTH_FACTOR > 0) || Double.isInfinite(COMPACTION_GROWTH_FACTOR)) {
+            throw new IllegalArgumentException("BarrageMessageProducer.compactionGrowthFactor must be finite and "
+                    + "greater than zero, got " + COMPACTION_GROWTH_FACTOR);
+        }
+    }
     /**
      * A producer also compacts once this many deltas have been recorded since the last compaction, whatever their size,
      * bounding the per-delta overhead (row sets, update descriptions) that the byte policy does not see. Zero disables
