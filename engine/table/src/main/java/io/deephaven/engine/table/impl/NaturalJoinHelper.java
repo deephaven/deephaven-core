@@ -7,7 +7,9 @@ import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.join.ChangedKeyRows;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.naturaljoin.*;
 import io.deephaven.engine.table.impl.sources.*;
@@ -532,6 +534,8 @@ class NaturalJoinHelper {
         private final ModifiedColumnSet leftKeyColumns;
         private final ModifiedColumnSet rightModifiedColumns;
         private final ModifiedColumnSet.Transformer leftTransformer;
+        // detects which modified left rows actually changed key value
+        private final ChangedKeyRows changedKeyRows;
 
         LeftTickingListener(String description, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
                 QueryTable leftTable, QueryTable result, WritableRowRedirection rowRedirection,
@@ -548,6 +552,8 @@ class NaturalJoinHelper {
 
             leftTransformer =
                     leftTable.newModifiedColumnSetTransformer(result, leftTable.getDefinition().getColumnNamesArray());
+            changedKeyRows = new ChangedKeyRows(
+                    Arrays.stream(leftSources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new));
         }
 
         @Override
@@ -561,29 +567,16 @@ class NaturalJoinHelper {
             final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
             leftTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
 
-            if (upstream.modifiedColumnSet().containsAny(leftKeyColumns)) {
-                newLeftRedirections.ensureCapacity(downstream.modified().size());
-                // compute our new values
-                jsm.decorateLeftSide(downstream.modified(), leftSources, newLeftRedirections);
-                final MutableBoolean updatedRightRow = new MutableBoolean(false);
-                final MutableInt position = new MutableInt(0);
-                downstream.modified().forAllRowKeys((long modifiedKey) -> {
-                    final long newRedirection = newLeftRedirections.getLong(position.get());
-                    jsm.checkExactMatch(modifiedKey, newRedirection);
-                    final long old;
-                    if (newRedirection == RowSequence.NULL_ROW_KEY) {
-                        old = rowRedirection.remove(modifiedKey);
-                    } else {
-                        old = rowRedirection.put(modifiedKey, newRedirection);
+            if (upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(leftKeyColumns)) {
+                // only the rows whose key value actually changed need a new redirection; the others were shifted
+                // above, so only the post-shift keys of the changed rows are needed
+                final RowSetBuilderSequential changedPostShiftBuilder = RowSetFactory.builderSequential();
+                changedKeyRows.findChanged(leftSources, upstream.getModifiedPreShift(), upstream.modified(), null,
+                        changedPostShiftBuilder, null);
+                try (final RowSet changedKeys = changedPostShiftBuilder.build()) {
+                    if (changedKeys.isNonempty()) {
+                        redirectChangedKeys(changedKeys, downstream.modifiedColumnSet());
                     }
-                    if (newRedirection != old) {
-                        updatedRightRow.setValue(true);
-                    }
-                    position.increment();
-                });
-
-                if (updatedRightRow.booleanValue()) {
-                    downstream.modifiedColumnSet().setAll(rightModifiedColumns);
                 }
             }
 
@@ -600,6 +593,35 @@ class NaturalJoinHelper {
             });
 
             result.notifyListeners(downstream);
+        }
+
+        /**
+         * Probe the static right side for the left rows whose key value changed and store their new redirections,
+         * marking every added column modified if any redirection differs from before.
+         */
+        private void redirectChangedKeys(final RowSet changedKeys, final ModifiedColumnSet downstreamColumns) {
+            newLeftRedirections.ensureCapacity(changedKeys.size());
+            jsm.decorateLeftSide(changedKeys, leftSources, newLeftRedirections);
+            final MutableBoolean updatedRightRow = new MutableBoolean(false);
+            final MutableInt position = new MutableInt(0);
+            changedKeys.forAllRowKeys((long modifiedKey) -> {
+                final long newRedirection = newLeftRedirections.getLong(position.get());
+                jsm.checkExactMatch(modifiedKey, newRedirection);
+                final long old;
+                if (newRedirection == RowSequence.NULL_ROW_KEY) {
+                    old = rowRedirection.remove(modifiedKey);
+                } else {
+                    old = rowRedirection.put(modifiedKey, newRedirection);
+                }
+                if (newRedirection != old) {
+                    updatedRightRow.setValue(true);
+                }
+                position.increment();
+            });
+
+            if (updatedRightRow.booleanValue()) {
+                downstreamColumns.setAll(rightModifiedColumns);
+            }
         }
     }
 

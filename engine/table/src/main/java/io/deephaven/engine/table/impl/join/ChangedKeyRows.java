@@ -62,8 +62,8 @@ public class ChangedKeyRows {
      * @param modifiedPreShift the modified rows in pre-shift key space, aligned positionally with
      *        {@code modifiedPostShift}
      * @param modifiedPostShift the modified rows in post-shift key space
-     * @param changedPreShift output, ascending, receives the pre-shift keys of the rows whose key value changed,
-     *        aligned with {@code changedPostShift}
+     * @param changedPreShift if not null, output, ascending, receives the pre-shift keys of the rows whose key value
+     *        changed, aligned with {@code changedPostShift}
      * @param changedPostShift output, ascending, receives the post-shift keys of the rows whose key value changed
      * @param previousKeyProbe if not null, called once per chunk with the changed rows' pre-shift row keys and their
      *        previous key values
@@ -72,7 +72,7 @@ public class ChangedKeyRows {
             final ColumnSource<?>[] keySources,
             final RowSet modifiedPreShift,
             final RowSet modifiedPostShift,
-            final RowSetBuilderSequential changedPreShift,
+            @Nullable final RowSetBuilderSequential changedPreShift,
             final RowSetBuilderSequential changedPostShift,
             @Nullable final TypedHasherUtil.ProbeHandler previousKeyProbe) {
         if (modifiedPostShift.isEmpty()) {
@@ -128,7 +128,9 @@ public class ChangedKeyRows {
                     // comparisonResults now holds true where the key changed, which is what the compaction keeps
                     comparisonResults.set(ii, changed);
                     if (changed) {
-                        changedPreShift.appendKey(preKeys.get(ii));
+                        if (changedPreShift != null) {
+                            changedPreShift.appendKey(preKeys.get(ii));
+                        }
                         changedPostShift.appendKey(postKeys.get(ii));
                         if (compactedPreRowKeys != null) {
                             compactedPreRowKeys.set(changedInChunk, preKeys.get(ii));

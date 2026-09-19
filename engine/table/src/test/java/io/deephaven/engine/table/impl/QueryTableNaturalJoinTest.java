@@ -2773,6 +2773,53 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         listener.close();
     }
 
+    public void testLeftKeyColumnModifiedRightStatic() {
+        // a refreshing left with a static right uses the LeftTickingListener: a modification that names the key
+        // column but leaves the key value unchanged must not disturb the redirection, while one that changes the key
+        // value re-probes the right side
+        final QueryTable left = testRefreshingTable(i(0, 1, 2).toTracking(), col("Key", "a", "b", "c"),
+                intCol("L", 1, 2, 3));
+        final Table right = testTable(col("Key", "a", "b"), intCol("R", 10, 20));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key");
+        assertTableEquals(newTable(col("Key", "a", "b", "c"), intCol("L", 1, 2, 3), intCol("R", 10, 20, NULL_INT)),
+                result);
+
+        final ModifiedColumnSet rColumn = result.newModifiedColumnSet("R");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // the key column is marked modified on rows 0 and 1, but only row 0's L actually changes
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(0, 1), col("Key", "a", "b"), intCol("L", 11, 2));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(0, 1), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("Key", "L")));
+        });
+        assertEquals(1, listener.getCount());
+        TableUpdate update = listener.getUpdate();
+        assertEquals(i(0, 1), update.modified());
+        assertFalse(update.modifiedColumnSet().containsAny(rColumn));
+        assertTableEquals(newTable(col("Key", "a", "b", "c"), intCol("L", 11, 2, 3), intCol("R", 10, 20, NULL_INT)),
+                result);
+
+        // row 1's key changes to "c" (unmatched) and row 2's key changes to "a" (matched)
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(1, 2), col("Key", "c", "a"), intCol("L", 2, 3));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(1, 2), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("Key")));
+        });
+        assertEquals(2, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(rColumn));
+        assertTableEquals(newTable(col("Key", "a", "c", "a"), intCol("L", 11, 2, 3), intCol("R", 10, NULL_INT, 10)),
+                result);
+
+        listener.close();
+    }
+
     public void testRightKeyColumnModifiedRightIncremental() {
         testRightKeyColumnModified(false);
     }

@@ -59,11 +59,9 @@ public class ChangedKeyRowsTest extends RefreshingTableTestCase {
             assertEquals(Arrays.asList(1, 2, 4), probedI);
             assertEquals(Arrays.asList("a", "b", "d"), probedS);
 
-            // without a probe the changed rows are still reported
-            final RowSetBuilderSequential preOnly = RowSetFactory.builderSequential();
+            // without a probe or a pre-shift output, the changed post-shift keys are still reported
             final RowSetBuilderSequential postOnly = RowSetFactory.builderSequential();
-            changedKeyRows.findChanged(sources, i(0, 1, 2, 3), i(0, 1, 2, 3), preOnly, postOnly, null);
-            assertEquals(i(0, 1, 3), preOnly.build());
+            changedKeyRows.findChanged(sources, i(0, 1, 2, 3), i(0, 1, 2, 3), null, postOnly, null);
             assertEquals(i(0, 1, 3), postOnly.build());
 
             // an empty input reports nothing and never calls the probe
