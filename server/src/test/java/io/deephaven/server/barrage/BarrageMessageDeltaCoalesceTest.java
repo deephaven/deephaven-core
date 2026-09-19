@@ -63,7 +63,7 @@ public class BarrageMessageDeltaCoalesceTest extends RefreshingTableTestCase {
         final WritableChunk<Values>[][] result = new WritableChunk[chunkSources.length][];
         for (int ci = forColumns.nextSetBit(0); ci >= 0; ci = forColumns.nextSetBit(ci + 1)) {
             final ChunkType chunkType = chunkSources[ci].getChunkType();
-            final WritableChunk<Values> chunk = BarrageMessageDelta.makeDeltaChunk(chunkType, numRows);
+            final WritableChunk<Values> chunk = chunkType.makeWritableChunk(numRows);
             for (int ii = 0; ii < numRows; ++ii) {
                 switch (ci) {
                     case INT_COL:

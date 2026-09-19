@@ -771,8 +771,8 @@ public class BarrageMessageProducer extends LivenessArtifact
     /**
      * Reads rows from {@code keysToRecord} (in parent table key-space) for the columns indicated by
      * {@code columnsToRecord} and stores them as {@link WritableChunk WritableChunks} in
-     * {@code outputChunks[columnIndex]}. Each chunk holds exactly {@link #DELTA_CHUNK_SIZE} rows except the last; see
-     * {@link BarrageMessageDelta#makeDeltaChunk} for how each is allocated.
+     * {@code outputChunks[columnIndex]}. Each chunk holds exactly {@link #DELTA_CHUNK_SIZE} rows except the last, which
+     * asks the pool for exactly the rows that remain and receives the next power of two.
      */
     @SuppressWarnings("unchecked")
     private void fillDeltaChunks(
@@ -807,7 +807,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                     for (int i = 0; i < numActiveCols; ++i) {
                         final int ci = columnIndices[i];
                         final WritableChunk<Values> chunk =
-                                BarrageMessageDelta.makeDeltaChunk(chunkSources[ci].getChunkType(), batchSize);
+                                chunkSources[ci].getChunkType().makeWritableChunk(batchSize);
                         chunkSources[ci].fillChunk(fillContexts[i], chunk, srcKeys);
                         outputChunks[ci][chunkIdx] = chunk;
                     }
