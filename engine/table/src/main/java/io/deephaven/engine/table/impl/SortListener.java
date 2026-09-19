@@ -254,7 +254,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                 final long after = ait.binarySearchValue(targetComparator, SortingOrder.Ascending.direction);
                 final long outputKey = after == -1 ? indexKeyForLeftmostInsert : after;
                 final long curr =
-                        modifiedNeedsSorting ? reverseLookup.get(addedInputKeys[ii]) : REVERSE_LOOKUP_NO_ENTRY_VALUE;
+                        modifiedNeedsSorting ? reverseLookup.getOne(addedInputKeys[ii]) : REVERSE_LOOKUP_NO_ENTRY_VALUE;
 
                 // check if new location differs from current location or if the previous row needs to slot here
                 if (curr != outputKey || (numAddedKeys > 0 && addedOutputKeys[numAddedKeys - 1] == curr)) {
@@ -349,7 +349,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                 downstream.modified = modifiedBuilder.build();
             } else {
                 final long[] modifiedOutputKeys = new long[upstream.modified().intSize()];
-                fillArray(modifiedOutputKeys, upstream.modified(), 0, reverseLookup::get);
+                fillArray(modifiedOutputKeys, upstream.modified(), 0, reverseLookup::getOne);
                 Arrays.sort(modifiedOutputKeys);
                 downstream.modified = sortedArrayToIndex(modifiedOutputKeys, 0, modifiedOutputKeys.length);
             }

@@ -18,7 +18,6 @@ public abstract class HashMapK1V1 extends HashMapBase {
 
     @Override
     final long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly) {
-        // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
         int location = getLocationFor(kvs, key);
         if (location >= 0) {
             // Item found, so replace it (unless 'insertOnly' is set).
@@ -59,7 +58,6 @@ public abstract class HashMapK1V1 extends HashMapBase {
             return defaultReturnValue();
         }
         key = fixKey(key);
-        // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
         final int location = getLocationFor(kvs, key);
         if (location < 0) {
             return defaultReturnValue();
@@ -72,7 +70,6 @@ public abstract class HashMapK1V1 extends HashMapBase {
             return defaultReturnValue();
         }
         key = fixKey(key);
-        // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
         final int location = getLocationFor(kvs, key);
         if (location < 0) {
             return defaultReturnValue();

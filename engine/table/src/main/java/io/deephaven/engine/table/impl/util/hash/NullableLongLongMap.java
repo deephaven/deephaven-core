@@ -3,6 +3,9 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Any;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
 /**
@@ -35,7 +38,7 @@ public interface NullableLongLongMap {
     boolean isEmpty();
 
     /**
-     * @return the value returned from {@link #get(long)} when no value is present in the map.
+     * @return the value returned from {@link #get(LongChunk, WritableLongChunk)} when no value is present in the map.
      */
     long defaultReturnValue();
 
@@ -44,7 +47,7 @@ public interface NullableLongLongMap {
      * 
      * @param key the key to add
      * @param value the value to add
-     * @return the old value of key (or {@link #defaultReturnValue()}} if there was no mapping)
+     * @return the old value of key (or {@link #defaultReturnValue()} if there was no mapping)
      */
     long put(long key, long value);
 
@@ -54,24 +57,40 @@ public interface NullableLongLongMap {
      * 
      * @param key the key to add
      * @param value the value to add
-     * @return the old value of key (or {@link #defaultReturnValue()}} if there was no mapping)
+     * @return the old value of key (or {@link #defaultReturnValue()} if there was no mapping)
      */
     long putIfAbsent(long key, long value);
 
     /**
-     * Gets the value associated with key. Returns {@link #defaultReturnValue()}} if no mapping exists.
-     * 
+     * Gets the value associated with each element of {@code keys}, writing it to the corresponding element of
+     * {@code result}. Keys with no mapping yield {@link #defaultReturnValue()}. On return, the size of {@code result}
+     * is set to {@code keys.size()}; its capacity must be at least that large.
+     *
+     * @param keys the keys to get
+     * @param result output: the value of each key (or {@link #defaultReturnValue()})
+     */
+    void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result);
+
+    /**
+     * Gets the value associated with a single key by delegating to {@link #get(LongChunk, WritableLongChunk)} with
+     * freshly-allocated single-element chunks. This is a convenience for cold paths and tests; hot paths should batch
+     * their lookups into real chunks.
+     *
      * @param key the key to get
      * @return the value of the key (or {@link #defaultReturnValue()})
      */
-    long get(long key);
+    default long getOne(long key) {
+        final long[] result = new long[1];
+        get(LongChunk.chunkWrap(new long[] {key}), WritableLongChunk.writableChunkWrap(result));
+        return result[0];
+    }
 
     /**
      * Remove a mapping for a key. Return the removed value of key (or {@link #defaultReturnValue()}) if one does not
      * exist.
      * 
      * @param key the key to add
-     * @return the removed value of (or {@link #defaultReturnValue()}} if there was no mapping)
+     * @return the removed value of (or {@link #defaultReturnValue()} if there was no mapping)
      */
     long remove(long key);
 

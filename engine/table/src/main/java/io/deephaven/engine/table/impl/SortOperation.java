@@ -348,7 +348,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             parent.copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Sort);
             resultTable.setAttribute(SORT_ROW_REDIRECTION_ATTRIBUTE, sortMappingColumnName);
             setReverseLookup(resultTable, (final long innerRowKey) -> {
-                final long outerRowKey = reverseLookup.get(innerRowKey);
+                final long outerRowKey = reverseLookup.getOne(innerRowKey);
                 return outerRowKey == reverseLookup.defaultReturnValue() ? RowSequence.NULL_ROW_KEY : outerRowKey;
             });
 
@@ -443,7 +443,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                 reverseLookup.put(innerRowKeys.nextLong(), outerRowKeys.nextLong());
             }
         }
-        return reverseLookup::get;
+        return reverseLookup::getOne;
     }
 
     private static void setReverseLookup(

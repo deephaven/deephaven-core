@@ -3,6 +3,9 @@
 //
 package io.deephaven.engine.table.impl.util.hash;
 
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Any;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
 public final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLongLongMapTestAccessors {
@@ -46,8 +49,15 @@ public final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLo
     }
 
     @Override
-    public long get(long key) {
-        return getImpl(keysAndValues, key);
+    public void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
+        // Take the volatile read once: like every read operation, a chunked get sees one consistent snapshot of the
+        // array. (getImpl tolerates a null snapshot.)
+        final long[] localKvs = keysAndValues;
+        final int size = keys.size();
+        for (int ii = 0; ii < size; ++ii) {
+            result.set(ii, getImpl(localKvs, keys.get(ii)));
+        }
+        result.setSize(size);
     }
 
     @Override
