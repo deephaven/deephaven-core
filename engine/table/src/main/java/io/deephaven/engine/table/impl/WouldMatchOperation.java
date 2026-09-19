@@ -277,7 +277,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                         .filter(Objects::nonNull)
                         .forEach(recomputed::add);
                 try (final WritableRowSet additionalModified = recomputed.build()) {
-                    downstream.modified().writableCast().insert(additionalModified);
+                    downstream.modified().writableCast().absorb(additionalModified);
                 }
             }
 
@@ -320,7 +320,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 }
                 if (downstream != null) {
                     try (final WritableRowSet modified = recomputed.build()) {
-                        downstream.modified().writableCast().insert(modified);
+                        downstream.modified().writableCast().absorb(modified);
                     }
                 }
             }

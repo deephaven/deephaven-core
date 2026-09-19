@@ -583,8 +583,8 @@ class CrossJoinModifiedSlotTracker {
         if (leftAdded == null) {
             leftAdded = downstreamAdds.build();
         } else {
-            try (final RowSet toInsert = downstreamAdds.build()) {
-                leftAdded.insert(toInsert);
+            try (final WritableRowSet toInsert = downstreamAdds.build()) {
+                leftAdded.absorb(toInsert);
             }
         }
     }
@@ -649,8 +649,8 @@ class CrossJoinModifiedSlotTracker {
                 }
             }
         }
-        try (final RowSet toRemove = rmBuilder.build()) {
-            leftRemoved.insert(toRemove);
+        try (final WritableRowSet toRemove = rmBuilder.build()) {
+            leftRemoved.absorb(toRemove);
         }
         leftModified = modBuilder.build();
         hasLeftModifies = leftModified.isNonempty();

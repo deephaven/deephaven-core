@@ -67,7 +67,7 @@ public class IncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
         if (usePrev) {
             Assert.eqZero(previouslyReleased.size(), "previouslyReleased.size()");
             try (final WritableRowSet releasedOnFirstStep = selection.subSetByPositionRange(0, getReleasedSize())) {
-                previouslyReleased.insert(releasedOnFirstStep);
+                previouslyReleased.absorb(releasedOnFirstStep);
             }
             return previouslyReleased;
         }
@@ -93,7 +93,7 @@ public class IncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
             final long newlyReleasedRows = releasedSize - previousSize;
             try (final WritableRowSet relevantRows = fullSet.minus(previouslyReleased);
                     final WritableRowSet toRelease = relevantRows.subSetByPositionRange(0, newlyReleasedRows)) {
-                previouslyReleased.insert(toRelease);
+                previouslyReleased.absorb(toRelease);
             }
         }
 

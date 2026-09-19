@@ -136,6 +136,73 @@ public class RowSetUnionBatcherTest {
         }
     }
 
+    /** The entries a row set stores, which is what the batcher weighs a prepend against. */
+    private static long entryCount(final RowSet rowSet) {
+        return ((WritableRowSetImpl) rowSet).getInnerSet().ixEntryCount();
+    }
+
+    @Test
+    public void descendingInputOfGrowingRowSetsCollapsesToOneRowSet() {
+        // Each row set is wholly below the run and holds at least as many entries as the run does, so folding it in
+        // pays for moving the run with the entries it brings, and the batch never reaches a second slot.
+        final List<RowSet> rowSets = new ArrayList<>();
+        long below = 1_000_000;
+        for (int entries = 1; entries <= 128; entries *= 2) {
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+            below -= 2L * entries;
+            for (int jj = 0; jj < entries; ++jj) {
+                builder.appendKey(below + 2L * jj);
+            }
+            rowSets.add(builder.build());
+        }
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(4)) {
+            for (final RowSet rowSet : rowSets) {
+                batcher.add(rowSet.copy());
+                assertThat(batcher.pendingBatchSize()).isEqualTo(1);
+            }
+            try (final WritableRowSet built = batcher.build();
+                    final WritableRowSet expected = reference(rowSets)) {
+                assertThat(built).isEqualTo(expected);
+            }
+        } finally {
+            SafeCloseable.closeAll(rowSets);
+        }
+    }
+
+    @Test
+    public void aPrependIsTakenOnlyWhenTheRunCanPayForIt() {
+        // The guard is about relative size, not about prepends. A small row set below a large run would move the
+        // whole run to save one slot, so it starts a run of its own and reaches the batch merge; the next one, below
+        // a run its own size, folds in.
+        final RowSetBuilderSequential bulk = RowSetFactory.builderSequential();
+        for (int jj = 0; jj < 512; ++jj) {
+            bulk.appendKey(1_000_000L + 2L * jj);
+        }
+        final List<RowSet> rowSets =
+                List.of(bulk.build(), RowSetFactory.fromKeys(20, 21), RowSetFactory.fromKeys(16, 17));
+        try {
+            // The premise: the run really does store an entry per key, so moving it is what the guard weighs.
+            assertThat(entryCount(rowSets.get(0))).isEqualTo(512);
+            assertThat(entryCount(rowSets.get(1))).isEqualTo(1);
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(64)) {
+                batcher.add(rowSets.get(0).copy());
+                assertThat(batcher.pendingBatchSize()).isEqualTo(1);
+                // Below the run, but 512 entries would move to take 1: a slot of its own.
+                batcher.add(rowSets.get(1).copy());
+                assertThat(batcher.pendingBatchSize()).isEqualTo(2);
+                // Below that run, and no larger than it: folded in, so no new slot.
+                batcher.add(rowSets.get(2).copy());
+                assertThat(batcher.pendingBatchSize()).isEqualTo(2);
+                try (final WritableRowSet built = batcher.build();
+                        final WritableRowSet expected = reference(rowSets)) {
+                    assertThat(built).isEqualTo(expected);
+                }
+            }
+        } finally {
+            SafeCloseable.closeAll(rowSets);
+        }
+    }
+
     @Test
     public void nonAppendingInputFillsTheBatch() {
         final List<RowSet> rowSets = interleaved(8, 4);
@@ -227,12 +294,12 @@ public class RowSetUnionBatcherTest {
 
     @Test
     public void aFullBatchLeavesTheGroupAvailableToAppendOnto() {
-        // Two to a batch. The first two arrive out of order, so neither appends to the other and they fill the batch;
-        // the third appends past the group they collapsed into, which only splices if the collapse left that group as
-        // the run.
+        // Two to a batch. The first two overlap, so neither falls clear of the other on either side and they fill the
+        // batch; the third appends past the group they collapsed into, which only splices if the collapse left that
+        // group as the run.
         try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(2)) {
             batcher.add(RowSetFactory.fromRange(100, 199));
-            batcher.add(RowSetFactory.fromRange(0, 99));
+            batcher.add(RowSetFactory.fromRange(0, 150));
             // The batch collapsed into one group covering [0, 199], which the next row set appends to.
             assertThat(batcher.groupCount()).isEqualTo(1);
             assertThat(batcher.pendingBatchSize()).isZero();

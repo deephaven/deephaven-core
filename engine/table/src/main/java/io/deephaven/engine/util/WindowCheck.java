@@ -362,9 +362,9 @@ public class WindowCheck {
                 final TableUpdateImpl downstream =
                         TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
 
-                try (final RowSet modifiedByTime = recomputeModified()) {
+                try (final WritableRowSet modifiedByTime = recomputeModified()) {
                     if (modifiedByTime.isNonempty()) {
-                        downstream.modified.writableCast().insert(modifiedByTime);
+                        downstream.modified.writableCast().absorb(modifiedByTime);
                     }
                 }
 
@@ -762,7 +762,7 @@ public class WindowCheck {
             notifyChanges();
         }
 
-        private RowSet recomputeModified() {
+        private WritableRowSet recomputeModified() {
             final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
 
             while (true) {

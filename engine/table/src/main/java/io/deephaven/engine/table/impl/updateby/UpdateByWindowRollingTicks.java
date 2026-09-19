@@ -197,9 +197,9 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
         if (upstream.modified().isNonempty() && ctx.inputModified) {
             // compute the rows affected from these changes
             try (final WritableRowSet modifiedInverted = ctx.sourceRowSet.invert(upstream.modified());
-                    final RowSet modifiedAffected =
+                    final WritableRowSet modifiedAffected =
                             computeAffectedRowsTicks(ctx.sourceRowSet, modifiedInverted, prevUnits, fwdUnits)) {
-                tmpAffected.insert(modifiedAffected);
+                tmpAffected.absorb(modifiedAffected);
             }
         }
 
@@ -209,8 +209,9 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
             final long fwd = Math.max(0, fwdUnits);
 
             try (final RowSet addedInverted = ctx.sourceRowSet.invert(upstream.added());
-                    final RowSet addedAffected = computeAffectedRowsTicks(ctx.sourceRowSet, addedInverted, prev, fwd)) {
-                tmpAffected.insert(addedAffected);
+                    final WritableRowSet addedAffected =
+                            computeAffectedRowsTicks(ctx.sourceRowSet, addedInverted, prev, fwd)) {
+                tmpAffected.absorb(addedAffected);
             }
         }
 
@@ -227,7 +228,7 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
                 upstream.shifted().apply(removedAffected);
                 // retain only the rows that still exist in the sourceRowSet
                 removedAffected.retain(ctx.sourceRowSet);
-                tmpAffected.insert(removedAffected);
+                tmpAffected.absorb(removedAffected);
             }
         }
 

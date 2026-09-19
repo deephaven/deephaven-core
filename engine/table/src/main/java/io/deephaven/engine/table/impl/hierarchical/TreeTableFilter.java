@@ -361,7 +361,7 @@ public class TreeTableFilter {
         return matchedRows;
     }
 
-    private RowSet checkForResurrectedParent(@NotNull final RowSet rowsToCheck) {
+    private WritableRowSet checkForResurrectedParent(@NotNull final RowSet rowsToCheck) {
         final RowSetBuilderSequential rowsToReParent = RowSetFactory.builderSequential();
 
         try (final ChunkSource.GetContext idGetContext = idSource.makeGetContext(CHUNK_SIZE);
@@ -487,10 +487,10 @@ public class TreeTableFilter {
         }
         affectedParents.forEach((parentId, pair) -> {
             try (final RowSet removed = pair.first.build();
-                    final RowSet added = pair.second.build()) {
+                    final WritableRowSet added = pair.second.build()) {
                 final WritableRowSet childRows = parentIdToChildRows.get(parentId);
                 childRows.remove(removed);
-                childRows.insert(added);
+                childRows.absorb(added);
             }
         });
     }
@@ -545,16 +545,16 @@ public class TreeTableFilter {
 
             // Finally, handle added sets.
             try (final WritableRowSet addedAndModified = upstream.added().union(upstream.modified());
-                    final RowSet newFiltered = filterValues(false, source.getRowSet(), addedAndModified);
-                    final RowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
-                    final RowSet newParents = computeParents(false, newFiltered);
-                    final RowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
+                    final WritableRowSet newFiltered = filterValues(false, source.getRowSet(), addedAndModified);
+                    final WritableRowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
+                    final WritableRowSet newParents = computeParents(false, newFiltered);
+                    final WritableRowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
 
 
-                matchedSourceRows.insert(newFiltered);
-                ancestorSourceRows.insert(newParents);
-                ancestorSourceRows.insert(resurrectedParents);
-                ancestorSourceRows.insert(newResurrectedParents);
+                matchedSourceRows.absorb(newFiltered);
+                ancestorSourceRows.absorb(newParents);
+                ancestorSourceRows.absorb(resurrectedParents);
+                ancestorSourceRows.absorb(newResurrectedParents);
             }
 
             // Compute expected results and the sets we will propagate to child listeners.
@@ -568,7 +568,7 @@ public class TreeTableFilter {
 
                 // convert post filter removals into pre-shift space -- note these rows must have previously existed
                 upstream.shifted().unapply(resultRemovals);
-                downstream.removed().writableCast().insert(resultRemovals);
+                downstream.removed().writableCast().absorb(resultRemovals);
             }
 
             downstream.shifted = upstream.shifted();
