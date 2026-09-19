@@ -111,8 +111,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             NaturalJoinType joinType, boolean addOnly) {
         super(keySourcesForErrorMessages, joinType, addOnly);
 
-        // we start out with a chunk sized table, and will grow by rehashing as states are added
-        this.tableSize = CHUNK_SIZE;
+        // the caller sizes the table for the states it expects (from a data index when one exists); we grow by
+        // rehashing as further states are added
+        this.tableSize = tableSize;
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
         Require.gtZero(tableSize, "tableSize");
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);

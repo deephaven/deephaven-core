@@ -97,9 +97,21 @@ class NaturalJoinHelper {
             if (leftTable.isRefreshing() && rightTable.isRefreshing()) {
                 // We always build right first, regardless of the build parameters. This is probably irrelevant.
 
+                // The build parameters size the table for the right row count, treating the right keys as unique. A
+                // join that errors on duplicates needs a state per right row, so that size is exact; a first- or
+                // last-match join collapses duplicates into one state, so its right row count may far overstate the
+                // states, and it starts from the left data index size (or the default) and grows by rehashing.
+                final boolean rightKeysUnique =
+                        joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH;
+                final int bothIncrementalTableSize = rightKeysUnique
+                        ? initialHashTableSize
+                        : bc.leftDataIndexTable != null
+                                ? control.tableSize(bc.leftDataIndexTable.size())
+                                : control.initialBuildSize();
+
                 final BothIncrementalNaturalJoinStateManager jsm = TypedHasherFactory.makeNaturalJoin(
                         IncrementalNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        initialHashTableSize, control.getMaximumLoadFactor(),
+                        bothIncrementalTableSize, control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor(), joinType, rightAddOnly);
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
 
