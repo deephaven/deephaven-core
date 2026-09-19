@@ -445,19 +445,31 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         freeDuplicateValues.add(duplicateLocation);
     }
 
-    @Override
-    public long getRightRowKey(int slot) {
-        final long rightRowKey;
+    /**
+     * Read the right state of a slot that holds a live key. The empty and tombstone states are contract violations: the
+     * tombstone shares its value with {@link #DUPLICATE_RIGHT_VALUE}, so a caller that asked about a dead slot would
+     * misread it as a duplicate.
+     */
+    private long rightStateForLiveSlot(final int slot) {
+        final long rightState;
         if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             // slot needs to represent whether we are in the main or alternate using main insert mask!
-            rightRowKey = mainRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+            rightState = mainRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         } else {
-            rightRowKey = alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+            rightState = alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         }
-        if (rightRowKey <= FIRST_DUPLICATE) {
+        Assert.neq(rightState, "rightState", EMPTY_RIGHT_STATE, "EMPTY_RIGHT_STATE");
+        Assert.neq(rightState, "rightState", TOMBSTONE_RIGHT_STATE, "TOMBSTONE_RIGHT_STATE");
+        return rightState;
+    }
+
+    @Override
+    public long getRightRowKey(int slot) {
+        final long rightState = rightStateForLiveSlot(slot);
+        if (rightState <= FIRST_DUPLICATE) {
             return DUPLICATE_RIGHT_VALUE;
         }
-        return rightRowKey;
+        return rightState;
     }
 
     @Override
@@ -471,14 +483,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public RowSet getRightRowSet(int slot) {
-        final long rightRowKey;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
-            // slot needs to represent whether we are in the main or alternate using main insert mask!
-            rightRowKey = mainRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
-        } else {
-            rightRowKey = alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
-        }
-        return rightSideDuplicateRowSets.getUnsafe(duplicateLocationFromRowKey(rightRowKey));
+        return rightSideDuplicateRowSets.getUnsafe(duplicateLocationFromRowKey(rightStateForLiveSlot(slot)));
     }
 
     @Override
