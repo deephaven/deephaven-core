@@ -1247,12 +1247,17 @@ public class BarrageMessageProducer extends LivenessArtifact
             baseRowSet = propagationRowSet.copy();
         }
 
+        // The run's totals are needed under the monitor, where a scan of the run would block the update graph
+        // thread for as long as the run is long; take them here instead.
+        final long runBytes = totalChunkBytes(run);
+        final int runNonAddOnly = countNonAddOnly(run);
+
         final BarrageMessageDelta compacted;
         try (final SafeCloseable ignored = baseRowSet) {
             // Compaction and splicing might create add-only deltas from mixed deltas. Decline additional compaction.
-            if (BarrageMessageDelta.allAddOnly(run)) {
+            if (runNonAddOnly == 0) {
                 synchronized (this) {
-                    markCompactionDeclined(totalChunkBytes(run), run.size());
+                    markCompactionDeclined(runBytes, run.size());
                 }
                 return;
             }
@@ -1266,7 +1271,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         // this). Releasing chunks isn't always free (for Object, must null out references), so do it outside the
         // synchronized block.
         synchronized (this) {
-            replaced = spliceCompacted(run, compacted);
+            replaced = spliceCompacted(run, runBytes, runNonAddOnly, compacted);
         }
         SafeCloseable.closeAll(replaced);
     }
@@ -1976,14 +1981,19 @@ public class BarrageMessageProducer extends LivenessArtifact
      * Takes ownership of {@code compacted}: either the queue holds it on return, or it is closed here.
      *
      * <p>
-     * Only bounded work happens here. Closing a delta returns its chunks to the pool, which clears their backing arrays
-     * and so costs time proportional to the data being discarded; that is left to the caller, once it has released the
-     * monitor, so the update graph thread is not blocked behind it.
+     * Only bounded work happens here, which is why the run's totals arrive as arguments rather than being taken from
+     * it. Closing a delta returns its chunks to the pool, which clears their backing arrays and so costs time
+     * proportional to the data being discarded; that is left to the caller, once it has released the monitor, so the
+     * update graph thread is not blocked behind it.
      *
+     * @param run the deltas being replaced, still at the head of the queue
+     * @param runBytes total {@link BarrageMessageDelta#chunkBytes} over {@code run}
+     * @param runNonAddOnly how many of {@code run} are not add-only
+     * @param compacted the delta that replaces them
      * @return the replaced deltas, which the caller must close
      */
-    private List<BarrageMessageDelta> spliceCompacted(final List<BarrageMessageDelta> run,
-            final BarrageMessageDelta compacted) {
+    private List<BarrageMessageDelta> spliceCompacted(final List<BarrageMessageDelta> run, final long runBytes,
+            final int runNonAddOnly, final BarrageMessageDelta compacted) {
         Assert.assertion(Thread.holdsLock(this), "spliceCompacted must hold lock!");
         final int numDeltas = run.size();
         final long firstStep;
@@ -2009,9 +2019,9 @@ public class BarrageMessageProducer extends LivenessArtifact
             throw err;
         }
 
-        pendingDeltaBytes += compacted.chunkBytes - totalChunkBytes(replaced);
+        pendingDeltaBytes += compacted.chunkBytes - runBytes;
         // Coalescing can leave only adds behind (rows added and then modified within the run), so recount the head.
-        pendingNonAddOnlyDeltas += (compacted.isAddOnly() ? 0 : 1) - countNonAddOnly(replaced);
+        pendingNonAddOnlyDeltas += (compacted.isAddOnly() ? 0 : 1) - runNonAddOnly;
         markCompacted(compacted);
 
         if (log.isDebugEnabled()) {

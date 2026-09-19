@@ -714,24 +714,14 @@ final class BarrageMessageDelta implements SafeCloseable {
         return mapping;
     }
 
-    /** Whether this delta only adds rows: nothing removed, modified or shifted, and no modified data recorded. */
+    /**
+     * Whether this delta only adds rows: nothing removed, modified or shifted, and no modified data recorded. A run of
+     * such deltas cannot drop a single row when coalesced, so compacting it would copy the whole run's data and save
+     * nothing; the producer declines such runs.
+     */
     boolean isAddOnly() {
         return update.removed().isEmpty() && update.modified().isEmpty() && update.shifted().empty()
                 && recordedMods.isEmpty() && modifiedColumns.isEmpty();
-    }
-
-    /**
-     * Whether every delta in the run only adds rows: no removals, no modifications, no shifts anywhere in it.
-     * Coalescing such a run cannot drop a single row, so compacting it would copy the whole run's data and save
-     * nothing; the producer declines such runs.
-     */
-    static boolean allAddOnly(final List<BarrageMessageDelta> deltas) {
-        for (final BarrageMessageDelta delta : deltas) {
-            if (!delta.isAddOnly()) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**

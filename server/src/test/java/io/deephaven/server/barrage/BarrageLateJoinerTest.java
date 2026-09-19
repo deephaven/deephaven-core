@@ -685,6 +685,64 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
     }
 
     /**
+     * The byte trigger on its own, well under the count cap. Every cycle modifies the whole of a three-chunk table, so
+     * each delta's size is known exactly and the test can follow the producer's policy step by step: nothing compacts
+     * until the raw bytes cross the floor, the compacted head is then one table's worth, and the next compaction waits
+     * until the raw bytes recorded since reach {@code max(floor, growthFactor * head)} again.
+     */
+    public void testByteTriggerCompaction() {
+        final int chunk = BarrageMessageProducer.DELTA_CHUNK_SIZE;
+        final int tableSize = 3 * chunk;
+        final QueryTable sourceTable = newSourceTable(tableSize);
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient fullClient = nugget.newClient(null, allColumns(), "existing-full");
+        flushProducerTable();
+        flushClients(nugget);
+        nugget.validate("existing subscription satisfied");
+        final BarrageMessageProducer producer = nugget.barrageMessageProducer;
+
+        // A whole-table modification records one full chunk per column per DELTA_CHUNK_SIZE rows, with no rounding.
+        long bytesPerDelta = 0;
+        for (final String columnName : new String[] {"intCol", "doubleCol", "strCol"}) {
+            bytesPerDelta += (long) tableSize * sourceTable.getColumnSource(columnName).getChunkType().elementBytes();
+        }
+        final long floor = BarrageMessageProducer.COMPACTION_FLOOR_BYTES;
+        final double growth = BarrageMessageProducer.COMPACTION_GROWTH_FACTOR;
+        final int numCycles = 8;
+        assertTrue("the test needs the count cap out of the way",
+                numCycles < BarrageMessageProducer.COMPACTION_MAX_PENDING_DELTAS);
+        assertTrue("the test needs one delta under the floor and two over it: bytesPerDelta=" + bytesPerDelta
+                + ", floor=" + floor, bytesPerDelta < floor && 2 * bytesPerDelta >= floor);
+
+        long rawBytes = 0;
+        long headBytes = 0;
+        int expectedPending = 0;
+        int compactions = 0;
+        try (final RowSet allRows = RowSetFactory.flat(tableSize)) {
+            for (int cycle = 1; cycle <= numCycles; ++cycle) {
+                modifyRows(sourceTable, allRows);
+                ++expectedPending;
+                rawBytes += bytesPerDelta;
+                runDueJobs();
+                if (expectedPending >= 2 && rawBytes >= Math.max(floor, growth * headBytes)) {
+                    // every row survives exactly once, so the compacted head is one table's worth
+                    expectedPending = 1;
+                    headBytes = bytesPerDelta;
+                    rawBytes = 0;
+                    ++compactions;
+                }
+                assertEquals("pending deltas after cycle " + cycle, expectedPending, pendingDeltaCount(producer));
+            }
+        }
+        assertTrue("expected the byte trigger to fire more than once, fired " + compactions, compactions >= 2);
+
+        flushProducerTable();
+        assertNoSnapshots("existing-full", fullClient);
+        flushClients(nugget);
+        nugget.validate("after byte-triggered compactions");
+    }
+
+    /**
      * As {@link #testViewportChangeWithPendingDeltas}, but the queue is compacted before the viewport changes. The
      * changing client's pre-snapshot data, now drawn from a compacted delta, is still sent under its old viewport.
      */
