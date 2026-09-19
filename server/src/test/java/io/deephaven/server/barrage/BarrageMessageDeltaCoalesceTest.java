@@ -133,14 +133,14 @@ public class BarrageMessageDeltaCoalesceTest extends RefreshingTableTestCase {
             assertEquals(100, result.addChunks[INT_COL][0].asIntChunk().get(0));
             assertEquals(2200, result.addChunks[INT_COL][0].asIntChunk().get(1));
             assertEquals(200, result.addChunks[INT_COL][0].asIntChunk().get(2));
-            assertEquals(1.0, result.addChunks[DOUBLE_COL][0].asDoubleChunk().get(0));
-            assertEquals(22.0, result.addChunks[DOUBLE_COL][0].asDoubleChunk().get(1));
-            assertEquals(2.0, result.addChunks[DOUBLE_COL][0].asDoubleChunk().get(2));
+            assertEquals(1.0, result.addChunks[DOUBLE_COL][0].asDoubleChunk().get(0), 0.0);
+            assertEquals(22.0, result.addChunks[DOUBLE_COL][0].asDoubleChunk().get(1), 0.0);
+            assertEquals(2.0, result.addChunks[DOUBLE_COL][0].asDoubleChunk().get(2), 0.0);
 
             // row 5 from delta 1's mods
             assertEquals(1, result.modChunks[INT_COL][0].size());
             assertEquals(1100, result.modChunks[INT_COL][0].asIntChunk().get(0));
-            assertEquals(11.0, result.modChunks[DOUBLE_COL][0].asDoubleChunk().get(0));
+            assertEquals(11.0, result.modChunks[DOUBLE_COL][0].asDoubleChunk().get(0), 0.0);
             assertEquals(RowSetFactory.fromKeys(5), result.getRecordedMods(INT_COL));
         } finally {
             delta1.close();
