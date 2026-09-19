@@ -33,7 +33,7 @@ class TableReplayer(JObjectWrapper):
                 replay end time.  Integer values are nanoseconds since the Epoch.
 
         Raises:
-            DHError
+            DHError: If unable to create a replayer.
         """
         start_time = time.to_j_instant(start_time)
         end_time = time.to_j_instant(end_time)
@@ -59,7 +59,7 @@ class TableReplayer(JObjectWrapper):
             a replay Table
 
         Raises:
-            DHError
+            DHError: If unable to add a historical table.
         """
         try:
             replay_table = Table(j_table=self._j_replayer.replay(table.j_table, col))
@@ -71,7 +71,7 @@ class TableReplayer(JObjectWrapper):
         """Starts replaying.
 
         Raises:
-             DHError
+             DHError: If unable to start the replayer.
         """
         try:
             self._j_replayer.start()

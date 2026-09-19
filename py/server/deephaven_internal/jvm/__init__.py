@@ -17,7 +17,7 @@ def check_ready():
     Raises a RuntimeError if the JVM is not ready.
 
     Raises:
-        RuntimeError
+        RuntimeError: If the Deephaven Server has not been initialized. Please ensure that deephaven_server.Server has been constructed before importing deephaven.
     """
     # Note: we might be tempted to store the source of truth for this in Java, but we aren't able to do that.
     # `import jpy` has potential side effects, and may improperly start the JVM.
@@ -33,7 +33,7 @@ def check_py_env():
     """Checks if the current Python environment is in good order and if not, raises a RuntimeError.
 
     Raises:
-        RuntimeError
+        RuntimeError: If the Deephaven Enterprise Python Package (name 'deephaven' on pypi) is installed in the current Python environment. It conflicts with the Deephaven Community Python Package (name 'deephaven-core' on pypi). Please uninstall the 'deephaven' package and reinstall the 'deephaven-core' package.
     """
     import importlib.metadata
 
@@ -64,7 +64,7 @@ def init_jvm(*args, **kwargs):
     Calls ready() after jpyutil.init_jvm(...).
 
     Raises:
-        ImportError
+        ImportError: If unable to initialize JVM, try setting the environment variable JAVA_HOME (JDK 11+ required).
     """
     # Note: we might be able to use our own logic instead of jpyutil here in the future
     import jpyutil

@@ -65,7 +65,7 @@ def read(
         a table
 
     Raises:
-        DHError
+        DHError: If read csv fails.
     """
     try:
         csv_specs_builder = _JCsvTools.builder()
@@ -118,7 +118,7 @@ def write(table: Table, path: str, cols: Sequence[str] = []) -> None:
         cols (Sequence[str]): the names of the columns to be written out
 
     Raises:
-        DHError
+        DHError: If the operation fails.
     """
     try:
         _JCsvTools.writeCsv(table.j_table, False, path, *cols)

@@ -39,7 +39,7 @@ def _column_to_numpy_array(col_def: ColumnDefinition, j_array: jpy.JType) -> np.
         np.ndarray
 
     Raises:
-        DHError
+        DHError: If unable to create a numpy array for the column.
     """
     try:
         return _j_array_to_numpy_array(

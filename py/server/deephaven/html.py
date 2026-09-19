@@ -19,7 +19,7 @@ def to_html(table: Table) -> str:
         a HTML string
 
     Raises:
-        DHError
+        DHError: If table to_html fails.
     """
     try:
         return _JTableTools.html(table.j_table)

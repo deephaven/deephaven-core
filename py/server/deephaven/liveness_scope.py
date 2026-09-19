@@ -108,7 +108,7 @@ class _BaseLivenessScope(JObjectWrapper):
         """Closes the LivenessScope and releases all the query graph resources.
 
         Raises:
-            DHError if this instance has been released too many times
+            DHError: If this instance has been released too many times.
         """
         try:
             self.j_scope.release()
@@ -123,7 +123,7 @@ class _BaseLivenessScope(JObjectWrapper):
             referent (Union[JObjectWrapper, jpy.JType]): an object to preserve in the next outer liveness scope
 
         Raises:
-            DHError if the object isn't a liveness node, or this instance isn't currently at the stop of the stack
+            DHError: If the object is not a liveness node, or this instance is not currently at the top of the stack.
         """
         referent = _unwrap_to_liveness_referent(referent)
         try:
@@ -157,7 +157,7 @@ class _BaseLivenessScope(JObjectWrapper):
         Returns: None
 
         Raises:
-            DHError if the referent isn't a LivenessReferent, or if it is no longer live
+            DHError: If the referent is not a LivenessReferent, or if it is no longer live.
 
         """
         referent = _unwrap_to_liveness_referent(referent)
@@ -177,7 +177,7 @@ class _BaseLivenessScope(JObjectWrapper):
         Returns: None
 
         Raises:
-            DHError if the referent isn't a LivenessReferent, or if it is no longer live
+            DHError: If the referent is not a LivenessReferent, or if it is no longer live.
 
         """
         referent = _unwrap_to_liveness_referent(referent)
@@ -212,7 +212,7 @@ class LivenessScope(_BaseLivenessScope):
         """Closes the LivenessScope and releases all the managed resources.
 
         Raises:
-            DHError if this instance has been released too many times
+            DHError: If this instance has been released too many times.
         """
         self._release()
 
