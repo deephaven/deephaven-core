@@ -2151,56 +2151,67 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
 
         // Zero-copy: transfer chunk ownership directly from the delta to the BarrageMessage.
-        final BitSet addColumnSet = source.recordedAdds.isEmpty() ? new BitSet() : source.subscribedColumns;
-        final BitSet modColumnSet = source.modifiedColumns;
+        try {
+            final BitSet addColumnSet = source.recordedAdds.isEmpty() ? new BitSet() : source.subscribedColumns;
+            final BitSet modColumnSet = source.modifiedColumns;
 
-        downstream.rowsAdded = source.update.added().copy();
-        downstream.rowsRemoved = source.update.removed().copy();
-        downstream.shifted = source.update.shifted();
-        downstream.rowsIncluded = source.recordedAdds.copy();
+            downstream.rowsAdded = source.update.added().copy();
+            downstream.rowsRemoved = source.update.removed().copy();
+            downstream.shifted = source.update.shifted();
+            downstream.rowsIncluded = source.recordedAdds.copy();
 
-        downstream.addColumnData = new BarrageMessage.AddColumnData[chunkSources.length];
-        downstream.modColumnData = new BarrageMessage.ModColumnData[chunkSources.length];
+            downstream.addColumnData = new BarrageMessage.AddColumnData[chunkSources.length];
+            downstream.modColumnData = new BarrageMessage.ModColumnData[chunkSources.length];
 
-        for (int ci = 0; ci < downstream.addColumnData.length; ++ci) {
-            final BarrageMessage.AddColumnData adds = new BarrageMessage.AddColumnData();
-            adds.data = new ArrayList<>();
-            adds.chunkType = chunkSources[ci].getChunkType();
-            downstream.addColumnData[ci] = adds;
+            for (int ci = 0; ci < downstream.addColumnData.length; ++ci) {
+                final BarrageMessage.AddColumnData adds = new BarrageMessage.AddColumnData();
+                adds.data = new ArrayList<>();
+                adds.chunkType = chunkSources[ci].getChunkType();
+                downstream.addColumnData[ci] = adds;
 
-            if (addColumnSet.get(ci)) {
-                // Detach chunks from the delta; BarrageMessage.close() returns them to the pool.
-                final WritableChunk<Values>[] chunks = source.extractAddChunks(ci);
-                if (chunks != null) {
-                    Collections.addAll(adds.data, chunks);
+                if (addColumnSet.get(ci)) {
+                    // Detach chunks from the delta; BarrageMessage.close() returns them to the pool.
+                    final WritableChunk<Values>[] chunks = source.extractAddChunks(ci);
+                    if (chunks != null) {
+                        Collections.addAll(adds.data, chunks);
+                    }
                 }
+
+                adds.type = realColumnType[ci];
+                adds.componentType = realColumnComponentType[ci];
             }
 
-            adds.type = realColumnType[ci];
-            adds.componentType = realColumnComponentType[ci];
-        }
+            for (int ci = 0; ci < downstream.modColumnData.length; ++ci) {
+                final BarrageMessage.ModColumnData mods = new BarrageMessage.ModColumnData();
+                mods.data = new ArrayList<>();
+                mods.chunkType = chunkSources[ci].getChunkType();
+                downstream.modColumnData[ci] = mods;
 
-        for (int ci = 0; ci < downstream.modColumnData.length; ++ci) {
-            final BarrageMessage.ModColumnData mods = new BarrageMessage.ModColumnData();
-            mods.data = new ArrayList<>();
-            mods.chunkType = chunkSources[ci].getChunkType();
-            downstream.modColumnData[ci] = mods;
-
-            if (modColumnSet.get(ci)) {
-                mods.rowsModified = source.getRecordedMods(ci).copy();
-                // Detach chunks from the delta; BarrageMessage.close() returns them to the pool.
-                final WritableChunk<Values>[] chunks = source.extractModChunks(ci);
-                if (chunks != null) {
-                    Collections.addAll(mods.data, chunks);
+                if (modColumnSet.get(ci)) {
+                    mods.rowsModified = source.getRecordedMods(ci).copy();
+                    // Detach chunks from the delta; BarrageMessage.close() returns them to the pool.
+                    final WritableChunk<Values>[] chunks = source.extractModChunks(ci);
+                    if (chunks != null) {
+                        Collections.addAll(mods.data, chunks);
+                    }
+                } else {
+                    mods.rowsModified = RowSetFactory.empty();
                 }
-            } else {
-                mods.rowsModified = RowSetFactory.empty();
+
+                mods.type = realColumnType[ci];
+                mods.componentType = realColumnComponentType[ci];
             }
 
-            mods.type = realColumnType[ci];
-            mods.componentType = realColumnComponentType[ci];
+        } catch (final Throwable err) {
+            // Nothing else can reach either of these: the message is local, and a synthetic source is not in
+            // pendingDeltas. Chunks already detached into the message go back with it; the source then releases
+            // only what it still holds.
+            downstream.close();
+            if (closeSource) {
+                source.close();
+            }
+            throw err;
         }
-
         if (closeSource) {
             // A synthetic delta is not in pendingDeltas; its chunks were detached above, so this releases only its
             // row sets and update.
