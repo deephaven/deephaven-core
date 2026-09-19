@@ -2083,10 +2083,19 @@ public class BarrageMessageProducer extends LivenessArtifact
             // Each delta's addChunks contain exactly its recordedAdds rows in order, so concatenation
             // produces the correct combined add data matching the synthesized recordedAdds RowSet.
 
+            // The columns every delta recorded; a removal-only promotion mid-run narrows what the later ones hold, and
+            // the remaining subscribers need no more than that.
+            final BitSet subscribedCols = new BitSet();
+            if (hasDelta) {
+                subscribedCols.or(origDelta.subscribedColumns);
+                for (int ii = startDelta + 1; ii < endDelta; ++ii) {
+                    subscribedCols.and(pendingDeltas.get(ii).subscribedColumns);
+                }
+            }
+
             // noinspection unchecked
             final WritableChunk<Values>[][] blinkAddChunks = new WritableChunk[chunkSources.length][];
             if (hasDelta) {
-                final BitSet subscribedCols = origDelta.subscribedColumns;
                 for (int ci = subscribedCols.nextSetBit(0); ci >= 0; ci = subscribedCols.nextSetBit(ci + 1)) {
                     int totalChunks = 0;
                     for (int ii = startDelta; ii < endDelta; ++ii) {
@@ -2117,7 +2126,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                     recordedBuilder.build(),
                     RowSetFactory.empty(),
                     null,
-                    hasDelta ? origDelta.subscribedColumns : new BitSet(),
+                    subscribedCols,
                     new BitSet(),
                     blinkAddChunks,
                     new WritableChunk[chunkSources.length][]);

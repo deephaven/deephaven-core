@@ -191,12 +191,15 @@ final class BarrageMessageDelta implements SafeCloseable {
         final int numDeltas = deltas.size();
         final int numColumns = chunkSources.length;
 
-        // Columns the run modified upstream are candidates; only those with surviving recorded rows keep data.
+        // Columns the run modified upstream are candidates; only those with surviving recorded rows keep data, and
+        // only within the columns every delta recorded.
         if (update.modifiedColumnSet() == ModifiedColumnSet.ALL) {
             run.modColumnSet.set(0, numColumns);
         } else {
             run.modColumnSet.or(update.modifiedColumnSet().extractAsBitSet());
         }
+        run.modColumnSet.and(run.columns);
+        final BitSet addColumnSet = run.added.isEmpty() ? new BitSet() : run.columns;
 
         // The arrays hold nothing to release until the mapping below fills them.
         // noinspection unchecked
@@ -207,7 +210,7 @@ final class BarrageMessageDelta implements SafeCloseable {
         final BitSet modifiedColumns = new BitSet();
         final WritableRowSet recordedMods = RowSetFactory.empty();
         try (final ColumnMappingCache mappings = new ColumnMappingCache(deltas, run.added, update.added())) {
-            for (int ci = run.addColumnSet.nextSetBit(0); ci >= 0; ci = run.addColumnSet.nextSetBit(ci + 1)) {
+            for (int ci = addColumnSet.nextSetBit(0); ci >= 0; ci = addColumnSet.nextSetBit(ci + 1)) {
                 final ColumnMapping mapping = mappings.get(ci);
                 addChunks[ci] = copyColumn(mapping.addedRuns, mapping.addedRows, chunkSources[ci].getChunkType(),
                         deltas, ci);
@@ -229,13 +232,12 @@ final class BarrageMessageDelta implements SafeCloseable {
                 }
             }
 
-            // Every contributing delta shares one column set within a generation (RunSummary asserts it), so the
-            // run's first delta speaks for the result: with surviving adds their data exists for exactly these
-            // columns, and without any the result still coalesces with what follows it.
+            // The result is stamped with the run's first generation: compaction runs are one generation, and the only
+            // multi-generation run, propagation across a removal-only promotion, is sent at once and never queued.
             return new BarrageMessageDelta(deltas.get(0).generation,
                     deltas.get(0).firstStep, deltas.get(numDeltas - 1).lastStep,
                     update, run.added, recordedMods, perColumnRecordedMods,
-                    (BitSet) deltas.get(0).subscribedColumns.clone(), modifiedColumns, addChunks, modChunks);
+                    (BitSet) run.columns.clone(), modifiedColumns, addChunks, modChunks);
         } catch (final Throwable err) {
             // the cache has already closed the mappings it still owned
             closeChunkArrays(addChunks);
@@ -263,40 +265,31 @@ final class BarrageMessageDelta implements SafeCloseable {
     }
 
     /**
-     * What a run adds: the rows recorded as added that are still present at its end, the columns their data was
-     * recorded for, and the columns some delta recorded modified data for.
+     * What a run adds: the rows recorded as added that are still present at its end, the columns the result can carry,
+     * and the columns some delta recorded modified data for.
      */
     private static final class RunSummary {
         /** Surviving recorded adds, in the key space at the end of the run; owned by the caller of {@link #of}. */
         final WritableRowSet added = RowSetFactory.empty();
-        final BitSet addColumnSet = new BitSet();
+        /**
+         * The columns every delta in the run recorded, which is the most the result can carry. Within one generation
+         * this is simply the shared column set. Across the one boundary propagation does coalesce over, a removal-only
+         * promotion, the later deltas recorded a subset of the earlier ones' columns and the remaining subscribers need
+         * only that subset, so the intersection loses nothing anyone will be sent and never asks a delta for a column
+         * it did not record.
+         */
+        final BitSet columns = new BitSet();
         final BitSet modColumnSet = new BitSet();
 
         static RunSummary of(final List<BarrageMessageDelta> deltas) {
             final RunSummary result = new RunSummary();
-            // The column-set assertion below can throw, so this cleans up after itself rather than leaving the
-            // caller to release a row set it has not been handed yet.
             try {
+                result.columns.or(deltas.get(0).subscribedColumns);
                 for (final BarrageMessageDelta delta : deltas) {
+                    result.columns.and(delta.subscribedColumns);
                     result.added.remove(delta.update.removed());
                     delta.update.shifted().apply(result.added);
-
-                    // reset the add column set if we do not have any adds from previous updates
-                    if (result.added.isEmpty()) {
-                        result.addColumnSet.clear();
-                    }
-
-                    if (delta.recordedAdds.isNonempty()) {
-                        if (result.addColumnSet.isEmpty()) {
-                            result.addColumnSet.or(delta.subscribedColumns);
-                        } else {
-                            // It pays to be certain that all of the data we look up was written down.
-                            Assert.equals(delta.subscribedColumns, "delta.subscribedColumns", result.addColumnSet,
-                                    "addColumnSet");
-                        }
-                        result.added.insert(delta.recordedAdds);
-                    }
-
+                    result.added.insert(delta.recordedAdds);
                     if (delta.recordedMods.isNonempty()) {
                         result.modColumnSet.or(delta.modifiedColumns);
                     }
