@@ -164,8 +164,16 @@ git clone https://github.com/deephaven/deephaven-core.git
 cd deephaven-core
 python3 -m venv ~/my-dh-venv
 source ~/my-dh-venv/bin/activate
+```
+
+Build the wheel, install it, and start the server. Note that this has to be re-run after any change to `py/server`.
+
+```sh
 ./gradlew py-server:assemble
-pip install 'py/server/build/wheel/deephaven_core-<version>-py3-non-any.whl[autocomplete]'
+
+# Uninstall if previously built since snapshot builds reuse same version string
+pip uninstall -y deephaven-core
+pip install 'py/server/build/wheel/deephaven_core-<version>-py3-none-any.whl[autocomplete]'
 ./gradlew server-jetty-app:run
 ```
 
@@ -246,7 +254,7 @@ right = new_table([
 t = left.join(right, "DeptID", "DeptName, DeptTelephone=Telephone")
 ```
 
-![alt_text](docs/images/ide_first_query.png "Deephaven IDE First Query")
+![alt_text](docs/images/ide_first_query.png 'Deephaven IDE First Query')
 
 ### Groovy
 
@@ -266,7 +274,7 @@ right = newTable(
 t = left.join(right, "DeptID", "DeptName, DeptTelephone=Telephone")
 ```
 
-![alt_text](docs/images/ide_first_query.png "Deephaven IDE First Query")
+![alt_text](docs/images/ide_first_query.png 'Deephaven IDE First Query')
 
 ## Resources
 
