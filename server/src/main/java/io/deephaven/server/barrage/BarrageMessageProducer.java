@@ -7,6 +7,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.rpc.Code;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -86,21 +87,20 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.MIN_SNAPSHOT_CELL
  */
 public class BarrageMessageProducer extends LivenessArtifact
         implements DynamicNode, NotificationStepReceiver {
-    public static final int DELTA_CHUNK_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(
-            BarrageMessageProducer.class, "deltaChunkSize", ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY);
-    static {
-        // The copy kernel locates a row's chunk with a shift and its offset with a mask.
-        if (DELTA_CHUNK_SIZE <= 0 || Integer.bitCount(DELTA_CHUNK_SIZE) != 1) {
-            throw new IllegalArgumentException(
-                    "BarrageMessageProducer.deltaChunkSize must be a power of two, got " + DELTA_CHUNK_SIZE);
-        }
-    }
-
     private static final Logger log = LoggerFactory.getLogger(BarrageMessageProducer.class);
 
     public static final boolean SUBSCRIPTION_GROWTH_ENABLED =
             Configuration.getInstance().getBooleanForClassWithDefault(BarrageMessageProducer.class,
                     "subscriptionGrowthEnabled", true);
+
+    /**
+     * The number of rows in every chunk a delta records, except the last of a column. A configured
+     * {@code deltaChunkSize} that is not a power of two is rounded up to the next one, because the copy kernel locates
+     * a row's chunk with a shift and its offset with a mask.
+     */
+    public static final int DELTA_CHUNK_SIZE = MathUtil.roundUpPowerOf2(
+            Configuration.getInstance().getIntegerForClassWithDefault(
+                    BarrageMessageProducer.class, "deltaChunkSize", ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY));
 
     /**
      * Whether a producer compacts its queue of pending deltas before the subscribers' update interval elapses. See
