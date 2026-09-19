@@ -278,7 +278,9 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     throw new IllegalStateException(
                             "When converting left group position to row keys more than one LHS value was found!");
                 }
+                // Replace the single-key placeholder with the indexed row set.
                 this.leftRowSet.set(ii, rowSetSource.get(leftRowSet.firstRowKey()).copy());
+                leftRowSet.close();
             }
         }
     }

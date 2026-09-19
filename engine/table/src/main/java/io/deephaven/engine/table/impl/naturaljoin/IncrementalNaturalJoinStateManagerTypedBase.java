@@ -538,8 +538,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         Assert.eq(leftRowSet.size(), "leftRowSet.size()", 1);
                         // Load the row set from the index row set column.
                         final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
-                        // Reset mainLeftRowSet to contain the indexed row set.
+                        // Replace the single-key placeholder with the indexed row set.
                         mainLeftRowSet.set(ii, leftRowSetForKey.copy());
+                        leftRowSet.close();
                         final long leftRowKey = leftRowSetForKey.firstRowKey();
                         final long rightState = mainRightRowKey.getUnsafe(ii);
                         final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
@@ -559,8 +560,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         Assert.eq(leftRowSet.size(), "leftRowSet.size()", 1);
                         // Load the row set from the index row set column.
                         final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
-                        // Reset mainLeftRowSet to contain the indexed row set.
+                        // Replace the single-key placeholder with the indexed row set.
                         mainLeftRowSet.set(ii, leftRowSetForKey.copy());
+                        leftRowSet.close();
                         final long leftRowKey = leftRowSetForKey.firstRowKey();
                         final long rightState = mainRightRowKey.getUnsafe(ii);
                         final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
@@ -582,8 +584,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         Assert.eq(leftRowSet.size(), "leftRowSet.size()", 1);
                         // Load the row set from the index row set column.
                         final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
-                        // Reset mainLeftRowSet to contain the indexed row set.
+                        // Replace the single-key placeholder with the indexed row set.
                         mainLeftRowSet.set(ii, leftRowSetForKey.copy());
+                        leftRowSet.close();
                         final long leftRowKey = leftRowSetForKey.firstRowKey();
                         final long rightState = mainRightRowKey.getUnsafe(ii);
                         final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
