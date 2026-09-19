@@ -2653,6 +2653,126 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(dupMsg + "a", e.getMessage());
     }
 
+    public void testNaturalJoinZeroKeysRightTickReportingStaticLeft() {
+        testNaturalJoinZeroKeysRightTickReporting(false);
+    }
+
+    public void testNaturalJoinZeroKeysRightTickReportingRefreshingLeft() {
+        testNaturalJoinZeroKeysRightTickReporting(true);
+    }
+
+    private void testNaturalJoinZeroKeysRightTickReporting(final boolean leftRefreshing) {
+        // a zero-key join redirects every left row to one right row; a right update that does not touch that row must
+        // not be reported downstream, and one that modifies it must report only the modified columns
+        final QueryTable left = leftRefreshing
+                ? testRefreshingTable(i(0, 1, 2).toTracking(), intCol("L", 1, 2, 3))
+                : testTable(i(0, 1, 2).toTracking(), intCol("L", 1, 2, 3));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), intCol("C", 100, 101),
+                intCol("D", 1000, 1001));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "", "C,D", NaturalJoinType.FIRST_MATCH);
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 100, 100, 100), intCol("D", 1000, 1000, 1000)),
+                result);
+
+        final ModifiedColumnSet cColumn = result.newModifiedColumnSet("C");
+        final ModifiedColumnSet dColumn = result.newModifiedColumnSet("D");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // append a right row after the first match
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(2), intCol("C", 102), intCol("D", 1002));
+            right.notifyListeners(i(2), i(), i());
+        });
+        assertEquals(0, listener.getCount());
+
+        // modify a right row that is not the first match
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(1), intCol("C", 151), intCol("D", 1001));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("C")));
+        });
+        assertEquals(0, listener.getCount());
+
+        // modify only C on the first match
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(0), intCol("C", 150), intCol("D", 1000));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("C")));
+        });
+        assertEquals(1, listener.getCount());
+        TableUpdate update = listener.getUpdate();
+        assertEquals(i(0, 1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertFalse(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 150, 150, 150), intCol("D", 1000, 1000, 1000)),
+                result);
+
+        // remove the first match, so the next row is selected and every right column may have changed
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(right, i(0));
+            right.notifyListeners(i(), i(0), i());
+        });
+        assertEquals(2, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(0, 1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertTrue(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 151, 151, 151), intCol("D", 1001, 1001, 1001)),
+                result);
+
+        // remove the first match and shift the next row into its key: the redirection value is unchanged, but it
+        // now selects a different row, so every right column may have changed
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(2, 2, -1);
+            removeRows(right, i(1, 2));
+            addToTable(right, i(1), intCol("C", 102), intCol("D", 1002));
+            right.notifyListeners(new TableUpdateImpl(i(), i(1), i(), builder.build(), ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(3, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(0, 1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertTrue(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 102, 102, 102), intCol("D", 1002, 1002, 1002)),
+                result);
+
+        // shift the first match away and add a new row at its old key: the redirection value is unchanged, but it
+        // now selects the added row, so every right column may have changed
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(1, 1, 1);
+            removeRows(right, i(1));
+            addToTable(right, i(1, 2), intCol("C", 103, 102), intCol("D", 1003, 1002));
+            right.notifyListeners(new TableUpdateImpl(i(1), i(), i(), builder.build(), ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(4, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(0, 1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertTrue(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 103, 103, 103), intCol("D", 1003, 1003, 1003)),
+                result);
+
+        if (leftRefreshing) {
+            // a left-only modification reports only the modified left row, with no right columns
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(1), intCol("L", 20));
+                left.notifyListeners(i(), i(), i(1));
+            });
+            assertEquals(5, listener.getCount());
+            update = listener.getUpdate();
+            assertEquals(i(1), update.modified());
+            assertFalse(update.modifiedColumnSet().containsAny(cColumn));
+            assertFalse(update.modifiedColumnSet().containsAny(dColumn));
+        }
+
+        listener.close();
+    }
+
     public void testNaturalJoinDuplicateRightsUniqueTable() {
         // a single boolean key selects the SimpleUniqueStaticNaturalJoinStateManager, whose duplicate right key error
         // must read like the hashed state managers' error

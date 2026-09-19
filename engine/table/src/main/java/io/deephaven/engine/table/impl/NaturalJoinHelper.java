@@ -342,18 +342,13 @@ class NaturalJoinHelper {
 
                         checkRightTableSizeZeroKeys(leftTable, rightTable, joinType);
 
-                        if (rightChanged) {
-                            final boolean rightUpdated = updateRightRedirection(rightTable, rowRedirection, joinType);
-                            if (rightUpdated) {
-                                modifiedColumnSet.setAll(allRightColumns);
-                            } else {
-                                rightTransformer.transform(rightRecorder.getModifiedColumnSet(), modifiedColumnSet);
-                            }
-                        }
+                        final boolean rightValuesChanged = rightChanged && applyZeroKeyRightUpdate(rightTable,
+                                rowRedirection, joinType, rightRecorder.getUpdate(), rightTransformer,
+                                allRightColumns, modifiedColumnSet);
 
                         if (leftChanged) {
                             final RowSet modified;
-                            if (rightChanged) {
+                            if (rightValuesChanged) {
                                 modified = result.getRowSet().minus(leftRecorder.getAdded());
                             } else {
                                 modified = leftRecorder.getModified().copy();
@@ -362,7 +357,7 @@ class NaturalJoinHelper {
                             result.notifyListeners(new TableUpdateImpl(
                                     leftRecorder.getAdded().copy(), leftRecorder.getRemoved().copy(), modified,
                                     leftRecorder.getShifted(), modifiedColumnSet));
-                        } else if (rightChanged) {
+                        } else if (rightValuesChanged) {
                             result.notifyListeners(new TableUpdateImpl(
                                     RowSetFactory.empty(), RowSetFactory.empty(),
                                     result.getRowSet().copy(), RowSetShiftData.EMPTY, modifiedColumnSet));
@@ -398,15 +393,15 @@ class NaturalJoinHelper {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
                                 checkRightTableSizeZeroKeys(leftTable, rightTable, joinType);
-                                final boolean changed = updateRightRedirection(rightTable, rowRedirection, joinType);
                                 final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                                if (!changed) {
-                                    rightTransformer.clearAndTransform(upstream.modifiedColumnSet(), modifiedColumnSet);
+                                modifiedColumnSet.clear();
+                                if (!applyZeroKeyRightUpdate(rightTable, rowRedirection, joinType, upstream,
+                                        rightTransformer, allRightColumns, modifiedColumnSet)) {
+                                    return;
                                 }
                                 result.notifyListeners(
                                         new TableUpdateImpl(RowSetFactory.empty(), RowSetFactory.empty(),
-                                                result.getRowSet().copy(), RowSetShiftData.EMPTY,
-                                                changed ? allRightColumns : modifiedColumnSet));
+                                                result.getRowSet().copy(), RowSetShiftData.EMPTY, modifiedColumnSet));
                             }
                         });
             }
@@ -443,6 +438,43 @@ class NaturalJoinHelper {
             }
         }
         return changed;
+    }
+
+    /**
+     * Apply a right update to a zero-key join's redirection and record which right columns may have changed for every
+     * result row. The redirection selects one right row, so only a change to that row (or a change of which row is
+     * selected) affects the result.
+     *
+     * @param modifiedColumnSet the result's modified column set, cleared by the caller; receives the affected right
+     *        columns
+     * @return whether every result row's right values may have changed
+     */
+    private static boolean applyZeroKeyRightUpdate(
+            final QueryTable rightTable,
+            final SingleValueRowRedirection rowRedirection,
+            final NaturalJoinType joinType,
+            final TableUpdate upstream,
+            final ModifiedColumnSet.Transformer rightTransformer,
+            final ModifiedColumnSet allRightColumns,
+            final ModifiedColumnSet modifiedColumnSet) {
+        // NULL_ROW_KEY when no right row was selected; it is never a member of the update's row sets below
+        final long previousRightRow = rowRedirection.getValue();
+        if (updateRightRedirection(rightTable, rowRedirection, joinType)) {
+            modifiedColumnSet.setAll(allRightColumns);
+            return true;
+        }
+        if (upstream.removed().find(previousRightRow) >= 0 || upstream.added().find(previousRightRow) >= 0) {
+            // the selected key is unchanged but holds a different row: the previous row was removed (and another row
+            // re-added or shifted into its key), or it shifted away and a new row was added at its key. Shifts preserve
+            // order, so an existing row cannot otherwise take the first or last key without that key changing.
+            modifiedColumnSet.setAll(allRightColumns);
+            return true;
+        }
+        if (upstream.modified().find(previousRightRow) >= 0) {
+            rightTransformer.transform(upstream.modifiedColumnSet(), modifiedColumnSet);
+            return modifiedColumnSet.nonempty();
+        }
+        return false;
     }
 
     private static void checkRightTableSizeZeroKeys(
