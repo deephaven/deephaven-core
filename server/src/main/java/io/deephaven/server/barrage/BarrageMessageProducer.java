@@ -1164,6 +1164,10 @@ public class BarrageMessageProducer extends LivenessArtifact
 
             activeSubscriptions.clear();
             pendingSubscriptions.clear();
+            // The counters describe the lists that were just emptied. Left stale, a growing count would have the
+            // next propagation reschedule itself forever over no subscriptions.
+            numFullSubscriptions = 0;
+            numGrowingSubscriptions = 0;
             // With no subscriptions left, nothing will schedule a propagation, and its flush is the only other
             // thing that drains the queue. destroy() does not close these either, so without this they would be
             // held until the producer is collected and their chunks would never return to the pool.
