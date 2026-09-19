@@ -7,6 +7,8 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
@@ -17,6 +19,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.experimental.categories.Category;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -60,6 +63,16 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
     /** Bumped on every tick so each update writes values no previous tick produced. */
     private int tickCounter;
 
+    /** Row keys {@link #churnRows} adds live here, far from the table's initial rows and anything a shift reaches. */
+    private static final long CHURN_KEY_BASE = 1L << 20;
+    /** Every this many churn cycles, {@link #churnRows} also shifts the second half of the table. */
+    private static final int SHIFT_EVERY = 8;
+    private int churnCount;
+    /** The row key the previous churn cycle added, or -1. */
+    private long lastChurnKey;
+    /** How far the second half of the table has been shifted up so far. */
+    private int shiftOffset;
+
     private static BitSet allColumns() {
         final BitSet columns = new BitSet();
         columns.set(0, NUM_COLUMNS);
@@ -72,6 +85,9 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
 
     private QueryTable newSourceTable() {
         tickCounter = 0;
+        churnCount = 0;
+        lastChurnKey = -1;
+        shiftOffset = 0;
         final int[] intValues = new int[TABLE_SIZE];
         final double[] doubleValues = new double[TABLE_SIZE];
         final String[] stringValues = new String[TABLE_SIZE];
@@ -94,26 +110,149 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
     private void modifyRows(final QueryTable sourceTable, final RowSet rowsToModify) {
         final int tick = ++tickCounter;
         updateGraph().runWithinUnitTestCycle(() -> {
-            final int numRows = rowsToModify.intSize();
-            final int[] intValues = new int[numRows];
-            final double[] doubleValues = new double[numRows];
-            final String[] stringValues = new String[numRows];
-            int ii = 0;
-            for (final RowSet.Iterator it = rowsToModify.iterator(); it.hasNext();) {
-                final long rowKey = it.nextLong();
-                intValues[ii] = (int) (rowKey * 1000 + tick);
-                doubleValues[ii] = rowKey + tick / 1000.0;
-                stringValues[ii] = "v" + rowKey + "-" + tick;
-                ++ii;
-            }
-            TstUtils.addToTable(sourceTable, rowsToModify,
-                    TableTools.intCol("intCol", intValues),
-                    TableTools.doubleCol("doubleCol", doubleValues),
-                    TableTools.stringCol("strCol", stringValues));
+            writeRows(sourceTable, rowsToModify, tick);
             sourceTable.notifyListeners(new TableUpdateImpl(
                     RowSetFactory.empty(), RowSetFactory.empty(), rowsToModify.copy(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
         });
+    }
+
+    /** Writes values derived from {@code tick} into every column of {@code rows}; must run inside a cycle. */
+    private static void writeRows(final QueryTable sourceTable, final RowSet rows, final int tick) {
+        final int numRows = rows.intSize();
+        final int[] intValues = new int[numRows];
+        final double[] doubleValues = new double[numRows];
+        final String[] stringValues = new String[numRows];
+        int ii = 0;
+        for (final RowSet.Iterator it = rows.iterator(); it.hasNext();) {
+            final long rowKey = it.nextLong();
+            intValues[ii] = (int) (rowKey * 1000 + tick);
+            doubleValues[ii] = rowKey + tick / 1000.0;
+            stringValues[ii] = "v" + rowKey + "-" + tick;
+            ++ii;
+        }
+        TstUtils.addToTable(sourceTable, rows,
+                TableTools.intCol("intCol", intValues),
+                TableTools.doubleCol("doubleCol", doubleValues),
+                TableTools.stringCol("strCol", stringValues));
+    }
+
+    /**
+     * Runs one update graph cycle carrying every kind of change, so that coalescing it with its neighbors has work to
+     * do: the first half of the table is modified again, the row the previous churn cycle added is removed and a new
+     * one added, and every {@link #SHIFT_EVERY} cycles the second half of the table is shifted up by one key.
+     */
+    private void churnRows(final QueryTable sourceTable) {
+        final int tick = ++tickCounter;
+        final int churn = ++churnCount;
+        updateGraph().runWithinUnitTestCycle(() -> {
+            final WritableRowSet removed = RowSetFactory.empty();
+            if (lastChurnKey >= 0) {
+                removed.insert(lastChurnKey);
+                TstUtils.removeRows(sourceTable, removed);
+            }
+            final long addedKey = CHURN_KEY_BASE + churn;
+            final RowSet added = RowSetFactory.fromKeys(addedKey);
+            writeRows(sourceTable, added, tick);
+            lastChurnKey = addedKey;
+
+            final RowSet modified = RowSetFactory.fromRange(0, TABLE_SIZE / 2 - 1);
+            writeRows(sourceTable, modified, tick);
+
+            final RowSetShiftData shifted = churn % SHIFT_EVERY == 0
+                    ? shiftSecondHalf(sourceTable)
+                    : RowSetShiftData.EMPTY;
+
+            sourceTable.notifyListeners(new TableUpdateImpl(added, removed, modified, shifted, ModifiedColumnSet.ALL));
+        });
+    }
+
+    /**
+     * Moves the second half of the table up by one row key, keeping every value with its row, and returns the shift
+     * that describes the move. Must run inside a cycle, before the update is published.
+     */
+    private RowSetShiftData shiftSecondHalf(final QueryTable sourceTable) {
+        final long start = TABLE_SIZE / 2 + shiftOffset;
+        final long end = TABLE_SIZE - 1 + shiftOffset;
+        final int numRows = (int) (end - start + 1);
+
+        final ColumnSource<?> intSource = sourceTable.getColumnSource("intCol");
+        final ColumnSource<?> doubleSource = sourceTable.getColumnSource("doubleCol");
+        final ColumnSource<?> stringSource = sourceTable.getColumnSource("strCol");
+        final int[] intValues = new int[numRows];
+        final double[] doubleValues = new double[numRows];
+        final String[] stringValues = new String[numRows];
+        for (int ii = 0; ii < numRows; ++ii) {
+            final long rowKey = start + ii;
+            intValues[ii] = intSource.getInt(rowKey);
+            doubleValues[ii] = doubleSource.getDouble(rowKey);
+            stringValues[ii] = (String) stringSource.get(rowKey);
+        }
+
+        try (final RowSet oldKeys = RowSetFactory.fromRange(start, end)) {
+            TstUtils.removeRows(sourceTable, oldKeys);
+        }
+        try (final RowSet newKeys = RowSetFactory.fromRange(start + 1, end + 1)) {
+            TstUtils.addToTable(sourceTable, newKeys,
+                    TableTools.intCol("intCol", intValues),
+                    TableTools.doubleCol("doubleCol", doubleValues),
+                    TableTools.stringCol("strCol", stringValues));
+        }
+        ++shiftOffset;
+
+        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+        builder.shiftRange(start, end, 1);
+        return builder.build();
+    }
+
+    /**
+     * Runs the scheduler work that is due now, which is the compaction job the producer scheduled with
+     * {@code runImmediately}, without running the propagation job, which is waiting out {@link #UPDATE_INTERVAL}.
+     * Advances the simulated clock by one millisecond.
+     */
+    private void runDueJobs() {
+        scheduler.runUntil(scheduler.timeAfterMs(1));
+    }
+
+    /**
+     * The number of deltas the producer is holding. Read reflectively: the producer deliberately exposes no accessor
+     * for its queue, and whether the queue was compacted is otherwise invisible, since a subscriber receives the same
+     * message either way.
+     */
+    private static int pendingDeltaCount(final BarrageMessageProducer producer) {
+        try {
+            final Field field = BarrageMessageProducer.class.getDeclaredField("pendingDeltas");
+            field.setAccessible(true);
+            synchronized (producer) {
+                return ((List<?>) field.get(producer)).size();
+            }
+        } catch (final ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    /**
+     * Queues enough churn to cross the producer's delta-count trigger, runs the compaction job on its own, and checks
+     * that it collapsed the queue to one delta, which then keeps accepting appends. On return the queue holds the
+     * compacted delta and two raw ones behind it, all of one subscription generation, with nothing propagated yet.
+     */
+    private void queueAndCompact(final RemoteNugget nugget, final QueryTable sourceTable) {
+        assertTrue("these tests rely on the default compaction configuration",
+                BarrageMessageProducer.COMPACTION_ENABLED && BarrageMessageProducer.COMPACTION_MAX_PENDING_DELTAS > 0);
+        final BarrageMessageProducer producer = nugget.barrageMessageProducer;
+
+        final int numCycles = BarrageMessageProducer.COMPACTION_MAX_PENDING_DELTAS + 3;
+        for (int ii = 0; ii < numCycles; ++ii) {
+            churnRows(sourceTable);
+        }
+        assertEquals("one delta per cycle until the compaction job runs", numCycles, pendingDeltaCount(producer));
+
+        runDueJobs();
+        assertEquals("compaction replaced the run with one delta", 1, pendingDeltaCount(producer));
+
+        churnRows(sourceTable);
+        churnRows(sourceTable);
+        assertEquals("deltas append behind the compacted head", 3, pendingDeltaCount(producer));
     }
 
     /** Modifies the first {@code numRows} rows, {@code numCycles} times, without flushing the producer. */
@@ -321,6 +460,99 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
             flushClients(nugget);
             nugget.validate("after join " + joinIndex);
         }
+    }
+
+    /**
+     * A queue that was compacted before a newcomer joins must serve everyone exactly as an uncompacted one would: the
+     * existing subscribers receive the compacted head and what followed it as one non-snapshot update, the newcomer
+     * receives its snapshot and nothing that predates it, and the replicated tables match the source afterwards.
+     */
+    public void testFullSubscriberJoinsAfterCompaction() {
+        checkJoinAfterCompaction(null, "late-full");
+    }
+
+    /** As {@link #testFullSubscriberJoinsAfterCompaction}, but the newcomer requests a viewport. */
+    public void testViewportSubscriberJoinsAfterCompaction() {
+        try (final RowSet viewport = RowSetFactory.fromRange(10, 40)) {
+            checkJoinAfterCompaction(viewport, "late-viewport");
+        }
+    }
+
+    private void checkJoinAfterCompaction(final RowSet lateViewport, final String lateClientName) {
+        final QueryTable sourceTable = newSourceTable();
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+
+        final RemoteClient fullClient = nugget.newClient(null, allColumns(), "existing-full");
+        final RemoteClient viewportClient;
+        try (final RowSet viewport = RowSetFactory.fromRange(0, TABLE_SIZE / 2)) {
+            viewportClient = nugget.newClient(viewport.copy(), allColumns(), "existing-viewport");
+        }
+        flushProducerTable();
+        flushClients(nugget);
+        nugget.validate("existing subscriptions satisfied");
+
+        queueAndCompact(nugget, sourceTable);
+        assertEquals("no propagation without a flush", 0, fullClient.pendingMessageCount());
+        assertEquals("no propagation without a flush", 0, viewportClient.pendingMessageCount());
+
+        final RemoteClient lateClient = nugget.newClient(
+                lateViewport == null ? null : lateViewport.copy(), allColumns(), lateClientName);
+        flushProducerTable();
+
+        assertNoSnapshots("existing-full", fullClient);
+        assertNoSnapshots("existing-viewport", viewportClient);
+        assertSnapshotFirst(lateClientName, lateClient);
+
+        flushClients(nugget);
+        nugget.validate("after late join onto a compacted queue");
+
+        // a second round, now with the newcomer among the existing subscribers
+        queueAndCompact(nugget, sourceTable);
+        flushProducerTable();
+        assertNoSnapshots("existing-full post-join", fullClient);
+        assertNoSnapshots(lateClientName + " post-join", lateClient);
+        flushClients(nugget);
+        nugget.validate("after a second compaction with the newcomer subscribed");
+    }
+
+    /**
+     * As {@link #testViewportChangeWithPendingDeltas}, but the queue is compacted before the viewport changes. The
+     * changing client's pre-snapshot data, now drawn from a compacted delta, is still sent under its old viewport.
+     */
+    public void testViewportChangeAfterCompaction() {
+        final QueryTable sourceTable = newSourceTable();
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+
+        final RemoteClient stableClient = nugget.newClient(null, allColumns(), "stable-full");
+        final RemoteClient changingClient;
+        try (final RowSet viewport = RowSetFactory.fromRange(0, 20)) {
+            changingClient = nugget.newClient(viewport.copy(), allColumns(), "changing-viewport");
+        }
+        flushProducerTable();
+        flushClients(nugget);
+        nugget.validate("subscriptions satisfied");
+
+        queueAndCompact(nugget, sourceTable);
+
+        try (final RowSet newViewport = RowSetFactory.fromRange(40, 70)) {
+            changingClient.setViewport(newViewport.copy());
+        }
+        flushProducerTable();
+
+        assertNoSnapshots("stable-full", stableClient);
+        assertDeltaThenSnapshot("changing-viewport", changingClient);
+
+        flushClients(nugget);
+        nugget.validate("after viewport change onto a compacted queue");
+
+        // the churn shifted the table's second half, so modify the rows that exist now rather than [0, TABLE_SIZE)
+        try (final RowSet allRows = sourceTable.getRowSet().copy()) {
+            modifyRows(sourceTable, allRows);
+            modifyRows(sourceTable, allRows);
+        }
+        flushProducerTable();
+        flushClients(nugget);
+        nugget.validate("after post-change deltas");
     }
 
     /**

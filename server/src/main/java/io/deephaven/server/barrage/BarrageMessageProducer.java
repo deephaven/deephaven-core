@@ -104,8 +104,10 @@ public class BarrageMessageProducer extends LivenessArtifact
     public static final boolean COMPACTION_ENABLED = Configuration.getInstance()
             .getBooleanForClassWithDefault(BarrageMessageProducer.class, "compactionEnabled", true);
     /**
-     * A producer never compacts while it has recorded fewer than this many bytes of chunk data since it last compacted
-     * (or flushed). Producers whose subscribers are served often enough to stay under it never pay for compaction.
+     * The byte trigger never fires while a producer has recorded fewer than this many bytes of chunk data since it last
+     * compacted (or flushed), so producers whose subscribers are served often enough to stay under it never pay for
+     * compaction on account of their size. The count trigger, {@link #COMPACTION_MAX_PENDING_DELTAS}, is independent of
+     * it.
      */
     public static final long COMPACTION_FLOOR_BYTES = Configuration.getInstance()
             .getLongForClassWithDefault(BarrageMessageProducer.class, "compactionFloorBytes", 4L << 20);
@@ -263,6 +265,12 @@ public class BarrageMessageProducer extends LivenessArtifact
     private long rawBytesSinceCompaction = 0;
     /** Deltas recorded since the last compaction, declined compaction, or flush. */
     private int deltasSinceCompaction = 0;
+    /**
+     * How many of {@link #pendingDeltas} are not {@link BarrageMessageDelta#isAddOnly() add-only}. Maintained as deltas
+     * are appended, spliced and flushed so that the enqueue path can decline compaction of a queue that only adds rows
+     * without scanning it.
+     */
+    private int pendingNonAddOnlyDeltas = 0;
     /**
      * Size of the compacted delta at the head of the queue, or after a declined compaction the size of the whole queue
      * (so the next attempt waits for it to double), or zero after a flush.
@@ -1029,13 +1037,16 @@ public class BarrageMessageProducer extends LivenessArtifact
         pendingDeltaBytes += delta.chunkBytes;
         rawBytesSinceCompaction += delta.chunkBytes;
         ++deltasSinceCompaction;
+        if (!delta.isAddOnly()) {
+            ++pendingNonAddOnlyDeltas;
+        }
 
         // Gauges, not durations: the useful value over a reporting window is the maximum.
         recordMetric(stats -> stats.pendingDeltaCount, pendingDeltas.size());
         recordMetric(stats -> stats.pendingDeltaBytes, pendingDeltaBytes);
 
         if (shouldCompact()) {
-            if (BarrageMessageDelta.allAddOnly(pendingDeltas)) {
+            if (pendingNonAddOnlyDeltas == 0) {
                 markCompactionDeclined(pendingDeltaBytes, pendingDeltas.size());
             } else {
                 compactionJob.maybeSchedule();
@@ -1072,6 +1083,17 @@ public class BarrageMessageProducer extends LivenessArtifact
         return bytes;
     }
 
+    /** How many of {@code deltas} are not {@link BarrageMessageDelta#isAddOnly() add-only}. */
+    private static int countNonAddOnly(final List<BarrageMessageDelta> deltas) {
+        int count = 0;
+        for (final BarrageMessageDelta delta : deltas) {
+            if (!delta.isAddOnly()) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
     /** Called after the splice, when {@link #pendingDeltas} and {@link #pendingDeltaBytes} describe the new queue. */
     private void markCompacted(final BarrageMessageDelta compacted) {
         compactedHeadBytes = compacted.chunkBytes;
@@ -1103,6 +1125,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         final List<BarrageMessageDelta> discarded = new ArrayList<>(pendingDeltas);
         pendingDeltas.clear();
         pendingDeltaBytes = 0;
+        pendingNonAddOnlyDeltas = 0;
         markFlushed();
         SafeCloseable.closeAll(discarded);
     }
@@ -1987,6 +2010,8 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
 
         pendingDeltaBytes += compacted.chunkBytes - totalChunkBytes(replaced);
+        // Coalescing can leave only adds behind (rows added and then modified within the run), so recount the head.
+        pendingNonAddOnlyDeltas += (compacted.isAddOnly() ? 0 : 1) - countNonAddOnly(replaced);
         markCompacted(compacted);
 
         if (log.isDebugEnabled()) {
