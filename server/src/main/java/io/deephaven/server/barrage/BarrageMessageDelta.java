@@ -13,17 +13,16 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.extensions.barrage.chunk.BarrageCopyKernel;
+import io.deephaven.extensions.barrage.chunk.BarrageCopyKernel.Runs;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
@@ -220,8 +219,7 @@ final class BarrageMessageDelta implements SafeCloseable {
         try (final ColumnMappingCache mappings = new ColumnMappingCache(deltas, run.added, update.added())) {
             for (int ci = addColumnSet.nextSetBit(0); ci >= 0; ci = addColumnSet.nextSetBit(ci + 1)) {
                 final ColumnMapping mapping = mappings.getOrCompute(ci);
-                addChunks[ci] = copyColumn(mapping.addedRuns, mapping.addedRows, chunkSources[ci].getChunkType(),
-                        deltas, ci);
+                addChunks[ci] = copyColumn(mapping.addedRuns, chunkSources[ci].getChunkType(), deltas, ci);
             }
 
             for (int ci = run.modColumnSet.nextSetBit(0); ci >= 0; ci = run.modColumnSet.nextSetBit(ci + 1)) {
@@ -230,8 +228,7 @@ final class BarrageMessageDelta implements SafeCloseable {
                     // modified upstream, but nothing we recorded survived the run
                     continue;
                 }
-                modChunks[ci] = copyColumn(mapping.modifiedRuns, mapping.modifiedRows,
-                        chunkSources[ci].getChunkType(), deltas, ci);
+                modChunks[ci] = copyColumn(mapping.modifiedRuns, chunkSources[ci].getChunkType(), deltas, ci);
                 perColumnRecordedMods[ci] = mapping.recordedMods;
                 modifiedColumns.set(ci);
                 final RowSet extracted = mappings.extractRecordedMods(mapping);
@@ -423,10 +420,54 @@ final class BarrageMessageDelta implements SafeCloseable {
                     final RowSet rowsToFill = unfilled.subSetForPositions(destinationsInPosSpace)) {
                 // originPositions are positions within the delta's chunks on this side; tag them with the delta and
                 // side
-                originPositions.shiftInPlace(deltaAddOrModOffset(deltaIndex, !pass.fromRecordedAdds));
+                originPositions.shiftInPlace(BarrageCopyKernel.originOffset(deltaIndex, !pass.fromRecordedAdds));
                 remaining.remove(recorded);
                 unfilled.remove(rowsToFill);
-                out.append(rowsToFill, originPositions);
+                appendRuns(out, rowsToFill, originPositions);
+            }
+        }
+
+        /**
+         * Pair {@code destinations} with {@code encodedOrigins}, both ascending and of equal size, position by
+         * position, appending to {@code out} one run for each stretch over which both are contiguous.
+         */
+        private static void appendRuns(final Runs out, final RowSet destinations, final RowSet encodedOrigins) {
+            Assert.eq(destinations.size(), "destinations.size()", encodedOrigins.size(), "encodedOrigins.size()");
+            try (final RowSet.RangeIterator dit = destinations.rangeIterator();
+                    final RowSet.RangeIterator oit = encodedOrigins.rangeIterator()) {
+                // Walk the two range sequences in lock step. The k-th destination pairs with the k-th origin, so the
+                // pairing is one merge pass: at any moment we are somewhere inside one destination range and one
+                // origin range, and the next run is as long as whichever of the two has fewer positions left.
+                long destPos = 0;
+                long destEnd = -1; // exhausted until the first range is loaded
+                long originPos = 0;
+                long originEnd = -1;
+                while (true) {
+                    // Advance to the next destination range once the current one is used up; running out ends the
+                    // pass.
+                    if (destPos > destEnd) {
+                        if (!dit.hasNext()) {
+                            break;
+                        }
+                        dit.next();
+                        destPos = dit.currentRangeStart();
+                        destEnd = dit.currentRangeEnd();
+                    }
+                    // Same for the origins. Equal sizes mean an origin range is always there when a destination is.
+                    if (originPos > originEnd) {
+                        Assert.assertion(oit.hasNext(), "oit.hasNext()");
+                        oit.next();
+                        originPos = oit.currentRangeStart();
+                        originEnd = oit.currentRangeEnd();
+                    }
+                    // One run: contiguous on both sides until the nearer range boundary. Whichever side ends first is
+                    // exhausted after this, and the top of the loop reloads it; the other side continues from where it
+                    // stopped, so a range on one side may span several runs.
+                    final long length = Math.min(destEnd - destPos, originEnd - originPos) + 1;
+                    out.add(destPos, originPos, length);
+                    destPos += length;
+                    originPos += length;
+                }
             }
         }
     }
@@ -553,99 +594,19 @@ final class BarrageMessageDelta implements SafeCloseable {
     }
 
     /**
-     * The long that names position zero of one side (adds or mods) of one delta, in the {@link BarrageCopyKernel} bit
-     * layout: delta index, add-or-mod flag and position in one long. Callers add a position within that side's chunks
-     * to it, or shift a whole row set of positions by it, to get the encoded values the copy reads back.
-     */
-    private static long deltaAddOrModOffset(final int deltaIndex, final boolean fromModChunks) {
-        final long base = ((long) deltaIndex) << BarrageCopyKernel.DELTA_INDEX_SHIFT;
-        return fromModChunks ? base | (1L << BarrageCopyKernel.DELTA_MOD_FLAG_BIT) : base;
-    }
-
-    /**
-     * The result of the mapping pass for one column: for each stretch of surviving rows that is contiguous both in the
-     * output and in the delta it comes from, one run of destination position, encoded origin and length. Row sets are
-     * range-compressed and updates arrive in ranges, so a run usually covers many rows and the mapping pass costs
-     * proportionally to ranges rather than rows.
-     */
-    private static final class Runs {
-        long[] dest = new long[16];
-        long[] encoded = new long[16];
-        long[] len = new long[16];
-        int count;
-
-        void add(final long destination, final long origin, final long length) {
-            if (count == dest.length) {
-                dest = Arrays.copyOf(dest, count * 2);
-                encoded = Arrays.copyOf(encoded, count * 2);
-                len = Arrays.copyOf(len, count * 2);
-            }
-            dest[count] = destination;
-            encoded[count] = origin;
-            len[count] = length;
-            ++count;
-        }
-
-        /**
-         * Pair {@code destinations} with {@code encodedOrigins}, both ascending and of equal size, position by
-         * position, appending one run for each stretch over which both are contiguous.
-         */
-        void append(final RowSet destinations, final RowSet encodedOrigins) {
-            Assert.eq(destinations.size(), "destinations.size()", encodedOrigins.size(), "encodedOrigins.size()");
-            try (final RowSet.RangeIterator dit = destinations.rangeIterator();
-                    final RowSet.RangeIterator oit = encodedOrigins.rangeIterator()) {
-                // Walk the two range sequences in lock step. The k-th destination pairs with the k-th origin, so the
-                // pairing is one merge pass: at any moment we are somewhere inside one destination range and one
-                // origin range, and the next run is as long as whichever of the two has fewer positions left.
-                long destPos = 0;
-                long destEnd = -1; // exhausted until the first range is loaded
-                long originPos = 0;
-                long originEnd = -1;
-                while (true) {
-                    // Advance to the next destination range once the current one is used up; running out ends the
-                    // pass.
-                    if (destPos > destEnd) {
-                        if (!dit.hasNext()) {
-                            break;
-                        }
-                        dit.next();
-                        destPos = dit.currentRangeStart();
-                        destEnd = dit.currentRangeEnd();
-                    }
-                    // Same for the origins. Equal sizes mean an origin range is always there when a destination is.
-                    if (originPos > originEnd) {
-                        Assert.assertion(oit.hasNext(), "oit.hasNext()");
-                        oit.next();
-                        originPos = oit.currentRangeStart();
-                        originEnd = oit.currentRangeEnd();
-                    }
-                    // One run: contiguous on both sides until the nearer range boundary. Whichever side ends first is
-                    // exhausted after this, and the top of the loop reloads it; the other side continues from where it
-                    // stopped, so a range on one side may span several runs.
-                    final long length = Math.min(destEnd - destPos, originEnd - originPos) + 1;
-                    add(destPos, originPos, length);
-                    destPos += length;
-                    originPos += length;
-                }
-            }
-        }
-    }
-
-    /**
-     * Build one column's output chunks for {@code totalRows} surviving rows from {@code runs}. Output chunks are cut at
+     * Build one column's output chunks for the rows {@code runs} accounts for. Output chunks are cut at
      * {@link BarrageMessageProducer#DELTA_CHUNK_SIZE}, which is not a preference: the copy kernel and later compactions
      * locate a row by dividing its position by that constant, so every delta must keep that layout.
      *
      * <p>
-     * When runs average at least {@link AbstractColumnSource#USE_RANGES_AVERAGE_RUN_LENGTH} rows, each run is copied
-     * with an array copy, split where it crosses a chunk boundary on either side. Shorter runs would make a copy per
-     * row through the range API, which is what the typed {@link BarrageCopyKernel} was built to avoid, so for them the
-     * runs are expanded into the kernel's per-row mapping and the kernel gathers cell by cell.
+     * How the data moves is the typed {@link BarrageCopyKernel}'s decision; this method only allocates the output and
+     * hands over the runs alongside the chunks they name.
      *
      * @return the output chunks, or null if there are no rows; nothing is left allocated if the copy fails
      */
-    private static WritableChunk<Values>[] copyColumn(final Runs runs, final long totalRows, final ChunkType chunkType,
+    private static WritableChunk<Values>[] copyColumn(final Runs runs, final ChunkType chunkType,
             final List<BarrageMessageDelta> deltas, final int columnIndex) {
+        final long totalRows = runs.totalRows();
         final int numChunks = LongSizedDataStructure.intSize("BarrageMessageDelta",
                 (totalRows + DELTA_CHUNK_SIZE - 1) / DELTA_CHUNK_SIZE);
         if (numChunks == 0) {
@@ -676,80 +637,13 @@ final class BarrageMessageDelta implements SafeCloseable {
                 colModChunks[di] = delta.modChunks[columnIndex];
             }
 
-            if (totalRows / runs.count >= AbstractColumnSource.USE_RANGES_AVERAGE_RUN_LENGTH) {
-                copyRuns(runs, colAddChunks, colModChunks, dest);
-            } else {
-                copyCells(runs, colAddChunks, colModChunks, dest, chunkType);
-            }
+            final BarrageCopyKernel kernel = BarrageCopyKernel.makeBarrageCopyKernel(chunkType);
+            kernel.copy(runs, dest, kernel.makeContext(colAddChunks, colModChunks, DELTA_CHUNK_SIZE));
             return dest;
         } catch (final Throwable err) {
             closeChunks(dest);
             throw err;
         }
-    }
-
-    /**
-     * Copy every run with array copies, splitting a run wherever it crosses an origin or destination chunk boundary.
-     */
-    private static void copyRuns(final Runs runs, final WritableChunk<Values>[][] colAddChunks,
-            final WritableChunk<Values>[][] colModChunks, final WritableChunk<Values>[] dest) {
-        for (int ri = 0; ri < runs.count; ++ri) {
-            final long encoded = runs.encoded[ri];
-            final int deltaIdx =
-                    (int) ((encoded >>> BarrageCopyKernel.DELTA_INDEX_SHIFT) & BarrageCopyKernel.DELTA_INDEX_MASK);
-            final boolean fromModChunks = (encoded & (1L << BarrageCopyKernel.DELTA_MOD_FLAG_BIT)) != 0;
-            final WritableChunk<Values>[] originChunks =
-                    fromModChunks ? colModChunks[deltaIdx] : colAddChunks[deltaIdx];
-
-            long originPos = encoded & BarrageCopyKernel.DELTA_POSITION_MASK;
-            long destPos = runs.dest[ri];
-            long remaining = runs.len[ri];
-            while (remaining > 0) {
-                final int originOff = (int) (originPos % DELTA_CHUNK_SIZE);
-                final int destOff = (int) (destPos % DELTA_CHUNK_SIZE);
-                final int length = (int) Math.min(remaining,
-                        Math.min(DELTA_CHUNK_SIZE - originOff, DELTA_CHUNK_SIZE - destOff));
-                dest[(int) (destPos / DELTA_CHUNK_SIZE)].copyFromChunk(
-                        originChunks[(int) (originPos / DELTA_CHUNK_SIZE)], originOff, destOff, length);
-                originPos += length;
-                destPos += length;
-                remaining -= length;
-            }
-        }
-    }
-
-    /**
-     * Copy cell by cell through the typed {@link BarrageCopyKernel}, whose gather beats an array copy per run when runs
-     * are short. The kernel takes one encoded origin per output row, so the runs are expanded into that form first.
-     */
-    private static void copyCells(final Runs runs, final WritableChunk<Values>[][] colAddChunks,
-            final WritableChunk<Values>[][] colModChunks, final WritableChunk<Values>[] dest,
-            final ChunkType chunkType) {
-        final long[][] mapping = mappingFromRuns(runs, dest);
-        final BarrageCopyKernel kernel = BarrageCopyKernel.makeBarrageCopyKernel(chunkType);
-        final BarrageCopyKernel.BarrageCopyKernelContext context =
-                kernel.makeContext(colAddChunks, colModChunks, DELTA_CHUNK_SIZE);
-        for (int mi = 0; mi < dest.length; ++mi) {
-            kernel.copyFromDeltaChunks(mapping[mi], dest[mi], context);
-        }
-    }
-
-    /** Expand runs into the copy kernel's per-row origins, one array per output chunk, sized like {@code dest}. */
-    private static long[][] mappingFromRuns(final Runs runs, final WritableChunk<Values>[] dest) {
-        final long[][] mapping = new long[dest.length][];
-        for (int mi = 0; mi < dest.length; ++mi) {
-            mapping[mi] = new long[dest[mi].size()];
-        }
-        for (int ri = 0; ri < runs.count; ++ri) {
-            long destPos = runs.dest[ri];
-            long origin = runs.encoded[ri];
-            for (long remaining = runs.len[ri]; remaining > 0; --remaining) {
-                mapping[(int) (destPos / DELTA_CHUNK_SIZE)][(int) (destPos % DELTA_CHUNK_SIZE)] = origin;
-                ++destPos;
-                ++origin;
-            }
-        }
-        return mapping;
     }
 
     /**

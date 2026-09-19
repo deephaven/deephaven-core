@@ -60,31 +60,53 @@ public class LongBarrageCopyKernel {
     }
 
     /**
-     * Copy values from the delta chunks into the destination chunk according to the mapping. Each mapping entry encodes
-     * the source delta chunk and position, and whether it comes from an add or mod chunk. This method decodes the
-     * mapping and performs the copy for each position in the mapping.
+     * The chunks of one side of one delta, selected by a run's encoded origin.
      */
-    private static void copyFromDeltaChunks(
-            final long[] mapping,
-            final WritableLongChunk<Values> dest,
-            final BarrageCopyKernel.BarrageCopyKernelContext context) {
+    private static WritableLongChunk<Values>[] originChunks(
+            final long encoded,
+            final WritableLongChunk<Values>[][] addChunks,
+            final WritableLongChunk<Values>[][] modChunks) {
+        final int deltaIdx =
+                (int) ((encoded >>> BarrageCopyKernel.DELTA_INDEX_SHIFT) & BarrageCopyKernel.DELTA_INDEX_MASK);
+        return (encoded & (1L << BarrageCopyKernel.DELTA_MOD_FLAG_BIT)) != 0
+                ? modChunks[deltaIdx]
+                : addChunks[deltaIdx];
+    }
 
+    /**
+     * Copy every run, splitting a run wherever it crosses an origin or destination chunk boundary and moving each
+     * resulting stretch with one typed array copy. No length test is needed here, because
+     * {@code copyFromTypedChunk} is itself size aware: it uses {@code System.arraycopy} for a stretch of
+     * {@code Chunk.SYSTEM_ARRAYCOPY_THRESHOLD} rows or more and an element loop below that, so a short stretch never
+     * pays for a call it cannot amortize.
+     */
+    private static void copy(
+            final BarrageCopyKernel.Runs runs,
+            final WritableLongChunk<Values>[] dest,
+            final BarrageCopyKernel.BarrageCopyKernelContext context) {
         final LongBarrageCopyKernelContext longContext = (LongBarrageCopyKernelContext) context;
         final int deltaChunkSize = longContext.deltaChunkSize();
         final WritableLongChunk<Values>[][] addChunks = longContext.addChunks;
         final WritableLongChunk<Values>[][] modChunks = longContext.modChunks;
 
-        for (int pos = 0; pos < mapping.length; ++pos) {
-            final long encoded = mapping[pos];
-            final boolean fromMods = (encoded & (1L << BarrageCopyKernel.DELTA_MOD_FLAG_BIT)) != 0;
-            final int deltaIdx =
-                    (int) ((encoded >>> BarrageCopyKernel.DELTA_INDEX_SHIFT) & BarrageCopyKernel.DELTA_INDEX_MASK);
-            final long srcPos = encoded & BarrageCopyKernel.DELTA_POSITION_MASK;
+        for (int ri = 0; ri < runs.count; ++ri) {
+            final long encoded = runs.encoded[ri];
+            final WritableLongChunk<Values>[] originChunks = originChunks(encoded, addChunks, modChunks);
 
-            final WritableLongChunk<Values>[] srcChunks = fromMods ? modChunks[deltaIdx] : addChunks[deltaIdx];
-            final int srcChunkIdx = (int) (srcPos / deltaChunkSize);
-            final int srcOff = (int) (srcPos % deltaChunkSize);
-            dest.set(pos, srcChunks[srcChunkIdx].get(srcOff));
+            long originPos = encoded & BarrageCopyKernel.DELTA_POSITION_MASK;
+            long destPos = runs.dest[ri];
+            long remaining = runs.len[ri];
+            while (remaining > 0) {
+                final int originOff = (int) (originPos % deltaChunkSize);
+                final int destOff = (int) (destPos % deltaChunkSize);
+                final int length = (int) Math.min(remaining,
+                        Math.min(deltaChunkSize - originOff, deltaChunkSize - destOff));
+                dest[(int) (destPos / deltaChunkSize)].copyFromTypedChunk(
+                        originChunks[(int) (originPos / deltaChunkSize)], originOff, destOff, length);
+                originPos += length;
+                destPos += length;
+                remaining -= length;
+            }
         }
     }
 
@@ -99,8 +121,13 @@ public class LongBarrageCopyKernel {
         }
 
         @Override
-        public void copyFromDeltaChunks(long[] mapping, WritableChunk<Values> dest, BarrageCopyKernelContext context) {
-            LongBarrageCopyKernel.copyFromDeltaChunks(mapping, dest.asWritableLongChunk(), context);
+        public void copy(Runs runs, WritableChunk<Values>[] dest, BarrageCopyKernelContext context) {
+            // noinspection unchecked
+            final WritableLongChunk<Values>[] typedDest = new WritableLongChunk[dest.length];
+            for (int ii = 0; ii < dest.length; ++ii) {
+                typedDest[ii] = dest[ii].asWritableLongChunk();
+            }
+            LongBarrageCopyKernel.copy(runs, typedDest, context);
         }
     }
 
