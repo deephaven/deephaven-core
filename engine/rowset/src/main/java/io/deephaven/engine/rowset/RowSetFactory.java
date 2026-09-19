@@ -277,7 +277,7 @@ public abstract class RowSetFactory {
                 groups[groupCount++] = accumulator;
                 long duplicates = 0;
                 if (read < count) {
-                    duplicates = absorb(accumulator, rowSets[read], appends(accumulator, rowSets[read]));
+                    duplicates = insertBorrowed(accumulator, rowSets[read], appends(accumulator, rowSets[read]));
                     rowSets[read++] = null;
                 }
                 while (read < count) {
@@ -286,7 +286,7 @@ public abstract class RowSetFactory {
                     if (!appends && duplicates == 0) {
                         break;
                     }
-                    duplicates = absorb(accumulator, next, appends);
+                    duplicates = insertBorrowed(accumulator, next, appends);
                     rowSets[read++] = null;
                 }
             }
@@ -303,11 +303,11 @@ public abstract class RowSetFactory {
                     ++read2;
                     long duplicates = 0;
                     if (read2 < groupCount) {
-                        // Every row set in this pass is an accumulator the first pass created, so absorbing one hands
-                        // this method the last reference to it. Insertion borrows its argument; closing is ours to do.
+                        // Every row set in this pass is an accumulator the first pass created, so we hold the last
+                        // reference to it. Absorbing empties it; closing it is still ours to do.
                         try (final WritableRowSet next = groups[read2]) {
                             groups[read2++] = null;
-                            duplicates = absorb(accumulator, next, appends(accumulator, next));
+                            duplicates = absorbOwned(accumulator, next);
                         }
                     }
                     while (read2 < groupCount) {
@@ -318,7 +318,7 @@ public abstract class RowSetFactory {
                         }
                         try (next) {
                             groups[read2++] = null;
-                            duplicates = absorb(accumulator, next, appends);
+                            duplicates = absorbOwned(accumulator, next);
                         }
                     }
                 }
@@ -415,24 +415,13 @@ public abstract class RowSetFactory {
             small.close();
             throw e;
         }
-        // TODO: DH-23732: the bitmap inputs merge in passes and the result is then inserted here, walking the larger
-        // side's spans. Bucketing their spans by block and OR-ing each block's containers once, as the radix build does
-        // for ranges, would fold them in one pass instead.
-        // Insert the smaller into the larger: a bitmap insert walks the accumulator's spans. The one inserted from is
-        // closed here; the one inserted into is the result.
-        final WritableRowSet into;
-        final WritableRowSet from;
-        if (small.size() >= merged.size()) {
-            into = small;
-            from = merged;
-        } else {
-            into = merged;
-            from = small;
+        // TODO: the bitmap inputs merge in passes and the result is then folded in here, walking the larger side's
+        // spans. Bucketing their spans by block and OR-ing each block's containers once, as the radix build does for
+        // ranges, would fold them in one pass instead.
+        try (merged) {
+            small.absorb(merged);
         }
-        try (from) {
-            into.insert(from);
-        }
-        return into;
+        return small;
     }
 
     /**
@@ -825,22 +814,44 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Insert {@code next} into {@code accumulator}.
+     * Insert {@code next}, which belongs to the caller of {@code union} and has to survive this, into
+     * {@code accumulator}.
      *
-     * @return The number of rows of {@code next} that {@code accumulator} already held. An append cannot duplicate
-     *         anything, so it does not need to be measured.
+     * @return How many of {@code next}'s row keys the accumulator already held. An append cannot duplicate anything, so
+     *         it does not need to be measured.
      */
-    private static long absorb(
+    private static long insertBorrowed(
             final WritableRowSet accumulator,
             final RowSet next,
             final boolean appends) {
         if (appends) {
+            // Nothing below the accumulator's last key, so nothing it can already hold.
             accumulator.insert(next);
             return 0;
         }
         final long accumulatorSize = accumulator.size();
         final long nextSize = next.size();
         accumulator.insert(next);
+        return nextSize - (accumulator.size() - accumulatorSize);
+    }
+
+    /**
+     * Fold {@code next}, an accumulator this method built and therefore owns, into {@code accumulator}. Absorbing it
+     * rather than inserting it lets the merge reuse whichever side's storage is cheaper to edit; {@code next} is left
+     * empty for its owner to close.
+     * <p>
+     * Unlike {@link #insertBorrowed}, this has no append case to skip the count for: a group ends only where the next
+     * row set did not append to it, so each group starts at or below the last key of the one before it, and merging
+     * adjacent pairs keeps that true through every pass.
+     *
+     * @return How many of {@code next}'s row keys the accumulator already held
+     */
+    private static long absorbOwned(
+            final WritableRowSet accumulator,
+            final WritableRowSet next) {
+        final long accumulatorSize = accumulator.size();
+        final long nextSize = next.size();
+        accumulator.absorb(next);
         return nextSize - (accumulator.size() - accumulatorSize);
     }
 
