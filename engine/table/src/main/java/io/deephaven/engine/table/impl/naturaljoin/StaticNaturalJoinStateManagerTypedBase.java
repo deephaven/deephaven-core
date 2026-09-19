@@ -30,7 +30,8 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
 
     public static final long NO_RIGHT_STATE_VALUE = RowSet.NULL_ROW_KEY;
     public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
-    public static final long DUPLICATE_RIGHT_STATE = -2;
+    // errorOnDuplicates recognizes duplicate slots by comparing the stored state against DUPLICATE_RIGHT_VALUE
+    public static final long DUPLICATE_RIGHT_STATE = DUPLICATE_RIGHT_VALUE;
 
     // the number of slots in our table
     protected int tableSize;

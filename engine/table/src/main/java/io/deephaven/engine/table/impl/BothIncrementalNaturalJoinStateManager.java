@@ -73,6 +73,24 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
             RowSetBuilderSequential changedPreShift, RowSetBuilderSequential changedPostShift,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
+    /**
+     * The right-side counterpart of {@link #removeLeftModifications}: in a single pass over the modified right rows,
+     * determine which rows' key value actually changed, remove those rows from their previous-key hash slots, and
+     * report the changed keys. Rows whose key value is unchanged keep their slot.
+     *
+     * @param rightSources the right key sources
+     * @param modifiedPreShift the modified rows, in pre-shift key space, aligned positionally with
+     *        {@code modifiedPostShift}
+     * @param modifiedPostShift the modified rows, in post-shift key space
+     * @param changedPreShift output, ascending, receives the pre-shift keys whose key value changed (to be excluded
+     *        from the caller's shift processing)
+     * @param changedPostShift output, ascending, receives the post-shift keys whose key value changed (to be re-added
+     *        by the caller)
+     */
+    void removeRightModifications(ColumnSource<?>[] rightSources, RowSet modifiedPreShift, RowSet modifiedPostShift,
+            RowSetBuilderSequential changedPreShift, RowSetBuilderSequential changedPostShift,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+
     interface InitialBuildContext extends Context {
     }
 }

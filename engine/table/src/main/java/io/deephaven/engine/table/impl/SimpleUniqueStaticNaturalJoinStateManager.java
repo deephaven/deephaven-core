@@ -17,6 +17,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
 
 /**
@@ -35,7 +37,11 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     private final int tableSize;
     private final ToIntFunctor<Values> transform;
 
-    private final LongArraySource rightRowSetSource = new LongArraySource();
+    /**
+     * The right row key for each possible key value, indexed by the transformed key; {@link RowSequence#NULL_ROW_KEY}
+     * for no right row, {@link #DUPLICATE_RIGHT_VALUE} for several. The table is fixed size, so a plain array serves.
+     */
+    private final long[] rightRowKeys;
 
     SimpleUniqueStaticNaturalJoinStateManager(
             ColumnSource<?>[] tableKeySources,
@@ -46,10 +52,8 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
         super(tableKeySources, joinType, addOnly);
         this.tableSize = Require.gtZero(tableSize, "tableSize");
         this.transform = transform;
-        rightRowSetSource.ensureCapacity(tableSize);
-        for (int ii = 0; ii < tableSize; ++ii) {
-            rightRowSetSource.set(ii, RowSequence.NULL_ROW_KEY);
-        }
+        rightRowKeys = new long[tableSize];
+        Arrays.fill(rightRowKeys, RowSequence.NULL_ROW_KEY);
     }
 
     void setRightSide(RowSet rightRowSet, ColumnSource<?> valueSource) {
@@ -69,14 +73,14 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                     if (tableLocation < 0 || tableLocation >= tableSize) {
                         return true;
                     }
-                    final long existingRight = rightRowSetSource.getLong(tableLocation);
+                    final long existingRight = rightRowKeys[tableLocation];
                     if (existingRight == RowSequence.NULL_ROW_KEY || joinType == NaturalJoinType.LAST_MATCH) {
-                        rightRowSetSource.set(tableLocation, keyIndex);
+                        rightRowKeys[tableLocation] = keyIndex;
                     } else {
                         if (joinType == NaturalJoinType.FIRST_MATCH) {
                             // no-op, already have the first match
                         } else {
-                            rightRowSetSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
+                            rightRowKeys[tableLocation] = DUPLICATE_RIGHT_VALUE;
                         }
                     }
                     return true;
@@ -111,10 +115,10 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                         leftRedirections.set(offset + ii, NO_RIGHT_ENTRY_VALUE);
                         continue;
                     }
-                    final long existingRight = rightRowSetSource.getLong(tableLocation);
+                    final long existingRight = rightRowKeys[tableLocation];
 
                     if (existingRight == DUPLICATE_RIGHT_VALUE) {
-                        throw new IllegalStateException(":Natural Join found duplicate right key for "
+                        throw new IllegalStateException("Natural Join found duplicate right key for "
                                 + keySourcesForErrorMessages[0].get(leftRowSet.get(offset + ii)));
                     }
                     leftRedirections.set(offset + ii, existingRight);
