@@ -42,8 +42,8 @@ public class ReplayTable extends ReplayTableBase implements Runnable {
 
         advanceIterators();
         if (!done) {
-            try (final RowSet initial = advanceToCurrentTime()) {
-                getRowSet().writableCast().insert(initial);
+            try (final WritableRowSet initial = advanceToCurrentTime()) {
+                getRowSet().writableCast().absorb(initial);
             }
         }
     }
@@ -72,7 +72,7 @@ public class ReplayTable extends ReplayTableBase implements Runnable {
     /**
      * Advance iterators to the current time.
      */
-    private RowSet advanceToCurrentTime() {
+    private WritableRowSet advanceToCurrentTime() {
         final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
         final long currentReplayTimeNanos = replayer.clock().currentTimeNanos();
         while (!done && nextTimeNanos <= currentReplayTimeNanos) {

@@ -166,7 +166,7 @@ abstract class AbstractFilterExecution {
                             final WritableRowSet subset = inputCopy.subSetByPositionRange(startOffSet, endOffset);
                             final WritableRowSet result = filter(filter, subset)) {
                         synchronized (filterResult) {
-                            filterResult.insert(result);
+                            filterResult.absorb(result);
                         }
                     }
                     resume.run();

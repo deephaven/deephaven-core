@@ -39,24 +39,24 @@ public class ShiftObliviousUpdateCoalescer {
     public void update(final RowSet addedOnUpdate, final RowSet removedOnUpdate,
             final RowSet modifiedOnUpdate) {
         // Note: extract removes matching ranges from the source RowSet
-        try (final RowSet addedBack = this.removed.extract(addedOnUpdate);
-                final RowSet actuallyAdded = addedOnUpdate.minus(addedBack)) {
-            this.added.insert(actuallyAdded);
-            this.modified.insert(addedBack);
+        try (final WritableRowSet addedBack = this.removed.extract(addedOnUpdate);
+                final WritableRowSet actuallyAdded = addedOnUpdate.minus(addedBack)) {
+            this.added.absorb(actuallyAdded);
+            this.modified.absorb(addedBack);
         }
 
         // Things we've added, but are now removing. Do not aggregate these as removed since client never saw them.
         try (final RowSet additionsRemoved = this.added.extract(removedOnUpdate);
-                final RowSet actuallyRemoved = removedOnUpdate.minus(additionsRemoved)) {
-            this.removed.insert(actuallyRemoved);
+                final WritableRowSet actuallyRemoved = removedOnUpdate.minus(additionsRemoved)) {
+            this.removed.absorb(actuallyRemoved);
         }
 
         // If we've removed it, it should no longer be modified.
         this.modified.remove(removedOnUpdate);
 
         // And anything modified, should be added to the modified set; unless we've previously added it.
-        try (final RowSet actuallyModified = modifiedOnUpdate.minus(this.added)) {
-            this.modified.insert(actuallyModified);
+        try (final WritableRowSet actuallyModified = modifiedOnUpdate.minus(this.added)) {
+            this.modified.absorb(actuallyModified);
         }
 
         if (VALIDATE_COALESCED_UPDATES
