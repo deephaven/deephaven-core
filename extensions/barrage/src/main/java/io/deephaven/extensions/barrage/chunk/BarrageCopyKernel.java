@@ -31,6 +31,14 @@ public interface BarrageCopyKernel {
     int DELTA_MOD_FLAG_BIT = 62;
 
     /**
+     * Average run length at or above which a column is copied with an array copy per stretch rather than an element at
+     * a time. Fitted at 2^20 rows for int, double and String: the element path wins at one row per run and narrowly at
+     * two, the array copy wins from three up and is twice as fast by five. The kernel's average is an integer division,
+     * so this is compared against the floor of the true average.
+     */
+    long MIN_AVERAGE_RUN_LENGTH_FOR_ARRAY_COPY = 3;
+
+    /**
      * Position zero of one side (adds or mods) of one delta, in the bit layout above. Add a position within that side's
      * chunks, or shift a whole row set of positions by it, for the encoded origins {@link Runs} carries.
      */
@@ -114,7 +122,7 @@ public interface BarrageCopyKernel {
      * @param addChunks the add delta chunks (per delta)
      * @param modChunks the mod delta chunks (per delta)
      * @param deltaChunkSize the number of rows in every delta chunk except the last of a column, which is what makes an
-     *        encoded position locate a chunk by division
+     *        encoded position locate a chunk by a shift; must be a power of two
      * @return a context that can be passed to {@link #copy(Runs, WritableChunk[], BarrageCopyKernelContext)} to drive
      *         the copy from the add / mod delta chunks into the output chunks.
      */
@@ -127,10 +135,8 @@ public interface BarrageCopyKernel {
      * Fill one column's output chunks from the per-delta chunks the context holds, following {@code runs}.
      *
      * <p>
-     * A run is split wherever it crosses a chunk boundary on either side, and each resulting stretch is moved with one
-     * typed array copy. That was measured against a cell-by-cell gather and is faster at every average run length, down
-     * to runs of a single row, for primitives and references alike, so there is no second strategy and nothing to
-     * choose between.
+     * Chooses once per column, from the average run length against {@link #MIN_AVERAGE_RUN_LENGTH_FOR_ARRAY_COPY},
+     * between an array copy per run and an element at a time.
      *
      * @param runs where every output row comes from, in output order
      * @param dest the output chunks to fill, all of {@link BarrageCopyKernelContext#deltaChunkSize()} rows except the

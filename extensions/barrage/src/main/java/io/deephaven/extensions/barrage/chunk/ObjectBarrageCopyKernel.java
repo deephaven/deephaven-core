@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -10,17 +11,27 @@ import io.deephaven.chunk.attributes.Values;
 public class ObjectBarrageCopyKernel {
     /**
      * Context for the ObjectBarrageCopyKernel that holds the add / mod chunks as WritableObjectChunk and the delta
-     * chunk size.
+     * chunk size as a shift and a mask.
      */
     private static class ObjectBarrageCopyKernelContext implements BarrageCopyKernel.BarrageCopyKernelContext {
         private final WritableObjectChunk<Object, Values>[][] addChunks;
         private final WritableObjectChunk<Object, Values>[][] modChunks;
         private final int deltaChunkSize;
+        /**
+         * {@code position >>> deltaChunkShift} is the chunk index and {@code position & deltaChunkMask} the offset.
+         * Derived here rather than held as constants because the kernel does not own the chunk size: the producer
+         * configures it and passes it in, so it is only known once per context, and it must be a power of two.
+         */
+        private final int deltaChunkShift;
+        private final int deltaChunkMask;
 
         private ObjectBarrageCopyKernelContext(
                 final WritableChunk<Values>[][] addChunks,
                 final WritableChunk<Values>[][] modChunks,
                 final int deltaChunkSize) {
+            Assert.assertion(deltaChunkSize > 0 && Integer.bitCount(deltaChunkSize) == 1,
+                    "deltaChunkSize is a power of two", deltaChunkSize, "deltaChunkSize");
+
             // Clone and cast the add / mod chunk arrays to WritableObjectChunk.
             // noinspection unchecked
             this.addChunks = new WritableObjectChunk[addChunks.length][];
@@ -47,6 +58,8 @@ public class ObjectBarrageCopyKernel {
                 }
             }
             this.deltaChunkSize = deltaChunkSize;
+            this.deltaChunkShift = Integer.numberOfTrailingZeros(deltaChunkSize);
+            this.deltaChunkMask = deltaChunkSize - 1;
         }
 
         @Override
@@ -71,19 +84,16 @@ public class ObjectBarrageCopyKernel {
 
     /**
      * Copy every run, splitting a run wherever it crosses an origin or destination chunk boundary and moving each
-     * resulting stretch with one typed array copy. No length test is needed here, because {@code copyFromTypedChunk} is
-     * itself size aware: it uses {@code System.arraycopy} for a stretch of {@code Chunk.SYSTEM_ARRAYCOPY_THRESHOLD}
-     * rows or more and an element loop below that, so a short stretch never pays for a call it cannot amortize.
+     * resulting stretch with one typed array copy.
      */
-    private static void copy(
+    private static void copyByRuns(
             final BarrageCopyKernel.Runs runs,
             final WritableObjectChunk<Object, Values>[] dest,
-            final BarrageCopyKernel.BarrageCopyKernelContext context) {
-        final ObjectBarrageCopyKernelContext objectContext = (ObjectBarrageCopyKernelContext) context;
-        final int deltaChunkSize = objectContext.deltaChunkSize();
-        final WritableObjectChunk<Object, Values>[][] addChunks = objectContext.addChunks;
-        final WritableObjectChunk<Object, Values>[][] modChunks = objectContext.modChunks;
-
+            final ObjectBarrageCopyKernelContext context) {
+        // hoisted out of the loops
+        final int deltaChunkSize = context.deltaChunkSize;
+        final WritableObjectChunk<Object, Values>[][] addChunks = context.addChunks;
+        final WritableObjectChunk<Object, Values>[][] modChunks = context.modChunks;
         for (int ri = 0; ri < runs.count; ++ri) {
             final long encoded = runs.encoded[ri];
             final WritableObjectChunk<Object, Values>[] originChunks = originChunks(encoded, addChunks, modChunks);
@@ -102,6 +112,58 @@ public class ObjectBarrageCopyKernel {
                 destPos += length;
                 remaining -= length;
             }
+        }
+    }
+
+    /**
+     * Copy every run by assigning one element at a time, addressed straight from the runs: with a power-of-two chunk
+     * size, locating an element's chunk and offset is a shift and a mask, so a run that crosses a chunk boundary needs
+     * no special handling. The primitive kernels instead expand the runs into a per-row mapping first, which is faster
+     * for them; for references the mapping's allocation, landing in a heap full of the very objects being copied,
+     * measured twice as slow as this, so this kernel does not build one.
+     */
+    private static void copyByElements(
+            final BarrageCopyKernel.Runs runs,
+            final WritableObjectChunk<Object, Values>[] dest,
+            final ObjectBarrageCopyKernelContext context) {
+        // hoisted out of the loops
+        final int shift = context.deltaChunkShift;
+        final int mask = context.deltaChunkMask;
+        final WritableObjectChunk<Object, Values>[][] addChunks = context.addChunks;
+        final WritableObjectChunk<Object, Values>[][] modChunks = context.modChunks;
+        for (int ri = 0; ri < runs.count; ++ri) {
+            final long encoded = runs.encoded[ri];
+            final WritableObjectChunk<Object, Values>[] originChunks = originChunks(encoded, addChunks, modChunks);
+            final long originStart = encoded & BarrageCopyKernel.DELTA_POSITION_MASK;
+            final long destStart = runs.dest[ri];
+            final long length = runs.len[ri];
+            for (long ii = 0; ii < length; ++ii) {
+                final long originPos = originStart + ii;
+                final long destPos = destStart + ii;
+                dest[(int) (destPos >>> shift)].set((int) (destPos & mask),
+                        originChunks[(int) (originPos >>> shift)].get((int) (originPos & mask)));
+            }
+        }
+    }
+
+    /**
+     * Fill the output chunks from the delta chunks according to the runs, choosing once for the whole column between an
+     * array copy per stretch and an assignment per element. The runs of one column come from the same updates, so they
+     * are alike; deciding per column keeps the decision out of the copy loop.
+     */
+    private static void copy(
+            final BarrageCopyKernel.Runs runs,
+            final WritableObjectChunk<Object, Values>[] dest,
+            final BarrageCopyKernel.BarrageCopyKernelContext context) {
+        if (runs.count == 0) {
+            return;
+        }
+
+        final ObjectBarrageCopyKernelContext objectContext = (ObjectBarrageCopyKernelContext) context;
+        if (runs.totalRows / runs.count >= BarrageCopyKernel.MIN_AVERAGE_RUN_LENGTH_FOR_ARRAY_COPY) {
+            copyByRuns(runs, dest, objectContext);
+        } else {
+            copyByElements(runs, dest, objectContext);
         }
     }
 
