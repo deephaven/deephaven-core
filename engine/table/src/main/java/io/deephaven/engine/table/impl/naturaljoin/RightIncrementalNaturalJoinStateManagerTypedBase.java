@@ -246,7 +246,10 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public String keyString(int slot) {
-        throw new UnsupportedOperationException();
+        // every slot holds at least one left row, since only left keys are entered into the table
+        final long firstLeftRowKey = leftRowSet.getUnsafe(slot).firstRowKey();
+        Assert.neq(firstLeftRowKey, "firstLeftRowKey", RowSet.NULL_ROW_KEY);
+        return extractKeyStringFromSourceTable(firstLeftRowKey);
     }
 
     @Override
