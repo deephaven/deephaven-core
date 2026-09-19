@@ -2648,13 +2648,20 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         DataIndexer.getOrCreateDataIndex(left, "Key");
         final Table right = testTable(col("Key", "a", "a", "b", "c", "d", "e"), intCol("R", 10, 11, 20, 30, 40, 50));
 
-        try {
-            final Table result = left.naturalJoin(right, "Key");
-            showWithRowSet(result);
-            fail("Expected exception");
-        } catch (IllegalStateException e) {
-            assertEquals(dupMsg + "a", e.getMessage());
-        }
+        final IllegalStateException e =
+                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key"));
+        assertEquals(dupMsg + "a", e.getMessage());
+    }
+
+    public void testNaturalJoinDuplicateRightsUniqueTable() {
+        // a single boolean key selects the SimpleUniqueStaticNaturalJoinStateManager, whose duplicate right key error
+        // must read like the hashed state managers' error
+        final Table left = testTable(col("Key", true, false), intCol("L", 1, 2));
+        final Table right = testTable(col("Key", true, true, false), intCol("R", 10, 11, 20));
+
+        final IllegalStateException e =
+                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key"));
+        assertEquals(dupMsg + "true", e.getMessage());
     }
 
     public void testNaturalJoinDuplicateRightsBothRefreshingLeftAdd() {
@@ -2695,13 +2702,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         DataIndexer.getOrCreateDataIndex(left, "Key");
         final QueryTable right = testRefreshingTable(col("Key", "a", "a"), intCol("R", 10, 11));
 
-        try {
-            final Table result = left.naturalJoin(right, "Key");
-            showWithRowSet(result);
-            fail("Expected exception");
-        } catch (IllegalStateException e) {
-            assertEquals(dupMsg + "a", e.getMessage());
-        }
+        final IllegalStateException e =
+                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key"));
+        assertEquals(dupMsg + "a", e.getMessage());
     }
 
     private static final NaturalJoinType[] FIRST_AND_LAST_MATCH =
