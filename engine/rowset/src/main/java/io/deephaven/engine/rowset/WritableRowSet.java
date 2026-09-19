@@ -59,7 +59,7 @@ public interface WritableRowSet extends RowSet {
      * @throws IllegalArgumentException If {@code other} is this RowSet, which has no answer: the union with ourselves
      *         is the keys we already hold, and emptying the argument would take them away
      */
-    void absorb(WritableRowSet other);
+    void subsume(WritableRowSet other);
 
     /**
      * Remove a single key from this RowSet if it's present.

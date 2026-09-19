@@ -472,10 +472,10 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
             final WritableRowSet removedRowSet = removed.build();
 
             try (final WritableRowSet built = addedByModifies.build()) {
-                addedRowSet.absorb(built);
+                addedRowSet.subsume(built);
             }
             try (final WritableRowSet built = removedByModifies.build()) {
-                removedRowSet.absorb(built);
+                removedRowSet.subsume(built);
             }
 
             final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
@@ -490,7 +490,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 resultRowset.remove(built);
             }
             try (final WritableRowSet built = addedByShiftBuilder.build()) {
-                resultRowset.absorb(built);
+                resultRowset.subsume(built);
             }
             resultRowset.insert(addedRowSet);
 
@@ -605,7 +605,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
 
             final WritableRowSet removedRowSet = removedBuilder.build();
             try (final WritableRowSet removedByModifies = removedByModifiesBuilder.build()) {
-                removedRowSet.absorb(removedByModifies);
+                removedRowSet.subsume(removedByModifies);
             }
             // we want to remove everything that is no longer relevant for our shift
             final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
@@ -652,7 +652,7 @@ public class UngroupOperation implements QueryTable.MemoizableOperation<QueryTab
                 resultRowset.resetTo(built);
             }
             try (final WritableRowSet addedByModifies = addedByModifiesBuilder.build()) {
-                addedInNewBaseRowSet.absorb(addedByModifies);
+                addedInNewBaseRowSet.subsume(addedByModifies);
             }
 
             resultRowset.insert(addedInNewBaseRowSet);

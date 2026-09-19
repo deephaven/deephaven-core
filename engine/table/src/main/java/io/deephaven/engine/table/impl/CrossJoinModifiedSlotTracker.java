@@ -584,7 +584,7 @@ class CrossJoinModifiedSlotTracker {
             leftAdded = downstreamAdds.build();
         } else {
             try (final WritableRowSet toInsert = downstreamAdds.build()) {
-                leftAdded.absorb(toInsert);
+                leftAdded.subsume(toInsert);
             }
         }
     }
@@ -650,7 +650,7 @@ class CrossJoinModifiedSlotTracker {
             }
         }
         try (final WritableRowSet toRemove = rmBuilder.build()) {
-            leftRemoved.absorb(toRemove);
+            leftRemoved.subsume(toRemove);
         }
         leftModified = modBuilder.build();
         hasLeftModifies = leftModified.isNonempty();

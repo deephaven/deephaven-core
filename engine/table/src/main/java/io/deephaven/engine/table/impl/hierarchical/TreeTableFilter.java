@@ -490,7 +490,7 @@ public class TreeTableFilter {
                     final WritableRowSet added = pair.second.build()) {
                 final WritableRowSet childRows = parentIdToChildRows.get(parentId);
                 childRows.remove(removed);
-                childRows.absorb(added);
+                childRows.subsume(added);
             }
         });
     }
@@ -551,10 +551,10 @@ public class TreeTableFilter {
                     final WritableRowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
 
 
-                matchedSourceRows.absorb(newFiltered);
-                ancestorSourceRows.absorb(newParents);
-                ancestorSourceRows.absorb(resurrectedParents);
-                ancestorSourceRows.absorb(newResurrectedParents);
+                matchedSourceRows.subsume(newFiltered);
+                ancestorSourceRows.subsume(newParents);
+                ancestorSourceRows.subsume(resurrectedParents);
+                ancestorSourceRows.subsume(newResurrectedParents);
             }
 
             // Compute expected results and the sets we will propagate to child listeners.
@@ -568,7 +568,7 @@ public class TreeTableFilter {
 
                 // convert post filter removals into pre-shift space -- note these rows must have previously existed
                 upstream.shifted().unapply(resultRemovals);
-                downstream.removed().writableCast().absorb(resultRemovals);
+                downstream.removed().writableCast().subsume(resultRemovals);
             }
 
             downstream.shifted = upstream.shifted();

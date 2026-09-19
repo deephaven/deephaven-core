@@ -11,7 +11,7 @@ import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesShort;
 
 /**
  * Which of two {@link OrderedLongSet}s should receive an insert of the other, for
- * {@link io.deephaven.engine.rowset.WritableRowSet#absorb absorb}, which unlike an insert may edit either side.
+ * {@link io.deephaven.engine.rowset.WritableRowSet#subsume subsume}, which unlike an insert may edit either side.
  * <p>
  * Both directions produce the same keys, so this only chooses which set is edited in place and which is read. It is a
  * cost estimate and nothing more: getting it wrong loses some of the saving, never the answer. Everything it reads is
@@ -32,7 +32,7 @@ final class InsertCostEstimation {
      * span a container merge. An entry carried into a set built for the answer, which is what happens when the receiver
      * cannot be written to as it stands, falls between the two and is paid for both sides rather than one.
      * <p>
-     * These ratios are measured rather than assumed: {@code RowSetAbsorbBench} times both directions of each shape it
+     * These ratios are measured rather than assumed: {@code RowSetSubsumeBench} times both directions of each shape it
      * covers, and no other set of weights agrees with all of them.
      */
     private static final int MOVED_ENTRY_COST = 1;
@@ -135,7 +135,7 @@ final class InsertCostEstimation {
     }
 
     /**
-     * Whether an absorb of {@code theirs} into {@code mine} should be run the other way around, with {@code theirs}
+     * Whether a subsume of {@code theirs} into {@code mine} should be run the other way around, with {@code theirs}
      * receiving {@code mine}.
      * <p>
      * An append is not on its own a reason to choose a direction. Appending is cheap per entry, but it is paid for

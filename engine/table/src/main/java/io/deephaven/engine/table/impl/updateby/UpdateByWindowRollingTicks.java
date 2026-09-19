@@ -199,7 +199,7 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
             try (final WritableRowSet modifiedInverted = ctx.sourceRowSet.invert(upstream.modified());
                     final WritableRowSet modifiedAffected =
                             computeAffectedRowsTicks(ctx.sourceRowSet, modifiedInverted, prevUnits, fwdUnits)) {
-                tmpAffected.absorb(modifiedAffected);
+                tmpAffected.subsume(modifiedAffected);
             }
         }
 
@@ -211,7 +211,7 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
             try (final RowSet addedInverted = ctx.sourceRowSet.invert(upstream.added());
                     final WritableRowSet addedAffected =
                             computeAffectedRowsTicks(ctx.sourceRowSet, addedInverted, prev, fwd)) {
-                tmpAffected.absorb(addedAffected);
+                tmpAffected.subsume(addedAffected);
             }
         }
 
@@ -228,7 +228,7 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
                 upstream.shifted().apply(removedAffected);
                 // retain only the rows that still exist in the sourceRowSet
                 removedAffected.retain(ctx.sourceRowSet);
-                tmpAffected.absorb(removedAffected);
+                tmpAffected.subsume(removedAffected);
             }
         }
 

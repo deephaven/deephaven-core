@@ -407,7 +407,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             downstream.added().writableCast().insert(added);
             // must remove before adding as removed.intersect(added) may be non-empty
             resultRowSet.remove(postShiftRemoved);
-            resultRowSet.absorb(added);
+            resultRowSet.subsume(added);
         }
         downstream.modified = modBuilder.build();
     }

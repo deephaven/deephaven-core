@@ -197,7 +197,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                 // recompute all windows that have the modified rows in their window
                 try (final WritableRowSet modifiedAffected =
                         computeAffectedRowsTime(ctx, tsContext, upstream.modified(), prevUnits, fwdUnits, false)) {
-                    tmpAffected.absorb(modifiedAffected);
+                    tmpAffected.subsume(modifiedAffected);
                 }
 
                 if (ctx.timestampsModified) {
@@ -209,7 +209,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                         // we used the SSA (post-shift) to get these keys, no need to shift
                         // retain only the rows that still exist in the sourceRowSet
                         modifiedAffectedPrev.retain(ctx.timestampValidRowSet);
-                        tmpAffected.absorb(modifiedAffectedPrev);
+                        tmpAffected.subsume(modifiedAffectedPrev);
                     }
 
                     // re-compute all modified rows, they have new windows after the timestamp modifications
@@ -223,7 +223,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                 final long fwd = Math.max(0, fwdUnits);
                 try (final WritableRowSet addedAffected =
                         computeAffectedRowsTime(ctx, tsContext, upstream.added(), prev, fwd, false)) {
-                    tmpAffected.absorb(addedAffected);
+                    tmpAffected.subsume(addedAffected);
                 }
                 // compute all new rows
                 tmpAffected.insert(upstream.added());
@@ -239,7 +239,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                     // retain only the rows that still exist in the sourceRowSet
                     removedAffected.retain(ctx.timestampValidRowSet);
 
-                    tmpAffected.absorb(removedAffected);
+                    tmpAffected.subsume(removedAffected);
                 }
             }
 

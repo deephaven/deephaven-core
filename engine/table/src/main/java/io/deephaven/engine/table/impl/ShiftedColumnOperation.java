@@ -216,7 +216,7 @@ public class ShiftedColumnOperation {
 
                                                 final RowSet dirtyPositions = haveAdds ? dirtyFromAdds : dirtyFromMods;
                                                 if (haveAdds && haveMods) {
-                                                    dirtyFromAdds.absorb(dirtyFromMods);
+                                                    dirtyFromAdds.subsume(dirtyFromMods);
                                                 }
 
                                                 if (dirtyPositions.isNonempty()) {

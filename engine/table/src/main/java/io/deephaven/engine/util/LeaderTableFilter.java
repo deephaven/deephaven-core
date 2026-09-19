@@ -385,7 +385,7 @@ public class LeaderTableFilter {
                     }
                 }
                 try (final WritableRowSet added = addedBatch.build()) {
-                    followerResultRowSets[tt].absorb(added);
+                    followerResultRowSets[tt].subsume(added);
                 }
             }
         }
@@ -631,11 +631,11 @@ public class LeaderTableFilter {
         state.pendingRows = pendingBuilder.build();
         if (addMatches) {
             try (final WritableRowSet newMatches = matchedBuilder.build()) {
-                state.matchedRows.absorb(newMatches);
+                state.matchedRows.subsume(newMatches);
             }
             if (state.currentIdBuilder != null) {
                 try (final WritableRowSet curentMatches = state.currentIdBuilder.build()) {
-                    state.matchedRows.absorb(curentMatches);
+                    state.matchedRows.subsume(curentMatches);
                     state.currentIdBuilder = null;
                 }
             }

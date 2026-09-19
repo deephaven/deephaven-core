@@ -124,7 +124,7 @@ public final class RowSetUnionBatcher implements SafeCloseable {
         if (joinsRun(rowSet)) {
             // Ownership passed to us, so this may reuse either side's storage for the result.
             try (rowSet) {
-                run.absorb(rowSet);
+                run.subsume(rowSet);
             }
             return;
         }
@@ -154,7 +154,7 @@ public final class RowSetUnionBatcher implements SafeCloseable {
      * <p>
      * Above the run is always worth it: the row set implementations splice onto the end, so it costs what is spliced
      * and nothing per entry already there. Below the run is not the mirror image, and not because the direction is
-     * chosen badly -- {@link WritableRowSet#absorb absorb} picks the cheaper of the two and picks it well. It is that
+     * chosen badly -- {@link WritableRowSet#subsume subsume} picks the cheaper of the two and picks it well. It is that
      * both directions are proportional to the run rather than to what arrived: opening room at the front moves the run,
      * and appending the run onto what arrived copies it. Keys are held in order, so something has to move either way.
      *

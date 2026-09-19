@@ -218,7 +218,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         if (chunkDestinationsBuilder != null) {
             try (final WritableRowSet chunkUpdatedDestinations =
                     new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
-                stepUpdatedDestinations.absorb(chunkUpdatedDestinations);
+                stepUpdatedDestinations.subsume(chunkUpdatedDestinations);
             }
         }
     }
@@ -244,7 +244,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
         try (final WritableRowSet chunkUpdatedDestinations =
                 new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
-            stepUpdatedDestinations.absorb(chunkUpdatedDestinations);
+            stepUpdatedDestinations.subsume(chunkUpdatedDestinations);
         }
     }
 
@@ -281,7 +281,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
         try (final WritableRowSet chunkUpdatedDestinations =
                 new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
-            stepUpdatedDestinations.absorb(chunkUpdatedDestinations);
+            stepUpdatedDestinations.subsume(chunkUpdatedDestinations);
         }
     }
 
@@ -308,7 +308,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         }
         try (final WritableRowSet chunkUpdatedDestinations =
                 new WritableRowSetImpl(chunkDestinationsBuilder.getOrderedLongSet())) {
-            stepUpdatedDestinations.absorb(chunkUpdatedDestinations);
+            stepUpdatedDestinations.subsume(chunkUpdatedDestinations);
         }
     }
 

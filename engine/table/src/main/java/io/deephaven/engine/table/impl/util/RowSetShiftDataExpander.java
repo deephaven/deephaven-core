@@ -83,14 +83,14 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             // consider all rows that are in a shift region as modified (if they still exist)
             try (final WritableRowSet addedByShift = addedByShiftB.build();
                     final WritableRowSet rmByShift = removedByShiftB.build()) {
-                addedByShift.absorb(rmByShift);
+                addedByShift.subsume(rmByShift);
                 addedByShift.retain(sourceRowSet);
-                modified.absorb(addedByShift);
+                modified.subsume(addedByShift);
             }
 
             // remove all rows we define as added (i.e. modified rows that were actually shifted into a new row key)
             try (final WritableRowSet absoluteModified = update.removed().intersect(update.added())) {
-                modified.absorb(absoluteModified);
+                modified.subsume(absoluteModified);
             }
             modified.remove(added);
         } catch (Exception e) {

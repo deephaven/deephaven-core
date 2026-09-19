@@ -321,7 +321,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
         final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
         removed.forAllRowKeys((final long outerKey) -> freeBuilder.addKey(rowRedirection.remove(outerKey)));
         try (final WritableRowSet freed = freeBuilder.build()) {
-            freeRows.absorb(freed);
+            freeRows.subsume(freed);
         }
     }
 

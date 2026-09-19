@@ -41,14 +41,14 @@ public class ShiftObliviousUpdateCoalescer {
         // Note: extract removes matching ranges from the source RowSet
         try (final WritableRowSet addedBack = this.removed.extract(addedOnUpdate);
                 final WritableRowSet actuallyAdded = addedOnUpdate.minus(addedBack)) {
-            this.added.absorb(actuallyAdded);
-            this.modified.absorb(addedBack);
+            this.added.subsume(actuallyAdded);
+            this.modified.subsume(addedBack);
         }
 
         // Things we've added, but are now removing. Do not aggregate these as removed since client never saw them.
         try (final RowSet additionsRemoved = this.added.extract(removedOnUpdate);
                 final WritableRowSet actuallyRemoved = removedOnUpdate.minus(additionsRemoved)) {
-            this.removed.absorb(actuallyRemoved);
+            this.removed.subsume(actuallyRemoved);
         }
 
         // If we've removed it, it should no longer be modified.
@@ -56,7 +56,7 @@ public class ShiftObliviousUpdateCoalescer {
 
         // And anything modified, should be added to the modified set; unless we've previously added it.
         try (final WritableRowSet actuallyModified = modifiedOnUpdate.minus(this.added)) {
-            this.modified.absorb(actuallyModified);
+            this.modified.subsume(actuallyModified);
         }
 
         if (VALIDATE_COALESCED_UPDATES

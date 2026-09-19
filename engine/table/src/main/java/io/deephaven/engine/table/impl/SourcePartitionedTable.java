@@ -215,7 +215,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                         locationKeyMatcher);
                 try (final WritableRowSet added = sortAndAddLocations(locationStates.stream())) {
                     if (added != null) {
-                        resultRows.absorb(added);
+                        resultRows.subsume(added);
                     }
                 }
             }

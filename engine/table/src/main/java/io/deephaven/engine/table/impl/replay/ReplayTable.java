@@ -43,7 +43,7 @@ public class ReplayTable extends ReplayTableBase implements Runnable {
         advanceIterators();
         if (!done) {
             try (final WritableRowSet initial = advanceToCurrentTime()) {
-                getRowSet().writableCast().absorb(initial);
+                getRowSet().writableCast().subsume(initial);
             }
         }
     }

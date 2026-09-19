@@ -160,11 +160,11 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     }
 
     @Override
-    public final void absorb(final WritableRowSet other) {
+    public final void subsume(final WritableRowSet other) {
         if (other == this) {
-            // Absorbing yourself has no answer: the union with ourselves is the keys we already hold, and emptying
+            // Subsuming yourself has no answer: the union with ourselves is the keys we already hold, and emptying
             // the argument would take them away.
-            throw new IllegalArgumentException("Cannot absorb a RowSet into itself");
+            throw new IllegalArgumentException("Cannot subsume a RowSet into itself");
         }
         if (!(other instanceof WritableRowSetImpl)) {
             throw new UnsupportedOperationException("Unexpected RowSet type " + other.getClass());

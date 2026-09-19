@@ -364,7 +364,7 @@ public class WindowCheck {
 
                 try (final WritableRowSet modifiedByTime = recomputeModified()) {
                     if (modifiedByTime.isNonempty()) {
-                        downstream.modified.writableCast().absorb(modifiedByTime);
+                        downstream.modified.writableCast().subsume(modifiedByTime);
                     }
                 }
 

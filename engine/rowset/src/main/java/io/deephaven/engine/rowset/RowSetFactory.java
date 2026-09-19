@@ -43,7 +43,7 @@ public abstract class RowSetFactory {
          */
         SEQUENTIAL_SORTED,
         /**
-         * Merge in passes: an accumulator keeps absorbing the next row set while it appends or while the previous one
+         * Merge in passes: an accumulator keeps subsuming the next row set while it appends or while the previous one
          * duplicated rows already held, otherwise a new group starts. See {@link #mergeInPasses}.
          */
         MERGE_IN_PASSES,
@@ -249,12 +249,12 @@ public abstract class RowSetFactory {
      * entries are consumed.
      *
      * <p>
-     * Row sets are merged in passes. Within a pass an accumulator keeps absorbing the next row set while that row set
+     * Row sets are merged in passes. Within a pass an accumulator keeps subsuming the next row set while that row set
      * only appends to it, and while the row set before it duplicated rows the accumulator already held, which means the
      * inputs are covering each other and further insertion stays cheap. A new accumulator is started as soon as the
      * next row set overlaps and the one before it brought nothing the accumulator already had, which is where inserting
      * everything into a single accumulator would become quadratic. Only the most recent insertion counts: a cumulative
-     * count would let one early overlapping pair license absorbing an unbounded run of disjoint row sets afterwards.
+     * count would let one early overlapping pair license subsuming an unbounded run of disjoint row sets afterwards.
      * Every accumulator takes at least one partner, so a pass at least halves the count and the merge terminates; where
      * nothing duplicates anything this is a balanced pairwise merge, and where the inputs are disjoint and ordered the
      * first pass consumes all of them by appending.
@@ -304,10 +304,10 @@ public abstract class RowSetFactory {
                     long duplicates = 0;
                     if (read2 < groupCount) {
                         // Every row set in this pass is an accumulator the first pass created, so we hold the last
-                        // reference to it. Absorbing empties it; closing it is still ours to do.
+                        // reference to it. Subsuming empties it; closing it is still ours to do.
                         try (final WritableRowSet next = groups[read2]) {
                             groups[read2++] = null;
-                            duplicates = absorbOwned(accumulator, next);
+                            duplicates = subsumeOwned(accumulator, next);
                         }
                     }
                     while (read2 < groupCount) {
@@ -318,7 +318,7 @@ public abstract class RowSetFactory {
                         }
                         try (next) {
                             groups[read2++] = null;
-                            duplicates = absorbOwned(accumulator, next);
+                            duplicates = subsumeOwned(accumulator, next);
                         }
                     }
                 }
@@ -419,7 +419,7 @@ public abstract class RowSetFactory {
         // spans. Bucketing their spans by block and OR-ing each block's containers once, as the radix build does for
         // ranges, would fold them in one pass instead.
         try (merged) {
-            small.absorb(merged);
+            small.subsume(merged);
         }
         return small;
     }
@@ -836,7 +836,7 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Fold {@code next}, an accumulator this method built and therefore owns, into {@code accumulator}. Absorbing it
+     * Fold {@code next}, an accumulator this method built and therefore owns, into {@code accumulator}. Subsuming it
      * rather than inserting it lets the merge reuse whichever side's storage is cheaper to edit; {@code next} is left
      * empty for its owner to close.
      * <p>
@@ -846,12 +846,12 @@ public abstract class RowSetFactory {
      *
      * @return How many of {@code next}'s row keys the accumulator already held
      */
-    private static long absorbOwned(
+    private static long subsumeOwned(
             final WritableRowSet accumulator,
             final WritableRowSet next) {
         final long accumulatorSize = accumulator.size();
         final long nextSize = next.size();
-        accumulator.absorb(next);
+        accumulator.subsume(next);
         return nextSize - (accumulator.size() - accumulatorSize);
     }
 

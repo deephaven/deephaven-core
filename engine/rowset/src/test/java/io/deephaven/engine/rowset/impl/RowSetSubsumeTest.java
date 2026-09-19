@@ -33,8 +33,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * {@link WritableRowSet#absorb} against {@link WritableRowSet#insert(RowSet)}, which it has to agree with on keys while
- * being free to disagree on which side it edits.
+ * {@link WritableRowSet#subsume} against {@link WritableRowSet#insert(RowSet)}, which it has to agree with on keys
+ * while being free to disagree on which side it edits.
  * <p>
  * The interesting part is the bookkeeping rather than the merge: whichever direction is chosen, the receiver ends up
  * holding the union, the argument ends up empty and still usable, and neither side leaks a reference to an inner set or
@@ -42,7 +42,7 @@ import static org.junit.Assert.fail;
  * sizes and key positions that make both directions attractive, and runs each pair with each side's inner set shared
  * and unshared, which is what decides whether an edit can be made in place.
  */
-public class RowSetAbsorbTest {
+public class RowSetSubsumeTest {
 
     @Rule
     public final EngineCleanup engineCleanup = new EngineCleanup();
@@ -214,28 +214,28 @@ public class RowSetAbsorbTest {
         for (final Operand left : OPERANDS) {
             for (final Operand right : OPERANDS) {
                 for (int variant = 0; variant < 4; ++variant) {
-                    checkAbsorb(left, right, (variant & 1) != 0, (variant & 2) != 0, directionsSeen);
+                    checkSubsume(left, right, (variant & 1) != 0, (variant & 2) != 0, directionsSeen);
                 }
             }
         }
-        assertTrue("some pair absorbs forward", directionsSeen[0]);
-        assertTrue("some pair absorbs in reverse", directionsSeen[1]);
+        assertTrue("some pair subsumes forward", directionsSeen[0]);
+        assertTrue("some pair subsumes in reverse", directionsSeen[1]);
     }
 
     /**
-     * Absorb {@code right} into {@code left}, optionally holding a second reference to either side's inner set first,
+     * Subsume {@code right} into {@code left}, optionally holding a second reference to either side's inner set first,
      * and check the keys, the emptied argument and the references.
      */
-    private static void checkAbsorb(
+    private static void checkSubsume(
             final Operand left,
             final Operand right,
             final boolean shareLeft,
             final boolean shareRight,
             final boolean[] directionsSeen) {
-        final String what = left.name + " absorbs " + right.name
+        final String what = left.name + " subsumes " + right.name
                 + (shareLeft ? " sharedLeft" : "") + (shareRight ? " sharedRight" : "");
         // The shares outlive the two row sets, so that what closing those gives back can be checked. Nothing else
-        // may hold a reference to either inner set while the absorb runs: an extra one would make that side shared,
+        // may hold a reference to either inner set while the subsume runs: an extra one would make that side shared,
         // which is another variant's case and not this one's.
         final WritableRowSetImpl leftShare;
         final WritableRowSetImpl rightShare;
@@ -248,7 +248,7 @@ public class RowSetAbsorbTest {
                     : 0] =
                             true;
 
-            target.absorb(source);
+            target.subsume(source);
 
             target.validate(what);
             source.validate(what);
@@ -291,9 +291,9 @@ public class RowSetAbsorbTest {
             for (final Operand right : OPERANDS) {
                 try (final WritableRowSetImpl target = left.build();
                         final WritableRowSetImpl source = right.build()) {
-                    target.absorb(source);
+                    target.subsume(source);
                     if (!target.getInnerSet().ixIsEmpty()) {
-                        assertEquals(left.name + " absorbs " + right.name, 1, target.refCount());
+                        assertEquals(left.name + " subsumes " + right.name, 1, target.refCount());
                     }
                 }
             }
@@ -301,11 +301,11 @@ public class RowSetAbsorbTest {
     }
 
     @Test
-    public void testAbsorbSelfThrows() {
+    public void testSubsumeSelfThrows() {
         try (final WritableRowSet rowSet = RowSetFactory.fromRange(10, 20)) {
             try {
-                rowSet.absorb(rowSet);
-                fail("absorbing a row set into itself");
+                rowSet.subsume(rowSet);
+                fail("subsuming a row set into itself");
             } catch (IllegalArgumentException expected) {
                 // expected
             }
@@ -317,7 +317,7 @@ public class RowSetAbsorbTest {
     }
 
     @Test
-    public void testAbsorbSharedInnerSet() {
+    public void testSubsumeSharedInnerSet() {
         // Two row sets over one inner set: the union is the keys they both already hold, and the argument still has
         // to end up empty without taking the receiver's keys with it. Only the reference-counted representations can
         // get into that state -- a SingleRange answers ixCowRef() with a copy, so two wrappers over one never share
@@ -331,7 +331,7 @@ public class RowSetAbsorbTest {
                 assertSame(operand.name, target.getInnerSet(), source.getInnerSet());
                 assertEquals(operand.name, 2, target.refCount());
 
-                target.absorb(source);
+                target.subsume(source);
 
                 target.validate(operand.name);
                 assertEquals(operand.name, expected, target);
@@ -463,21 +463,21 @@ public class RowSetAbsorbTest {
     }
 
     @Test
-    public void testAbsorbRejectsUnmodifiableViews() {
+    public void testSubsumeRejectsUnmodifiableViews() {
         try (final TrackingWritableRowSet tracking = RowSetFactory.fromRange(0, 9).toTracking();
                 final WritableRowSet other = RowSetFactory.fromRange(20, 29)) {
-            // prev() hands back an unmodifiable view, which rejects every mutator through its hooks; absorb mutates
+            // prev() hands back an unmodifiable view, which rejects every mutator through its hooks; subsume mutates
             // both sides, so it has to be rejected from either position.
             final WritableRowSet prev = (WritableRowSet) tracking.prev();
             try {
-                prev.absorb(other);
-                fail("absorbing into an unmodifiable view");
+                prev.subsume(other);
+                fail("subsuming into an unmodifiable view");
             } catch (UnsupportedOperationException expected) {
                 // expected
             }
             try {
-                other.absorb(prev);
-                fail("absorbing an unmodifiable view");
+                other.subsume(prev);
+                fail("subsuming an unmodifiable view");
             } catch (UnsupportedOperationException expected) {
                 // expected
             }
@@ -488,12 +488,12 @@ public class RowSetAbsorbTest {
     }
 
     @Test
-    public void testAbsorbIntoTracking() {
+    public void testSubsumeIntoTracking() {
         final LogicalClockImpl clock = (LogicalClockImpl) ExecutionContext.getContext().getUpdateGraph().clock();
         try (final TrackingWritableRowSet tracking = RowSetFactory.fromRange(0, 9).toTracking()) {
             clock.startUpdateCycle();
             try (final WritableRowSet added = RowSetFactory.fromRange(20, 29)) {
-                tracking.absorb(added);
+                tracking.subsume(added);
                 assertTrue(added.isEmpty());
             }
             assertEquals(20, tracking.size());
@@ -504,12 +504,12 @@ public class RowSetAbsorbTest {
     }
 
     @Test
-    public void testAbsorbFromTracking() {
+    public void testSubsumeFromTracking() {
         final LogicalClockImpl clock = (LogicalClockImpl) ExecutionContext.getContext().getUpdateGraph().clock();
         try (final TrackingWritableRowSet tracking = RowSetFactory.fromRange(0, 9).toTracking();
                 final WritableRowSet target = RowSetFactory.fromRange(20, 29)) {
             clock.startUpdateCycle();
-            target.absorb(tracking);
+            target.subsume(tracking);
             assertTrue(tracking.isEmpty());
             // The emptied set keeps the previous value it snapshotted on the way in, and the keys went to the target
             // rather than being shared with it.
@@ -520,11 +520,11 @@ public class RowSetAbsorbTest {
     }
 
     @Test
-    public void testAbsorbEmptiesArgumentOfEveryRepresentation() {
+    public void testSubsumeEmptiesArgumentOfEveryRepresentation() {
         for (final Operand operand : OPERANDS) {
             try (final WritableRowSet target = RowSetFactory.empty();
                     final WritableRowSetImpl source = operand.build()) {
-                target.absorb(source);
+                target.subsume(source);
                 assertTrue(operand.name, source.isEmpty());
                 assertSame(operand.name, OrderedLongSet.EMPTY, source.getInnerSet());
                 try (final WritableRowSet expected = expectedUnion(operand, operand)) {
@@ -542,7 +542,7 @@ public class RowSetAbsorbTest {
                     final WritableRowSet source = randomRowSet(random);
                     final WritableRowSet inserted = target.copy()) {
                 inserted.insert(source);
-                target.absorb(source);
+                target.subsume(source);
                 target.validate("trial " + trial);
                 assertEquals("trial " + trial, inserted, target);
                 assertTrue("trial " + trial, source.isEmpty());

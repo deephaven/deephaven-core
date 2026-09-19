@@ -29,16 +29,16 @@ import org.openjdk.jmh.runner.RunnerException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * {@link WritableRowSet#absorb} against {@link WritableRowSet#insert(RowSet)} over the same pair of sets.
+ * {@link WritableRowSet#subsume} against {@link WritableRowSet#insert(RowSet)} over the same pair of sets.
  *
  * <p>
  * The two produce the same keys; what differs is which side may be edited. {@code insert} has to leave its argument
- * alone, so the target is always the receiver, whereas {@code absorb} may make the incoming set the receiver and hand
+ * alone, so the target is always the receiver, whereas {@code subsume} may make the incoming set the receiver and hand
  * the result back. The cases where that is worth doing are the ones the parameters here lay out: the incoming set being
  * the larger side, so that the smaller one is the one placed entry by entry; and {@link Position#PREPEND}, where the
  * incoming keys all fall below the target's, so appending the target onto the incoming set replaces a walk into the
  * middle of the target. {@link Position#APPEND} is the case {@code insert} already gets right, and is here to show
- * {@code absorb} does not give it up.
+ * {@code subsume} does not give it up.
  *
  * <p>
  * Both methods close the incoming set, because the pattern this replaces closes it:
@@ -50,9 +50,9 @@ import java.util.concurrent.TimeUnit;
  * </pre>
  *
  * Closing is where the difference would otherwise hide. After {@code insert} the close gives back a set that still
- * holds its keys; after {@code absorb} it gives back an empty one, the keys having gone to the target already. Timing
- * the insert alone would charge that release to {@code absorb} and not to {@code insert}, when it is the caller's
- * either way, and would make {@code absorb} look slower on the shapes where the two do the same work.
+ * holds its keys; after {@code subsume} it gives back an empty one, the keys having gone to the target already. Timing
+ * the insert alone would charge that release to {@code subsume} and not to {@code insert}, when it is the caller's
+ * either way, and would make {@code subsume} look slower on the shapes where the two do the same work.
  *
  * <p>
  * Each side is a {@link Side}, a representation and an entry count. Every side holds single keys one to a block, so an
@@ -77,13 +77,13 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 5, time = 1)
 @Fork(value = 2)
-public class RowSetAbsorbBench {
+public class RowSetSubsumeBench {
 
     /** Where the incoming set's keys lie relative to the target's. */
     public enum Position {
         /** Wholly above the target's last key, the case both operations can do as an append. */
         APPEND,
-        /** Wholly below the target's first key, which only {@code absorb} can turn into an append. */
+        /** Wholly below the target's first key, which only {@code subsume} can turn into an append. */
         PREPEND,
         /** Spread over the same key range as the target, a block off so the two never share one. */
         INTERLEAVED
@@ -111,7 +111,7 @@ public class RowSetAbsorbBench {
         }
     }
 
-    /** The shape of the set that receives when {@code insert} is used, and may not when {@code absorb} is. */
+    /** The shape of the set that receives when {@code insert} is used, and may not when {@code subsume} is. */
     @Param
     private Side targetSide;
 
@@ -164,12 +164,12 @@ public class RowSetAbsorbBench {
         }
         try (final WritableRowSet a = new WritableRowSetImpl(deepCopy(targetTemplate));
                 final WritableRowSet b = new WritableRowSetImpl(deepCopy(incomingTemplate))) {
-            a.absorb(b);
+            a.subsume(b);
             if (a.size() != expected || !b.isEmpty()) {
-                throw new IllegalStateException("absorb disagrees with insert for " + position);
+                throw new IllegalStateException("subsume disagrees with insert for " + position);
             }
         }
-        // Which direction absorb chose is not printed here: the estimator that decides it is package private to
+        // Which direction subsume chose is not printed here: the estimator that decides it is package private to
         // the row set implementation, and the shape plus the entry counts below say what it had to work with.
         System.out.println(position + " target=" + targetSide + " incoming=" + incomingSide
                 + " entries=" + targetTemplate.ixEntryCount() + "/" + incomingTemplate.ixEntryCount()
@@ -227,9 +227,9 @@ public class RowSetAbsorbBench {
     }
 
     @Benchmark
-    public WritableRowSet absorb() {
+    public WritableRowSet subsume() {
         try {
-            target.absorb(incoming);
+            target.subsume(incoming);
         } finally {
             incoming.close();
         }
@@ -237,6 +237,6 @@ public class RowSetAbsorbBench {
     }
 
     public static void main(String[] args) throws RunnerException {
-        BenchUtil.run(RowSetAbsorbBench.class);
+        BenchUtil.run(RowSetSubsumeBench.class);
     }
 }
