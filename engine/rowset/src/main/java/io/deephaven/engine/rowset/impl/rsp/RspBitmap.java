@@ -1814,10 +1814,14 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         release();
     }
 
-    @VisibleForTesting
     @Override
     public int ixRefCount() {
         return refCount();
+    }
+
+    @Override
+    public int ixEntryCount() {
+        return getSize();
     }
 
     @Override

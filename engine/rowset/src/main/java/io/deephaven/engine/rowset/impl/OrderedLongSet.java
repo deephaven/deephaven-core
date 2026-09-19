@@ -17,7 +17,7 @@ import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.annotations.FinalDefault;
-import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.annotations.InternalUseOnly;
 
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
@@ -31,8 +31,22 @@ public interface OrderedLongSet {
 
     void ixRelease();
 
-    @VisibleForTesting
+    /**
+     * @return The number of references outstanding to this set; a set with more than one copies itself before it can be
+     *         mutated
+     */
+    @InternalUseOnly
     int ixRefCount();
+
+    /**
+     * An O(1) count of the entries this set stores: spans for an {@link RspBitmap}, positions in the packed array for
+     * {@link SortedRanges}, one for a {@link SingleRange}. Unlike {@link #ixCardinality()}, this measures what a pass
+     * over the set costs -- a single full block span holds a whole block of row keys in one entry -- which is what
+     * decides which of two sets should receive an insert of the other.
+     *
+     * @return The number of entries stored, zero when the set is empty
+     */
+    int ixEntryCount();
 
     OrderedLongSet ixInsert(long key);
 
@@ -224,6 +238,11 @@ public interface OrderedLongSet {
         @Override
         public int ixRefCount() {
             return 1;
+        }
+
+        @Override
+        public int ixEntryCount() {
+            return 0;
         }
 
         @Override
