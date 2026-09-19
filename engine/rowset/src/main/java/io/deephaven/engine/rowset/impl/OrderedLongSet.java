@@ -39,10 +39,10 @@ public interface OrderedLongSet {
     int ixRefCount();
 
     /**
-     * An O(1) count of the entries this set stores: spans for an {@link RspBitmap}, positions in the packed array for
-     * {@link SortedRanges}, one for a {@link SingleRange}. Unlike {@link #ixCardinality()}, this measures what a pass
-     * over the set costs -- a single full block span holds a whole block of row keys in one entry -- which is what
-     * decides which of two sets should receive an insert of the other.
+     * A measure of what a traversal of this OrderedLongSet costs, which is different for each implementation. This is
+     * used, for example, to determine if {@code a.insert(b)} or {@code b.insert(a)} is less expensive to compute. The
+     * unit is not identical across types: spans for an {@link RspBitmap}, positions in the packed array for a
+     * {@link SortedRanges}, or simply one for a {@link SingleRange}.
      *
      * @return The number of entries stored, zero when the set is empty
      */
