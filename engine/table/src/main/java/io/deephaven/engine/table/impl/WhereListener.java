@@ -223,7 +223,7 @@ class WhereListener extends GuardedMergedListener {
 
                 // Matching modifies in the current mapping are adds
                 try (final WritableRowSet modsToAdd = modifiedFilterResult.minus(currentMapping)) {
-                    update.added.writableCast().insert(modsToAdd);
+                    update.added.writableCast().subsume(modsToAdd);
                 }
 
                 // Unmatched upstream mods are removes if they are in our output rowset
@@ -235,7 +235,7 @@ class WhereListener extends GuardedMergedListener {
 
                     // Move modsToRemove into pre-shift keyspace and add to myRemoved
                     upstream.shifted().unapply(modsToRemove);
-                    update.removed.writableCast().insert(modsToRemove);
+                    update.removed.writableCast().subsume(modsToRemove);
                 }
             } else {
                 update.modified = upstream.modified().intersect(currentMapping);

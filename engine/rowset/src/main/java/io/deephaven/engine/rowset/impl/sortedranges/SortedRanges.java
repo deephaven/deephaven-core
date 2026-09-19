@@ -4777,6 +4777,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
+    public final int ixEntryCount() {
+        return count();
+    }
+
+    @Override
     public final OrderedLongSet ixInsert(final long key) {
         final SortedRanges ans = add(key);
         if (ans != null) {
@@ -5191,6 +5196,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (other instanceof SingleRange) {
             final long start = other.ixFirstKey();
             final long end = other.ixLastKey();
+            if (start <= first() && last() <= end) {
+                // One contiguous range covering our first and last key covers every key between them too, so it is
+                // already the union. SingleRange.ixUnionOnNew makes the same check the other way around.
+                return other.ixCowRef();
+            }
             SortedRanges ans = deepCopy();
             ans = ans.addRange(start, end);
             if (ans != null) {
@@ -5207,8 +5217,49 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             if (out != null) {
                 return out;
             }
+            // The result does not fit a packed array, so one side has to be built into spans and the other placed
+            // into it one entry at a time. Building is the cheaper half, so it is the side with more entries that
+            // should be built, as in unionRspOnNew.
+            if (unionBuildsFromOther(otherSar)) {
+                return otherSar.ixToRspOnNew().ixInsertNoWriteCheck(this);
+            }
+            return ixToRspOnNew().ixInsertNoWriteCheck(otherSar);
         }
-        return ixToRspOnNew().ixInsertNoWriteCheck(other);
+        return unionRspOnNew((RspBitmap) other);
+    }
+
+    /**
+     * Whether the {@link RspBitmap} a union of ours with {@code other} has to become should be built from
+     * {@code other}'s entries rather than from ours.
+     * <p>
+     * Building is the cheaper half of the work and what is built from does not then have to be placed one entry at a
+     * time, so it is the side with more entries that should be built. Both directions answer with the same keys, so
+     * this is the only part of the choice a test can see.
+     */
+    final boolean unionBuildsFromOther(final OrderedLongSet other) {
+        return other.ixEntryCount() > count();
+    }
+
+    /**
+     * Our keys together with {@code other}'s, as a new {@link RspBitmap} the caller owns.
+     * <p>
+     * A union of the two cannot be held as a {@link SortedRanges}, so one side or the other has to be turned into
+     * spans. {@link #unionBuildsFromOther} picks which; taking {@code other}'s spans as they are also spares us
+     * converting our own ranges into spans first.
+     *
+     * @param other The other set, which is not modified
+     */
+    private RspBitmap unionRspOnNew(final RspBitmap other) {
+        if (unionBuildsFromOther(other)) {
+            final RspBitmap ans = other.deepCopy();
+            ans.insertOrderedLongSetUnsafeNoWriteCheck(this);
+            ans.finishMutations();
+            return ans;
+        }
+        final RspBitmap ans = ixToRspOnNew();
+        ans.orEqualsUnsafeNoWriteCheck(other);
+        ans.finishMutations();
+        return ans;
     }
 
     @Override
@@ -5299,10 +5350,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             final SortedRanges addedSar = (SortedRanges) added;
             return ixInsertImpl(addedSar);
         }
-        final RspBitmap rsp = ixToRspOnNew();
-        rsp.orEqualsUnsafeNoWriteCheck((RspBitmap) added);
-        rsp.finishMutations();
-        return rsp;
+        return unionRspOnNew((RspBitmap) added);
     }
 
     @Override

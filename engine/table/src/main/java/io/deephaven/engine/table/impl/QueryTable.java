@@ -1267,7 +1267,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             previouslyMatched.remove(upstream.added());
                             previouslyMatched.remove(upstream.modified());
                         }
-                        newMapping.insert(previouslyMatched);
+                        newMapping.subsume(previouslyMatched);
                     }
                     completeRefilterUpdate(listener, upstream, update, adds);
                 }, exception -> errorRefilterUpdate(listener, exception, upstream));
@@ -1307,7 +1307,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     // add back what we previously matched, except for modifications and removals
                     try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
                         previouslyMatched.remove(rowsToFilter);
-                        newMapping.insert(previouslyMatched);
+                        newMapping.subsume(previouslyMatched);
                     }
                     completeRefilterUpdate(listener, upstream, update, adds);
                 }, exception -> errorRefilterUpdate(listener, exception, upstream));
@@ -1334,7 +1334,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                 if (upstream != null) {
                     upstream.shifted().unapply(postShiftRemovals);
                 }
-                update.removed.writableCast().insert(postShiftRemovals);
+                update.removed.writableCast().subsume(postShiftRemovals);
             }
 
             if (upstream == null || upstream.modified().isEmpty()) {
