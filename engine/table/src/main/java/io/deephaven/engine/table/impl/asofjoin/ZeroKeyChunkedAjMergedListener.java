@@ -407,7 +407,9 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                 downstream.shifted = leftRecorder.getShifted();
             }
 
-            downstream.modified = leftRecorder.getModified().union(modifiedBuilder.build());
+            try (final RowSet modifiedByRightStamps = modifiedBuilder.build()) {
+                downstream.modified = leftRecorder.getModified().union(modifiedByRightStamps);
+            }
         }
 
         result.notifyListeners(downstream);

@@ -209,26 +209,32 @@ public class AsOfJoinHelper {
                         rightStampSource.getChunkType().makeResettableWritableChunk()) {
             for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
                 final int slot = slots.getInt(slotIndex);
-                RowSet leftRowSet = asOfJoinStateManager.getLeftRowSet(slot);
-                if (leftRowSet == null || leftRowSet.isEmpty()) {
-                    continue;
-                }
+                try (final RowSet slotLeftRowSet = asOfJoinStateManager.getLeftRowSet(slot)) {
+                    if (slotLeftRowSet == null || slotLeftRowSet.isEmpty()) {
+                        continue;
+                    }
 
-                final RowSet rightRowSet = asOfJoinStateManager.getRightRowset(slot);
-                if (rightRowSet == null || rightRowSet.isEmpty()) {
-                    continue;
-                }
+                    final RowSet rightRowSet = asOfJoinStateManager.getRightRowset(slot);
+                    if (rightRowSet == null || rightRowSet.isEmpty()) {
+                        continue;
+                    }
 
-                if (leftDataIndexRowSetColumn != null) {
-                    Assert.eq(leftRowSet.size(), "Indexed left row set size", 1);
-                    leftRowSet = leftDataIndexRowSetColumn.get(leftRowSet.get(0));
-                }
+                    // the slot's row set is built here and owned by this loop; a data index row set belongs to the
+                    // index and outlives it
+                    final RowSet leftRowSet;
+                    if (leftDataIndexRowSetColumn != null) {
+                        Assert.eq(slotLeftRowSet.size(), "Indexed left row set size", 1);
+                        leftRowSet = leftDataIndexRowSetColumn.get(slotLeftRowSet.get(0));
+                    } else {
+                        leftRowSet = slotLeftRowSet;
+                    }
 
-                if (arrayValuesCache != null) {
-                    processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, rowRedirection,
-                            rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
-                } else {
-                    stampContext.processEntry(leftRowSet, rightRowSet, rowRedirection);
+                    if (arrayValuesCache != null) {
+                        processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, rowRedirection,
+                                rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
+                    } else {
+                        stampContext.processEntry(leftRowSet, rightRowSet, rowRedirection);
+                    }
                 }
             }
         }
@@ -286,11 +292,12 @@ public class AsOfJoinHelper {
                         for (int ii = 0; ii < slotCount; ++ii) {
                             final int slot = updatedSlots.getInt(ii);
 
-                            final RowSet leftRowSet = asOfJoinStateManager.getLeftRowSet(slot);
-                            final RowSet rightRowSet = asOfJoinStateManager.getRightRowset(slot);
-                            assert arrayValuesCache != null;
-                            processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, rowRedirection,
-                                    rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
+                            try (final RowSet leftRowSet = asOfJoinStateManager.getLeftRowSet(slot)) {
+                                final RowSet rightRowSet = asOfJoinStateManager.getRightRowset(slot);
+                                assert arrayValuesCache != null;
+                                processLeftSlotWithRightCache(stampContext, leftRowSet, rightRowSet, rowRedirection,
+                                        rightStampSource, keyChunk, valuesChunk, arrayValuesCache, slot);
+                            }
                         }
                     }
                 }
@@ -399,27 +406,35 @@ public class AsOfJoinHelper {
             int slot) {
         final long[] leftStampKeys = arrayValuesCache.getKeys(slot);
         if (leftStampKeys == null) {
+            // a row set fetched here is owned locally and released once its values are cached, while one supplied by
+            // the caller belongs to the caller. Every slot is built from the left side and cached by the initial pass,
+            // and nothing afterwards inserts a slot, so a caller that supplies no row set is only reached for a slot
+            // that already holds one.
+            final RowSet ownedLeftRowSet;
             if (leftRowSet == null) {
-                leftRowSet = asOfJoinStateManager.getAndClearLeftRowSet(slot);
-                if (leftRowSet == null) {
-                    leftRowSet = RowSetFactory.empty();
-                }
+                ownedLeftRowSet = asOfJoinStateManager.getAndClearLeftRowSet(slot);
+                Assert.neqNull(ownedLeftRowSet, "ownedLeftRowSet");
+                leftRowSet = ownedLeftRowSet;
+            } else {
+                ownedLeftRowSet = null;
             }
-            final int leftSize = leftRowSet.intSize();
-            final long[] keyIndices = new long[leftSize];
+            try (final RowSet ignored = ownedLeftRowSet) {
+                final int leftSize = leftRowSet.intSize();
+                final long[] keyIndices = new long[leftSize];
 
-            final Object leftStampArray = leftStampSource.getChunkType().makeArray(leftSize);
+                final Object leftStampArray = leftStampSource.getChunkType().makeArray(leftSize);
 
-            keyChunk.resetFromTypedArray(keyIndices, 0, leftSize);
-            valuesChunk.resetFromArray(leftStampArray, 0, leftSize);
+                keyChunk.resetFromTypedArray(keyIndices, 0, leftSize);
+                valuesChunk.resetFromArray(leftStampArray, 0, leftSize);
 
-            leftRowSet.fillRowKeyChunk(keyChunk);
+                leftRowSet.fillRowKeyChunk(keyChunk);
 
-            leftStampSource.fillChunk(fillContext.ensureCapacity(leftSize), valuesChunk, leftRowSet);
+                leftStampSource.fillChunk(fillContext.ensureCapacity(leftSize), valuesChunk, leftRowSet);
 
-            sortContext.ensureCapacity(leftSize).sort(keyChunk, valuesChunk);
+                sortContext.ensureCapacity(leftSize).sort(keyChunk, valuesChunk);
 
-            arrayValuesCache.setKeysAndValues(slot, keyIndices, leftStampArray);
+                arrayValuesCache.setKeysAndValues(slot, keyIndices, leftStampArray);
+            }
         } else {
             keyChunk.resetFromTypedArray(leftStampKeys, 0, leftStampKeys.length);
             valuesChunk.resetFromArray(arrayValuesCache.getValues(slot), 0, leftStampKeys.length);
@@ -535,40 +550,41 @@ public class AsOfJoinHelper {
                         rightStampSource.getChunkType().makeResettableWritableChunk()) {
             for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
                 final int slot = slots.getInt(slotIndex);
-                final RowSet leftRowSet = asOfJoinStateManager.getAndClearLeftRowSet(slot);
-                assert leftRowSet != null;
-                assert leftRowSet.isNonempty();
+                try (final RowSet leftRowSet = asOfJoinStateManager.getAndClearLeftRowSet(slot)) {
+                    assert leftRowSet != null;
+                    assert leftRowSet.isNonempty();
 
-                final SegmentedSortedArray rightSsa = asOfJoinStateManager.getRightSsa(slot, (rightRowSet) -> {
-                    final SegmentedSortedArray ssa = ssaFactory.get();
-                    final int slotSize = rightRowSet.intSize();
-                    if (slotSize > 0) {
-                        rightStampSource.fillChunk(rightStampFillContext.ensureCapacity(slotSize),
-                                rightValues.ensureCapacity(slotSize), rightRowSet);
-                        rightRowSet.fillRowKeyChunk(rightKeyIndices.ensureCapacity(slotSize));
-                        sortContext.ensureCapacity(slotSize).sort(rightKeyIndices.get(), rightValues.get());
-                        ssa.insert(rightValues.get(), rightKeyIndices.get());
+                    final SegmentedSortedArray rightSsa = asOfJoinStateManager.getRightSsa(slot, (rightRowSet) -> {
+                        final SegmentedSortedArray ssa = ssaFactory.get();
+                        final int slotSize = rightRowSet.intSize();
+                        if (slotSize > 0) {
+                            rightStampSource.fillChunk(rightStampFillContext.ensureCapacity(slotSize),
+                                    rightValues.ensureCapacity(slotSize), rightRowSet);
+                            rightRowSet.fillRowKeyChunk(rightKeyIndices.ensureCapacity(slotSize));
+                            sortContext.ensureCapacity(slotSize).sort(rightKeyIndices.get(), rightValues.get());
+                            ssa.insert(rightValues.get(), rightKeyIndices.get());
+                        }
+                        return ssa;
+                    });
+
+                    getCachedLeftStampsAndKeys(null, leftRowSet, leftStampSource, leftStampFillContext, sortContext,
+                            leftKeyChunk, leftValuesChunk, leftValuesCache, slot);
+
+                    if (rightSsa.size() == 0) {
+                        continue;
                     }
-                    return ssa;
-                });
 
-                getCachedLeftStampsAndKeys(null, leftRowSet, leftStampSource, leftStampFillContext, sortContext,
-                        leftKeyChunk, leftValuesChunk, leftValuesCache, slot);
+                    final WritableLongChunk<RowKeys> rightKeysForLeftChunk =
+                            rightKeysForLeft.ensureCapacity(leftRowSet.intSize());
 
-                if (rightSsa.size() == 0) {
-                    continue;
-                }
+                    chunkSsaStamp.processEntry(leftValuesChunk, leftKeyChunk, rightSsa, rightKeysForLeftChunk,
+                            disallowExactMatch);
 
-                final WritableLongChunk<RowKeys> rightKeysForLeftChunk =
-                        rightKeysForLeft.ensureCapacity(leftRowSet.intSize());
-
-                chunkSsaStamp.processEntry(leftValuesChunk, leftKeyChunk, rightSsa, rightKeysForLeftChunk,
-                        disallowExactMatch);
-
-                for (int ii = 0; ii < leftKeyChunk.size(); ++ii) {
-                    final long index = rightKeysForLeftChunk.get(ii);
-                    if (index != RowSequence.NULL_ROW_KEY) {
-                        rowRedirection.put(leftKeyChunk.get(ii), index);
+                    for (int ii = 0; ii < leftKeyChunk.size(); ++ii) {
+                        final long index = rightKeysForLeftChunk.get(ii);
+                        if (index != RowSequence.NULL_ROW_KEY) {
+                            rowRedirection.put(leftKeyChunk.get(ii), index);
+                        }
                     }
                 }
             }

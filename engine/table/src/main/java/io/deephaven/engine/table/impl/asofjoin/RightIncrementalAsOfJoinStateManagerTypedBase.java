@@ -672,17 +672,17 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             if (sequentialBuilder == null) {
                 continue;
             }
-            final WritableRowSet rs = sequentialBuilder.build();
             final byte entryType = stateSource.getUnsafe(slot);
-            if (rs.isEmpty()) {
-                stateSource.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_EMPTY));
-                rs.close();
-            } else if (rs.size() == 1) {
-                // Set a copy of the RowSet into the row set source because the original is owned by the index.
-                rightRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()).copy());
-                stateSource.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_ROWSET));
-            } else {
-                throw new IllegalStateException("Index-built row set should have exactly one value: " + rs);
+            try (final WritableRowSet rs = sequentialBuilder.build()) {
+                if (rs.isEmpty()) {
+                    stateSource.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_EMPTY));
+                } else if (rs.size() == 1) {
+                    // Set a copy of the RowSet into the row set source because the original is owned by the index.
+                    rightRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()).copy());
+                    stateSource.set(slot, (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_ROWSET));
+                } else {
+                    throw new IllegalStateException("Index-built row set should have exactly one value: " + rs);
+                }
             }
         }
     }
@@ -698,17 +698,17 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             if (sequentialBuilder == null) {
                 continue;
             }
-            final WritableRowSet rs = sequentialBuilder.build();
             final byte entryType = stateSource.getUnsafe(slot);
-            if (rs.isEmpty()) {
-                stateSource.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_EMPTY));
-                rs.close();
-            } else if (rs.size() == 1) {
-                // Set a copy of the RowSet into the row set source because the original is owned by the index.
-                leftRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()).copy());
-                stateSource.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_ROWSET));
-            } else {
-                throw new IllegalStateException("Index-built row set should have exactly one value: " + rs);
+            try (final WritableRowSet rs = sequentialBuilder.build()) {
+                if (rs.isEmpty()) {
+                    stateSource.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_EMPTY));
+                } else if (rs.size() == 1) {
+                    // Set a copy of the RowSet into the row set source because the original is owned by the index.
+                    leftRowSetSource.set(slot, rowSetSource.get(rs.firstRowKey()).copy());
+                    stateSource.set(slot, (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_ROWSET));
+                } else {
+                    throw new IllegalStateException("Index-built row set should have exactly one value: " + rs);
+                }
             }
         }
     }
