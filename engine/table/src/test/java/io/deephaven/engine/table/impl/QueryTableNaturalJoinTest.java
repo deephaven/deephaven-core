@@ -3198,4 +3198,44 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(newTable(byteCol("Key", (byte) 1, (byte) 2, (byte) 1), intCol("L", 1, 2, 3),
                 intCol("R", 10, 20, 10)), result);
     }
+
+    public void testRightKeyChangeCreatingUnselectedDuplicateReportsNoModificationsRightIncremental() {
+        testRightKeyChangeCreatingUnselectedDuplicate(false);
+    }
+
+    public void testRightKeyChangeCreatingUnselectedDuplicateReportsNoModificationsBothIncremental() {
+        testRightKeyChangeCreatingUnselectedDuplicate(true);
+    }
+
+    /**
+     * A right key change that turns a slot's single right row into a duplicate set only affects the left rows when it
+     * changes which right row they select. Under FIRST_MATCH an arriving row after the selected one leaves every added
+     * column value alone, so there is nothing to report downstream.
+     */
+    private void testRightKeyChangeCreatingUnselectedDuplicate(final boolean leftRefreshing) {
+        final QueryTable left = leftRefreshing
+                ? testRefreshingTable(i(0).toTracking(), col("Key", "a"), intCol("L", 1))
+                : testTable(i(0).toTracking(), col("Key", "a"), intCol("L", 1));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(),
+                col("Key", "a", "c"), intCol("C", 100, 200), intCol("D", 1000, 2000));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "C,D", NaturalJoinType.FIRST_MATCH);
+        final Table expected = newTable(col("Key", "a"), intCol("L", 1), intCol("C", 100), intCol("D", 1000));
+        assertTableEquals(expected, result);
+
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(1), col("Key", "a"), intCol("C", 201), intCol("D", 2000));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("Key", "C")));
+        });
+
+        // right row 0 remains the FIRST_MATCH for "a", so C and D are unchanged
+        assertTableEquals(expected, result);
+        assertEquals(0, listener.getCount());
+        listener.close();
+    }
 }

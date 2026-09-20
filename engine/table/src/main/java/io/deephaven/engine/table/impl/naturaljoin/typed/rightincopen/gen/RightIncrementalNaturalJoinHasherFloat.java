@@ -220,7 +220,9 @@ final class RightIncrementalNaturalJoinHasherFloat extends RightIncrementalNatur
                             final WritableRowSet duplicates = RowSetFactory.fromKeys(rightRowKeyForState, inputKey);
                             rightSideDuplicateRowSets.set(duplicateLocation, duplicates);
                             rightRowKey.set(tableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
-                            modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                            if (duplicateCreationChangesState(duplicates, rightRowKeyForState, joinType)) {
+                                modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                            }
                         }
                     }
                     break;

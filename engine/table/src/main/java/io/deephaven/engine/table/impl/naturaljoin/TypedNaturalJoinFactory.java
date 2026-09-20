@@ -263,9 +263,12 @@ public class TypedNaturalJoinFactory {
                 WritableRowSet.class);
         builder.addStatement("rightSideDuplicateRowSets.set(duplicateLocation, duplicates)");
         builder.addStatement("rightRowKey.set(tableLocation, rowKeyFromDuplicateLocation(duplicateLocation))");
+        builder.beginControlFlow(
+                "if (duplicateCreationChangesState(duplicates, rightRowKeyForState, joinType))");
         builder.addStatement(
                 "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, $T.FLAG_RIGHT_CHANGE))",
                 NaturalJoinModifiedSlotTracker.class);
+        builder.endControlFlow();
 
         builder.endControlFlow();
 
@@ -517,7 +520,10 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("rightSideDuplicateRowSets.set(duplicateLocation, duplicates)");
         builder.addStatement("$LRightRowKey.set($L, rowKeyFromDuplicateLocation(duplicateLocation))", sourceType,
                 tableLocation);
+        builder.beginControlFlow(
+                "if (duplicateCreationChangesState(duplicates, existingRightRowKey, joinType))");
         modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
+        builder.endControlFlow();
 
         builder.endControlFlow();
 
