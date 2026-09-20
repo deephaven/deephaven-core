@@ -148,7 +148,7 @@ public class TestLongLongMap {
         }
         for (long key = beginKey; key < endKey; ++key) {
             final long expectedPrevious = key - 10000;
-            final long actualPrevious = map.remove(key);
+            final long actualPrevious = scalarAccess.remove(key);
             assertEquals(expectedPrevious, actualPrevious);
         }
     }
@@ -273,9 +273,9 @@ public class TestLongLongMap {
             cursor.put(colliding[ki], 10 + ki);
         }
         assertEquals(where, occupied, base.nonEmptySlots);
-        map.remove(colliding[deleted]);
+        cursor.remove(colliding[deleted]);
         if (alsoDeleted != -1) {
-            map.remove(colliding[alsoDeleted]);
+            cursor.remove(colliding[alsoDeleted]);
         }
         // Tombstones still count as non-empty.
         assertEquals(where, occupied, base.nonEmptySlots);
@@ -356,7 +356,7 @@ public class TestLongLongMap {
             cursor.put(candidate, 100 + ki);
         }
         assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
-        map.remove(others[deleted]);
+        cursor.remove(others[deleted]);
         assertEquals(where, entriesPerBucket + filled, base.nonEmptySlots);
         // remove() does not go through the cursor yet: reset the invalidated binding.
         cursor.reset(map);
@@ -505,11 +505,10 @@ public class TestLongLongMap {
             scalarAccess.put(key, key + 1000000);
         }
         for (long key = beginKey; key < endKey; key += 2) {
-            map.remove(key);
+            scalarAccess.remove(key);
         }
         assertEquals(map.size(), size / 2);
-        // The removes did not go through the cursor: reset the invalidated binding (the writer footnote).
-        scalarAccess.reset(map);
+        // The cursor did all the mutating itself, so its binding is still fresh for the reads.
         for (long key = beginKey; key < endKey; ++key) {
             final long expectedResult = (key % 2) == 0 ? noEntryValue : key + 1000000;
             final long actualResult = scalarAccess.get(key);
@@ -563,7 +562,7 @@ public class TestLongLongMap {
             scalarAccess.put(key, key + 1000000);
         }
         for (long key = 0; key < endKey; key += 2) {
-            map.remove(key);
+            scalarAccess.remove(key);
         }
         // Even keys are tombstoned; the chunked path must probe past the tombstones exactly as a scalar get would.
         final long[] probes = new long[(int) endKey];
@@ -710,6 +709,83 @@ public class TestLongLongMap {
     }
 
     @Test
+    public void chunkedRemoveHitsAndMisses() {
+        final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        final long noEntryValue = map.defaultReturnValue();
+        final long beginKey = -50000;
+        final long endKey = 50000;
+        final long size = endKey - beginKey;
+        // Probes cover a range three times as wide as the occupied keyspace: misses below, hits, misses above.
+        final int totalProbes = (int) (3 * size);
+        final long[] probes = new long[totalProbes];
+        final long probeBegin = beginKey - size;
+        for (int ii = 0; ii < totalProbes; ++ii) {
+            probes[ii] = probeBegin + ii;
+        }
+
+        // A chunked remove on a never-populated map yields noEntryValue everywhere and removes nothing.
+        checkChunkedRemove(map, probes, 4096, key -> noEntryValue);
+        assertEquals(0, map.size());
+
+        // Fill, then remove everything through the chunked entry point, with chunk sizes covering the degenerate,
+        // the odd, the typical (with a partial tail), and everything-in-one-chunk.
+        final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map);
+        for (final int chunkSize : new int[] {1, 7, 4096, totalProbes}) {
+            // The chunked removes of the previous iteration did not go through the cursor: reset the invalidated
+            // binding.
+            scalarAccess.reset(map);
+            for (long key = beginKey; key < endKey; ++key) {
+                scalarAccess.put(key, key + 1000000);
+            }
+            checkChunkedRemove(map, probes, chunkSize,
+                    key -> key >= beginKey && key < endKey ? key + 1000000 : noEntryValue);
+            assertEquals(0, map.size());
+        }
+
+        // An empty keys chunk yields an empty result (the result-size contract).
+        final WritableLongChunk<Any> emptyResult = WritableLongChunk.writableChunkWrap(new long[1]);
+        map.remove(LongChunk.chunkWrap(new long[0]), emptyResult);
+        assertEquals(0, emptyResult.size());
+    }
+
+    @Test
+    public void chunkedRemoveSeesOwnEarlierRemoves() {
+        final NullableLongLongMap map = factory.create(initialCapacity, loadFactor);
+        final long noEntryValue = map.defaultReturnValue();
+        final NullableLongLongMap.ScalarAccess scalarAccess = new NullableLongLongMap.ScalarAccess(map);
+        for (long key = 0; key < 10; ++key) {
+            scalarAccess.put(key, key + 1000000);
+        }
+        // Elements are processed in index order, so the duplicates of key 5 find nothing left to remove.
+        final long[] keys = {5, 5, 7, 5};
+        final long[] expected = {5 + 1000000, noEntryValue, 7 + 1000000, noEntryValue};
+        final WritableLongChunk<Any> oldValues = WritableLongChunk.writableChunkWrap(new long[keys.length]);
+        map.remove(LongChunk.chunkWrap(keys), oldValues);
+        assertEquals(keys.length, oldValues.size());
+        for (int ii = 0; ii < keys.length; ++ii) {
+            assertEquals(expected[ii], oldValues.get(ii));
+        }
+        assertEquals(8, map.size());
+    }
+
+    /**
+     * Feed {@code probes} through the chunked remove in slices of at most {@code chunkSize}, checking every returned
+     * old value and the result-size contract on each call.
+     */
+    private static void checkChunkedRemove(final NullableLongLongMap map, final long[] probes, final int chunkSize,
+            final LongUnaryOperator expected) {
+        final WritableLongChunk<Any> oldValuesChunk = WritableLongChunk.writableChunkWrap(new long[chunkSize]);
+        for (int begin = 0; begin < probes.length; begin += chunkSize) {
+            final int thisSize = Math.min(chunkSize, probes.length - begin);
+            map.remove(LongChunk.chunkWrap(probes, begin, thisSize), oldValuesChunk);
+            assertEquals(thisSize, oldValuesChunk.size());
+            for (int ii = 0; ii < thisSize; ++ii) {
+                assertEquals(expected.applyAsLong(probes[begin + ii]), oldValuesChunk.get(ii));
+            }
+        }
+    }
+
+    @Test
     public void do1MRandomOperationsLotsOfCollisions() {
         // Standard of correctness: java.util.HashMap
         Map<Long, Long> reference = new HashMap<>(initialCapacity, loadFactor);
@@ -748,9 +824,7 @@ public class TestLongLongMap {
 
         for (int ii = 0; ii < iterations; ++ii) {
             final long deleteKey = deleteStream.nextLong() % randomMod;
-            map.remove(deleteKey);
-            // remove() does not go through the cursor yet: reset the invalidated binding.
-            scalarAccess.reset(map);
+            scalarAccess.remove(deleteKey);
 
             final long key = insertStream.nextLong() % randomMod;
             final long value = key + 12;
@@ -922,9 +996,7 @@ public class TestLongLongMap {
                 scalarAccess.put(nextKey, nextValue);
             } else {
                 reference.remove(nextKey);
-                test.remove(nextKey);
-                // remove() does not go through the cursor yet: reset the invalidated binding.
-                scalarAccess.reset(test);
+                scalarAccess.remove(nextKey);
             }
         }
     }
@@ -1033,8 +1105,12 @@ public class TestLongLongMap {
         }
 
         @Override
-        public long remove(long key) {
-            return map.remove(key);
+        public void remove(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> oldValues) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                oldValues.set(ii, map.remove(keys.get(ii)));
+            }
+            oldValues.setSize(size);
         }
 
         @Override

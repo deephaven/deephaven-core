@@ -96,8 +96,15 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
     }
 
     @Override
-    public long remove(long key) {
-        return removeImpl(keysAndValues, key);
+    public void remove(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> oldValues) {
+        // Like get (and unlike put), the volatile read is hoisted: removeImpl tombstones slots in place and never
+        // rehashes, so no element can replace the array a later element must see.
+        final long[] localKvs = keysAndValues;
+        final int size = keys.size();
+        for (int ii = 0; ii < size; ++ii) {
+            oldValues.set(ii, removeImpl(localKvs, keys.get(ii)));
+        }
+        oldValues.setSize(size);
     }
 
     public int capacity() {

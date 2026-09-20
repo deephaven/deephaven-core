@@ -13,6 +13,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.impl.util.hash.HashMapK4V4;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.ChunkType;
@@ -21,12 +22,10 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
-import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.util.*;
-import java.util.function.LongUnaryOperator;
 
 import static io.deephaven.engine.table.impl.SortHelpers.AllowSymbolTable.DISALLOW_SYMBOL_TABLE;
 
@@ -205,7 +204,12 @@ public class SortListener extends BaseTable.ListenerImpl {
 
             // handle upstream removes immediately (lest state gets trashed by upstream shifts)
             if (numRemovedKeys > 0) {
-                fillArray(removedOutputKeys, upstream.removed(), 0, reverseLookup::remove);
+                final long[] removedInputKeys = new long[removedSize];
+                final WritableLongChunk<OrderedRowKeys> removedInputChunk =
+                        WritableLongChunk.writableChunkWrap(removedInputKeys);
+                upstream.removed().fillRowKeyChunk(removedInputChunk);
+                reverseLookup.remove(removedInputChunk,
+                        WritableLongChunk.writableChunkWrap(removedOutputKeys, 0, removedSize));
                 Arrays.sort(removedOutputKeys, 0, numRemovedKeys);
                 final LongChunk<OrderedRowKeys> keyChunk =
                         LongChunk.chunkWrap(removedOutputKeys, 0, numRemovedKeys);
@@ -220,8 +224,10 @@ public class SortListener extends BaseTable.ListenerImpl {
             // handle upstream shifts; note these never effect the sorted output keyspace
             final SortMappingAggregator mappingChanges = closer.add(new SortMappingAggregator());
             try (final RowSet prevRowSet = parent.getRowSet().copyPrev()) {
+                final NullableLongLongMap.ScalarAccess reverseLookupAccess =
+                        new NullableLongLongMap.ScalarAccess(reverseLookup);
                 upstream.shifted().forAllInRowSet(prevRowSet, (key, delta) -> {
-                    final long dst = reverseLookup.remove(key);
+                    final long dst = reverseLookupAccess.remove(key);
                     if (dst != REVERSE_LOOKUP_NO_ENTRY_VALUE) {
                         mappingChanges.append(dst, key + delta);
                     }
@@ -945,15 +951,6 @@ public class SortListener extends BaseTable.ListenerImpl {
                     String.format("While updating rowSet, the destination slot %d reached its limit",
                             destinationSlot));
         }
-    }
-
-    private static void fillArray(final long[] dest, final RowSet src, final int destIndex,
-            final LongUnaryOperator transformer) {
-        final MutableInt pos = new MutableInt(destIndex);
-        src.forAllRowKeys((final long v) -> {
-            dest[pos.get()] = transformer.applyAsLong(v);
-            pos.increment();
-        });
     }
 
     private static void showGaps(RowSet rowSet) {
