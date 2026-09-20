@@ -55,7 +55,7 @@ public interface BarrageCopyKernel {
         long[] encoded = new long[16];
         long[] len = new long[16];
         int count;
-        /** Sum of the run lengths, so a kernel can size its strategy without a pass over the runs. */
+        /** Sum of the run lengths, so the caller can size the output without a pass over the runs. */
         long totalRows;
 
         /** How many output rows these runs account for between them. */
@@ -79,8 +79,6 @@ public interface BarrageCopyKernel {
             ++count;
             totalRows += length;
         }
-
-
     }
 
     static BarrageCopyKernel makeBarrageCopyKernel(final ChunkType chunkType) {

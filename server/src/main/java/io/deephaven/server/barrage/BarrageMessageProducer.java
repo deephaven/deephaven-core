@@ -95,8 +95,8 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     /**
      * The number of rows in every chunk a delta records, except the last of a column. A configured
-     * {@code deltaChunkSize} that is not a power of two is rounded up to the next one, because the copy kernel locates
-     * a row's chunk with a shift and its offset with a mask.
+     * {@code deltaChunkSize} that is not a power of two is rounded up to the next one, because these chunks come from a
+     * pool that serves powers of two: an unrounded size would leave the tail of every chunk it hands back unused.
      */
     public static final int DELTA_CHUNK_SIZE = MathUtil.roundUpPowerOf2(
             Configuration.getInstance().getIntegerForClassWithDefault(
