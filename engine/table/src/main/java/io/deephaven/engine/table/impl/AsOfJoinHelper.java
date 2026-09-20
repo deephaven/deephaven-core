@@ -543,11 +543,18 @@ public class AsOfJoinHelper {
         final SizedLongChunk<RowKeys> rightKeyIndices = new SizedLongChunk<>();
         final SizedLongChunk<RowKeys> rightKeysForLeft = new SizedLongChunk<>();
 
-        // if we have an error the closeableList cleans up for us; if not they can be used later
+        // the sized contexts are closed on every exit from this block, including an exceptional one; the listener
+        // installed below resurrects them on its first use
         try (final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                 ResettableWritableLongChunk.makeResettableChunk();
                 final ResettableWritableChunk<Values> leftValuesChunk =
-                        rightStampSource.getChunkType().makeResettableWritableChunk()) {
+                        rightStampSource.getChunkType().makeResettableWritableChunk();
+                sortContext;
+                leftStampFillContext;
+                rightStampFillContext;
+                rightValues;
+                rightKeyIndices;
+                rightKeysForLeft) {
             for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
                 final int slot = slots.getInt(slotIndex);
                 try (final RowSet leftRowSet = asOfJoinStateManager.getAndClearLeftRowSet(slot)) {
@@ -589,10 +596,6 @@ public class AsOfJoinHelper {
                 }
             }
         }
-
-        // we will close them now, but the listener is able to resurrect them as needed
-        SafeCloseable.closeAll(sortContext, leftStampFillContext, rightStampFillContext, rightValues, rightKeyIndices,
-                rightKeysForLeft);
 
         final QueryTable result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
 
@@ -872,6 +875,13 @@ public class AsOfJoinHelper {
                     restampAdditions.close();
                     restampRemovals.close();
                 }
+            }
+
+            @Override
+            protected void destroy() {
+                super.destroy();
+                getUpdateGraph().runWhenIdle(() -> SafeCloseable.closeAll(sortContext, leftStampFillContext,
+                        rightStampFillContext, rightValues, rightKeyIndices, rightKeysForLeft));
             }
         });
 
