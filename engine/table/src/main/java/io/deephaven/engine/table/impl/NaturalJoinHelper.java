@@ -58,9 +58,18 @@ class NaturalJoinHelper {
             MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, NaturalJoinType joinType, JoinControl control) {
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
+        // A join that errors on duplicates needs a state per right row, so the right row count sizes the hash table
+        // exactly; a first- or last-match join collapses duplicates into one state, so its states are counted from the
+        // right data index when there is one and otherwise start from the default size and grow by rehashing.
+        final boolean rightKeysUnique =
+                joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH;
+
         try (final BucketingContext bc = new BucketingContext("naturalJoin",
-                leftTable, rightTable, columnsToMatch, columnsToAdd, control, true, true)) {
-            final JoinControl.BuildParameters.From firstBuildFrom = bc.buildParameters.firstBuildFrom();
+                leftTable, rightTable, columnsToMatch, columnsToAdd, control, rightKeysUnique, true)) {
+            // the right data index only sizes the table; the right rows themselves are built into it
+            final JoinControl.BuildParameters.From firstBuildFrom =
+                    bc.buildParameters.firstBuildFrom() == RightDataIndex ? RightInput
+                            : bc.buildParameters.firstBuildFrom();
             final int initialHashTableSize = bc.buildParameters.hashTableSize();
             final boolean rightAddOnly = rightTable.isAddOnly();
 
@@ -98,22 +107,9 @@ class NaturalJoinHelper {
 
             if (leftTable.isRefreshing() && rightTable.isRefreshing()) {
                 // We always build right first, regardless of the build parameters. This is probably irrelevant.
-
-                // The build parameters size the table for the right row count, treating the right keys as unique. A
-                // join that errors on duplicates needs a state per right row, so that size is exact; a first- or
-                // last-match join collapses duplicates into one state, so its right row count may far overstate the
-                // states, and it starts from the left data index size (or the default) and grows by rehashing.
-                final boolean rightKeysUnique =
-                        joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH;
-                final int bothIncrementalTableSize = rightKeysUnique
-                        ? initialHashTableSize
-                        : bc.leftDataIndexTable != null
-                                ? control.tableSize(bc.leftDataIndexTable.size())
-                                : control.initialBuildSize();
-
                 final BothIncrementalNaturalJoinStateManager jsm = TypedHasherFactory.makeNaturalJoin(
                         IncrementalNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        bothIncrementalTableSize, control.getMaximumLoadFactor(),
+                        initialHashTableSize, control.getMaximumLoadFactor(),
                         control.getTargetLoadFactor(), joinType, rightAddOnly);
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
 
@@ -258,8 +254,8 @@ class NaturalJoinHelper {
             } else if (firstBuildFrom == LeftInput) {
                 final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.makeNaturalJoin(
                         StaticNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        // The static state manager doesn't allow rehashing, so we must allocate a big enough hash
-                        // table for the possibility that all left rows will have unique keys.
+                        // A build from the left side records each left row's hash slot, which a rehash would move, so
+                        // the table must be big enough for the possibility that all left rows have unique keys.
                         control.tableSize(leftTable.size()),
                         control.getMaximumLoadFactor(), control.getTargetLoadFactor(), joinType, rightAddOnly);
 

@@ -25,6 +25,8 @@ import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerT
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
+import java.lang.Override;
+import java.util.Arrays;
 import java.util.function.LongUnaryOperator;
 
 final class StaticNaturalJoinHasherChar extends StaticNaturalJoinStateManagerTypedBase {
@@ -177,5 +179,35 @@ final class StaticNaturalJoinHasherChar extends StaticNaturalJoinStateManagerTyp
 
     private static boolean isStateEmpty(long state) {
         return state == EMPTY_RIGHT_STATE;
+    }
+
+    @Override
+    protected void rehashInternalFull(final int oldSize) {
+        final char[] destKeyArray0 = new char[tableSize];
+        final long[] destState = new long[tableSize];
+        Arrays.fill(destState, EMPTY_RIGHT_STATE);
+        final char [] originalKeyArray0 = mainKeySource0.getArray();
+        mainKeySource0.setArray(destKeyArray0);
+        final long [] originalStateArray = mainRightRowKey.getArray();
+        mainRightRowKey.setArray(destState);
+        for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
+            final long currentStateValue = originalStateArray[sourceBucket];
+            if (isStateEmpty(currentStateValue)) {
+                continue;
+            }
+            final char k0 = originalKeyArray0[sourceBucket];
+            final int hash = hash(k0);
+            final int firstDestinationTableLocation = hashToTableLocation(hash);
+            int destinationTableLocation = firstDestinationTableLocation;
+            while (true) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
+                    destKeyArray0[destinationTableLocation] = k0;
+                    destState[destinationTableLocation] = originalStateArray[sourceBucket];
+                    break;
+                }
+                destinationTableLocation = nextTableLocation(destinationTableLocation);
+                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
+            }
+        }
     }
 }

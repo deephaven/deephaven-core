@@ -3482,4 +3482,95 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         listener.close();
     }
+
+    /**
+     * A first- or last-match join against a static right table sizes its hash table from the right data index when
+     * there is one, rather than from the right row count, which overstates the states when keys repeat.
+     */
+    public void testStaticRightHashTableSizedFromRightDataIndex() {
+        final int distinctKeys = 4;
+        final long[] largestRequest = {-1};
+        final JoinControl control = new JoinControl() {
+            @Override
+            int tableSize(final long expectedEntries) {
+                largestRequest[0] = Math.max(largestRequest[0], expectedEntries);
+                return super.tableSize(expectedEntries);
+            }
+        };
+
+        final QueryTable right = (QueryTable) emptyTable(100_000)
+                .update("Key = (long) (ii % " + distinctKeys + ")", "RS = (int) ii");
+        DataIndexer.getOrCreateDataIndex(right, "Key");
+        final Table expected = newTable(longCol("Key", 0, 1, 2, 3), intCol("LS", 1, 2, 3, 4),
+                intCol("RS", 99_996, 99_997, 99_998, 99_999));
+
+        // a refreshing left builds from the right side
+        final QueryTable refreshingLeft = testRefreshingTable(longCol("Key", 0, 1, 2, 3), intCol("LS", 1, 2, 3, 4));
+        assertTableEquals(expected, NaturalJoinHelper.naturalJoin(refreshingLeft, right,
+                MatchPairFactory.getExpressions("Key"), MatchPairFactory.getExpressions("RS"),
+                NaturalJoinType.LAST_MATCH, control));
+        assertEquals(distinctKeys, largestRequest[0]);
+
+        // a static left larger than the right data index also builds from the right side
+        largestRequest[0] = -1;
+        final QueryTable staticLeft = testTable(longCol("Key", 0, 1, 2, 3, 0), intCol("LS", 1, 2, 3, 4, 5));
+        assertTableEquals(newTable(longCol("Key", 0, 1, 2, 3, 0), intCol("LS", 1, 2, 3, 4, 5),
+                intCol("RS", 99_996, 99_997, 99_998, 99_999, 99_996)),
+                NaturalJoinHelper.naturalJoin(staticLeft, right,
+                        MatchPairFactory.getExpressions("Key"), MatchPairFactory.getExpressions("RS"),
+                        NaturalJoinType.LAST_MATCH, control));
+        assertEquals(distinctKeys, largestRequest[0]);
+    }
+
+    public void testStaticRightRehashFirstMatch() {
+        testStaticRightRehash(NaturalJoinType.FIRST_MATCH);
+    }
+
+    public void testStaticRightRehashLastMatch() {
+        testStaticRightRehash(NaturalJoinType.LAST_MATCH);
+    }
+
+    /**
+     * Without a right data index, a first- or last-match join against a static right table starts from the default hash
+     * table size and grows by rehashing as states are added; the redirections found after the rehashes, and by later
+     * left probes, must match a join against the deduplicated right table.
+     */
+    private void testStaticRightRehash(final NaturalJoinType joinType) {
+        // a tiny initial table forces many rehashes while the right side is built
+        final JoinControl control = new JoinControl() {
+            @Override
+            int initialBuildSize() {
+                return 16;
+            }
+        };
+        final int distinctKeys = 3_000;
+        final QueryTable right = (QueryTable) emptyTable(20_000)
+                .update("Key = `k` + (ii % " + distinctKeys + ")", "RS = (int) ii");
+        final Table deduplicatedRight =
+                joinType == NaturalJoinType.FIRST_MATCH ? right.firstBy("Key") : right.lastBy("Key");
+
+        // half of the left keys match; the other half are absent from the right
+        final QueryTable left = (QueryTable) emptyTable(distinctKeys)
+                .update("Key = `k` + (ii * 2)", "LS = (int) ii");
+        final QueryTable refreshingLeft = testRefreshingTable(left.getRowSet().copy().toTracking(),
+                col("Key", ColumnVectors.ofObject(left, "Key", String.class).toArray()),
+                intCol("LS", ColumnVectors.ofInt(left, "LS").toArray()));
+
+        for (final QueryTable leftTable : new QueryTable[] {left, refreshingLeft}) {
+            final Table result = NaturalJoinHelper.naturalJoin(leftTable, right,
+                    MatchPairFactory.getExpressions("Key"), MatchPairFactory.getExpressions("RS"), joinType, control);
+            assertTableEquals(leftTable.naturalJoin(deduplicatedRight, "Key", "RS"), result);
+
+            if (leftTable.isRefreshing()) {
+                // later left probes read the rehashed table
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    addToTable(leftTable, i(distinctKeys, distinctKeys + 1), col("Key", "k1", "k2999"),
+                            intCol("LS", -1, -2));
+                    leftTable.notifyListeners(i(distinctKeys, distinctKeys + 1), i(), i());
+                });
+                assertTableEquals(leftTable.naturalJoin(deduplicatedRight, "Key", "RS"), result);
+            }
+        }
+    }
 }

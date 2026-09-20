@@ -40,8 +40,7 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
 
     protected long numEntries = 0;
 
-    // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
-    // or if it falls below minimum load factor we will instead contract the table
+    // a build from the right side doubles the table when the next chunk would push the load factor past this
     private final double maximumLoadFactor;
 
     // the keys for our hash entries
@@ -135,7 +134,8 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
             return;
         }
         try (final BuildContext bc = makeBuildContext(leftSources, leftTable.size())) {
-            buildTable(bc, leftTable.getRowSet(), leftSources, new LeftBuildHandler(leftHashSlots));
+            // the hash slots recorded for the left rows would not survive a rehash
+            buildTable(bc, leftTable.getRowSet(), leftSources, new LeftBuildHandler(leftHashSlots), false);
         }
     }
 
@@ -148,8 +148,8 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
             return;
         }
         try (final BuildContext bc = makeBuildContext(rightSources, rightTable.size())) {
-            buildTable(bc, rightTable.getRowSet(), rightSources,
-                    this::buildFromRightSide);
+            // the right rows are only ever probed through the keys, so the table may grow as states are added
+            buildTable(bc, rightTable.getRowSet(), rightSources, this::buildFromRightSide, true);
         }
     }
 
@@ -198,11 +198,16 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
 
+    /**
+     * @param allowRehash whether the table may be rehashed to make room for a chunk; a build that records hash slots
+     *        must instead be allocated with sufficient size up front
+     */
     protected void buildTable(
             final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
-            final TypedHasherUtil.BuildHandler buildHandler) {
+            final TypedHasherUtil.BuildHandler buildHandler,
+            final boolean allowRehash) {
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
@@ -211,9 +216,11 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
 
-                if (exceedsCapacity(nextChunkSize)) {
+                if (allowRehash) {
+                    doRehash(nextChunkSize);
+                } else if (exceedsCapacity(nextChunkSize)) {
                     throw new IllegalStateException(
-                            "Static naturalJoin does not permit rehashing, table must be allocated with sufficient size at the beginning of initialization.");
+                            "Static naturalJoin does not permit rehashing when built from the left side, table must be allocated with sufficient size at the beginning of initialization.");
                 }
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
@@ -254,6 +261,25 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     public boolean exceedsCapacity(int nextChunkSize) {
         return (numEntries + nextChunkSize) >= (tableSize);
     }
+
+    /**
+     * Double the table until the next chunk fits within the maximum load factor, then move every state to its new
+     * location.
+     */
+    private void doRehash(final int nextChunkSize) {
+        final int oldSize = tableSize;
+        while ((numEntries + nextChunkSize) > (tableSize * maximumLoadFactor)) {
+            tableSize *= 2;
+            if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
+                throw new UnsupportedOperationException("Hash table exceeds maximum size!");
+            }
+        }
+        if (tableSize > oldSize) {
+            rehashInternalFull(oldSize);
+        }
+    }
+
+    protected abstract void rehashInternalFull(int oldSize);
 
     protected int hashToTableLocation(int hash) {
         return hash & (tableSize - 1);

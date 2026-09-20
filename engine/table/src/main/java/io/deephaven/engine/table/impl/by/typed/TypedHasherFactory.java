@@ -182,7 +182,7 @@ public class TypedHasherFactory {
                     .stateType(long.class).mainStateName("mainRightRowKey")
                     .emptyStateName("EMPTY_RIGHT_STATE")
                     .includeOriginalSources(true)
-                    .supportRehash(false)
+                    .supportRehash(true)
                     .addConstructorParameter(ParameterSpec.builder(NaturalJoinType.class, "joinType").build())
                     .addConstructorParameter(ParameterSpec.builder(boolean.class, "addOnly").build());
 
@@ -847,12 +847,14 @@ public class TypedHasherFactory {
             builder.addStatement("destKeyArray$L[destinationTableLocation] = k$L", ii, ii);
         }
         builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]");
-        if (!hasherConfig.alwaysMoveMain) {
-            builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
-        }
-        hasherConfig.moveMainFull.accept(builder);
-        if (!hasherConfig.alwaysMoveMain) {
-            builder.endControlFlow();
+        if (hasherConfig.moveMainFull != null) {
+            if (!hasherConfig.alwaysMoveMain) {
+                builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
+            }
+            hasherConfig.moveMainFull.accept(builder);
+            if (!hasherConfig.alwaysMoveMain) {
+                builder.endControlFlow();
+            }
         }
         builder.addStatement("break");
         builder.endControlFlow();
