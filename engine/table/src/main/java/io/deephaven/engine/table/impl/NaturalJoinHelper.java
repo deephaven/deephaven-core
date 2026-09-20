@@ -299,7 +299,7 @@ class NaturalJoinHelper {
         if (rightTable.size() > 1) {
             if ((joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH)) {
                 if (!leftTable.isEmpty()) {
-                    throw new RuntimeException(
+                    throw new IllegalStateException(
                             "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
                 }
                 // we don't care where it goes
@@ -483,22 +483,27 @@ class NaturalJoinHelper {
         return false;
     }
 
+    /**
+     * Check the right table's size against the join type when there are left rows to match. The exceptions match the
+     * keyed paths: a duplicate right key is an {@link IllegalStateException}, a missing exact match a
+     * {@link RuntimeException}.
+     */
     private static void checkRightTableSizeZeroKeys(
             final Table leftTable,
             final Table rightTable,
             final NaturalJoinType joinType) {
-        if (!leftTable.isEmpty()) {
-            if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE) {
-                if (rightTable.size() > 1) {
-                    throw new RuntimeException(
-                            "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
-                }
-            } else if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                if (rightTable.size() != 1) {
-                    throw new RuntimeException(
-                            "exactJoin with zero key columns must have exactly one row in the right hand side table!");
-                }
+        if (leftTable.isEmpty()) {
+            return;
+        }
+        if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+            if (rightTable.size() > 1) {
+                throw new IllegalStateException(
+                        "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
             }
+        }
+        if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && rightTable.isEmpty()) {
+            throw new RuntimeException(
+                    "exactJoin with zero key columns must have exactly one row in the right hand side table!");
         }
     }
 

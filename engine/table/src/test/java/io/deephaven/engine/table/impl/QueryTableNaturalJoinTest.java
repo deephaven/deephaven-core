@@ -3329,4 +3329,35 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key", "R"));
         assertEquals("Natural Join found duplicate right key for c", e.getMessage());
     }
+
+    /**
+     * A zero-key join fails the same way as a keyed join when the right side has several rows under a join type that
+     * rejects duplicates: an IllegalStateException, at construction and from the listener alike. A missing exact match
+     * remains a plain RuntimeException, as it is for a keyed exact join.
+     */
+    public void testNaturalJoinZeroKeysDuplicateRightRowsExceptionType() {
+        final QueryTable left = testTable(intCol("L", 1, 2));
+        final Table twoRightRows = testTable(intCol("C", 100, 200));
+        for (final NaturalJoinType joinType : new NaturalJoinType[] {NaturalJoinType.ERROR_ON_DUPLICATE,
+                NaturalJoinType.EXACTLY_ONE_MATCH}) {
+            assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(twoRightRows, "", "C", joinType));
+        }
+        assertThrowsExactly(RuntimeException.class,
+                () -> left.naturalJoin(testTable(intCol("C")), "", "C", NaturalJoinType.EXACTLY_ONE_MATCH));
+
+        final QueryTable right = testRefreshingTable(i(0).toTracking(), intCol("C", 100));
+        final Table result = left.naturalJoin(right, "", "C");
+        assertTableEquals(newTable(intCol("L", 1, 2), intCol("C", 100, 100)), result);
+
+        final ErrorListener listener = new ErrorListener(result);
+        result.addUpdateListener(listener);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(right, i(1), intCol("C", 200));
+                right.notifyListeners(i(1), i(), i());
+            });
+        }
+        assertEquals(IllegalStateException.class, listener.originalException().getClass());
+    }
 }
