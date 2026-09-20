@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.*;
@@ -3162,5 +3164,38 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right = newTable(intCol("R", 10, 20));
         final Table result = left.naturalJoin(right, "", "R", NaturalJoinType.LAST_MATCH);
         assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("R", 20, 20, 20)), result);
+    }
+
+    /**
+     * The unique-table natural join maps key values through a functor that owns a pooled chunk. A refreshing left table
+     * probes that functor on every tick, long after the {@link BucketingContext} that built the join is gone, so the
+     * functor must not outlive the pass over the keys that uses it.
+     */
+    public void testNaturalJoinUniqueTableDoesNotRetainAPooledChunk() {
+        final QueryTable left = testRefreshingTable(i(1, 2).toTracking(),
+                byteCol("Key", (byte) 1, (byte) 2), intCol("L", 1, 2));
+        final QueryTable right = testTable(i(1, 2).toTracking(),
+                byteCol("Key", (byte) 1, (byte) 2), intCol("R", 10, 20));
+
+        final Table result = left.naturalJoin(right, "Key", "R");
+        assertTableEquals(newTable(byteCol("Key", (byte) 1, (byte) 2), intCol("L", 1, 2), intCol("R", 10, 20)),
+                result);
+
+        // The pool is LIFO, so a chunk the join wrongly kept would be handed straight back to us here.
+        try (final WritableIntChunk<Values> recycled = WritableIntChunk.makeWritableChunk(JoinControl.CHUNK_SIZE)) {
+            recycled.fillWithValue(0, JoinControl.CHUNK_SIZE, -12345);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(3), byteCol("Key", (byte) 1), intCol("L", 3));
+                left.notifyListeners(i(3), i(), i());
+            });
+
+            assertEquals(JoinControl.CHUNK_SIZE, recycled.size());
+            assertEquals(-12345, recycled.get(0));
+        }
+
+        assertTableEquals(newTable(byteCol("Key", (byte) 1, (byte) 2, (byte) 1), intCol("L", 1, 2, 3),
+                intCol("R", 10, 20, 10)), result);
     }
 }

@@ -68,9 +68,9 @@ class NaturalJoinHelper {
             // TODO: SimpleUniqueStaticNaturalJoinManager, but not static!
             if (!rightTable.isRefreshing()
                     && control.useUniqueTable(bc.uniqueValues, bc.maximumUniqueValue, bc.minimumUniqueValue)) {
-                Assert.neqNull(bc.uniqueFunctor, "uniqueFunctor");
+                Assert.neqNull(bc.uniqueChunkType, "uniqueChunkType");
                 final SimpleUniqueStaticNaturalJoinStateManager jsm = new SimpleUniqueStaticNaturalJoinStateManager(
-                        bc.originalLeftSources, bc.uniqueValuesRange(), bc.uniqueFunctor, joinType,
+                        bc.originalLeftSources, bc.uniqueValuesRange(), bc.uniqueChunkType, bc.uniqueOffset, joinType,
                         rightTable.isAddOnly());
                 jsm.setRightSide(rightTable.getRowSet(), bc.rightSources[0]);
                 final LongArraySource leftRedirections = new LongArraySource();
