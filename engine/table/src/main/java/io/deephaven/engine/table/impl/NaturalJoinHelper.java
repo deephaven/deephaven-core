@@ -165,7 +165,8 @@ class NaturalJoinHelper {
 
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
                 if (bc.leftDataIndexTable != null) {
-                    jsm.decorateLeftSide(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources, leftRedirections);
+                    jsm.decorateLeftSideIndexed(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources,
+                            bc.leftDataIndexRowSetSource, leftRedirections);
                     rowRedirection = jsm.buildIndexedRowRedirectionFromRedirections(leftTable,
                             bc.leftDataIndexTable.getRowSet(), leftRedirections, bc.leftDataIndexRowSetSource,
                             control.getRedirectionType(leftTable));

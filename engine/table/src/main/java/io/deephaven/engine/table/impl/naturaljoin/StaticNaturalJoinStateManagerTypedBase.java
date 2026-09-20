@@ -21,6 +21,8 @@ import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.P
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.QueryConstants;
 
+import java.util.function.LongUnaryOperator;
+
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
 import static io.deephaven.engine.table.impl.JoinControl.MAX_TABLE_SIZE;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
@@ -110,16 +112,19 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
 
     private class LeftProbeHandler implements TypedHasherUtil.ProbeHandler {
         final LongArraySource leftRedirections;
+        /** maps a probed row key to a row key of {@code keySourcesForErrorMessages}, for the duplicate key error */
+        final LongUnaryOperator probedRowKeyToErrorRowKey;
         long offset = 0;
 
-        private LeftProbeHandler(LongArraySource leftRedirections) {
+        private LeftProbeHandler(LongArraySource leftRedirections, LongUnaryOperator probedRowKeyToErrorRowKey) {
             this.leftRedirections = leftRedirections;
+            this.probedRowKeyToErrorRowKey = probedRowKeyToErrorRowKey;
         }
 
         @Override
         public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
             leftRedirections.ensureCapacity(offset + chunkOk.intSize());
-            decorateLeftSide(chunkOk, sourceKeyChunks, leftRedirections, offset);
+            decorateLeftSide(chunkOk, sourceKeyChunks, leftRedirections, offset, probedRowKeyToErrorRowKey);
             offset += chunkOk.intSize();
         }
     }
@@ -152,16 +157,32 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
 
     @Override
     public void decorateLeftSide(RowSet leftRowSet, ColumnSource<?>[] leftSources, LongArraySource leftRedirections) {
-        if (leftRowSet.isEmpty()) {
+        // the probed rows are left table rows, which is the keyspace of the error message key sources
+        decorateLeftSide(leftRowSet, leftSources, leftRedirections, LongUnaryOperator.identity());
+    }
+
+    @Override
+    public void decorateLeftSideIndexed(RowSet indexTableRowSet, ColumnSource<?>[] indexSources,
+            ColumnSource<RowSet> indexRowSets, LongArraySource leftRedirections) {
+        // the probed rows are data index table rows, so a duplicate key error is rendered from the first left row of
+        // the offending group
+        decorateLeftSide(indexTableRowSet, indexSources, leftRedirections,
+                (long indexRowKey) -> indexRowSets.get(indexRowKey).firstRowKey());
+    }
+
+    private void decorateLeftSide(RowSet probeRowSet, ColumnSource<?>[] probeSources,
+            LongArraySource leftRedirections, LongUnaryOperator probedRowKeyToErrorRowKey) {
+        if (probeRowSet.isEmpty()) {
             return;
         }
-        try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
-            probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler(leftRedirections));
+        try (final ProbeContext pc = makeProbeContext(probeSources, probeRowSet.size())) {
+            probeTable(pc, probeRowSet, false, probeSources,
+                    new LeftProbeHandler(leftRedirections, probedRowKeyToErrorRowKey));
         }
     }
 
     abstract protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftRedirections, long redirectionsOffset);
+            LongArraySource leftRedirections, long redirectionsOffset, LongUnaryOperator probedRowKeyToErrorRowKey);
 
     @Override
     public void decorateWithRightSide(Table rightTable, ColumnSource<?>[] rightSources) {

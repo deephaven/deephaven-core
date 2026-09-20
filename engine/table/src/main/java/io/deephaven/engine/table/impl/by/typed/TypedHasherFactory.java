@@ -48,6 +48,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -195,7 +196,8 @@ public class TypedHasherFactory {
                     false, TypedNaturalJoinFactory::staticProbeDecorateLeftFound,
                     TypedNaturalJoinFactory::staticProbeDecorateLeftMissing,
                     ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
-                    ParameterSpec.builder(long.class, "redirectionOffset").build()));
+                    ParameterSpec.builder(long.class, "redirectionOffset").build(),
+                    ParameterSpec.builder(LongUnaryOperator.class, "probedRowKeyToErrorRowKey").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, true, TypedNaturalJoinFactory::staticBuildRightFound,

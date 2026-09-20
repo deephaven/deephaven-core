@@ -25,6 +25,7 @@ import io.deephaven.engine.table.impl.naturaljoin.StaticNaturalJoinStateManagerT
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource;
+import java.util.function.LongUnaryOperator;
 
 final class StaticNaturalJoinHasherDouble extends StaticNaturalJoinStateManagerTypedBase {
     private final ImmutableDoubleArraySource mainKeySource0;
@@ -105,7 +106,8 @@ final class StaticNaturalJoinHasherDouble extends StaticNaturalJoinStateManagerT
     }
 
     protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftRedirections, long redirectionOffset) {
+            LongArraySource leftRedirections, long redirectionOffset,
+            LongUnaryOperator probedRowKeyToErrorRowKey) {
         final DoubleChunk<Values> keyChunk0 = sourceKeyChunks[0].asDoubleChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -119,7 +121,7 @@ final class StaticNaturalJoinHasherDouble extends StaticNaturalJoinStateManagerT
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (rightRowKey == DUPLICATE_RIGHT_STATE) {
                         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
-                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
+                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(probedRowKeyToErrorRowKey.applyAsLong(rowKeyChunk.get(chunkPosition))));
                     }
                     leftRedirections.set(redirectionOffset++, rightRowKey);
                     found = true;

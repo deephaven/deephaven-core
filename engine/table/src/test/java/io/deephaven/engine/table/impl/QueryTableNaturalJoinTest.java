@@ -3293,4 +3293,40 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(newTable(col("Key", "a"), intCol("L", 1), intCol("C", 300), intCol("E", 300)), downstream);
         listener.close();
     }
+
+    /**
+     * A refreshing left table with a data index joined to a static right table probes the rows of the data index table
+     * against the right side. A duplicate right key error must name the offending key, which is rendered from the left
+     * table's key columns: with sparse left row keys the group's data index row key is not a left row key at all.
+     */
+    public void testDuplicateRightKeyErrorLeftRefreshingWithDataIndexSparseRows() {
+        final QueryTable left =
+                testRefreshingTable(i(10, 20, 30).toTracking(), col("Key", "a", "b", "c"), intCol("L", 1, 2, 3));
+        DataIndexer.getOrCreateDataIndex(left, "Key");
+        final Table right = testTable(col("Key", "a", "a", "b"), intCol("R", 10, 11, 20));
+
+        for (final NaturalJoinType joinType : new NaturalJoinType[] {NaturalJoinType.ERROR_ON_DUPLICATE,
+                NaturalJoinType.EXACTLY_ONE_MATCH}) {
+            final IllegalStateException e = assertThrowsExactly(IllegalStateException.class,
+                    () -> left.naturalJoin(right, "Key", "R", joinType));
+            assertEquals("Natural Join found duplicate right key for a", e.getMessage());
+        }
+    }
+
+    /**
+     * With dense left row keys the group's data index row key is a valid left row key, but of a row with a different
+     * key; the error must still name the duplicated key.
+     */
+    public void testDuplicateRightKeyErrorLeftRefreshingWithDataIndexDenseRows() {
+        // left rows 0..3 hold a, a, b, c; the data index table holds a, b, c at rows 0..2, so the group for c is index
+        // row 2 while left row 2 holds b
+        final QueryTable left = testRefreshingTable(i(0, 1, 2, 3).toTracking(), col("Key", "a", "a", "b", "c"),
+                intCol("L", 1, 2, 3, 4));
+        DataIndexer.getOrCreateDataIndex(left, "Key");
+        final Table right = testTable(col("Key", "c", "c", "b"), intCol("R", 10, 11, 20));
+
+        final IllegalStateException e =
+                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key", "R"));
+        assertEquals("Natural Join found duplicate right key for c", e.getMessage());
+    }
 }

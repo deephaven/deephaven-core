@@ -56,7 +56,7 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("final $T<$T> rowKeyChunk = rowSequence.asRowKeyChunk()", LongChunk.class,
                 OrderedRowKeys.class);
         builder.addStatement(
-                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)))");
+                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(probedRowKeyToErrorRowKey.applyAsLong(rowKeyChunk.get(chunkPosition))))");
         builder.endControlFlow();
         builder.addStatement("leftRedirections.set(redirectionOffset++, rightRowKey)");
     }
