@@ -8,34 +8,23 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 
 public class ObjectBarrageCopyKernel {
     /**
      * Context for the ObjectBarrageCopyKernel that holds the add / mod chunks as WritableObjectChunk and the delta chunk
-     * size as a shift and a mask.
+     * size.
      */
     private static class ObjectBarrageCopyKernelContext implements BarrageCopyKernel.BarrageCopyKernelContext {
         private final WritableObjectChunk<Object, Values>[][] addChunks;
         private final WritableObjectChunk<Object, Values>[][] modChunks;
         private final int deltaChunkSize;
-        /**
-         * {@code position >>> deltaChunkShift} is the chunk index and {@code position & deltaChunkMask} the offset.
-         * Derived here rather than held as constants because the kernel does not own the chunk size: the producer
-         * configures it and passes it in, so it is only known once per context, and it must be a power of two.
-         */
-        private final int deltaChunkShift;
-        private final int deltaChunkMask;
 
         private ObjectBarrageCopyKernelContext(
                 final WritableChunk<Values>[][] addChunks,
                 final WritableChunk<Values>[][] modChunks,
                 final int deltaChunkSize) {
-            Assert.assertion(deltaChunkSize > 0 && Integer.bitCount(deltaChunkSize) == 1,
-                    "deltaChunkSize is a power of two", deltaChunkSize, "deltaChunkSize");
-
             // Clone and cast the add / mod chunk arrays to WritableObjectChunk.
             // noinspection unchecked
             this.addChunks = new WritableObjectChunk[addChunks.length][];
@@ -62,8 +51,6 @@ public class ObjectBarrageCopyKernel {
                 }
             }
             this.deltaChunkSize = deltaChunkSize;
-            this.deltaChunkShift = Integer.numberOfTrailingZeros(deltaChunkSize);
-            this.deltaChunkMask = deltaChunkSize - 1;
         }
 
         @Override
@@ -87,17 +74,18 @@ public class ObjectBarrageCopyKernel {
     }
 
     /**
-     * Copy every run, splitting a run wherever it crosses an origin or destination chunk boundary and moving each
-     * resulting stretch with one typed array copy.
+     * Fill the output chunks from the delta chunks according to the runs, splitting a run wherever it crosses an origin
+     * or destination chunk boundary and moving each resulting stretch with one typed array copy.
      */
-    private static void copyByRuns(
+    private static void copy(
             final BarrageCopyKernel.Runs runs,
             final WritableObjectChunk<Object, Values>[] dest,
-            final ObjectBarrageCopyKernelContext context) {
+            final BarrageCopyKernel.BarrageCopyKernelContext context) {
         // hoisted out of the loops
-        final int deltaChunkSize = context.deltaChunkSize;
-        final WritableObjectChunk<Object, Values>[][] addChunks = context.addChunks;
-        final WritableObjectChunk<Object, Values>[][] modChunks = context.modChunks;
+        final ObjectBarrageCopyKernelContext objectContext = (ObjectBarrageCopyKernelContext) context;
+        final int deltaChunkSize = objectContext.deltaChunkSize;
+        final WritableObjectChunk<Object, Values>[][] addChunks = objectContext.addChunks;
+        final WritableObjectChunk<Object, Values>[][] modChunks = objectContext.modChunks;
         for (int ri = 0; ri < runs.count; ++ri) {
             final long encoded = runs.encoded[ri];
             final WritableObjectChunk<Object, Values>[] originChunks = originChunks(encoded, addChunks, modChunks);
@@ -116,57 +104,6 @@ public class ObjectBarrageCopyKernel {
                 destPos += length;
                 remaining -= length;
             }
-        }
-    }
-
-    /**
-     * Copy every row from {@link BarrageCopyKernel.Runs#convertRunsToElementMapping}, one encoded origin per output
-     * row, filling the destination in order with the row index as the loop variable. Building that mapping costs a pass
-     * and an array the size of the output, but buys a gather loop with no destination arithmetic and no run
-     * bookkeeping, which for short runs is the cheaper trade, and the columns copying the same runs share one of them.
-     */
-    private static void copyByElements(
-            final long[][] mapping,
-            final WritableObjectChunk<Object, Values>[] dest,
-            final ObjectBarrageCopyKernelContext context) {
-        // hoisted out of the loops
-        final int shift = context.deltaChunkShift;
-        final int mask = context.deltaChunkMask;
-        final WritableObjectChunk<Object, Values>[][] addChunks = context.addChunks;
-        final WritableObjectChunk<Object, Values>[][] modChunks = context.modChunks;
-        for (int mi = 0; mi < dest.length; ++mi) {
-            final long[] chunkMapping = mapping[mi];
-            final WritableObjectChunk<Object, Values> destChunk = dest[mi];
-            for (int pos = 0; pos < chunkMapping.length; ++pos) {
-                final long encoded = chunkMapping[pos];
-                final WritableObjectChunk<Object, Values>[] originChunks = originChunks(encoded, addChunks, modChunks);
-                final long originPos = encoded & BarrageCopyKernel.DELTA_POSITION_MASK;
-                destChunk.set(pos, originChunks[(int) (originPos >>> shift)].get((int) (originPos & mask)));
-            }
-        }
-    }
-
-    /**
-     * Fill the output chunks from the delta chunks according to the runs, choosing once for the whole column between an
-     * array copy per stretch and an assignment per element. The runs of one column come from the same updates, so they
-     * are alike; deciding per column keeps the decision out of the copy loop. A column whose runs another column has
-     * already converted copies from that mapping, since the runs it would have read are gone.
-     */
-    private static void copy(
-            final BarrageCopyKernel.Runs runs,
-            final WritableObjectChunk<Object, Values>[] dest,
-            final BarrageCopyKernel.BarrageCopyKernelContext context) {
-        if (runs.count == 0) {
-            return;
-        }
-
-        final ObjectBarrageCopyKernelContext objectContext = (ObjectBarrageCopyKernelContext) context;
-        if (runs.elementMapping != null
-                || runs.totalRows / runs.count < BarrageCopyKernel.MIN_AVERAGE_RUN_LENGTH_FOR_ARRAY_COPY) {
-            runs.convertRunsToElementMapping(objectContext.deltaChunkSize);
-            copyByElements(runs.elementMapping, dest, objectContext);
-        } else {
-            copyByRuns(runs, dest, objectContext);
         }
     }
 

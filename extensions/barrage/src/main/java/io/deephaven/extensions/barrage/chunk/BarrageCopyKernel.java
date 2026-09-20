@@ -3,7 +3,6 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -32,14 +31,6 @@ public interface BarrageCopyKernel {
     int DELTA_MOD_FLAG_BIT = 62;
 
     /**
-     * Average run length at or above which a column is copied with an array copy per stretch rather than an element at
-     * a time. Benchmarking shows the element path ahead while runs are a row or two long and the array copy ahead from
-     * three up, by a margin that widens with the run length. The kernel's average is an integer division, so this is
-     * compared against the floor of the true average.
-     */
-    long MIN_AVERAGE_RUN_LENGTH_FOR_ARRAY_COPY = 3;
-
-    /**
      * Position zero of one side (adds or mods) of one delta, in the bit layout above. Add a position within that side's
      * chunks, or shift a whole row set of positions by it, for the encoded origins {@link Runs} carries.
      */
@@ -54,28 +45,18 @@ public interface BarrageCopyKernel {
      * {@link #originOffset}) and how many rows follow contiguously.
      *
      * <p>
-     * The caller appends the runs in output order and a kernel consumes them, either as runs or by replacing them with
-     * the mapping {@link #convertRunsToElementMapping} expands them into. Row sets are range-compressed and updates
-     * arrive in ranges, so a run usually covers many rows and building this costs proportionally to ranges rather than
-     * rows.
+     * Data only. The caller appends the runs in output order; a kernel reads them. Row sets are range-compressed and
+     * updates arrive in ranges, so a run usually covers many rows and building this costs proportionally to ranges
+     * rather than rows.
      */
     final class Runs {
-        /**
-         * Run data for this column: the output positions, encoded origins, and lengths of each contiguous stretch. This
-         * may be used directly by the copy kernel or converted to an element mapping for element-wise copying (which
-         * will nullify these arrays).
-         */
+        /** The output positions, encoded origins and lengths of each contiguous stretch. */
         long[] dest = new long[16];
         long[] encoded = new long[16];
         long[] len = new long[16];
         int count;
         /** Sum of the run lengths, so a kernel can size its strategy without a pass over the runs. */
         long totalRows;
-        /**
-         * Once decided to use element-wise copying, this holds the mapping from output rows to encoded origins. It is
-         * null until {@link #convertRunsToElementMapping} is called.
-         */
-        long[][] elementMapping;
 
         /** How many output rows these runs account for between them. */
         public long totalRows() {
@@ -87,7 +68,6 @@ public interface BarrageCopyKernel {
          * encoded origin {@code origin} and whose remaining rows follow it contiguously.
          */
         public void add(final long destination, final long origin, final long length) {
-            Assert.eqNull(elementMapping, "elementMapping");
             if (count == dest.length) {
                 dest = Arrays.copyOf(dest, count * 2);
                 encoded = Arrays.copyOf(encoded, count * 2);
@@ -101,52 +81,6 @@ public interface BarrageCopyKernel {
         }
 
 
-        /**
-         * Replace the runs with {@link #elementMapping}, one encoded origin per output row, in output order, laid out
-         * in the output's chunks. Idempotent — once the mapping is there, this does nothing.
-         *
-         * <p>
-         * The mapping depends only on the runs and the chunk size, never on a column's data, and every column whose
-         * rows come from the same deltas in the same pattern shares one {@code Runs}, so the columns of one coalesce
-         * that need it build it once between them rather than each allocating eight bytes per row. Coalescing is single
-         * threaded, which is what makes the unsynchronized caching safe.
-         *
-         * <p>
-         * The runs are dropped once converted, because they are the larger of the two: three longs per run against one
-         * per row, so at a run per row they cost three times the mapping, more once {@link #add}'s doubling has left
-         * slack. Nothing reads them afterwards: a kernel copies by run only while {@link #elementMapping} is null, so
-         * the first column to convert commits the rest to the mapping.
-         *
-         * @param deltaChunkSize rows per output chunk except the last; must be a power of two
-         */
-        void convertRunsToElementMapping(final int deltaChunkSize) {
-            if (elementMapping != null) {
-                return;
-            }
-            final int numChunks = (int) ((totalRows + deltaChunkSize - 1) / deltaChunkSize);
-            final long[][] mapping = new long[numChunks][];
-            for (int mi = 0; mi < numChunks; ++mi) {
-                final int rows = (mi < numChunks - 1 || totalRows % deltaChunkSize == 0)
-                        ? deltaChunkSize
-                        : (int) (totalRows % deltaChunkSize);
-                mapping[mi] = new long[rows];
-            }
-            final int shift = Integer.numberOfTrailingZeros(deltaChunkSize);
-            final int mask = deltaChunkSize - 1;
-            for (int ri = 0; ri < count; ++ri) {
-                long destPos = dest[ri];
-                long origin = encoded[ri];
-                for (long remaining = len[ri]; remaining > 0; --remaining) {
-                    mapping[(int) (destPos >>> shift)][(int) (destPos & mask)] = origin;
-                    ++destPos;
-                    ++origin;
-                }
-            }
-            dest = null;
-            encoded = null;
-            len = null;
-            elementMapping = mapping;
-        }
     }
 
     static BarrageCopyKernel makeBarrageCopyKernel(final ChunkType chunkType) {
@@ -182,8 +116,8 @@ public interface BarrageCopyKernel {
      *
      * @param addChunks the add delta chunks (per delta)
      * @param modChunks the mod delta chunks (per delta)
-     * @param deltaChunkSize the number of rows in every delta chunk except the last of a column, which is what makes an
-     *        encoded position locate a chunk by a shift; must be a power of two
+     * @param deltaChunkSize the number of rows in every delta chunk except the last of a column, which is what lets an
+     *        encoded position locate its chunk
      * @return a context that can be passed to {@link #copy(Runs, WritableChunk[], BarrageCopyKernelContext)} to drive
      *         the copy from the add / mod delta chunks into the output chunks.
      */
@@ -196,9 +130,8 @@ public interface BarrageCopyKernel {
      * Fill one column's output chunks from the per-delta chunks the context holds, following {@code runs}.
      *
      * <p>
-     * Chooses once per column, from the average run length against {@link #MIN_AVERAGE_RUN_LENGTH_FOR_ARRAY_COPY},
-     * between an array copy per run and an element at a time; a column whose runs another column has already converted
-     * takes the element copy whatever its run length.
+     * Each run is split wherever it crosses an origin or destination chunk boundary, and every resulting stretch moves
+     * with one typed array copy.
      *
      * @param runs where every output row comes from, in output order
      * @param dest the output chunks to fill, all of {@link BarrageCopyKernelContext#deltaChunkSize()} rows except the
