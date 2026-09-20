@@ -407,12 +407,11 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     } else {
                         final boolean leftEmpty = mainLeftRowSet.getUnsafe(tableLocation).isEmpty();
                         if (leftEmpty) {
-                            mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
-                            liveEntries--;
+                            tombstoneSlot(true, tableLocation, modifiedSlotTracker);
                         } else {
                             mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
+                            mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                         }
-                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     }
                     found = true;
                     break;
@@ -455,12 +454,11 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                 } else {
                                     final boolean leftEmpty = alternateLeftRowSet.getUnsafe(alternateTableLocation).isEmpty();
                                     if (leftEmpty) {
-                                        alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
-                                        liveEntries--;
+                                        tombstoneSlot(false, alternateTableLocation, modifiedSlotTracker);
                                     } else {
                                         alternateRightRowKey.set(alternateTableLocation, RowSet.NULL_ROW_KEY);
+                                        alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                                     }
-                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                                 }
                                 alternateFound = true;
                                 break;
@@ -672,8 +670,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                         left.remove(rowKeyChunk.get(chunkPosition));
                         if (rightState == RowSet.NULL_ROW_KEY) {
                             // no right match remains, so the slot is now dead
-                            mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
-                            liveEntries--;
+                            tombstoneSlot(true, tableLocation, modifiedSlotTracker);
                         }
                     } else {
                         // multi-row slot: accumulate for one bulk remove per slot
@@ -704,8 +701,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                     left.remove(rowKeyChunk.get(chunkPosition));
                                     if (rightState == RowSet.NULL_ROW_KEY) {
                                         // no right match remains, so the slot is now dead
-                                        alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
-                                        liveEntries--;
+                                        tombstoneSlot(false, alternateTableLocation, modifiedSlotTracker);
                                     }
                                 } else {
                                     // multi-row slot: accumulate for one bulk remove per slot

@@ -457,12 +457,11 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("final boolean leftEmpty = $LLeftRowSet.getUnsafe($L).isEmpty()", sourceType,
                 tableLocation);
         builder.beginControlFlow("if (leftEmpty)");
-        builder.addStatement("$LRightRowKey.set($L, $L)", sourceType, tableLocation, hasherConfig.tombstoneStateName);
-        builder.addStatement("liveEntries--");
+        builder.addStatement("tombstoneSlot($L, $L, modifiedSlotTracker)", !alternate, tableLocation);
         builder.nextControlFlow("else");
         builder.addStatement("$LRightRowKey.set($L, $T.NULL_ROW_KEY)", sourceType, tableLocation, RowSet.class);
-        builder.endControlFlow();
         modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
+        builder.endControlFlow();
         builder.endControlFlow();
     }
 
@@ -629,8 +628,7 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("left.remove(rowKeyChunk.get(chunkPosition))");
         builder.beginControlFlow("if (rightState == $T.NULL_ROW_KEY)", RowSet.class);
         builder.add("// no right match remains, so the slot is now dead\n");
-        builder.addStatement("$LRightRowKey.set($L, TOMBSTONE_RIGHT_STATE)", sourceType, tableLocation);
-        builder.addStatement("liveEntries--");
+        builder.addStatement("tombstoneSlot($L, $L, modifiedSlotTracker)", !alternate, tableLocation);
         builder.endControlFlow();
         builder.nextControlFlow("else");
         builder.add("// multi-row slot: accumulate for one bulk remove per slot\n");

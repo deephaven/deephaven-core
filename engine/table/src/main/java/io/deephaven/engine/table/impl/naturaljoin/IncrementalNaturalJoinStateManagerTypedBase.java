@@ -805,15 +805,26 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         : alternateRightRowKey.getUnsafe(location);
                 if (rightState == RowSet.NULL_ROW_KEY) {
                     // the slot only existed because of left rows, and they are all gone now
-                    if (main) {
-                        mainRightRowKey.set(location, TOMBSTONE_RIGHT_STATE);
-                    } else {
-                        alternateRightRowKey.set(location, TOMBSTONE_RIGHT_STATE);
-                    }
-                    liveEntries--;
+                    tombstoneSlot(main, location, modifiedSlotTracker);
                 }
             }
         });
+    }
+
+    /**
+     * Mark a slot dead once its last left row and last right row are gone. Any modified slot tracker entry the slot
+     * holds this cycle describes the key that just died, so it is discarded rather than applied to the key that later
+     * reuses the slot.
+     */
+    protected void tombstoneSlot(final boolean main, final long location,
+            final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        final ImmutableLongArraySource rightRowKey = main ? mainRightRowKey : alternateRightRowKey;
+        final ImmutableLongArraySource cookieSource =
+                main ? mainModifiedTrackerCookieSource : alternateModifiedTrackerCookieSource;
+        rightRowKey.set(location, TOMBSTONE_RIGHT_STATE);
+        modifiedSlotTracker.removeEntry(cookieSource.getUnsafe(location));
+        cookieSource.set(location, -1L);
+        liveEntries--;
     }
 
     @Override

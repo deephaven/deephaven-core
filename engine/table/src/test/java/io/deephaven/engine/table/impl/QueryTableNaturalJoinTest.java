@@ -43,6 +43,7 @@ import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiConsumer;
@@ -3572,5 +3573,96 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 assertTableEquals(leftTable.naturalJoin(deduplicatedRight, "Key", "RS"), result);
             }
         }
+    }
+
+    public void testTombstonedSlotDiscardsTrackerEntryLeftRemoval() {
+        testTombstonedSlotDiscardsTrackerEntry(false);
+    }
+
+    public void testTombstonedSlotDiscardsTrackerEntryRightDuplicateRemoval() {
+        testTombstonedSlotDiscardsTrackerEntry(true);
+    }
+
+    /**
+     * A modified slot tracker entry is keyed by hash slot and lives until the end of the cycle. When a slot is
+     * tombstoned later in the same cycle, its entry must be discarded: a key added afterwards in the cycle may reuse
+     * the tombstone, and applying the dead key's entry to it would report the right columns modified (and, for a key
+     * migrated into the tombstone by a rehash, report its rows modified) although no surviving row's right match
+     * changed.
+     *
+     * @param rightDuplicates whether the dying keys have two right rows and no left rows, so that the slot is
+     *        tombstoned by the removal of the last right row (rather than by the removal of the last left row after the
+     *        right row's removal)
+     */
+    private void testTombstonedSlotDiscardsTrackerEntry(final boolean rightDuplicates) {
+        final int dCount = 1000; // keys whose slots die in the final cycle
+        final int eCount = 2000; // keys that never change; one of them gets a left-only column modification
+        final int nCount = 3000; // left-only keys added in the final cycle, many of which reuse D tombstones
+
+        // distinct pseudo-random keys, so that key ranges collide in the hash table the way real data does
+        final Random random = new Random(20260920);
+        final LinkedHashSet<Integer> keySet = new LinkedHashSet<>();
+        while (keySet.size() < dCount + eCount + nCount) {
+            keySet.add(random.nextInt());
+        }
+        final int[] allKeys = keySet.stream().mapToInt(Integer::intValue).toArray();
+        final int[] dKeys = Arrays.copyOfRange(allKeys, 0, dCount);
+        final int[] eKeys = Arrays.copyOfRange(allKeys, dCount, dCount + eCount);
+        final int[] nKeys = Arrays.copyOfRange(allKeys, dCount + eCount, dCount + eCount + nCount);
+
+        final WritableRowSet dRows = RowSetFactory.fromRange(0, dCount - 1);
+        final WritableRowSet eRows = RowSetFactory.fromRange(dCount, dCount + eCount - 1);
+        final WritableRowSet nRows = RowSetFactory.fromRange(dCount + eCount, dCount + eCount + nCount - 1);
+        // the second right row of each D key, for the duplicate variant
+        final WritableRowSet dRowsAgain = RowSetFactory.fromRange(10_000, 10_000 + dCount - 1);
+
+        final QueryTable left = rightDuplicates
+                ? testRefreshingTable(eRows.copy().toTracking(), intCol("Key", eKeys), intCol("LV", new int[eCount]))
+                : testRefreshingTable(dRows.union(eRows).toTracking(),
+                        intCol("Key", IntStream.concat(Arrays.stream(dKeys), Arrays.stream(eKeys)).toArray()),
+                        intCol("LV", new int[dCount + eCount]));
+        final QueryTable right = testRefreshingTable(dRows.union(eRows).toTracking(),
+                intCol("Key", IntStream.concat(Arrays.stream(dKeys), Arrays.stream(eKeys)).toArray()),
+                intCol("RV", IntStream.range(0, dCount + eCount).toArray()));
+        if (rightDuplicates) {
+            addToTable(right, dRowsAgain, intCol("Key", dKeys), intCol("RV", new int[dCount]));
+        }
+
+        final Table result = left.naturalJoin(right, "Key", "RV", NaturalJoinType.FIRST_MATCH);
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        // the one legitimately modified row: a left-only column of an E key
+        final long modifiedERow = dCount;
+        final int modifiedEKey = eKeys[0];
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet rightRemoved = rightDuplicates ? dRows.union(dRowsAgain) : dRows.copy();
+            removeRows(right, rightRemoved);
+            right.notifyListeners(RowSetFactory.empty(), rightRemoved, RowSetFactory.empty());
+
+            if (!rightDuplicates) {
+                removeRows(left, dRows);
+            }
+            addToTable(left, nRows, intCol("Key", nKeys), intCol("LV", new int[nCount]));
+            addToTable(left, i(modifiedERow), intCol("Key", modifiedEKey), intCol("LV", 1));
+            left.notifyListeners(new TableUpdateImpl(nRows.copy(), rightDuplicates ? i() : dRows.copy(),
+                    i(modifiedERow), RowSetShiftData.EMPTY, left.newModifiedColumnSet("LV")));
+        });
+
+        assertEquals(1, listener.getCount());
+        assertEquals(nRows, listener.getUpdate().added());
+        assertEquals(rightDuplicates ? i() : dRows, listener.getUpdate().removed());
+        assertEquals(i(modifiedERow), listener.getUpdate().modified());
+
+        // only LV changed for the modified row; its right match (and every other surviving right match) is untouched
+        final ModifiedColumnSet rightColumns = ((QueryTable) result).newModifiedColumnSet("RV");
+        final ModifiedColumnSet leftColumns = ((QueryTable) result).newModifiedColumnSet("LV");
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAll(leftColumns));
+        assertFalse("right column RV reported modified although no surviving row's right match changed: "
+                + listener.getUpdate().modifiedColumnSet(),
+                listener.getUpdate().modifiedColumnSet().containsAny(rightColumns));
+        listener.close();
     }
 }

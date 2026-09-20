@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -212,6 +213,23 @@ public class NaturalJoinModifiedSlotTracker {
         return resultCookie;
     }
 
+    /**
+     * Discard the entry for a slot that has been tombstoned. The slot no longer describes the key the entry was
+     * recorded for, so the entry must not be applied to whatever key later reuses the slot.
+     *
+     * @param cookie the slot's cookie; an invalid cookie means the slot has no entry this cycle
+     */
+    public void removeEntry(final long cookie) {
+        if (!isValidCookie(cookie)) {
+            return;
+        }
+        final long pointer = getPointerFromCookie(cookie);
+        // left removals are applied (and their builders consumed) before a slot can become empty, and left additions
+        // only accumulate after all removals, so a tombstoned slot never has pending left row keys
+        Assert.eqNull(slotLeftRowSetBuilders.getUnsafe(pointer), "slotLeftRowSetBuilders.getUnsafe(pointer)");
+        modifiedSlots.set(pointer, modifiedSlots.getLong(pointer) & ~(long) FLAG_MASK);
+    }
+
     private long updateFlags(final long cookie, byte flags) {
         final long pointer = getPointerFromCookie(cookie);
         final long existingValue = modifiedSlots.getLong(pointer);
@@ -296,7 +314,8 @@ public class NaturalJoinModifiedSlotTracker {
             try (final WritableRowSet rowKeys = builder.build()) {
                 consumer.accept(slot, rowKeys);
             }
-            modifiedSlots.set(ii, slotAndFlag & ~(long) flag);
+            // the consumer may have discarded the entry, so the flags are read back rather than reused
+            modifiedSlots.set(ii, modifiedSlots.getLong(ii) & ~(long) flag);
         }
     }
 
