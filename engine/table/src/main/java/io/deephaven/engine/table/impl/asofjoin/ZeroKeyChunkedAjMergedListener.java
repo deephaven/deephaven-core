@@ -108,6 +108,18 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
         resultModifiedColumnSet = result.newModifiedColumnSet(result.getDefinition().getColumnNamesArray());
     }
 
+    /**
+     * The number of rows a recorder's update can present to a chunked pass, clamped to the configured maximum.
+     */
+    private static int cycleChunkSize(final int maximumChunkSize, final JoinListenerRecorder recorder) {
+        if (recorder == null) {
+            return 1;
+        }
+        final long work = recorder.getAdded().size() + recorder.getRemoved().size() + recorder.getModified().size()
+                + recorder.getShifted().getEffectiveSize();
+        return (int) Math.max(1, Math.min(maximumChunkSize, work));
+    }
+
     @Override
     public void process() {
         final TableUpdateImpl downstream = new TableUpdateImpl();
@@ -117,19 +129,25 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
         final boolean leftTicked = leftRecorder.recordedVariablesAreValid();
         final boolean rightTicked = rightRecorder.recordedVariablesAreValid();
 
+        // A cycle's chunks and sort contexts are sized to the rows that cycle actually touches rather than to the
+        // maximum chunk size. The same value bounds the allocation and the length requested from each row sequence
+        // iterator, so a smaller size costs additional iterations and nothing else.
+        final int cycleLeftChunkSize = cycleChunkSize(leftChunkSize, leftTicked ? leftRecorder : null);
+        final int cycleRightChunkSize = cycleChunkSize(rightChunkSize, rightTicked ? rightRecorder : null);
+
         final boolean leftStampModified = leftTicked && leftRecorder.getModified().isNonempty()
                 && leftRecorder.getModifiedColumnSet().containsAny(leftStampColumn);
         final boolean leftAdditionsOrRemovals = leftStampModified
                 || (leftTicked && (leftRecorder.getAdded().isNonempty() || leftRecorder.getRemoved().isNonempty()));
 
         try (final ColumnSource.FillContext leftFillContext =
-                leftAdditionsOrRemovals ? leftStampSource.makeFillContext(leftChunkSize) : null;
+                leftAdditionsOrRemovals ? leftStampSource.makeFillContext(cycleLeftChunkSize) : null;
                 final WritableChunk<Values> leftStampValues =
-                        leftAdditionsOrRemovals ? stampChunkType.makeWritableChunk(leftChunkSize) : null;
+                        leftAdditionsOrRemovals ? stampChunkType.makeWritableChunk(cycleLeftChunkSize) : null;
                 final WritableLongChunk<RowKeys> leftStampKeys =
-                        leftAdditionsOrRemovals ? WritableLongChunk.makeWritableChunk(leftChunkSize) : null;
+                        leftAdditionsOrRemovals ? WritableLongChunk.makeWritableChunk(cycleLeftChunkSize) : null;
                 final LongSortKernel<Values, RowKeys> sortKernel = LongSortKernel.makeContext(stampChunkType, order,
-                        Math.max(leftChunkSize, rightChunkSize), true)) {
+                        Math.max(cycleLeftChunkSize, cycleRightChunkSize), true)) {
             final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
 
             // first we remove anything that is not of interest from the left hand side, because we don't want to
@@ -152,7 +170,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                         assert leftStampValues != null;
 
                         while (leftRsIt.hasMore()) {
-                            final RowSequence chunkOk = leftRsIt.getNextRowSequenceWithLength(leftChunkSize);
+                            final RowSequence chunkOk = leftRsIt.getNextRowSequenceWithLength(cycleLeftChunkSize);
 
                             leftStampSource.fillPrevChunk(leftFillContext, leftStampValues, chunkOk);
                             chunkOk.fillRowKeyChunk(leftStampKeys);
@@ -171,7 +189,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                         rowRedirection.applyShift(prevRowSet, leftShifted);
                     }
                     ChunkedAjUtils.bothIncrementalLeftSsaShift(leftShifted, leftSsa, leftRestampRemovals, leftTable,
-                            leftChunkSize, leftStampSource);
+                            cycleLeftChunkSize, leftStampSource);
                 }
 
                 if (leftStampModified) {
@@ -188,10 +206,11 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
                 final boolean rightStampModified = rightRecorder.getModifiedColumnSet().containsAny(rightStampColumn);
 
-                try (final ColumnSource.FillContext fillContext = rightStampSource.makeFillContext(rightChunkSize);
-                        final WritableChunk<Values> rightStampValues = stampChunkType.makeWritableChunk(rightChunkSize);
+                try (final ColumnSource.FillContext fillContext = rightStampSource.makeFillContext(cycleRightChunkSize);
+                        final WritableChunk<Values> rightStampValues =
+                                stampChunkType.makeWritableChunk(cycleRightChunkSize);
                         final WritableLongChunk<RowKeys> rightStampKeys =
-                                WritableLongChunk.makeWritableChunk(rightChunkSize)) {
+                                WritableLongChunk.makeWritableChunk(cycleRightChunkSize)) {
                     final RowSet rightRestampRemovals;
                     final RowSet rightRestampAdditions;
                     final RowSet rightModified = rightRecorder.getModified();
@@ -208,9 +227,9 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     // with the removed redirection to the previous key.
                     try (final RowSequence.Iterator removeit = rightRestampRemovals.getRowSequenceIterator();
                             final WritableLongChunk<RowKeys> priorRedirections =
-                                    WritableLongChunk.makeWritableChunk(rightChunkSize)) {
+                                    WritableLongChunk.makeWritableChunk(cycleRightChunkSize)) {
                         while (removeit.hasMore()) {
-                            final RowSequence chunkOk = removeit.getNextRowSequenceWithLength(rightChunkSize);
+                            final RowSequence chunkOk = removeit.getNextRowSequenceWithLength(cycleRightChunkSize);
                             rightStampSource.fillPrevChunk(fillContext, rightStampValues, chunkOk);
                             chunkOk.fillRowKeyChunk(rightStampKeys);
                             sortKernel.sort(rightStampKeys, rightStampValues);
@@ -260,7 +279,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                                     try (final RowSequence.Iterator shiftIt = rowSetToShift.getRowSequenceIterator()) {
                                         while (shiftIt.hasMore()) {
                                             final RowSequence chunkOk =
-                                                    shiftIt.getNextRowSequenceWithLength(rightChunkSize);
+                                                    shiftIt.getNextRowSequenceWithLength(cycleRightChunkSize);
                                             rightStampSource.fillPrevChunk(fillContext, rightStampValues, chunkOk);
                                             chunkOk.fillRowKeyChunk(rightStampKeys);
                                             sortKernel.sort(rightStampKeys, rightStampValues);
@@ -284,19 +303,20 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     // search in the left for the first value >=, everything up until the next extant right value should
                     // be
                     // restamped with our value
-                    try (final WritableChunk<Values> stampChunk = stampChunkType.makeWritableChunk(rightChunkSize);
+                    try (final WritableChunk<Values> stampChunk = stampChunkType.makeWritableChunk(cycleRightChunkSize);
                             final WritableChunk<Values> nextRightValue =
-                                    stampChunkType.makeWritableChunk(rightChunkSize);
+                                    stampChunkType.makeWritableChunk(cycleRightChunkSize);
                             final WritableLongChunk<RowKeys> insertedIndices =
-                                    WritableLongChunk.makeWritableChunk(rightChunkSize);
+                                    WritableLongChunk.makeWritableChunk(cycleRightChunkSize);
                             final WritableBooleanChunk<Any> retainStamps =
-                                    WritableBooleanChunk.makeWritableChunk(rightChunkSize)) {
-                        final int chunks = (rightRestampAdditions.intSize() + rightChunkSize - 1) / rightChunkSize;
+                                    WritableBooleanChunk.makeWritableChunk(cycleRightChunkSize)) {
+                        final int chunks =
+                                (rightRestampAdditions.intSize() + cycleRightChunkSize - 1) / cycleRightChunkSize;
                         for (int ii = 0; ii < chunks; ++ii) {
                             final int startChunk = chunks - ii - 1;
                             try (final RowSet chunkOk =
-                                    rightRestampAdditions.subSetByPositionRange(startChunk * rightChunkSize,
-                                            (startChunk + 1) * rightChunkSize)) {
+                                    rightRestampAdditions.subSetByPositionRange(startChunk * cycleRightChunkSize,
+                                            (startChunk + 1) * cycleRightChunkSize)) {
                                 final int chunkSize = chunkOk.intSize();
                                 rightStampSource.fillChunk(fillContext, stampChunk, chunkOk);
                                 insertedIndices.setSize(chunkSize);
@@ -334,7 +354,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     if (!rightStampModified && rightModified.isNonempty()) {
                         try (final RowSequence.Iterator modit = rightModified.getRowSequenceIterator()) {
                             while (modit.hasMore()) {
-                                final RowSequence chunkOk = modit.getNextRowSequenceWithLength(rightChunkSize);
+                                final RowSequence chunkOk = modit.getNextRowSequenceWithLength(cycleRightChunkSize);
                                 rightStampSource.fillChunk(fillContext, rightStampValues, chunkOk);
                                 chunkOk.fillRowKeyChunk(rightStampKeys);
                                 sortKernel.sort(rightStampKeys, rightStampValues);
@@ -370,12 +390,12 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
                 try (final RowSequence.Iterator leftRsIt = leftRestampAdditions.getRowSequenceIterator();
                         final WritableLongChunk<RowKeys> rightKeysForLeft =
-                                WritableLongChunk.makeWritableChunk(leftChunkSize)) {
+                                WritableLongChunk.makeWritableChunk(cycleLeftChunkSize)) {
                     while (leftRsIt.hasMore()) {
                         assert leftFillContext != null;
                         assert leftStampValues != null;
 
-                        final RowSequence chunkOk = leftRsIt.getNextRowSequenceWithLength(leftChunkSize);
+                        final RowSequence chunkOk = leftRsIt.getNextRowSequenceWithLength(cycleLeftChunkSize);
                         leftStampSource.fillChunk(leftFillContext, leftStampValues, chunkOk);
                         chunkOk.fillRowKeyChunk(leftStampKeys);
                         sortKernel.sort(leftStampKeys, leftStampValues);
