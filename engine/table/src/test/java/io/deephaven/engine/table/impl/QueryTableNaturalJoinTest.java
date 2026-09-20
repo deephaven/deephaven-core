@@ -2759,13 +2759,42 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 103, 103, 103), intCol("D", 1003, 1003, 1003)),
                 result);
 
+        // shift both right rows: the same row remains the first match, so nothing is reported
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(1, 2, 5);
+            removeRows(right, i(1, 2));
+            addToTable(right, i(6, 7), intCol("C", 103, 102), intCol("D", 1003, 1002));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(), builder.build(), ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(4, listener.getCount());
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 103, 103, 103), intCol("D", 1003, 1003, 1003)),
+                result);
+
+        // shift the first match and modify only its D in the same cycle: only D is reported
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(6, 6, -2);
+            removeRows(right, i(6));
+            addToTable(right, i(4), intCol("C", 103), intCol("D", 1103));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(4), builder.build(),
+                    right.newModifiedColumnSet("D")));
+        });
+        assertEquals(5, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(0, 1, 2), update.modified());
+        assertFalse(update.modifiedColumnSet().containsAny(cColumn));
+        assertTrue(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 103, 103, 103), intCol("D", 1103, 1103, 1103)),
+                result);
+
         if (leftRefreshing) {
             // a left-only modification reports only the modified left row, with no right columns
             updateGraph.runWithinUnitTestCycle(() -> {
                 addToTable(left, i(1), intCol("L", 20));
                 left.notifyListeners(i(), i(), i(1));
             });
-            assertEquals(5, listener.getCount());
+            assertEquals(6, listener.getCount());
             update = listener.getUpdate();
             assertEquals(i(1), update.modified());
             assertFalse(update.modifiedColumnSet().containsAny(cColumn));

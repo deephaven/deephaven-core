@@ -466,17 +466,25 @@ class NaturalJoinHelper {
         // NULL_ROW_KEY when no right row was selected; it is never a member of the update's row sets below
         final long previousRightRow = rowRedirection.getValue();
         if (updateRightRedirection(rightTable, rowRedirection, joinType)) {
-            modifiedColumnSet.setAll(allRightColumns);
-            return true;
-        }
-        if (upstream.removed().find(previousRightRow) >= 0 || upstream.added().find(previousRightRow) >= 0) {
+            // the selected key changed; if the previously selected row simply shifted to the new key, it is still the
+            // selected row and only its own modifications matter
+            final long selectedRightRow = rowRedirection.getValue();
+            final boolean previousRowShiftedToSelectedKey = previousRightRow != RowSequence.NULL_ROW_KEY
+                    && upstream.removed().find(previousRightRow) < 0
+                    && upstream.shifted().apply(previousRightRow) == selectedRightRow;
+            if (!previousRowShiftedToSelectedKey) {
+                modifiedColumnSet.setAll(allRightColumns);
+                return true;
+            }
+        } else if (upstream.removed().find(previousRightRow) >= 0 || upstream.added().find(previousRightRow) >= 0) {
             // the selected key is unchanged but holds a different row: the previous row was removed (and another row
             // re-added or shifted into its key), or it shifted away and a new row was added at its key. Shifts preserve
             // order, so an existing row cannot otherwise take the first or last key without that key changing.
             modifiedColumnSet.setAll(allRightColumns);
             return true;
         }
-        if (upstream.modified().find(previousRightRow) >= 0) {
+        // the same row remains selected, at its current (post-shift) key
+        if (upstream.modified().find(rowRedirection.getValue()) >= 0) {
             rightTransformer.transform(upstream.modifiedColumnSet(), modifiedColumnSet);
             return modifiedColumnSet.nonempty();
         }
