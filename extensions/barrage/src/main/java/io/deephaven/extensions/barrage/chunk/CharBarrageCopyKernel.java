@@ -116,13 +116,13 @@ public class CharBarrageCopyKernel {
     }
 
     /**
-     * Copy every row by first expanding the runs into one encoded origin per output row, chunk by chunk, and then
-     * filling the destination in order with the row index as the loop variable. The expansion costs a pass and an array
-     * the size of the output, but buys a gather loop with no destination arithmetic and no run bookkeeping, which for
-     * short runs is the cheaper trade.
+     * Copy every row from {@link BarrageCopyKernel.Runs#convertRunsToElementMapping}, one encoded origin per output
+     * row, filling the destination in order with the row index as the loop variable. Building that mapping costs a pass
+     * and an array the size of the output, but buys a gather loop with no destination arithmetic and no run
+     * bookkeeping, which for short runs is the cheaper trade, and the columns copying the same runs share one of them.
      */
     private static void copyByElements(
-            final BarrageCopyKernel.Runs runs,
+            final long[][] mapping,
             final WritableCharChunk<Values>[] dest,
             final CharBarrageCopyKernelContext context) {
         // hoisted out of the loops
@@ -130,19 +130,6 @@ public class CharBarrageCopyKernel {
         final int mask = context.deltaChunkMask;
         final WritableCharChunk<Values>[][] addChunks = context.addChunks;
         final WritableCharChunk<Values>[][] modChunks = context.modChunks;
-        final long[][] mapping = new long[dest.length][];
-        for (int mi = 0; mi < dest.length; ++mi) {
-            mapping[mi] = new long[dest[mi].size()];
-        }
-        for (int ri = 0; ri < runs.count; ++ri) {
-            long destPos = runs.dest[ri];
-            long origin = runs.encoded[ri];
-            for (long remaining = runs.len[ri]; remaining > 0; --remaining) {
-                mapping[(int) (destPos >>> shift)][(int) (destPos & mask)] = origin;
-                ++destPos;
-                ++origin;
-            }
-        }
         for (int mi = 0; mi < dest.length; ++mi) {
             final long[] chunkMapping = mapping[mi];
             final WritableCharChunk<Values> destChunk = dest[mi];
@@ -158,7 +145,8 @@ public class CharBarrageCopyKernel {
     /**
      * Fill the output chunks from the delta chunks according to the runs, choosing once for the whole column between an
      * array copy per stretch and an assignment per element. The runs of one column come from the same updates, so they
-     * are alike; deciding per column keeps the decision out of the copy loop.
+     * are alike; deciding per column keeps the decision out of the copy loop. A column whose runs another column has
+     * already converted copies from that mapping, since the runs it would have read are gone.
      */
     private static void copy(
             final BarrageCopyKernel.Runs runs,
@@ -169,10 +157,12 @@ public class CharBarrageCopyKernel {
         }
 
         final CharBarrageCopyKernelContext charContext = (CharBarrageCopyKernelContext) context;
-        if (runs.totalRows / runs.count >= BarrageCopyKernel.MIN_AVERAGE_RUN_LENGTH_FOR_ARRAY_COPY) {
-            copyByRuns(runs, dest, charContext);
+        if (runs.elementMapping != null
+                || runs.totalRows / runs.count < BarrageCopyKernel.MIN_AVERAGE_RUN_LENGTH_FOR_ARRAY_COPY) {
+            runs.convertRunsToElementMapping(charContext.deltaChunkSize);
+            copyByElements(runs.elementMapping, dest, charContext);
         } else {
-            copyByElements(runs, dest, charContext);
+            copyByRuns(runs, dest, charContext);
         }
     }
 

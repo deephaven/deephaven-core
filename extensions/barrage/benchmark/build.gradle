@@ -50,6 +50,30 @@ def createJmhTask = {
 
 createJmhTask('jmhRunBarrageRoundTrip', 'BarrageMessageRoundTripBenchmark')
 
+createJmhTask('jmhRunBarrageCopyKernel', 'BarrageCopyKernelBenchmark')
+
+// The two algorithms on one column, across the run lengths either side of the kernel's threshold.
+createJmhTask('jmhRunBarrageCopyKernelAlgorithms',
+        ['BarrageCopyKernelBenchmark\\.(mappingOnly|rangeAware)$', '-wi', '3', '-i', '8', '-w', '2', '-r', '2',
+         '-gc', 'true'])
+
+// The same matrix at ~100k rows with the chunk size scaled to match, to see whether 2^20 rows was needed.
+createJmhTask('jmhRunBarrageCopyKernelAlgorithms100k',
+        ['BarrageCopyKernelBenchmark\\.(mappingOnly|rangeAware)$', '-wi', '3', '-i', '8', '-w', '2', '-r', '2',
+         '-gc', 'true'],
+        ['-Dbench.deltaChunkSize=4096', '-Dbench.totalRows=98304'])
+
+// Does sharing runs, and the mapping they convert to, pay off? Two columns per operation.
+createJmhTask('jmhRunBarrageCopyKernelSharing',
+        ['BarrageCopyKernelBenchmark\\.twoColumns.*$', '-wi', '3', '-i', '8', '-w', '2', '-r', '2', '-gc', 'true',
+         '-p', 'columnType=Int', '-p', 'avgRunLength=1,2,5,16'])
+
+// The same question at ~100k rows.
+createJmhTask('jmhRunBarrageCopyKernelSharing100k',
+        ['BarrageCopyKernelBenchmark\\.twoColumns.*$', '-wi', '3', '-i', '8', '-w', '2', '-r', '2', '-gc', 'true',
+         '-p', 'columnType=Int', '-p', 'avgRunLength=1,2,5,16'],
+        ['-Dbench.deltaChunkSize=4096', '-Dbench.totalRows=98304'])
+
 // The String arm runs fewer columns than the primitive default: String cells are wide enough that 5000 columns of
 // them split the snapshot across record batches, which the single-batch reader in this benchmark cannot parse.
 createJmhTask('jmhRunBarrageRoundTripStrings',

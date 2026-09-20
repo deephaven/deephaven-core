@@ -34,6 +34,8 @@ public class ReplicateBarrageUtils {
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/CharBarrageCopyKernel.java");
+        fixupObjectBarrageCopyKernel(ReplicatePrimitiveCode.charToObject("replicateBarrageUtils",
+                CHUNK_PACKAGE + "/CharBarrageCopyKernel.java"));
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/CharBarrageRunKernel.java");
@@ -46,6 +48,19 @@ public class ReplicateBarrageUtils {
                 "Float");
         fixupDictionaryWriterValueMap(CHUNK_PACKAGE + "/writermap/DoubleDictionaryWriterValueMap.java", "double",
                 "Double");
+    }
+
+    /**
+     * {@code charToObject} leaves the chunks with one type parameter, where a WritableObjectChunk takes two, the
+     * element type and the attribute; it also capitalizes the {@code charContext} local along with the type name.
+     */
+    private static void fixupObjectBarrageCopyKernel(@NotNull final String path) throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = globalReplacements(lines,
+                "WritableObjectChunk<Values>", "WritableObjectChunk<Object, Values>",
+                "ObjectContext", "objectContext");
+        FileUtils.writeLines(file, lines);
     }
 
     private static void fixupDictionaryWriterValueMap(
