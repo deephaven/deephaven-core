@@ -41,6 +41,14 @@ public abstract class RightIncrementalHashedAsOfJoinStateManager extends RightIn
         builder.appendKey(indexKey);
     }
 
+    /**
+     * The number of occupied buckets, which bounds the number of distinct slots any probe can report and therefore the
+     * capacity the per-slot output arrays need.
+     *
+     * @return the number of buckets this manager holds
+     */
+    public abstract long getNumEntries();
+
     protected byte leftEntryAsRightType(byte entryType) {
         return (byte) ((entryType & ENTRY_LEFT_MASK) >> 4);
     }

@@ -52,6 +52,12 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
     protected long numEntries = 0;
 
+    @Override
+    public long getNumEntries() {
+        return numEntries;
+    }
+
+
     // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
     // or if it falls below minimum load factor we will instead contract the table
     private final double maximumLoadFactor;
