@@ -683,6 +683,7 @@ public class AsOfJoinHelper {
                                         continue;
                                     }
 
+                                    sequentialBuilders.ensureCapacity(rowSetToShift.size());
                                     final int shiftedSlots = asOfJoinStateManager.gatherShiftRowSet(rowSetToShift,
                                             rightSources, slots, sequentialBuilders);
                                     rowSetToShift.close();
@@ -810,6 +811,7 @@ public class AsOfJoinHelper {
                     // the responsive modifications.
                     if (!keysModified && !stampModified && upstream.modified().isNonempty()) {
                         // next we do the additions
+                        sequentialBuilders.ensureCapacity(upstream.modified().size());
                         final int modifiedSlotCount = asOfJoinStateManager.gatherModifications(upstream.modified(),
                                 rightSources, slots, sequentialBuilders);
 
