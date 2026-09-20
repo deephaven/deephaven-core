@@ -167,9 +167,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             forBaseline.reset(baseline);
             updates.forEach((key, value) -> {
                 if (value == BASELINE_KEY_NOT_FOUND) {
-                    baseline.remove(key);
-                    // remove() does not go through the cursor yet, so it invalidates the binding (the writer footnote).
-                    forBaseline.reset(baseline);
+                    forBaseline.remove(key);
                 } else {
                     forBaseline.put(key, value);
                 }
