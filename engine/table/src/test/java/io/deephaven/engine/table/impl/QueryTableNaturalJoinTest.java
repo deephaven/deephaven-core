@@ -3389,4 +3389,97 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
         assertEquals(IllegalStateException.class, listener.originalException().getClass());
     }
+
+    public void testLeftKeyChangeReportsRightColumnsOnlyWhenRedirectionChangesStaticRight() {
+        testLeftKeyChangeReportsRightColumnsOnlyWhenRedirectionChanges(false);
+    }
+
+    public void testLeftKeyChangeReportsRightColumnsOnlyWhenRedirectionChangesRefreshingRight() {
+        testLeftKeyChangeReportsRightColumnsOnlyWhenRedirectionChanges(true);
+    }
+
+    /**
+     * A left key change re-probes the row against the right side; the added columns are reported modified only when the
+     * row now selects a different right row (or none), whether or not the row also shifted in the same cycle.
+     */
+    private void testLeftKeyChangeReportsRightColumnsOnlyWhenRedirectionChanges(final boolean rightRefreshing) {
+        final QueryTable left = testRefreshingTable(i(0, 1).toTracking(), longCol("Key", 1, 2), intCol("L", 10, 20));
+        final QueryTable right = rightRefreshing
+                ? testRefreshingTable(longCol("Key", 1), intCol("R", 100))
+                : testTable(longCol("Key", 1), intCol("R", 100));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "R");
+        assertTableEquals(newTable(longCol("Key", 1, 2), intCol("L", 10, 20), intCol("R", 100, NULL_INT)), result);
+
+        final ModifiedColumnSet keyColumn = result.newModifiedColumnSet("Key");
+        final ModifiedColumnSet rColumn = result.newModifiedColumnSet("R");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // unmatched to unmatched: only the key column changed
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(1), longCol("Key", 3), intCol("L", 20));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("Key")));
+        });
+        assertEquals(1, listener.getCount());
+        assertEquals(i(1), listener.getUpdate().modified());
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAny(keyColumn));
+        assertFalse(listener.getUpdate().modifiedColumnSet().containsAny(rColumn));
+
+        // unmatched to matched
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(1), longCol("Key", 1), intCol("L", 20));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("Key")));
+        });
+        assertEquals(2, listener.getCount());
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAny(rColumn));
+        assertTableEquals(newTable(longCol("Key", 1, 1), intCol("L", 10, 20), intCol("R", 100, 100)), result);
+
+        // matched to unmatched, while the row also shifts
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(1, 1, 4);
+            removeRows(left, i(1));
+            addToTable(left, i(5), longCol("Key", 4), intCol("L", 20));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(5), builder.build(),
+                    left.newModifiedColumnSet("Key")));
+        });
+        assertEquals(3, listener.getCount());
+        assertEquals(i(5), listener.getUpdate().modified());
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAny(rColumn));
+        assertTableEquals(newTable(longCol("Key", 1, 4), intCol("L", 10, 20), intCol("R", 100, NULL_INT)), result);
+
+        // unmatched to unmatched, while the row also shifts: only the key column changed
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(5, 5, 1);
+            removeRows(left, i(5));
+            addToTable(left, i(6), longCol("Key", 7), intCol("L", 20));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(6), builder.build(),
+                    left.newModifiedColumnSet("Key")));
+        });
+        assertEquals(4, listener.getCount());
+        assertEquals(i(6), listener.getUpdate().modified());
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAny(keyColumn));
+        assertFalse(listener.getUpdate().modifiedColumnSet().containsAny(rColumn));
+        assertTableEquals(newTable(longCol("Key", 1, 7), intCol("L", 10, 20), intCol("R", 100, NULL_INT)), result);
+
+        // matched to matched on the same right row is impossible, but a matched row that shifts without a key change
+        // is not modified at all
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(0, 0, 2);
+            removeRows(left, i(0));
+            addToTable(left, i(2), longCol("Key", 1), intCol("L", 10));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(), builder.build(), ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(5, listener.getCount());
+        assertTrue(listener.getUpdate().modified().isEmpty());
+        assertTableEquals(newTable(longCol("Key", 1, 7), intCol("L", 10, 20), intCol("R", 100, NULL_INT)), result);
+
+        listener.close();
+    }
 }

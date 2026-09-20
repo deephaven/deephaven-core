@@ -1049,15 +1049,13 @@ class NaturalJoinHelper {
                     rowRedirection.removeAll(leftRemoved);
                     jsm.removeLeft(pc, leftRemoved, leftSources, modifiedSlotTracker);
 
-                    if (leftKeyChanges) {
-                        // the changed rows were already removed from the hash slots by removeLeftModifications above;
-                        // here we only need to drop their redirections
-                        rowRedirection.removeAll(changedKeysPreShift);
-                    }
-
+                    // The rows whose key value changed were removed from their hash slots by removeLeftModifications
+                    // above, but they keep their previous redirection (shifted along with the other rows) until their
+                    // new one is stored, so that the two can be compared.
                     if (leftShifted.nonempty()) {
                         try (final WritableRowSet prevRowSet = leftRecorder.getParent().getRowSet().copyPrev()) {
                             prevRowSet.remove(leftRemoved);
+                            rowRedirection.applyShift(prevRowSet, leftShifted);
 
                             if (leftKeyChanges) {
                                 prevRowSet.remove(changedKeysPreShift);
@@ -1071,34 +1069,21 @@ class NaturalJoinHelper {
                                     jsm.applyLeftShift(pc, leftSources, shiftedRowSet, sit.shiftDelta());
                                 }
                             }
-
-                            rowRedirection.applyShift(prevRowSet, leftShifted);
                         }
                     }
 
                     if (leftKeyChanges) {
-                        // add the post-shift rows whose key value actually changed
+                        // add the post-shift rows whose key value actually changed; every added column may have a new
+                        // value for a row that now selects a different right row (or none)
                         jsm.addLeftSide(bc, changedKeysPostShift, leftSources, leftRedirections, modifiedSlotTracker);
-                        copyRedirections(changedKeysPostShift, leftRedirections);
-
-                        // TODO: This column mask could be made better if we were to keep more careful track of the
-                        // original left hash slots during removal.
-                        // We are almost able to fix this, because we know the hash slot and the result redirection for
-                        // the left modified row; which is the new value.
-                        // We could get the hash slot from the removal, and compare them, but the hash slot outside of a
-                        // modified slot tracker is unstable [and we don't want two of them].
-                        // On removal, we could ask our modified slot tracker if, (i) our cookie is valid, and if so
-                        // (ii) what the original right value was what the right value was
-                        // [presuming we add that for right side point 1]. This would let us report our original
-                        // row redirection as part of the jsm.removeLeft. We could then compare
-                        // the old redirections to the new redirections, only lighting up allRightColumns if there was
-                        // indeed a change.
-                        modifiedColumnSet.setAll(allRightColumns);
+                        if (storeRedirections(changedKeysPostShift, leftRedirections, true)) {
+                            modifiedColumnSet.setAll(allRightColumns);
+                        }
                     }
 
                     if (leftAdditions) {
                         jsm.addLeftSide(bc, leftAdded, leftSources, leftRedirections, modifiedSlotTracker);
-                        copyRedirections(leftAdded, leftRedirections);
+                        storeRedirections(leftAdded, leftRedirections, false);
                     }
                 } finally {
                     if (changedKeysPostShift != null) {
@@ -1130,18 +1115,36 @@ class NaturalJoinHelper {
                     leftShifted, modifiedColumnSet));
         }
 
-        private void copyRedirections(final RowSet leftRows, @NotNull final LongArraySource leftRedirections) {
+        /**
+         * Store the redirection found for each of {@code leftRows} (by position in {@code leftRedirections}).
+         *
+         * @param compareWithPrevious whether the rows may already hold a redirection, in which case the previous value
+         *        is read back and compared
+         * @return whether some row's redirection differs from the one it held before; always false when
+         *         {@code compareWithPrevious} is false
+         */
+        private boolean storeRedirections(final RowSet leftRows, @NotNull final LongArraySource leftRedirections,
+                final boolean compareWithPrevious) {
             final MutableInt position = new MutableInt(0);
+            final MutableBoolean changed = new MutableBoolean(false);
             leftRows.forAllRowKeys((long ll) -> {
                 final long rightKey = leftRedirections.getLong(position.get());
                 jsm.checkExactMatch(ll, rightKey);
-                if (rightKey == RowSequence.NULL_ROW_KEY) {
+                if (compareWithPrevious) {
+                    final long previous = rightKey == RowSequence.NULL_ROW_KEY
+                            ? rowRedirection.remove(ll)
+                            : rowRedirection.put(ll, rightKey);
+                    if (previous != rightKey) {
+                        changed.setTrue();
+                    }
+                } else if (rightKey == RowSequence.NULL_ROW_KEY) {
                     rowRedirection.removeVoid(ll);
                 } else {
                     rowRedirection.putVoid(ll, rightKey);
                 }
                 position.increment();
             });
+            return changed.booleanValue();
         }
     }
 
