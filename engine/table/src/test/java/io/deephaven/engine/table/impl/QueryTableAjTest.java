@@ -1778,4 +1778,77 @@ public class QueryTableAjTest {
         // the new buckets have no left rows, so the result is unchanged
         assertTableEquals(expected, result);
     }
+
+    /**
+     * A right column that is also a stamp match column is added to the result automatically under its own name. Naming
+     * it in columnsToAdd renames that automatic addition, and naming it twice under two different left names produces
+     * both renamed columns. The left stamp column is always carried through under its own name.
+     */
+    @Test
+    public void testAjAddStampColumnUnderTwoNames() {
+        final Table left = TableTools.newTable(intCol("LeftStamp", 5));
+        final Table right = TableTools.newTable(intCol("RightStamp", 1), intCol("Sentinel", 100));
+
+        final Table result = left.aj(right, "LeftStamp>=RightStamp", "A=RightStamp,B=RightStamp,Sentinel");
+
+        assertEquals(Arrays.asList("LeftStamp", "A", "B", "Sentinel"), result.getDefinition().getColumnNames());
+        Asserts.assertEquals(new int[] {5}, intColumn(result, "LeftStamp"));
+        Asserts.assertEquals(new int[] {1}, intColumn(result, "A"));
+        Asserts.assertEquals(new int[] {1}, intColumn(result, "B"));
+        Asserts.assertEquals(new int[] {100}, intColumn(result, "Sentinel"));
+    }
+
+    /**
+     * The stamp match column appears in the result under its right hand name when columnsToAdd does not mention it, and
+     * under the requested name when it does. Either way the left stamp column keeps its own name, and an added column
+     * may not take a name the left table already uses.
+     */
+    @Test
+    public void testAjStampColumnNamingInOutput() {
+        final Table left = TableTools.newTable(intCol("LeftStamp", 5));
+        final Table right = TableTools.newTable(intCol("RightStamp", 1), intCol("Sentinel", 100));
+
+        // not mentioned in columnsToAdd, so the match column is carried through under its own name
+        final Table automatic = left.aj(right, "LeftStamp>=RightStamp", "Sentinel");
+        assertEquals(Arrays.asList("LeftStamp", "RightStamp", "Sentinel"),
+                automatic.getDefinition().getColumnNames());
+        Asserts.assertEquals(new int[] {1}, intColumn(automatic, "RightStamp"));
+
+        // a single alias renames that automatic addition rather than adding a second copy
+        final Table renamed = left.aj(right, "LeftStamp>=RightStamp", "A=RightStamp,Sentinel");
+        assertEquals(Arrays.asList("LeftStamp", "A", "Sentinel"), renamed.getDefinition().getColumnNames());
+        Asserts.assertEquals(new int[] {1}, intColumn(renamed, "A"));
+
+        // the left stamp column is untouched by the join and is never renamed
+        final Table sameName = TableTools.newTable(intCol("Stamp", 5));
+        final Table rightSameName = TableTools.newTable(intCol("Stamp", 1), intCol("Sentinel", 100));
+        final Table shared = sameName.aj(rightSameName, "Stamp>=Stamp", "Sentinel");
+        assertEquals(Arrays.asList("Stamp", "Sentinel"), shared.getDefinition().getColumnNames());
+        Asserts.assertEquals(new int[] {5}, intColumn(shared, "Stamp"));
+
+        // an added column may not be renamed onto a column the left table already has
+        try {
+            left.aj(right, "LeftStamp>=RightStamp", "LeftStamp=RightStamp,Sentinel");
+            fail("expected a conflict for an added column named LeftStamp");
+        } catch (RuntimeException expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("LeftStamp"));
+        }
+    }
+
+    /**
+     * Naming a stamp match column under its own name and under an alias requests both output columns, in either order.
+     */
+    @Test
+    public void testAjAddStampColumnWithAndWithoutAlias() {
+        final Table left = TableTools.newTable(intCol("LeftStamp", 5));
+        final Table right = TableTools.newTable(intCol("RightStamp", 1), intCol("Sentinel", 100));
+
+        final Table originalFirst = left.aj(right, "LeftStamp>=RightStamp", "RightStamp,A=RightStamp,Sentinel");
+        assertEquals(Arrays.asList("LeftStamp", "RightStamp", "A", "Sentinel"),
+                originalFirst.getDefinition().getColumnNames());
+
+        final Table aliasFirst = left.aj(right, "LeftStamp>=RightStamp", "A=RightStamp,RightStamp,Sentinel");
+        assertEquals(Arrays.asList("LeftStamp", "RightStamp", "A", "Sentinel"),
+                aliasFirst.getDefinition().getColumnNames());
+    }
 }
