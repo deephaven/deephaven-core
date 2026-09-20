@@ -9,6 +9,7 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.Asserts;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -1718,5 +1719,63 @@ public class QueryTableAjTest {
         checkAjResults(result.partitionBy("Bucket"), leftTable.partitionBy("Bucket"),
                 rightTable.partitionBy("Bucket"),
                 true, true);
+    }
+
+    /**
+     * A static left table joined against a refreshing right table takes the bucketed right-ticking path, which reuses
+     * one per-slot builder array for removals, additions, shifts and modifications. A cycle whose only change is a
+     * modification of a right column that is neither the stamp nor a bucket key leaves the removal and addition sets
+     * empty, so the builder array must still be sized for the modified rows before the modification pass probes into
+     * it.
+     */
+    @Test
+    public void testRightModifyNonStampColumnWithStaticLeft() {
+        final QueryTable left = testTable(i(0).toTracking(),
+                col("Bucket", "A"), intCol("LeftStamp", 5));
+        final QueryTable right = testRefreshingTable(i(0).toTracking(),
+                col("Bucket", "A"), intCol("RightStamp", 1), intCol("Sentinel", 1), intCol("Other", 0));
+
+        final Table result = left.aj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel,Other");
+        assertTableEquals(newTable(col("Bucket", "A"), intCol("LeftStamp", 5), intCol("RightStamp", 1),
+                intCol("Sentinel", 1), intCol("Other", 0)), result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(0), col("Bucket", "A"), intCol("RightStamp", 1), intCol("Sentinel", 1),
+                    intCol("Other", 7));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("Other")));
+        });
+
+        assertTableEquals(newTable(col("Bucket", "A"), intCol("LeftStamp", 5), intCol("RightStamp", 1),
+                intCol("Sentinel", 1), intCol("Other", 7)), result);
+    }
+
+    /**
+     * A bucketed join over two refreshing tables builds a bucket for a right key it has not seen before, so the
+     * per-slot output arrays must be sized for the added rows rather than for the buckets that already exist. A cycle
+     * whose only change is right additions in new buckets reaches the build with no earlier operation having grown
+     * those arrays.
+     */
+    @Test
+    public void testRightAddInNewBucketWithBothTicking() {
+        final QueryTable left = testRefreshingTable(i(0).toTracking(),
+                col("Bucket", "A"), intCol("LeftStamp", 5));
+        final QueryTable right = testRefreshingTable(i(0).toTracking(),
+                col("Bucket", "A"), intCol("RightStamp", 1), intCol("Sentinel", 1));
+
+        final Table result = left.aj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
+        final Table expected = newTable(col("Bucket", "A"), intCol("LeftStamp", 5), intCol("RightStamp", 1),
+                intCol("Sentinel", 1));
+        assertTableEquals(expected, result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(1, 2), col("Bucket", "B", "C"), intCol("RightStamp", 1, 1), intCol("Sentinel", 2, 3));
+            right.notifyListeners(i(1, 2), i(), i());
+        });
+
+        // the new buckets have no left rows, so the result is unchanged
+        assertTableEquals(expected, result);
     }
 }

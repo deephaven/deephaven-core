@@ -452,7 +452,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 }
             }
 
-            // next we do the additions
+            // next we do the additions; this build can create a bucket for a key it has not seen before, which is why
+            // the capacity reserved for the cycle covers the added row count rather than only the bucket count
             final int addedSlotCount = asOfJoinStateManager.buildAdditions(false, rightRestampAdditions,
                     rightKeySources, slots, sequentialBuilders);
 
