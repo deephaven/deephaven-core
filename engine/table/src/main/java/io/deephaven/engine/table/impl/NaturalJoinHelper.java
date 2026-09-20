@@ -304,9 +304,12 @@ class NaturalJoinHelper {
                 // we don't care where it goes
                 rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
             } else {
-                rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
-                // immediately re-direct to the appropriate RHS row
-                updateRightRedirection(rightTable, rowRedirection, joinType);
+                // The selected right row is known here, and only a refreshing right table gets a writable
+                // redirection, so the row must be seeded rather than re-pointed afterwards.
+                rowRedirection = getSingleValueRowRedirection(rightRefreshing,
+                        joinType == NaturalJoinType.FIRST_MATCH
+                                ? rightTable.getRowSet().firstRowKey()
+                                : rightTable.getRowSet().lastRowKey());
             }
         } else if (rightTable.size() == 1) {
             rowRedirection = getSingleValueRowRedirection(rightRefreshing, rightTable.getRowSet().firstRowKey());

@@ -3149,4 +3149,18 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         listener.close();
     }
+
+    public void testNaturalJoinZeroKeysStaticRightMultipleRowsFirstMatch() {
+        final Table left = newTable(intCol("L", 1, 2, 3));
+        final Table right = newTable(intCol("R", 10, 20));
+        final Table result = left.naturalJoin(right, "", "R", NaturalJoinType.FIRST_MATCH);
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("R", 10, 10, 10)), result);
+    }
+
+    public void testNaturalJoinZeroKeysStaticRightMultipleRowsLastMatch() {
+        final Table left = newTable(intCol("L", 1, 2, 3));
+        final Table right = newTable(intCol("R", 10, 20));
+        final Table result = left.naturalJoin(right, "", "R", NaturalJoinType.LAST_MATCH);
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("R", 20, 20, 20)), result);
+    }
 }
