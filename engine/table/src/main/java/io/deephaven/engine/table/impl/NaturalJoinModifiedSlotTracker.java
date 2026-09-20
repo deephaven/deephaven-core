@@ -118,6 +118,31 @@ public class NaturalJoinModifiedSlotTracker {
     }
 
 
+    /**
+     * Record a right row arriving at {@code addedRightRowKey} in {@code slot}. Beyond {@code flags}, this marks
+     * {@link #FLAG_RIGHT_ADD} when the arriving row takes the row key this slot's entry recorded as its original right
+     * row: the left rows' redirection then names a different row than it did before, even though the row key it holds
+     * is unchanged. That happens when the previously selected right row shifts away from its key within the same cycle
+     * and a new right row for the same join key is added at the vacated key.
+     *
+     * @param cookie the slot's existing cookie (or an invalid cookie if this slot has not been tracked yet)
+     * @param slot the hash slot (encoding main/alternate via the insert mask)
+     * @param originalRightValue the slot's right state before this addition
+     * @param addedRightRowKey the row key of the arriving right row
+     * @param flags the flags to or into our state
+     * @return the cookie for future access
+     */
+    public long addMainRightAdd(final long cookie, final int slot, final long originalRightValue,
+            final long addedRightRowKey, byte flags) {
+        final long entryOriginalRightValue = isValidCookie(cookie)
+                ? originalRightValues.getLong(getPointerFromCookie(cookie))
+                : originalRightValue;
+        if (entryOriginalRightValue == addedRightRowKey) {
+            flags |= FLAG_RIGHT_ADD;
+        }
+        return addMain(cookie, slot, originalRightValue, flags);
+    }
+
     private long doAddition(final int slot, final long originalRightValue, byte flags) {
         if (pointer == allocated) {
             allocated += CHUNK_SIZE;

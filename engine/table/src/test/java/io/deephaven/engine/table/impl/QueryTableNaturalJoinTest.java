@@ -3238,4 +3238,59 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(0, listener.getCount());
         listener.close();
     }
+
+    public void testRightShiftAndReAddAtVacatedKeyFirstMatchStaticLeft() {
+        testRightShiftAndReAddAtVacatedKey(false, NaturalJoinType.FIRST_MATCH);
+    }
+
+    public void testRightShiftAndReAddAtVacatedKeyFirstMatchRefreshingLeft() {
+        testRightShiftAndReAddAtVacatedKey(true, NaturalJoinType.FIRST_MATCH);
+    }
+
+    public void testRightShiftAndReAddAtVacatedKeyLastMatchStaticLeft() {
+        testRightShiftAndReAddAtVacatedKey(false, NaturalJoinType.LAST_MATCH);
+    }
+
+    public void testRightShiftAndReAddAtVacatedKeyLastMatchRefreshingLeft() {
+        testRightShiftAndReAddAtVacatedKey(true, NaturalJoinType.LAST_MATCH);
+    }
+
+    /**
+     * When the selected right row shifts away from its row key and a new right row for the same join key is added at
+     * the vacated key, the left rows hold the same row key but it names a different row, so the added columns must be
+     * reported modified.
+     */
+    private void testRightShiftAndReAddAtVacatedKey(final boolean leftRefreshing,
+            final NaturalJoinType joinType) {
+        final QueryTable left = leftRefreshing
+                ? testRefreshingTable(i(0).toTracking(), col("Key", "a"), intCol("L", 1))
+                : testTable(i(0).toTracking(), col("Key", "a"), intCol("L", 1));
+        final QueryTable right =
+                testRefreshingTable(i(5, 6).toTracking(), col("Key", "a", "b"), intCol("C", 100, 200));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "C", joinType);
+        final Table downstream = result.update("E=C");
+        assertTableEquals(newTable(col("Key", "a"), intCol("L", 1), intCol("C", 100)), result);
+
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        // FIRST_MATCH: the matched row moves up and the new row lands below it; LAST_MATCH: the reverse
+        final long delta = joinType == NaturalJoinType.FIRST_MATCH ? 2 : -2;
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(5, 6, delta);
+            removeRows(right, i(5, 6));
+            addToTable(right, i(5 + delta, 6 + delta), col("Key", "a", "b"), intCol("C", 100, 200));
+            addToTable(right, i(5), col("Key", "a"), intCol("C", 300));
+            right.notifyListeners(new TableUpdateImpl(i(5), i(), i(), builder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        assertTableEquals(newTable(col("Key", "a"), intCol("L", 1), intCol("C", 300)), result);
+        assertEquals(1, listener.getCount());
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAny(result.newModifiedColumnSet("C")));
+        assertTableEquals(newTable(col("Key", "a"), intCol("L", 1), intCol("C", 300), intCol("E", 300)), downstream);
+        listener.close();
+    }
 }

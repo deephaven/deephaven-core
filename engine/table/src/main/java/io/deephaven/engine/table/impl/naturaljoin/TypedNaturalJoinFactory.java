@@ -224,7 +224,7 @@ public class TypedNaturalJoinFactory {
         builder.beginControlFlow("if (inputKey == newKey)");
         builder.addStatement("// we have a new output key for the LHS rows");
         builder.addStatement(
-                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, $T.FLAG_RIGHT_CHANGE))",
+                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, inputKey, $T.FLAG_RIGHT_CHANGE))",
                 NaturalJoinModifiedSlotTracker.class);
         builder.endControlFlow();
 
@@ -243,7 +243,7 @@ public class TypedNaturalJoinFactory {
         builder.beginControlFlow("if (newKey != rightRowKeyForState)");
         builder.addStatement("rightRowKey.set(tableLocation, newKey)");
         builder.addStatement(
-                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, $T.FLAG_RIGHT_CHANGE))",
+                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, inputKey, $T.FLAG_RIGHT_CHANGE))",
                 NaturalJoinModifiedSlotTracker.class);
         builder.endControlFlow();
 
@@ -252,7 +252,7 @@ public class TypedNaturalJoinFactory {
         builder.beginControlFlow("if (newKey != rightRowKeyForState)");
         builder.addStatement("rightRowKey.set(tableLocation, newKey)");
         builder.addStatement(
-                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, $T.FLAG_RIGHT_CHANGE))",
+                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, inputKey, $T.FLAG_RIGHT_CHANGE))",
                 NaturalJoinModifiedSlotTracker.class);
         builder.endControlFlow();
 
@@ -266,7 +266,7 @@ public class TypedNaturalJoinFactory {
         builder.beginControlFlow(
                 "if (duplicateCreationChangesState(duplicates, rightRowKeyForState, joinType))");
         builder.addStatement(
-                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, $T.FLAG_RIGHT_CHANGE))",
+                "modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, inputKey, $T.FLAG_RIGHT_CHANGE))",
                 NaturalJoinModifiedSlotTracker.class);
         builder.endControlFlow();
 
@@ -493,7 +493,7 @@ public class TypedNaturalJoinFactory {
                 tableLocation);
         builder.beginControlFlow("if (!leftEmpty && inputKey == newKey)");
         builder.addStatement("// we have a new output key for the LHS rows");
-        modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
+        modifyCookieRightAdd(builder, sourceType, tableLocation, "inputKey", "FLAG_RIGHT_CHANGE");
         builder.endControlFlow();
 
         builder.nextControlFlow("else");
@@ -503,14 +503,14 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("final long newKey = Math.min(existingRightRowKey, inputKey)");
         builder.beginControlFlow("if (newKey != existingRightRowKey)");
         builder.addStatement("$LRightRowKey.set($L, newKey)", sourceType, tableLocation);
-        modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
+        modifyCookieRightAdd(builder, sourceType, tableLocation, "inputKey", "FLAG_RIGHT_CHANGE");
         builder.endControlFlow();
 
         builder.nextControlFlow("else if (addOnly && joinType == NaturalJoinType.LAST_MATCH)");
         builder.addStatement("final long newKey = Math.max(existingRightRowKey, inputKey)");
         builder.beginControlFlow("if (newKey != existingRightRowKey)");
         builder.addStatement("$LRightRowKey.set($L, newKey)", sourceType, tableLocation);
-        modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
+        modifyCookieRightAdd(builder, sourceType, tableLocation, "inputKey", "FLAG_RIGHT_CHANGE");
         builder.endControlFlow();
 
         builder.nextControlFlow("else");
@@ -522,12 +522,24 @@ public class TypedNaturalJoinFactory {
                 tableLocation);
         builder.beginControlFlow(
                 "if (duplicateCreationChangesState(duplicates, existingRightRowKey, joinType))");
-        modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
+        modifyCookieRightAdd(builder, sourceType, tableLocation, "inputKey", "FLAG_RIGHT_CHANGE");
         builder.endControlFlow();
 
         builder.endControlFlow();
 
         builder.endControlFlow();
+    }
+
+    /**
+     * Record a right row arriving at {@code keyExpression} for a slot that already holds a right row or duplicate set,
+     * so the tracker can tell that the arriving row took the row key the left rows are redirected to.
+     */
+    private static void modifyCookieRightAdd(CodeBlock.Builder builder, String sourceType, String tableLocation,
+            String keyExpression, String flag) {
+        builder.addStatement(
+                "$LModifiedTrackerCookieSource.set($L, modifiedSlotTracker.addMainRightAdd($LModifiedTrackerCookieSource.getUnsafe($L), $LInsertMask | $L, existingRightRowKey, $L, $T.$L))",
+                sourceType, tableLocation, sourceType, tableLocation, sourceType, tableLocation, keyExpression,
+                NaturalJoinModifiedSlotTracker.class, flag);
     }
 
     private static void modifyCookie(CodeBlock.Builder builder, String sourceType, String tableLocation, String flag) {
