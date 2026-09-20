@@ -39,13 +39,25 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 implements NullableLo
     }
 
     @Override
-    public long put(long key, long value) {
-        return putImpl(keysAndValues, key, value, false);
+    public void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values,
+            WritableLongChunk<? extends Any> oldValues) {
+        final int size = keys.size();
+        for (int ii = 0; ii < size; ++ii) {
+            // Unlike get, the volatile read is NOT hoisted: any put may rehash, so each element must see the array
+            // that the previous element may have replaced.
+            oldValues.set(ii, putImpl(keysAndValues, keys.get(ii), values.get(ii), false));
+        }
+        oldValues.setSize(size);
     }
 
     @Override
-    public long putIfAbsent(long key, long value) {
-        return putImpl(keysAndValues, key, value, true);
+    public void putIfAbsent(LongChunk<? extends Any> keys, LongChunk<? extends Any> values,
+            WritableLongChunk<? extends Any> oldValues) {
+        final int size = keys.size();
+        for (int ii = 0; ii < size; ++ii) {
+            oldValues.set(ii, putImpl(keysAndValues, keys.get(ii), values.get(ii), true));
+        }
+        oldValues.setSize(size);
     }
 
     @Override

@@ -161,13 +161,19 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         final NullableLongLongMap baseline = instance.baseline;
         Assert.neq(baseline, "baseline", updates, "updates");
 
-        updates.forEach((key, value) -> {
-            if (value == BASELINE_KEY_NOT_FOUND) {
-                baseline.remove(key);
-            } else {
-                baseline.put(key, value);
-            }
-        });
+        try (final AutoCloseableScalarAccessPair sap = SCALAR_ACCESS_PAIR.get()) {
+            final NullableLongLongMap.ScalarAccess forBaseline = sap.forBaseline;
+            forBaseline.reset(baseline);
+            updates.forEach((key, value) -> {
+                if (value == BASELINE_KEY_NOT_FOUND) {
+                    baseline.remove(key);
+                    // remove() does not go through the cursor yet, so it invalidates the binding (the writer footnote).
+                    forBaseline.reset(baseline);
+                } else {
+                    forBaseline.put(key, value);
+                }
+            });
+        }
         // Publish null (a volatile write, see the class comment), retaining the capacity for the next allocation. We
         // do not clear the old array in place, because a Reader@Idle may still be probing it.
         updates.resetToNullRetainingCapacity();
@@ -365,7 +371,11 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             updateCommitter.maybeActivate();
         }
 
-        rowSequence.forAllRowKeys(key -> updates.put(key, BASELINE_KEY_NOT_FOUND));
+        try (final AutoCloseableScalarAccessPair sap = SCALAR_ACCESS_PAIR.get()) {
+            final NullableLongLongMap.ScalarAccess forUpdates = sap.forUpdates;
+            forUpdates.reset(updates);
+            rowSequence.forAllRowKeys(key -> forUpdates.put(key, BASELINE_KEY_NOT_FOUND));
+        }
     }
 
     @Override
@@ -373,8 +383,12 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (updateCommitter != null) {
             updateCommitter.maybeActivate();
         }
-        for (int ii = 0; ii < outerRowKeys.size(); ++ii) {
-            updates.put(outerRowKeys.get(ii), BASELINE_KEY_NOT_FOUND);
+        try (final AutoCloseableScalarAccessPair sap = SCALAR_ACCESS_PAIR.get()) {
+            final NullableLongLongMap.ScalarAccess forUpdates = sap.forUpdates;
+            forUpdates.reset(updates);
+            for (int ii = 0; ii < outerRowKeys.size(); ++ii) {
+                forUpdates.put(outerRowKeys.get(ii), BASELINE_KEY_NOT_FOUND);
+            }
         }
     }
 
@@ -394,13 +408,14 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         if (updateCommitter != null) {
             updateCommitter.maybeActivate();
         }
-        final long result = updates.put(key, value);
-        // The prior value from updates is either some legit previous value, or BASELINE_KEY_NOT_FOUND.
-        // In either case, return it to the caller.
-        if (result != UPDATES_KEY_NOT_FOUND) {
-            return result;
-        }
         try (final AutoCloseableScalarAccessPair sap = SCALAR_ACCESS_PAIR.get()) {
+            sap.forUpdates.reset(updates);
+            final long result = sap.forUpdates.put(key, value);
+            // The prior value from updates is either some legit previous value, or BASELINE_KEY_NOT_FOUND.
+            // In either case, return it to the caller.
+            if (result != UPDATES_KEY_NOT_FOUND) {
+                return result;
+            }
             sap.forBaseline.reset(baseline);
             return sap.forBaseline.get(key);
         }
@@ -415,12 +430,12 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
             updateCommitter.maybeActivate();
         }
 
-        final MutableInt offset = new MutableInt();
         final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
-        outerRowKeys.forAllRowKeys(outerRowKey -> {
-            updates.put(outerRowKey, innerRowKeysTyped.get(offset.get()));
-            offset.increment();
-        });
+        final LongChunk<? extends RowKeys> outerRowKeysTyped = outerRowKeys.asRowKeyChunk();
+        try (final WritableLongChunk<RowKeys> oldValues =
+                WritableLongChunk.makeWritableChunk(outerRowKeysTyped.size())) {
+            updates.put(outerRowKeysTyped, innerRowKeysTyped, oldValues);
+        }
     }
 
     @Override
@@ -433,9 +448,9 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         }
 
         final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
-        final int size = innerRowKeysTyped.size();
-        for (int ki = 0; ki < size; ++ki) {
-            updates.put(outerRowKeys.get(ki), innerRowKeysTyped.get(ki));
+        try (final WritableLongChunk<RowKeys> oldValues =
+                WritableLongChunk.makeWritableChunk(innerRowKeysTyped.size())) {
+            updates.put(outerRowKeys, innerRowKeysTyped, oldValues);
         }
     }
 

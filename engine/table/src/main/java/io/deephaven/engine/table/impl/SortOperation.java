@@ -321,8 +321,10 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                     ? RowSetFactory.empty()
                     : RowSetFactory.fromRange(offset, offset + sortedKeys.length - 1)).toTracking();
 
+            final NullableLongLongMap.ScalarAccess reverseLookupAccess =
+                    new NullableLongLongMap.ScalarAccess(reverseLookup);
             for (int i = 0; i < sortedKeys.length; i++) {
-                reverseLookup.put(sortedKeys[i], i + offset);
+                reverseLookupAccess.put(sortedKeys[i], i + offset);
             }
 
             // fillFromChunk may convert the provided RowSequence to a KeyRanges (or RowKeys) chunk that is owned by
@@ -440,8 +442,10 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         try (final LongColumnIterator innerRowKeys =
                 new ChunkedLongColumnIterator(sortRedirection, sortResult.getRowSet());
                 final RowSet.Iterator outerRowKeys = sortResult.getRowSet().iterator()) {
+            final NullableLongLongMap.ScalarAccess reverseLookupAccess =
+                    new NullableLongLongMap.ScalarAccess(reverseLookup);
             while (outerRowKeys.hasNext()) {
-                reverseLookup.put(innerRowKeys.nextLong(), outerRowKeys.nextLong());
+                reverseLookupAccess.put(innerRowKeys.nextLong(), outerRowKeys.nextLong());
             }
         }
         return (final long innerRowKey) -> getSingle(reverseLookup, innerRowKey);

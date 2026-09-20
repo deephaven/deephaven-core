@@ -401,30 +401,15 @@ public class NullableLongLongMapBench {
 
     private void fill(final NullableLongLongMap map) {
         for (int ci = 0; ci < keyChunks.length; ++ci) {
-            putAll(map, keyChunks[ci], valueChunks[ci], scratch);
+            map.put(keyChunks[ci], valueChunks[ci], scratch);
         }
     }
 
     // region glue
-    // Glue between the chunk-oriented benchmark code above/below and the map's current API. As map operations become
-    // chunk-oriented (get already is; put/putIfAbsent/remove are still per-element), only these methods change;
-    // everything the benchmarks measure and generate stays identical. Each output chunk must have capacity >=
-    // keys.size();
-    // element ii of the output corresponds to element ii of keys.
-
-    private static <T extends Any> void putAll(final NullableLongLongMap map, final LongChunk<? extends Any> keys,
-            final LongChunk<T> values, final WritableLongChunk<T> oldValues) {
-        for (int ii = 0; ii < keys.size(); ++ii) {
-            oldValues.set(ii, map.put(keys.get(ii), values.get(ii)));
-        }
-    }
-
-    private static <T extends Any> void putAllIfAbsent(final NullableLongLongMap map,
-            final LongChunk<? extends Any> keys, final LongChunk<T> values, final WritableLongChunk<T> oldValues) {
-        for (int ii = 0; ii < keys.size(); ++ii) {
-            oldValues.set(ii, map.putIfAbsent(keys.get(ii), values.get(ii)));
-        }
-    }
+    // Glue between the chunk-oriented benchmark code above/below and the map's current API. remove is the last
+    // per-element map operation; when it becomes chunk-oriented, only this method changes and everything the
+    // benchmarks measure and generate stays identical. oldValues must have capacity >= keys.size(); element ii of the
+    // output corresponds to element ii of keys.
 
     private static void removeAll(final NullableLongLongMap map, final LongChunk<? extends Any> keys,
             final WritableLongChunk<? extends Any> oldValues) {
@@ -497,13 +482,23 @@ public class NullableLongLongMapBench {
         }
 
         @Override
-        public long put(final long key, final long value) {
-            return map.put(key, value);
+        public void put(final LongChunk<? extends Any> keys, final LongChunk<? extends Any> values,
+                final WritableLongChunk<? extends Any> oldValues) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                oldValues.set(ii, map.put(keys.get(ii), values.get(ii)));
+            }
+            oldValues.setSize(size);
         }
 
         @Override
-        public long putIfAbsent(final long key, final long value) {
-            return map.putIfAbsent(key, value);
+        public void putIfAbsent(final LongChunk<? extends Any> keys, final LongChunk<? extends Any> values,
+                final WritableLongChunk<? extends Any> oldValues) {
+            final int size = keys.size();
+            for (int ii = 0; ii < size; ++ii) {
+                oldValues.set(ii, map.putIfAbsent(keys.get(ii), values.get(ii)));
+            }
+            oldValues.setSize(size);
         }
 
         @Override

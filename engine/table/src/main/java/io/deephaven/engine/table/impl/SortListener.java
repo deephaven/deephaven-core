@@ -13,6 +13,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.impl.util.hash.HashMapK4V4;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.ChunkType;
@@ -675,12 +676,16 @@ public class SortListener extends BaseTable.ListenerImpl {
                     sortMapping.fillFromChunk(fillFromContext, valuesChunk, rowSequence);
                 }
 
+                final NullableLongLongMap.ScalarAccess reverseLookupAccess =
+                        new NullableLongLongMap.ScalarAccess(reverseLookup);
                 for (int jj = 0; jj < thisSize; ++jj) {
                     final long index = valuesChunk.get(jj);
                     if (index != RowSequence.NULL_ROW_KEY) {
-                        reverseLookup.put(index, keysChunk.get(jj));
+                        reverseLookupAccess.put(index, keysChunk.get(jj));
                     } else {
                         reverseLookup.remove(index);
+                        // remove() does not go through the cursor yet: reset the invalidated binding.
+                        reverseLookupAccess.reset(reverseLookup);
                     }
                 }
             }
