@@ -13,7 +13,6 @@ import io.deephaven.extensions.barrage.chunk.BarrageCopyKernel;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -34,8 +33,7 @@ import java.util.concurrent.TimeUnit;
  * Two one-column arms compare the algorithms. {@link #mappingOnly} is what main does: expand the surviving rows into a
  * mapping holding one encoded origin per output row, then gather cell by cell from it, whatever the run structure; the
  * expansion is timed with the gather because main cannot copy without it. {@link #rangeAware} is
- * {@link BarrageCopyKernel#copy}, which chooses from the average run length between an array copy per stretch and an
- * element fill through the same kind of mapping.
+ * {@link BarrageCopyKernel#copy}: one typed array copy per stretch, straight from the runs.
  *
  * <p>
  * Two more arms copy <em>two</em> columns of one type per operation, to show what columns sharing a
@@ -43,16 +41,16 @@ import java.util.concurrent.TimeUnit;
  *
  * <ul>
  * <li>{@link #twoColumnsSeparateRuns} gives each column its own runs, as columns with different modification patterns
- * get. Below the array-copy threshold each column builds its own mapping.</li>
- * <li>{@link #twoColumnsSharedRuns} hands both columns the same runs, as columns with one modification pattern get. At
- * or above the threshold neither column builds a mapping, so this should cost what separate runs cost; below it the
- * first column converts the runs and the second reads what it left, so the pair should pay for one mapping.</li>
+ * get.</li>
+ * <li>{@link #twoColumnsSharedRuns} hands both columns the same runs, as columns with one modification pattern get. The
+ * kernel only reads the runs, so this should cost exactly what separate runs cost; the pair is the control that sharing
+ * is free.</li>
  * </ul>
  *
  * <p>
- * The runs are rebuilt before every operation, outside the measurement, because converting a {@code Runs} consumes it:
- * without that, only the first operation of an iteration would pay for the mapping and the rest would read a cached
- * one.
+ * The runs are built once per trial. The kernel does not modify them, so nothing about one operation changes the next,
+ * and rebuilding them per operation would only leave garbage for the collector to find inside the measurement: an
+ * earlier version did that and it was the largest allocation in the benchmark by far.
  */
 @Fork(1)
 @State(Scope.Benchmark)
@@ -83,13 +81,13 @@ public class BarrageCopyKernelBenchmark {
 
     private ChunkType chunkType;
 
-    /** The runs as plain arrays, from which a fresh {@link BarrageCopyKernel.Runs} is built for every operation. */
+    /** The runs as plain arrays, which {@link #mappingOnly} expands directly. */
     private long[] runDest;
     private long[] runEncoded;
     private long[] runLen;
 
-    /** Rebuilt per operation: one for each of the two columns, unconverted. */
-    private BarrageCopyKernel.Runs runsA;
+    /** The same runs as the kernel takes them, one per column. */
+    private BarrageCopyKernel.Runs runs;
     private BarrageCopyKernel.Runs runsB;
 
     private WritableChunk<Values>[][] addChunks;
@@ -187,19 +185,12 @@ public class BarrageCopyKernelBenchmark {
             destPos += length;
         }
 
+        runs = buildRuns();
+        runsB = buildRuns();
+
         kernel = BarrageCopyKernel.makeBarrageCopyKernel(chunkType);
         context = kernel.makeContext(addChunks, modChunks, DELTA_CHUNK_SIZE);
         contextB = kernel.makeContext(addChunksB, modChunksB, DELTA_CHUNK_SIZE);
-    }
-
-    /**
-     * Fresh runs for every operation. Converting a {@code Runs} to its mapping drops the runs, so a converted one
-     * cannot be measured twice; building them here keeps that cost out of the measurement.
-     */
-    @Setup(Level.Invocation)
-    public void newRuns() {
-        runsA = buildRuns();
-        runsB = buildRuns();
     }
 
     private BarrageCopyKernel.Runs buildRuns() {
@@ -213,30 +204,24 @@ public class BarrageCopyKernelBenchmark {
     /** One column through the shipped kernel: runs in, the kernel picks how to move them. */
     @Benchmark
     public void rangeAware(final Blackhole blackhole) {
-        kernel.copy(runsA, dest, context);
+        kernel.copy(runs, dest, context);
         blackhole.consume(dest);
     }
 
-    /**
-     * Two columns whose runs are their own, as columns with different modification patterns have. Below the array-copy
-     * threshold each column expands its own mapping.
-     */
+    /** Two columns whose runs are their own, as columns with different modification patterns have. */
     @Benchmark
     public void twoColumnsSeparateRuns(final Blackhole blackhole) {
-        kernel.copy(runsA, dest, context);
+        kernel.copy(runs, dest, context);
         kernel.copy(runsB, destB, contextB);
         blackhole.consume(dest);
         blackhole.consume(destB);
     }
 
-    /**
-     * Two columns sharing one set of runs, as columns with one modification pattern have. Below the array-copy
-     * threshold the first column converts the runs and the second copies from the mapping it left.
-     */
+    /** Two columns sharing one set of runs, as columns with one modification pattern have. */
     @Benchmark
     public void twoColumnsSharedRuns(final Blackhole blackhole) {
-        kernel.copy(runsA, dest, context);
-        kernel.copy(runsA, destB, contextB);
+        kernel.copy(runs, dest, context);
+        kernel.copy(runs, destB, contextB);
         blackhole.consume(dest);
         blackhole.consume(destB);
     }
