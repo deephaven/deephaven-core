@@ -19,6 +19,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.intCol;
@@ -105,17 +106,55 @@ public class TestPD034 {
     }
 
     /**
+     * The same gate reached through the wrappers {@code withDeclaredBarriers}, {@code withRespectedBarriers} and
+     * {@code withSerial} produce. Unlike {@code ComposedFilter} and {@code WhereFilterInvertedImpl} -- both of which
+     * reject {@link ReindexingFilter} components outright -- these wrappers accept one, and they hide it from an
+     * {@code instanceof} test on the outer filter.
+     */
+    @Test
+    public void canPushdownFilterRejectsWrappedReindexingFilter() {
+        for (final UnaryOperator<WhereFilter> wrapper : List.<UnaryOperator<WhereFilter>>of(
+                f -> f.withDeclaredBarriers("PD034_BARRIER"),
+                f -> f.withRespectedBarriers("PD034_BARRIER"),
+                WhereFilter::withSerial)) {
+            final WhereFilter filter = wrapper.apply(new UnsortedClockFilter("Timestamp", clock, true));
+            filter.init(testInput.getDefinition());
+
+            assertFalse("a wrapped ReindexingFilter must not be pushed down: " + filter.getClass().getSimpleName(),
+                    PushdownFilterMatcher.canPushdownFilter(filter));
+        }
+    }
+
+    /**
      * End-to-end: the clock filter must release rows as the clock advances, whether or not a data index happens to
      * exist on the clock column.
      */
     @Test
     public void indexedClockFilterReleasesRowsLikeUnindexedOracle() {
-        final int[][] oracle = runSteps(false);
+        final int[][] oracle = runSteps(false, UnaryOperator.identity());
         assertTrue("sanity: without an index the clock filter's filter() runs", filterInitialized);
 
-        final int[][] actual = runSteps(true);
+        final int[][] actual = runSteps(true, UnaryOperator.identity());
         assertTrue("ClockFilter.filter() is load-bearing initialization and must not be skipped by pushdown",
                 filterInitialized);
+
+        assertArrayEquals("initial result", oracle[0], actual[0]);
+        assertArrayEquals("after clock step 1", oracle[1], actual[1]);
+        assertArrayEquals("after clock step 2", oracle[2], actual[2]);
+    }
+
+    /**
+     * End-to-end through a barrier wrapper, which hides the {@link ReindexingFilter} marker from the gate.
+     */
+    @Test
+    public void barrierWrappedIndexedClockFilterReleasesRowsLikeUnindexedOracle() {
+        final UnaryOperator<WhereFilter> barrier = f -> f.withDeclaredBarriers("PD034_BARRIER");
+
+        final int[][] oracle = runSteps(false, barrier);
+        assertTrue("sanity: without an index the clock filter's filter() runs", filterInitialized);
+
+        final int[][] actual = runSteps(true, barrier);
+        assertTrue("a barrier wrapper must not make the load-bearing filter() skippable", filterInitialized);
 
         assertArrayEquals("initial result", oracle[0], actual[0]);
         assertArrayEquals("after clock step 1", oracle[1], actual[1]);
@@ -126,7 +165,7 @@ public class TestPD034 {
      * Builds the sorted input, optionally indexes the clock column, applies a refreshing {@link SortedClockFilter}, and
      * captures the {@code Int} column after the initial filter and after each of two clock steps.
      */
-    private int[][] runSteps(final boolean withDataIndex) {
+    private int[][] runSteps(final boolean withDataIndex, final UnaryOperator<WhereFilter> wrapper) {
         clock.reset();
         QueryTable.USE_DATA_INDEX_FOR_WHERE = withDataIndex;
         try {
@@ -141,7 +180,7 @@ public class TestPD034 {
             }
 
             final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
-            final Table result = input.where(filter);
+            final Table result = input.where(wrapper.apply(filter));
 
             final List<int[]> captured = new ArrayList<>();
             // ClockFilter.filter() is its initialization: it assigns nanosColumnSource. If pushdown fully
