@@ -886,8 +886,10 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     // by appending.
                     try (final WritableRowSet match = RowSetFactory.union(matches);
                             final WritableRowSet maybeMatch = RowSetFactory.union(maybeMatches)) {
-                        // Insert the rows from the constituents that don't support pushdown.
-                        maybeMatch.insert(ctx.maybeMatch);
+                        // The rows of constituents that don't support pushdown are "maybe" rows. They are taken from
+                        // this call's selection: the context was initialized against the widest selection this filter
+                        // will see, and each pushdown call may be asked about a narrower one.
+                        ctx.insertNonPushdownRows(selection, maybeMatch);
                         onComplete.accept(PushdownResult.of(selection, match, maybeMatch));
                     }
                 },
@@ -898,16 +900,28 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 onError);
     }
 
+    /**
+     * Pushdown context for a filter over {@link UnionColumnSource union sources}. The context is initialized once, by
+     * the first {@link #estimatePushdownFilterCost estimate} or {@link #pushdownFilter pushdown} call, against the
+     * widest selection this filter will see; later calls may be made against narrower selections, as earlier filters in
+     * the same {@code where()} eliminate rows. The context therefore caches only which constituents participate and the
+     * key ranges they occupy, never rows: every call derives the rows it reports from the selection it was given.
+     */
     public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContextImpl {
         final UnionSourceManager manager;
-        final WritableRowSet maybeMatch;
         final Map<String, String> renameMap;
 
         boolean initialized = false;
+
+        /** Per constituent that supports pushdown: its matcher, its key range in the union, and its own context. */
         List<PushdownFilterMatcher> matchers;
         LongArrayList firstRowKeys;
         LongArrayList lastRowKeys;
         List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
+
+        /** Per constituent that does not support pushdown: its key range in the union. Its rows are always "maybe". */
+        LongArrayList nonPushdownFirstRowKeys;
+        LongArrayList nonPushdownLastRowKeys;
 
         public UnionSourcePushdownFilterContext(
                 @NotNull final WhereFilter filter,
@@ -915,7 +929,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 @NotNull final UnionSourceManager manager) {
             super(filter, columnSources);
             this.manager = Require.neqNull(manager, "manager");
-            maybeMatch = RowSetFactory.empty();
 
             final List<String> filterColumns = filter.getColumns();
             Require.eq(filterColumns.size(), "filterColumns.size()",
@@ -948,6 +961,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
             contexts = new ArrayList<>(constituentCount);
             firstRowKeys = new LongArrayList(constituentCount);
             lastRowKeys = new LongArrayList(constituentCount);
+            nonPushdownFirstRowKeys = new LongArrayList();
+            nonPushdownLastRowKeys = new LongArrayList();
 
             // Use a 0-based slot counter for unionRedirection lookups (which are position-indexed, not
             // row-key-indexed). Slot positions diverge from constituentRows row keys when
@@ -980,13 +995,29 @@ public class UnionSourceManager implements PushdownPredicateManager {
                             firstRowKeys.add(firstKey);
                             lastRowKeys.add(lastKey);
                         } else {
-                            // Skip this table, but save the rows from this constituent as "maybe"
-                            try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstKey, lastKey)) {
-                                maybeMatch.subsume(localSelection);
-                            }
+                            // This constituent cannot push the filter down; remember its key range so that each
+                            // pushdown call can report the selected rows in it as "maybe".
+                            nonPushdownFirstRowKeys.add(firstKey);
+                            nonPushdownLastRowKeys.add(lastKey);
                         }
                     }
                     ++slot;
+                }
+            }
+        }
+
+        /**
+         * Insert the rows of {@code selection} that belong to constituents that do not support pushdown into
+         * {@code maybeMatch}.
+         *
+         * @param selection The selection of row keys being filtered by this call
+         * @param maybeMatch The "maybe" rows being accumulated for this call's result
+         */
+        void insertNonPushdownRows(final RowSet selection, final WritableRowSet maybeMatch) {
+            for (int ii = 0; ii < nonPushdownFirstRowKeys.size(); ++ii) {
+                try (final WritableRowSet localSelection = selection.subSetByKeyRange(
+                        nonPushdownFirstRowKeys.getLong(ii), nonPushdownLastRowKeys.getLong(ii))) {
+                    maybeMatch.subsume(localSelection);
                 }
             }
         }
