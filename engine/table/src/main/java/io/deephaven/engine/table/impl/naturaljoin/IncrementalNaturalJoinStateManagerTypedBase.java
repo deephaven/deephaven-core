@@ -748,7 +748,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public void addLeftSide(Context bc, RowSequence leftRowSet, ColumnSource<?>[] leftSources,
-            LongArraySource leftRedirections, @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            LongArraySource leftRedirections, @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker,
+            boolean addedToTable) {
         if (leftRowSet.isEmpty()) {
             return;
         }
@@ -758,17 +759,18 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             redirectionOffset.add(chunkOk.size());
         }, modifiedSlotTracker);
         // Perform the accumulated additions to each slot's left row set in a single bulk insert per slot.
-        applyLeftAdditions(modifiedSlotTracker);
+        applyLeftAdditions(modifiedSlotTracker, addedToTable);
     }
 
     /**
      * Apply the left additions that were accumulated into the modified slot tracker by the generated
      * {@code addLeftSide} handler. Each slot's added keys are inserted into its left row set in a single bulk
      * {@link WritableRowSet#insert} call (rather than one key at a time). The tracker discards each slot's builder as
-     * it is processed.
+     * it is processed, and counts the keys as rows added to the left table when {@code addedToTable} is set.
      */
-    private void applyLeftAdditions(final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        modifiedSlotTracker.forAllLeftAdditions((slot, addedKeys) -> {
+    private void applyLeftAdditions(final NaturalJoinModifiedSlotTracker modifiedSlotTracker,
+            final boolean addedToTable) {
+        modifiedSlotTracker.forAllLeftAdditions(addedToTable, (slot, addedKeys) -> {
             final boolean main = (slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask;
             final long location = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
             final WritableRowSet leftRowSet = main

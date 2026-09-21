@@ -35,7 +35,14 @@ public class NaturalJoinModifiedSlotTracker {
     private final ObjectArraySource<RowSetBuilderSequential> slotLeftRowSetBuilders =
             new ObjectArraySource<>(RowSetBuilderSequential.class);
     /**
-     * /** The entries (as pointers into modifiedSlots) whose builders hold the shifted keys of the shift range being
+     * The number of left row keys added to each slot this cycle by rows added to the left table (counted by
+     * {@link #forAllLeftAdditions(boolean, LeftRowSetConsumer)}), parallel to modifiedSlots. Rows that were present
+     * before this cycle and moved into the slot because their key value changed are not counted. A slot whose left row
+     * set is no larger than this count holds no left row whose right values need reporting.
+     */
+    private final LongArraySource leftAddedCounts = new LongArraySource();
+    /**
+     * The entries (as pointers into modifiedSlots) whose builders hold the shifted keys of the shift range being
      * accumulated. Shifts are applied once per shift range, so {@link #forAllLeftShifts(LeftRowSetConsumer)} visits
      * these entries rather than every entry of the cycle; the single removal and addition passes scan all entries.
      */
@@ -162,9 +169,11 @@ public class NaturalJoinModifiedSlotTracker {
             modifiedSlots.ensureCapacity(allocated);
             originalRightValues.ensureCapacity(allocated);
             slotLeftRowSetBuilders.ensureCapacity(allocated);
+            leftAddedCounts.ensureCapacity(allocated);
         }
         modifiedSlots.set(pointer, ((long) slot << FLAG_SHIFT) | flags);
         originalRightValues.set(pointer, originalRightValue);
+        leftAddedCounts.set(pointer, 0L);
         return getCookieFromPointer(pointer++);
     }
 
@@ -186,7 +195,7 @@ public class NaturalJoinModifiedSlotTracker {
     /**
      * Accumulate a left row key that must be added to {@code slot}. The insertion is not performed here; the key is
      * appended to the slot's sequential builder and the {@link #FLAG_LEFT_ADD} flag is set. The caller performs the
-     * insertions in bulk later via {@link #forAllLeftAdditions(LeftRowSetConsumer)}.
+     * insertions in bulk later via {@link #forAllLeftAdditions(boolean, LeftRowSetConsumer)}.
      *
      * @param cookie the slot's existing cookie (or an invalid cookie if this slot has not been tracked yet)
      * @param slot the hash slot (encoding main/alternate via the insert mask)
@@ -286,7 +295,7 @@ public class NaturalJoinModifiedSlotTracker {
                 continue;
             }
             final int slot = (int) (slotAndFlag >> FLAG_SHIFT);
-            slotConsumer.accept(slot, originalRightValues.getLong(ii), flag);
+            slotConsumer.accept(slot, originalRightValues.getLong(ii), flag, leftAddedCounts.getUnsafe(ii));
         }
     }
 
@@ -316,7 +325,7 @@ public class NaturalJoinModifiedSlotTracker {
      * @param consumer the consumer of each slot's removed left row keys
      */
     public void forAllLeftRemovals(LeftRowSetConsumer consumer) {
-        forAllLeftSlots(FLAG_LEFT_REMOVE, consumer);
+        forAllLeftSlots(FLAG_LEFT_REMOVE, false, consumer);
     }
 
     /**
@@ -333,7 +342,7 @@ public class NaturalJoinModifiedSlotTracker {
             final long entryPointer = pendingShiftEntries.getLong(pi);
             final long slotAndFlag = modifiedSlots.getUnsafe(entryPointer);
             Assert.neqZero(slotAndFlag & FLAG_LEFT_SHIFT, "slotAndFlag & FLAG_LEFT_SHIFT");
-            consumeLeftEntry(entryPointer, slotAndFlag, FLAG_LEFT_SHIFT, consumer);
+            consumeLeftEntry(entryPointer, slotAndFlag, FLAG_LEFT_SHIFT, false, consumer);
         }
         pendingShiftEntries.clear();
     }
@@ -344,10 +353,12 @@ public class NaturalJoinModifiedSlotTracker {
      * {@link #forAllModifiedSlots(ModifiedSlotConsumer)} pass does not re-process it). The row set handed to the
      * consumer is owned by this method and closed after the consumer returns.
      *
+     * @param addedToTable whether the accumulated keys are rows added to the left table this cycle, in which case they
+     *        are counted for {@link ModifiedSlotConsumer#accept}
      * @param consumer the consumer of each slot's added left row keys
      */
-    public void forAllLeftAdditions(LeftRowSetConsumer consumer) {
-        forAllLeftSlots(FLAG_LEFT_ADD, consumer);
+    public void forAllLeftAdditions(final boolean addedToTable, final LeftRowSetConsumer consumer) {
+        forAllLeftSlots(FLAG_LEFT_ADD, addedToTable, consumer);
     }
 
     /**
@@ -356,13 +367,13 @@ public class NaturalJoinModifiedSlotTracker {
      * {@link #forAllLeftAdditions}, each of which runs once per cycle over every entry. The row set handed to the
      * consumer is owned by this method and closed after the consumer returns.
      */
-    private void forAllLeftSlots(final byte flag, final LeftRowSetConsumer consumer) {
+    private void forAllLeftSlots(final byte flag, final boolean countAsAdded, final LeftRowSetConsumer consumer) {
         for (int ii = 0; ii < pointer; ++ii) {
             final long slotAndFlag = modifiedSlots.getLong(ii);
             if ((slotAndFlag & flag) == 0) {
                 continue;
             }
-            consumeLeftEntry(ii, slotAndFlag, flag, consumer);
+            consumeLeftEntry(ii, slotAndFlag, flag, countAsAdded, consumer);
         }
     }
 
@@ -372,10 +383,13 @@ public class NaturalJoinModifiedSlotTracker {
      * {@code flag}.
      */
     private void consumeLeftEntry(final long entryPointer, final long slotAndFlag, final byte flag,
-            final LeftRowSetConsumer consumer) {
+            final boolean countAsAdded, final LeftRowSetConsumer consumer) {
         final int slot = (int) (slotAndFlag >> FLAG_SHIFT);
         final RowSetBuilderSequential builder = slotLeftRowSetBuilders.getAndSetUnsafe(entryPointer, null);
         try (final WritableRowSet rowKeys = builder.build()) {
+            if (countAsAdded) {
+                leftAddedCounts.getAndAddUnsafe(entryPointer, rowKeys.size());
+            }
             consumer.accept(slot, rowKeys);
         }
         // the consumer may have discarded the entry, so the flags are read back rather than reused
@@ -383,7 +397,13 @@ public class NaturalJoinModifiedSlotTracker {
     }
 
     interface ModifiedSlotConsumer {
-        void accept(int slot, long originalRightValue, byte flag);
+        /**
+         * @param slot the hash slot (encoding main/alternate via the insert mask)
+         * @param originalRightValue the slot's right state when its entry was created this cycle
+         * @param flag the flags accumulated for the slot this cycle
+         * @param leftAddedCount the number of rows added to the left table this cycle that the slot holds
+         */
+        void accept(int slot, long originalRightValue, byte flag, long leftAddedCount);
     }
 
     public interface LeftRowSetConsumer {

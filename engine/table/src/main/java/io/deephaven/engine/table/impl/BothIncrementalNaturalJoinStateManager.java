@@ -44,8 +44,22 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
     void applyRightShift(Context pc, ColumnSource<?>[] rightSources, RowSet shiftedRowSet, long shiftDelta,
             @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
+    /**
+     * Add left rows to their key's slots, storing each row's right redirection (by position) in
+     * {@code leftRedirections}.
+     *
+     * @param bc the build context
+     * @param leftIndex the left rows to add
+     * @param leftSources the left key sources
+     * @param leftRedirections receives the right row key (or {@link RowSequence#NULL_ROW_KEY}) of each row, by position
+     * @param modifiedSlotTracker the tracker, whose per-slot builders accumulate the added keys of each slot
+     * @param addedToTable whether the rows were added to the left table this cycle, as opposed to rows that were
+     *        present before this cycle and whose key value changed; only rows added to the table are counted by the
+     *        tracker as rows whose right values need no reporting
+     */
     void addLeftSide(final Context bc, RowSequence leftIndex, ColumnSource<?>[] leftSources,
-            LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+            LongArraySource leftRedirections, NaturalJoinModifiedSlotTracker modifiedSlotTracker,
+            boolean addedToTable);
 
     void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?>[] leftSources,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);

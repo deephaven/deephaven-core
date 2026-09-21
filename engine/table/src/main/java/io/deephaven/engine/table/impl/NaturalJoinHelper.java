@@ -848,9 +848,13 @@ class NaturalJoinHelper {
         }
 
         @Override
-        public void accept(int updatedSlot, long originalRightValue, byte flag) {
+        public void accept(int updatedSlot, long originalRightValue, byte flag, long leftAddedCount) {
             final RowSet leftIndices = jsm.getLeftRowSet(updatedSlot);
-            if (leftIndices == null || leftIndices.isEmpty()) {
+            // The rows added to the left table this cycle already hold the redirection found for them against the
+            // right side as it stands after this cycle's right updates, and an added row is never reported as modified,
+            // so a slot's right change affects only the left rows that were present before this cycle (including rows
+            // that moved into the slot because their key value changed).
+            if (leftIndices == null || leftIndices.size() <= leftAddedCount) {
                 return;
             }
 
@@ -1143,14 +1147,15 @@ class NaturalJoinHelper {
                     if (leftKeyChanges) {
                         // add the post-shift rows whose key value actually changed; every added column may have a new
                         // value for a row that now selects a different right row (or none)
-                        jsm.addLeftSide(bc, changedKeysPostShift, leftSources, leftRedirections, modifiedSlotTracker);
+                        jsm.addLeftSide(bc, changedKeysPostShift, leftSources, leftRedirections, modifiedSlotTracker,
+                                false);
                         if (storeRedirections(changedKeysPostShift, leftRedirections, true)) {
                             modifiedColumnSet.setAll(allRightColumns);
                         }
                     }
 
                     if (leftAdditions) {
-                        jsm.addLeftSide(bc, leftAdded, leftSources, leftRedirections, modifiedSlotTracker);
+                        jsm.addLeftSide(bc, leftAdded, leftSources, leftRedirections, modifiedSlotTracker, true);
                         storeRedirections(leftAdded, leftRedirections, false);
                     }
                 } finally {
