@@ -21,7 +21,7 @@ import io.deephaven.engine.table.impl.util.LongColumnSourceRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
-import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK4V4;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -310,9 +310,15 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             dataIndex, rowSetToSort, usePrev, ALLOW_SYMBOL_TABLE)
                     .getArrayMapping();
 
-            // Size the map so the initial population completes without any rehashing.
-            final NullableLongLongMap reverseLookup =
-                    HashMapLockFreeK4V4.ofExpectedSize(sortedKeys.length, 0.75, -3);
+            // Size the map so the initial population completes without any rehashing. The shape comes from the
+            // central policy; at this load factor (0.75 — measured as a wash between the serial and windowed
+            // shapes) it picks serial K4V4 except for sorts within reach of the maps' absolute capacity ceiling,
+            // which are forced dense and get the windowed shape. There is deliberately no dynamic upgrade here:
+            // getSingle's operator
+            // captures the map reference, and swapping a field under a captured alias would leave the alias serving
+            // the abandoned map.
+            final NullableLongLongMap reverseLookup = NullableLongLongMaps.ofExpectedSize(sortedKeys.length, 0.75,
+                    -3, NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES);
 
             sortMapping = SortHelpers.createSortRowRedirection();
 
@@ -437,9 +443,10 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortRedirection == null) {
             return null;
         }
-        // Size the map so the population below completes without any rehashing.
-        final NullableLongLongMap reverseLookup =
-                HashMapLockFreeK4V4.ofExpectedSize(sortResult.intSize(), 0.75, RowSequence.NULL_ROW_KEY);
+        // Size the map so the population below completes without any rehashing. The shape comes from the central
+        // policy (currently always serial at this load factor; see the comment at the other call site).
+        final NullableLongLongMap reverseLookup = NullableLongLongMaps.ofExpectedSize(sortResult.intSize(), 0.75,
+                RowSequence.NULL_ROW_KEY, NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES);
         // Populate it a chunk at a time: the redirection's inner keys for a run of outer keys, the run's own keys, and
         // one put of the pairs. The map is new, so there are no previous values to report.
         final RowSet outerRowSet = sortResult.getRowSet();

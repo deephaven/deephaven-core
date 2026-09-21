@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK1V1;
 import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK2V2;
 import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK4V4;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
+import io.deephaven.engine.table.impl.util.hash.NullableLongLongMaps;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -131,9 +132,13 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     private static final long UPDATES_KEY_NOT_FOUND = -2L;
 
     /**
-     * How things looked at the beginning of the most recent idle cycle.
+     * How things looked at the beginning of the most recent idle cycle. Not final: commitUpdates() may replace a
+     * baseline that has grown past AMAC_THRESHOLD_ENTRIES with an upgraded (windowed) map. The swap rides the same
+     * release/acquire chains that publish the commit itself (arguments #1 and #2 in the class comment); a Reader that
+     * has not yet synchronized sees the old map, which is never mutated again after the swap and so remains a
+     * consistent pre-commit snapshot.
      */
-    private final NullableLongLongMap baseline;
+    private NullableLongLongMap baseline;
     /**
      * Updates that have happened since the start of the most recent idle cycle.
      */
@@ -159,7 +164,15 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         // in turn can only happen once prev tracking has been turned on). We copy updates to baseline and reset the
         // updates map.
         final NullableLongLongMap updates = instance.updates;
-        final NullableLongLongMap baseline = instance.baseline;
+        // A baseline that has become dense — deliberately (grown past the AMAC threshold while LOAD_FACTOR is at
+        // or above the policy's density floor; never at the default 0.5) or forcibly (creeping toward the absolute
+        // capacity ceiling, where rehash clamps and occupancy climbs regardless of LOAD_FACTOR) — is rebuilt as the
+        // windowed shape before the merge, so the merge's own puts also run against the upgraded map. Readers pick
+        // up the swap through the usual publication chains; one still holding the old map sees a consistent
+        // pre-commit snapshot, which the commit boundary permits.
+        final NullableLongLongMap baseline =
+                NullableLongLongMaps.maybeUpgrade(instance.baseline, LOAD_FACTOR, AMAC_THRESHOLD_ENTRIES);
+        instance.baseline = baseline;
         Assert.neq(baseline, "baseline", updates, "updates");
 
         try (final AutoCloseableScalarAccessPair sap = SCALAR_ACCESS_PAIR.get()) {
@@ -456,6 +469,13 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
 
     private static final int hashBucketWidth = Configuration.getInstance()
             .getIntegerForClassWithDefault(WritableRowRedirectionLockFree.class, "hashBucketWidth", 1);
+
+    /**
+     * Entry count at which commitUpdates() upgrades the baseline map to the windowed (AMAC) shape.
+     */
+    private static final int AMAC_THRESHOLD_ENTRIES = Configuration.getInstance()
+            .getIntegerForClassWithDefault(WritableRowRedirectionLockFree.class, "amacThresholdEntries",
+                    NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES);
 
     @NotNull
     private static NullableLongLongMap createUpdateMap() {
