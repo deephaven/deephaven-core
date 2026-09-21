@@ -2209,31 +2209,32 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     @Override
     public OrderedLongSet ixRetain(final OrderedLongSet other) {
-        return retainImpl(other, this::getWriteRef);
+        return retainImpl(other, true);
     }
 
     public OrderedLongSet ixRetainNoWriteCheck(final OrderedLongSet other) {
-        return retainImpl(other, () -> this);
+        return retainImpl(other, false);
     }
 
-    private OrderedLongSet retainImpl(final OrderedLongSet other, Supplier<RspBitmap> refSupplier) {
+    private OrderedLongSet retainImpl(final OrderedLongSet other, final boolean writeCheck) {
         if (isEmpty() || other.ixIsEmpty() || last() < other.ixFirstKey() || other.ixLastKey() < first()) {
             return OrderedLongSet.EMPTY;
         }
         if (other instanceof SingleRange) {
-            return refSupplier.get().ixRetainRange(other.ixFirstKey(), other.ixLastKey());
+            final RspBitmap ans = writeCheck ? getWriteRef() : this;
+            return ans.ixRetainRange(other.ixFirstKey(), other.ixLastKey());
         }
         if (other instanceof SortedRanges) {
             final SortedRanges sr = (SortedRanges) other;
             final OrderedLongSet ans = sr.intersectOnNew(this);
-            return (ans != null) ? ans : retainImpl(sr.toRsp(), refSupplier);
+            return (ans != null) ? ans : retainImpl(sr.toRsp(), writeCheck);
         }
         final RspBitmap o = (RspBitmap) other;
-        return retainImpl(o, refSupplier);
+        return retainImpl(o, writeCheck);
     }
 
-    private OrderedLongSet retainImpl(final RspBitmap other, final Supplier<RspBitmap> refSupplier) {
-        final RspBitmap ans = refSupplier.get();
+    private OrderedLongSet retainImpl(final RspBitmap other, final boolean writeCheck) {
+        final RspBitmap ans = writeCheck ? getWriteRef() : this;
         ans.andEqualsUnsafeNoWriteCheck(other);
         if (ans.isEmpty()) {
             if (ans != this) {
