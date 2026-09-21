@@ -54,7 +54,13 @@ public class ConditionFilter extends AbstractConditionFilter {
     protected static final String CLASS_NAME = "GeneratedFilterKernel";
 
     private Future<Class<?>> filterKernelClassFuture = null;
-    private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
+    /**
+     * The columns and special variables used by this filter. Assigned by {@link #getClassBody}, which
+     * {@link AbstractConditionFilter#checkAndInitializeVectorization} deliberately skips for a vectorizable Python
+     * function -- it marks the filter initialized having set up a chunk filter instead. Defaulting to empty rather than
+     * null keeps {@link #getNumInputsUsed()} answerable on that path.
+     */
+    private List<Pair<String, Class<?>>> usedInputs = List.of();
     private String classBody;
     private Filter filter = null;
     private boolean pythonFilter = false;
@@ -98,6 +104,12 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     /**
      * Get the number of inputs (columns and special variables) used by this filter.
+     *
+     * <p>
+     * Returns {@code 0} when the inputs have not been determined -- before {@link #init(TableDefinition)}, and for a
+     * filter initialized from a vectorizable Python function, which never runs {@link #getClassBody}. Callers using
+     * this to decide whether the filter is usable as a single-column chunk filter therefore decline rather than fail.
+     * </p>
      */
     public int getNumInputsUsed() {
         return usedInputs.size();
