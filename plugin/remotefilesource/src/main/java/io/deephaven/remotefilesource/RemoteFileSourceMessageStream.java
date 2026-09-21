@@ -41,6 +41,11 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     private final Map<String, CompletableFuture<byte[]>> pendingRequests = new ConcurrentHashMap<>();
 
     /**
+     * Set once the client's stream has closed, after which no further messages may be sent on it.
+     */
+    private volatile boolean closed;
+
+    /**
      * Creates a new RemoteFileSourceMessageStream for the given connection.
      *
      * @param connection the message stream connection to the client
@@ -73,6 +78,15 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         // timeout to this future, and a request whose response never arrives would otherwise be retained until the
         // stream closes.
         future.whenComplete((result, error) -> pendingRequests.remove(requestId));
+
+        // Checked after publishing the future, so that a close racing this call either cancels the future itself or
+        // is seen here. Resources resolved before the client disconnected can still be fetched afterwards, and the
+        // caller would otherwise wait out its timeout for a response that cannot arrive.
+        if (closed) {
+            future.completeExceptionally(new IllegalStateException(
+                    "Remote file source connection closed before requesting " + resourceName));
+            return future;
+        }
 
         try {
             // Build RemoteFileSourceMetaRequest proto
@@ -186,7 +200,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      * @param requestId the request ID
      * @param setExecutionContext the SetExecutionContextRequest containing resource paths and isDirty flag
      */
-    private void handleSetExecutionContext(String requestId, SetExecutionContextRequest setExecutionContext) {
+    private void handleSetExecutionContext(String requestId, SetExecutionContextRequest setExecutionContext)
+            throws ObjectCommunicationException {
         boolean isDirty = setExecutionContext.getIsDirty();
         List<String> resourcePaths = setExecutionContext.getResourcePathsList();
 
@@ -200,7 +215,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      *
      * @param requestId the request ID to acknowledge
      */
-    private void sendExecutionContextAcknowledgment(String requestId) {
+    private void sendExecutionContextAcknowledgment(String requestId) throws ObjectCommunicationException {
         SetExecutionContextResponse response = SetExecutionContextResponse.newBuilder().build();
 
         RemoteFileSourceServerMessage serverRequest = RemoteFileSourceServerMessage.newBuilder()
@@ -208,11 +223,10 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
                 .setSetExecutionContextResponse(response)
                 .build();
 
-        try {
-            connection.onData(ByteBuffer.wrap(serverRequest.toByteArray()));
-        } catch (ObjectCommunicationException e) {
-            log.error().append("Failed to send execution context acknowledgment: ").append(e).endl();
-        }
+        // Let a send failure propagate out of onData: the declaration is already installed, and the object service
+        // responds to this by closing the stream, which drops it. Swallowing it would leave the client waiting out
+        // its timeout while the unacknowledged declaration stayed claimable by a later evaluation.
+        connection.onData(ByteBuffer.wrap(serverRequest.toByteArray()));
     }
 
     /**
@@ -221,6 +235,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      */
     @Override
     public void onClose() {
+        closed = true;
         RemoteFileSourceClassLoader.getInstance().providerClosed(this);
 
         // Cancel all pending requests

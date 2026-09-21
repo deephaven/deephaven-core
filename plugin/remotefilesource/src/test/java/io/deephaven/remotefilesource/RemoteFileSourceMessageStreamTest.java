@@ -12,10 +12,13 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests that a client's declared resources are scoped to the single script evaluation they were declared for.
@@ -44,6 +47,25 @@ class RemoteFileSourceMessageStreamTest {
     private static final class FakeConnection implements ObjectType.MessageStream {
         @Override
         public void onData(final ByteBuffer payload, final Object... references) {}
+
+        @Override
+        public void onClose() {}
+    }
+
+    /**
+     * A connection whose sends fail once {@code sendsFail} is set, leaving the constructor's initial message to
+     * succeed.
+     */
+    private static final class FailingConnection implements ObjectType.MessageStream {
+        private boolean sendsFail;
+
+        @Override
+        public void onData(final ByteBuffer payload, final Object... references)
+                throws ObjectCommunicationException {
+            if (sendsFail) {
+                throw new ObjectCommunicationException("send failed");
+            }
+        }
 
         @Override
         public void onClose() {}
@@ -259,6 +281,46 @@ class RemoteFileSourceMessageStreamTest {
             assertThat(classLoader.getResource(RESOURCE)).isNull();
         } finally {
             surviving.onClose();
+        }
+    }
+
+    /**
+     * A client disconnecting mid-evaluation must not quietly change where that evaluation's declared paths come from.
+     * The claimed declaration stays in place so the fetch fails, rather than resolving a same-named classpath resource
+     * and compiling sources of mixed origin.
+     */
+    @Test
+    void disconnectingDuringAnEvaluationFailsRatherThanResolvingLocally() throws Exception {
+        final RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
+        final RemoteFileSourceMessageStream stream = newStream();
+
+        sendSetExecutionContext(stream, List.of(RESOURCE), false);
+        classLoader.beginEvaluation();
+
+        stream.onClose();
+
+        final URL url = classLoader.getResource(RESOURCE);
+        assertThat(url).isNotNull();
+        assertThat(url.getProtocol()).isEqualTo("remotefile");
+        // Fails outright, and without waiting for the fetch timeout, since the connection is known to be gone
+        assertThatThrownBy(url::openStream).isInstanceOf(IOException.class);
+    }
+
+    /**
+     * A failed acknowledgment must reach the object service, which closes the stream in response. Swallowing it would
+     * leave the declaration installed and claimable while the client waited out its timeout.
+     */
+    @Test
+    void aFailedAcknowledgmentPropagates() throws Exception {
+        final FailingConnection connection = new FailingConnection();
+        final RemoteFileSourceMessageStream stream = new RemoteFileSourceMessageStream(connection);
+        try {
+            connection.sendsFail = true;
+
+            assertThatThrownBy(() -> sendSetExecutionContext(stream, List.of(RESOURCE), false))
+                    .isInstanceOf(ObjectCommunicationException.class);
+        } finally {
+            stream.onClose();
         }
     }
 }

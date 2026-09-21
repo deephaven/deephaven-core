@@ -137,20 +137,20 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     }
 
     /**
-     * Discards any declaration made or claimed by the given provider, for use when its connection closes. A provider
-     * that has since been superseded leaves the newer declaration untouched.
+     * Discards any declaration the given provider has made but that no evaluation has claimed yet, for use when its
+     * connection closes. A provider that has since been superseded leaves the newer declaration untouched.
      *
-     * @param provider the provider whose declarations should be dropped
+     * <p>
+     * A declaration already claimed is deliberately left in place. An evaluation underway keeps resolving the paths it
+     * claimed, so the fetches fail against the closed provider rather than silently falling through to same-named
+     * classpath resources, which would let one run compile sources of mixed origin.
+     *
+     * @param provider the provider whose unclaimed declaration should be dropped
      */
     public void providerClosed(final RemoteFileSourceProvider provider) {
         final RemoteFileSourceExecutionContext pending = pendingContext.get();
         if (pending != null && pending.getProvider() == provider) {
             pendingContext.compareAndSet(pending, null);
-        }
-
-        final RemoteFileSourceExecutionContext current = evaluationContext;
-        if (current != null && current.getProvider() == provider) {
-            evaluationContext = null;
         }
     }
 
