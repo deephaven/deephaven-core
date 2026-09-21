@@ -190,6 +190,15 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
         }
 
         @Override
+        public void updateExecutedFilterCost(final long executedFilterCost) {
+            super.updateExecutedFilterCost(executedFilterCost);
+            // The wrapped matcher executed alongside this context, so it has executed the same steps.
+            if (wrappedContext != null) {
+                wrappedContext.updateExecutedFilterCost(executedFilterCost);
+            }
+        }
+
+        @Override
         public void close() {
             if (wrappedContext != null) {
                 wrappedContext.close();

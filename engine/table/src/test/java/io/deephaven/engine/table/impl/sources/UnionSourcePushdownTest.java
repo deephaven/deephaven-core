@@ -191,6 +191,33 @@ public class UnionSourcePushdownTest {
     }
 
     /**
+     * The driver records the cost ceiling a pushdown ran under on the context it handed out, so that a repeat
+     * invocation skips the steps already taken. The union context must pass that on to its constituents' contexts,
+     * which are the ones that consult it.
+     */
+    @Test
+    public void executedFilterCostReachesConstituentContexts() {
+        final Table merged = mergedTable();
+        final WhereFilter filter = initializedFilter(merged, UNION_FILTER);
+        final PushdownFilterMatcher matcher = unionMatcher(merged, filter);
+
+        try (final PushdownFilterContext context =
+                matcher.makePushdownFilterContext(filter, filterSources(merged, filter))) {
+            estimateCost(matcher, filter, merged.getRowSet(), context);
+            final UnionSourceManager.UnionSourcePushdownFilterContext unionContext =
+                    (UnionSourceManager.UnionSourcePushdownFilterContext) context;
+            assertThat(unionContext.contexts).isNotEmpty();
+
+            context.updateExecutedFilterCost(1234L);
+
+            assertThat(context.executedFilterCost()).isEqualTo(1234L);
+            for (final PushdownFilterContext constituentContext : unionContext.contexts) {
+                assertThat(constituentContext.executedFilterCost()).isEqualTo(1234L);
+            }
+        }
+    }
+
+    /**
      * End to end: a selective filter runs first, so the union filter pushes down against a narrowed selection. Rows the
      * first filter eliminated must not come back.
      */

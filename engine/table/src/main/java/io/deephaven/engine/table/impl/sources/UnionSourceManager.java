@@ -1016,6 +1016,13 @@ public class UnionSourceManager implements PushdownPredicateManager {
         }
 
         @Override
+        public void updateExecutedFilterCost(final long executedFilterCost) {
+            super.updateExecutedFilterCost(executedFilterCost);
+            // The constituents executed alongside this context, so they have executed the same steps.
+            contexts.forEach(ctx -> ctx.updateExecutedFilterCost(executedFilterCost));
+        }
+
+        @Override
         public void close() {
             contexts.forEach(io.deephaven.engine.table.impl.PushdownFilterContext::close);
             super.close();
