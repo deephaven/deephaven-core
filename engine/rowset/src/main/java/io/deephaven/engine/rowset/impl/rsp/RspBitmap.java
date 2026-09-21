@@ -2437,23 +2437,30 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         if (last() < other.ixFirstKey() || other.ixLastKey() < first()) {
             return cowRef();
         }
+        final RspBitmap ans;
         if (other instanceof SingleRange) {
             if (other.ixFirstKey() <= ixFirstKey() && ixLastKey() <= other.ixLastKey()) {
                 return OrderedLongSet.EMPTY;
             }
-            final RspBitmap ans = deepCopy();
+            ans = deepCopy();
             ans.removeRangeUnsafeNoWriteCheck(other.ixFirstKey(), other.ixLastKey());
             ans.finishMutations();
-            return ans;
-        }
-        if (other instanceof SortedRanges) {
-            final RspBitmap ans = deepCopy();
+        } else if (other instanceof SortedRanges) {
+            ans = deepCopy();
             final SortedRanges sr = (SortedRanges) other;
             ans.removeRangesUnsafeNoWriteCheck(sr.getRangeIterator());
             ans.finishMutations();
-            return ans;
+        } else {
+            ans = RspBitmap.andNot(this, (RspBitmap) other);
         }
-        return RspBitmap.andNot(this, (RspBitmap) other);
+        // A minus can only shrink, so as with the subindex operations it pays off to check for compacting the
+        // result: left as a bitmap, a result that has become a handful of ranges makes every later operation on it
+        // pay bitmap costs. tryCompact gives up on cardinality before doing any work, so a large result is cheap.
+        final OrderedLongSet compacted = ans.ixCompact();
+        if (compacted != ans) {
+            ans.ixRelease();
+        }
+        return compacted;
     }
 
     @Override
