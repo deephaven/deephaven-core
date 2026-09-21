@@ -914,14 +914,14 @@ public class UnionSourceManager implements PushdownPredicateManager {
         boolean initialized = false;
 
         /** Per constituent that supports pushdown: its matcher, its key range in the union, and its own context. */
-        List<PushdownFilterMatcher> matchers;
-        LongArrayList firstRowKeys;
-        LongArrayList lastRowKeys;
-        List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
+        final List<PushdownFilterMatcher> matchers = new ArrayList<>();
+        final LongArrayList firstRowKeys = new LongArrayList();
+        final LongArrayList lastRowKeys = new LongArrayList();
+        final List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts = new ArrayList<>();
 
         /** Per constituent that does not support pushdown: its key range in the union. Its rows are always "maybe". */
-        LongArrayList nonPushdownFirstRowKeys;
-        LongArrayList nonPushdownLastRowKeys;
+        final LongArrayList nonPushdownFirstRowKeys = new LongArrayList();
+        final LongArrayList nonPushdownLastRowKeys = new LongArrayList();
 
         public UnionSourcePushdownFilterContext(
                 @NotNull final WhereFilter filter,
@@ -940,7 +940,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         /**
          * Initialize the context with the selection and whether to use previous values. This must be called before
-         * using the context.
+         * using the context to estimate or execute a filter; a context that is never initialized can still be
+         * {@link #close() closed}.
          *
          * @param selection The selection of row keys to filter
          * @param usePrev Whether to use previous values for filtering
@@ -955,14 +956,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
             // is very important for UnionSourceManager because will likely contain refreshing constituent tables.
 
             final RowSet rowSetToUse = usePrev ? manager.constituentRows.prev() : manager.constituentRows;
-            final int constituentCount = rowSetToUse.intSize();
-
-            matchers = new ArrayList<>(constituentCount);
-            contexts = new ArrayList<>(constituentCount);
-            firstRowKeys = new LongArrayList(constituentCount);
-            lastRowKeys = new LongArrayList(constituentCount);
-            nonPushdownFirstRowKeys = new LongArrayList();
-            nonPushdownLastRowKeys = new LongArrayList();
 
             // Use a 0-based slot counter for unionRedirection lookups (which are position-indexed, not
             // row-key-indexed). Slot positions diverge from constituentRows row keys when

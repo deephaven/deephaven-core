@@ -176,6 +176,21 @@ public class UnionSourcePushdownTest {
     }
 
     /**
+     * The driver constructs every filter's context before estimating any of their costs, and closes them all if
+     * anything fails in between. A context that was never initialized must therefore be closeable.
+     */
+    @Test
+    public void unInitializedContextIsCloseable() {
+        final Table merged = mergedTable();
+        final WhereFilter filter = initializedFilter(merged, UNION_FILTER);
+        final PushdownFilterMatcher matcher = unionMatcher(merged, filter);
+
+        final PushdownFilterContext context = matcher.makePushdownFilterContext(filter, filterSources(merged, filter));
+        assertThat(context).isInstanceOf(UnionSourceManager.UnionSourcePushdownFilterContext.class);
+        context.close();
+    }
+
+    /**
      * End to end: a selective filter runs first, so the union filter pushes down against a narrowed selection. Rows the
      * first filter eliminated must not come back.
      */
