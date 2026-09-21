@@ -45,7 +45,7 @@
     // on rootful daemons — `id` still says uid 1000 on a Mac.
     "ghcr.io/devc-tools/features/rootless-remap:0": {},
 
-    // Nested containers via podman, adding no capabilities beyond Docker’s default set.
+    // Nested containers via podman, adding no capabilities beyond Docker's default set.
     // slirp4netns gives nested containers their own networks with name DNS, which the gradle
     // deephaven-in-docker tests (:py-client, :go, :R, :cpp-client, web/client-api) rely on to
     // reach the server container by name. Requires the tun device and the seccomp profile in
