@@ -40,6 +40,8 @@ Subscription statistics are presented in percentiles bucketed over a time period
 | UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic          |
 | WriteNanos           | Sender            | The time it took to write the update to a single subscriber                         |
 | WriteBytes           | Sender            | The payload size of the update in bytes                                             |
+| PendingDeltaCount    | Sender            | How many per-cycle updates the server was holding, un-propagated, at the end of an update graph cycle |
+| PendingDeltaBytes    | Sender            | Approximate heap footprint, in bytes, of the chunk storage those pending updates own |
 | DeserializationNanos | Receiver          | The time it took to read and deserialize the update from the wire                   |
 | ProcessUpdateNanos   | Receiver          | The time it took to apply a single update during the update graph cycle             |
 | RefreshNanos         | Receiver          | The time it took to apply all queued updates during a single update graph cycle     |
@@ -54,6 +56,9 @@ Snapshot statistics are presented once per request.
 | SnapshotNanos | The time it took to construct a consistent snapshot of the source table |
 | WriteNanos    | The time it took to write the snapshot                                  |
 | WriteBytes    | The payload size of the snapshot in bytes                               |
+
+> [!NOTE]
+> `PendingDeltaCount` and `PendingDeltaBytes` are gauges rather than durations: each is sampled once per update graph cycle, so the useful value over a reporting window is the maximum rather than the average. They measure what the server is holding on behalf of subscribers it has not yet served, which rises with the number of update graph cycles that elapse per subscriber update interval. The byte figure is approximate: it counts the capacity of the chunks a pending update owns, which is what the server allocated, not the rows actually stored in them.
 
 > [!NOTE]
 > All durations are nanoseconds and all payload sizes are bytes, stored as `long`. This matches Deephaven's other performance tables. Convert in a query when you want different units — for example `WriteMillis = WriteNanos / 1e6`, or `WriteMegabits = WriteBytes * 8 / 1e6` to compare against link bandwidth.

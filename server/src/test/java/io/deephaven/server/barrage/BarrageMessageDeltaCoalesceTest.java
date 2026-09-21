@@ -179,4 +179,55 @@ public class BarrageMessageDeltaCoalesceTest extends RefreshingTableTestCase {
             delta2.close();
         }
     }
+
+    /**
+     * Columns whose rows come from the same places compute their mapping once and share the result, which is the whole
+     * point of {@code ColumnMappingCache}. Nothing else observes the sharing: a subscriber receives the same message
+     * either way, and the copy kernel only reads what the mapping produced. The coalesced delta does expose it, because
+     * columns that shared a mapping share the one recorded-modification row set it built.
+     *
+     * <p>
+     * Here the first delta modifies two columns and the second modifies all three, so the first two columns are
+     * modified by the same deltas and share, while the third is modified by only one of them and does not.
+     */
+    public void testColumnsModifiedTogetherShareOneMapping() {
+        final BitSet wide = columns(INT_COL, DOUBLE_COL, STR_COL);
+        final BitSet twoColumns = columns(INT_COL, DOUBLE_COL);
+
+        final RowSet mods1 = RowSetFactory.fromKeys(2, 3);
+        final BarrageMessageDelta delta1 = new BarrageMessageDelta(1, 1, 1,
+                update(RowSetFactory.empty(), mods1.copy(), table.newModifiedColumnSet("intCol", "doubleCol")),
+                RowSetFactory.empty(), mods1, null, (BitSet) wide.clone(), (BitSet) twoColumns.clone(),
+                new WritableChunk[chunkSources.length][], chunks(twoColumns, 2, 1));
+
+        final RowSet mods2 = RowSetFactory.fromKeys(5, 6);
+        final BarrageMessageDelta delta2 = new BarrageMessageDelta(1, 2, 2,
+                update(RowSetFactory.empty(), mods2.copy(), ModifiedColumnSet.ALL),
+                RowSetFactory.empty(), mods2, null, (BitSet) wide.clone(), (BitSet) wide.clone(),
+                new WritableChunk[chunkSources.length][], chunks(wide, 2, 2));
+
+        try (final RowSet base = RowSetFactory.flat(10);
+                final BarrageMessageDelta result =
+                        BarrageMessageDelta.coalesce(List.of(delta1, delta2), base, chunkSources)) {
+            assertEquals("modified columns", wide, result.modifiedColumns);
+
+            assertSame("columns modified by the same deltas share one recorded-modification row set",
+                    result.perColumnRecordedMods[INT_COL], result.perColumnRecordedMods[DOUBLE_COL]);
+            assertNotSame("a column modified by only one of the deltas computes its own",
+                    result.perColumnRecordedMods[INT_COL], result.perColumnRecordedMods[STR_COL]);
+
+            assertEquals("rows the shared mapping covers", RowSetFactory.fromKeys(2, 3, 5, 6),
+                    result.perColumnRecordedMods[INT_COL]);
+            assertEquals("rows the unshared mapping covers", RowSetFactory.fromKeys(5, 6),
+                    result.perColumnRecordedMods[STR_COL]);
+            assertEquals("union over the columns", RowSetFactory.fromKeys(2, 3, 5, 6), result.recordedMods);
+
+            // The sharing is of the mapping, not of the data: each column still copies its own chunks.
+            assertEquals(2 * 100 + 0, result.modChunks[INT_COL][0].asIntChunk().get(2));
+            assertEquals("2:0", result.modChunks[STR_COL][0].<String>asObjectChunk().get(0));
+        } finally {
+            delta1.close();
+            delta2.close();
+        }
+    }
 }

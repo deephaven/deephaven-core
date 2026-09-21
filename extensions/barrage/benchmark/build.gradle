@@ -54,7 +54,7 @@ createJmhTask('jmhRunBarrageCopyKernel', 'BarrageCopyKernelBenchmark')
 
 // Three forks throughout: single-fork runs of these arms have disagreed with each other by more than the effects
 // they measure, and the sign of a small difference has flipped between forks.
-def copyKernelJmhArgs = ['-f', '3', '-wi', '3', '-i', '8', '-w', '2', '-r', '2', '-gc', 'true']
+def copyKernelJmhArgs = ['-f', '3', '-wi', '3', '-i', '10', '-w', '2', '-r', '2', '-gc', 'true']
 
 // The two algorithms on one column, across the run lengths either side of the kernel's threshold.
 createJmhTask('jmhRunBarrageCopyKernelAlgorithms',
@@ -69,7 +69,7 @@ createJmhTask('jmhRunBarrageCopyKernelAlgorithms100k',
 createJmhTask('jmhRunBarrageCopyKernelCrossover',
         ['BarrageCopyKernelBenchmark\\.(mappingOnly|rangeAware)$', copyKernelJmhArgs, '-p', 'avgRunLength=1,2,3,4,5'])
 
-// Does sharing runs, and the mapping they convert to, pay off? Two columns per operation.
+// Does sharing one set of runs between columns pay off? Two columns per operation.
 createJmhTask('jmhRunBarrageCopyKernelSharing',
         ['BarrageCopyKernelBenchmark\\.twoColumns.*$', copyKernelJmhArgs, '-p', 'columnType=Int',
          '-p', 'avgRunLength=1,2,5,16'])

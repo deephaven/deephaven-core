@@ -45,9 +45,10 @@ public interface BarrageCopyKernel {
      * {@link #originOffset}) and how many rows follow contiguously.
      *
      * <p>
-     * Data only. The caller appends the runs in output order; a kernel reads them. Row sets are range-compressed and
-     * updates arrive in ranges, so a run usually covers many rows and building this costs proportionally to ranges
-     * rather than rows.
+     * No column data lives here, only the positions that say where to find it. The caller appends the runs in output
+     * order and a kernel reads them; nothing consumes or rewrites them, which is what lets columns whose rows come from
+     * the same places share one. Row sets are range-compressed and updates arrive in ranges, so a run usually covers
+     * many rows and building this costs proportionally to ranges rather than rows.
      */
     final class Runs {
         /** The output positions, encoded origins and lengths of each contiguous stretch. */
@@ -81,6 +82,10 @@ public interface BarrageCopyKernel {
         }
     }
 
+    /**
+     * The kernel for {@code chunkType}: a stateless shared instance, not a new one, named to match
+     * {@link io.deephaven.engine.table.impl.util.copy.CopyKernel#makeCopyKernel}.
+     */
     static BarrageCopyKernel makeBarrageCopyKernel(final ChunkType chunkType) {
         switch (chunkType) {
             case Char:
@@ -103,41 +108,25 @@ public interface BarrageCopyKernel {
     }
 
     /**
-     * Base context for a BarrageCopyKernel.
-     **/
-    interface BarrageCopyKernelContext {
-        int deltaChunkSize();
-    }
-
-    /**
-     * Create a context for this copy kernel that will contain add / mod delta chunks cast to the correct type.
-     *
-     * @param addChunks the add delta chunks (per delta)
-     * @param modChunks the mod delta chunks (per delta)
-     * @param deltaChunkSize the number of rows in every delta chunk except the last of a column, which is what lets an
-     *        encoded position locate its chunk
-     * @return a context that can be passed to {@link #copy(Runs, WritableChunk[], BarrageCopyKernelContext)} to drive
-     *         the copy from the add / mod delta chunks into the output chunks.
-     */
-    BarrageCopyKernelContext makeContext(
-            WritableChunk<Values>[][] addChunks,
-            WritableChunk<Values>[][] modChunks,
-            int deltaChunkSize);
-
-    /**
-     * Fill one column's output chunks from the per-delta chunks the context holds, following {@code runs}.
+     * Fill one column's output chunks from one column's per-delta chunks, following {@code runs}.
      *
      * <p>
      * Each run is split wherever it crosses an origin or destination chunk boundary, and every resulting stretch moves
-     * with one typed array copy.
+     * with one typed array copy. An implementation casts the chunk arrays to its own chunk type once per call, so there
+     * is nothing worth keeping between calls and nothing to close afterwards.
      *
      * @param runs where every output row comes from, in output order
-     * @param dest the output chunks to fill, all of {@link BarrageCopyKernelContext#deltaChunkSize()} rows except the
-     *        last, holding {@code runs.totalRows} rows between them
-     * @param context the context returned from {@link #makeContext(WritableChunk[][], WritableChunk[][], int)}
+     * @param dest the output chunks to fill, all of {@code deltaChunkSize} rows except the last, holding
+     *        {@code runs.totalRows} rows between them
+     * @param addChunks the add delta chunks for this column, indexed by the delta index a run's origin encodes
+     * @param modChunks the mod delta chunks for this column, indexed the same way
+     * @param deltaChunkSize the number of rows in every delta chunk except the last of a column, which is what lets an
+     *        encoded position locate its chunk. Must be a power of two.
      */
     void copy(
             Runs runs,
             WritableChunk<Values>[] dest,
-            BarrageCopyKernelContext context);
+            WritableChunk<Values>[][] addChunks,
+            WritableChunk<Values>[][] modChunks,
+            int deltaChunkSize);
 }

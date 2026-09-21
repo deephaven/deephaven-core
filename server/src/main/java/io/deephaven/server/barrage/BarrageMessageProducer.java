@@ -95,8 +95,9 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     /**
      * The number of rows in every chunk a delta records, except the last of a column. A configured
-     * {@code deltaChunkSize} that is not a power of two is rounded up to the next one, because these chunks come from a
-     * pool that serves powers of two: an unrounded size would leave the tail of every chunk it hands back unused.
+     * {@code deltaChunkSize} that is not a power of two is rounded up to the next one, because that is what lets the
+     * copy kernel turn an encoded position into a chunk index and an offset within that chunk with a shift and a mask
+     * rather than a division per row; {@link io.deephaven.extensions.barrage.chunk.BarrageCopyKernel#copy} asserts it.
      */
     public static final int DELTA_CHUNK_SIZE = MathUtil.roundUpPowerOf2(
             Configuration.getInstance().getIntegerForClassWithDefault(
@@ -104,41 +105,41 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     /**
      * Whether a producer compacts its queue of pending deltas before the subscribers' update interval elapses. See
-     * {@link #shouldCompact()} for the policy and {@link #COMPACTION_FLOOR_BYTES}, {@link #COMPACTION_GROWTH_FACTOR}
-     * and {@link #COMPACTION_MAX_PENDING_DELTAS} for its parameters.
+     * {@link #shouldCompact()} for the policy, and {@link #COMPACTION_MIN_FREED_FRACTION} and
+     * {@link #COMPACTION_FLOOR_BYTES} for its parameters.
      */
     public static final boolean COMPACTION_ENABLED = Configuration.getInstance()
             .getBooleanForClassWithDefault(BarrageMessageProducer.class, "compactionEnabled", true);
     /**
-     * The byte trigger never fires while a producer has recorded fewer than this many bytes of chunk data since it last
-     * compacted (or flushed), so producers whose subscribers are served often enough to stay under it never pay for
-     * compaction on account of their size. The count trigger, {@link #COMPACTION_MAX_PENDING_DELTAS}, is independent of
-     * it.
+     * A producer does not compact unless doing so would free at least this many bytes of chunk storage, however
+     * wasteful its queue looks as a fraction.
+     *
+     * <p>
+     * This is what stops a stream of tiny deltas from compacting on every cycle. A delta that records a single row
+     * still occupies the pool's smallest chunk in each subscribed column, so from the second such delta on nearly all
+     * of the queue is rounding rather than data, and the freed fraction sits above 90% forever. Compacting there copies
+     * the whole queue to release one chunk per column, and the job's fixed costs -- scheduling, the run lock, the row
+     * set passes, the splice -- are the same as for a compaction that frees gigabytes. The floor makes such a producer
+     * wait until the saving is worth a job: at 4 MiB, a 20-byte row compacts about every 7,000 single-row appends and a
+     * 300-byte row about every 450.
      */
     public static final long COMPACTION_FLOOR_BYTES = Configuration.getInstance()
             .getLongForClassWithDefault(BarrageMessageProducer.class, "compactionFloorBytes", 4L << 20);
     /**
-     * Once past the floor, a producer compacts when the bytes recorded since the last compaction exceed this multiple
-     * of the compacted delta's size. Each compaction then copies at most about {@code (1 + 1/factor)} times the new
-     * data, so total copying stays linear in the data recorded, and the queue holds at most about {@code (1 + factor)}
-     * times the compacted footprint plus the transient of one compaction.
+     * A producer compacts once doing so would free this fraction of the chunk storage its pending deltas hold, *and* at
+     * least {@link #COMPACTION_FLOOR_BYTES}. A fraction from 0.0 to 1.0; at the default a compaction has to release
+     * half the queue to be worth running.
+     *
+     * <p>
+     * The setting trades processor time against heap. Total copying is at most {@code (1 - f) / f} times the data
+     * recorded, and the queue reaches about {@code 1 / (1 - f)} times the footprint it would have if it were coalesced:
+     * 0.5 copies once per byte recorded and holds twice that footprint, while 0.9 copies about a ninth as much and
+     * holds ten times it. Since reclaiming that heap is the point of compacting at all, raise it only where processor
+     * time is the scarcer resource. At 0.0 a producer compacts whenever the floor alone is met; at 1.0 it never
+     * compacts, since a queue that would coalesce to nothing still has a delta to coalesce.
      */
-    public static final double COMPACTION_GROWTH_FACTOR = Configuration.getInstance()
-            .getDoubleForClassWithDefault(BarrageMessageProducer.class, "compactionGrowthFactor", 1.0);
-    static {
-        // NaN or infinity would silently disable the byte trigger; zero or less would compact at the floor forever.
-        if (!(COMPACTION_GROWTH_FACTOR > 0) || Double.isInfinite(COMPACTION_GROWTH_FACTOR)) {
-            throw new IllegalArgumentException("BarrageMessageProducer.compactionGrowthFactor must be finite and "
-                    + "greater than zero, got " + COMPACTION_GROWTH_FACTOR);
-        }
-    }
-    /**
-     * A producer also compacts once this many deltas have been recorded since the last compaction, whatever their size,
-     * bounding the per-delta overhead (row sets, update descriptions) that the byte policy does not see. Zero disables
-     * the count trigger.
-     */
-    public static final int COMPACTION_MAX_PENDING_DELTAS = Configuration.getInstance()
-            .getIntegerForClassWithDefault(BarrageMessageProducer.class, "compactionMaxPendingDeltas", 32);
+    public static final double COMPACTION_MIN_FREED_FRACTION = Configuration.getInstance()
+            .getDoubleForClassWithDefault(BarrageMessageProducer.class, "compactionMinFreedFraction", 0.5);
 
     private long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
     private double snapshotNanosPerCell = 0;
@@ -274,27 +275,38 @@ public class BarrageMessageProducer extends LivenessArtifact
     private final List<BarrageMessageDelta> pendingDeltas = new ArrayList<>();
     /** Running total of {@link BarrageMessageDelta#chunkBytes} over {@link #pendingDeltas}. */
     private long pendingDeltaBytes = 0;
-    /** Chunk bytes recorded since the last compaction, declined compaction, or flush. */
-    private long rawBytesSinceCompaction = 0;
-    /** Deltas recorded since the last compaction, declined compaction, or flush. */
-    private int deltasSinceCompaction = 0;
     /**
-     * How many of {@link #pendingDeltas} are not {@link BarrageMessageDelta#isAddOnly() add-only}. Maintained as deltas
-     * are appended, spliced and flushed so that the enqueue path can decline compaction of a queue that only adds rows
-     * without scanning it.
+     * The rows the pending deltas would add if they were coalesced now, in the current key space. With
+     * {@link #netModifiedRows} and {@link #netModifiedColumns} this is what {@link #coalescedChunkBytes} needs to
+     * compute how much of {@link #pendingDeltaBytes} a compaction would release.
+     *
+     * <p>
+     * Maintained per cycle as the coalescing itself would: rows removed upstream drop out, the cycle's shifts are
+     * applied, and the rows this cycle recorded are inserted. Because it describes the unique rows the queue holds
+     * rather than how the queue stores them, compaction leaves it alone -- the compacted queue describes the same rows
+     * -- and only a flush clears it.
      */
-    private int pendingNonAddOnlyDeltas = 0;
+    private final WritableRowSet netAddedRows = RowSetFactory.empty();
     /**
-     * Size of the compacted delta at the head of the queue, or after a declined compaction the size of the whole queue
-     * (so the next attempt waits for it to double), or zero after a flush.
+     * The rows the pending deltas would modify if they were coalesced now, in the current key space, kept disjoint from
+     * {@link #netAddedRows} because a row added within the queue is sent as an add. See that field for how both are
+     * maintained.
      */
-    private long compactedHeadBytes = 0;
+    private final WritableRowSet netModifiedRows = RowSetFactory.empty();
+    /**
+     * The columns some pending delta recorded modified data for. Never narrows before a flush, so a column whose
+     * modifications have all been superseded still counts toward the coalesced size; that over-estimate delays a
+     * compaction and never provokes one.
+     */
+    private final BitSet netModifiedColumns = new BitSet();
+    /** {@link ChunkType#elementBytes()} per column, for estimating the coalesced size of the pending deltas. */
+    private final int[] columnBytes;
     private final CompactionJob compactionJob = new CompactionJob();
     /**
      * Bumped by {@link #promoteSnapshotToActive}, which is the only place {@link #activeViewport},
      * {@link #activeReverseViewport} and {@link #activeColumns} change. Every delta is stamped with the generation it
-     * was recorded under; the propagation job splits pending deltas at that boundary to serve old and new subscribers
-     * differently, so only deltas of one generation may be compacted together.
+     * was recorded under, so that {@link #compactLeadingRun} can take a run of one generation without reasoning about
+     * when generations can mix.
      */
     private long subscriptionGeneration = 0;
 
@@ -371,6 +383,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 parent.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         // noinspection unchecked
         chunkSources = new ChunkSource.WithPrev[sources.length];
+        columnBytes = new int[sources.length];
         realColumnType = new Class<?>[sources.length];
         realColumnComponentType = new Class<?>[sources.length];
 
@@ -408,6 +421,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             } else {
                 chunkSources[ci] = sources[ci];
             }
+            columnBytes[ci] = chunkSources[ci].getChunkType().elementBytes();
         }
     }
 
@@ -1048,43 +1062,101 @@ public class BarrageMessageProducer extends LivenessArtifact
                 (BitSet) activeColumns.clone(), modifiedColumns, addChunks, modChunks);
         pendingDeltas.add(delta);
         pendingDeltaBytes += delta.chunkBytes;
-        rawBytesSinceCompaction += delta.chunkBytes;
-        ++deltasSinceCompaction;
-        if (!delta.isAddOnly()) {
-            ++pendingNonAddOnlyDeltas;
-        }
+        updateNetRowSets(upstream, addsToRecord, modsToRecord, modifiedColumns);
 
         // Gauges, not durations: the useful value over a reporting window is the maximum.
         recordMetric(stats -> stats.pendingDeltaCount, pendingDeltas.size());
         recordMetric(stats -> stats.pendingDeltaBytes, pendingDeltaBytes);
 
         if (shouldCompact()) {
-            if (pendingNonAddOnlyDeltas == 0) {
-                markCompactionDeclined(pendingDeltaBytes, pendingDeltas.size());
-            } else {
-                compactionJob.maybeSchedule();
-            }
+            compactionJob.maybeSchedule();
         }
     }
 
     /**
-     * The geometric compaction policy. Compact when the bytes recorded since the last compaction exceed the larger of
-     * the floor and {@code growthFactor} times the compacted delta's size, or when the count of deltas recorded since
-     * then reaches the cap. Doubling the raw data between compactions is what keeps the total copying linear in the
-     * data recorded while bounding the queue to a small multiple of its compacted footprint.
+     * Fold the rows this cycle recorded into {@link #netAddedRows} and {@link #netModifiedRows}, which together
+     * describe what the pending deltas would hold if they were coalesced now.
+     */
+    private void updateNetRowSets(final TableUpdate upstream, final RowSet addsToRecord, final RowSet modsToRecord,
+            final BitSet modifiedColumns) {
+        Assert.assertion(Thread.holdsLock(this), "updateNetRowSets must hold lock!");
+        if (isBlinkTable) {
+            // Never read: a blink table's queue is not compacted, for the reasons in shouldCompact.
+            return;
+        }
+        // Removed rows are named in the pre-shift key space and recorded rows in the post-shift one, so drop what
+        // this cycle removed before moving what survives, exactly as coalescing a run of deltas does.
+        netAddedRows.remove(upstream.removed());
+        netModifiedRows.remove(upstream.removed());
+        upstream.shifted().apply(netAddedRows);
+        upstream.shifted().apply(netModifiedRows);
+        netAddedRows.insert(addsToRecord);
+        if (modsToRecord.isNonempty()) {
+            netModifiedRows.insert(modsToRecord);
+            netModifiedColumns.or(modifiedColumns);
+        }
+        // A row the pending deltas add is sent as an add however else it was touched, so the two stay disjoint.
+        netModifiedRows.remove(netAddedRows);
+    }
+
+    /**
+     * The compaction policy: compact when doing so would release {@link #COMPACTION_MIN_FREED_FRACTION} of the chunk
+     * storage the pending deltas hold, and at least {@link #COMPACTION_FLOOR_BYTES} of it. Compaction costs processor
+     * time and buys memory, so a producer pays for it only where there is memory to reclaim.
+     *
+     * <p>
+     * Measuring against the whole queue, rather than against the last compaction's output, is what makes the two bounds
+     * hold throughout the interval rather than only at the instant after a compaction: each compaction leaves behind
+     * exactly the storage it estimated, so the next one cannot fire until a further {@code f} of the queue is
+     * superseded. Total copying is therefore at most {@code (1 - f) / f} times the data recorded, and the queue holds
+     * at most about {@code 1 / (1 - f)} times its coalesced footprint, plus the delta that triggered the compaction and
+     * the transient of the copy itself.
      */
     private boolean shouldCompact() {
         Assert.assertion(Thread.holdsLock(this), "shouldCompact must hold lock!");
         if (!COMPACTION_ENABLED || isBlinkTable || pendingDeltas.size() < 2) {
-            // A blink table's deltas are all new rows; nothing supersedes anything, so there is nothing to compact.
+            // A blink table's pending deltas are coalesced by concatenation rather than by the algorithm compaction
+            // runs, because every row that blinked during the interval has to reach the subscriber. Nothing is ever
+            // superseded, so there is nothing to reclaim, and the estimate below does not describe such a queue: each
+            // cycle removes the rows the last one added, which would read as waste.
             return false;
         }
-        if (COMPACTION_MAX_PENDING_DELTAS > 0 && deltasSinceCompaction >= COMPACTION_MAX_PENDING_DELTAS) {
-            return true;
+        final long freed = pendingDeltaBytes - coalescedChunkBytes();
+        return freed >= Math.max(COMPACTION_FLOOR_BYTES, COMPACTION_MIN_FREED_FRACTION * pendingDeltaBytes);
+    }
+
+    /**
+     * An estimate of the chunk storage the pending deltas would occupy if they were coalesced now, to compare against
+     * the {@link #pendingDeltaBytes} they occupy as they stand. It is a heuristic input and approximates in both
+     * directions.
+     *
+     * <p>
+     * It charges one row set per side rather than one per column, so a column whose modifications were superseded while
+     * another column's survived is counted as if both had survived, which overstates the result and delays a
+     * compaction.
+     *
+     * <p>
+     * Against that, it charges the rows themselves where {@link #pendingDeltaBytes} measures the capacity a delta
+     * holds, so it misses what the pool rounds the last chunk of every column up to, and a compaction therefore leaves
+     * behind somewhat more storage than this predicts -- at most one chunk per column per side. Since the estimate is
+     * subtracted from {@link #pendingDeltaBytes} to decide, understating it credits a compaction with rounding it
+     * cannot free. {@link #COMPACTION_FLOOR_BYTES} is what keeps that from mattering: rounding up to a power of two can
+     * never account for half of a chunk, so at the default {@link #COMPACTION_MIN_FREED_FRACTION} the phantom saving
+     * cannot satisfy the fraction on its own, and a fraction configured much below one half wants a floor large enough
+     * to cover {@link #DELTA_CHUNK_SIZE} rows of the subscription's width.
+     */
+    private long coalescedChunkBytes() {
+        return netAddedRows.size() * columnBytesOver(activeColumns)
+                + netModifiedRows.size() * columnBytesOver(netModifiedColumns);
+    }
+
+    /** The width in bytes of one row of {@code columns}. */
+    private long columnBytesOver(final BitSet columns) {
+        long width = 0;
+        for (int ci = columns.nextSetBit(0); ci >= 0; ci = columns.nextSetBit(ci + 1)) {
+            width += columnBytes[ci];
         }
-        final double threshold =
-                Math.max(COMPACTION_FLOOR_BYTES, COMPACTION_GROWTH_FACTOR * compactedHeadBytes);
-        return rawBytesSinceCompaction >= threshold;
+        return width;
     }
 
     /** Total {@link BarrageMessageDelta#chunkBytes} over {@code deltas}. */
@@ -1094,38 +1166,6 @@ public class BarrageMessageProducer extends LivenessArtifact
             bytes += delta.chunkBytes;
         }
         return bytes;
-    }
-
-    /** How many of {@code deltas} are not {@link BarrageMessageDelta#isAddOnly() add-only}. */
-    private static int countNonAddOnly(final List<BarrageMessageDelta> deltas) {
-        int count = 0;
-        for (final BarrageMessageDelta delta : deltas) {
-            if (!delta.isAddOnly()) {
-                ++count;
-            }
-        }
-        return count;
-    }
-
-    /** Called after the splice, when {@link #pendingDeltas} and {@link #pendingDeltaBytes} describe the new queue. */
-    private void markCompacted(final BarrageMessageDelta compacted) {
-        compactedHeadBytes = compacted.chunkBytes;
-        // Whatever was appended behind the run while it was being compacted is still raw.
-        rawBytesSinceCompaction = pendingDeltaBytes - compactedHeadBytes;
-        deltasSinceCompaction = pendingDeltas.size() - 1;
-    }
-
-    /**
-     * Called when a run was examined and found to supersede nothing. That run is treated as already compact, so the
-     * next attempt waits for it to double; whatever was appended behind it was never examined and is still raw.
-     *
-     * @param runBytes total {@link BarrageMessageDelta#chunkBytes} over the examined run
-     * @param runSize how many deltas were examined
-     */
-    private void markCompactionDeclined(final long runBytes, final int runSize) {
-        compactedHeadBytes = runBytes;
-        rawBytesSinceCompaction = pendingDeltaBytes - runBytes;
-        deltasSinceCompaction = pendingDeltas.size() - runSize;
     }
 
     /**
@@ -1138,15 +1178,10 @@ public class BarrageMessageProducer extends LivenessArtifact
         final List<BarrageMessageDelta> discarded = new ArrayList<>(pendingDeltas);
         pendingDeltas.clear();
         pendingDeltaBytes = 0;
-        pendingNonAddOnlyDeltas = 0;
-        markFlushed();
+        netAddedRows.clear();
+        netModifiedRows.clear();
+        netModifiedColumns.clear();
         SafeCloseable.closeAll(discarded);
-    }
-
-    private void markFlushed() {
-        compactedHeadBytes = 0;
-        rawBytesSinceCompaction = 0;
-        deltasSinceCompaction = 0;
     }
 
     /**
@@ -1223,16 +1258,21 @@ public class BarrageMessageProducer extends LivenessArtifact
      * interval. The replacement carries the same information as the run it replaces -- a later re-aggregation of the
      * pending list produces the same message either way -- but only the data that survived coalescing: rows modified
      * repeatedly are stored once, and rows added and then removed are stored not at all. The surviving data is copied
-     * into fresh chunks; the replaced deltas are then closed and their chunks returned to the pool. A run in which
-     * nothing is superseded -- pure adds -- is declined, since every recorded row survives and copying would cost the
-     * whole run's data and save no memory.
+     * into fresh chunks; the replaced deltas are then closed and their chunks returned to the pool. Whether the saving
+     * is worth the copy is {@link #shouldCompact()}'s decision, taken before the job is scheduled and taken again here,
+     * since the queue may have been flushed or already compacted in between.
      *
      * <p>
      * Only a prefix may be compacted, because the coalescing has to start from {@link #propagationRowSet}, which is the
      * row set as of the last propagation. {@link #propagationRowSet} is deliberately left where it is: compaction
-     * changes how the pending updates are stored, not what subscribers have been told. Deltas recorded under different
-     * subscription generations describe different viewports or column sets and must not be merged, because the
-     * propagation job splits them at the snapshot step to send them to different populations of subscribers.
+     * changes how the pending updates are stored, not what subscribers have been told.
+     *
+     * <p>
+     * The run is taken from one {@link #subscriptionGeneration} for good measure rather than out of necessity. A
+     * generation is bumped inside a propagation run, which holds the run lock this job could not take and which ends by
+     * flushing the whole queue, so outside such a run every pending delta shares one generation and the loop below
+     * always takes all of them. What a compacted delta really must not straddle is a snapshot step, which the
+     * propagation job splits the queue at; the same exclusion is what guarantees it never can.
      *
      * <p>
      * The work is done in two phases: copy the run and a row set snapshot out under the monitor, coalesce without it,
@@ -1264,20 +1304,12 @@ public class BarrageMessageProducer extends LivenessArtifact
             baseRowSet = propagationRowSet.copy();
         }
 
-        // The run's totals are needed under the monitor, where a scan of the run would block the update graph
-        // thread for as long as the run is long; take them here instead.
+        // The run's total is needed under the monitor, where a scan of the run would block the update graph thread
+        // for as long as the run is long; take it here instead.
         final long runBytes = totalChunkBytes(run);
-        final int runNonAddOnly = countNonAddOnly(run);
 
         final BarrageMessageDelta compacted;
         try (final SafeCloseable ignored = baseRowSet) {
-            // Compaction and splicing might create add-only deltas from mixed deltas. Decline additional compaction.
-            if (runNonAddOnly == 0) {
-                synchronized (this) {
-                    markCompactionDeclined(runBytes, run.size());
-                }
-                return;
-            }
             final long startTm = System.nanoTime();
             compacted = BarrageMessageDelta.coalesce(run, baseRowSet, chunkSources);
             recordMetric(stats -> stats.aggregate, System.nanoTime() - startTm);
@@ -1288,7 +1320,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         // this). Releasing chunks isn't always free (for Object, must null out references), so do it outside the
         // synchronized block.
         synchronized (this) {
-            replaced = spliceCompacted(run, runBytes, runNonAddOnly, compacted);
+            replaced = spliceCompacted(run, runBytes, compacted);
         }
         SafeCloseable.closeAll(replaced);
     }
@@ -1998,19 +2030,23 @@ public class BarrageMessageProducer extends LivenessArtifact
      * Takes ownership of {@code compacted}: either the queue holds it on return, or it is closed here.
      *
      * <p>
-     * Only bounded work happens here, which is why the run's totals arrive as arguments rather than being taken from
+     * Only bounded work happens here, which is why the run's total arrives as an argument rather than being taken from
      * it. Closing a delta returns its chunks to the pool, which clears their backing arrays and so costs time
      * proportional to the data being discarded; that is left to the caller, once it has released the monitor, so the
      * update graph thread is not blocked behind it.
      *
+     * <p>
+     * {@link #netAddedRows} and {@link #netModifiedRows} need no adjustment: the compacted delta holds exactly the rows
+     * they name, so they describe the new queue as faithfully as they described the old one, including whatever the
+     * update graph thread appended while the coalescing ran.
+     *
      * @param run the deltas being replaced, still at the head of the queue
      * @param runBytes total {@link BarrageMessageDelta#chunkBytes} over {@code run}
-     * @param runNonAddOnly how many of {@code run} are not add-only
      * @param compacted the delta that replaces them
      * @return the replaced deltas, which the caller must close
      */
     private List<BarrageMessageDelta> spliceCompacted(final List<BarrageMessageDelta> run, final long runBytes,
-            final int runNonAddOnly, final BarrageMessageDelta compacted) {
+            final BarrageMessageDelta compacted) {
         Assert.assertion(Thread.holdsLock(this), "spliceCompacted must hold lock!");
         final int numDeltas = run.size();
         final long firstStep;
@@ -2037,9 +2073,6 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
 
         pendingDeltaBytes += compacted.chunkBytes - runBytes;
-        // Coalescing can leave only adds behind (rows added and then modified within the run), so recount the head.
-        pendingNonAddOnlyDeltas += (compacted.isAddOnly() ? 0 : 1) - runNonAddOnly;
-        markCompacted(compacted);
 
         if (log.isDebugEnabled()) {
             log.debug().append(logPrefix).append("compacted ").append(numDeltas)

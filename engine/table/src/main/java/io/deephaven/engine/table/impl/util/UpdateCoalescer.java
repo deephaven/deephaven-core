@@ -3,12 +3,14 @@
 //
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
@@ -17,8 +19,14 @@ import java.util.function.BiConsumer;
 
 /**
  * Helper utility for coalescing multiple {@link TableUpdateImpl updates}.
+ *
+ * <p>
+ * Owns every {@link io.deephaven.engine.rowset.RowSet} it allocates, so it must be {@link #close closed}. Calling
+ * {@link #coalesce} hands {@link #added}, {@link #removed} and {@link #modified} to the update it returns, which the
+ * caller must then release; whatever is left belongs to this object and {@link #close} frees it. A coalescer that is
+ * closed without being coalesced therefore releases everything, which is what makes it safe to abandon one.
  */
-public class UpdateCoalescer {
+public class UpdateCoalescer implements SafeCloseable {
 
     public final WritableRowSet added;
     public final WritableRowSet removed;
@@ -30,6 +38,9 @@ public class UpdateCoalescer {
     // This is a RowSet that represents which keys still exist in prevSpace for the agg update. It is necessary to
     // keep to ensure we make the correct selections when shift destinations overlap.
     private final WritableRowSet rowSet;
+
+    /** Whether {@link #coalesce} has passed the public row sets to an update. */
+    private boolean coalesced;
 
     public UpdateCoalescer(final RowSet rowSet, final TableUpdate update) {
         this.rowSet = rowSet.copy();
@@ -48,8 +59,24 @@ public class UpdateCoalescer {
         }
     }
 
+    /**
+     * The updates seen so far as one. Ownership of {@link #added}, {@link #removed} and {@link #modified} passes to the
+     * result, so the caller must release it; {@link #close} leaves them alone from here on. Because that ownership can
+     * only be given away once, this may be called at most once.
+     */
     public TableUpdate coalesce() {
+        Assert.eqFalse(coalesced, "coalesced");
+        coalesced = true;
         return new TableUpdateImpl(added, removed, modified, shifted, modifiedColumnSet);
+    }
+
+    @Override
+    public void close() {
+        try (final SafeCloseable ignored = rowSet) {
+            if (!coalesced) {
+                SafeCloseable.closeAll(added, removed, modified);
+            }
+        }
     }
 
     public UpdateCoalescer update(final TableUpdate update) {

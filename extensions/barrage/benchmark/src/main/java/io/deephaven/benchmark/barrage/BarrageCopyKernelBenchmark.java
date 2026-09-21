@@ -75,8 +75,11 @@ public class BarrageCopyKernelBenchmark {
     @Param({"Int", "Double", "String"})
     public String columnType;
 
-    /** Lengths either side of the kernel's array-copy threshold, from a run per row upward. */
-    @Param({"1", "2", "5", "16", "50"})
+    /**
+     * The run lengths the published comparison reports, from a run per row up to runs long enough that one array copy
+     * moves fifty of them.
+     */
+    @Param({"1", "2", "3", "5", "10", "50"})
     public int avgRunLength;
 
     private ChunkType chunkType;
@@ -98,8 +101,6 @@ public class BarrageCopyKernelBenchmark {
     private WritableChunk<Values>[] destB;
 
     private BarrageCopyKernel kernel;
-    private BarrageCopyKernel.BarrageCopyKernelContext context;
-    private BarrageCopyKernel.BarrageCopyKernelContext contextB;
 
     private static Object value(final ChunkType chunkType, final int index) {
         switch (chunkType) {
@@ -189,8 +190,6 @@ public class BarrageCopyKernelBenchmark {
         runsB = buildRuns();
 
         kernel = BarrageCopyKernel.makeBarrageCopyKernel(chunkType);
-        context = kernel.makeContext(addChunks, modChunks, DELTA_CHUNK_SIZE);
-        contextB = kernel.makeContext(addChunksB, modChunksB, DELTA_CHUNK_SIZE);
     }
 
     private BarrageCopyKernel.Runs buildRuns() {
@@ -201,18 +200,22 @@ public class BarrageCopyKernelBenchmark {
         return built;
     }
 
-    /** One column through the shipped kernel: runs in, the kernel picks how to move them. */
+    /**
+     * One column through the shipped kernel: runs in, one typed array copy per stretch. The kernel casts the chunk
+     * arrays inside the call, as the gather this is compared against casts its own, so neither arm is charged for work
+     * the other does outside the measurement.
+     */
     @Benchmark
     public void rangeAware(final Blackhole blackhole) {
-        kernel.copy(runs, dest, context);
+        kernel.copy(runs, dest, addChunks, modChunks, DELTA_CHUNK_SIZE);
         blackhole.consume(dest);
     }
 
     /** Two columns whose runs are their own, as columns with different modification patterns have. */
     @Benchmark
     public void twoColumnsSeparateRuns(final Blackhole blackhole) {
-        kernel.copy(runs, dest, context);
-        kernel.copy(runsB, destB, contextB);
+        kernel.copy(runs, dest, addChunks, modChunks, DELTA_CHUNK_SIZE);
+        kernel.copy(runsB, destB, addChunksB, modChunksB, DELTA_CHUNK_SIZE);
         blackhole.consume(dest);
         blackhole.consume(destB);
     }
@@ -220,8 +223,8 @@ public class BarrageCopyKernelBenchmark {
     /** Two columns sharing one set of runs, as columns with one modification pattern have. */
     @Benchmark
     public void twoColumnsSharedRuns(final Blackhole blackhole) {
-        kernel.copy(runs, dest, context);
-        kernel.copy(runs, destB, contextB);
+        kernel.copy(runs, dest, addChunks, modChunks, DELTA_CHUNK_SIZE);
+        kernel.copy(runs, destB, addChunksB, modChunksB, DELTA_CHUNK_SIZE);
         blackhole.consume(dest);
         blackhole.consume(destB);
     }
@@ -268,7 +271,7 @@ public class BarrageCopyKernelBenchmark {
 
     @SuppressWarnings("unchecked")
     private void gatherInt(final long[][] mapping) {
-        // The previous kernel's context cast every delta's chunk array for the column; that cost belongs to this path.
+        // The previous kernel cast every delta's chunk array for the column; that cost belongs to this path.
         final WritableIntChunk<Values>[][] adds = new WritableIntChunk[NUM_DELTAS][];
         final WritableIntChunk<Values>[][] mods = new WritableIntChunk[NUM_DELTAS][];
         for (int di = 0; di < NUM_DELTAS; ++di) {

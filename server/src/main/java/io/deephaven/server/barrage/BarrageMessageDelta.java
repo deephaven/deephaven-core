@@ -255,17 +255,13 @@ final class BarrageMessageDelta implements SafeCloseable {
 
     /** The run's updates as one, starting from the row set as of immediately before it. The caller owns the result. */
     private static TableUpdate coalesceUpdates(final List<BarrageMessageDelta> deltas, final RowSet baseRowSet) {
-        final UpdateCoalescer coalescer = new UpdateCoalescer(baseRowSet, deltas.get(0).update);
-        try {
+        try (final UpdateCoalescer coalescer = new UpdateCoalescer(baseRowSet, deltas.get(0).update)) {
             for (int i = 1; i < deltas.size(); ++i) {
                 coalescer.update(deltas.get(i).update);
             }
+            // Coalescing hands the row sets to the update, so closing the coalescer now releases only what it kept
+            // for itself; a failure before this point releases all of them.
             return coalescer.coalesce();
-        } catch (final Throwable err) {
-            // The coalescer has no close(); release what it exposes. Its private pre-shift row set is not
-            // reachable from here and is left to the garbage collector.
-            SafeCloseable.closeAll(coalescer.added, coalescer.removed, coalescer.modified);
-            throw err;
         }
     }
 
@@ -349,8 +345,6 @@ final class BarrageMessageDelta implements SafeCloseable {
         final WritableRowSet recordedMods = RowSetFactory.empty();
         final Runs addedRuns = new Runs();
         final Runs modifiedRuns = new Runs();
-        long addedRows;
-        long modifiedRows;
 
         /**
          * @param deltasThatModify which deltas of the run modified this column
@@ -369,8 +363,8 @@ final class BarrageMessageDelta implements SafeCloseable {
                 }
             }
             recordedMods.remove(coalescedAdded);
-            addedRows = localAdded.size();
-            modifiedRows = recordedMods.size();
+            final long addedRows = localAdded.size();
+            final long modifiedRows = recordedMods.size();
 
             // Walk the run latest first so each surviving row takes its value from the last delta that recorded it.
             // "Remaining" holds the surviving rows not yet sourced, as keys in the current delta's key space;
@@ -637,23 +631,13 @@ final class BarrageMessageDelta implements SafeCloseable {
                 colModChunks[di] = delta.modChunks[columnIndex];
             }
 
-            final BarrageCopyKernel kernel = BarrageCopyKernel.makeBarrageCopyKernel(chunkType);
-            kernel.copy(runs, dest, kernel.makeContext(colAddChunks, colModChunks, DELTA_CHUNK_SIZE));
+            BarrageCopyKernel.makeBarrageCopyKernel(chunkType)
+                    .copy(runs, dest, colAddChunks, colModChunks, DELTA_CHUNK_SIZE);
             return dest;
         } catch (final Throwable err) {
             closeChunks(dest);
             throw err;
         }
-    }
-
-    /**
-     * Whether this delta only adds rows: nothing removed, modified or shifted, and no modified data recorded. A run of
-     * such deltas cannot drop a single row when coalesced, so compacting it would copy the whole run's data and save
-     * nothing; the producer declines such runs.
-     */
-    boolean isAddOnly() {
-        return update.removed().isEmpty() && update.modified().isEmpty() && update.shifted().empty()
-                && recordedMods.isEmpty() && modifiedColumns.isEmpty();
     }
 
     /**

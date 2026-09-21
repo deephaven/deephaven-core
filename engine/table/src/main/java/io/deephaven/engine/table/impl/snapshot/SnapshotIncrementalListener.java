@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.ListenerRecorder;
 import io.deephaven.engine.table.impl.MergedListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.util.*;
 
 import java.util.Arrays;
@@ -65,12 +66,16 @@ public class SnapshotIncrementalListener extends MergedListener {
         }
 
         if (triggerListener.recordedVariablesAreValid()) {
-            if (firstSnapshot) {
-                doFirstSnapshot(false);
-            } else if (baseUpdates != null) {
-                doSnapshot();
+            // This snapshot consumes everything accumulated since the last one, and the accumulator is discarded
+            // either way, so hand it to a local that releases it on the way out.
+            try (final UpdateCoalescer accumulated = baseUpdates) {
+                baseUpdates = null;
+                if (firstSnapshot) {
+                    doFirstSnapshot(false);
+                } else if (accumulated != null) {
+                    doSnapshot(accumulated);
+                }
             }
-            baseUpdates = null;
         }
     }
 
@@ -84,11 +89,10 @@ public class SnapshotIncrementalListener extends MergedListener {
         firstSnapshot = false;
     }
 
-    public void doSnapshot() {
+    private void doSnapshot(final UpdateCoalescer accumulated) {
         lastBaseRowSet.clear();
         lastBaseRowSet.insert(baseTable.getRowSet());
-        try (final RowSetShiftDataExpander expander =
-                new RowSetShiftDataExpander(baseUpdates.coalesce(), lastBaseRowSet)) {
+        try (final RowSetShiftDataExpander expander = expand(accumulated)) {
             final RowSet baseAdded = expander.getAdded().copy();
             final RowSet baseModified = expander.getModified().copy();
             final RowSet baseRemoved = expander.getRemoved().copy();
@@ -101,6 +105,20 @@ public class SnapshotIncrementalListener extends MergedListener {
 
             resultTable.getRowSet().writableCast().update(baseAdded, baseRemoved);
             resultTable.notifyListeners(baseAdded, baseRemoved, baseModified);
+        }
+    }
+
+    /**
+     * Coalesce {@code accumulated} into a single update and expand its shifts. {@link UpdateCoalescer#coalesce} hands
+     * us ownership of the coalesced update, and the expander copies what it needs out of it while keeping no reference
+     * to it, so the update is released before we return.
+     */
+    private RowSetShiftDataExpander expand(final UpdateCoalescer accumulated) {
+        final TableUpdate baseUpdate = accumulated.coalesce();
+        try {
+            return new RowSetShiftDataExpander(baseUpdate, lastBaseRowSet);
+        } finally {
+            baseUpdate.release();
         }
     }
 

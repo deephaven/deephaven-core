@@ -16,6 +16,8 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.base.MathUtil;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.experimental.categories.Category;
 
@@ -59,7 +61,20 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      */
     private static final int TABLE_SIZE = 100;
 
+    /**
+     * The table size the compaction tests use. Compaction is triggered by the memory it would release, so a test that
+     * wants to see one has to record megabytes: at three columns of twenty bytes, one modification of this many rows
+     * records 3.75 MiB, and three such modifications release more than
+     * {@link BarrageMessageProducer#COMPACTION_FLOOR_BYTES}. Sizing it in whole
+     * {@link BarrageMessageProducer#DELTA_CHUNK_SIZE} chunks also means a delta that records every row fills its chunks
+     * exactly, so a test can predict the producer's byte accounting.
+     */
+    private static final int COMPACTION_TABLE_SIZE = 3 * BarrageMessageProducer.DELTA_CHUNK_SIZE;
+
     private static final int NUM_COLUMNS = 3;
+
+    /** The size {@link #newSourceTable(int)} last built, which the churn helpers work in proportion to. */
+    private int tableSize;
 
     /** Bumped on every tick so each update writes values no previous tick produced. */
     private int tickCounter;
@@ -69,6 +84,8 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
     /** Every this many churn cycles, {@link #churnRows} also shifts the second half of the table. */
     private static final int SHIFT_EVERY = 8;
     private int churnCount;
+    /** How many rows {@link #appendRows} has added past the table's initial size. */
+    private int appendedRows;
     /** The row key the previous churn cycle added, or -1. */
     private long lastChurnKey;
     /** How far the second half of the table has been shifted up so far. */
@@ -93,6 +110,8 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
         churnCount = 0;
         lastChurnKey = -1;
         shiftOffset = 0;
+        tableSize = size;
+        appendedRows = 0;
         final int[] intValues = new int[size];
         final double[] doubleValues = new double[size];
         final String[] stringValues = new String[size];
@@ -119,6 +138,32 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
             sourceTable.notifyListeners(new TableUpdateImpl(
                     RowSetFactory.empty(), RowSetFactory.empty(), rowsToModify.copy(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
+        });
+    }
+
+    /**
+     * Runs one update graph cycle that appends {@code count} rows past the end of the table, adding rows and nothing
+     * else, so that nothing a previous cycle recorded is superseded.
+     */
+    private void appendRows(final QueryTable sourceTable, final int count) {
+        final int tick = ++tickCounter;
+        final long firstKey = tableSize + appendedRows;
+        appendedRows += count;
+        updateGraph().runWithinUnitTestCycle(() -> {
+            try (final RowSet added = RowSetFactory.fromRange(firstKey, firstKey + count - 1)) {
+                writeRows(sourceTable, added, tick);
+                sourceTable.notifyListeners(new TableUpdateImpl(added.copy(), RowSetFactory.empty(),
+                        RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+            }
+        });
+    }
+
+    /** Runs one update graph cycle that removes {@code rowsToRemove}, removing rows and nothing else. */
+    private void removeRows(final QueryTable sourceTable, final RowSet rowsToRemove) {
+        updateGraph().runWithinUnitTestCycle(() -> {
+            TstUtils.removeRows(sourceTable, rowsToRemove);
+            sourceTable.notifyListeners(new TableUpdateImpl(RowSetFactory.empty(), rowsToRemove.copy(),
+                    RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
     }
 
@@ -177,26 +222,31 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
     private void modifySomeColumns(final QueryTable sourceTable, final int cycle) {
         switch (cycle % 4) {
             case 0:
-                try (final RowSet rows = RowSetFactory.fromRange(0, 29)) {
+                try (final RowSet rows = fraction(0, 30)) {
                     modifyColumns(sourceTable, rows, "intCol");
                 }
                 break;
             case 1:
-                try (final RowSet rows = RowSetFactory.fromRange(20, 59)) {
+                try (final RowSet rows = fraction(20, 60)) {
                     modifyColumns(sourceTable, rows, "doubleCol");
                 }
                 break;
             case 2:
-                try (final RowSet rows = RowSetFactory.fromRange(50, 89)) {
+                try (final RowSet rows = fraction(50, 90)) {
                     modifyColumns(sourceTable, rows, "strCol");
                 }
                 break;
             default:
-                try (final RowSet rows = RowSetFactory.fromRange(10, 39)) {
+                try (final RowSet rows = fraction(10, 40)) {
                     modifyColumns(sourceTable, rows, "intCol", "doubleCol");
                 }
                 break;
         }
+    }
+
+    /** The rows from {@code fromPercent} to {@code toPercent} of the way through the table, the end exclusive. */
+    private RowSet fraction(final int fromPercent, final int toPercent) {
+        return RowSetFactory.fromRange((long) tableSize * fromPercent / 100, (long) tableSize * toPercent / 100 - 1);
     }
 
     /**
@@ -221,10 +271,10 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
             lastChurnKey = addedKey;
 
             final boolean shiftCycle = churn % SHIFT_EVERY == 0;
-            final WritableRowSet modified = RowSetFactory.fromRange(0, TABLE_SIZE / 2 - 1);
+            final WritableRowSet modified = RowSetFactory.fromRange(0, tableSize / 2 - 1);
             if (!shiftCycle) {
                 // ten rows of the second half, where it currently sits; the next shift cycle moves them
-                modified.insertRange(TABLE_SIZE / 2 + shiftOffset, TABLE_SIZE / 2 + shiftOffset + 9);
+                modified.insertRange(tableSize / 2 + shiftOffset, tableSize / 2 + shiftOffset + 9);
             }
             writeRows(sourceTable, modified, tick);
 
@@ -239,8 +289,8 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * that describes the move. Must run inside a cycle, before the update is published.
      */
     private RowSetShiftData shiftSecondHalf(final QueryTable sourceTable) {
-        final long start = TABLE_SIZE / 2 + shiftOffset;
-        final long end = TABLE_SIZE - 1 + shiftOffset;
+        final long start = tableSize / 2 + shiftOffset;
+        final long end = tableSize - 1 + shiftOffset;
         final int numRows = (int) (end - start + 1);
 
         final ColumnSource<?> intSource = sourceTable.getColumnSource("intCol");
@@ -304,11 +354,16 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * compacted delta and two raw ones behind it, all of one subscription generation, with nothing propagated yet.
      */
     private void queueAndCompact(final RemoteNugget nugget, final QueryTable sourceTable) {
-        assertTrue("these tests rely on the default compaction configuration",
-                BarrageMessageProducer.COMPACTION_ENABLED && BarrageMessageProducer.COMPACTION_MAX_PENDING_DELTAS > 0);
+        assertTrue("these tests rely on compaction being enabled", BarrageMessageProducer.COMPACTION_ENABLED);
+        assertEquals("churn on this scale is what carries the queue past the compaction floor",
+                COMPACTION_TABLE_SIZE, tableSize);
         final BarrageMessageProducer producer = nugget.barrageMessageProducer;
 
-        final int numCycles = BarrageMessageProducer.COMPACTION_MAX_PENDING_DELTAS + 3;
+        // Each cycle re-modifies the table's first half, so all but the last such modification is superseded and the
+        // queue's wasted fraction climbs with the cycle count. Enough cycles to include a shift, which is the only
+        // part of the churn that appears once every SHIFT_EVERY cycles; the compaction job is scheduled well before
+        // the last of them but does not run until runDueJobs() below.
+        final int numCycles = SHIFT_EVERY + 2;
         for (int ii = 0; ii < numCycles; ++ii) {
             churnRows(sourceTable);
         }
@@ -320,6 +375,43 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
         churnRows(sourceTable);
         churnRows(sourceTable);
         assertEquals("deltas append behind the compacted head", 3, pendingDeltaCount(producer));
+    }
+
+    /**
+     * The chunk storage one column of {@code rows} rows occupies in a delta, which is what the producer's
+     * {@code pendingDeltaBytes} counts: whole {@link BarrageMessageProducer#DELTA_CHUNK_SIZE} chunks and a last chunk
+     * that the pool rounds up to a power of two, never below {@link ChunkPoolConstants#SMALLEST_POOLED_CHUNK_CAPACITY}.
+     * The producer's estimate of what the queue would coalesce to counts rows rather than capacity, so the two agree
+     * only for a row count that fills its chunks, which {@link #COMPACTION_TABLE_SIZE} does.
+     *
+     * <p>
+     * Deliberately a second implementation of the producer's own layout arithmetic rather than a call into it, so that
+     * a test predicting when compaction fires would notice if the producer's changed.
+     */
+    private static long chunkSlots(final long rows) {
+        final long remainder = rows % BarrageMessageProducer.DELTA_CHUNK_SIZE;
+        if (remainder == 0) {
+            return rows;
+        }
+        return rows - remainder + Math.max(MathUtil.roundUpPowerOf2((int) remainder),
+                ChunkPoolConstants.SMALLEST_POOLED_CHUNK_CAPACITY);
+    }
+
+    /**
+     * Bytes of chunk storage a delta that records {@code rows} rows of every column occupies: twenty per row, for an
+     * {@code int}, a {@code double} and a {@code String}, whose chunk holds a reference.
+     */
+    private static long allColumnBytes(final long rows) {
+        return chunkSlots(rows) * (Integer.BYTES + Double.BYTES + Long.BYTES);
+    }
+
+    /**
+     * Whether the producer's policy would compact a queue holding {@code pendingBytes} that would coalesce to
+     * {@code coalescedBytes}.
+     */
+    private static boolean wouldCompact(final long pendingBytes, final long coalescedBytes) {
+        return pendingBytes - coalescedBytes >= Math.max(BarrageMessageProducer.COMPACTION_FLOOR_BYTES,
+                BarrageMessageProducer.COMPACTION_MIN_FREED_FRACTION * pendingBytes);
     }
 
     /** Modifies the first {@code numRows} rows, {@code numCycles} times, without flushing the producer. */
@@ -546,12 +638,12 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
     }
 
     private void checkJoinAfterCompaction(final RowSet lateViewport, final String lateClientName) {
-        final QueryTable sourceTable = newSourceTable();
+        final QueryTable sourceTable = newSourceTable(COMPACTION_TABLE_SIZE);
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
 
         final RemoteClient fullClient = nugget.newClient(null, allColumns(), "existing-full");
         final RemoteClient viewportClient;
-        try (final RowSet viewport = RowSetFactory.fromRange(0, TABLE_SIZE / 2)) {
+        try (final RowSet viewport = RowSetFactory.fromRange(0, tableSize / 2)) {
             viewportClient = nugget.newClient(viewport.copy(), allColumns(), "existing-viewport");
         }
         flushProducerTable();
@@ -588,12 +680,12 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * and is coalesced once more with a partial-column update recorded behind it when the queue propagates.
      */
     public void testPartialColumnModificationsAfterCompaction() {
-        final QueryTable sourceTable = newSourceTable();
+        final QueryTable sourceTable = newSourceTable(COMPACTION_TABLE_SIZE);
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
 
         final RemoteClient fullClient = nugget.newClient(null, allColumns(), "existing-full");
         final RemoteClient viewportClient;
-        try (final RowSet viewport = RowSetFactory.fromRange(0, TABLE_SIZE / 2)) {
+        try (final RowSet viewport = RowSetFactory.fromRange(0, tableSize / 2)) {
             viewportClient = nugget.newClient(viewport.copy(), allColumns(), "existing-viewport");
         }
         flushProducerTable();
@@ -601,7 +693,10 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
         nugget.validate("existing subscriptions satisfied");
         final BarrageMessageProducer producer = nugget.barrageMessageProducer;
 
-        final int numCycles = BarrageMessageProducer.COMPACTION_MAX_PENDING_DELTAS + 3;
+        // Four rounds of the four-cycle pattern. The producer estimates one coalesced row set for all modified
+        // columns rather than one per column, so a queue whose columns tick on their own rows looks larger coalesced
+        // than it is and takes longer to reach the trigger than the same bytes of whole-table modifications would.
+        final int numCycles = 16;
         for (int ii = 0; ii < numCycles; ++ii) {
             modifySomeColumns(sourceTable, ii);
         }
@@ -610,7 +705,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
         assertEquals("compaction replaced the run with one delta", 1, pendingDeltaCount(producer));
 
         // a partial-column update behind the compacted head, coalesced with it when the newcomer forces propagation
-        try (final RowSet rows = RowSetFactory.fromRange(30, 69)) {
+        try (final RowSet rows = fraction(30, 70)) {
             modifyColumns(sourceTable, rows, "doubleCol");
         }
         assertEquals("a delta appended behind the compacted head", 2, pendingDeltaCount(producer));
@@ -623,7 +718,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
         flushClients(nugget);
         nugget.validate("after per-column compaction and a late join");
 
-        try (final RowSet rows = RowSetFactory.fromRange(0, 99)) {
+        try (final RowSet rows = fraction(0, 100)) {
             modifyColumns(sourceTable, rows, "intCol", "strCol");
         }
         flushProducerTable();
@@ -633,14 +728,13 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
 
     /**
      * Compaction whose surviving mapping spans several source and destination chunks, in runs that are contiguous in
-     * neither. The table holds three chunks' worth of rows; two large deltas modify overlapping, gapped ranges, then
-     * small ones carry the queue over the count trigger, so the compacted delta draws the first chunk and a half and
-     * the last half chunk from the first delta and the two chunks between them from the second.
+     * neither. The table holds three chunks' worth of rows, and two overlapping, gapped ranges are modified in turn
+     * until the superseded copies are worth reclaiming. Coalescing walks the run latest first, so the compacted delta
+     * draws the middle two chunks from the last delta and the first chunk and the last from the one before it.
      */
     public void testMultiChunkMappingsAfterCompaction() {
         final int chunk = BarrageMessageProducer.DELTA_CHUNK_SIZE;
-        final int tableSize = 3 * chunk;
-        final QueryTable sourceTable = newSourceTable(tableSize);
+        final QueryTable sourceTable = newSourceTable(COMPACTION_TABLE_SIZE);
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
 
         final RemoteClient fullClient = nugget.newClient(null, allColumns(), "existing-full");
@@ -653,19 +747,17 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
         nugget.validate("existing subscriptions satisfied");
         final BarrageMessageProducer producer = nugget.barrageMessageProducer;
 
+        final int numPairs = 3;
         try (final RowSet head = RowSetFactory.fromRange(0, chunk + chunk / 2 - 1);
                 final RowSet tail = RowSetFactory.fromRange(2L * chunk, tableSize - 1);
                 final RowSet gapped = head.union(tail);
                 final RowSet middle = RowSetFactory.fromRange(chunk / 2, 2L * chunk + chunk / 2 - 1)) {
-            modifyRows(sourceTable, gapped);
-            modifyRows(sourceTable, middle);
-        }
-        final int numCycles = BarrageMessageProducer.COMPACTION_MAX_PENDING_DELTAS + 3;
-        for (int ii = 2; ii < numCycles; ++ii) {
-            try (final RowSet rows = RowSetFactory.fromKeys(ii, chunk + ii, 2L * chunk + ii)) {
-                modifyRows(sourceTable, rows);
+            for (int ii = 0; ii < numPairs; ++ii) {
+                modifyRows(sourceTable, gapped);
+                modifyRows(sourceTable, middle);
             }
         }
+        final int numCycles = 2 * numPairs;
         assertEquals("one delta per cycle until the compaction job runs", numCycles, pendingDeltaCount(producer));
         runDueJobs();
         assertEquals("compaction replaced the run with one delta", 1, pendingDeltaCount(producer));
@@ -690,15 +782,13 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
     }
 
     /**
-     * The byte trigger on its own, well under the count cap. Every cycle modifies the whole of a three-chunk table, so
-     * each delta's size is known exactly and the test can follow the producer's policy step by step: nothing compacts
-     * until the raw bytes cross the floor, the compacted head is then one table's worth, and the next compaction waits
-     * until the raw bytes recorded since reach {@code max(floor, growthFactor * head)} again.
+     * The policy followed step by step. Every cycle modifies the whole of a three-chunk table, so each delta records
+     * exactly one table's worth with no chunk rounding, every cycle but the last is entirely superseded, and the size
+     * the queue would coalesce to stays at one table's worth however long it grows. The test can therefore predict
+     * every compaction: the first once three deltas are held, and one every two deltas after that.
      */
-    public void testByteTriggerCompaction() {
-        final int chunk = BarrageMessageProducer.DELTA_CHUNK_SIZE;
-        final int tableSize = 3 * chunk;
-        final QueryTable sourceTable = newSourceTable(tableSize);
+    public void testFreedFractionCompaction() {
+        final QueryTable sourceTable = newSourceTable(COMPACTION_TABLE_SIZE);
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
         final RemoteClient fullClient = nugget.newClient(null, allColumns(), "existing-full");
         flushProducerTable();
@@ -706,45 +796,107 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
         nugget.validate("existing subscription satisfied");
         final BarrageMessageProducer producer = nugget.barrageMessageProducer;
 
-        // A whole-table modification records one full chunk per column per DELTA_CHUNK_SIZE rows, with no rounding.
-        long bytesPerDelta = 0;
-        for (final String columnName : new String[] {"intCol", "doubleCol", "strCol"}) {
-            bytesPerDelta += (long) tableSize * sourceTable.getColumnSource(columnName).getChunkType().elementBytes();
-        }
-        final long floor = BarrageMessageProducer.COMPACTION_FLOOR_BYTES;
-        final double growth = BarrageMessageProducer.COMPACTION_GROWTH_FACTOR;
-        final int numCycles = 8;
-        assertTrue("the test needs the count cap out of the way",
-                numCycles < BarrageMessageProducer.COMPACTION_MAX_PENDING_DELTAS);
-        assertTrue("the test needs one delta under the floor and two over it: bytesPerDelta=" + bytesPerDelta
-                + ", floor=" + floor, bytesPerDelta < floor && 2 * bytesPerDelta >= floor);
+        final long bytesPerDelta = allColumnBytes(tableSize);
+        // One delta cannot reach the floor on its own and two can, so the first compaction is governed by the floor
+        // and the later ones, whose queue is larger, by the fraction.
+        assertTrue("the test needs one delta under the floor and two over it: bytesPerDelta=" + bytesPerDelta,
+                bytesPerDelta < BarrageMessageProducer.COMPACTION_FLOOR_BYTES
+                        && 2 * bytesPerDelta >= BarrageMessageProducer.COMPACTION_FLOOR_BYTES);
 
-        long rawBytes = 0;
-        long headBytes = 0;
         int expectedPending = 0;
         int compactions = 0;
         try (final RowSet allRows = RowSetFactory.flat(tableSize)) {
-            for (int cycle = 1; cycle <= numCycles; ++cycle) {
+            for (int cycle = 1; cycle <= 8; ++cycle) {
                 modifyRows(sourceTable, allRows);
                 ++expectedPending;
-                rawBytes += bytesPerDelta;
                 runDueJobs();
-                if (expectedPending >= 2 && rawBytes >= Math.max(floor, growth * headBytes)) {
-                    // every row survives exactly once, so the compacted head is one table's worth
+                // Whatever the queue holds, coalescing it leaves one modification of every row.
+                if (expectedPending >= 2 && wouldCompact(expectedPending * bytesPerDelta, bytesPerDelta)) {
                     expectedPending = 1;
-                    headBytes = bytesPerDelta;
-                    rawBytes = 0;
                     ++compactions;
                 }
                 assertEquals("pending deltas after cycle " + cycle, expectedPending, pendingDeltaCount(producer));
             }
         }
-        assertTrue("expected the byte trigger to fire more than once, fired " + compactions, compactions >= 2);
+        assertEquals("expected a first compaction at three deltas and one every two thereafter", 3, compactions);
 
         flushProducerTable();
         assertNoSnapshots("existing-full", fullClient);
         flushClients(nugget);
-        nugget.validate("after byte-triggered compactions");
+        nugget.validate("after repeated compactions");
+    }
+
+    /**
+     * A queue that would free nothing by compacting is left alone, however many deltas it holds. Appends supersede
+     * nothing, so every recorded row survives a coalesce and the copy would move all of them to reclaim none; the one
+     * modification of a pre-existing row among them changes that by a single row's worth, which is what the fraction
+     * measures and a count of deltas could not.
+     */
+    public void testAppendsAreNotCompacted() {
+        final QueryTable sourceTable = newSourceTable();
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient fullClient = nugget.newClient(null, allColumns(), "existing-full");
+        flushProducerTable();
+        flushClients(nugget);
+        nugget.validate("existing subscription satisfied");
+        final BarrageMessageProducer producer = nugget.barrageMessageProducer;
+
+        // Enough appended rows that the queue itself is larger than the floor -- a policy that looked at the bytes it
+        // holds rather than the bytes it could release would compact here -- and one modification of a row that was
+        // already there, so the queue is not add-only in the sense the old policy tested for.
+        final int numCycles = 64;
+        final int rowsPerAppend = 4096;
+        assertTrue("the queue must grow past the floor for this test to mean anything",
+                (long) (numCycles - 1) * allColumnBytes(rowsPerAppend) > BarrageMessageProducer.COMPACTION_FLOOR_BYTES);
+
+        for (int ii = 0; ii < numCycles; ++ii) {
+            if (ii == numCycles / 2) {
+                try (final RowSet rows = RowSetFactory.fromRange(0, 9)) {
+                    modifyRows(sourceTable, rows);
+                }
+            } else {
+                appendRows(sourceTable, rowsPerAppend);
+            }
+            runDueJobs();
+        }
+        assertEquals("nothing was superseded, so nothing was compacted", numCycles, pendingDeltaCount(producer));
+
+        flushProducerTable();
+        assertNoSnapshots("existing-full", fullClient);
+        flushClients(nugget);
+        nugget.validate("after an uncompacted run of appends");
+    }
+
+    /**
+     * Removing everything the queue added leaves a compaction with almost nothing to copy and everything to release,
+     * which is the case the freed fraction handles best: the whole queue is waste, so it compacts once and cheaply.
+     */
+    public void testRemovingEverythingCompacts() {
+        final QueryTable sourceTable = newSourceTable(COMPACTION_TABLE_SIZE);
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient fullClient = nugget.newClient(null, allColumns(), "existing-full");
+        flushProducerTable();
+        flushClients(nugget);
+        nugget.validate("existing subscription satisfied");
+        final BarrageMessageProducer producer = nugget.barrageMessageProducer;
+
+        // Two whole-table modifications, still short of the floor between them, then a removal of every row.
+        try (final RowSet allRows = RowSetFactory.flat(tableSize)) {
+            modifyRows(sourceTable, allRows);
+            modifyRows(sourceTable, allRows);
+            runDueJobs();
+            assertEquals("two deltas cannot free enough to be worth compacting", 2, pendingDeltaCount(producer));
+
+            removeRows(sourceTable, allRows);
+        }
+        runDueJobs();
+        assertEquals("the removal made the whole queue waste", 1, pendingDeltaCount(producer));
+
+        flushProducerTable();
+        assertNoSnapshots("existing-full", fullClient);
+        flushClients(nugget);
+        nugget.validate("after compacting a queue whose rows were all removed");
+        assertEquals("the table is empty", 0, sourceTable.size());
     }
 
     /**
@@ -752,7 +904,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * changing client's pre-snapshot data, now drawn from a compacted delta, is still sent under its old viewport.
      */
     public void testViewportChangeAfterCompaction() {
-        final QueryTable sourceTable = newSourceTable();
+        final QueryTable sourceTable = newSourceTable(COMPACTION_TABLE_SIZE);
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
 
         final RemoteClient stableClient = nugget.newClient(null, allColumns(), "stable-full");

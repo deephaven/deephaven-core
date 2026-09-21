@@ -3,58 +3,12 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 
 public class CharBarrageCopyKernel {
-    /**
-     * Context for the CharBarrageCopyKernel that holds the add / mod chunks as WritableCharChunk and the delta chunk
-     * size.
-     */
-    private static class CharBarrageCopyKernelContext implements BarrageCopyKernel.BarrageCopyKernelContext {
-        private final WritableCharChunk<Values>[][] addChunks;
-        private final WritableCharChunk<Values>[][] modChunks;
-        private final int deltaChunkSize;
-
-        private CharBarrageCopyKernelContext(
-                final WritableChunk<Values>[][] addChunks,
-                final WritableChunk<Values>[][] modChunks,
-                final int deltaChunkSize) {
-            // Clone and cast the add / mod chunk arrays to WritableCharChunk.
-            // noinspection unchecked
-            this.addChunks = new WritableCharChunk[addChunks.length][];
-            for (int i = 0; i < addChunks.length; i++) {
-                if (addChunks[i] == null) {
-                    continue;
-                }
-                // noinspection unchecked
-                this.addChunks[i] = new WritableCharChunk[addChunks[i].length];
-                for (int j = 0; j < addChunks[i].length; j++) {
-                    this.addChunks[i][j] = addChunks[i][j].asWritableCharChunk();
-                }
-            }
-            // noinspection unchecked
-            this.modChunks = new WritableCharChunk[modChunks.length][];
-            for (int i = 0; i < modChunks.length; i++) {
-                if (modChunks[i] == null) {
-                    continue;
-                }
-                // noinspection unchecked
-                this.modChunks[i] = new WritableCharChunk[modChunks[i].length];
-                for (int j = 0; j < modChunks[i].length; j++) {
-                    this.modChunks[i][j] = modChunks[i][j].asWritableCharChunk();
-                }
-            }
-            this.deltaChunkSize = deltaChunkSize;
-        }
-
-        @Override
-        public int deltaChunkSize() {
-            return deltaChunkSize;
-        }
-    }
-
     /**
      * The chunks of one side of one delta, selected by a run's encoded origin.
      */
@@ -70,37 +24,24 @@ public class CharBarrageCopyKernel {
     }
 
     /**
-     * Fill the output chunks from the delta chunks according to the runs, splitting a run wherever it crosses an origin
-     * or destination chunk boundary and moving each resulting stretch with one typed array copy.
+     * One side's chunks as the concrete chunk type, so that the copy loop makes no cast of its own and its copy call
+     * stays monomorphic. A null entry is a delta that recorded nothing on this side for this column, which the runs
+     * then never name.
      */
-    private static void copy(
-            final BarrageCopyKernel.Runs runs,
-            final WritableCharChunk<Values>[] dest,
-            final BarrageCopyKernel.BarrageCopyKernelContext context) {
-        // hoisted out of the loops
-        final CharBarrageCopyKernelContext charContext = (CharBarrageCopyKernelContext) context;
-        final int deltaChunkSize = charContext.deltaChunkSize;
-        final WritableCharChunk<Values>[][] addChunks = charContext.addChunks;
-        final WritableCharChunk<Values>[][] modChunks = charContext.modChunks;
-        for (int ri = 0; ri < runs.count; ++ri) {
-            final long encoded = runs.encoded[ri];
-            final WritableCharChunk<Values>[] originChunks = originChunks(encoded, addChunks, modChunks);
-
-            long originPos = encoded & BarrageCopyKernel.DELTA_POSITION_MASK;
-            long destPos = runs.dest[ri];
-            long remaining = runs.len[ri];
-            while (remaining > 0) {
-                final int originOff = (int) (originPos % deltaChunkSize);
-                final int destOff = (int) (destPos % deltaChunkSize);
-                final int length = (int) Math.min(remaining,
-                        Math.min(deltaChunkSize - originOff, deltaChunkSize - destOff));
-                dest[(int) (destPos / deltaChunkSize)].copyFromTypedChunk(
-                        originChunks[(int) (originPos / deltaChunkSize)], originOff, destOff, length);
-                originPos += length;
-                destPos += length;
-                remaining -= length;
+    private static WritableCharChunk<Values>[][] asTypedChunks(final WritableChunk<Values>[][] chunks) {
+        // noinspection unchecked
+        final WritableCharChunk<Values>[][] typed = new WritableCharChunk[chunks.length][];
+        for (int di = 0; di < chunks.length; ++di) {
+            if (chunks[di] == null) {
+                continue;
+            }
+            // noinspection unchecked
+            typed[di] = new WritableCharChunk[chunks[di].length];
+            for (int ci = 0; ci < chunks[di].length; ++ci) {
+                typed[di][ci] = chunks[di][ci].asWritableCharChunk();
             }
         }
+        return typed;
     }
 
     /**
@@ -108,19 +49,49 @@ public class CharBarrageCopyKernel {
      */
     private static class CharBarrageCopyKernelImpl implements BarrageCopyKernel {
         @Override
-        public BarrageCopyKernelContext makeContext(WritableChunk<Values>[][] addChunks,
-                WritableChunk<Values>[][] modChunks, int deltaChunkSize) {
-            return new CharBarrageCopyKernelContext(addChunks, modChunks, deltaChunkSize);
-        }
+        public void copy(
+                final Runs runs,
+                final WritableChunk<Values>[] dest,
+                final WritableChunk<Values>[][] addChunks,
+                final WritableChunk<Values>[][] modChunks,
+                final int deltaChunkSize) {
+            Assert.eqTrue(Integer.bitCount(deltaChunkSize) == 1, "deltaChunkSize is a power of two");
 
-        @Override
-        public void copy(Runs runs, WritableChunk<Values>[] dest, BarrageCopyKernelContext context) {
+            // Cast every chunk once, here, rather than per run: the loop below then sees only the concrete chunk type
+            // and its copy inlines.
             // noinspection unchecked
             final WritableCharChunk<Values>[] typedDest = new WritableCharChunk[dest.length];
             for (int ii = 0; ii < dest.length; ++ii) {
                 typedDest[ii] = dest[ii].asWritableCharChunk();
             }
-            CharBarrageCopyKernel.copy(runs, typedDest, context);
+            final WritableCharChunk<Values>[][] typedAddChunks = asTypedChunks(addChunks);
+            final WritableCharChunk<Values>[][] typedModChunks = asTypedChunks(modChunks);
+
+            // Every chunk holds deltaChunkSize rows but the last of a column, so a position's chunk and its offset
+            // within that chunk are a shift and a mask.
+            final int chunkShift = Integer.numberOfTrailingZeros(deltaChunkSize);
+            final long offsetMask = deltaChunkSize - 1;
+
+            for (int ri = 0; ri < runs.count; ++ri) {
+                final long encoded = runs.encoded[ri];
+                final WritableCharChunk<Values>[] originChunks =
+                        originChunks(encoded, typedAddChunks, typedModChunks);
+
+                long originPos = encoded & BarrageCopyKernel.DELTA_POSITION_MASK;
+                long destPos = runs.dest[ri];
+                long remaining = runs.len[ri];
+                while (remaining > 0) {
+                    final int originOff = (int) (originPos & offsetMask);
+                    final int destOff = (int) (destPos & offsetMask);
+                    final int length = (int) Math.min(remaining,
+                            Math.min(deltaChunkSize - originOff, deltaChunkSize - destOff));
+                    typedDest[(int) (destPos >>> chunkShift)].copyFromTypedChunk(
+                            originChunks[(int) (originPos >>> chunkShift)], originOff, destOff, length);
+                    originPos += length;
+                    destPos += length;
+                    remaining -= length;
+                }
+            }
         }
     }
 
