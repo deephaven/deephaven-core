@@ -171,7 +171,7 @@ public class TypeInfos {
             @Override
             public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating,
                     Class<?> dataType) {
-                return type(PrimitiveTypeName.BINARY, required, repeating)
+                return type(PrimitiveTypeName.BINARY, required, repeating, ColumnOrder.typeDefined())
                         .as(LogicalTypeAnnotation.decimalType(precisionAndScale.scale, precisionAndScale.precision));
             }
         };
