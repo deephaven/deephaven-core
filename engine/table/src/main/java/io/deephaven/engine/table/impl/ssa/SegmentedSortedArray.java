@@ -96,8 +96,6 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
      */
     void forAllKeys(LongConsumer longConsumer);
 
-    SsaChecker makeChecker();
-
     boolean isReversed();
 
     /**

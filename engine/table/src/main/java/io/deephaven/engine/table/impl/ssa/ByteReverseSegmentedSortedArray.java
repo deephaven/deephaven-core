@@ -1834,8 +1834,4 @@ public final class ByteReverseSegmentedSortedArray implements SegmentedSortedArr
         return leafRowKeys[leafCount - 1][leafSizes[leafCount - 1] - 1];
     }
 
-    @Override
-    public SsaChecker makeChecker() {
-        return ByteReverseSsaChecker.INSTANCE;
-    }
 }

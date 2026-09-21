@@ -1835,8 +1835,4 @@ public final class FloatReverseSegmentedSortedArray implements SegmentedSortedAr
         return leafRowKeys[leafCount - 1][leafSizes[leafCount - 1] - 1];
     }
 
-    @Override
-    public SsaChecker makeChecker() {
-        return FloatReverseSsaChecker.INSTANCE;
-    }
 }

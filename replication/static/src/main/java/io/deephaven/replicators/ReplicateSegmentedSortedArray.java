@@ -113,8 +113,9 @@ public class ReplicateSegmentedSortedArray {
             }
         }
 
+        // the checkers exist only to validate an SSA's contents from a test, so they live in the test source set
         final String charSsaCheckerPath =
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/ssa/CharSsaChecker.java";
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/CharSsaChecker.java";
         final List<String> ssaCheckers = charToAllButBoolean(TASK, charSsaCheckerPath);
         ssaCheckers.add(charSsaCheckerPath);
 

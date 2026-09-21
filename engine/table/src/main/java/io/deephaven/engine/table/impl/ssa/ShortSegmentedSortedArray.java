@@ -1831,8 +1831,4 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
         return leafRowKeys[leafCount - 1][leafSizes[leafCount - 1] - 1];
     }
 
-    @Override
-    public SsaChecker makeChecker() {
-        return ShortSsaChecker.INSTANCE;
-    }
 }
