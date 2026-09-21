@@ -6,8 +6,12 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.join.ChangedKeyRows;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
@@ -593,19 +597,69 @@ class NaturalJoinHelper {
                 }
             }
 
-            newLeftRedirections.ensureCapacity(downstream.added().size());
-            jsm.decorateLeftSide(downstream.added(), leftSources, newLeftRedirections);
-            final MutableInt position = new MutableInt(0);
-            downstream.added().forAllRowKeys((long ll) -> {
-                final long newRedirection = newLeftRedirections.getLong(position.get());
-                jsm.checkExactMatch(ll, newRedirection);
-                if (newRedirection != RowSequence.NULL_ROW_KEY) {
-                    rowRedirection.putVoid(ll, newRedirection);
-                }
-                position.increment();
-            });
+            final RowSet added = downstream.added();
+            if (added.isNonempty()) {
+                newLeftRedirections.ensureCapacity(added.size());
+                jsm.decorateLeftSide(added, leftSources, newLeftRedirections);
+                storeAddedRedirections(added);
+            }
 
             result.notifyListeners(downstream);
+        }
+
+        /**
+         * Store the redirections that {@code newLeftRedirections} holds (by position) for {@code added}, one chunk at a
+         * time. An added row's key holds no redirection (the removed rows' keys were cleared and the shifted rows'
+         * redirections moved with them), so an unmatched row is left alone rather than storing the null marker, which
+         * would allocate redirection storage for it.
+         */
+        private void storeAddedRedirections(final RowSet added) {
+            final int chunkSize = (int) Math.min(JoinControl.CHUNK_SIZE, added.size());
+            try (final ChunkSource.GetContext redirectionContext = newLeftRedirections.makeGetContext(chunkSize);
+                    final ChunkSink.FillFromContext fillContext = rowRedirection.makeFillFromContext(chunkSize);
+                    final WritableLongChunk<RowKeys> matchedRedirections =
+                            WritableLongChunk.makeWritableChunk(chunkSize);
+                    final WritableLongChunk<OrderedRowKeys> matchedRows =
+                            WritableLongChunk.makeWritableChunk(chunkSize);
+                    final RowSequence.Iterator addedIterator = added.getRowSequenceIterator()) {
+                long position = 0;
+                while (addedIterator.hasMore()) {
+                    final RowSequence addedChunkRows = addedIterator.getNextRowSequenceWithLength(chunkSize);
+                    final int addedChunkSize = addedChunkRows.intSize();
+                    // noinspection unchecked
+                    final LongChunk<RowKeys> redirections = (LongChunk<RowKeys>) newLeftRedirections
+                            .getChunk(redirectionContext, position, position + addedChunkSize - 1).asLongChunk();
+                    final LongChunk<OrderedRowKeys> addedKeys = addedChunkRows.asRowKeyChunk();
+                    int unmatched = 0;
+                    for (int ii = 0; ii < addedChunkSize; ++ii) {
+                        final long redirection = redirections.get(ii);
+                        jsm.checkExactMatch(addedKeys.get(ii), redirection);
+                        if (redirection == RowSequence.NULL_ROW_KEY) {
+                            ++unmatched;
+                        }
+                    }
+                    if (unmatched == 0) {
+                        rowRedirection.fillFromChunk(fillContext, redirections, addedChunkRows);
+                    } else if (unmatched < addedChunkSize) {
+                        // compact the matched rows and their redirections into the reusable chunks, then fill only
+                        // those; the matched row keys stay in ascending order
+                        matchedRedirections.setSize(0);
+                        matchedRows.setSize(0);
+                        for (int ii = 0; ii < addedChunkSize; ++ii) {
+                            final long redirection = redirections.get(ii);
+                            if (redirection != RowSequence.NULL_ROW_KEY) {
+                                matchedRedirections.add(redirection);
+                                matchedRows.add(addedKeys.get(ii));
+                            }
+                        }
+                        try (final RowSequence matchedRowSequence =
+                                RowSequenceFactory.wrapRowKeysChunkAsRowSequence(matchedRows)) {
+                            rowRedirection.fillFromChunk(fillContext, matchedRedirections, matchedRowSequence);
+                        }
+                    }
+                    position += addedChunkSize;
+                }
+            }
         }
 
         /**
