@@ -9,6 +9,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.bytes.BytesUtils;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
@@ -102,7 +103,8 @@ public class MinMaxFromStatisticsTest {
 
     private static Statistics<?> buildFloatStats(
             final float min, final float max, final long nulls) {
-        final PrimitiveType colType = Types.required(FLOAT).named("floatPrimitive");
+        final PrimitiveType colType =
+                Types.required(FLOAT).columnOrder(ColumnOrder.typeDefined()).named("floatPrimitive");
         return buildStats(colType,
                 BytesUtils.intToBytes(Float.floatToIntBits(min)),
                 BytesUtils.intToBytes(Float.floatToIntBits(max)),
@@ -111,7 +113,8 @@ public class MinMaxFromStatisticsTest {
 
     private static Statistics<?> buildDoubleStats(
             final double min, final double max, final long nulls) {
-        final PrimitiveType colType = Types.required(DOUBLE).named("doublePrimitive");
+        final PrimitiveType colType =
+                Types.required(DOUBLE).columnOrder(ColumnOrder.typeDefined()).named("doublePrimitive");
         return buildStats(colType,
                 BytesUtils.longToBytes(Double.doubleToLongBits(min)),
                 BytesUtils.longToBytes(Double.doubleToLongBits(max)),
