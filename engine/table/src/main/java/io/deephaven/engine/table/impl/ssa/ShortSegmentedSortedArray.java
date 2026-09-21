@@ -331,11 +331,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
 
 
         if (SEGMENTED_SORTED_ARRAY_VALIDATION) {
-            if (leafCount > 1) {
-                validateLeaf(leaf);
-            } else {
-                validateLeaf(directoryValues, directoryRowKeys, newSize);
-            }
+            validateLeaf(leaf);
         }
     }
 
@@ -593,7 +589,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
             // found values in bulk. If our gallop length exceeds the initial gallop, then we reduce the number of
             // consecutive wins before we enter gallop mode. If we did not exceed the initial gallop length, we increase
             // the number of consecutive wins so that we don't enter gallop mode too early.
-            if (iwins > minGallop && rposl >= 0) {
+            if (iwins > minGallop) {
                 // find position the smallest position in insertValues that is larger than the next leaf value
                 final short searchValue = leafValues[rposl];
                 final long searchKey = leafRowKeys[rposl];
@@ -629,7 +625,7 @@ public final class ShortSegmentedSortedArray implements SegmentedSortedArray {
                 } else {
                     minGallop = Math.max(2, minGallop - 1);
                 }
-            } else if (lwins > minGallop && rposi >= 0) {
+            } else if (lwins > minGallop) {
                 // find the next insert value in the leaf
                 final short searchValue = insertValues.get(rposi);
                 final long searchKey = insertRowKeys.get(rposi);
