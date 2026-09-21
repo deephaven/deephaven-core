@@ -116,7 +116,7 @@ source = new_table(
 result = source.where_one_of(filters=["Color = `blue`", "Number > 3"])
 ```
 
-The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)`.
+The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)` — this is required whenever the engine can't statically determine the function's return type, which is the case here because `my_filter` has no return type hint. A function annotated `-> bool` doesn't need the cast.
 
 ```python order=source,result_filtered,result_not_filtered
 from deephaven import new_table

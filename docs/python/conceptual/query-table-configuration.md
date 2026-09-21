@@ -34,6 +34,8 @@ The `QueryTable` has the following user-configurable properties:
 | [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true       |
 | [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22` |
 | [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSort`                                | true       |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.minimumParallelSortRows`                     | `1L << 20` |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
 | [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
@@ -84,7 +86,6 @@ Pushdown predicates refer to the mechanism whereby filtering conditions are appl
 
 | Property Name                                            | Default Value | Description                                                                                                                                     |
 | -------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `QueryTable.useDataIndexForWhere`                        | true          | Enables the uses of table-level [data index](../how-to-guides/data-indexes.md) during `where` operations.                                       |
 | `QueryTable.disableWherePushdownDataIndex`               | false         | Disables the use of [data index](../how-to-guides/data-indexes.md) within `where`'s predicate pushdown.                                         |
 | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false         | Disables the usage of Parquet row group metadata during push-down filtering.                                                                    |
 | `QueryTable.disableWherePushdownMergedTables`            | false         | Disable predicate pushdown when filtering merged tables.                                                                                        |
@@ -103,7 +104,7 @@ Parallelism for `where` operations is not enabled until the parent's size exceed
 
 | Property Name                                  | Default Value | Description                                                                                                               |
 | ---------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `QueryTable.enableParallelWhere`               | false         | Enables parallelized optimizations for `QueryTable#where` operations                                                      |
+| `QueryTable.disableParallelWhere`              | false         | Disables parallelized optimizations for `QueryTable#where` operations                                                     |
 | `QueryTable.parallelWhereRowsPerSegment`       | `1 << 16`     | The number of rows per segment when the number of segments is not fixed                                                   |
 | `QueryTable.parallelWhereSegments`             | -1            | The number of segments to use when dividing all work equally into a fixed number of tasks; -1 implies one thread per core |
 | `QueryTable.forceParallelWhere` (test-focused) | false         | Forces Where operations to parallelize even when row requirements are not met                                             |
@@ -119,6 +120,17 @@ Parallelism for `select` operations is not enabled until the parent's size excee
 | `QueryTable.enableParallelSelectAndUpdate`               | true          | Enables parallelized optimizations for `QueryTable#select` and `QueryTable#update` operations |
 | `QueryTable.minimumParallelSelectRows`                   | `1L << 22`    | The minimum number of rows required to enable parallel select and update operations           |
 | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false         | Forces Select and Update operations to parallelize even when row requirements are not met     |
+
+## Parallel sorting
+
+[`sort`](../reference/table-operations/sort/sort.md) can parallelize filling the value chunks that feed the sort kernels, sorting segments with pairwise merges, and gathering the permuted row keys.
+
+Parallelism for `sort` is not enabled until the table's size exceeds `QueryTable.minimumParallelSortRows` rows; below that, dividing the work into segments costs more than the work itself, so the sort runs entirely on the calling thread. Set `QueryTable.parallelSort` to `false` to disable sort parallelization entirely, regardless of table size.
+
+| Property Name                        | Default Value | Description                                                                    |
+| ------------------------------------ | ------------- | ------------------------------------------------------------------------------ |
+| `QueryTable.parallelSort`            | true          | Whether the engine may parallelize sorts at all                                |
+| `QueryTable.minimumParallelSortRows` | `1L << 20`    | The minimum number of rows in a sort for which the engine may parallelize work |
 
 ## Parallel snapshotting
 
@@ -141,7 +153,7 @@ The `ungroup` table operation can expand one row into multiple rows. `QueryTable
 
 ## `SoftRecycler` configuration
 
-Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources. These column sources must maintain previous values during an update graph cycle. Rather than allocating fresh memory on each cycle, when memory is needed to record previous values it is borrowed from the recycler and returned at the end of the update cycle. These pools can improve performance and reduce garbage collection pressure.
+Deephaven uses [`SoftRecycler`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/SoftRecycler.html) objects to manage memory for array and sparse array column sources on refreshing tables that track previous values. Rather than allocating fresh memory on each cycle, when memory is needed to record previous values for a modified block it is borrowed from the recycler and returned at the end of the update cycle. These pools can improve performance and reduce garbage collection pressure.
 
 The capacity of these recyclers (how many arrays each recycler holds) can be configured on a per-type basis, allowing you to tune memory usage based on your workload characteristics.
 
@@ -161,7 +173,7 @@ Array-backed column sources (dense arrays) use SoftRecyclers to manage blocks of
 | `array.recycler.capacity.long`    | 1024                    | Recycler capacity for long array blocks                                                               |
 | `array.recycler.capacity.short`   | 1024                    | Recycler capacity for short array blocks                                                              |
 | `array.recycler.capacity.object`  | 1024                    | Recycler capacity for object array blocks                                                             |
-| `array.recycler.capacity.inuse`   | 9216 (max of all types) | Recycler capacity for "in use" bitmap blocks (should be at least the maximum capacity of other types) |
+| `array.recycler.capacity.inuse`   | 1024 (max of all types) | Recycler capacity for "in use" bitmap blocks (should be at least the maximum capacity of other types) |
 
 ### Sparse array column source recyclers
 
@@ -207,9 +219,9 @@ Sparse array column sources use a multi-level hierarchical structure and maintai
 | `sparsearray.recycler.capacity.short.0`   | 1024                         | Level 0 (top) recycler capacity for short sparse arrays          |
 | `sparsearray.recycler.capacity.object.0`  | 1024                         | Level 0 (top) recycler capacity for object sparse arrays         |
 | `sparsearray.recycler.capacity.inuse`     | 9216 (sum of all base types) | Recycler capacity for "in use" bitmap blocks at the lowest level |
-| `sparsearray.recycler.capacity.inuse.2`   | 9216 (max of level 2)        | Recycler capacity for "in use" bitmap blocks at level 2          |
-| `sparsearray.recycler.capacity.inuse.1`   | 9216 (max of level 1)        | Recycler capacity for "in use" bitmap blocks at level 1          |
-| `sparsearray.recycler.capacity.inuse.0`   | 9216 (max of level 0)        | Recycler capacity for "in use" bitmap blocks at level 0 (top)    |
+| `sparsearray.recycler.capacity.inuse.2`   | 1024 (max of level 2)        | Recycler capacity for "in use" bitmap blocks at level 2          |
+| `sparsearray.recycler.capacity.inuse.1`   | 1024 (max of level 1)        | Recycler capacity for "in use" bitmap blocks at level 1          |
+| `sparsearray.recycler.capacity.inuse.0`   | 1024 (max of level 0)        | Recycler capacity for "in use" bitmap blocks at level 0 (top)    |
 
 #### Tuning `SoftRecycler` capacity
 

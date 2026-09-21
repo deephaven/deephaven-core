@@ -63,6 +63,7 @@ Deephaven also parallelizes calculations within a single table, in two ways:
 
 - Column calculations in [`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md).
 - Filters in [`where`](../../reference/table-operations/filter/where.md) clauses.
+- [`sort`](../../reference/table-operations/sort/sort.md), once the table is large enough (`QueryTable.minimumParallelSortRows`, about 1 million rows by default) — disable with `QueryTable.parallelSort=false`.
 
 **What does NOT get parallelized**:
 

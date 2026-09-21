@@ -94,7 +94,7 @@ source = newTable(
 result = source.where(FilterOr.of(Filter.from("Color = `blue`", "Number > 3")))
 ```
 
-The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)`.
+The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)` — this is required because `my_filter` is a closure, whose return type Groovy can't statically determine at compile time. A native method with a declared `boolean` return type doesn't need the cast.
 
 ```groovy order=source,result_filtered,result_not_filtered
 my_filter = { int a -> a <= 4 }
