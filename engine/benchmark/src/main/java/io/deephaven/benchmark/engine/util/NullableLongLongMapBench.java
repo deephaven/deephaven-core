@@ -9,6 +9,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK1V1;
 import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK2V2;
 import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK4V4;
+import io.deephaven.engine.table.impl.util.hash.HashMapLockFreeK4V4WithAMAC;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
@@ -105,6 +106,7 @@ public class NullableLongLongMapBench {
         K1V1((desiredEntries, loadFactor) -> HashMapLockFreeK1V1.of(desiredEntries, loadFactor, -1)),
         K2V2((desiredEntries, loadFactor) -> HashMapLockFreeK2V2.of(desiredEntries, loadFactor, -1)),
         K4V4((desiredEntries, loadFactor) -> HashMapLockFreeK4V4.of(desiredEntries, loadFactor, -1)),
+        K4V4AMAC((desiredEntries, loadFactor) -> HashMapLockFreeK4V4WithAMAC.of(desiredEntries, loadFactor, -1)),
         FASTUTIL(FastutilAdapter::new);
         // @formatter:on
 
@@ -115,7 +117,7 @@ public class NullableLongLongMapBench {
         }
     }
 
-    @Param({"K1V1", "K2V2", "K4V4", "FASTUTIL"})
+    @Param({"K1V1", "K2V2", "K4V4", "K4V4AMAC", "FASTUTIL"})
     public Impl impl;
 
     /**

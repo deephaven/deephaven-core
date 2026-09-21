@@ -47,6 +47,15 @@ public class TestKnVn {
         fillToCapacity(new HashMapLockFreeK4V4(), HASHTABLE_SIZE_LOWER_BOUND_4);
     }
 
+    /**
+     * This is a very long-running test which also needs a big heap. We should figure out how to configure things so
+     * this runs off to the side without disrupting other developers.
+     */
+    @Test
+    public void fillK4V4WithAMACToTheMax() {
+        fillToCapacity(new HashMapLockFreeK4V4WithAMAC(), HASHTABLE_SIZE_LOWER_BOUND_4);
+    }
+
     private static void fillToCapacity(NullableLongLongMap ht, final long lowerSizeBound) {
         final long maxMemory = Runtime.getRuntime().maxMemory();
         if (maxMemory < MINIMUM_HEAP_SIZE_NEEDED_FOR_TEST) {

@@ -39,7 +39,8 @@ public class TestLongLongMap {
                 referenceFactory,
                 new Factory("K1V1", 1, HashMapLockFreeK1V1::new),
                 new Factory("K2V2", 2, HashMapLockFreeK2V2::new),
-                new Factory("K4V4", 4, HashMapLockFreeK4V4::new)
+                new Factory("K4V4", 4, HashMapLockFreeK4V4::new),
+                new Factory("K4V4WithAMAC", 4, HashMapLockFreeK4V4WithAMAC::new)
         };
         final int[] initialCapacities = {10, 1000, 1000000};
         final float[] loadFactors = {0.5f, 0.75f, 0.9f};
