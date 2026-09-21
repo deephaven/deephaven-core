@@ -33,13 +33,30 @@ orFilter = Filter.or(Filter.from("X > 5", "Y < 10"))
 andFilter = Filter.and(Filter.from("X > 5", "Y < 10"))
 ```
 
+## Filter functions
+
+The [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) interface provides static factory methods for common conditions. These return `Filter` objects that you can combine with `Filter.and`/`Filter.or` or modify with concurrency methods.
+
+| Function                                                                                                                                                  | Description                             |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| [`Filter.from(condition)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html)                                                         | Create from condition string(s)         |
+| [`Filter.and(filters)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html)                                                            | Logical AND of multiple filters         |
+| [`Filter.or(filters)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html)                                                             | Logical OR of multiple filters          |
+| [`Filter.isNull(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNull(io.deephaven.api.expression.Expression))       | True if the expression is null          |
+| [`Filter.isNotNull(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNotNull(io.deephaven.api.expression.Expression)) | True if the expression is not null      |
+| [`Filter.not(filter)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#not(F))                                                      | Logical NOT                             |
+| [`Filter.isNaN(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNaN(io.deephaven.api.expression.Expression))         | True if the expression is NaN           |
+| [`Filter.isNotNaN(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNotNaN(io.deephaven.api.expression.Expression))   | True if the expression is not NaN       |
+| [`Filter.isTrue(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isTrue(io.deephaven.api.expression.Expression))       | True if the boolean expression is true  |
+| [`Filter.isFalse(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isFalse(io.deephaven.api.expression.Expression))     | True if the boolean expression is false |
+
 ## Methods
 
 These methods control how Deephaven evaluates the filter. By default, Deephaven parallelizes filter evaluation across multiple CPU cores. Use these methods when your filter has side effects or requires coordination with other filters.
 
 ### `withSerial`
 
-Forces the filter to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the filter has side effects or depends on row order. With default settings, sources larger than about 131,072 rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `withSerial` to protect filters that can't tolerate that.
+Forces the filter to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the filter has side effects or depends on row order. With default settings, sources larger than about 131,072 rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `withSerial` to protect filters that cannot tolerate that.
 
 ```groovy order=source,result
 import io.deephaven.api.filter.Filter
@@ -59,7 +76,7 @@ result = source.where(myFilter)
 ```
 
 > [!NOTE]
-> Most filters don't need serial execution. Use `withSerial` only when the filter modifies external state or has side effects.
+> Most filters do not need serial execution. Use `withSerial` only when the filter modifies external state or has side effects.
 
 ### `withDeclaredBarriers` and `withRespectedBarriers`
 
@@ -72,21 +89,6 @@ A [barrier](./Barrier.md) is a synchronization object you create and share betwe
 
 For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
-## Filter functions
-
-The [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) interface provides static factory methods for common conditions. These return `Filter` objects that you can combine with `Filter.and`/`Filter.or` or modify with concurrency methods.
-
-| Function                                                                                                                                                  | Description                             |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| [`Filter.from(condition)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html)                                                         | Create from condition string(s)         |
-| [`Filter.isNull(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNull(io.deephaven.api.expression.Expression))       | True if the expression is null          |
-| [`Filter.isNotNull(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNotNull(io.deephaven.api.expression.Expression)) | True if the expression is not null      |
-| [`Filter.not(filter)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#not(F))                                                      | Logical NOT                             |
-| [`Filter.isNaN(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNaN(io.deephaven.api.expression.Expression))         | True if the expression is NaN           |
-| [`Filter.isNotNaN(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isNotNaN(io.deephaven.api.expression.Expression))   | True if the expression is not NaN       |
-| [`Filter.isTrue(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isTrue(io.deephaven.api.expression.Expression))       | True if the boolean expression is true  |
-| [`Filter.isFalse(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isFalse(io.deephaven.api.expression.Expression))     | True if the boolean expression is false |
-
 ## When to use Filter objects
 
 ### Do you need a Filter object at all?
@@ -94,7 +96,7 @@ The [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.
 Most of the time, no. When you pass a string condition to [`where`](../../table-operations/filter/where.md), Deephaven creates a `Filter` internally and parallelizes its evaluation across multiple cores. This works well for any condition that:
 
 - Only examines values in the current row (e.g., `"Price > 100"`).
-- Has no side effects — it doesn't modify global variables, write to files, or depend on evaluation order.
+- Has no side effects — it does not modify global variables, write to files, or depend on evaluation order.
 
 If both of those are true, use string conditions directly. There is no benefit to constructing a `Filter` object.
 

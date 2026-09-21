@@ -14,7 +14,7 @@ When using `update`, the new columns are evaluated and stored in memory. Existin
 > 3. cells are accessed many times, and/or
 > 4. a large amount of memory is available.
 >
-> When memory usage or computation needs to be reduced, consider using `select`, `view`, `updateView`, or `lazyUpdate`. These methods have different memory and computation expenses.
+> When memory usage or computation needs to be reduced, consider using [`select`](./select.md), [`view`](./view.md), `updateView`, or `lazyUpdate`. These methods have different memory and computation expenses.
 
 ## Syntax
 
@@ -73,7 +73,7 @@ For more information, see [Parallelization](../../../conceptual/query-engine/par
 
 ## Related documentation
 
-- [Choose the right selection method](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
+- [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
 - [Parallelization](../../../conceptual/query-engine/parallelization.md)

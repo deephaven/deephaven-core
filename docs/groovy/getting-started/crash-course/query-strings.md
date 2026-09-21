@@ -466,7 +466,7 @@ addVarsClass = emptyTable(1).update(
 ```
 
 > [!NOTE]
-> In the two queries above, we used `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import our class into the query library. This is a quick and easy way to make a user-defined class available in query strings. However, it is not best practice. It is recommended to define classes in their own Groovy files, and import those files via the `docker-compose.yml` file at startup. For an in-depth guide on how to do this, see [here](../../how-to-guides/install-and-use-java-packages.md).
+> In the two queries above, we used `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import our class into the query library. This is a quick and easy way to make a user-defined class available in query strings. However, it is not best practice. It is recommended to define classes in their own Groovy files, and import those files via the `docker-compose.yml` file at startup. For an in-depth guide on how to do this, see [Install and use Java packages](../../how-to-guides/install-and-use-java-packages.md).
 
 To learn more about using Groovy in query strings, see the user guides on [functions](../../how-to-guides/groovy-closures.md) and [classes](../../how-to-guides/groovy-classes.md#classes-and-objects-in-groovy).
 
@@ -497,74 +497,6 @@ result2 = compute(table, int2)
 
 For more information, see the [scoping rules](../../how-to-guides/query-scope.md).
 
-When Deephaven parallelizes a query, rows may be processed in any order across multiple CPU cores. **Stateless** functions - those whose output depends only on their inputs - produce correct results regardless of execution order. This function is stateless because each call is independent:
+### Parallel-safety of query-string functions
 
-```groovy test-set=2
-myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-
-getElementStateless = { idx ->
-    return myList[idx]
-}
-
-t = emptyTable(10).update("X = getElementStateless(ii)")
-```
-
-**Stateful** functions - those that read or modify _mutable_ external state that changes between calls - produce **incorrect results** when parallelized. (Reading fixed external state, like `myList` above, is fine — nothing changes it between calls.) Deephaven cannot automatically detect whether your code is stateful; it's your responsibility to identify stateful functions and force sequential execution with [`withSerial`](../../reference/query-language/types/Selectable.md#withserial).
-
-This stateful function increments a counter. On a large enough table, Deephaven may run this formula's calls concurrently and out of row-set order unless you mark it with `withSerial`. Without `withSerial`, this can corrupt the results:
-
-```groovy skip-test
-myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-idx = 0
-
-getNextElementStateful = {
-    idx += 1  // Each call changes idx
-    return myList[idx - 1]
-}
-
-// WRONG: parallel execution causes race conditions
-tWrong = emptyTable(10).update("X = getNextElementStateful()")
-```
-
-> [!NOTE]
-> This example uses 10 rows for illustration. By default, Deephaven evaluates a 10-row update serially, so the actual result would be 0 through 9. The duplicate/missing output below shows what would happen if the operation were parallelized.
-
-```groovy test-set=2
-import io.deephaven.api.Selectable
-
-myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-idx = 0
-
-getNextElementStateful = {
-    idx += 1
-    return myList[idx - 1]
-}
-
-// CORRECT: withSerial() ensures rows are processed one at a time, in order
-col = Selectable.parse("X = getNextElementStateful()").withSerial()
-tCorrect = emptyTable(10).update([col])
-```
-
-| Without `withSerial` (wrong) | With `withSerial` (correct) |
-| ---------------------------- | --------------------------- |
-| 0                            | 0                           |
-| 1                            | 1                           |
-| 2                            | 2                           |
-| 2                            | 3                           |
-| 4                            | 4                           |
-| 5                            | 5                           |
-| 5                            | 6                           |
-| 7                            | 7                           |
-| 8                            | 8                           |
-| 8                            | 9                           |
-
-The wrong output has duplicates (two 2s, two 5s, two 8s) and missing values (no 3, 6, or 9) because multiple cores incremented `idx` simultaneously.
-
-Serial execution forgoes the speedup of running concurrently across cores, so use it only when correctness requires it.
-
-Queries run faster when they can be parallelized. To enable parallelization:
-
-- Each row's result should depend only on that row's inputs.
-- Avoid modifying external variables.
-- Use Deephaven's built-in functions when possible.
+When Deephaven parallelizes a query, rows may be processed in any order across multiple CPU cores. Whether a function you call from a query string is safe under that comes down to whether it's **stateless** (output depends only on its inputs, like `myList[idx]`) or **stateful** (reads or modifies mutable external state that changes between calls, like a counter). See [Query parallelization](./parallelization.md) for the full picture, including a worked example of a stateful function producing corrupted output when parallelized, and how to force sequential execution with [`withSerial`](../../reference/query-language/types/Selectable.md#withserial).

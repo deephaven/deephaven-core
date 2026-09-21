@@ -22,7 +22,7 @@ These methods control how Deephaven executes the column calculation. By default,
 
 ### `with_serial`
 
-Forces the column calculation to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the formula has side effects or depends on row order. With default settings, sources larger than about 4.2 million rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `with_serial` to protect calculations that can't tolerate that. A formula backed by a Python callback, like the one below, is only eligible for that parallel (concurrent) evaluation on a free-threaded Python build — on the standard GIL-enabled build, it's never invoked concurrently. However, that alone doesn't guarantee row-set order the way `with_serial` does: use `with_serial` for any formula with order-dependent side effects, regardless of Python build. The example below uses 10 rows for clarity — well below the parallelization threshold, so it demonstrates correctness rather than an observable speedup difference.
+Forces the column calculation to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the formula has side effects or depends on row order. With default settings, sources larger than about 4.2 million rows are eligible for parallel evaluation (the exact threshold depends on engine configuration); use `with_serial` to protect calculations that cannot tolerate that. A formula backed by a Python callback, like the one below, is only eligible for that parallel (concurrent) evaluation on a free-threaded Python build — on the standard GIL-enabled build, it is never invoked concurrently. However, that alone doesn't guarantee row-set order the way `with_serial` does: use `with_serial` for any formula with order-dependent side effects, regardless of Python build. The example below uses 10 rows for clarity — well below the parallelization threshold, so it demonstrates correctness rather than an observable speedup difference.
 
 ```python order=result
 from deephaven.table import Selectable
@@ -62,7 +62,7 @@ For the full reference, constraints, and worked examples, see [Barrier](./Barrie
 Most of the time, no. When you pass a string formula to [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md), Deephaven creates a `Selectable` internally and parallelizes the computation across multiple cores. This is the default behavior and it works well for any formula that:
 
 - Only uses values from the current row (e.g., `"Total = Price * Quantity"`).
-- Has no side effects — it doesn't modify global variables, write to files, or depend on processing order.
+- Has no side effects — it does not modify global variables, write to files, or depend on processing order.
 
 If both of those are true, use string formulas directly. There is no benefit to constructing a `Selectable` object.
 
@@ -78,7 +78,7 @@ You need a `Selectable` object when parallel execution would produce incorrect r
 
 **Use barriers** when you have multiple columns with shared state and one column must finish all its rows before another column starts. See [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
 
-If you're unsure whether your formula is safe for parallel execution, ask: "Would this produce the same result if the rows were processed in a random order by multiple threads?" If the answer is no, you need a `Selectable`.
+If you are unsure whether your formula is safe for parallel execution, ask: "Would this produce the same result if the rows were processed in a random order by multiple threads?" If the answer is no, you need a `Selectable`.
 
 ## Related documentation
 

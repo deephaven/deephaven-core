@@ -14,7 +14,7 @@ When using `update_view`, the new columns are not stored in memory. Rather, a fo
 > 3. cells are accessed very few times, or
 > 4. memory usage must be minimized.
 >
-> For other cases, consider using `select`, `view`, `update`, or `lazy_update`. These methods have different memory and computation expenses.
+> For other cases, consider using [`select`](./select.md), [`view`](./view.md), `update`, or `lazy_update`. These methods have different memory and computation expenses.
 
 > [!CAUTION]
 > When using [`view`](./view.md) or `update_view`, non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](./select.md) or [`update`](./update.md) instead.
@@ -65,6 +65,7 @@ result = source.update_view(formulas=["X = B", "Y = sqrt(C)"])
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [Parallelizing queries](../../../conceptual/query-engine/parallelization.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#updateView(java.lang.String...))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update_view)

@@ -77,7 +77,7 @@ For live (refreshing) tables, Deephaven also registers the table in the [update 
 
 **Updates**: After initialization, live tables update whenever their source data changes, parallelizing across rows and across columns just like during initialization, plus across tables: independent downstream tables' update-graph notifications are processed concurrently, so two tables that both depend on the same changed source can each finish updating on their own core without waiting for each other. This is handled by the **Update Graph Processor Thread Pool**, configured with `PeriodicUpdateGraph.updateThreads` (default `-1`, meaning use all available cores).
 
-Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors()`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) at startup. Set either property to a specific number to limit parallelism during that phase.
+Both thread pools default to using all CPU cores, determined by [`Runtime.availableProcessors`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Runtime.html#availableProcessors()) at startup. Set either property to a specific number to limit parallelism during that phase.
 
 ## When parallelization is safe by default
 
@@ -186,6 +186,8 @@ result = emptyTable(5_000_000).update([col])
 
 When a Selectable is serial, every row is evaluated in order (row 0, then row 1, then row 2, etc.), only one thread processes the column at a time, and global state updates happen sequentially without race conditions.
 
+#### Serial filters
+
 The same applies to filters. Deephaven parallelizes string-based filters in [`where`](../../reference/table-operations/filter/where.md) by default, so construct `Filter` objects explicitly when a filter has stateful side effects:
 
 ```groovy order=result
@@ -270,7 +272,7 @@ Barriers work the same way for [`Filter`](../../reference/query-language/types/F
 
 #### Implicit barriers
 
-When `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is enabled, serial operations automatically create barriers between each other — two serial columns in the same `update` will execute one after the other without explicit barriers. This behavior is controlled by the `QueryTable.serialSelectImplicitBarriers` configuration property:
+When `QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS` is enabled, serial operations automatically create barriers between each other — two serial columns in the same `update` execute one after the other without explicit barriers. This behavior is controlled by the `QueryTable.serialSelectImplicitBarriers` configuration property:
 
 - **Stateless mode (default)**: Serial operations only enforce row order within themselves, not between each other. Use explicit barriers if you need cross-operation ordering.
 - **Stateful mode**: Serial operations automatically wait for each other. This is useful when operations share global state. Enable by setting `QueryTable.serialSelectImplicitBarriers=true`.

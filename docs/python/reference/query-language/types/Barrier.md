@@ -141,6 +141,6 @@ Execution order:
 ## Related documentation
 
 - [ConcurrencyControl](./ConcurrencyControl.md) — The interface that provides `with_declared_barriers` and `with_respected_barriers`
-- [Barrier Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier)
 - [Selectable](./Selectable.md) — Uses barriers to coordinate column calculations
 - [Filter](./Filter.md) — Uses barriers to coordinate filters
+- [Barrier Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier)

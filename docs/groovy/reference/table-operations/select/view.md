@@ -14,7 +14,7 @@ When using `view`, the data being requested is not stored in memory. Rather, a f
 > 3. cells are accessed very few times, or
 > 4. memory usage must be minimized.
 >
-> When memory usage or computation needs to be reduced, consider using `select`, `updateView`, `update`, or `lazyUpdate`. These methods have different memory and computation expenses.
+> When memory usage or computation needs to be reduced, consider using [`select`](./select.md), [`updateView`](./update-view.md), [`update`](./update.md), or [`lazyUpdate`](./lazy-update.md). These methods have different memory and computation expenses.
 
 > [!CAUTION]
 > When using `view` or [`updateView`](./update-view.md), non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](./select.md) or [`update`](./update.md) instead.

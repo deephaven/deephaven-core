@@ -5,7 +5,7 @@ title: where
 The `where` method filters rows of data from the source table.
 
 > [!NOTE]
-> The engine will address filters in series, consistent with the ordering of arguments. It is _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded. Additionally, match filters are highly optimized and should usually come before conditional filters.
+> The engine addresses filters in series, consistent with the ordering of arguments. It is _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded. Additionally, match filters are highly optimized and should usually come before conditional filters.
 
 ## Syntax
 
@@ -116,7 +116,7 @@ source = new_table(
 result = source.where_one_of(filters=["Color = `blue`", "Number > 3"])
 ```
 
-The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)` — this is required whenever the engine can't statically determine the function's return type, which is the case here because `my_filter` has no return type hint. A function annotated `-> bool` doesn't need the cast.
+The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)` — this is required whenever the engine cannot statically determine the function's return type, which is the case here because `my_filter` has no return type hint. A function annotated `-> bool` does not need the cast.
 
 ```python order=source,result_filtered,result_not_filtered
 from deephaven import new_table
@@ -137,7 +137,7 @@ result_not_filtered = source.where(filters=["!((boolean)my_filter(IntegerColumn)
 
 By default, Deephaven parallelizes filter evaluation across multiple CPU cores. For filters with side effects or order dependencies, use [`with_serial`](../../query-language/types/Filter.md#with_serial) to force sequential processing.
 
-This filter tracks how many rows it evaluates. On a source with more than 131,072 rows, the filter becomes eligible for parallel evaluation — it isn't guaranteed to run in parallel, since that also depends on available worker threads and, for a Python-backed filter, a free-threaded Python build; a standard GIL-enabled build never invokes it concurrently. That's a narrower guarantee than `with_serial` provides, though: without `with_serial`, the engine can still evaluate this filter out of row-set order on any Python build — so use `with_serial` to protect a filter like this regardless of build. The example below uses 100 rows for clarity.
+This filter tracks how many rows it evaluates. On a source with more than 131,072 rows, the filter becomes eligible for parallel evaluation — it is not guaranteed to run in parallel, since that also depends on available worker threads and, for a Python-backed filter, a free-threaded Python build; a standard GIL-enabled build never invokes it concurrently. This is a narrower guarantee than `with_serial` provides, though: without `with_serial`, the engine can still evaluate this filter out of row-set order on any Python build — so use `with_serial` to protect a filter like this regardless of build. The example below uses 100 rows for clarity.
 
 ```python order=source,result
 from deephaven.filters import Filter

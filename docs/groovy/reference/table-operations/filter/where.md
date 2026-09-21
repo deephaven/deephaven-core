@@ -5,7 +5,7 @@ title: where
 The `where` method filters rows of data from the source table.
 
 > [!NOTE]
-> The engine will address filters in series, consistent with the ordering of arguments. It is _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded. Additionally, match filters are highly optimized and should usually come before conditional filters.
+> The engine addresses filters in series, consistent with the ordering of arguments. It is _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded. Additionally, match filters are highly optimized and should usually come before conditional filters.
 
 ## Syntax
 
@@ -18,12 +18,7 @@ table.where(filters...)
 <ParamTable>
 <Param name="filters" type="String...">
 
-Formula for filtering.
-
-Filters can be:
-
-- A match filter. <!--TODO: add links [#474](https://github.com/deephaven/deephaven.io/issues/474) -->
-- A conditional filter. This may be a custom boolean function. <!--TODO: add links [#201](https://github.com/deephaven/deephaven.io/issues/201) -->
+Formulas for filtering as a list of [Strings](../../query-language/types/strings.md).
 
 </Param>
 <Param name="filters" type="Collection">
@@ -94,7 +89,7 @@ source = newTable(
 result = source.where(FilterOr.of(Filter.from("Color = `blue`", "Number > 3")))
 ```
 
-The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)` — this is required because `my_filter` is a closure, whose return type Groovy can't statically determine at compile time. A native method with a declared `boolean` return type doesn't need the cast.
+The following shows how to apply a custom function as a filter. Take note that the function call must be explicitly cast to a `(boolean)` — this is required because `my_filter` is a closure, whose return type Groovy cannot statically determine at compile time. A native method with a declared `boolean` return type does not need the cast.
 
 ```groovy order=source,result_filtered,result_not_filtered
 my_filter = { int a -> a <= 4 }
@@ -111,7 +106,7 @@ result_not_filtered = source.where("!((boolean)my_filter(IntegerColumn))")
 
 By default, Deephaven parallelizes filter evaluation across multiple CPU cores. For filters with side effects or order dependencies, use [`withSerial`](../../query-language/types/Filter.md#withserial) to force sequential processing.
 
-This filter tracks how many rows it evaluates. On a source with more than 131,072 rows, the filter becomes eligible for parallel evaluation — it isn't guaranteed to run in parallel, since that also depends on available worker threads and a parallel-capable filter — and the counter could produce incorrect results if it does. The example below uses 100 rows for clarity; use `withSerial` to protect larger inputs:
+This filter tracks how many rows it evaluates. On a source with more than 131,072 rows, the filter becomes eligible for parallel evaluation — it is not guaranteed to run in parallel, since that also depends on available worker threads and a parallel-capable filter — and the counter could produce incorrect results if it does. The example below uses 100 rows for clarity; use `withSerial` to protect larger inputs:
 
 ```groovy order=source,result
 import io.deephaven.api.filter.Filter
@@ -125,7 +120,7 @@ checkValue = { int x ->
 
 source = emptyTable(100).update("X = i")
 
-// Use .withSerial because the filter has side effects
+// Use withSerial because the filter has side effects
 // Filter.from() returns a collection; [0] gets the single filter
 f = Filter.from("(boolean)checkValue(X)")[0].withSerial()
 result = source.where(f)
@@ -140,9 +135,9 @@ See [Parallelization](../../../conceptual/query-engine/parallelization.md) for m
 - [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [Filter](../../query-language/types/Filter.md)
 - [equals](../../query-language/match-filters/equals.md)
-- [icase in](../../query-language/match-filters/icase-in.md)
-- [icase not in](../../query-language/match-filters/icase-not-in.md)
-- [in](../../query-language/match-filters/in.md)
-- [not equals](../../query-language/match-filters/not-equals.md)
-- [not in](../../query-language/match-filters/not-in.md)
+- [`icase in`](../../query-language/match-filters/icase-in.md)
+- [`icase not in`](../../query-language/match-filters/icase-not-in.md)
+- [`in`](../../query-language/match-filters/in.md)
+- [not equals (`!=`)](../../query-language/match-filters/not-equals.md)
+- [`not in`](../../query-language/match-filters/not-in.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#where(java.lang.String...))
