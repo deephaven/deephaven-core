@@ -171,9 +171,9 @@ Build the wheel, install it, and start the server. Note that this has to be re-r
 ```sh
 ./gradlew py-server:assemble
 
-# Uninstall if previously built since snapshot builds reuse same version string
-pip uninstall -y deephaven-core
-pip install 'py/server/build/wheel/deephaven_core-<version>-py3-none-any.whl[autocomplete]'
+# --force-reinstall because snapshot builds reuse the same version string, so a plain
+# install would treat the new wheel as already satisfied and silently do nothing
+pip install --force-reinstall 'py/server/build/wheel/deephaven_core-<version>-py3-none-any.whl[autocomplete]'
 ./gradlew server-jetty-app:run
 ```
 
@@ -254,7 +254,7 @@ right = new_table([
 t = left.join(right, "DeptID", "DeptName, DeptTelephone=Telephone")
 ```
 
-![alt_text](docs/images/ide_first_query.png 'Deephaven IDE First Query')
+![alt_text](docs/images/ide_first_query.png "Deephaven IDE First Query")
 
 ### Groovy
 
@@ -274,7 +274,7 @@ right = newTable(
 t = left.join(right, "DeptID", "DeptName, DeptTelephone=Telephone")
 ```
 
-![alt_text](docs/images/ide_first_query.png 'Deephaven IDE First Query')
+![alt_text](docs/images/ide_first_query.png "Deephaven IDE First Query")
 
 ## Resources
 
