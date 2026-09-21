@@ -3665,4 +3665,46 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 listener.getUpdate().modifiedColumnSet().containsAny(rightColumns));
         listener.close();
     }
+
+    /**
+     * A right modification of a row that no left row matches, in the same cycle as a modification of a left row's own
+     * (non-key) column: the result reports the left row as modified with only the left table's columns in the modified
+     * column set, since no left row's right values changed.
+     */
+    public void testRightModifyOfUnmatchedRowDoesNotMarkRightColumnForLeftModification() {
+        final QueryTable left = testRefreshingTable(i(0, 1).toTracking(),
+                stringCol("Key", "a", "b"), intCol("L", 1, 2));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(),
+                stringCol("Key", "a", "c"), intCol("R", 10, 30));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "R");
+        assertTableEquals(newTable(stringCol("Key", "a", "b"), intCol("L", 1, 2),
+                intCol("R", 10, NULL_INT)), result);
+
+        final ModifiedColumnSet rightColumn = result.newModifiedColumnSet("R");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // the unmatched right row "c" changes its value
+            addToTable(right, i(1), stringCol("Key", "c"), intCol("R", 31));
+            right.notifyListeners(new TableUpdateImpl(i(), i(),
+                    i(1), RowSetShiftData.EMPTY, right.newModifiedColumnSet("R")));
+            // the left row "b" changes its own value
+            addToTable(left, i(1), stringCol("Key", "b"), intCol("L", 20));
+            left.notifyListeners(new TableUpdateImpl(i(), i(),
+                    i(1), RowSetShiftData.EMPTY, left.newModifiedColumnSet("L")));
+        });
+
+        assertTableEquals(newTable(stringCol("Key", "a", "b"), intCol("L", 1, 20),
+                intCol("R", 10, NULL_INT)), result);
+        assertEquals(1, listener.getCount());
+        final TableUpdate update = listener.getUpdate();
+        assertEquals(i(1), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(result.newModifiedColumnSet("L")));
+        assertFalse("R is marked modified although no result row's R changed: " + update.modifiedColumnSet(),
+                update.modifiedColumnSet().containsAny(rightColumn));
+        listener.close();
+    }
 }

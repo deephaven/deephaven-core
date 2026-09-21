@@ -700,6 +700,7 @@ class NaturalJoinHelper {
         private final NaturalJoinType joinType;
         private final ModifiedColumnSet allRightColumns;
         private final ModifiedColumnSet rightKeyColumns;
+        private final ModifiedColumnSet rightAddedColumns;
         private final ModifiedColumnSet.Transformer rightTransformer;
         private final NaturalJoinModifiedSlotTracker modifiedSlotTracker = new NaturalJoinModifiedSlotTracker();
 
@@ -715,6 +716,7 @@ class NaturalJoinHelper {
             this.joinType = joinType;
 
             rightKeyColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
+            rightAddedColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToAdd));
             allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
             rightTransformer = rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
         }
@@ -771,9 +773,8 @@ class NaturalJoinHelper {
                         }
                     }
 
-                    final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                    rightTransformer.clearAndTransform(upstream.modifiedColumnSet(), modifiedColumnSet);
-                    addedRightColumnsChanged = modifiedColumnSet.size() != 0;
+                    addedRightColumnsChanged = upstream.modified().isNonempty()
+                            && upstream.modifiedColumnSet().containsAny(rightAddedColumns);
 
                     if (changedKeysPostShift != null) {
                         jsm.addRightSide(pc, changedKeysPostShift, rightSources, modifiedSlotTracker);
@@ -801,6 +802,10 @@ class NaturalJoinHelper {
                     joinType, addedRightColumnsChanged);
             modifiedSlotTracker.forAllModifiedSlots(slotUpdater);
             final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+            modifiedColumnSet.clear();
+            if (slotUpdater.rightValuesModified) {
+                rightTransformer.transform(upstream.modifiedColumnSet(), modifiedColumnSet);
+            }
             if (slotUpdater.selectedRightRowChanged) {
                 modifiedColumnSet.setAll(allRightColumns);
             }
@@ -826,6 +831,12 @@ class NaturalJoinHelper {
          * right row at a shifted key), in which case every added column may have a new value.
          */
         boolean selectedRightRowChanged = false;
+        /**
+         * Whether some slot's left rows are reported as modified because the right row they select had an added column
+         * modified (a modify probe reached the slot), in which case the right table's modified added columns have new
+         * values for them.
+         */
+        boolean rightValuesModified = false;
 
         private ModifiedSlotUpdater(IncrementalNaturalJoinStateManager jsm, RowSetBuilderRandom modifiedLeftBuilder,
                 WritableRowRedirection rowRedirection, NaturalJoinType joinType, boolean rightAddedColumnsChanged) {
@@ -884,6 +895,9 @@ class NaturalJoinHelper {
                 // we do not want to mark the state as modified if the only thing that changed was a shift
                 // otherwise we know the left side is modified
                 modifiedLeftBuilder.addRowSet(leftIndices);
+                if ((flag & NaturalJoinModifiedSlotTracker.FLAG_RIGHT_MODIFY_PROBE) != 0) {
+                    rightValuesModified = true;
+                }
             }
 
             // but we might not need to update the row redirection
@@ -914,6 +928,7 @@ class NaturalJoinHelper {
         private final NaturalJoinType joinType;
         private final ModifiedColumnSet rightKeyColumns;
         private final ModifiedColumnSet leftKeyColumns;
+        private final ModifiedColumnSet rightAddedColumns;
         private final ModifiedColumnSet allRightColumns;
         private final ModifiedColumnSet.Transformer rightTransformer;
         private final ModifiedColumnSet.Transformer leftTransformer;
@@ -946,6 +961,7 @@ class NaturalJoinHelper {
 
             rightKeyColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
             leftKeyColumns = leftTable.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToMatch));
+            rightAddedColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToAdd));
             allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
 
             leftTransformer = leftTable.newModifiedColumnSetTransformer(result,
@@ -987,8 +1003,8 @@ class NaturalJoinHelper {
                         jsm.removeRight(pc, rightRemoved, rightSources, modifiedSlotTracker);
                     }
 
-                    rightTransformer.transform(rightModifiedColumns, modifiedColumnSet);
-                    addedRightColumnsChanged = modifiedColumnSet.size() > 0;
+                    addedRightColumnsChanged =
+                            rightModified.isNonempty() && rightModifiedColumns.containsAny(rightAddedColumns);
 
                     // the modified rows whose key value actually changed (null when the key columns were not
                     // modified); the other modified rows keep their hash slot
@@ -1155,6 +1171,9 @@ class NaturalJoinHelper {
             final ModifiedSlotUpdater slotUpdater = new ModifiedSlotUpdater(jsm, modifiedLeftBuilder, rowRedirection,
                     joinType, addedRightColumnsChanged);
             modifiedSlotTracker.forAllModifiedSlots(slotUpdater);
+            if (slotUpdater.rightValuesModified) {
+                rightTransformer.transform(rightRecorder.getModifiedColumnSet(), modifiedColumnSet);
+            }
             if (slotUpdater.selectedRightRowChanged) {
                 modifiedColumnSet.setAll(allRightColumns);
             }
