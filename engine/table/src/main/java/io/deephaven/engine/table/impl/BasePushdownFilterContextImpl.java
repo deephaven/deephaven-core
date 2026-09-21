@@ -191,8 +191,17 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Table nullTestDummyTable = TableTools.newTable(1, columnSourceMap);
             final TrackingRowSet rowSet = nullTestDummyTable.getRowSet();
-            try (final RowSet result = filter.filter(rowSet, rowSet, nullTestDummyTable, false)) {
-                return result.isEmpty() ? FilterNullBehavior.EXCLUDES_NULLS : FilterNullBehavior.INCLUDES_NULLS;
+            try {
+                // Probe a copy rather than this context's own filter. filter() is not guaranteed to be free of side
+                // effects, so probing the live object would initialize any state the filter carries against the dummy
+                // table instead of the real one. The copy is init'ed against the dummy definition because copy() is
+                // not required to preserve initialization; init() is idempotent for filters whose copy does preserve
+                // it.
+                final WhereFilter probeFilter = filter.copy();
+                probeFilter.init(nullTestDummyTable.getDefinition());
+                try (final RowSet result = probeFilter.filter(rowSet, rowSet, nullTestDummyTable, false)) {
+                    return result.isEmpty() ? FilterNullBehavior.EXCLUDES_NULLS : FilterNullBehavior.INCLUDES_NULLS;
+                }
             } catch (final Exception e) {
                 return FilterNullBehavior.FAILS_ON_NULLS;
             }

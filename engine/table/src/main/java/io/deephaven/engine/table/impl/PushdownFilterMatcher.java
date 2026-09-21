@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.select.NoPredicatePushdown;
+import io.deephaven.engine.table.impl.select.ReindexingFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 
@@ -139,6 +140,14 @@ public interface PushdownFilterMatcher {
     /**
      * Check if the given filter can be pushed down.
      *
+     * <p>
+     * {@link ReindexingFilter}s are excluded because their
+     * {@link WhereFilter#filter(RowSet, RowSet, io.deephaven.engine.table.Table, boolean) filter()} call is not a pure
+     * predicate: it establishes the row set that subsequent filters must see, and implementations such as
+     * {@link io.deephaven.engine.table.impl.select.ClockFilter ClockFilter} use it to initialize the state their
+     * per-cycle refresh consumes. A pushdown that fully resolves the filter would skip that call entirely.
+     * </p>
+     *
      * @param filter The {@link WhereFilter filter} to check.
      * @return {@code true} if the filter can be pushed down, {@code false} otherwise.
      */
@@ -146,6 +155,7 @@ public interface PushdownFilterMatcher {
         return !filter.getColumns().isEmpty()
                 && !filter.hasVirtualRowVariables()
                 && filter.getColumnArrays().isEmpty()
-                && !(filter instanceof NoPredicatePushdown);
+                && !(filter instanceof NoPredicatePushdown)
+                && !(filter instanceof ReindexingFilter);
     }
 }
