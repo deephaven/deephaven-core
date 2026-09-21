@@ -3818,6 +3818,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (startPos >= size) {
                 break;
             }
+            // Our spans before startPos are settled, so other's spans that end before our next one begins have
+            // nothing left to remove. Jumping over them is what keeps the pass proportional to us rather than to
+            // other. The jump stops at the last span of other whose key is still at or below ours, which is the
+            // lowest one that can reach our next span: spans are disjoint and ascending, so any earlier one ends
+            // below that key.
+            andNotIdx = other.lastSpanIndexNotAbove(andNotIdx + 1, getKey(startPos)) - 1;
         }
         applyPendingSpanEdits(pending, madeNullSpansMu);
     }

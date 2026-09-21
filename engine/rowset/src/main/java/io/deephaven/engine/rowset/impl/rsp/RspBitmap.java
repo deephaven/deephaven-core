@@ -2209,37 +2209,45 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     @Override
     public OrderedLongSet ixRetain(final OrderedLongSet other) {
-        return retainImpl(other, this::getWriteRef);
+        return retainImpl(other, true);
     }
 
     public OrderedLongSet ixRetainNoWriteCheck(final OrderedLongSet other) {
-        return retainImpl(other, () -> this);
+        return retainImpl(other, false);
     }
 
-    private OrderedLongSet retainImpl(final OrderedLongSet other, Supplier<RspBitmap> refSupplier) {
+    private OrderedLongSet retainImpl(final OrderedLongSet other, final boolean writeCheck) {
         if (isEmpty() || other.ixIsEmpty() || last() < other.ixFirstKey() || other.ixLastKey() < first()) {
             return OrderedLongSet.EMPTY;
         }
         if (other instanceof SingleRange) {
-            return refSupplier.get().ixRetainRange(other.ixFirstKey(), other.ixLastKey());
+            final RspBitmap ans = writeCheck ? getWriteRef() : this;
+            return ans.ixRetainRange(other.ixFirstKey(), other.ixLastKey());
         }
         if (other instanceof SortedRanges) {
             final SortedRanges sr = (SortedRanges) other;
             final OrderedLongSet ans = sr.intersectOnNew(this);
-            return (ans != null) ? ans : retainImpl(sr.toRsp(), refSupplier);
+            return (ans != null) ? ans : retainImpl(sr.toRsp(), writeCheck);
         }
         final RspBitmap o = (RspBitmap) other;
-        return retainImpl(o, refSupplier);
+        return retainImpl(o, writeCheck);
     }
 
-    private static OrderedLongSet retainImpl(final RspBitmap other, Supplier<RspBitmap> refSupplier) {
-        final RspBitmap ans = refSupplier.get();
+    private OrderedLongSet retainImpl(final RspBitmap other, final boolean writeCheck) {
+        final RspBitmap ans = writeCheck ? getWriteRef() : this;
         ans.andEqualsUnsafeNoWriteCheck(other);
         if (ans.isEmpty()) {
+            if (ans != this) {
+                ans.ixRelease();
+            }
             return OrderedLongSet.EMPTY;
         }
         ans.finishMutations();
-        return ans;
+        final OrderedLongSet compacted = ans.ixCompact();
+        if (compacted != ans && ans != this) {
+            ans.ixRelease();
+        }
+        return compacted;
     }
 
     @Override
@@ -2269,10 +2277,17 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         }
         if (mayHaveChanged) {
             if (ans.isEmpty()) {
+                if (ans != this) {
+                    ans.ixRelease();
+                }
                 return OrderedLongSet.EMPTY;
             }
             ans.finishMutations();
-            return ans;
+            final OrderedLongSet compacted = ans.ixCompact();
+            if (compacted != ans && ans != this) {
+                ans.ixRelease();
+            }
+            return compacted;
         }
         return this;
     }
@@ -2322,7 +2337,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             final SortedRanges sr = (SortedRanges) other;
             return sr.intersectOnNew(this);
         }
-        return RspBitmap.and(this, (RspBitmap) other);
+        final RspBitmap ans = RspBitmap.and(this, (RspBitmap) other);
+        final OrderedLongSet compacted = ans.ixCompact();
+        if (compacted != ans) {
+            ans.ixRelease();
+        }
+        return compacted;
     }
 
     @Override
@@ -2424,26 +2444,43 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     @Override
     public OrderedLongSet ixMinusOnNew(final OrderedLongSet other) {
+        // first() and last() below read our spans directly, unlike the ixFirstKey()/ixLastKey() accessors, so an
+        // empty receiver has to be answered here. SortedRanges and ixRemove answer it the same way.
+        if (isEmpty()) {
+            return OrderedLongSet.EMPTY;
+        }
         if (other.ixIsEmpty()) {
             return cowRef();
         }
+        // Nothing of ours lies in other's span of keys, so the result is us: hand back a reference rather than
+        // copying ourselves only to remove nothing from the copy. SingleRange and SortedRanges detect this too.
+        if (last() < other.ixFirstKey() || other.ixLastKey() < first()) {
+            return cowRef();
+        }
+        final RspBitmap ans;
         if (other instanceof SingleRange) {
             if (other.ixFirstKey() <= ixFirstKey() && ixLastKey() <= other.ixLastKey()) {
                 return OrderedLongSet.EMPTY;
             }
-            final RspBitmap ans = deepCopy();
+            ans = deepCopy();
             ans.removeRangeUnsafeNoWriteCheck(other.ixFirstKey(), other.ixLastKey());
             ans.finishMutations();
-            return ans;
-        }
-        if (other instanceof SortedRanges) {
-            final RspBitmap ans = deepCopy();
+        } else if (other instanceof SortedRanges) {
+            ans = deepCopy();
             final SortedRanges sr = (SortedRanges) other;
             ans.removeRangesUnsafeNoWriteCheck(sr.getRangeIterator());
             ans.finishMutations();
-            return ans;
+        } else {
+            ans = RspBitmap.andNot(this, (RspBitmap) other);
         }
-        return RspBitmap.andNot(this, (RspBitmap) other);
+        // A minus can only shrink, so as with the subindex operations it pays off to check for compacting the
+        // result: left as a bitmap, a result that has become a handful of ranges makes every later operation on it
+        // pay bitmap costs. tryCompact gives up on cardinality before doing any work, so a large result is cheap.
+        final OrderedLongSet compacted = ans.ixCompact();
+        if (compacted != ans) {
+            ans.ixRelease();
+        }
+        return compacted;
     }
 
     @Override
