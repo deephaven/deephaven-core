@@ -578,7 +578,7 @@ public abstract class QueryTableWhereTest {
         assertThrows(CancellationException.class,
                 () -> ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), columnSource, false, interrupting));
 
-        log.debug().append("Invoked Values: " + interrupting.invokedValues).endl();
+        System.out.println("Invoked Values: " + interrupting.invokedValues);
         assertEquals(ChunkFilter.INITIAL_INTERRUPTION_SIZE, interrupting.invokedValues);
     }
 
