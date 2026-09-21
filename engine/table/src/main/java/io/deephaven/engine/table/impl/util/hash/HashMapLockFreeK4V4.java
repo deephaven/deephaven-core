@@ -59,10 +59,17 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
     public void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values,
             WritableLongChunk<? extends Any> oldValues) {
         final int size = keys.size();
+        // Unlike get, the volatile read is NOT hoisted: any put may rehash, so each element must see the array
+        // that the previous element may have replaced. The reciprocal rides in a register-local memo, refreshed
+        // from the new array's own header whenever the array changes (a load, not a divide: every array carries
+        // its reciprocal).
+        long[] kvs = keysAndValues;
+        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
-            // Unlike get, the volatile read is NOT hoisted: any put may rehash, so each element must see the array
-            // that the previous element may have replaced.
-            oldValues.set(ii, putImpl(keysAndValues, keys.get(ii), values.get(ii), false));
+            oldValues.set(ii, putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), false));
+            // Hot reads: cheap, and free of a stale-check branch; kvs is non-null once putImpl has run.
+            kvs = keysAndValues;
+            numBucketsReciprocal = reciprocalOf(kvs);
         }
         oldValues.setSize(size);
     }
@@ -71,8 +78,14 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
     public void putIfAbsent(LongChunk<? extends Any> keys, LongChunk<? extends Any> values,
             WritableLongChunk<? extends Any> oldValues) {
         final int size = keys.size();
+        // Same volatile-read and reciprocal-memo discipline as put.
+        long[] kvs = keysAndValues;
+        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
-            oldValues.set(ii, putImpl(keysAndValues, keys.get(ii), values.get(ii), true));
+            oldValues.set(ii, putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), true));
+            // Hot reads: cheap, and free of a stale-check branch; kvs is non-null once putImpl has run.
+            kvs = keysAndValues;
+            numBucketsReciprocal = reciprocalOf(kvs);
         }
         oldValues.setSize(size);
     }
@@ -80,17 +93,25 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
     @Override
     public void put(LongChunk<? extends Any> keys, LongChunk<? extends Any> values) {
         final int size = keys.size();
+        // As above: the array is re-read per element, because any put may rehash; the reciprocal rides along.
+        long[] kvs = keysAndValues;
+        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
-            // As above: the volatile read is not hoisted, because any put may rehash.
-            putImpl(keysAndValues, keys.get(ii), values.get(ii), false);
+            putImpl(kvs, numBucketsReciprocal, keys.get(ii), values.get(ii), false);
+            kvs = keysAndValues;
+            numBucketsReciprocal = reciprocalOf(kvs);
         }
     }
 
     @Override
     public void put(LongChunk<? extends Any> keys, long value) {
         final int size = keys.size();
+        long[] kvs = keysAndValues;
+        long numBucketsReciprocal = kvs == null ? 0 : reciprocalOf(kvs);
         for (int ii = 0; ii < size; ++ii) {
-            putImpl(keysAndValues, keys.get(ii), value, false);
+            putImpl(kvs, numBucketsReciprocal, keys.get(ii), value, false);
+            kvs = keysAndValues;
+            numBucketsReciprocal = reciprocalOf(kvs);
         }
     }
 
@@ -99,6 +120,9 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
         // Take the volatile read once: like every read operation, a chunked get sees one consistent snapshot of the
         // array.
         final long[] localKvs = keysAndValues;
+        // The reciprocal comes from the snapshot's own header — published with the array and immutable
+        // thereafter, so it cannot tear against it.
+        final long numBucketsReciprocal = localKvs == null ? 0 : reciprocalOf(localKvs);
         final int size = keys.size();
         if (localKvs == null) {
             // Never populated, or reset: every key is a miss, and we need not probe to know it.
@@ -107,7 +131,7 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
             return;
         }
         for (int ii = 0; ii < size; ++ii) {
-            result.set(ii, getImpl(localKvs, keys.get(ii)));
+            result.set(ii, getImpl(localKvs, numBucketsReciprocal, keys.get(ii)));
         }
         result.setSize(size);
     }
@@ -117,9 +141,11 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
         // Like get (and unlike put), the volatile read is hoisted: removeImpl tombstones slots in place and never
         // rehashes, so no element can replace the array a later element must see.
         final long[] localKvs = keysAndValues;
+        // Same header-borne reciprocal as get.
+        final long numBucketsReciprocal = localKvs == null ? 0 : reciprocalOf(localKvs);
         final int size = keys.size();
         for (int ii = 0; ii < size; ++ii) {
-            oldValues.set(ii, removeImpl(localKvs, keys.get(ii)));
+            oldValues.set(ii, removeImpl(localKvs, numBucketsReciprocal, keys.get(ii)));
         }
         oldValues.setSize(size);
     }

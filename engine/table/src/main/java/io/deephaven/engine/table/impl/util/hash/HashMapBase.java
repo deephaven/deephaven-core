@@ -112,37 +112,66 @@ public abstract class HashMapBase implements NullableLongLongMap {
         return (int) (((long) desiredEntryCapacity + entriesPerBucket - 1) / entriesPerBucket);
     }
 
+    // After the bucket data, the keys-and-values array carries a one-long header: the fastmod reciprocal of
+    // the bucket count. It is written while the array is being built and is published by the same volatile
+    // store that publishes the buckets; it is never mutated afterwards. Whoever holds an array therefore holds
+    // its reciprocal — this state cannot tear against a snapshot, which is the invariant all reader-visible
+    // probing state must satisfy: be a pure function of the array snapshot, or travel inside it.
+    //
+    // The header slot may share a cache line with the last buckets, or with the neighboring heap object.
+    // Accepted: an invalidation requires someone else to write the sharing partner while a reader holds the
+    // line — rare in both cases — and costs one line re-fetch. The rule is to pad against certainties, not
+    // possibilities: if this header ever gains writer-hot state (e.g. size, written on every put), that is
+    // guaranteed sharing, and a no-man's-land margin between the read-mostly and writer-hot regions becomes
+    // mandatory at that point.
+    static final int HEADER_LONGS = 1;
+
+    /**
+     * The fastmod reciprocal of {@code kvs}'s bucket count, read from the array's own header — published with the array
+     * and immutable thereafter, so it cannot tear against the snapshot in hand.
+     */
+    static long reciprocalOf(long[] kvs) {
+        return kvs[kvs.length - 1];
+    }
+
+    private static void writeReciprocal(long[] kvs, long reciprocal) {
+        kvs[kvs.length - 1] = reciprocal;
+    }
+
     long[] allocateKeysAndValuesArray(int entriesPerBucket) {
         final int desiredNumBuckets = desiredBucketCount(desiredInitialCapacity, entriesPerBucket);
-        final int longCapacity = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
-        final long[] keysAndValues = new long[longCapacity];
+        final int dataLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
+        final long[] keysAndValues = new long[dataLongs + HEADER_LONGS];
+        writeReciprocal(keysAndValues, reciprocalFor(dataLongs / (entriesPerBucket * 2)));
         setKeysAndValues(keysAndValues);
         return keysAndValues;
     }
 
     void rehash(long[] oldKeysAndValues, boolean wantResize, int entriesPerBucket) {
-        final int oldNumLongs = oldKeysAndValues.length;
+        final int oldDataLongs = oldKeysAndValues.length - HEADER_LONGS;
 
-        final int newNumLongs;
+        final int newDataLongs;
         if (wantResize) {
-            final int oldBucketCapacity = oldNumLongs / (entriesPerBucket * 2);
+            final int oldBucketCapacity = oldDataLongs / (entriesPerBucket * 2);
             final int desiredNumBuckets = grownBucketCount(oldBucketCapacity, entriesPerBucket);
-            newNumLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
+            newDataLongs = setRehashThresholdAndCalcLongCapacity(desiredNumBuckets, entriesPerBucket);
         } else {
-            newNumLongs = oldNumLongs;
+            newDataLongs = oldDataLongs;
         }
         size = 0;
         nonEmptySlots = 0;
-        long[] newKvs = new long[newNumLongs];
+        long[] newKvs = new long[newDataLongs + HEADER_LONGS];
+        final long newReciprocal = reciprocalFor(newDataLongs / (entriesPerBucket * 2));
+        writeReciprocal(newKvs, newReciprocal);
 
-        // Copy the keys and values over.
-        for (int ii = 0; ii < oldKeysAndValues.length; ii += 2) {
+        // Copy the keys and values over. (The bound excludes the source array's header.)
+        for (int ii = 0; ii < oldDataLongs; ii += 2) {
             final long oldKey = oldKeysAndValues[ii];
             if (oldKey == SPECIAL_KEY_FOR_EMPTY_SLOT || oldKey == SPECIAL_KEY_FOR_DELETED_SLOT) {
                 continue;
             }
             final long oldValue = oldKeysAndValues[ii + 1];
-            putImplNoTranslate(newKvs, oldKey, oldValue, true);
+            putImplNoTranslate(newKvs, newReciprocal, oldKey, oldValue, true);
         }
         setKeysAndValues(newKvs);
     }
@@ -163,7 +192,8 @@ public abstract class HashMapBase implements NullableLongLongMap {
         final int proposedBucketCapacity = PrimeFinder.nextPrime(desiredNumBuckets);
         final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
         final int newBucketCapacity = Math.min(proposedBucketCapacity, maxBucketCapacity);
-        Assert.leq((long) newBucketCapacity * entriesPerBucket * 2, "(long)newBucketCapacity * entriesPerBucket * 2",
+        Assert.leq((long) newBucketCapacity * entriesPerBucket * 2 + HEADER_LONGS,
+                "(long)newBucketCapacity * entriesPerBucket * 2 + HEADER_LONGS",
                 Integer.MAX_VALUE, "Integer.MAX_VALUE");
         final int entryCapacity = newBucketCapacity * entriesPerBucket;
         final int longCapacity = entryCapacity * 2;
@@ -182,7 +212,8 @@ public abstract class HashMapBase implements NullableLongLongMap {
         }
     }
 
-    abstract long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly);
+    abstract long putImplNoTranslate(long[] kvs, long numBucketsReciprocal, long key, long value,
+            boolean insertOnly);
 
     abstract void setKeysAndValues(long[] keysAndValues);
 
@@ -197,7 +228,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
     }
 
     final int capacityImpl(long[] keysAndValues) {
-        return keysAndValues == null ? 0 : keysAndValues.length / 2;
+        return keysAndValues == null ? 0 : (keysAndValues.length - HEADER_LONGS) / 2;
     }
 
     final void clearImpl(long[] keysAndValues) {
@@ -208,7 +239,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
             return;
         }
         // We leave rehashThreshold alone because the array size (and therefore the hashtable capacity) isn't changing.
-        Arrays.fill(keysAndValues, SPECIAL_KEY_FOR_EMPTY_SLOT);
+        Arrays.fill(keysAndValues, 0, keysAndValues.length - HEADER_LONGS, SPECIAL_KEY_FOR_EMPTY_SLOT);
     }
 
     final void resetToNullImpl() {
@@ -222,7 +253,7 @@ public abstract class HashMapBase implements NullableLongLongMap {
             // Remember the capacity, in entries, so that the next allocation lands back at this size directly rather
             // than regrowing from the construction-time capacity through successive rehashes. We remember the size
             // rather than holding the array itself so that the storage is reclaimable while the map sits empty.
-            desiredInitialCapacity = Math.max(desiredInitialCapacity, keysAndValues.length / 2);
+            desiredInitialCapacity = Math.max(desiredInitialCapacity, (keysAndValues.length - HEADER_LONGS) / 2);
         }
         resetToNullImpl();
     }
@@ -274,8 +305,8 @@ public abstract class HashMapBase implements NullableLongLongMap {
         // unsynchronized concurrent case, we might encounter more keys than would fit in the array. To avoid an index
         // range exception, we do the 'nextIndex < sz' test here.
         // A never-populated (or reset) map has no array; its keys and values are simply none.
-        final int length = kv == null ? 0 : kv.length;
-        for (int ii = 0; ii < length && nextIndex < sz; ii += 2) {
+        final int dataLongs = kv == null ? 0 : kv.length - HEADER_LONGS;
+        for (int ii = 0; ii < dataLongs && nextIndex < sz; ii += 2) {
             final long key = kv[ii];
             if (key == SPECIAL_KEY_FOR_EMPTY_SLOT || key == SPECIAL_KEY_FOR_DELETED_SLOT) {
                 continue;
@@ -295,7 +326,8 @@ public abstract class HashMapBase implements NullableLongLongMap {
         if (kv == null) {
             return;
         }
-        for (int nextIndex = findOccupiedSlot(kv, 0); nextIndex < kv.length; nextIndex =
+        final int dataLongs = kv.length - HEADER_LONGS;
+        for (int nextIndex = findOccupiedSlot(kv, 0); nextIndex < dataLongs; nextIndex =
                 findOccupiedSlot(kv, nextIndex + 2)) {
             final long rawKey = kv[nextIndex];
             final long key = rawKey == REDIRECTED_KEY_FOR_EMPTY_SLOT ? SPECIAL_KEY_FOR_EMPTY_SLOT : rawKey;
@@ -311,7 +343,8 @@ public abstract class HashMapBase implements NullableLongLongMap {
      * @return The slot containing the next occupied key, or keysAndValues.length if none.
      */
     private int findOccupiedSlot(long[] keysAndValues, int beginSlot) {
-        while (beginSlot < keysAndValues.length) {
+        final int dataLongs = keysAndValues.length - HEADER_LONGS;
+        while (beginSlot < dataLongs) {
             final long key = keysAndValues[beginSlot];
             if (key != SPECIAL_KEY_FOR_EMPTY_SLOT && key != SPECIAL_KEY_FOR_DELETED_SLOT) {
                 break;
@@ -328,14 +361,15 @@ public abstract class HashMapBase implements NullableLongLongMap {
         for (int entriesPerBucket : new int[] {1, 2, 4}) {
             final long mbc = getMaxBucketCapacity(entriesPerBucket);
             // Assert.isPrime(mbc);
-            Assert.leq(mbc * entriesPerBucket * longsPerEntry, "mbc * entriesPerBucket * longsPerEntry",
+            Assert.leq(mbc * entriesPerBucket * longsPerEntry + HEADER_LONGS,
+                    "mbc * entriesPerBucket * longsPerEntry + HEADER_LONGS",
                     Integer.MAX_VALUE, "Integer.MAX_VALUE");
         }
     }
 
     /**
      * @param entriesPerBucket Number of entries per bucket
-     * @return The largest prime p such that p * entriesPerBucket * 2 <= Integer.MAX_VALUE
+     * @return The largest prime p such that p * entriesPerBucket * 2 + HEADER_LONGS <= Integer.MAX_VALUE
      */
     static int getMaxBucketCapacity(int entriesPerBucket) {
         switch (entriesPerBucket) {
@@ -351,34 +385,64 @@ public abstract class HashMapBase implements NullableLongLongMap {
     }
 
     /**
-     * Computes Stafford variant 13 of 64bit mix function.
-     *
-     * <p>
-     * See David Stafford's <a href="http://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html">Mix13
-     * variant</a> / java.util.SplittableRandom#mix64(long).
+     * Computes the murmur3 fmix64 finalizer — a full-strength mixer, independent of probe1's weak fold, so the
+     * double-hash step behaves as an independent hash function.
      */
-    static long mix64(long key) {
-        key ^= (key >>> 30);
-        key *= 0xbf58476d1ce4e5b9L;
-        key ^= (key >>> 27);
-        key *= 0x94d049bb133111ebL;
-        key ^= (key >>> 31);
+    static long mix64b(long key) {
+        key ^= (key >>> 33);
+        key *= 0xff51afd7ed558ccdL;
+        key ^= (key >>> 33);
+        key *= 0xc4ceb9fe1a85ec53L;
+        key ^= (key >>> 33);
         return key;
     }
 
     /**
-     * This poorly distributed hash function has been intentionally left with the acknowledgement that some sequentially
-     * indexed key cases may benefit from the cacheability of the poor distribution. If we find common use cases in the
-     * future where this poor first hash causes more problems than it solves, we can update it to a better distributed
-     * hash function.
+     * Computes the scaled reciprocal used by Lemire's exact "fastmod" remainder: ceil(2^64 / numBuckets), i.e. the
+     * reciprocal of the bucket count in unsigned 0.64 fixed-point, rounded up. For 32-bit unsigned x, x % numBuckets ==
+     * fastRange(reciprocal * x, numBuckets). The result is only meaningful together with the numBuckets it was computed
+     * from; the array's header carries it (see {@link #reciprocalOf}), so whoever holds an array holds its reciprocal.
      */
-    static int probe1(long key, int range) {
-        final long badHash = (key ^ (key >>> 32));
-        return (int) ((badHash & 0x7fffffffffffffffL) % range);
+    static long reciprocalFor(int numBuckets) {
+        return Long.divideUnsigned(-1L, numBuckets) + 1;
     }
 
+    /**
+     * The high 64 bits of the unsigned 128-bit product of x and range, i.e. floor(x / 2^64 * range) — the multiply-high
+     * reduction of unsigned x into [0, range). {@link Math#multiplyHigh} is signed and Math.unsignedMultiplyHigh needs
+     * JDK 18 (we compile to an earlier release); for a nonnegative range the unsigned correction reduces to a single
+     * and-add.
+     */
+    static int fastRange(long x, int range) {
+        return (int) (Math.multiplyHigh(x, range) + ((x >> 63) & range));
+    }
+
+    /**
+     * First probe. This poorly distributed hash function — a 32-bit fold that sends sequentially indexed keys to
+     * adjacent, distinct buckets — has been intentionally kept: sequentially indexed key cases benefit from the
+     * cacheability of the poor distribution. The prime modulo is computed exactly, via fastmod with the caller-supplied
+     * precomputed reciprocal, keeping the 64-bit division off the per-element path.
+     */
+    static int probe1(long key, int range, long numBucketsReciprocal) {
+        // The 64->32 fold uses + rather than ^: the xor fold is sign-flip symmetric (for 0 < k < 2^32, the fold of
+        // -k equals k - 1), so mirror-image key families alias onto each other's buckets — measured as an ~85%
+        // getMiss regression against negated-key probes. Carry propagation breaks the symmetry, and for keys whose
+        // high word is zero (all small nonnegative keys) + and ^ produce identical buckets, so the hit path of
+        // typical row-key populations is unchanged. Sequential keys still land in adjacent buckets either way.
+        // The high word is spread by an odd multiplier before the fold. Without it, key families a power of two apart
+        // (a partitioned table's regions sit at r << 43) landed 2,048 buckets apart and overlapped bucket for bucket,
+        // so a lookup keyed by regioned row keys paid a wasted first probe almost every time; with it they land at
+        // pseudo-random offsets. The low word stays linear, so consecutive keys still take consecutive buckets, and
+        // keys whose high word is zero hash exactly as before.
+        final long fold32 = (key + (key >>> 32) * 0x9E3779B9L) & 0xffffffffL;
+        return fastRange(numBucketsReciprocal * fold32, range);
+    }
+
+    /**
+     * Second probe (double-hash step): full mix then multiply-high "fastrange" reduction — well-mixed input makes plain
+     * scaling into [0, range) as good as a remainder, and it needs no per-divisor constant at all.
+     */
     static int probe2(long key, int range) {
-        final long mixHash = mix64(key);
-        return (int) ((mixHash & 0x7fffffffffffffffL) % range);
+        return fastRange(mix64b(key), range);
     }
 }

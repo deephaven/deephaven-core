@@ -8,17 +8,18 @@ public abstract class HashMapK1V1 extends HashMapBase {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
     }
 
-    final long putImpl(long[] kvs, long key, long value, boolean insertOnly) {
+    final long putImpl(long[] kvs, long numBucketsReciprocal, long key, long value, boolean insertOnly) {
         if (kvs == null) {
             kvs = allocateKeysAndValuesArray(1);
+            numBucketsReciprocal = reciprocalOf(kvs);
         }
         final long fixedKey = fixKey(key);
-        return putImplNoTranslate(kvs, fixedKey, value, insertOnly);
+        return putImplNoTranslate(kvs, numBucketsReciprocal, fixedKey, value, insertOnly);
     }
 
     @Override
-    final long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly) {
-        int location = getLocationFor(kvs, key);
+    final long putImplNoTranslate(long[] kvs, long numBucketsReciprocal, long key, long value, boolean insertOnly) {
+        int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location >= 0) {
             // Item found, so replace it (unless 'insertOnly' is set).
             final long oldValue = kvs[location + 1];
@@ -53,24 +54,24 @@ public abstract class HashMapK1V1 extends HashMapBase {
         return defaultReturnValue();
     }
 
-    final long getImpl(long[] kvs, long key) {
+    final long getImpl(long[] kvs, long numBucketsReciprocal, long key) {
         if (kvs == null) {
             return defaultReturnValue();
         }
         key = fixKey(key);
-        final int location = getLocationFor(kvs, key);
+        final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {
             return defaultReturnValue();
         }
         return kvs[location + 1];
     }
 
-    final long removeImpl(long[] kvs, long key) {
+    final long removeImpl(long[] kvs, long numBucketsReciprocal, long key) {
         if (kvs == null) {
             return defaultReturnValue();
         }
         key = fixKey(key);
-        final int location = getLocationFor(kvs, key);
+        final int location = getLocationFor(kvs, key, numBucketsReciprocal);
         if (location < 0) {
             return defaultReturnValue();
         }
@@ -79,13 +80,13 @@ public abstract class HashMapK1V1 extends HashMapBase {
         return kvs[location + 1];
     }
 
-    private static int getLocationFor(long[] kvs, long target) {
-        // In units of longs
-        final int length = kvs.length;
+    private static int getLocationFor(long[] kvs, long target, long numBucketsReciprocal) {
+        // In units of longs, excluding the header
+        final int dataLength = kvs.length - HEADER_LONGS;
         // In units of buckets
-        final int numBuckets = length / (1 * 2);
+        final int numBuckets = dataLength / (1 * 2);
 
-        final int bucketProbe = probe1(target, numBuckets);
+        final int bucketProbe = probe1(target, numBuckets, numBucketsReciprocal);
         // In units of longs again
         int probe = bucketProbe * (1 * 2);
 
@@ -113,7 +114,9 @@ public abstract class HashMapK1V1 extends HashMapBase {
         final int offset = (1 + probe2(target, numBuckets - 2)) * (1 * 2);
         final int probeStart = probe;
         while (true) {
-            probe = (int) (((long) probe + offset) % length);
+            // offset < dataLength and probe < dataLength, so one conditional subtraction replaces the modulo.
+            final long advanced = (long) probe + offset;
+            probe = (int) (advanced >= dataLength ? advanced - dataLength : advanced);
             if (probe == probeStart) {
                 throw new IllegalStateException("Wrapped around? Impossible.");
             }

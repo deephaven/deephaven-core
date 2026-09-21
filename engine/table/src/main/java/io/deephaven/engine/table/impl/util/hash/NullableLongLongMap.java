@@ -120,9 +120,9 @@ public interface NullableLongLongMap {
 
     /**
      * A reusable cursor for scalar access to a {@link NullableLongLongMap}, for callers whose shape is genuinely
-     * per-element. {@link #reset} binds the cursor to a map and performs (and, in future map implementations, caches)
-     * whatever per-batch setup the map's chunked operations need, so that {@link #get} calls are cheap: callers with a
-     * loop should reset once outside the loop.
+     * per-element. {@link #reset} binds the cursor to a map. The per-batch setup the map's chunked operations need is
+     * memoized by the map itself, validated against its own array snapshot, so the cursor's calls stay cheap; callers
+     * with a loop should still allocate and reset once, outside the loop.
      *
      * <p>
      * Contract: an instance may be used by only one thread at a time. It is valid from the time of {@link #reset}, with
@@ -132,10 +132,6 @@ public interface NullableLongLongMap {
      * other path (a chunked call on the map, another cursor, {@link NullableLongLongMap#clear},
      * {@link NullableLongLongMap#resetToNull}) invalidates that thread's bindings to the mutated map — reset again
      * before the next use.
-     *
-     * <p>
-     * Keep one cursor per map you are working with (rather than ping-ponging one cursor between maps): future
-     * implementations memoize per-map state keyed on the map's backing storage, and rebinding churns that cache.
      */
     class ScalarAccess {
         private NullableLongLongMap map;
