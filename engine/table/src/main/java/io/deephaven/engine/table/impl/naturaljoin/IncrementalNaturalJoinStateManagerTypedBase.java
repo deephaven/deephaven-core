@@ -867,25 +867,27 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     @Override
-    public void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta) {
+    public void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta,
+            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (shiftedRowSet.isEmpty()) {
             return;
         }
-        final ProbeContext pc1 = (ProbeContext) pc;
-        pc1.startShifts(shiftDelta);
-        probeTable(pc1, shiftedRowSet, false, leftSources, (chunkOk, sourceKeyChunks) -> {
-            pc1.ensureShiftCapacity(shiftDelta, chunkOk.size());
-            applyLeftShift(chunkOk, sourceKeyChunks, shiftDelta, pc1);
-        });
-        for (int ii = pc1.pendingShiftPointer - 2; ii >= 0; ii -= 2) {
-            final long location = pc1.pendingShifts.getUnsafe(ii);
-            final long indexKey = pc1.pendingShifts.getUnsafe(ii + 1);
-            if ((location & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) != 0) {
-                shiftLeftIndexAlternate(location & AlternatingColumnSource.ALTERNATE_INNER_MASK, indexKey, shiftDelta);
-            } else {
-                shiftLeftIndexMain(location, indexKey, shiftDelta);
+        // The generated handler accumulates each shifted row's post-shift key into its slot's builder in the tracker;
+        // the slots' left row sets are then moved in bulk, one remove of the pre-shift keys and one insert of the
+        // post-shift keys per slot, rather than one key at a time.
+        probeTable((ProbeContext) pc, shiftedRowSet, false, leftSources,
+                (chunkOk, sourceKeyChunks) -> applyLeftShift(chunkOk, sourceKeyChunks, modifiedSlotTracker));
+        modifiedSlotTracker.forAllLeftShifts((slot, shiftedKeys) -> {
+            final boolean main = (slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask;
+            final long location = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+            final WritableRowSet leftRowSet = main
+                    ? mainLeftRowSet.getUnsafe(location)
+                    : alternateLeftRowSet.getUnsafe(location);
+            try (final WritableRowSet preShiftKeys = shiftedKeys.shift(-shiftDelta)) {
+                leftRowSet.remove(preShiftKeys);
             }
-        }
+            leftRowSet.insert(shiftedKeys);
+        });
     }
 
     @Override
@@ -913,20 +915,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         shiftOneKey(duplicate, shiftedKey, shiftDelta);
     }
 
-    private void shiftLeftIndexMain(long tableLocation, long shiftedKey, long shiftDelta) {
-        final WritableRowSet existingLeftRowSet = mainLeftRowSet.getUnsafe(tableLocation);
-        Assert.neqNull(existingLeftRowSet, "existingLeftRowSet");
-        shiftOneKey(existingLeftRowSet, shiftedKey, shiftDelta);
-    }
-
-    private void shiftLeftIndexAlternate(long tableLocation, long shiftedKey, long shiftDelta) {
-        final WritableRowSet existingLeftRowSet = alternateLeftRowSet.getUnsafe(tableLocation);
-        Assert.neqNull(existingLeftRowSet, "existingLeftRowSet");
-        shiftOneKey(existingLeftRowSet, shiftedKey, shiftDelta);
-    }
-
-    protected abstract void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
-            ProbeContext pc);
+    protected abstract void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
     public BothIncrementalNaturalJoinStateManager.InitialBuildContext makeInitialBuildContext() {

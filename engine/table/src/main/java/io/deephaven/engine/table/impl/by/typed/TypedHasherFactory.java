@@ -324,8 +324,7 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("applyLeftShift", null, true,
                     TypedNaturalJoinFactory::incrementalShiftLeftFound,
                     TypedNaturalJoinFactory::incrementalShiftLeftMissing,
-                    ParameterSpec.builder(long.class, "shiftDelta").build(),
-                    probeContextParam));
+                    modifiedSlotTrackerParam));
         } else if (baseClass.equals(StaticAsOfJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticAsOfJoinHasher").packageGroup("asofjoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)

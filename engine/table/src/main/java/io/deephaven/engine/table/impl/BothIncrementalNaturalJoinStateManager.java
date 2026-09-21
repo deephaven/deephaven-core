@@ -50,7 +50,17 @@ public interface BothIncrementalNaturalJoinStateManager extends IncrementalNatur
     void removeLeft(Context pc, RowSequence leftIndex, ColumnSource<?>[] leftSources,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
-    void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta);
+    /**
+     * Move the left rows of one shift range within their slots' left row sets.
+     *
+     * @param pc the probe context
+     * @param leftSources the left key sources
+     * @param shiftedRowSet the post-shift row keys of the shifted left rows
+     * @param shiftDelta the shift range's delta
+     * @param modifiedSlotTracker the tracker, whose per-slot builders accumulate the shifted keys of each slot
+     */
+    void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta,
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     /**
      * In a single pass over the modified left rows, determine which rows' key value actually changed (by comparing the

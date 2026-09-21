@@ -645,15 +645,12 @@ public class TypedNaturalJoinFactory {
 
     public static void incrementalShiftLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
             CodeBlock.Builder builder) {
+        final String sourceType = getSourceType(alternate);
         final String tableLocation = getTableLocation(alternate);
-        builder.addStatement("final $T leftRowSetForState = $LLeftRowSet.getUnsafe($L)", WritableRowSet.class,
-                getSourceType(alternate), tableLocation);
-        builder.addStatement("final long keyToShift = rowKeyChunk.get(chunkPosition)");
-        builder.beginControlFlow("if (shiftDelta < 0)");
-        builder.addStatement("shiftOneKey(leftRowSetForState, keyToShift, shiftDelta)");
-        builder.nextControlFlow("else");
-        addPendingShift(alternate, builder, tableLocation);
-        builder.endControlFlow();
+        builder.add("// accumulate the post-shift key for one bulk remove and insert per slot and shift range\n");
+        builder.addStatement(
+                "$LModifiedTrackerCookieSource.set($L, modifiedSlotTracker.addLeftShift($LModifiedTrackerCookieSource.getUnsafe($L), $LInsertMask | $L, rowKeyChunk.get(chunkPosition), stateValue))",
+                sourceType, tableLocation, sourceType, tableLocation, sourceType, tableLocation);
     }
 
     public static void incrementalApplyRightShift(HasherConfig<?> hasherConfig, boolean alternate,

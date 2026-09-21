@@ -24,7 +24,6 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.IncrementalNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
-import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource;
@@ -723,8 +722,8 @@ final class IncrementalNaturalJoinHasherDouble extends IncrementalNaturalJoinSta
         }
     }
 
-    protected void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
-            IncrementalNaturalJoinStateManagerTypedBase.ProbeContext pc) {
+    protected void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final DoubleChunk<Values> keyChunk0 = sourceKeyChunks[0].asDoubleChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
         final int chunkSize = keyChunk0.size();
@@ -742,14 +741,8 @@ final class IncrementalNaturalJoinHasherDouble extends IncrementalNaturalJoinSta
                         searchAlternate = false;
                         break;
                     }
-                    final WritableRowSet leftRowSetForState = mainLeftRowSet.getUnsafe(tableLocation);
-                    final long keyToShift = rowKeyChunk.get(chunkPosition);
-                    if (shiftDelta < 0) {
-                        shiftOneKey(leftRowSetForState, keyToShift, shiftDelta);
-                    } else {
-                        pc.pendingShifts.set(pc.pendingShiftPointer++, (long)tableLocation);
-                        pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);
-                    }
+                    // accumulate the post-shift key for one bulk remove and insert per slot and shift range
+                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addLeftShift(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, rowKeyChunk.get(chunkPosition), stateValue));
                     found = true;
                     break;
                 }
@@ -769,14 +762,8 @@ final class IncrementalNaturalJoinHasherDouble extends IncrementalNaturalJoinSta
                                 if (isStateDeleted(stateValue)) {
                                     break;
                                 }
-                                final WritableRowSet leftRowSetForState = alternateLeftRowSet.getUnsafe(alternateTableLocation);
-                                final long keyToShift = rowKeyChunk.get(chunkPosition);
-                                if (shiftDelta < 0) {
-                                    shiftOneKey(leftRowSetForState, keyToShift, shiftDelta);
-                                } else {
-                                    pc.pendingShifts.set(pc.pendingShiftPointer++, (long)(AlternatingColumnSource.ALTERNATE_SWITCH_MASK | alternateTableLocation));
-                                    pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);
-                                }
+                                // accumulate the post-shift key for one bulk remove and insert per slot and shift range
+                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addLeftShift(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, rowKeyChunk.get(chunkPosition), stateValue));
                                 alternateFound = true;
                                 break;
                             }
