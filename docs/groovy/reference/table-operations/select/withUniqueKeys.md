@@ -4,7 +4,7 @@ title: withUniqueKeys
 
 The `withUniqueKeys` method returns a table that shares the underlying data and schema with the source table, but with the specified columns marked as its key columns, additionally indicating that each combination of key values identifies exactly one row.
 
-Key columns are metadata used by consumers such as the Deephaven UI to identify which rows represent the same real-world entity. They do not affect the table's data. Use `withUniqueKeys` when the key columns form a true primary key, so that selecting a row in the Deephaven UI never selects any other row. If more than one row can share the same key values, use [`withKeys`](./withKeys.md) instead — but note that `withKeys` does not clear the `uniqueKeys` attribute on its own; see the note on [`withKeys`](./withKeys.md) for converting a table that already has it set.
+Key columns are metadata used by consumers such as the Deephaven UI to identify which rows represent the same real-world entity. They do not affect the table's data. Use `withUniqueKeys` when the key columns form a true primary key, so that selecting a row in the Deephaven UI never selects any other row. If more than one row can share the same key values, use [`withKeys`](./withKeys.md) instead — but note that `withKeys` does not clear the `uniqueKeys` attribute on its own. See the note on [`withKeys`](./withKeys.md) for converting a table that already has it set.
 
 `withUniqueKeys` does not verify that the key values are actually unique; it only records that assumption for consumers of the table.
 
