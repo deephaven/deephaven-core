@@ -71,6 +71,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongConsumer;
+import java.util.function.LongSupplier;
+import java.util.function.LongUnaryOperator;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
@@ -419,15 +421,26 @@ public abstract class QueryTableWhereTest {
     }
 
     private static class TestChunkFilter implements ChunkFilter {
-        final CountDownLatch latch = new CountDownLatch(1);
         final ChunkFilter actualFilter;
-        final long sleepDurationNanos;
+        /** The invocation, counting from one, that interrupts the filtering thread; zero never interrupts. */
+        final long interruptAtInvocation;
         long invokes;
         long invokedValues;
 
-        private TestChunkFilter(ChunkFilter actualFilter, long sleepDurationNanos) {
+        private TestChunkFilter(ChunkFilter actualFilter) {
+            this(actualFilter, 0);
+        }
+
+        private TestChunkFilter(ChunkFilter actualFilter, long interruptAtInvocation) {
             this.actualFilter = actualFilter;
-            this.sleepDurationNanos = sleepDurationNanos;
+            this.interruptAtInvocation = interruptAtInvocation;
+        }
+
+        private void beforeFilter(final int size) {
+            if (++invokes == interruptAtInvocation) {
+                Thread.currentThread().interrupt();
+            }
+            invokedValues += size;
         }
 
         @Override
@@ -435,17 +448,7 @@ public abstract class QueryTableWhereTest {
                 final Chunk<? extends Values> values,
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
-            if (++invokes == 1) {
-                latch.countDown();
-            }
-            invokedValues += values.size();
-            if (sleepDurationNanos > 0) {
-                long nanos = sleepDurationNanos * values.size();
-                final long start = System.nanoTime();
-                final long end = start + nanos;
-                // noinspection StatementWithEmptyBody
-                while (System.nanoTime() < end);
-            }
+            beforeFilter(values.size());
             actualFilter.filter(values, keys, results);
         }
 
@@ -453,17 +456,7 @@ public abstract class QueryTableWhereTest {
         public int filter(
                 final Chunk<? extends Values> values,
                 final WritableBooleanChunk<Values> results) {
-            if (++invokes == 1) {
-                latch.countDown();
-            }
-            invokedValues += values.size();
-            if (sleepDurationNanos > 0) {
-                long nanos = sleepDurationNanos * values.size();
-                final long timeStart = System.nanoTime();
-                final long timeEnd = timeStart + nanos;
-                // noinspection StatementWithEmptyBody
-                while (System.nanoTime() < timeEnd);
-            }
+            beforeFilter(values.size());
             return actualFilter.filter(values, results);
         }
 
@@ -471,17 +464,7 @@ public abstract class QueryTableWhereTest {
         public int filterAnd(
                 final Chunk<? extends Values> values,
                 final WritableBooleanChunk<Values> results) {
-            if (++invokes == 1) {
-                latch.countDown();
-            }
-            invokedValues += values.size();
-            if (sleepDurationNanos > 0) {
-                long nanos = sleepDurationNanos * values.size();
-                final long timeStart = System.nanoTime();
-                final long timeEnd = timeStart + nanos;
-                // noinspection StatementWithEmptyBody
-                while (System.nanoTime() < timeEnd);
-            }
+            beforeFilter(values.size());
             return actualFilter.filterAnd(values, results);
         }
 
@@ -578,58 +561,91 @@ public abstract class QueryTableWhereTest {
     @Test
     public void testChunkFilterInterruption() {
         final Table tableToFilter = TableTools.emptyTable(2_000_000).update("X=i");
+        final ColumnSource<?> columnSource = tableToFilter.getColumnSource("X");
 
-        final TestChunkFilter slowCounter =
-                new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1_000_000, true, false), 100);
+        final TestChunkFilter counter =
+                new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1_000_000, true, false));
+        try (final RowSet result =
+                ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), columnSource, false, counter)) {
+            assertEquals(RowSetFactory.fromRange(0, 999_999), result);
+        }
+        assertEquals(2_000_000, counter.invokedValues);
 
-        QueryScope.addParam("slowCounter", slowCounter);
+        // The filter interrupts its own thread while filtering the first chunk, which the first interruption
+        // check observes one INITIAL_INTERRUPTION_SIZE of rows later.
+        final TestChunkFilter interrupting =
+                new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1_000_000, true, false), 1);
+        assertThrows(CancellationException.class,
+                () -> ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), columnSource, false, interrupting));
 
-        final long start = System.currentTimeMillis();
-        final RowSet result =
-                ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"),
-                        false, slowCounter);
-        final long end = System.currentTimeMillis();
-        log.debug().append("Duration: " + (end - start)).endl();
+        log.debug().append("Invoked Values: " + interrupting.invokedValues).endl();
+        assertEquals(ChunkFilter.INITIAL_INTERRUPTION_SIZE, interrupting.invokedValues);
+    }
 
-        assertEquals(RowSetFactory.fromRange(0, 999_999), result);
+    private static final long FIRST_WINDOW_CHUNKS =
+            ChunkFilter.INITIAL_INTERRUPTION_SIZE / ChunkFilter.FILTER_CHUNK_SIZE;
 
-        assertEquals(2_000_000, slowCounter.invokedValues);
-        slowCounter.reset();
+    /**
+     * Filter {@code totalChunks} chunks of rows, against a clock that reports {@code chunksToMillis} of the chunks
+     * filtered so far, and return the number of chunks filtered between successive interruption checks.
+     */
+    private static long[] interruptionWindows(final long totalChunks, final LongUnaryOperator chunksToMillis) {
+        // Nothing reads the values, so an empty column source and a filter that rejects everything suffice.
+        final TestChunkFilter counter = new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1, true, false));
 
-        final MutableObject<Exception> caught = new MutableObject<>();
-        final ExecutionContext executionContext = ExecutionContext.getContext();
-        final Thread t = new Thread(() -> {
-            final long start1 = System.currentTimeMillis();
-            try (final SafeCloseable ignored = executionContext.open()) {
-                ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"), false,
-                        slowCounter);
-            } catch (Exception e) {
-                caught.setValue(e);
-            }
-            final long end1 = System.currentTimeMillis();
-            log.debug().append("Duration: " + (end1 - start1)).endl();
-        });
-        t.start();
+        // The clock is read once before filtering begins, and once per interruption check.
+        final LongArrayList checkedAfterChunks = new LongArrayList();
+        final LongSupplier clockMillis = () -> {
+            checkedAfterChunks.add(counter.invokes);
+            return chunksToMillis.applyAsLong(counter.invokes);
+        };
 
-        waitForLatch(slowCounter.latch);
-
-        t.interrupt();
-
-        try {
-            t.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        try (final RowSet selection = RowSetFactory.flat(totalChunks * ChunkFilter.FILTER_CHUNK_SIZE);
+                final RowSet result = ChunkFilter.applyChunkFilter(selection,
+                        NullValueColumnSource.getInstance(int.class, null), false, counter, clockMillis)) {
+            assertTrue(result.isEmpty());
+            assertEquals(totalChunks, counter.invokes);
         }
 
-        log.debug().append("Invoked Values: " + slowCounter.invokedValues).endl();
-        log.debug().append("Invokes: " + slowCounter.invokes).endl();
+        final long[] windows = new long[checkedAfterChunks.size() - 1];
+        for (int ii = 0; ii < windows.length; ++ii) {
+            windows[ii] = checkedAfterChunks.getLong(ii + 1) - checkedAfterChunks.getLong(ii);
+        }
+        return windows;
+    }
 
-        assertTrue(slowCounter.invokedValues < 2_000_000L);
-        assertEquals(1 << 20, slowCounter.invokedValues);
-        assertNotNull(caught.getValue());
-        assertEquals(CancellationException.class, caught.getValue().getClass());
+    @Test
+    public void testInterruptionIntervalDoublesWhenChecksAreInstantaneous() {
+        // A clock that never advances leaves nothing to measure, so the interval simply doubles.
+        final long[] windows = interruptionWindows(7 * FIRST_WINDOW_CHUNKS + 1, chunks -> 0);
+        assertArrayEquals(
+                new long[] {FIRST_WINDOW_CHUNKS, 2 * FIRST_WINDOW_CHUNKS, 4 * FIRST_WINDOW_CHUNKS},
+                windows);
+    }
 
-        QueryScope.addParam("slowCounter", null);
+    @Test
+    public void testInterruptionIntervalGrowthIsCappedAtDoubling() {
+        // The first window takes a quarter of the goal duration, which asks for four times as many chunks; the
+        // interval may only double.
+        final long[] windows = interruptionWindows(3 * FIRST_WINDOW_CHUNKS + 1,
+                chunks -> chunks * ChunkFilter.INTERRUPTION_GOAL_MILLIS / (4 * FIRST_WINDOW_CHUNKS));
+        assertArrayEquals(new long[] {FIRST_WINDOW_CHUNKS, 2 * FIRST_WINDOW_CHUNKS}, windows);
+    }
+
+    @Test
+    public void testInterruptionIntervalConvergesOnTheGoalDuration() {
+        // A millisecond per chunk: the first window overshoots the goal, and one retune lands on it exactly.
+        final long[] windows = interruptionWindows(
+                FIRST_WINDOW_CHUNKS + 2 * ChunkFilter.INTERRUPTION_GOAL_MILLIS + 1, chunks -> chunks);
+        assertArrayEquals(new long[] {FIRST_WINDOW_CHUNKS, ChunkFilter.INTERRUPTION_GOAL_MILLIS,
+                ChunkFilter.INTERRUPTION_GOAL_MILLIS}, windows);
+    }
+
+    @Test
+    public void testInterruptionIntervalNeverShrinksBelowOneChunk() {
+        // A second per chunk: a single chunk already overshoots the goal, so the interval bottoms out at one.
+        final long[] windows = interruptionWindows(FIRST_WINDOW_CHUNKS + 3, chunks -> chunks * 1000);
+        assertArrayEquals(new long[] {FIRST_WINDOW_CHUNKS, 1, 1}, windows);
     }
 
     @ReflexiveUse(referrers = "QueryTableWhereTest.class")
