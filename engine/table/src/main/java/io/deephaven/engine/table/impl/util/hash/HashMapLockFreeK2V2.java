@@ -8,19 +8,36 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Any;
 import it.unimi.dsi.fastutil.longs.LongLongBiConsumer;
 
+/**
+ * The K2V2 implementation of {@link NullableLongLongMap}: each hash bucket holds two keys followed by their two values.
+ * The concrete type is an implementation detail — callers construct maps through the static factories and hold the
+ * interface. The factory is the seam where implementation choice lives (and where, in a future change, a map may choose
+ * or change its own shape).
+ */
 public final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLongLongMapTestAccessors {
     private volatile long[] keysAndValues;
 
-    public static HashMapLockFreeK2V2 ofExpectedSize(int expectedSize, double loadFactor, long noEntryValue) {
+    /**
+     * Creates a map presized so that {@code expectedSize} entries at {@code loadFactor} fit without a rehash.
+     */
+    public static NullableLongLongMap ofExpectedSize(int expectedSize, double loadFactor, long noEntryValue) {
         final int desiredInitialCapacity = capacityForExpectedEntries(expectedSize, loadFactor);
+        return of(desiredInitialCapacity, loadFactor, noEntryValue);
+    }
+
+    /**
+     * Creates a map with the given initial capacity, load factor, and noEntryValue (the value returned by reads that
+     * find no mapping).
+     */
+    public static NullableLongLongMap of(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         return new HashMapLockFreeK2V2(desiredInitialCapacity, loadFactor, noEntryValue);
     }
 
-    public HashMapLockFreeK2V2() {
+    HashMapLockFreeK2V2() {
         this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
     }
 
-    public HashMapLockFreeK2V2(int desiredInitialCapacity) {
+    HashMapLockFreeK2V2(int desiredInitialCapacity) {
         this(desiredInitialCapacity, DEFAULT_LOAD_FACTOR, DEFAULT_NO_ENTRY_VALUE);
     }
 
@@ -28,7 +45,7 @@ public final class HashMapLockFreeK2V2 extends HashMapK2V2 implements NullableLo
         this(desiredInitialCapacity, loadFactor, DEFAULT_NO_ENTRY_VALUE);
     }
 
-    public HashMapLockFreeK2V2(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
+    HashMapLockFreeK2V2(int desiredInitialCapacity, double loadFactor, long noEntryValue) {
         super(desiredInitialCapacity, loadFactor, noEntryValue);
         this.keysAndValues = null;
     }

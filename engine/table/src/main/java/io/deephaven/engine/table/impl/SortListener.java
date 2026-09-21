@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.table.impl.util.hash.HashMapK4V4;
 import io.deephaven.engine.table.impl.util.hash.NullableLongLongMap;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -45,7 +44,7 @@ public class SortListener extends BaseTable.ListenerImpl {
 
     private final Table parent;
     private final QueryTable result;
-    private final HashMapK4V4 reverseLookup;
+    private final NullableLongLongMap reverseLookup;
     private final ColumnSource<Comparable<?>>[] originalColumnsToSortBy;
     private final ColumnSource<Comparable<?>>[] columnsToSortBy;
     private final WritableRowSet resultRowSet;
@@ -65,7 +64,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     public SortListener(
             final Table parent,
             final QueryTable result,
-            final HashMapK4V4 reverseLookup,
+            final NullableLongLongMap reverseLookup,
             final ColumnSource<Comparable<?>>[] originalColumnsToSortBy,
             final ColumnSource<Comparable<?>>[] columnsToSortBy,
             final SortingOrder[] order,

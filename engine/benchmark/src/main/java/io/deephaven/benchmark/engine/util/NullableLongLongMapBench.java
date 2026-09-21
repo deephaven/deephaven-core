@@ -100,11 +100,11 @@ public class NullableLongLongMapBench {
     }
 
     public enum Impl {
-        // The third constructor argument is the noEntryValue; -1 is the maps' default.
+        // The third factory argument is the noEntryValue; -1 is the maps' default.
         // @formatter:off
-        K1V1((desiredEntries, loadFactor) -> new HashMapLockFreeK1V1(desiredEntries, loadFactor, -1)),
-        K2V2((desiredEntries, loadFactor) -> new HashMapLockFreeK2V2(desiredEntries, loadFactor, -1)),
-        K4V4((desiredEntries, loadFactor) -> new HashMapLockFreeK4V4(desiredEntries, loadFactor, -1)),
+        K1V1((desiredEntries, loadFactor) -> HashMapLockFreeK1V1.of(desiredEntries, loadFactor, -1)),
+        K2V2((desiredEntries, loadFactor) -> HashMapLockFreeK2V2.of(desiredEntries, loadFactor, -1)),
+        K4V4((desiredEntries, loadFactor) -> HashMapLockFreeK4V4.of(desiredEntries, loadFactor, -1)),
         FASTUTIL(FastutilAdapter::new);
         // @formatter:on
 
