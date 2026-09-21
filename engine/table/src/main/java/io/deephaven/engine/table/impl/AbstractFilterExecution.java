@@ -21,6 +21,8 @@ import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -57,6 +59,8 @@ import static io.deephaven.engine.table.impl.PushdownResult.UNSUPPORTED_ACTION_C
  * initialization case).
  */
 abstract class AbstractFilterExecution {
+    private static final Logger log = LoggerFactory.getLogger(AbstractFilterExecution.class);
+
     final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
 
     final QueryTable sourceTable;
@@ -470,6 +474,50 @@ abstract class AbstractFilterExecution {
     }
 
     /**
+     * Build the {@link StatelessFilter} for {@code filter}, including its {@link PushdownFilterMatcher} and
+     * {@link PushdownFilterContext} when one is available.
+     *
+     * <p>
+     * Pushdown is purely an optimization, so failing to build the matcher or the context must not fail the operation --
+     * the filter can always be evaluated directly. On failure we log and return a {@code StatelessFilter} with no
+     * matcher, which runs {@code filter} as a plain filter. {@link CancellationException} is not a construction failure
+     * and is allowed to propagate.
+     * </p>
+     *
+     * @param filterIdx the index of this filter in the collection
+     * @param filter the filter to build for
+     * @param barrierDependencies the inter-barrier dependencies accumulated so far
+     * @return the {@code StatelessFilter}, with a pushdown matcher and context if one could be built
+     */
+    private StatelessFilter makePushdownStatelessFilter(
+            final int filterIdx,
+            final WhereFilter filter,
+            final Map<Object, Collection<Object>> barrierDependencies) {
+        try {
+            final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                    .map(sourceTable::getColumnSource)
+                    .collect(Collectors.toList());
+
+            PushdownFilterMatcher executor =
+                    PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+            // Wrap the executor to add DataIndex support (if applicable).
+            executor = DataIndexPushdownManager.wrap(filterDataIndexMap.get(filter), executor);
+            // Wrap the executor to add SortedColumn support (if applicable)
+            executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
+            if (executor != null) {
+                final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
+                return new StatelessFilter(filterIdx, filter, executor, context, barrierDependencies);
+            }
+        } catch (final CancellationException e) {
+            throw e;
+        } catch (final RuntimeException e) {
+            log.warn().append("Unable to construct filter pushdown for ").append(filter.toString())
+                    .append("; evaluating it without pushdown: ").append(e).endl();
+        }
+        return new StatelessFilter(filterIdx, filter, null, null, barrierDependencies);
+    }
+
+    /**
      * Execute all stateless filters in the collection and return a row set that contains the rows that match every
      * filter.
      *
@@ -506,22 +554,7 @@ abstract class AbstractFilterExecution {
                         || !columnSourceMap.keySet().containsAll(filter.getColumns())) {
                     statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
                 } else {
-                    final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                            .map(sourceTable::getColumnSource)
-                            .collect(Collectors.toList());
-
-                    PushdownFilterMatcher executor =
-                            PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-                    // Wrap the executor to add DataIndex support (if applicable).
-                    executor = DataIndexPushdownManager.wrap(filterDataIndexMap.get(filter), executor);
-                    // Wrap the executor to add SortedColumn support (if applicable)
-                    executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
-                    if (executor != null) {
-                        final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
-                        statelessFilters[ii] = new StatelessFilter(ii, filter, executor, context, barrierDependencies);
-                    } else {
-                        statelessFilters[ii] = new StatelessFilter(ii, filter, null, null, barrierDependencies);
-                    }
+                    statelessFilters[ii] = makePushdownStatelessFilter(ii, filter, barrierDependencies);
                 }
                 for (Object barrier : statelessFilters[ii].declaredBarriers) {
                     if (barrierDependencies.containsKey(barrier)) {
