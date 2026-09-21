@@ -13,6 +13,7 @@ import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
@@ -192,8 +193,10 @@ public class TypeInfos {
         return false;// TODO change this when adding optionals support
     }
 
-    private static PrimitiveBuilder<PrimitiveType> type(PrimitiveTypeName type, boolean required, boolean repeating) {
-        return repeating ? Types.repeated(type) : (required ? Types.required(type) : Types.optional(type));
+    private static PrimitiveBuilder<PrimitiveType> type(PrimitiveTypeName type, boolean required, boolean repeating,
+            ColumnOrder columnOrder) {
+        return (repeating ? Types.repeated(type) : (required ? Types.required(type) : Types.optional(type)))
+                .columnOrder(columnOrder);
     }
 
     private enum IntType implements TypeInfo {
@@ -208,7 +211,8 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(32, true));
+            return type(PrimitiveTypeName.INT32, required, repeating, ColumnOrder.typeDefined())
+                    .as(LogicalTypeAnnotation.intType(32, true));
         }
     }
 
@@ -224,7 +228,7 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.INT64, required, repeating);
+            return type(PrimitiveTypeName.INT64, required, repeating, ColumnOrder.typeDefined());
         }
     }
 
@@ -240,7 +244,8 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(16, true));
+            return type(PrimitiveTypeName.INT32, required, repeating, ColumnOrder.typeDefined())
+                    .as(LogicalTypeAnnotation.intType(16, true));
         }
     }
 
@@ -256,7 +261,7 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.BOOLEAN, required, repeating);
+            return type(PrimitiveTypeName.BOOLEAN, required, repeating, ColumnOrder.typeDefined());
         }
     }
 
@@ -272,7 +277,8 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.FLOAT, required, repeating);
+            // TODO(DH-23747): Allow parquet writers the ability to configure column order (/stats)
+            return type(PrimitiveTypeName.FLOAT, required, repeating, ColumnOrder.typeDefined());
         }
     }
 
@@ -288,7 +294,8 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.DOUBLE, required, repeating);
+            // TODO(DH-23747): Allow parquet writers the ability to configure column order (/stats)
+            return type(PrimitiveTypeName.DOUBLE, required, repeating, ColumnOrder.typeDefined());
         }
     }
 
@@ -304,7 +311,8 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(16, false));
+            return type(PrimitiveTypeName.INT32, required, repeating, ColumnOrder.typeDefined())
+                    .as(LogicalTypeAnnotation.intType(16, false));
         }
     }
 
@@ -320,7 +328,8 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(8, true));
+            return type(PrimitiveTypeName.INT32, required, repeating, ColumnOrder.typeDefined())
+                    .as(LogicalTypeAnnotation.intType(8, true));
         }
     }
 
@@ -336,7 +345,7 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.BINARY, required, repeating)
+            return type(PrimitiveTypeName.BINARY, required, repeating, ColumnOrder.typeDefined())
                     .as(LogicalTypeAnnotation.stringType());
         }
     }
@@ -354,7 +363,7 @@ public class TypeInfos {
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             // Write instants as Parquet TIMESTAMP(isAdjustedToUTC = true, unit = NANOS)
-            return type(PrimitiveTypeName.INT64, required, repeating)
+            return type(PrimitiveTypeName.INT64, required, repeating, ColumnOrder.typeDefined())
                     .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
         }
     }
@@ -372,7 +381,7 @@ public class TypeInfos {
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             // Write LocalDateTime as Parquet TIMESTAMP(isAdjustedToUTC = false, unit = NANOS)
-            return type(PrimitiveTypeName.INT64, required, repeating)
+            return type(PrimitiveTypeName.INT64, required, repeating, ColumnOrder.typeDefined())
                     .as(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.NANOS));
         }
     }
@@ -389,7 +398,7 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.INT32, required, repeating)
+            return type(PrimitiveTypeName.INT32, required, repeating, ColumnOrder.typeDefined())
                     .as(LogicalTypeAnnotation.dateType());
         }
     }
@@ -407,7 +416,7 @@ public class TypeInfos {
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
             // Always write in (isAdjustedToUTC = true, unit = NANOS) format
-            return type(PrimitiveTypeName.INT64, required, repeating)
+            return type(PrimitiveTypeName.INT64, required, repeating, ColumnOrder.typeDefined())
                     .as(LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
         }
     }
@@ -432,7 +441,7 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilderImpl(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.BINARY, required, repeating)
+            return type(PrimitiveTypeName.BINARY, required, repeating, ColumnOrder.typeDefined())
                     .as(LogicalTypeAnnotation.decimalType(0, 1));
         }
     }
@@ -509,7 +518,7 @@ public class TypeInfos {
 
         @Override
         public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
-            return type(PrimitiveTypeName.BINARY, required, repeating);
+            return type(PrimitiveTypeName.BINARY, required, repeating, ColumnOrder.typeDefined());
         }
     }
 }
