@@ -176,9 +176,11 @@ The kernel is replicated per chunk type from `CharBarrageCopyKernel`, the Object
 type parameters where the primitive chunks take one.
 
 Every chunk a delta records holds `DELTA_CHUNK_SIZE` rows except the last of a column, which is what
-lets an encoded position locate its chunk. `DELTA_CHUNK_SIZE` is a power of two — the producer rounds
-a configured size up to one — so the kernel finds a position's chunk with a shift and its offset with
-a mask rather than with a division per row, and asserts that.
+lets an encoded position locate its chunk. The one delta that breaks this is the package a blink table
+propagates, which concatenates its deltas' chunks as they are; it never passes through the kernel, so
+nothing depends on its layout. `DELTA_CHUNK_SIZE` is a power of two — the producer rounds a
+configured size up to one — so the kernel finds a position's chunk with a shift and its offset with a
+mask rather than with a division per row, and asserts that.
 
 ## Measurements
 
