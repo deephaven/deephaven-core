@@ -1,5 +1,9 @@
 {
   "name": "Default",
+  // The relative-worktrees setup in README.md needs git 2.48+. The `base:noble
+  // image ships with git 2.52 at /usr/local/bin which gets precedent over Noble's
+  // apt 2.43, which satisfies this requirement. Keep this in mind if we ever
+  // switch the base image.
   "image": "mcr.microsoft.com/devcontainers/base:noble",
   "features": {
     "ghcr.io/devcontainers/features/git-lfs:1": {
@@ -150,15 +154,18 @@
         // point Pylance and the test explorer at it explicitly.
         "python.defaultInterpreterPath": "/usr/local/share/deephaven-core/venv/bin/python",
         "terminal.integrated.defaultProfile.linux": "bash",
+        // From Deephaven Core's Web UI dark palette: --dh-color-accent #3b6bda
+        // (with its down state #254ba4 for the inactive title bar),
+        // --dh-color-fg #f0f0ee, --dh-color-negative #c73f61.
         "workbench.colorCustomizations": {
-          "statusBar.background": "#7c3aed",
-          "statusBar.foreground": "#ffffff",
-          "titleBar.activeBackground": "#7c3aed",
-          "titleBar.activeForeground": "#ffffff",
-          "titleBar.inactiveBackground": "#5b21b6",
-          "titleBar.inactiveForeground": "#ffffff",
-          "chat.requestBorder": "#e21010",
-          "statusBarItem.remoteBackground": "#e21010"
+          "statusBar.background": "#3b6bda",
+          "statusBar.foreground": "#f0f0ee",
+          "titleBar.activeBackground": "#3b6bda",
+          "titleBar.activeForeground": "#f0f0ee",
+          "titleBar.inactiveBackground": "#254ba4",
+          "titleBar.inactiveForeground": "#f0f0ee",
+          "chat.requestBorder": "#c73f61",
+          "statusBarItem.remoteBackground": "#c73f61"
         }
       }
     }
