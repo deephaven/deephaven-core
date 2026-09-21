@@ -493,6 +493,9 @@ abstract class AbstractFilterExecution {
             final int filterIdx,
             final WhereFilter filter,
             final Map<Object, Collection<Object>> barrierDependencies) {
+        // Held here so that it is closed rather than leaked if we abandon it below; ownership passes to the
+        // StatelessFilter once one has been constructed around it.
+        PushdownFilterContext context = null;
         try {
             final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
                     .map(sourceTable::getColumnSource)
@@ -505,14 +508,21 @@ abstract class AbstractFilterExecution {
             // Wrap the executor to add SortedColumn support (if applicable)
             executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
             if (executor != null) {
-                final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
-                return new StatelessFilter(filterIdx, filter, executor, context, barrierDependencies);
+                context = executor.makePushdownFilterContext(filter, filterSources);
+                final StatelessFilter statelessFilter =
+                        new StatelessFilter(filterIdx, filter, executor, context, barrierDependencies);
+                context = null;
+                return statelessFilter;
             }
         } catch (final CancellationException e) {
             throw e;
         } catch (final RuntimeException e) {
             log.warn().append("Unable to construct filter pushdown for ").append(filter.toString())
                     .append("; evaluating it without pushdown: ").append(e).endl();
+        } finally {
+            if (context != null) {
+                context.close();
+            }
         }
         return new StatelessFilter(filterIdx, filter, null, null, barrierDependencies);
     }
