@@ -1840,8 +1840,4 @@ public final class ObjectReverseSegmentedSortedArray implements SegmentedSortedA
         return leafRowKeys[leafCount - 1][leafSizes[leafCount - 1] - 1];
     }
 
-    @Override
-    public SsaChecker makeChecker() {
-        return ObjectReverseSsaChecker.INSTANCE;
-    }
 }

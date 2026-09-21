@@ -1834,8 +1834,4 @@ public final class IntReverseSegmentedSortedArray implements SegmentedSortedArra
         return leafRowKeys[leafCount - 1][leafSizes[leafCount - 1] - 1];
     }
 
-    @Override
-    public SsaChecker makeChecker() {
-        return IntReverseSsaChecker.INSTANCE;
-    }
 }
