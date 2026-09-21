@@ -204,6 +204,10 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
         failPendingRequests(reason);
 
+        // Closing the widget is what releases the plugin export ticket, so it has to happen on every close path, not
+        // only when a caller closes the service
+        widget.close();
+
         // Release the handler as it runs. Callers can hold a reference to a closed service, and it should not keep
         // the owner alive through this lambda.
         final Runnable handler = closedHandler;
@@ -306,7 +310,12 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * @return a promise that resolves once the server has acknowledged the execution context
      */
     @JsMethod
-    public Promise<Void> setExecutionContext(boolean isDirty, @JsOptional String[] resourcePaths) {
+    public Promise<Void> setExecutionContext(boolean isDirty, @JsOptional @JsNullable String[] resourcePaths) {
+        // Nothing can be sent on a closed stream, and waiting out the timeout only delays the same failure
+        if (closed) {
+            return Promise.reject("RemoteFileSourceService is closed");
+        }
+
         // Generate a unique request ID
         String requestId = "setExecutionContext-" + (requestIdCounter++);
 
@@ -380,8 +389,6 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     public void close() {
         markClosed("RemoteFileSourceService closed");
-
-        widget.close();
     }
 
     /**
