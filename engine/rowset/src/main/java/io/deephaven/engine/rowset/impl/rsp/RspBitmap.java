@@ -2424,7 +2424,17 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
 
     @Override
     public OrderedLongSet ixMinusOnNew(final OrderedLongSet other) {
+        // first() and last() below read our spans directly, unlike the ixFirstKey()/ixLastKey() accessors, so an
+        // empty receiver has to be answered here. SortedRanges and ixRemove answer it the same way.
+        if (isEmpty()) {
+            return OrderedLongSet.EMPTY;
+        }
         if (other.ixIsEmpty()) {
+            return cowRef();
+        }
+        // Nothing of ours lies in other's span of keys, so the result is us: hand back a reference rather than
+        // copying ourselves only to remove nothing from the copy. SingleRange and SortedRanges detect this too.
+        if (last() < other.ixFirstKey() || other.ixLastKey() < first()) {
             return cowRef();
         }
         if (other instanceof SingleRange) {
