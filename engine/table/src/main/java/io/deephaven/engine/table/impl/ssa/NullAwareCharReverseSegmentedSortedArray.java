@@ -99,9 +99,7 @@ public final class NullAwareCharReverseSegmentedSortedArray implements Segmented
             return 0;
         }
 
-        if (leafCount == 0) {
-            throw new IllegalArgumentException("No values to find.");
-        }
+        Assert.gtZero(leafCount, "leafCount");
 
         if (leafCount == 1) {
             return findNextOneLeaf(0, stampValues, stampRowKeys, nextValues, size, directoryValues, directoryRowKeys);
@@ -110,9 +108,7 @@ public final class NullAwareCharReverseSegmentedSortedArray implements Segmented
         int stampsFound = 0;
         int currentLeaf = 0;
         while (stampsFound < stampValues.size()) {
-            if (currentLeaf >= leafCount) {
-                break;
-            }
+            Assert.lt(currentLeaf, "currentLeaf", leafCount, "leafCount");
             final char searchValue = stampValues.get(stampsFound);
             final long searchKey = stampRowKeys.get(stampsFound);
             // we need to check the last value in the leaf
