@@ -2322,7 +2322,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             final SortedRanges sr = (SortedRanges) other;
             return sr.intersectOnNew(this);
         }
-        return RspBitmap.and(this, (RspBitmap) other);
+        final RspBitmap ans = RspBitmap.and(this, (RspBitmap) other);
+        final OrderedLongSet compacted = ans.ixCompact();
+        if (compacted != ans) {
+            ans.ixRelease();
+        }
+        return compacted;
     }
 
     @Override
