@@ -2232,14 +2232,21 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         return retainImpl(o, refSupplier);
     }
 
-    private static OrderedLongSet retainImpl(final RspBitmap other, Supplier<RspBitmap> refSupplier) {
+    private OrderedLongSet retainImpl(final RspBitmap other, final Supplier<RspBitmap> refSupplier) {
         final RspBitmap ans = refSupplier.get();
         ans.andEqualsUnsafeNoWriteCheck(other);
         if (ans.isEmpty()) {
+            if (ans != this) {
+                ans.ixRelease();
+            }
             return OrderedLongSet.EMPTY;
         }
         ans.finishMutations();
-        return ans;
+        final OrderedLongSet compacted = ans.ixCompact();
+        if (compacted != ans && ans != this) {
+            ans.ixRelease();
+        }
+        return compacted;
     }
 
     @Override
@@ -2269,10 +2276,17 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         }
         if (mayHaveChanged) {
             if (ans.isEmpty()) {
+                if (ans != this) {
+                    ans.ixRelease();
+                }
                 return OrderedLongSet.EMPTY;
             }
             ans.finishMutations();
-            return ans;
+            final OrderedLongSet compacted = ans.ixCompact();
+            if (compacted != ans && ans != this) {
+                ans.ixRelease();
+            }
+            return compacted;
         }
         return this;
     }
