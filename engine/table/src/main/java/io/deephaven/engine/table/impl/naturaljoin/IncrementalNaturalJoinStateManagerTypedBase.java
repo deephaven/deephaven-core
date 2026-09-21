@@ -368,12 +368,20 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
     }
 
+    /**
+     * Drop the alternate table once every live entry has migrated to the main table. Any tracker entry that referred to
+     * an alternate slot was moved to the slot's main location as it migrated, so nothing reads the alternate sources
+     * afterwards and their arrays are released.
+     */
     protected void clearAlternate() {
         alternateEntries = 0;
         rehashPointer = 0;
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
+        alternateRightRowKey = null;
+        alternateLeftRowSet = null;
+        alternateModifiedTrackerCookieSource = null;
     }
 
     public boolean rehashRequired(int nextChunkSize) {
@@ -814,16 +822,19 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     /**
      * Mark a slot dead once its last left row and last right row are gone. Any modified slot tracker entry the slot
      * holds this cycle describes the key that just died, so it is discarded rather than applied to the key that later
-     * reuses the slot.
+     * reuses the slot. The slot's (now empty) left row set is released; a key that later reuses the slot builds a fresh
+     * one.
      */
     protected void tombstoneSlot(final boolean main, final long location,
             final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final ImmutableLongArraySource rightRowKey = main ? mainRightRowKey : alternateRightRowKey;
         final ImmutableLongArraySource cookieSource =
                 main ? mainModifiedTrackerCookieSource : alternateModifiedTrackerCookieSource;
+        final ImmutableObjectArraySource<WritableRowSet> leftRowSetSource = main ? mainLeftRowSet : alternateLeftRowSet;
         rightRowKey.set(location, TOMBSTONE_RIGHT_STATE);
         modifiedSlotTracker.removeEntry(cookieSource.getUnsafe(location));
         cookieSource.set(location, -1L);
+        ((WritableRowSet) leftRowSetSource.getAndSetUnsafe(location, null)).close();
         liveEntries--;
     }
 
