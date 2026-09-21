@@ -137,6 +137,11 @@ public class BarrageMessageProducer extends LivenessArtifact
      * holds ten times it. Since reclaiming that heap is the point of compacting at all, raise it only where processor
      * time is the scarcer resource. At 0.0 a producer compacts whenever the floor alone is met; at 1.0 it never
      * compacts, since a queue that would coalesce to nothing still has a delta to coalesce.
+     *
+     * <p>
+     * The value is trusted as configured, not validated. Outside 0.0 to 1.0 it does what the formula in
+     * {@link #shouldCompact()} says: above one, or NaN, the threshold is unreachable and the producer never compacts;
+     * below zero the floor alone decides. Either is the setting an operator asked for.
      */
     public static final double COMPACTION_MIN_FREED_FRACTION = Configuration.getInstance()
             .getDoubleForClassWithDefault(BarrageMessageProducer.class, "compactionMinFreedFraction", 0.5);
