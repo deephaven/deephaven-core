@@ -5,6 +5,7 @@ plugins {
 dependencies {
     implementation project(':plugin')
     implementation project(':server')
+    implementation project(':engine-base')
     implementation project(':proto:proto-backplane-grpc')
     implementation project(':proto:proto-backplane-grpc-flight')
 

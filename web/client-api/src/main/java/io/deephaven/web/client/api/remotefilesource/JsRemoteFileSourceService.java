@@ -294,7 +294,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     private void handleSetExecutionContextResponse(RemoteFileSourceServerMessage message) {
         String requestId = message.getRequestId();
-        LazyPromise<Void> promise = pendingSetExecutionContextRequests.remove(requestId);
+        LazyPromise<Void> promise = pendingSetExecutionContextRequests.get(requestId);
         if (promise != null) {
             promise.succeed(null);
         }
@@ -322,6 +322,10 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         // Create a lazy promise that will be resolved when we get the response
         LazyPromise<Void> promise = new LazyPromise<>();
         pendingSetExecutionContextRequests.put(requestId, promise);
+        // Drop the entry on every completion path, not just when a response arrives. A request that times out on a
+        // stream that stays open would otherwise be retained until the service closes.
+        promise.onSuccess(ignored -> pendingSetExecutionContextRequests.remove(requestId));
+        promise.onFailure(ignored -> pendingSetExecutionContextRequests.remove(requestId));
 
         // Send the request
         RemoteFileSourceClientMessage clientRequest = getSetExecutionContextRequest(isDirty, resourcePaths, requestId);
