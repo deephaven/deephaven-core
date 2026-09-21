@@ -874,6 +874,41 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             // noinspection unchecked
             return (ColumnSource<ORIGINAL_TYPE>) originalSource;
         }
+
+        // The manager knows the original sources by name, not their reinterpretations, so a filter over this source
+        // cannot be routed to the constituents. Decline pushdown rather than delegate to the manager.
+
+        @Override
+        public void estimatePushdownFilterCost(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final JobScheduler jobScheduler,
+                final LongConsumer onComplete,
+                final Consumer<Exception> onError) {
+            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
+        }
+
+        @Override
+        public void pushdownFilter(
+                final WhereFilter filter,
+                final RowSet selection,
+                final boolean usePrev,
+                final PushdownFilterContext context,
+                final long costCeiling,
+                final JobScheduler jobScheduler,
+                final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+        }
+
+        @Override
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
+            return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
+        }
     }
 
     private static class ReinterpretedClassKey extends KeyedObjectKey.Basic<Class, ReinterpretReference> {

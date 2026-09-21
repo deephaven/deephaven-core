@@ -218,6 +218,36 @@ public class UnionSourcePushdownTest {
     }
 
     /**
+     * The manager knows the merged table's sources by name; a reinterpretation of a union source is not among them. A
+     * filter over one must decline pushdown rather than fail the {@code where()}.
+     */
+    @Test
+    public void reinterpretedUnionSourceDeclinesPushdown() {
+        final Table constituent = TableTools.emptyTable(ROWS_PER_CONSTITUENT)
+                .update("T = DateTimeUtils.epochNanosToInstant(ii)");
+        final Table merged = TableTools.merge(constituent, constituent);
+        final ColumnSource<?> reinterpreted = merged.getColumnSource("T").reinterpret(long.class);
+        assertThat(reinterpreted).isInstanceOf(UnionColumnSource.class);
+
+        final Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>();
+        columnSources.put("T", reinterpreted);
+        final Table view = new QueryTable(merged.getRowSet(), columnSources);
+
+        final WhereFilter filter = initializedFilter(view, "T > 50");
+        final PushdownFilterMatcher matcher =
+                PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources(view, filter));
+        assertThat(matcher).isSameAs(reinterpreted);
+        try (final PushdownFilterContext context =
+                matcher.makePushdownFilterContext(filter, filterSources(view, filter))) {
+            assertThat(context).isSameAs(PushdownFilterContext.NO_PUSHDOWN_CONTEXT);
+            assertThat(estimateCost(matcher, filter, view.getRowSet(), context))
+                    .isEqualTo(PushdownResult.UNSUPPORTED_ACTION_COST);
+        }
+
+        assertTableEquals(view.select().where("T > 50"), view.where("T > 50"));
+    }
+
+    /**
      * End to end: a selective filter runs first, so the union filter pushes down against a narrowed selection. Rows the
      * first filter eliminated must not come back.
      */

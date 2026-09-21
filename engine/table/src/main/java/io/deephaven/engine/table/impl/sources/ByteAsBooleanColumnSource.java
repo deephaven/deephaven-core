@@ -3,16 +3,28 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.BasePushdownFilterContext;
+import io.deephaven.engine.table.impl.BasePushdownFilterContextImpl;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@code byte} to {@code Boolean} values.
@@ -151,4 +163,68 @@ public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean>
     public boolean isStateless() {
         return alternateColumnSource.isStateless();
     }
+
+    // region Pushdown
+    /**
+     * Whether the wrapped source holds one value for every row key. A filter over such a source can be evaluated once,
+     * against that value, instead of once per row.
+     */
+    private boolean isSingleValued() {
+        return alternateColumnSource instanceof RowKeyAgnosticChunkSource;
+    }
+
+    @Override
+    public PushdownFilterContext makePushdownFilterContext(
+            final WhereFilter filter,
+            final List<ColumnSource<?>> filterSources) {
+        if (!isSingleValued()) {
+            return super.makePushdownFilterContext(filter, filterSources);
+        }
+        return new BasePushdownFilterContextImpl(filter, filterSources);
+    }
+
+    @Override
+    public void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+        if (!isSingleValued()) {
+            super.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+            return;
+        }
+        onComplete.accept(PushdownResult.TABLE_SINGLE_VALUE_COLUMN_COST);
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        if (!isSingleValued()) {
+            super.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler, onComplete, onError);
+            return;
+        }
+        if (selection.isEmpty()) {
+            // If the selection is empty, we can skip all pushdown filtering.
+            onComplete.accept(PushdownResult.noneMatch(selection));
+            return;
+        }
+        final BasePushdownFilterContext filterCtx = (BasePushdownFilterContext) context;
+        // Boolean columns are filtered as object chunks.
+        final Supplier<Chunk<Values>> chunkSupplier =
+                () -> SingleValuePushdownHelper.makeChunk((Object) (usePrev ? getPrev(0) : get(0)));
+        final boolean matches =
+                SingleValuePushdownHelper.filter(selection, usePrev, filterCtx, chunkSupplier, this);
+        onComplete.accept(matches ? PushdownResult.allMatch(selection) : PushdownResult.noneMatch(selection));
+    }
+    // endregion Pushdown
 }
