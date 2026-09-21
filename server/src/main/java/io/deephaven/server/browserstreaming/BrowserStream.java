@@ -29,10 +29,12 @@ public class BrowserStream<T> implements Closeable {
     }
 
     /**
-     * Creates a BrowserStream based on the current session and the observed passed in to the open stream call.
+     * Creates a BrowserStream based on the current session and the observer passed in to the open stream call,
+     * optionally creating an export to scope the call to the session lifetime.
      */
     public interface Factory<ReqT, RespT> {
-        BrowserStream<ReqT> create(SessionState sessionState, StreamObserver<RespT> responseObserver);
+        BrowserStream<ReqT> create(SessionState sessionState, StreamData initialStreamData,
+                StreamObserver<RespT> responseObserver);
     }
 
     private static class Message<T> {
@@ -71,33 +73,36 @@ public class BrowserStream<T> implements Closeable {
      */
     public static <ReqT, RespT> Factory<ReqT, RespT> factory(Mode mode,
             GrpcServiceOverrideBuilder.BidiDelegate<ReqT, RespT> bidiDelegate) {
-        return (session, responseObserver) -> new BrowserStream<>(mode, session, new Marshaller<ReqT>() {
-            private final StreamObserver<ReqT> requestObserver = bidiDelegate.doInvoke(responseObserver);
+        return (session, initialStreamData, responseObserver) -> {
+            final Marshaller<ReqT> marshaller = new Marshaller<>() {
+                private final StreamObserver<ReqT> requestObserver = bidiDelegate.doInvoke(responseObserver);
 
-            @Override
-            public void onMessageReceived(ReqT message) {
-                requestObserver.onNext(message);
-            }
+                @Override
+                public void onMessageReceived(ReqT message) {
+                    requestObserver.onNext(message);
+                }
 
-            @Override
-            public void onCancel() {
-                StatusRuntimeException canceled =
-                        Exceptions.statusRuntimeException(Code.CANCELLED, "Stream canceled on the server");
-                GrpcUtil.safelyError(responseObserver, canceled);
+                @Override
+                public void onCancel() {
+                    StatusRuntimeException canceled =
+                            Exceptions.statusRuntimeException(Code.CANCELLED, "Stream canceled on the server");
+                    GrpcUtil.safelyError(responseObserver, canceled);
 
-                GrpcUtil.safelyError(requestObserver, canceled);
-            }
+                    GrpcUtil.safelyError(requestObserver, canceled);
+                }
 
-            @Override
-            public void onError(Throwable err) {
-                requestObserver.onError(err);
-            }
+                @Override
+                public void onError(Throwable err) {
+                    requestObserver.onError(err);
+                }
 
-            @Override
-            public void onCompleted() {
-                requestObserver.onCompleted();
-            }
-        });
+                @Override
+                public void onCompleted() {
+                    requestObserver.onCompleted();
+                }
+            };
+            return new BrowserStream<>(mode, session, initialStreamData, marshaller);
+        };
     }
 
     /** represents the sequence that the listener will process next */
@@ -119,17 +124,66 @@ public class BrowserStream<T> implements Closeable {
     private StreamData queuedStreamData;
     private T queuedMessage;
 
-    private BrowserStream(final Mode mode, final SessionState session, final Marshaller<T> marshaller) {
+    /**
+     * Export retaining this stream so later {@code Next} calls can resolve it by ticket, or {@code null} if the initial
+     * message was a half-close. Released when the stream ends, otherwise it would leak for the session's lifetime.
+     */
+    private final SessionState.ExportObject<?> export;
+    /** whether this stream has ended: completed, failed, cancelled by the client, or closed with the session */
+    private boolean ended;
+
+    private BrowserStream(final Mode mode, final SessionState session, final StreamData initialStreamData,
+            final Marshaller<T> marshaller) {
         this.mode = mode;
         this.logIdentity = "BrowserStream(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
         this.session = session;
         this.marshaller = marshaller;
 
-        this.session.addOnCloseCallback(this);
+        // Retain this stream so later Next calls can resolve it by ticket, unless the client won't send more messages;
+        // released when the stream ends so that it (and everything it keeps reachable) can be collected without
+        // waiting for the session to end.
+        final SessionState.ExportBuilder<BrowserStream<T>> exportBuilder;
+        try {
+            exportBuilder = initialStreamData.isHalfClose() ? null
+                    : session.newExport(initialStreamData.getRpcTicket(), "rpcTicket");
+            // A Next call that arrived before this open may already be waiting on this export, and runs as soon as
+            // its work does - possibly on another thread, before submit() returns - so it may end this stream at once.
+            // Both the export and the close callback must be in place by then, or the end steps have nothing to
+            // release.
+            this.export = exportBuilder == null ? null : exportBuilder.getExport();
+            this.session.addOnCloseCallback(this);
+        } catch (final RuntimeException err) {
+            // the session already expired; nothing has a reference to this instance yet, so all that is left is to let
+            // the underlying call know now instead of leaving it to hang
+            marshaller.onError(err);
+            throw err;
+        }
+        if (exportBuilder == null) {
+            return;
+        }
+        try {
+            // no onError needed here: if this export is later cancelled by the session expiring, close() (registered
+            // just above) already notifies the marshaller
+            exportBuilder.submit(() -> this);
+        } catch (final RuntimeException err) {
+            // The ticket is already taken, so this stream can never be reached; undo the registration above and let
+            // the underlying call know now instead of leaving it to hang. Until here `export` refers to whoever owns
+            // the ticket, but this instance never escapes construction, so nothing can act on it - except close() if
+            // the session expires in between, and by then the session has already cancelled every export (hence the
+            // guard: the marshaller has been notified, and cancelling a terminal export is a no-op).
+            if (this.session.removeOnCloseCallback(this)) {
+                marshaller.onError(err);
+            }
+            throw err;
+        }
     }
 
     public void onMessageReceived(T message, StreamData streamData) {
         synchronized (this) {
+            if (ended) {
+                // the stream is over (the client abandoned it, or it failed); there is nothing left to deliver to
+                return;
+            }
             if (halfClosedSeq != -1 && streamData.getSequence() > halfClosedSeq) {
                 throw Exceptions.statusRuntimeException(Code.ABORTED, "Sequence sent after half close: closed seq="
                         + halfClosedSeq + " recv seq=" + streamData.getSequence());
@@ -192,6 +246,11 @@ public class BrowserStream<T> implements Closeable {
 
         do {
             synchronized (this) {
+                if (ended) {
+                    // the stream ended while the previous message was being delivered; drop whatever is still queued
+                    processingMessage = false;
+                    return;
+                }
                 if (streamData.isHalfClose()) {
                     onComplete();
                     processingMessage = false;
@@ -238,21 +297,71 @@ public class BrowserStream<T> implements Closeable {
     }
 
     public void onError(final RuntimeException e) {
-        if (session.removeOnCloseCallback(this)) {
-            log.error().append(logIdentity).append("closing browser stream on unexpected exception: ").append(e).endl();
-            this.marshaller.onError(e);
+        markEnded();
+        try {
+            if (session.removeOnCloseCallback(this)) {
+                log.error().append(logIdentity).append("closing browser stream on unexpected exception: ").append(e)
+                        .endl();
+                this.marshaller.onError(e);
+            }
+        } finally {
+            releaseExport();
         }
     }
 
+    /**
+     * The client abandoned the call that opened this stream.
+     */
+    public void onCancel() {
+        markEnded();
+        try {
+            if (session.removeOnCloseCallback(this)) {
+                log.debug().append(logIdentity).append("browser stream cancelled by client").endl();
+                this.marshaller.onCancel();
+            }
+        } finally {
+            releaseExport();
+        }
+    }
+
+    /**
+     * The session this stream belongs to is closing or has expired.
+     */
     @Override
     public void close() {
-        this.marshaller.onCancel();
+        markEnded();
+        try {
+            this.marshaller.onCancel();
+        } finally {
+            releaseExport();
+        }
     }
 
     private void onComplete() {
-        if (session.removeOnCloseCallback(this)) {
-            log.debug().append(logIdentity).append("browser stream completed").endl();
-            this.marshaller.onCompleted();
+        markEnded();
+        try {
+            if (session.removeOnCloseCallback(this)) {
+                log.debug().append(logIdentity).append("browser stream completed").endl();
+                this.marshaller.onCompleted();
+            }
+        } finally {
+            releaseExport();
+        }
+    }
+
+    /**
+     * Marks this stream as ended, so that no further message is delivered to it. Idempotent, like the release and
+     * notification steps at each call site above: {@link SessionState.ExportObject#cancel} tolerates redundant calls,
+     * and {@code removeOnCloseCallback} only succeeds once, so the marshaller is notified at most once regardless.
+     */
+    private synchronized void markEnded() {
+        ended = true;
+    }
+
+    private void releaseExport() {
+        if (export != null) {
+            // cancel rather than release: the export may not have run yet, and the session may already be expired
+            export.cancel();
         }
     }
 
