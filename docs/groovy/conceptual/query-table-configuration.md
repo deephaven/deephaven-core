@@ -100,14 +100,14 @@ For more details, see [Predicate pushdown filtering](../how-to-guides/predicate-
 
 ## Parallel processing with `where`
 
-Parallelism for `where` operations is not enabled until the parent's size exceeds `QueryTable.parallelWhereRowsPerSegment` rows. This avoids the overhead of using threads for small operations. For tables larger than this threshold, the `where` operation uses a fixed number of parallel segments defined by `QueryTable.parallelWhereSegments`. These parameters can be tuned to avoid unnecessary parallelism when the overhead exceeds potential gains.
+Parallelism for `where` operations is not enabled until the parent's size exceeds twice `QueryTable.parallelWhereRowsPerSegment` (about 131,072 rows with defaults) — the engine needs enough rows to fill more than one segment before splitting the work. This avoids the overhead of using threads for small operations. By default (`QueryTable.parallelWhereSegments` at its default of `-1`), the number of segments is derived from the update graph's available worker threads rather than a fixed count; set `QueryTable.parallelWhereSegments` to a positive number to use a fixed number of segments instead. These parameters can be tuned to avoid unnecessary parallelism when the overhead exceeds potential gains.
 
-| Property Name                                  | Default Value | Description                                                                                                               |
-| ---------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `QueryTable.disableParallelWhere`              | false         | Disables parallelized optimizations for `QueryTable#where` operations                                                     |
-| `QueryTable.parallelWhereRowsPerSegment`       | `1 << 16`     | The number of rows per segment when the number of segments is not fixed                                                   |
-| `QueryTable.parallelWhereSegments`             | -1            | The number of segments to use when dividing all work equally into a fixed number of tasks; -1 implies one thread per core |
-| `QueryTable.forceParallelWhere` (test-focused) | false         | Forces Where operations to parallelize even when row requirements are not met                                             |
+| Property Name                                  | Default Value | Description                                                                                                                                                      |
+| ---------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `QueryTable.disableParallelWhere`              | false         | Disables parallelized optimizations for `QueryTable#where` operations                                                                                            |
+| `QueryTable.parallelWhereRowsPerSegment`       | `1 << 16`     | The number of rows per segment when the number of segments is not fixed                                                                                          |
+| `QueryTable.parallelWhereSegments`             | -1            | The number of segments to use when dividing all work equally into a fixed number of tasks; -1 derives the count from the update graph's available worker threads |
+| `QueryTable.forceParallelWhere` (test-focused) | false         | Forces Where operations to parallelize even when row requirements are not met                                                                                    |
 
 ## Parallel processing with `select`
 
@@ -125,7 +125,7 @@ Parallelism for `select` operations is not enabled until the parent's size excee
 
 [`sort`](../reference/table-operations/sort/sort.md) can parallelize filling the value chunks that feed the sort kernels, sorting segments with pairwise merges, and gathering the permuted row keys.
 
-Parallelism for `sort` is not enabled until the table's size exceeds `QueryTable.minimumParallelSortRows` rows; below that, dividing the work into segments costs more than the work itself, so the sort runs entirely on the calling thread. Set `QueryTable.parallelSort` to `false` to disable sort parallelization entirely, regardless of table size.
+Parallelism for `sort` is not enabled until the table's size reaches `QueryTable.minimumParallelSortRows` rows; below that, dividing the work into segments costs more than the work itself, so the sort runs entirely on the calling thread. Set `QueryTable.parallelSort` to `false` to disable sort parallelization entirely, regardless of table size.
 
 | Property Name                        | Default Value | Description                                                                    |
 | ------------------------------------ | ------------- | ------------------------------------------------------------------------------ |

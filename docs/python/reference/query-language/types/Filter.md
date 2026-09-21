@@ -72,7 +72,7 @@ def check_value(x) -> bool:
 source = empty_table(100).update("X = i")
 
 # Use with_serial because the filter has side effects
-my_filter = Filter.from_("(boolean)check_value(X)").with_serial()
+my_filter = Filter.from_("check_value(X)").with_serial()
 result = source.where(my_filter)
 ```
 

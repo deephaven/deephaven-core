@@ -5,7 +5,7 @@ title: where
 The `where` method filters rows of data from the source table.
 
 > [!NOTE]
-> The engine addresses filters in series, consistent with the ordering of arguments. It is _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded. Additionally, match filters are highly optimized and should usually come before conditional filters.
+> The engine does not guarantee it evaluates filters in argument order: stateless filters (the default) are scheduled by estimated cost, so a cheaper or more selective filter can run before one that appears earlier in the argument list. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized and typically evaluated before conditional filters. If your query depends on filters running in a specific order, use [`withSerial`](../../query-language/types/Filter.md#withserial) or barriers to guarantee it.
 
 ## Syntax
 

@@ -9,10 +9,11 @@ Modern computers have multiple processors (called "cores") that can work simulta
 
 ## How parallelization works
 
-Deephaven distributes work across cores in a few ways, most visibly:
+Deephaven distributes work across cores in three ways:
 
 1. **Across tables**: When multiple tables depend on the same live source, Deephaven's update graph can update them at the same time on different cores as new data arrives.
 2. **Across rows**: When computing values for a single table, Deephaven divides the rows among cores so each core handles a portion.
+3. **Across columns**: When you compute multiple columns in the same operation, Deephaven can calculate independent columns simultaneously.
 
 ### Across tables
 
@@ -50,6 +51,16 @@ largeTable = emptyTable(20_000_000).update(
 ```
 
 With 20 million rows and 4 cores, Deephaven divides the work into four chunks of roughly 5 million rows each. All four cores compute their chunks simultaneously, so the work completes faster than if a single core processed all rows sequentially — though scheduling overhead means the speedup is rarely a perfectly linear 4x. (Deephaven only splits a single column's row-wise computation across cores once a table is large enough — at least a few million rows; below that threshold, that column's own computation runs on a single core, though independent columns and other downstream tables can still run concurrently.)
+
+### Across columns
+
+When you compute multiple columns in the same operation, Deephaven can also calculate independent columns at the same time:
+
+```groovy test-set=parallel order=source
+source = emptyTable(10).update("A = i * 2", "B = i + 10")
+```
+
+Since `A` and `B` don't depend on each other, Deephaven can compute them on different cores simultaneously.
 
 ## When it works
 
