@@ -162,7 +162,7 @@ public class TestPD034 {
     }
 
     /**
-     * Builds the sorted input, optionally indexes the clock column, applies a refreshing {@link SortedClockFilter}, and
+     * Optionally indexes the clock column, applies {@code wrapper} to a refreshing {@link UnsortedClockFilter}, and
      * captures the {@code Int} column after the initial filter and after each of two clock steps.
      */
     private int[][] runSteps(final boolean withDataIndex, final UnaryOperator<WhereFilter> wrapper) {
