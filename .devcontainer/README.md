@@ -42,6 +42,12 @@ An agent in here can read and write anything mounted into the container and reac
 network. It cannot see the rest of your filesystem, your host's processes, or its Docker daemon.
 There is no egress filtering: whatever an agent can read, it can send somewhere.
 
+Copilot Chat runs with terminal commands auto-approved except for VS Code's own built-in rules,
+which still prompt — roughly one command in eight, from a deny list shaped for a host rather than
+a container (`rm`, `curl`, `chmod`, `ps`, …). Some prompts come from neither: VS Code always
+confirms a variable assignment (`LOG=/tmp/x`) or a redirect outside the workspace, whatever the
+rules say. Approving in chat is a click; nothing is blocked outright.
+
 ### What is mounted
 
 - **This repo** — and, in a worktree, the main checkout's `.git`. That includes `.git/hooks`,
@@ -157,12 +163,22 @@ and `docs/manual-verification.md` § 13.9.
   did not take. `id` inside should print `uid=0(vscode)`; if it prints 1000, rebuild without
   cache and check the build log for the `rootless-remap` lines.
 
-## Reference: why terminal auto-approve rules are not used
+## Reference: why global auto-approve is not set here
 
-`chat.tools.terminal.autoApprove` cannot express "approve everything in this container". VS Code
-parses each command and always asks about two constructs whatever the rules say: a variable
-assignment (`LOG=/tmp/x`, `export FOO=bar`) and a redirect to a destination outside the workspace
-or containing `$ ( ) { } ~`. Against ~4,900 recorded agent commands from this repo, a fully
-loosened rule set still stopped on 8.7% of them — about one prompt every 12 commands, 98% of them
-variable assignments. `chat.tools.global.autoApprove` is evaluated before those rules, so it
-clears them too.
+`chat.tools.global.autoApprove` looks like the setting that would remove the remaining prompts. It
+does not work from `devcontainer.json`. In `vs/platform/agentHost` it is registered `policyOnly`,
+so only an enterprise policy value is read — user, machine and remote values are ignored — and it
+contributes something only when set to **`false`**, where it emits `disableBypassPermissionsMode`.
+Set to `true` it maps to nothing at all: it is a restriction knob, not an enabler.
+`chat.tools.terminal.autoApprove` is registered `anyGlobal`, which is why that one is honoured
+here.
+
+Enabling global auto-approve is therefore a per-user decision in local settings, where VS Code
+shows a deliberate warning the first time it is used. This repo does not make it for you.
+
+Two further limits worth knowing. The rules are merged across configuration scopes and
+`devcontainer.json` can only write the machine scope, so a user's own host-level rules still apply
+inside the container — a devcontainer cannot isolate its approval policy from the host's. And the
+prompts VS Code raises structurally (variable assignments, out-of-workspace redirects) are
+evaluated before any rule, so no rule set removes them: measured against ~4,900 recorded agent
+commands from this repo, even a fully loosened rule set still stopped on 8.7%.

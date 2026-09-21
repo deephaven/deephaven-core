@@ -135,11 +135,15 @@
         // Copilot Chat ships built-in with the VS Code server and cannot be removed from here,
         // so these chat.* settings are live whether or not it is listed in "extensions".
         //
-        // Runs Copilot without per-command approval prompts; the container is the boundary
-        // instead. See README.md for more details on permissions.
-        "chat.tools.global.autoApprove": true,
+        // Approve anything VS Code's own rules do not explicitly deny. Those built-in rules still
+        // apply on top of this (ignoreDefaultAutoApproveRules stays false) and downgrade a
+        // command to a confirmation prompt rather than blocking it, so nothing is unreachable.
+        // See README.md § "Agent permissions".
+        "chat.tools.terminal.autoApprove": { "/.*/": true },
+        "chat.tools.terminal.ignoreDefaultAutoApproveRules": false,
 
-        // The default, 50, halts the agent partway through a Gradle task.
+        // A tool-call budget, not an access control. The default, 50, halts the agent partway
+        // through a Gradle task.
         "chat.agent.maxRequests": 500,
         "editor.formatOnSave": true,
         // Auto-discovery only scans the workspace root, and the venv lives outside it — so
