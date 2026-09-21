@@ -47,9 +47,10 @@ for a compaction that frees gigabytes. With the floor in place, a stream of sing
 compacts about every 7,000 cycles at 20 bytes per row, and about every 450 at 300 bytes per row.
 
 **Both bounds hold throughout the interval, not only just after a compaction.** Because each
-compaction leaves behind exactly the storage the estimate predicted, the next cannot fire until a
-further fraction `f` of the queue has been superseded. Writing `raw` for the bytes recorded between
-two compactions, the trigger gives `N_i ≤ (1 − f)(N_{i−1} + raw_i)`, and summing:
+compaction leaves behind the storage the estimate predicted, within the rounding described below,
+the next cannot fire until a further fraction `f` of the queue has been superseded. Writing `raw`
+for the bytes recorded between two compactions, the trigger gives `N_i ≤ (1 − f)(N_{i−1} + raw_i)`,
+and summing:
 
 ```
 Σ N_i ≤ ((1 − f) / f) × Σ raw_i

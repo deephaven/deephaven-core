@@ -43,8 +43,9 @@ public interface BarrageSubscriptionPerformanceLogger {
         /** Payload size of an update written to a single subscriber, in bytes. */
         public static final String WRITE_BYTES = "WriteBytes";
         /**
-         * Number of per-cycle updates a producer is holding, un-propagated, at the end of one update graph cycle. It
-         * rises with the number of update graph cycles that elapse per subscriber update interval.
+         * Number of pending deltas a producer is holding, un-propagated, at the end of one update graph cycle. Each
+         * cycle records one, so it rises with the number of update graph cycles that elapse per subscriber update
+         * interval; compaction lowers it, since a compacted delta stands for every cycle it coalesced.
          */
         public static final String PENDING_DELTA_COUNT = "PendingDeltaCount";
         /**

@@ -1112,10 +1112,10 @@ public class BarrageMessageProducer extends LivenessArtifact
      * <p>
      * Measuring against the whole queue, rather than against the last compaction's output, is what makes the two bounds
      * hold throughout the interval rather than only at the instant after a compaction: each compaction leaves behind
-     * exactly the storage it estimated, so the next one cannot fire until a further {@code f} of the queue is
-     * superseded. Total copying is therefore at most {@code (1 - f) / f} times the data recorded, and the queue holds
-     * at most about {@code 1 / (1 - f)} times its coalesced footprint, plus the delta that triggered the compaction and
-     * the transient of the copy itself.
+     * the storage it estimated, within the rounding {@link #coalescedChunkBytes()} describes, so the next one cannot
+     * fire until a further {@code f} of the queue is superseded. Total copying is therefore at most {@code (1 - f) / f}
+     * times the data recorded, and the queue holds at most about {@code 1 / (1 - f)} times its coalesced footprint,
+     * plus the delta that triggered the compaction and the transient of the copy itself.
      */
     private boolean shouldCompact() {
         Assert.assertion(Thread.holdsLock(this), "shouldCompact must hold lock!");
