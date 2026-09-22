@@ -13,7 +13,7 @@ Install `deephaven-server` to use Deephaven tables in your Python project:
 pip install deephaven-server
 ```
 
-> **Note:** `deephaven-server` requires Java 17+ and sets up an embedded Deephaven server. Set your `JAVA_HOME` environment variable before running.
+> **Note:** `deephaven-server` requires Java 11+ and sets up an embedded Deephaven server. Set your `JAVA_HOME` environment variable before running.
 
 ### Optional dependencies
 
@@ -55,7 +55,7 @@ from deephaven.column import int_col, string_col
 
 def test_table_creation():
     """Test that we can create a table."""
-    t = empty_table(10).update("X = i", "Y = X * 2")
+    t = empty_table(10).update(["X = i", "Y = X * 2"])
 
     assert t.size == 10
     assert "X" in [col.name for col in t.columns]
@@ -92,7 +92,6 @@ When testing with [`time_table`](../reference/table-operations/create/timeTable.
 
 ```python skip-test
 from deephaven import time_table
-from deephaven.update_graph import exclusive_lock
 
 
 def test_ticking_table():
@@ -100,9 +99,8 @@ def test_ticking_table():
     t = time_table("PT1S").update("X = ii")
 
     # Wait for the table to have at least 3 rows
-    with exclusive_lock(t):
-        while t.size < 3:
-            t.await_update(1000)  # Wait up to 1 second
+    while t.size < 3:
+        t.await_update(1000)  # Wait up to 1 second
 
     assert t.size >= 3
 ```

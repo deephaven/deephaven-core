@@ -16,6 +16,7 @@ Add the Maven Central repository and Deephaven dependencies to your `build.gradl
 ```groovy skip-test
 plugins {
     id 'java'
+    id 'groovy'
 }
 
 repositories {
@@ -30,6 +31,7 @@ dependencies {
     implementation "io.deephaven:deephaven-Configuration:$dhcVersion"
     implementation "io.deephaven:deephaven-engine-time:$dhcVersion"
     implementation "io.deephaven:deephaven-log-factory:$dhcVersion"
+    implementation "org.apache.groovy:groovy-all:4.0.15"
 }
 ```
 
@@ -68,7 +70,36 @@ Add dependencies to your `pom.xml`:
         <artifactId>deephaven-log-factory</artifactId>
         <version>${dhc.version}</version>
     </dependency>
+    <dependency>
+        <groupId>org.apache.groovy</groupId>
+        <artifactId>groovy-all</artifactId>
+        <version>4.0.15</version>
+    </dependency>
 </dependencies>
+```
+
+To compile Groovy sources, add the `gmavenplus-plugin` to your build:
+
+```xml
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.codehaus.gmavenplus</groupId>
+            <artifactId>gmavenplus-plugin</artifactId>
+            <version>3.0.2</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>addSources</goal>
+                        <goal>addTestSources</goal>
+                        <goal>compile</goal>
+                        <goal>compileTests</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
 ```
 
 ## Common dependencies by use case
@@ -112,13 +143,14 @@ Or in Maven:
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-surefire-plugin</artifactId>
+    <version>3.2.5</version>
     <configuration>
         <argLine>--add-exports=java.management/sun.management=ALL-UNNAMED</argLine>
     </configuration>
 </plugin>
 ```
 
-> **Note:** Advanced use cases like the Barrage Java client may require additional JVM arguments: `--add-opens=java.base/java.lang=ALL-UNNAMED`, `--add-opens=java.management/sun.management=ALL-UNNAMED`, and `--add-opens=java.base/java.nio=ALL-UNNAMED`.
+> **Note:** Advanced use cases like the Barrage Java client may require an additional JVM argument: `--add-opens=java.base/java.nio=ALL-UNNAMED`.
 
 ### Example test setup
 
@@ -126,8 +158,13 @@ Add `deephaven-engine-test-utils` as a test dependency to use `TestExecutionCont
 
 ```groovy skip-test
 testImplementation "io.deephaven:deephaven-engine-test-utils:$dhcVersion"
+testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
 testRuntimeOnly "io.deephaven:deephaven-log-to-slf4j:$dhcVersion"
 testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.9'
+
+test {
+    useJUnitPlatform()
+}
 ```
 
 Or in Maven:
@@ -149,6 +186,12 @@ Or in Maven:
     <groupId>org.slf4j</groupId>
     <artifactId>slf4j-simple</artifactId>
     <version>2.0.9</version>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.junit.jupiter</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <version>5.10.2</version>
     <scope>test</scope>
 </dependency>
 ```
