@@ -1,7 +1,6 @@
 ---
 name: deephaven-core-accuracy-check
-description: >
-  Review deephaven-core (Community) documentation for technical accuracy: verify claims against source code and validate internal links. **Invoke when:** reviewing or fact-checking a doc, confirming code examples work, verifying method signatures/config property names, or checking that described behavior matches implementation, for a full file or a change touching multiple sections or independent claims (use deephaven-core-accuracy-spot-check instead for one isolated snippet, sentence, or paragraph). Verifies against source in engine/, py/server/, server/, extensions/. **Do NOT use for:** deephaven-ent/iris docs (use deephaven-enterprise-accuracy-check), style/formatting (use deephaven-writing-style), or reorganization (use deephaven-doc-structure-review). For a full review covering accuracy+structure+style, use deephaven-docs-review-full.
+description: Review deephaven-core (Community) documentation for technical/factual accuracy and missing links. Use this whenever a developer asks you to review, check, proofread, or verify a doc against source for the deephaven-core repo specifically. Do not use for deephaven-ent/iris docs — that repo has a separate skill (deephaven-enterprise-accuracy-check) with different paths, pitfalls, and vocabulary. Pair with deephaven-doc-structure-review for organization/flow and deephaven-writing-style for prose and style — this skill is accuracy/link validation only and does not check style. For a single small edit rather than a full-file audit, use deephaven-core-accuracy-spot-check instead. For all three review dimensions in one pass, use deephaven-docs-review-full.
 allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 ---
 
@@ -54,17 +53,8 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    - Check docker-compose examples against real compose files in the repository.
    - Verify port numbers, volume mounts, and network configurations.
 
-   > [!CAUTION]
-   > **Stay in scope.** This skill checks accuracy and links ONLY. Do not comment on:
-   > - Prose style (backticks, capitalization, em dashes, link wording)
-   > - Document structure (heading order, topic flow, section placement)
-   > - Tone or voice
-   > 
-   > Those are `deephaven-writing-style` and `deephaven-doc-structure-review` concerns. If you catch yourself writing "consider capitalizing..." or "the link format differs...", stop — that's out of scope.
-
    **Common accuracy pitfalls to check specifically:**
-   - **Mandatory claims ("must", "required", "necessary"):** When a doc says users "must" do something, verify that's actually true. Claims like "you must manually capture the execution context" or "this is required for X to work" are often overstated — the engine may handle it automatically. Check what happens if the user omits the supposedly required step. If the engine does it for them, the "must" is wrong.
-   - **Execution context in transform callbacks:** The engine automatically captures and reopens execution context for `transform`/`partitioned_transform` callbacks (see `PartitionedTable.java`'s default `transform` and `partitionedTransform` overloads, `TableTransformationColumn.java` for the unary path, and `BiTableTransformationColumn.java` for the binary path). Documentation claiming users "must" manually capture context is outdated — manual handling is only needed for advanced scenarios like frozen variables or non-default contexts.
+   - **Execution context:** Do `transform` callbacks on live partitioned tables capture and reopen an execution context? (Required because new constituents arrive on update threads.)
    - **Materialization vs. direct access:** Does text claiming "direct access" actually involve a copy? (`toArray()`, `to_pandas()`, `to_numpy()` all materialize data.)
    - **Update graph semantics:** Are timing guarantees accurate? (1000ms is a target interval, not a deadline. Cycles can exceed it.)
    - **TableUpdate contract:** Does the description include row-shift and modified-column info? Are refilter scenarios acknowledged?
@@ -93,17 +83,15 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
      - If no source exists, mark as "⚠️ Needs SME input" and suggest a reviewer from the SME matrix.
    - Flag any outdated or incorrect information.
 
-   Style, prose, and page-structure concerns are out of scope — see the CAUTION box above.
+   Style, prose, and page-structure concerns (backticks, link wording, proper noun
+   capitalization, tone, active voice, the mechanical dot-prefix/parens/link-text grep patterns)
+   are out of scope for this skill entirely — see `deephaven-writing-style`. Organizational
+   concerns (heading order, duplicated explanations, topic flow, orphaned sections) are equally
+   out of scope — see `deephaven-doc-structure-review`. Don't re-run either check here, and don't
+   maintain a parallel style/structure checklist in this file; use `deephaven-docs-review-full` to
+   run accuracy, structure, and style together in the right order.
 
-4a. **Cross-language consistency check (mandatory when a sibling exists):**
-   - If reviewing `docs/python/.../X.md`, **immediately check** whether `docs/groovy/.../X.md` exists (or vice versa).
-   - If a sibling exists, diff substantive claims between them:
-     - Numeric thresholds, "cannot be used with..." restrictions
-     - Enumerated lists ("N ways this works," "these methods are supported")
-     - Mandatory claims ("must", "required") — if one says users must do X and the other doesn't, investigate
-   - Flag any divergence that isn't explained by an actual language-level API difference.
-   - Verify each language's claims independently against that language's own source — don't assume a claim confirmed in Python also holds for Groovy.
-   - **When fixing a shared claim, fix both siblings in the same pass.** Don't fix Python and leave Groovy broken for later.
+   **Cross-language consistency check (when a sibling doc exists):** If reviewing `docs/python/.../X.md`, check whether `docs/groovy/.../X.md` exists, or vice versa. If so, diff the substantive claims between them — numeric thresholds, "cannot be used with..." restrictions, and any enumerated list ("N ways this works," "these methods are supported") — and flag any divergence that isn't explained by an actual language-level API difference. Verify each language's claims independently against that language's own source rather than assuming a claim already confirmed correct in one language's doc also holds for its sibling. **When a fix corrects a shared, substantive claim that both siblings make — not a language-specific detail — apply it to both in the same pass**, rather than fixing Python and leaving the same wrong claim sitting in Groovy (or vice versa) for a later round; that's exactly the kind of gap that resurfaces as a "why wasn't this also fixed here" finding next review. A fix that's genuinely specific to one language's API or behavior stays in that one file — don't copy it into the sibling just because you touched both docs in the same session.
 
    **Completeness check (for docs that enumerate a fixed set of things):** When a doc lists mechanisms, config properties, or methods ("Deephaven parallelizes in N ways," a table of filter functions, etc.), independently derive the exhaustive list from source (grep for all static factory methods on the relevant class, all properties in the config file, all mechanisms documented in the related conceptual doc) and diff it against what the doc actually lists. Flag missing entries, not just wrong ones — an omission that leaves out a real, user-relevant capability is as much a defect as a false claim.
 
@@ -124,8 +112,6 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 8. **Completeness sweep — do this before considering the review finished, not just once at the start:** For every issue you found — whether you applied the fix or only reported it (a review-only pass has just as much to sweep as one that edits the file) — re-grep the file and its cross-language sibling for the same claim, number, or pattern restated elsewhere (see **Duplicate claim propagation** above). A review that flags an issue in prose but misses the same issue in a table five lines away, or catches it in Python but not Groovy, isn't finished — it just guarantees the next review round finds the leftover. Only report the review as complete once this sweep turns up nothing new for every finding, applied or proposed. If you're reviewing in response to an external reviewer's comments (e.g., a bot leaving PR review comments), assume the same defect appears elsewhere in the file even if only one location was flagged, and check before moving on — don't wait for a follow-up comment to tell you.
 
 **Quick verification checklist:**
-- [ ] Cross-language sibling checked (if `docs/python/.../X.md`, check if `docs/groovy/.../X.md` exists)
-- [ ] Every "must"/"required"/"necessary" claim verified — does the engine actually require it, or does it handle it automatically?
 - [ ] Every method/function name verified against source
 - [ ] Every parameter name and type verified
 - [ ] Every import statement verified against actual package structure
@@ -140,4 +126,3 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 - [ ] Every runtime-behavior example (ordering, parallelism, timing) traced against the actual execution path, not assumed from the general feature description
 - [ ] Every paraphrase of a method's documented contract checked word-by-word against the source's exact guarantee, including prose written earlier in this same review that wasn't re-verified when the review moved on
 - [ ] Every worked example demonstrating "you need X" checked for whether X is actually load-bearing, given every other mechanism already active in that example
-- [ ] No style or structure comments included (those are out of scope)

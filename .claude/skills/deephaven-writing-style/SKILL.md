@@ -1,7 +1,6 @@
 ---
 name: deephaven-writing-style
-description: >
-  Deephaven's documentation style guide for deephaven-core — proper noun capitalization, Python/Groovy code formatting conventions, backtick usage, code example tags, and prose quality standards (active voice, clarity, jargon/audience calibration). **Use this skill when:** someone asks to check style, review formatting, fix prose issues, check capitalization, review code examples for naming conventions, check for passive voice, or asks about em dashes, backticks, link text, or method names in prose. Also use when writing or editing any deephaven-core doc, tutorial, how-to guide, README, or API reference — not just when explicitly asked about "style." Pair with deephaven-core-accuracy-check and deephaven-doc-structure-review for a full review, or use deephaven-docs-review-full to run all three together. **Do NOT use for:** accuracy/fact-checking (use deephaven-core-accuracy-check), document organization (use deephaven-doc-structure-review), or Enterprise/deephaven-ent docs.
+description: Deephaven's documentation style guide for deephaven-core — proper noun capitalization, Python/Groovy code formatting conventions, backtick usage, code example tags, and prose quality standards (active voice, clarity, jargon/audience calibration). Applies to deephaven-core (Community) documentation specifically. Use this whenever drafting, writing, editing, or reviewing any deephaven-core documentation, tutorial, how-to guide, README, or API reference — not just when explicitly asked about "style." Also consult this alongside deephaven-core-accuracy-check and deephaven-doc-structure-review when reviewing existing docs (deephaven-core-accuracy-spot-check for a single small edit instead), or use deephaven-docs-review-full to run accuracy, structure, and style together in the right order; see ref-deephaven-doc-categories for the Tutorial/How-to/Concept/Reference categories this guide's tone rules are calibrated to.
 ---
 
 # Deephaven documentation style guide (Community/Core)
@@ -77,14 +76,9 @@ Capitalize:
 - Whitespace for readability: `"A = 4"` not `"A=4"`
 - Null: prose = "will not include null values"; parameter descriptions = `NULL`; code = language-appropriate null.
 
-**Method names in prose:** No leading dot in prose, only in code. Empty parentheses add no value in
-prose, so a bare method reference never carries them. Parentheses *with* an argument are allowed
-when the argument itself conveys useful information to the reader (e.g. `isNaN(value)` shows what's
-being tested) — that's a small usage example, not just a method name, so the empty-parens rule
-doesn't apply to it.
+**Method names in prose:** No leading dot and no parentheses in prose, only in code.
 
 - Correct prose: "Use `with_serial` when your formula has side effects"
-- Correct prose: "Use `isNaN(value)` to explicitly test for `NaN`"
 - Correct code: `col.with_serial()`
 - Incorrect prose: "Use `.with_serial` when your formula has side effects" or "Use `with_serial()` when your formula has side effects"
 
@@ -109,10 +103,9 @@ required searches, not optional style intuition:
   first mention is bare and a later mention is linked still violates "first mention should link,"
   even though a plain existence check would pass it. Flag any identifier whose first occurrence is
   bare; the fix is to move the link to that first mention, not to add one anywhere in the file.
-- Search for a backticked identifier immediately followed by empty `()` outside of a fenced code
-  block (e.g. `` `with_serial()` `` in prose) — flag it; empty parentheses add no value in prose.
-  However, parentheses *with* arguments (e.g. `` `isNaN(value)` ``) are acceptable when the
-  argument conveys useful information to the reader. See **Method names in prose** above.
+- Search for a backticked identifier immediately followed by `()` outside of a fenced code block
+  (e.g. `` `with_serial()` `` in prose) — flag it; parentheses belong in code, not prose (see
+  **Method names in prose** above).
 - Search for the literal *markdown link label* `[here]`, `[click here]`, or `[this page]`
   (case-insensitive — the brackets matter: this targets link syntax, not ordinary prose like
   "This page explains...") — the **Link wording** rule above bans non-descriptive link text; flag

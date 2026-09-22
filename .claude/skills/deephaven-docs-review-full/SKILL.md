@@ -1,7 +1,6 @@
 ---
 name: deephaven-docs-review-full
-description: >
-  Run a complete deephaven-core (Community) documentation review — technical accuracy, structural organization, and prose style — in one pass, in the order that keeps one dimension from silently undoing another. **Use this skill when:** someone asks for a "full review" or "comprehensive review" of a doc, asks if a doc "is ready for production," or wants all three dimensions (accuracy + structure + style) checked together, for a new doc, a substantially rewritten doc, or a doc PR that touches more than a small, isolated edit. **Do NOT use for:** single small edits to a doc — a one-line fix, one code snippet, one changed sentence — (use deephaven-core-accuracy-spot-check instead), non-documentation code review, Enterprise/deephaven-ent docs, or when only one dimension is requested.
+description: Run a complete deephaven-core (Community) documentation review — technical accuracy, structural organization, and prose style — in one pass, in the order that keeps one dimension from silently undoing another. Use this for a new doc, a substantially rewritten doc, or before merging a doc PR, instead of remembering to invoke deephaven-core-accuracy-check, deephaven-doc-structure-review, and deephaven-writing-style separately and in the right order. For a single small edit, use deephaven-core-accuracy-spot-check instead — this skill is overkill for a one-paragraph change.
 allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *), Bash(awk *)
 ---
 
