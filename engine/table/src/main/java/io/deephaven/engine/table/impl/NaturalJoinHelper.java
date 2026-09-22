@@ -495,8 +495,8 @@ class NaturalJoinHelper {
 
     /**
      * Check the right table's size against the join type when there are left rows to match. As in the keyed paths,
-     * several right rows are a {@link DuplicateRightKeyException} and a missing exact match an
-     * {@link ExactJoinMissingKeyException}.
+     * several right rows raise a {@link DuplicateRightKeyException} and an empty right table under an exact join raises
+     * an {@link ExactJoinMissingKeyException}.
      */
     private static void checkRightTableSizeZeroKeys(
             final Table leftTable,

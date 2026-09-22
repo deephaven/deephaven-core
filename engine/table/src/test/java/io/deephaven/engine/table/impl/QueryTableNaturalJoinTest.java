@@ -2624,6 +2624,34 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     /**
+     * An exact join of a static left table to a refreshing right table fails with an ExactJoinMissingKeyException when
+     * the right row of a matched key is removed.
+     */
+    public void testExactJoinRightRemovalStaticLeft() {
+        final Table left = testTable(col("Key", "a", "b"), intCol("L", 1, 2));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), col("Key", "a", "b"), intCol("R", 10, 20));
+
+        final Table result = left.exactJoin(right, "Key");
+        assertTableEquals(newTable(col("Key", "a", "b"), intCol("L", 1, 2), intCol("R", 10, 20)), result);
+
+        final ErrorListener listener = new ErrorListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(right, i(1));
+                right.notifyListeners(i(), i(1), i());
+            });
+        }
+
+        final Throwable failure = listener.originalException();
+        assertNotNull(failure);
+        assertEquals(failure.toString(), ExactJoinMissingKeyException.class, failure.getClass());
+        assertEquals("Tables don't have one-to-one mapping - no mappings for key b.", failure.getMessage());
+    }
+
+    /**
      * exactJoin a two-row refreshing left table to a static right table with the same keys, apply {@code leftUpdate}
      * within a cycle, and return the message of the resulting failure of the join.
      */
