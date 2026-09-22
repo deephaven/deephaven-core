@@ -36,6 +36,7 @@ The `QueryTable` has the following user-configurable properties:
 | [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
 | [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSort`                                | true       |
 | [Parallel sorting](#parallel-sorting)                               | `QueryTable.minimumParallelSortRows`                     | `1L << 20` |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSortSegmentSize`                     | `1L << 18` |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
 | [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
 | [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
@@ -126,12 +127,13 @@ Parallelism for `select` operations is not enabled until the parent's size excee
 
 [`sort`](../reference/table-operations/sort/sort.md) can parallelize filling the value chunks that feed the sort kernels, sorting segments with pairwise merges, and gathering the permuted row keys.
 
-Parallelism for `sort` is not enabled until the table's size reaches `QueryTable.minimumParallelSortRows` rows; below that, dividing the work into segments costs more than the work itself, so the sort runs entirely on the calling thread. Set `QueryTable.parallelSort` to `false` to disable sort parallelization entirely, regardless of table size.
+Parallelism for `sort` is not enabled until the table's size reaches `QueryTable.minimumParallelSortRows` rows; below that, dividing the work into segments costs more than the work itself, so the sort runs entirely on the calling thread. Set `QueryTable.parallelSort` to `false` to disable sort parallelization entirely, regardless of table size. The number of segments is capped by `QueryTable.parallelSortSegmentSize`, which biases toward fewer, larger segments rather than splitting into more segments than that minimum size allows.
 
 | Property Name                        | Default Value | Description                                                                    |
 | ------------------------------------ | ------------- | ------------------------------------------------------------------------------ |
 | `QueryTable.parallelSort`            | true          | Whether the engine may parallelize sorts at all                                |
 | `QueryTable.minimumParallelSortRows` | `1L << 20`    | The minimum number of rows in a sort for which the engine may parallelize work |
+| `QueryTable.parallelSortSegmentSize` | `1L << 18`    | The minimum number of rows in each segment of a parallel sort                  |
 
 ## Parallel snapshotting
 
