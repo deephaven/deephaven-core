@@ -60,6 +60,10 @@ public class UnionRedirectionTest {
         final long largestKeySpace = (Long.MAX_VALUE / ALLOCATION_UNIT_ROW_KEYS) * ALLOCATION_UNIT_ROW_KEYS;
         for (final long lastRowKey : new long[] {largestKeySpace, largestKeySpace + 1, Long.MAX_VALUE - 1,
                 Long.MAX_VALUE}) {
+            if (lastRowKey < 0) {
+                // The unit divides Long.MAX_VALUE, so largestKeySpace + 1 wrapped; it is not a valid last row key.
+                continue;
+            }
             assertThatThrownBy(() -> UnionRedirection.keySpaceFor(lastRowKey))
                     .as("keySpaceFor(%d)", lastRowKey)
                     .isInstanceOf(UnsupportedOperationException.class);
