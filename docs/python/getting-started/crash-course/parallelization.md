@@ -2,7 +2,7 @@
 title: Query Parallelization
 ---
 
-Modern computers have multiple processors (called "cores") that can work simultaneously. Deephaven automatically distributes work across these cores to make queries faster. For example, a calculation that takes 8 seconds on a single core can complete significantly faster on a multi-core machine by having several cores work on different parts at the same time — though the actual speedup depends on the workload and scheduling overhead, not just the number of cores.
+Modern computers have multiple processors (called "cores") that can work simultaneously. Deephaven automatically distributes work across these cores to make queries faster by having several cores work on different parts of a calculation at the same time. The actual speedup depends on the workload and scheduling overhead, not just the number of cores.
 
 > [!TIP]
 > **Most queries benefit from parallelization automatically.** You don't need to do anything special. This guide explains how parallelization works and covers the uncommon situations where you need to disable it.
@@ -52,7 +52,9 @@ large_table = empty_table(20_000_000).update(
 )
 ```
 
-With 20 million rows and 4 cores (assuming the default operation-initialization thread pool, which uses one thread per core — a differently-sized pool changes the chunk count), Deephaven divides each column's computation into four chunks of roughly 5 million rows each, independently for `Price`, `Quantity`, and `Total`. All four cores compute their chunks simultaneously, so the work completes faster than if a single core processed all rows sequentially — though scheduling overhead means the speedup is rarely a perfectly linear 4x. (Deephaven only splits a single column's row-wise computation across cores once a table is large enough — at least a few million rows; below that threshold, that column's own computation runs on a single core, though independent columns and other downstream tables can still run concurrently.)
+With 20 million rows and 4 cores, Deephaven divides each column's computation into four chunks of roughly 5 million rows each, independently for `Price`, `Quantity`, and `Total`. All four cores compute their chunks simultaneously, so the work completes faster than if a single core processed all rows sequentially. This assumes the default operation-initialization thread pool, which uses one thread per core; a differently-sized pool changes the chunk count, and scheduling overhead means the speedup is rarely a perfectly linear 4x.
+
+Deephaven only splits a single column's row-wise computation across cores once a table is large enough (at least a few million rows). Below that threshold, that column's own computation runs on a single core, though independent columns and other downstream tables can still run concurrently.
 
 ### Across columns
 
