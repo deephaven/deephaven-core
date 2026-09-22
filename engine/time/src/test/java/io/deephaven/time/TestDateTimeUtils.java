@@ -3337,6 +3337,17 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         // The Epoch itself, and one nanosecond after it.
         TestCase.assertEquals(0, DateTimeUtils.nanosOfMilli(DateTimeUtils.epochNanosToInstant(0L)));
         TestCase.assertEquals(1, DateTimeUtils.nanosOfMilli(DateTimeUtils.epochNanosToInstant(1L)));
+
+        // Outside the range representable as epoch nanoseconds in a long (roughly 1678 through 2262). The nano-of-
+        // second is well defined for these, so they must not be routed through an epoch-nanos conversion, which
+        // wraps silently below the range and throws above it.
+        final Instant early = LocalDateTime.parse("1600-06-15T12:30:00.123456789").toInstant(ZoneOffset.UTC);
+        TestCase.assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(early));
+        TestCase.assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(early.atZone(TZ_JP)));
+
+        final Instant late = LocalDateTime.parse("2300-06-15T12:30:00.123456789").toInstant(ZoneOffset.UTC);
+        TestCase.assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(late));
+        TestCase.assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(late.atZone(TZ_JP)));
     }
 
     public void testNanosOfDay() {
@@ -3600,6 +3611,15 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         // The Epoch itself, and one nanosecond after it.
         TestCase.assertEquals(0, DateTimeUtils.microsOfMilli(DateTimeUtils.epochNanosToInstant(0L)));
         TestCase.assertEquals(0, DateTimeUtils.microsOfMilli(DateTimeUtils.epochNanosToInstant(1L)));
+
+        // Outside the range representable as epoch nanoseconds in a long, as in testNanosOfMilli().
+        final Instant early = LocalDateTime.parse("1600-06-15T12:30:00.123456789").toInstant(ZoneOffset.UTC);
+        TestCase.assertEquals(457, DateTimeUtils.microsOfMilli(early));
+        TestCase.assertEquals(457, DateTimeUtils.microsOfMilli(early.atZone(TZ_JP)));
+
+        final Instant late = LocalDateTime.parse("2300-06-15T12:30:00.123456789").toInstant(ZoneOffset.UTC);
+        TestCase.assertEquals(457, DateTimeUtils.microsOfMilli(late));
+        TestCase.assertEquals(457, DateTimeUtils.microsOfMilli(late.atZone(TZ_JP)));
     }
 
     public void testAtMidnight() {

@@ -769,7 +769,7 @@ public class JdbcTypeMapper {
                 stmt.setNull(parameterIndex, sqlType);
             } else {
                 final Timestamp ts = new Timestamp(value.toEpochMilli());
-                ts.setNanos((int) Math.floorMod(DateTimeUtils.epochNanos(value), 1_000_000_000L));
+                ts.setNanos(value.getNano());
                 stmt.setTimestamp(parameterIndex, ts, context.getSourceCalendar());
             }
         }
