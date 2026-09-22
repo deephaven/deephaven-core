@@ -549,24 +549,16 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         // build from right
         final Table left = testTable(col("Symbol", "A", "B", "C", "D"), col("LeftSentinel", 1, 2, 3, 4));
         final Table right = newTable(col("Symbol", "A", "A"), col("RightSentinel", 10, 11));
-        try {
-            final Table cj = left.naturalJoin(right, "Symbol");
-            TableTools.showWithRowSet(cj);
-            fail("Expected exception.");
-        } catch (DuplicateRightKeyException e) {
-            assertEquals(dupMsg + "A", e.getMessage());
-        }
+        final DuplicateRightKeyException buildRightError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "Symbol"));
+        assertEquals(dupMsg + "A", buildRightError.getMessage());
 
         // build from left
         final Table left2 = testTable(col("Symbol", "A", "B"), col("LeftSentinel", 1, 2));
         final Table right2 = newTable(col("Symbol", "A", "A", "B", "C", "D"), col("RightSentinel", 10, 11, 12, 13, 14));
-        try {
-            final Table cj2 = left2.naturalJoin(right2, "Symbol");
-            TableTools.showWithRowSet(cj2);
-            fail("Expected exception");
-        } catch (DuplicateRightKeyException e) {
-            assertEquals(dupMsg + "A", e.getMessage());
-        }
+        final DuplicateRightKeyException buildLeftError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left2.naturalJoin(right2, "Symbol"));
+        assertEquals(dupMsg + "A", buildLeftError.getMessage());
     }
 
     public void testNaturalJoinDuplicateReinterpret() {
@@ -589,25 +581,17 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 testTable(col("JK1", true, true), col("JK2", instantA, instantA), col("RightSentinel", 10, 11));
         right.setRefreshing(rightRefreshing);
 
-        try {
-            final Table cj = left.naturalJoin(right, "JK1, JK2");
-            TableTools.showWithRowSet(cj);
-            fail("Expected exception.");
-        } catch (DuplicateRightKeyException e) {
-            assertEquals(dupMsg + "[true, " + instantA + "]", e.getMessage());
-        }
+        final DuplicateRightKeyException buildRightError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "JK1, JK2"));
+        assertEquals(dupMsg + "[true, " + instantA + "]", buildRightError.getMessage());
 
         // build from left
         final Table left2 = testTable(col("DT", instantA, instantB), col("LeftSentinel", 1, 2));
         final Table right2 = newTable(col("DT", instantA, instantA, instantB, instantC, instantD),
                 col("RightSentinel", 10, 11, 12, 13, 14));
-        try {
-            final Table cj2 = left2.naturalJoin(right2, "DT");
-            TableTools.showWithRowSet(cj2);
-            fail("Expected exception");
-        } catch (DuplicateRightKeyException e) {
-            assertEquals(dupMsg + instantA, e.getMessage());
-        }
+        final DuplicateRightKeyException buildLeftError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left2.naturalJoin(right2, "DT"));
+        assertEquals(dupMsg + instantA, buildLeftError.getMessage());
     }
 
     private final static String dupMsg = "Natural Join found duplicate right key for ";
@@ -644,13 +628,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TableTools.showWithRowSet(right.meta());
         TableTools.showWithRowSet(right);
 
-        try {
-            final Table cj = left.naturalJoin(right, "Symbol");
-            TableTools.showWithRowSet(cj);
-            fail("Expected exception.");
-        } catch (DuplicateRightKeyException rte) {
-            assertEquals(dupMsg + a, rte.getMessage());
-        }
+        final DuplicateRightKeyException duplicateError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "Symbol"));
+        assertEquals(dupMsg + a, duplicateError.getMessage());
 
         // bad right key added
         final QueryTable right2 = testRefreshingTable(col("Symbol", a), col("RightSentinel", 10));
@@ -688,13 +668,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table left = castSymbol(clazz, testRefreshingTable(col("Symbol", a, b), col("LeftSentinel", 1, 2)));
         final Table right = castSymbol(clazz, testRefreshingTable(col("Symbol", a, a), col("RightSentinel", 10, 11)));
 
-        try {
-            final Table cj = left.naturalJoin(right, "Symbol");
-            TableTools.showWithRowSet(cj);
-            fail("Expected exception.");
-        } catch (DuplicateRightKeyException rte) {
-            assertEquals(dupMsg + a, rte.getMessage());
-        }
+        final DuplicateRightKeyException duplicateError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "Symbol"));
+        assertEquals(dupMsg + a, duplicateError.getMessage());
 
         // bad right key added
         final QueryTable right2 = testRefreshingTable(col("Symbol", a), col("RightSentinel", 10));
