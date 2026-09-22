@@ -215,16 +215,16 @@ public class UnionRedirection {
      * @return The key space size to allocate
      */
     static long keySpaceFor(final long lastRowKey) {
+        if (lastRowKey < 0) {
+            // Empty tables get one allocation unit, so that any row key can be binary searched to a slot.
+            return ALLOCATION_UNIT_ROW_KEYS;
+        }
+        // The multiplication overflows above the quotient; the increment can only wrap when the unit is 1.
         final long numUnits = lastRowKey / ALLOCATION_UNIT_ROW_KEYS + 1;
-
-        // A negative value means the increment overflowed; a value above the quotient means the multiplication would.
         if (numUnits < 0 || numUnits > Long.MAX_VALUE / ALLOCATION_UNIT_ROW_KEYS) {
             throw new UnsupportedOperationException(ROW_SET_OVERFLOW_MESSAGE);
         }
-
-        // Require empty tables to have non-empty key space allocation so that we can binary search using a row key to
-        // find its source table slot.
-        return Math.max(1, numUnits) * ALLOCATION_UNIT_ROW_KEYS;
+        return numUnits * ALLOCATION_UNIT_ROW_KEYS;
     }
 
     /**

@@ -875,41 +875,10 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return (ColumnSource<ORIGINAL_TYPE>) originalSource;
         }
 
-        // The manager knows the original sources by name, not their reinterpretations, so a filter over this source
-        // cannot be routed to the constituents. The inherited overrides delegate to the manager, which would throw, so
-        // all three must be overridden back to the AbstractColumnSource defaults to decline pushdown. They go together:
-        // the manager casts whatever context it is handed to its own type.
-
         @Override
-        public void estimatePushdownFilterCost(
-                final WhereFilter filter,
-                final RowSet selection,
-                final boolean usePrev,
-                final PushdownFilterContext context,
-                final JobScheduler jobScheduler,
-                final LongConsumer onComplete,
-                final Consumer<Exception> onError) {
-            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
-        }
-
-        @Override
-        public void pushdownFilter(
-                final WhereFilter filter,
-                final RowSet selection,
-                final boolean usePrev,
-                final PushdownFilterContext context,
-                final long costCeiling,
-                final JobScheduler jobScheduler,
-                final Consumer<PushdownResult> onComplete,
-                final Consumer<Exception> onError) {
-            onComplete.accept(PushdownResult.allMaybeMatch(selection));
-        }
-
-        @Override
-        public PushdownFilterContext makePushdownFilterContext(
-                final WhereFilter filter,
-                final List<ColumnSource<?>> filterSources) {
-            return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
+        public PushdownPredicateManager pushdownManager() {
+            // The manager knows the original sources by name, not their reinterpretations, so decline pushdown.
+            return null;
         }
     }
 
@@ -970,6 +939,10 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
     }
 
+    /**
+     * The manager to route pushdown through, or {@code null} to decline it. The pushdown methods below consult this, so
+     * the disable flag and the reinterpreted subclass both decline in one place.
+     */
     @Override
     public PushdownPredicateManager pushdownManager() {
         if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
@@ -987,13 +960,12 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
-            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
+        final PushdownPredicateManager manager = pushdownManager();
+        if (manager == null) {
+            super.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler, onComplete, onError);
             return;
         }
-        // Delegate to the manager.
-        unionSourceManager.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler,
-                onComplete, onError);
+        manager.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler, onComplete, onError);
     }
 
     @Override
@@ -1006,23 +978,22 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
-            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+        final PushdownPredicateManager manager = pushdownManager();
+        if (manager == null) {
+            super.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler, onComplete, onError);
             return;
         }
-        // Delegate to the manager.
-        unionSourceManager.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler,
-                onComplete, onError);
+        manager.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler, onComplete, onError);
     }
 
     @Override
     public PushdownFilterContext makePushdownFilterContext(
             final WhereFilter filter,
             final List<ColumnSource<?>> filterSources) {
-        if (QueryTable.DISABLE_WHERE_PUSHDOWN_MERGED_TABLES) {
-            return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
+        final PushdownPredicateManager manager = pushdownManager();
+        if (manager == null) {
+            return super.makePushdownFilterContext(filter, filterSources);
         }
-        // Delegate to the manager.
-        return unionSourceManager.makePushdownFilterContext(filter, filterSources);
+        return manager.makePushdownFilterContext(filter, filterSources);
     }
 }

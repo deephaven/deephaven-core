@@ -31,6 +31,19 @@ public class UnionRedirectionTest {
     }
 
     /**
+     * Only an empty table has a negative last row key; however negative, it gets one unit rather than an overflow
+     * error.
+     */
+    @Test
+    public void negativeLastRowKeysGetOneAllocationUnit() {
+        for (final long lastRowKey : new long[] {-2, -ALLOCATION_UNIT_ROW_KEYS, -2 * ALLOCATION_UNIT_ROW_KEYS,
+                Long.MIN_VALUE}) {
+            assertThat(UnionRedirection.keySpaceFor(lastRowKey)).as("keySpaceFor(%d)", lastRowKey)
+                    .isEqualTo(ALLOCATION_UNIT_ROW_KEYS);
+        }
+    }
+
+    /**
      * The largest key space that fits in a long is the last full allocation unit below {@code Long.MAX_VALUE}.
      */
     @Test

@@ -886,10 +886,11 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     // by appending.
                     try (final WritableRowSet match = RowSetFactory.union(matches);
                             final WritableRowSet maybeMatch = RowSetFactory.union(maybeMatches)) {
-                        // The rows of constituents that don't support pushdown are "maybe" rows. They are taken from
-                        // this call's selection: the context was initialized against the widest selection this filter
-                        // will see, and each pushdown call may be asked about a narrower one.
-                        ctx.insertNonPushdownRows(selection, maybeMatch);
+                        // Selected rows outside every pushdown constituent are "maybe" rows: those of constituents
+                        // that cannot push down, and of any the context did not see when it was initialized.
+                        try (final WritableRowSet uncovered = selection.minus(ctx.pushdownKeys)) {
+                            maybeMatch.insert(uncovered);
+                        }
                         onComplete.accept(PushdownResult.of(selection, match, maybeMatch));
                     }
                 },
@@ -902,26 +903,25 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
     /**
      * Pushdown context for a filter over {@link UnionColumnSource union sources}. The context is initialized once, by
-     * the first {@link #estimatePushdownFilterCost estimate} or {@link #pushdownFilter pushdown} call, against the
-     * widest selection this filter will see; later calls may be made against narrower selections, as earlier filters in
-     * the same {@code where()} eliminate rows. The context therefore caches only which constituents participate and the
-     * key ranges they occupy, never rows: every call derives the rows it reports from the selection it was given.
+     * the first {@link #estimatePushdownFilterCost estimate} or {@link #pushdownFilter pushdown} call, and caches only
+     * the constituents that overlapped that selection and support pushdown, with the key ranges they occupy. Every call
+     * derives the rows it reports from the selection it was given; selected rows outside the cached ranges are always
+     * "maybe", so a selection the context has not seen is answered correctly, if less selectively.
      */
-    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContextImpl {
+    public static class UnionSourcePushdownFilterContext extends ForwardingPushdownFilterContext {
         final UnionSourceManager manager;
         final Map<String, String> renameMap;
 
         boolean initialized = false;
 
         /** Per constituent that supports pushdown: its matcher, its key range in the union, and its own context. */
-        final List<PushdownFilterMatcher> matchers = new ArrayList<>();
+        final ArrayList<PushdownFilterMatcher> matchers = new ArrayList<>();
         final LongArrayList firstRowKeys = new LongArrayList();
         final LongArrayList lastRowKeys = new LongArrayList();
-        final List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts = new ArrayList<>();
+        final ArrayList<io.deephaven.engine.table.impl.PushdownFilterContext> contexts = new ArrayList<>();
 
-        /** Per constituent that does not support pushdown: its key range in the union. Its rows are always "maybe". */
-        final LongArrayList nonPushdownFirstRowKeys = new LongArrayList();
-        final LongArrayList nonPushdownLastRowKeys = new LongArrayList();
+        /** The union of the key ranges in {@link #firstRowKeys} and {@link #lastRowKeys}. */
+        final WritableRowSet pushdownKeys = RowSetFactory.empty();
 
         public UnionSourcePushdownFilterContext(
                 @NotNull final WhereFilter filter,
@@ -956,6 +956,11 @@ public class UnionSourceManager implements PushdownPredicateManager {
             // is very important for UnionSourceManager because will likely contain refreshing constituent tables.
 
             final RowSet rowSetToUse = usePrev ? manager.constituentRows.prev() : manager.constituentRows;
+            final int constituentCount = rowSetToUse.intSize();
+            matchers.ensureCapacity(constituentCount);
+            contexts.ensureCapacity(constituentCount);
+            firstRowKeys.ensureCapacity(constituentCount);
+            lastRowKeys.ensureCapacity(constituentCount);
 
             // Use a 0-based slot counter for unionRedirection lookups (which are position-indexed, not
             // row-key-indexed). Slot positions diverge from constituentRows row keys when
@@ -982,16 +987,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
                         final PushdownFilterMatcher matcher =
                                 PushdownFilterMatcher.getPushdownFilterMatcher(filter(), filterSources);
 
+                        // A constituent that cannot push the filter down is left out; pushdownFilter reports its rows.
                         if (matcher != null) {
+                            final io.deephaven.engine.table.impl.PushdownFilterContext constituentContext =
+                                    matcher.makePushdownFilterContext(filter(), filterSources);
+                            addChildContext(constituentContext);
                             matchers.add(matcher);
-                            contexts.add(matcher.makePushdownFilterContext(filter(), filterSources));
+                            contexts.add(constituentContext);
                             firstRowKeys.add(firstKey);
                             lastRowKeys.add(lastKey);
-                        } else {
-                            // This constituent cannot push the filter down; remember its key range so that each
-                            // pushdown call can report the selected rows in it as "maybe".
-                            nonPushdownFirstRowKeys.add(firstKey);
-                            nonPushdownLastRowKeys.add(lastKey);
+                            pushdownKeys.insertRange(firstKey, lastKey);
                         }
                     }
                     ++slot;
@@ -999,32 +1004,9 @@ public class UnionSourceManager implements PushdownPredicateManager {
             }
         }
 
-        /**
-         * Insert the rows of {@code selection} that belong to constituents that do not support pushdown into
-         * {@code maybeMatch}.
-         *
-         * @param selection The selection of row keys being filtered by this call
-         * @param maybeMatch The "maybe" rows being accumulated for this call's result
-         */
-        void insertNonPushdownRows(final RowSet selection, final WritableRowSet maybeMatch) {
-            for (int ii = 0; ii < nonPushdownFirstRowKeys.size(); ++ii) {
-                try (final WritableRowSet localSelection = selection.subSetByKeyRange(
-                        nonPushdownFirstRowKeys.getLong(ii), nonPushdownLastRowKeys.getLong(ii))) {
-                    maybeMatch.subsume(localSelection);
-                }
-            }
-        }
-
-        @Override
-        public void updateExecutedFilterCost(final long executedFilterCost) {
-            super.updateExecutedFilterCost(executedFilterCost);
-            // The constituents executed alongside this context, so they have executed the same steps.
-            contexts.forEach(ctx -> ctx.updateExecutedFilterCost(executedFilterCost));
-        }
-
         @Override
         public void close() {
-            contexts.forEach(io.deephaven.engine.table.impl.PushdownFilterContext::close);
+            pushdownKeys.close();
             super.close();
         }
     }
