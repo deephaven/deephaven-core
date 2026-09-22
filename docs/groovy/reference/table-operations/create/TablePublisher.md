@@ -30,7 +30,7 @@ The on-flush callback. If not `null`, the consumer is called once at the beginni
 
 </Param><Param name="onShutdownCallback" type="Runnable">
 
-The on-shutdown callback. If not `null`, the runnable is called one time when [`publishFailure`](#methods) is called.
+The on-shutdown callback. If not `null`, the runnable is called one time when the caller should stop adding new data and release any related resources, whether that is because [`publishFailure`](#methods) was called or because the blink table is no longer reachable.
 
 </Param>
 <Param name="updateGraph" type="UpdateGraph">
@@ -55,6 +55,7 @@ A new `TablePublisher`.
 
 - [`add(table)`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#add(io.deephaven.engine.table.Table)) - Adds a table to the blink table.
 - [`definition`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#definition()) - Gets the table definition.
+- [`inputTable()`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#inputTable()) - Gets the blink table with an `InputTableUpdater` attribute installed, so it can be used as an input table. Deleting rows is not supported. May return `null` if called more than once without the initial caller retaining a strong reference to the result.
 - [`isAlive`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#isAlive()) - Checks if the table publisher is alive.
 - [`publishFailure(failure)`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#publishFailure(java.lang.Throwable)) - Indicates that data publication has failed. Listeners are notified, the on-shutdown callback is invoked (if it hasn't already been), and future calls to `add` return without doing anything.
 - [`table`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#table()) - Gets the blink table.
@@ -64,7 +65,6 @@ A new `TablePublisher`.
 In this example, `TablePublisher` is used to create a blink table with three columns (`X`, `Y`, and `Z`). The columns are of type `int`, `double`, and `double`, respectively.
 
 ```groovy test-set=1 order=source
-import io.deephaven.csv.util.MutableBoolean
 import io.deephaven.engine.table.ColumnDefinition
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.stream.TablePublisher
@@ -76,8 +76,6 @@ definition = TableDefinition.of(
 )
 
 shutDown = {println "Finished using My Publisher."}
-
-onShutdown = new MutableBoolean()
 
 publisher = TablePublisher.of("My Publisher", definition, null, shutDown)
 

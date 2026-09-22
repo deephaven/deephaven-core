@@ -9,7 +9,7 @@ The `table_publisher` method creates a `TablePublisher`. A `TablePublisher` prod
 ```python syntax
 table_publisher(
     name: str,
-    col_defs: dict[str, DType],
+    col_defs: TableDefinitionLike,
     on_flush_callback: Callable[[TablePublisher], None] = None,
     on_shutdown_callback: Callable[[], None] = None,
     update_graph: UpdateGraph = None,
@@ -25,9 +25,9 @@ table_publisher(
 The name of the blink table.
 
 </Param>
-<Param name="col_defs" type="dict">
+<Param name="col_defs" type="TableDefinitionLike">
 
-The blink table's column definitions.
+The blink table's column definitions. See [`TableDefinitionLike`](./TableDefinitionLike.md) for the accepted forms.
 
 </Param>
 <Param name="on_flush_callback" type="Callable" optional>

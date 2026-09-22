@@ -20,7 +20,7 @@ add_only_to_blink(table: Table) -> Table
 <ParamTable>
 <Param name="table" type="Table">
 
-The add-only or append-only table to convert to a blink table.
+The add-only or append-only table to convert to a blink table. The table **must** be refreshing.
 
 </Param>
 </ParamTable>
@@ -47,4 +47,8 @@ blink_result = add_only_to_blink(tt1)
 ## Related documentation
 
 - [`time_table`](./timeTable.md)
+- [`is_blink`](../metadata/is_blink.md)
+- [`remove_blink`](./remove-blink.md)
+- [`blink_to_append_only`](./blink-to-append-only.md)
+- [Table types: Specialized semantics for blink tables](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables)
 - [Pydoc](/core/pydoc/code/deephaven.stream.html#deephaven.stream.add_only_to_blink)
