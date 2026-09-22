@@ -17,6 +17,12 @@ import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 
 public abstract class StaticNaturalJoinStateManager {
+    /**
+     * The right row key reported for a key that has several right rows. The static state managers store this value as a
+     * slot's right state; the incremental state managers store a duplicate-location token instead and translate it to
+     * this value in {@code getRightRowKey}. It coincides with the incremental tombstone state, so callers may only ask
+     * about slots that hold a live key.
+     */
     public static final long DUPLICATE_RIGHT_VALUE = -2;
     public static final long NO_RIGHT_ENTRY_VALUE = RowSequence.NULL_ROW_KEY;
 

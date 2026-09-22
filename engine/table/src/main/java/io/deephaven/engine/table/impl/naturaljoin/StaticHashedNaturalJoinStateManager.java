@@ -41,6 +41,22 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
             final ColumnSource<?>[] leftSources,
             final LongArraySource leftRedirections);
 
+    /**
+     * Probe the rows of a left data index table, storing one redirection per group. A duplicate right key error names
+     * the key of the offending group's first left row, since {@code keySourcesForErrorMessages} are columns of the left
+     * table rather than of the data index table.
+     *
+     * @param indexTableRowSet the data index table's row set
+     * @param indexSources the data index table's key columns
+     * @param indexRowSets the data index table's row set column, mapping each group to its left rows
+     * @param leftRedirections receives the right row key (or {@link RowSet#NULL_ROW_KEY}) for each group, by position
+     */
+    public abstract void decorateLeftSideIndexed(
+            final RowSet indexTableRowSet,
+            final ColumnSource<?>[] indexSources,
+            final ColumnSource<RowSet> indexRowSets,
+            final LongArraySource leftRedirections);
+
     public abstract void decorateWithRightSide(
             final Table rightTable,
             final ColumnSource<?>[] rightSources);
