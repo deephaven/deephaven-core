@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.util.SafeCloseable;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -115,10 +116,8 @@ public class SnapshotIncrementalListener extends MergedListener {
      */
     private RowSetShiftDataExpander expand(final UpdateCoalescer accumulated) {
         final TableUpdate baseUpdate = accumulated.coalesce();
-        try {
+        try (final SafeCloseable ignored = baseUpdate::release) {
             return new RowSetShiftDataExpander(baseUpdate, lastBaseRowSet);
-        } finally {
-            baseUpdate.release();
         }
     }
 

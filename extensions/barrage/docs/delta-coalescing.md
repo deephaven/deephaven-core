@@ -47,7 +47,7 @@ for a compaction that frees gigabytes. With the floor in place, a stream of sing
 compacts about every 7,000 cycles at 20 bytes per row, and about every 450 at 300 bytes per row.
 
 **Both bounds hold throughout the interval, not only just after a compaction.** Because each
-compaction leaves behind the storage the estimate predicted, within the rounding described below,
+compaction leaves behind the storage the estimate predicted, within the approximation described below,
 the next cannot fire until a further fraction `f` of the queue has been superseded. Writing `raw`
 for the bytes recorded between two compactions, the trigger gives `N_i ≤ (1 − f)(N_{i−1} + raw_i)`,
 and summing:
@@ -71,18 +71,18 @@ scarcer than heap.
 appended, as coalescing would: rows removed upstream drop out, the cycle's shifts are applied, the
 cycle's recorded rows are inserted, and the two sets are kept disjoint because a row the queue adds
 is sent as an add. The added side is exactly what `RunSummary` computes when a compaction runs; the
-modified side approximates what `ColumnMapping` does, in the ways below. `N` is then their sizes
-times the width of the columns concerned.
+modified side approximates what `ColumnMapping` does, in the ways below. `N` is then what those rows
+would occupy once chunked, as below.
 
 Three properties of that estimate matter:
 
-- **It counts rows where `pendingDeltaBytes` counts capacity.** A delta pays for the last chunk of
-  every column at whatever the pool rounded it up to, and the estimate does not, so a compaction
-  leaves behind somewhat more than `N` predicts — at most one chunk per column per side. Since `N`
-  is subtracted from `A`, that credits a compaction with rounding it cannot free. The floor is what
-  keeps it harmless: rounding up to a power of two never accounts for half a chunk, so at `f = 0.5`
-  the phantom saving cannot meet the fraction by itself, and a much smaller `f` wants a floor that
-  covers `DELTA_CHUNK_SIZE` rows of the subscription's width.
+- **It counts allocated capacity, as `pendingDeltaBytes` does.** A coalesced side of `n` rows occupies
+  `ceil(n / DELTA_CHUNK_SIZE)` chunks per column, all but the last exactly `DELTA_CHUNK_SIZE` wide.
+  The last is requested at the rows that remain and charged at what the pool serves that request:
+  the next power of two, never below the smallest pooled capacity, and exact above the largest,
+  which the pool does not serve. Both sides of `A − N` therefore measure the same thing, so a queue
+  of tiny deltas is scored on the chunk rounding it really holds rather than on the rows it
+  nominally stores.
 - **It charges one row set per side, not one per column.** Exact figures would need a row set per
   modified column, which is a row-set pass per column per cycle on the update-graph thread for a
   wide table that ticks every column. The union instead overstates `N` when columns tick on their

@@ -116,12 +116,14 @@ public class BarrageMessageProducer extends LivenessArtifact
      *
      * <p>
      * This is what stops a stream of tiny deltas from compacting on every cycle. A delta that records a single row
-     * still occupies the pool's smallest chunk in each subscribed column, so from the second such delta on nearly all
-     * of the queue is rounding rather than data, and the freed fraction sits above 90% forever. Compacting there copies
-     * the whole queue to release one chunk per column, and the job's fixed costs -- scheduling, the run lock, the row
-     * set passes, the splice -- are the same as for a compaction that frees gigabytes. The floor makes such a producer
-     * wait until the saving is worth a job: at 4 MiB, a 20-byte row compacts about every 7,000 single-row appends and a
-     * 300-byte row about every 450.
+     * still occupies the pool's smallest chunk in each subscribed column, so from the second such delta on the freed
+     * fraction sits above 90% forever. That waste is real -- {@link #coalescedChunkBytes()} measures allocated
+     * capacity, so the fraction is reporting chunks a compaction would genuinely release -- but what a fraction cannot
+     * say is how little it amounts to: such a queue grows by one smallest chunk per column per cycle, and the interval
+     * flushes it before it can grow far. Compacting there copies the whole queue to release one chunk per column, and
+     * the job's fixed costs -- scheduling, the run lock, the row set passes, the splice -- are the same as for a
+     * compaction that frees gigabytes. The floor makes such a producer wait until the saving is worth a job: at 4 MiB,
+     * a 20-byte row compacts about every 7,000 single-row appends and a 300-byte row about every 450.
      */
     public static final long COMPACTION_FLOOR_BYTES = Configuration.getInstance()
             .getLongForClassWithDefault(BarrageMessageProducer.class, "compactionFloorBytes", 4L << 20);
@@ -141,7 +143,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      * <p>
      * The value is trusted as configured, not validated. Outside 0.0 to 1.0 it does what the formula in
      * {@link #shouldCompact()} says: above one, or NaN, the threshold is unreachable and the producer never compacts;
-     * below zero the floor alone decides. Either is the setting an operator asked for.
+     * below zero the floor alone decides.
      */
     public static final double COMPACTION_MIN_FREED_FRACTION = Configuration.getInstance()
             .getDoubleForClassWithDefault(BarrageMessageProducer.class, "compactionMinFreedFraction", 0.5);
@@ -304,7 +306,10 @@ public class BarrageMessageProducer extends LivenessArtifact
      * compaction and never provokes one.
      */
     private final BitSet netModifiedColumns = new BitSet();
-    /** {@link ChunkType#elementBytes()} per column, for estimating the coalesced size of the pending deltas. */
+    /**
+     * {@link io.deephaven.chunk.ChunkType#elementBytes()} per column, for estimating the coalesced size of the pending
+     * deltas.
+     */
     private final int[] columnBytes;
     private final CompactionJob compactionJob = new CompactionJob();
     /**
@@ -1100,7 +1105,9 @@ public class BarrageMessageProducer extends LivenessArtifact
             netModifiedRows.insert(modsToRecord);
             netModifiedColumns.or(modifiedColumns);
         }
-        // A row the pending deltas add is sent as an add however else it was touched, so the two stay disjoint.
+        // A row can reach both sets: scrolling into a viewport is recorded as an add even when upstream only
+        // modified it, because that subscriber has not seen it. Charge it once, on the add side, which is the wider
+        // of the two -- an add carries every subscribed column and a modification only the ones that changed.
         netModifiedRows.remove(netAddedRows);
     }
 
@@ -1112,10 +1119,10 @@ public class BarrageMessageProducer extends LivenessArtifact
      * <p>
      * Measuring against the whole queue, rather than against the last compaction's output, is what makes the two bounds
      * hold throughout the interval rather than only at the instant after a compaction: each compaction leaves behind
-     * the storage it estimated, within the rounding {@link #coalescedChunkBytes()} describes, so the next one cannot
-     * fire until a further {@code f} of the queue is superseded. Total copying is therefore at most {@code (1 - f) / f}
-     * times the data recorded, and the queue holds at most about {@code 1 / (1 - f)} times its coalesced footprint,
-     * plus the delta that triggered the compaction and the transient of the copy itself.
+     * the storage it estimated, within the approximation {@link #coalescedChunkBytes()} describes, so the next one
+     * cannot fire until a further {@code f} of the queue is superseded. Total copying is therefore at most
+     * {@code (1 - f) / f} times the data recorded, and the queue holds at most about {@code 1 / (1 - f)} times its
+     * coalesced footprint, plus the delta that triggered the compaction and the transient of the copy itself.
      */
     private boolean shouldCompact() {
         Assert.assertion(Thread.holdsLock(this), "shouldCompact must hold lock!");
@@ -1132,27 +1139,53 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     /**
      * An estimate of the chunk storage the pending deltas would occupy if they were coalesced now, to compare against
-     * the {@link #pendingDeltaBytes} they occupy as they stand. It is a heuristic input and approximates in both
-     * directions.
+     * the {@link #pendingDeltaBytes} they currently occupy.
      *
      * <p>
-     * It charges one row set per side rather than one per column, so a column whose modifications were superseded while
-     * another column's survived is counted as if both had survived, which overstates the result and delays a
-     * compaction.
+     * Both sides of that comparison measure allocated capacity rather than rows. A coalesced side of {@code N} rows is
+     * composed of {@code ceil(N / DELTA_CHUNK_SIZE)} chunks, of which all but the last are exactly
+     * {@link #DELTA_CHUNK_SIZE} in size. The last holds the rows that remain and is requested from the chunk pool at
+     * exactly that count, so we estimate it as the pool sizes it: rounded up to the next power of two, never below
+     * {@link ChunkPoolConstants#SMALLEST_POOLED_CHUNK_CAPACITY}, and left exact above
+     * {@link ChunkPoolConstants#LARGEST_POOLED_CHUNK_CAPACITY}, which the pool does not serve. That rounding is real
+     * heap rather than an artifact of the accounting -- a delta recording a single row holds a whole smallest-pooled
+     * chunk in every subscribed column -- which is why collapsing a queue of tiny deltas frees anything at all.
      *
      * <p>
-     * Against that, it charges the rows themselves where {@link #pendingDeltaBytes} measures the capacity a delta
-     * holds, so it misses what the pool rounds the last chunk of every column up to, and a compaction therefore leaves
-     * behind somewhat more storage than this predicts -- at most one chunk per column per side. Since the estimate is
-     * subtracted from {@link #pendingDeltaBytes} to decide, understating it credits a compaction with rounding it
-     * cannot free. {@link #COMPACTION_FLOOR_BYTES} is what keeps that from mattering: rounding up to a power of two can
-     * never account for half of a chunk, so at the default {@link #COMPACTION_MIN_FREED_FRACTION} the phantom saving
-     * cannot satisfy the fraction on its own, and a fraction configured much below one half wants a floor large enough
-     * to cover {@link #DELTA_CHUNK_SIZE} rows of the subscription's width.
+     * It remains an estimate. It charges one row set per side (add/mod) rather than one per column, so a column whose
+     * modifications were superseded while another column's survived is counted as if both had survived, which
+     * overstates the result and delays a compaction. And, like {@link #pendingDeltaBytes}, it counts the chunks'
+     * backing arrays alone: an object column is charged one reference per row and never its referents, so neither side
+     * of the comparison sees the strings a subscription is really holding.
      */
     private long coalescedChunkBytes() {
-        return netAddedRows.size() * columnBytesOver(activeColumns)
-                + netModifiedRows.size() * columnBytesOver(netModifiedColumns);
+        return columnChunkBytes(netAddedRows.size(), activeColumns)
+                + columnChunkBytes(netModifiedRows.size(), netModifiedColumns);
+    }
+
+    /**
+     * The chunk storage one side (adds or mods) of a coalesced delta would occupy: {@code rows} rows of every column in
+     * {@code columns}, chunked and rounded as the recording and coalescing paths chunk and round it.
+     */
+    private long columnChunkBytes(final long rows, final BitSet columns) {
+        if (rows == 0) {
+            return 0;
+        }
+        final long fullChunks = rows / DELTA_CHUNK_SIZE;
+        final int remainder = (int) (rows % DELTA_CHUNK_SIZE);
+        // The last chunk is requested at the rows that remain and comes back the size the pool serves it at.
+        final long lastChunk;
+        if (remainder == 0) {
+            lastChunk = 0;
+        } else if (remainder > ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY) {
+            // Too large for the pool, so allocated exactly. Only reachable with deltaChunkSize configured above it.
+            lastChunk = remainder;
+        } else {
+            lastChunk = Math.max(ChunkPoolConstants.SMALLEST_POOLED_CHUNK_CAPACITY,
+                    MathUtil.roundUpPowerOf2(remainder));
+        }
+        // DELTA_CHUNK_SIZE is itself a power of two, so a full chunk costs exactly that.
+        return (fullChunks * DELTA_CHUNK_SIZE + lastChunk) * columnBytesOver(columns);
     }
 
     /** The width in bytes of one row of {@code columns}. */
