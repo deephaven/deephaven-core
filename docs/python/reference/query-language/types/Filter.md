@@ -6,7 +6,7 @@ A [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) r
 
 ## Creating a Filter
 
-There are two ways to create a `Filter` object: from a condition string, or by combining multiple filters with boolean logic.
+Here are two common ways to create a `Filter` object: from a condition string, or by combining multiple filters with boolean logic. The [Filter functions](#filter-functions) below cover additional direct factories.
 
 ### From a condition string
 
