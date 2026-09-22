@@ -128,7 +128,7 @@
 
         <div style="box-sizing:border-box;padding:12px;background:var(--dh-bg-1000);border:1px solid var(--dh-positive-300);border-radius:var(--dh-radius-md);">
           <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);">Single Table API</div>
-          <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);margin-top:2px;">.where() .agg_by() .join() - works on all data</div>
+          <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);margin-top:2px;">.where() .aggBy() .join() - works on all data</div>
         </div>
       </div>
 
@@ -150,22 +150,22 @@
 
   <div style="margin-top:20px;">
     <x-import component-from-global-scope="DeephavenDesignSystem_e929bc.Card" title="Code example: same API for both" padding="md" hint-size="1200px,auto">
-      <div style="font-size:12px;color:var(--dh-text-secondary);margin-bottom:14px;">Python code works identically for batch and real-time data:</div>
+      <div style="font-size:12px;color:var(--dh-text-secondary);margin-bottom:14px;">Groovy code works identically for batch and real-time data:</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div>
           <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);margin-bottom:6px;">Batch (Historical):</div>
           <div style="box-sizing:border-box;padding:12px;background:var(--dh-surface-sunken);border:1px solid var(--dh-primary-700);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);line-height:var(--dh-leading-relaxed);">
-            <div>historical = read_csv("trades_2024.csv")</div>
+            <div>historical = readCsv("trades_2024.csv")</div>
             <div>result = historical.where("Price &gt; 100")</div>
-            <div>&nbsp;&nbsp;.agg_by([agg.avg("Price")], by=["Symbol"])</div>
+            <div>&nbsp;&nbsp;.aggBy([AggAvg("Price")], "Symbol")</div>
           </div>
         </div>
         <div>
           <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);margin-bottom:6px;">Real-time (Live):</div>
           <div style="box-sizing:border-box;padding:12px;background:var(--dh-surface-sunken);border:1px solid var(--dh-warn-500);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);line-height:var(--dh-leading-relaxed);">
-            <div>live = consume_kafka({"topic": "trades"})</div>
+            <div>live = KafkaTools.consumeToTable(["topic": "trades"])</div>
             <div>result = live.where("Price &gt; 100")</div>
-            <div>&nbsp;&nbsp;.agg_by([agg.avg("Price")], by=["Symbol"])</div>
+            <div>&nbsp;&nbsp;.aggBy([AggAvg("Price")], "Symbol")</div>
           </div>
         </div>
       </div>
