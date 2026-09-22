@@ -29,9 +29,14 @@ dependencies {
     implementation "io.deephaven:deephaven-engine-api:$dhcVersion"
     implementation "io.deephaven:deephaven-engine-table:$dhcVersion"
     implementation "io.deephaven:deephaven-Configuration:$dhcVersion"
+    implementation "io.deephaven:deephaven-configs:$dhcVersion"
     implementation "io.deephaven:deephaven-engine-time:$dhcVersion"
     implementation "io.deephaven:deephaven-log-factory:$dhcVersion"
-    implementation "org.apache.groovy:groovy-all:4.0.15"
+    runtimeOnly "io.deephaven:deephaven-log-to-slf4j:$dhcVersion"
+    runtimeOnly 'org.slf4j:slf4j-simple:2.0.9'
+    // Align with the Groovy version Deephaven itself uses to avoid a
+    // conflicting Groovy runtime on the classpath.
+    implementation "org.codehaus.groovy:groovy:3.0.25"
 }
 ```
 
@@ -62,6 +67,11 @@ Add dependencies to your `pom.xml`:
     </dependency>
     <dependency>
         <groupId>io.deephaven</groupId>
+        <artifactId>deephaven-configs</artifactId>
+        <version>${dhc.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>io.deephaven</groupId>
         <artifactId>deephaven-engine-time</artifactId>
         <version>${dhc.version}</version>
     </dependency>
@@ -71,9 +81,21 @@ Add dependencies to your `pom.xml`:
         <version>${dhc.version}</version>
     </dependency>
     <dependency>
-        <groupId>org.apache.groovy</groupId>
-        <artifactId>groovy-all</artifactId>
-        <version>4.0.15</version>
+        <groupId>io.deephaven</groupId>
+        <artifactId>deephaven-log-to-slf4j</artifactId>
+        <version>${dhc.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>2.0.9</version>
+    </dependency>
+    <!-- Align with the Groovy version Deephaven itself uses to avoid a
+         conflicting Groovy runtime on the classpath. -->
+    <dependency>
+        <groupId>org.codehaus.groovy</groupId>
+        <artifactId>groovy</artifactId>
+        <version>3.0.25</version>
     </dependency>
 </dependencies>
 ```
@@ -154,13 +176,11 @@ Or in Maven:
 
 ### Example test setup
 
-Add `deephaven-engine-test-utils` as a test dependency to use `TestExecutionContext`. You also need a logging implementation at runtime:
+Add `deephaven-engine-test-utils` and JUnit Jupiter as test dependencies to use `TestExecutionContext` (the logging sink from the base setup above is already available on the test classpath):
 
 ```groovy skip-test
 testImplementation "io.deephaven:deephaven-engine-test-utils:$dhcVersion"
 testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
-testRuntimeOnly "io.deephaven:deephaven-log-to-slf4j:$dhcVersion"
-testRuntimeOnly 'org.slf4j:slf4j-simple:2.0.9'
 
 test {
     useJUnitPlatform()
@@ -174,18 +194,6 @@ Or in Maven:
     <groupId>io.deephaven</groupId>
     <artifactId>deephaven-engine-test-utils</artifactId>
     <version>${dhc.version}</version>
-    <scope>test</scope>
-</dependency>
-<dependency>
-    <groupId>io.deephaven</groupId>
-    <artifactId>deephaven-log-to-slf4j</artifactId>
-    <version>${dhc.version}</version>
-    <scope>test</scope>
-</dependency>
-<dependency>
-    <groupId>org.slf4j</groupId>
-    <artifactId>slf4j-simple</artifactId>
-    <version>2.0.9</version>
     <scope>test</scope>
 </dependency>
 <dependency>
