@@ -1,0 +1,24 @@
+plugins {
+    id 'java'
+}
+
+// netty 4.2 sets io.netty.noUnsafe=true by default on Java 25+, so PooledByteBufAllocator hands back
+// PooledDirectByteBuf instead of PooledUnsafeDirectByteBuf. arrow-memory-netty-buffer-patch's PooledByteBufAllocatorL
+// unconditionally casts to PooledUnsafeDirectByteBuf, throwing:
+//     class io.netty.buffer.PooledDirectByteBuf cannot be cast to class io.netty.buffer.PooledUnsafeDirectByteBuf
+//     at io.netty.buffer.PooledByteBufAllocatorL$InnerAllocator.newDirectBufferL(PooledByteBufAllocatorL.java:185)
+//     at org.apache.arrow.memory.netty.NettyAllocationManager.<init>(NettyAllocationManager.java:74)
+// Passing -Dio.netty.noUnsafe=false re-enables netty's use of sun.misc.Unsafe (netty reads the resulting
+// io.netty.noUnsafe system property) and silences the JDK's terminally-deprecated-method warnings. The other option
+// would be to use "--sun-misc-unsafe-memory-access=allow" which doesn't exist on older JDKs.
+tasks.withType(JavaExec).configureEach {
+    jvmArgs += ['-Dio.netty.noUnsafe=false']
+}
+
+tasks.withType(CreateStartScripts).configureEach {
+    defaultJvmOpts += ['-Dio.netty.noUnsafe=false']
+}
+
+tasks.withType(Test).configureEach {
+    jvmArgs += ['-Dio.netty.noUnsafe=false']
+}

@@ -111,3 +111,4 @@ check.dependsOn adbcTest
 check.dependsOn jdbcTest
 
 apply plugin: 'io.deephaven.java-open-nio'
+apply plugin: 'io.deephaven.java-netty-unsafe'
