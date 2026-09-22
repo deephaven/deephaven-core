@@ -188,7 +188,7 @@ Deephaven’s approach to mechanical sympathy can be summarized with a few key o
 
 The Deephaven query engine moves data around using a data structure called a _Chunk_. This subsystem is key to achieving mechanical sympathy in our implementation.
 
-<iframe src="../assets/conceptual/architecture/chunk-architecture.html" title="Diagram showing chunk-oriented architecture for bulk data processing" loading="lazy" style={{width: '100%', height: '900px', border: 'none'}} />
+<iframe src="../assets/conceptual/architecture/chunk-architecture.html" title="Diagram showing chunk-oriented architecture for bulk data processing" loading="lazy" style={{width: '100%', aspectRatio: '840 / 1178', border: 'none'}} />
 
 By working with chunks of data rather than single cells, we allow the engine to amortize data movement costs at every applicable level of the stack. For example, `ColumnSources` are _ChunkSources_, allowing bulk `getChunk` and `fillChunk` data transfers. These data transfers may in turn be implemented by wrapping or copying arrays, by reading the appropriate region of a file, or by evaluating a formula once for each result element.
 

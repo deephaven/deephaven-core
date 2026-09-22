@@ -16,6 +16,11 @@
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/styles.css">
   <script src="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/_ds_bundle.js"></script>
   <style>
+    html, body { margin: 0; padding: 0; }
+    /* No-JS fallback: step down so the diagram never clips.
+       With JS the fit is continuous (see dh-fit below). */
+    @media (max-width: 839px) { .dh-canvas { zoom: 0.78; } }
+    @media (max-width: 654px) { .dh-canvas { zoom: 0.52; } }
     @keyframes dh-tick-flow {
       0% { offset-distance: 0%; opacity: 0; }
       15% { opacity: 1; }
@@ -38,7 +43,7 @@
   </style>
 </helmet>
 
-<div style="width:1280px;box-sizing:border-box;padding:40px;background:var(--dh-surface-page);font-family:var(--dh-font-sans);color:var(--dh-text-primary);zoom:0.75;">
+<div class="dh-canvas" style="width:840px;box-sizing:border-box;padding:16px;background:var(--dh-surface-page);font-family:var(--dh-font-sans);color:var(--dh-text-primary);">
 
   <div style="margin-bottom:28px;">
     <h1 style="margin:0;font-size:28px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-text-primary);">Chunk-oriented architecture: bulk data processing</h1>
@@ -66,15 +71,15 @@
         <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px;">
           <div style="display:flex;align-items:center;gap:6px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-            <div style="font-size:12px;color:var(--dh-logo-red);">Each cell: virtual method call</div>
+            <div style="font-size:12px;color:var(--dh-logo-red-text);">Each cell: virtual method call</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-            <div style="font-size:12px;color:var(--dh-logo-red);">Poor cache locality</div>
+            <div style="font-size:12px;color:var(--dh-logo-red-text);">Poor cache locality</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-            <div style="font-size:12px;color:var(--dh-logo-red);">Can't vectorize</div>
+            <div style="font-size:12px;color:var(--dh-logo-red-text);">Can't vectorize</div>
           </div>
         </div>
       </div>
@@ -102,15 +107,15 @@
         <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px;">
           <div style="display:flex;align-items:center;gap:6px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
-            <div style="font-size:12px;color:var(--dh-logo-cyan);">One call for thousands of cells</div>
+            <div style="font-size:12px;color:var(--dh-logo-cyan-text);">One call for thousands of cells</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
-            <div style="font-size:12px;color:var(--dh-logo-cyan);">Sequential memory access</div>
+            <div style="font-size:12px;color:var(--dh-logo-cyan-text);">Sequential memory access</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--dh-logo-cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
-            <div style="font-size:12px;color:var(--dh-logo-cyan);">JIT can vectorize (SIMD)</div>
+            <div style="font-size:12px;color:var(--dh-logo-cyan-text);">JIT can vectorize (SIMD)</div>
           </div>
         </div>
       </div>
@@ -169,7 +174,7 @@
   </div>
 
   <div style="margin-top:32px;">
-    <x-import component-from-global-scope="DeephavenDesignSystem_e929bc.Card" title="Chunk pooling: reduce garbage collection" padding="md" hint-size="1200px,auto">
+    <x-import component-from-global-scope="DeephavenDesignSystem_e929bc.Card" title="Chunk pooling: reduce garbage collection" padding="md" hint-size="808px,auto">
       <div style="font-size:12px;color:var(--dh-text-secondary);margin-bottom:16px;">Chunks are reusable buffers managed by a pool to avoid allocating temporary objects</div>
       <div style="display:flex;align-items:center;gap:16px;">
         <div style="width:130px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);font-size:12px;font-weight:600;color:var(--dh-text-primary);">Available</div>
@@ -208,7 +213,7 @@
         </div>
         <div style="margin-top:10px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">Sequential memory allows</div>
         <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">SIMD operations</div>
-        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-cyan);">Process 4-8 values per instruction</div>
+        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-cyan-text);">Process 4-8 values per instruction</div>
       </div>
 
       <div style="box-sizing:border-box;padding:16px;background:var(--dh-surface-card);border:1px solid var(--dh-border);border-left:3px solid var(--dh-logo-cyan);border-radius:var(--dh-radius-lg);">
@@ -218,14 +223,14 @@
         </div>
         <div style="margin-top:10px;font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">Contiguous data improves</div>
         <div style="font-size:12px;color:var(--dh-text-secondary);line-height:var(--dh-leading-snug);">L1/L2/L3 cache hit rates</div>
-        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-cyan);">Fewer memory stalls</div>
+        <div style="margin-top:10px;font-size:18px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-logo-cyan-text);">Fewer memory stalls</div>
       </div>
 
     </div>
   </div>
 
   <div style="margin-top:32px;">
-    <x-import component-from-global-scope="DeephavenDesignSystem_e929bc.Card" title="Example: filtering with chunks" padding="md" hint-size="1200px,auto">
+    <x-import component-from-global-scope="DeephavenDesignSystem_e929bc.Card" title="Example: filtering with chunks" padding="md" hint-size="808px,auto">
       <div style="box-sizing:border-box;padding:12px;background:var(--dh-surface-sunken);border:1px solid var(--dh-border);border-radius:var(--dh-radius-md);">
         <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-muted);">// Instead of: for (long key : rowSet) { if (predicate(getValue(key))) { ... } }</div>
         <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-muted);margin-top:4px;">// Chunks do: Chunk values = source.getChunk(context, rowSequence);</div>
@@ -237,6 +242,32 @@
 </div>
 
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280}}"></script>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:840}}"></script>
+
+<script>
+/* Scale the fixed 840px canvas to whatever width the docs column gives us.
+   Numeric zoom affects layout, so the document height tracks the width
+   exactly -- the embedding iframe uses a matching aspect-ratio, which is
+   what keeps the frame free of both clipping and dead space.
+   The canvas is re-created when the x-dc template mounts, so re-apply on
+   mutation as well as on resize. Writing an unchanged value is a no-op,
+   so the observer settles instead of looping. */
+(function () {
+  var BASE = 840;
+  function fit() {
+    var el = document.querySelector('.dh-canvas');
+    if (!el) return;
+    var z = (document.documentElement.clientWidth / BASE).toFixed(4);
+    if (el.style.zoom !== z) el.style.zoom = z;
+  }
+  fit();
+  if (window.MutationObserver) {
+    new MutationObserver(fit).observe(document.documentElement, { childList: true, subtree: true });
+  }
+  addEventListener('resize', fit);
+  addEventListener('load', fit);
+  document.addEventListener('DOMContentLoaded', fit);
+})();
+</script>
 </body>
 </html>
