@@ -21,8 +21,6 @@ import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -59,7 +57,6 @@ import static io.deephaven.engine.table.impl.PushdownResult.UNSUPPORTED_ACTION_C
  * initialization case).
  */
 abstract class AbstractFilterExecution {
-    private static final Logger log = LoggerFactory.getLogger(AbstractFilterExecution.class);
 
     final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
 
@@ -478,16 +475,16 @@ abstract class AbstractFilterExecution {
      * {@link PushdownFilterContext} when one is available.
      *
      * <p>
-     * Pushdown is purely an optimization, so failing to build the matcher or the context must not fail the operation --
-     * the filter can always be evaluated directly. On failure we log and return a {@code StatelessFilter} with no
-     * matcher, which runs {@code filter} as a plain filter. {@link CancellationException} is not a construction failure
-     * and is allowed to propagate.
+     * A failure while building the matcher or the context propagates to the caller and fails the operation, like any
+     * other failure during filter execution. The only things that can fail here are broken engine invariants, which
+     * should surface rather than silently degrade the query. A context that was built but not handed to a
+     * {@code StatelessFilter} is closed before the failure propagates.
      * </p>
      *
      * @param filterIdx the index of this filter in the collection
      * @param filter the filter to build for
      * @param barrierDependencies the inter-barrier dependencies accumulated so far
-     * @return the {@code StatelessFilter}, with a pushdown matcher and context if one could be built
+     * @return the {@code StatelessFilter}, with a pushdown matcher and context if one is available
      */
     private StatelessFilter makePushdownStatelessFilter(
             final int filterIdx,
@@ -514,11 +511,6 @@ abstract class AbstractFilterExecution {
                 context = null;
                 return statelessFilter;
             }
-        } catch (final CancellationException e) {
-            throw e;
-        } catch (final RuntimeException e) {
-            log.warn().append("Unable to construct filter pushdown for ").append(filter.toString())
-                    .append("; evaluating it without pushdown: ").append(e).endl();
         } finally {
             if (context != null) {
                 context.close();

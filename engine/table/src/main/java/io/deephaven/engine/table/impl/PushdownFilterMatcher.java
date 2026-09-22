@@ -7,10 +7,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.select.NoPredicatePushdown;
-import io.deephaven.engine.table.impl.select.ReindexingFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 
 import java.util.List;
@@ -139,37 +136,17 @@ public interface PushdownFilterMatcher {
     }
 
     /**
-     * Check if the given filter can be pushed down.
-     *
-     * <p>
-     * {@link ReindexingFilter}s are excluded because their
-     * {@link WhereFilter#filter(RowSet, RowSet, io.deephaven.engine.table.Table, boolean) filter()} call is not a pure
-     * predicate: it establishes the row set that subsequent filters must see, and implementations such as
-     * {@link io.deephaven.engine.table.impl.select.ClockFilter ClockFilter} use it to initialize the state their
-     * per-cycle refresh consumes. A pushdown that fully resolves the filter would skip that call entirely.
-     * </p>
+     * Check if the given filter can be pushed down: it must have at least one column, no virtual row variables and no
+     * column arrays, and it must {@link WhereFilter#canPushdown() permit pushdown}. Wrappers and composed filters
+     * answer the last question for the filters they contain, so no unwrapping is needed here.
      *
      * @param filter The {@link WhereFilter filter} to check.
      * @return {@code true} if the filter can be pushed down, {@code false} otherwise.
      */
     static boolean canPushdownFilter(final WhereFilter filter) {
-        if (filter.getColumns().isEmpty()
-                || filter.hasVirtualRowVariables()
-                || !filter.getColumnArrays().isEmpty()) {
-            return false;
-        }
-        // The wrappers delegate the checks above, but they hide the marker interfaces from instanceof, so walk the
-        // delegation chain and test every layer. Note that this descends through WhereFilterInvertedImpl as well,
-        // which WhereFilterDelegating#maybeUnwrapFilter deliberately does not: inverting a filter that cannot be
-        // pushed down does not make it pushable.
-        for (WhereFilter current = filter;;) {
-            if (current instanceof NoPredicatePushdown || current instanceof ReindexingFilter) {
-                return false;
-            }
-            if (!(current instanceof WhereFilterDelegating)) {
-                return true;
-            }
-            current = ((WhereFilterDelegating) current).getWrappedFilter();
-        }
+        return !filter.getColumns().isEmpty()
+                && !filter.hasVirtualRowVariables()
+                && filter.getColumnArrays().isEmpty()
+                && filter.canPushdown();
     }
 }

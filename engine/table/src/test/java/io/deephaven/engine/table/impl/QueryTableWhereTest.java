@@ -1763,6 +1763,52 @@ public abstract class QueryTableWhereTest {
     }
 
     /**
+     * An {@link AbstractColumnSource} -- so it resolves as its own pushdown matcher -- whose pushdown context
+     * construction fails.
+     */
+    private static final class ThrowingPushdownContextSource extends IntegerArraySource {
+        static final String MESSAGE = "injected pushdown context construction failure";
+
+        @Override
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
+            throw new IllegalStateException(MESSAGE);
+        }
+    }
+
+    private static QueryTable makePushdownContextTable(final IntegerArraySource source) {
+        final int size = 100;
+        source.ensureCapacity(size, false);
+        for (int ii = 0; ii < size; ii++) {
+            source.set(ii, ii);
+        }
+        return new QueryTable(RowSetFactory.flat(size).toTracking(), Map.of("X", source));
+    }
+
+    private static void assertInjectedPushdownFailure(final Throwable thrown) {
+        for (Throwable t = thrown; t != null; t = t.getCause()) {
+            if (t instanceof IllegalStateException && ThrowingPushdownContextSource.MESSAGE.equals(t.getMessage())) {
+                return;
+            }
+        }
+        throw new AssertionError("injected failure not found in cause chain of " + thrown, thrown);
+    }
+
+    /**
+     * A failure while constructing a filter's pushdown context is a broken engine invariant, so it must fail the
+     * {@code where()} loudly, with the failure as the cause, rather than silently degrade to plain filtering.
+     */
+    @Test
+    public void testPushdownContextConstructionFailureFailsTheOperation() {
+        final QueryTable table = makePushdownContextTable(new ThrowingPushdownContextSource());
+
+        final TableInitializationException thrown =
+                assertThrows(TableInitializationException.class, () -> table.where("X >= 50"));
+        assertInjectedPushdownFailure(thrown);
+    }
+
+    /**
      * Test PPM for simple verification of filter execution code.
      */
     private static class TestPPM implements PushdownPredicateManager {

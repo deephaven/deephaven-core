@@ -3,13 +3,19 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.RawString;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
+import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.ReindexingFilter;
+import io.deephaven.engine.table.impl.select.UnsortedClockFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterDelegatingBase;
+import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import org.junit.Before;
@@ -18,12 +24,19 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
+import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
+import static io.deephaven.time.DateTimeUtils.epochNanosToInstant;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for {@link PushdownFilterMatcher#getPushdownFilterMatcher(WhereFilter, List)}, in particular the requirement
+ * Tests for {@link PushdownFilterMatcher}: the {@link PushdownFilterMatcher#canPushdownFilter(WhereFilter)} eligibility
+ * gate, and {@link PushdownFilterMatcher#getPushdownFilterMatcher(WhereFilter, List)}, in particular the requirement
  * that {@code filterSources} be parallel to {@code filter.getColumns()} (DH-23106).
  */
 public class PushdownFilterMatcherTest {
@@ -34,6 +47,10 @@ public class PushdownFilterMatcherTest {
     private Table table;
     private WhereFilter singleColumnFilter;
     private WhereFilter multiColumnFilter;
+
+    /** A table with a clock column and an int column, for the eligibility-gate tests. */
+    private Table clockTable;
+    private StepClock clock;
 
     @Before
     public void setUp() {
@@ -46,6 +63,77 @@ public class PushdownFilterMatcherTest {
                 new MatchFilter(MatchOptions.REGULAR, "Y", "D"));
         singleColumnFilter.init(table.getDefinition());
         multiColumnFilter.init(table.getDefinition());
+
+        clockTable = TableTools.newTable(
+                col("Timestamp", epochNanosToInstant(1000L), epochNanosToInstant(2000L), epochNanosToInstant(3000L)),
+                intCol("Int", 1, 2, 3));
+        clock = new StepClock(1000L, 2000L, 3000L);
+    }
+
+    /**
+     * A {@link ReindexingFilter} must not be pushdown-eligible: pushdown may satisfy it entirely and skip the
+     * {@code filter()} call it depends on for initialization (see {@link ReindexingFilter#canPushdown()}).
+     */
+    @Test
+    public void testCanPushdownFilterRejectsReindexingFilter() {
+        final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
+        filter.init(clockTable.getDefinition());
+
+        assertFalse("a ReindexingFilter must not be pushed down: " + filter.getClass().getSimpleName(),
+                PushdownFilterMatcher.canPushdownFilter(filter));
+    }
+
+    /**
+     * The same gate reached through the wrappers {@code withDeclaredBarriers}, {@code withRespectedBarriers} and
+     * {@code withSerial} produce. Unlike {@code ComposedFilter} and {@code WhereFilterInvertedImpl} -- both of which
+     * reject {@link ReindexingFilter} components outright -- these wrappers accept one, so the gate must see through
+     * them; {@link WhereFilterDelegatingBase} answers {@link WhereFilter#canPushdown()} from the wrapped filter.
+     */
+    @Test
+    public void testCanPushdownFilterRejectsWrappedReindexingFilter() {
+        for (final UnaryOperator<WhereFilter> wrapper : List.<UnaryOperator<WhereFilter>>of(
+                f -> f.withDeclaredBarriers("BARRIER"),
+                f -> f.withRespectedBarriers("BARRIER"),
+                WhereFilter::withSerial)) {
+            final WhereFilter filter = wrapper.apply(new UnsortedClockFilter("Timestamp", clock, true));
+            filter.init(clockTable.getDefinition());
+
+            assertFalse("a wrapped ReindexingFilter must not be pushed down: " + filter.getClass().getSimpleName(),
+                    PushdownFilterMatcher.canPushdownFilter(filter));
+        }
+    }
+
+    /**
+     * {@link DynamicWhereFilter} performs its own data-index-driven evaluation and binds its set-table subscription to
+     * the instance, so it opts out through {@link WhereFilter#canPushdown()}.
+     */
+    @Test
+    public void testCanPushdownFilterRejectsDynamicWhereFilter() {
+        final Table setTable = TableTools.newTable(intCol("Int", 1, 2));
+        final WhereFilter filter = new DynamicWhereFilter(setTable, true, new MatchPair("Int", "Int"));
+        filter.init(clockTable.getDefinition());
+
+        assertFalse("a DynamicWhereFilter must not be pushed down", PushdownFilterMatcher.canPushdownFilter(filter));
+    }
+
+    /**
+     * A composed filter is pushable only if every component is. The plain condition filter passes the gate on its own,
+     * so the rejection below is attributable to the {@link DynamicWhereFilter} component.
+     */
+    @Test
+    public void testCanPushdownFilterRejectsComposedFilterWithNonPushableComponent() {
+        final WhereFilter pushable = WhereFilter.of(RawString.of("Int > 1"));
+        pushable.init(clockTable.getDefinition());
+        assertTrue("control: a plain condition filter is pushable", PushdownFilterMatcher.canPushdownFilter(pushable));
+
+        final Table setTable = TableTools.newTable(intCol("Int", 1, 2));
+        final WhereFilter composed = ConjunctiveFilter.of(
+                WhereFilter.of(RawString.of("Int > 1")),
+                new DynamicWhereFilter(setTable, true, new MatchPair("Int", "Int")));
+        composed.init(clockTable.getDefinition());
+
+        assertFalse("a composed filter with a non-pushable component must not be pushed down",
+                PushdownFilterMatcher.canPushdownFilter(composed));
     }
 
     @Test
