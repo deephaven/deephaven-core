@@ -22,7 +22,7 @@ When one table feeds into several downstream tables, Deephaven's update graph ca
 ```groovy test-set=parallel ticking-table order=null
 import static io.deephaven.api.agg.Aggregation.*
 
-// Create a table that adds a new row every second
+// Create a table with rows arriving at one-second intervals
 trades = timeTable("PT1s").update(
     "Symbol = `SYM` + (int)(i % 5)",
     "Price = 100 + randomGaussian(0, 10)",

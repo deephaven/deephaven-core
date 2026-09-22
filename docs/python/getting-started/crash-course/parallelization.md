@@ -22,7 +22,7 @@ When one table feeds into several downstream tables, Deephaven's update graph ca
 ```python test-set=parallel ticking-table order=null
 from deephaven import time_table, agg
 
-# Create a table that adds a new row every second
+# Create a table with rows arriving at one-second intervals
 trades = time_table("PT1s").update(
     [
         "Symbol = `SYM` + (int)(i % 5)",

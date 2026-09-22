@@ -14,7 +14,7 @@ When using `update`, the new columns are evaluated and stored in memory. Existin
 > 3. cells are accessed many times, and/or
 > 4. a large amount of memory is available.
 >
-> When memory usage or computation needs to be reduced, consider using [`select`](./select.md), [`view`](./view.md), `update_view`, or `lazy_update`. These methods have different memory and computation expenses.
+> When memory usage or computation needs to be reduced, consider using [`select`](./select.md), [`view`](./view.md), [`update_view`](./update-view.md), or [`lazy_update`](./lazy-update.md). These methods have different memory and computation expenses.
 
 ## Syntax
 
