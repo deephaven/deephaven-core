@@ -245,6 +245,7 @@ Load test data from CSV or Parquet files in your test resources:
 
 ```java skip-test
 import io.deephaven.csv.CsvTools;
+import io.deephaven.engine.table.Table;
 import io.deephaven.parquet.table.ParquetTools;
 
 import java.nio.file.Paths;

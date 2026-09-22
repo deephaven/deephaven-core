@@ -13,7 +13,7 @@ Install `deephaven-server` to use Deephaven tables in your Python project:
 pip install deephaven-server
 ```
 
-> **Note:** `deephaven-server` requires Java 11+ and sets up an embedded Deephaven server. Set your `JAVA_HOME` environment variable before running.
+> **Note:** `deephaven-server` requires Java 17+ and sets up an embedded Deephaven server. Set your `JAVA_HOME` environment variable before running.
 
 ### Optional dependencies
 
@@ -98,9 +98,11 @@ def test_ticking_table():
     """Test a ticking table."""
     t = time_table("PT1S").update("X = ii")
 
-    # Wait for the table to have at least 3 rows
-    while t.size < 3:
+    # Wait for the table to have at least 3 rows, up to 5 seconds total
+    attempts = 0
+    while t.size < 3 and attempts < 5:
         t.await_update(1000)  # Wait up to 1 second
+        attempts += 1
 
     assert t.size >= 3
 ```
@@ -124,7 +126,14 @@ from pydeephaven import Session
 @pytest.fixture(scope="module")
 def session():
     """Connect to a running Deephaven server."""
-    session = Session(host="localhost", port=10000)
+    # Deephaven servers require PSK authentication by default; see the PSK
+    # printed to the server's log on startup.
+    session = Session(
+        host="localhost",
+        port=10000,
+        auth_type="io.deephaven.authentication.psk.PskAuthenticationHandler",
+        auth_token="YOUR_PASSWORD_HERE",
+    )
     yield session
     session.close()
 
