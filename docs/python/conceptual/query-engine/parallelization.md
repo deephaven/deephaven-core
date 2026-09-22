@@ -121,7 +121,7 @@ result4 = source4.update("Squared = sqrt(X)")
 ```
 
 > [!NOTE]
-> These examples use small tables for clarity. Deephaven only splits a `select`/`update` computation across cores once a table crosses `QueryTable.minimumParallelSelectRows` (about 4.2 million rows by default), and `where` has its own, much smaller per-segment threshold (`QueryTable.parallelWhereRowsPerSegment`, about 65,536 rows by default). Below those thresholds, Deephaven evaluates the formula on a single core regardless of whether it's marked stateless — these examples illustrate the correctness contract, not actual observed parallel speedup.
+> These examples use small tables for clarity. Deephaven only splits a `select`/`update` computation across cores once a table crosses `QueryTable.minimumParallelSelectRows` (about 4.2 million rows by default), and `where` has its own, much smaller threshold: more than twice `QueryTable.parallelWhereRowsPerSegment` (about 131,072 rows total with the default 65,536-row segment size). Below those thresholds, Deephaven evaluates the formula on a single core regardless of whether it's marked stateless — these examples illustrate the correctness contract, not actual observed parallel speedup.
 
 You can change the default behavior using configuration properties: `QueryTable.statelessSelectByDefault` for [`select`](../../reference/table-operations/select/select.md)/[`update`](../../reference/table-operations/select/update.md), and `QueryTable.statelessFiltersByDefault` for filters. See [Query table configuration](../query-table-configuration.md) for details on these and other engine configuration properties.
 

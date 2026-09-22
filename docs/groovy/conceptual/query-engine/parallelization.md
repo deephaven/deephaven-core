@@ -110,7 +110,7 @@ result4 = source4.update("Squared = sqrt(X)")
 ```
 
 > [!NOTE]
-> These examples use small tables for clarity. Deephaven only splits a `select`/`update` computation across cores once a table crosses `QueryTable.minimumParallelSelectRows` (about 4.2 million rows by default), and `where` has its own, much smaller per-segment threshold (`QueryTable.parallelWhereRowsPerSegment`, about 65,536 rows by default). Below those thresholds, Deephaven evaluates the formula on a single core regardless of whether it's marked stateless — these examples illustrate the correctness contract, not actual observed parallel speedup.
+> These examples use small tables for clarity. Deephaven only splits a `select`/`update` computation across cores once a table crosses `QueryTable.minimumParallelSelectRows` (about 4.2 million rows by default), and `where` has its own, much smaller threshold: more than twice `QueryTable.parallelWhereRowsPerSegment` (about 131,072 rows total with the default 65,536-row segment size). Below those thresholds, Deephaven evaluates the formula on a single core regardless of whether it's marked stateless — these examples illustrate the correctness contract, not actual observed parallel speedup.
 
 You can change the default behavior using configuration properties: `QueryTable.statelessSelectByDefault` for [`select`](../../reference/table-operations/select/select.md)/[`update`](../../reference/table-operations/select/update.md), and `QueryTable.statelessFiltersByDefault` for filters. See [Query table configuration](../query-table-configuration.md) for details on these and other engine configuration properties.
 
@@ -213,7 +213,7 @@ A barrier creates an ordering dependency between two operations: one operation *
 
 #### Example: extending the counter with a barrier
 
-Building on the counter example above: consider two columns that share a counter, where column A should assign IDs 0–9 and column B should continue from 10–19. Without a barrier, both columns would start simultaneously, both read the counter starting at 0, and produce overlapping, incorrect results. With a barrier, column A runs first (0–9), then column B starts where A left off (10–19):
+Building on the counter example above: consider two columns that share a counter, where column A should assign IDs 0–9 and column B should continue from 10–19. `AtomicInteger.getAndIncrement()` is itself thread-safe, so without a barrier the counter can't produce duplicate or corrupted values — but there's no guarantee which column's rows claim the lower values, so A and B's ranges could interleave arbitrarily instead of landing as two clean blocks. With a barrier, column A runs first (0–9), then column B starts where A left off (10–19):
 
 ```groovy order=t
 import io.deephaven.api.Selectable
@@ -236,7 +236,7 @@ colB = Selectable.parse("B = counter.getAndIncrement()")
 t = emptyTable(10).update([colA, colB])
 ```
 
-Column A gets values 0–9. Column B gets values 10–19. Without the barrier, both columns would race and produce unpredictable results. Without `withSerial`, rows within each column would also race.
+Column A gets values 0–9. Column B gets values 10–19. Without the barrier, there's no guarantee A's rows claim the lower values — the two columns' ranges could interleave unpredictably instead. Without `withSerial`, a column's own rows could also be evaluated out of row-set order, breaking the correspondence between row and counter value even within a single column.
 
 > [!IMPORTANT]
 > Barriers don't make a column execute serially. If your formula has shared mutable state, you typically need **both** `withSerial` (for sequential row processing within a column) **and** a barrier (for ordering between columns).
