@@ -72,7 +72,7 @@ def when_done():
 
 Subsequent calls of `add_table` will add data to `my_table`.
 
-```python test-set=1 order=null
+```python ticking-table test-set=1 order=null
 add_table(10)
 ```
 
@@ -290,7 +290,7 @@ t2, t2_cancel = subscribe_stats(["ETH-USD", "BTC-USDT", "ETH-USDT"])
 
 ## Data history
 
-Table publishers create blink tables. Blink tables do not store any data history — data is gone forever at the start of a new update cycle. In most use cases, you will want to store some or all of the rows written during previous update cycles. There are two ways to do this:
+Table publishers create blink tables. Blink tables do not store any data history — data is gone forever at the start of a new update cycle. In most use cases, you want to store some or all of the rows written during previous update cycles. There are two ways to do this:
 
 - Store some data history by creating a downstream ring table with [`ring_table`](../reference/table-operations/create/ringTable.md).
 - Store all data history by creating a downstream append-only table with [`blink_to_append_only`](../reference/table-operations/create/blink-to-append-only.md).

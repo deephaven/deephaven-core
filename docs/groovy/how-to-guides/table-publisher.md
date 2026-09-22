@@ -65,7 +65,7 @@ publishedTable = publisher.table()
 
 Add data to the blink table by calling the [`add`](../reference/table-operations/create/TablePublisher.md#methods) method.
 
-```groovy test-set=1 order=null
+```groovy ticking-table test-set=1 order=null
 publisher.add(emptyTable(5).update("X = randomInt(0, 10)", "Y = randomDouble(0.0, 100.0)", "Z = randomDouble(0.0, 100.0)"))
 ```
 
@@ -123,7 +123,7 @@ thread = new Thread(myFunc).start()
 
 ## Data history
 
-Table publishers create blink tables. Blink tables do not store any data history — data is gone forever at the start of a new update cycle. In most use cases, you will want to store some or all of the rows written during previous update cycles. There are two ways to do this:
+Table publishers create blink tables. Blink tables do not store any data history — data is gone forever at the start of a new update cycle. In most use cases, you want to store some or all of the rows written during previous update cycles. There are two ways to do this:
 
 - Store some data history by creating a downstream ring table with [`RingTableTools.of`](../reference/cheat-sheets/simple-table-constructors.md#ringtabletoolsof).
 - Store all data history by creating a downstream append-only table with [`blinkToAppendOnly`](../reference/table-operations/create/blink-to-append-only.md).

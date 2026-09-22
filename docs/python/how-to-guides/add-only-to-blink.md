@@ -2,13 +2,13 @@
 title: Convert add- and append-only tables to blink tables
 ---
 
-This guide will show you how to convert a refreshing add-only or append-only table to a blink table. It's a simple process that can be performed with a single method, [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md).
+This guide shows you how to convert a refreshing add-only or append-only table to a blink table. It's a simple process that can be performed with a single method, [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md).
 
 ## Example
 
-In this example, we will create a time table that refreshes every second, then convert it to a blink table using [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md).
+In this example, we create a time table that refreshes every second, then convert it to a blink table using [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md).
 
-```python order=null
+```python ticking-table order=null
 from deephaven.stream import add_only_to_blink
 from deephaven import time_table
 
