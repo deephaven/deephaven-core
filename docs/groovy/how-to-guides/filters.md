@@ -89,7 +89,7 @@ Range filters evaluate to true if the column value is within a specified range. 
 source = emptyTable(10).update("X = ii")
 resultGreaterThan = source.where("X > 5")
 resultLessThan = source.where("X < 5")
-resultRange = source.where("X >= 2 && X < 6")
+resultRange = source.where("X >= 2 && X <= 6")
 resultInRange = source.where("inRange(X, 2, 6)")
 ```
 
@@ -103,7 +103,7 @@ Both `resultRange` and `resultInRange` can instead be implemented by [conjunctiv
 
 ```groovy order=source,resultRangeConjunctive
 source = emptyTable(10).update("X = ii")
-resultRangeConjunctive = source.where("X >= 2", "X < 6")
+resultRangeConjunctive = source.where("X >= 2", "X <= 6")
 ```
 
 You can also filter for data that is not in a range by using the `!` operator or by [disjunctively](#disjunctive) combining two separate range filters:
@@ -116,6 +116,9 @@ resultNotInRangeDisjunctive = source.where("X < 2 || X > 6")
 resultNotInRangeFilterOr = source.where(Filter.or(Filter.from("X < 2", "X > 6")))
 resultNotInRange = source.where("!inRange(X, 2, 6)")
 ```
+
+> [!NOTE]
+> These forms are only equivalent for non-`NaN` values. `inRange` returns `false` for `NaN` (per standard IEEE 754 comparison rules), so `!inRange(X, 2, 6)` includes `NaN` rows, while `X < 2 || X > 6` excludes them.
 
 ### String filters
 

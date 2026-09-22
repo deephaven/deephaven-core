@@ -160,6 +160,48 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     }
 
     @Override
+    public final void subsume(final WritableRowSet other) {
+        if (other == this) {
+            // Subsuming yourself has no answer: the union with ourselves is the keys we already hold, and emptying
+            // the argument would take them away.
+            throw new IllegalArgumentException("Cannot subsume a RowSet into itself");
+        }
+        if (!(other instanceof WritableRowSetImpl)) {
+            throw new UnsupportedOperationException("Unexpected RowSet type " + other.getClass());
+        }
+        final WritableRowSetImpl otherImpl = (WritableRowSetImpl) other;
+        // Both sides are mutated, so both hooks fire before either is touched; a tracking set snapshots its previous
+        // value here, which is what makes the set it snapshots shared and so safe to read through below.
+        preMutationHook();
+        otherImpl.preMutationHook();
+        final OrderedLongSet mine = innerSet;
+        final OrderedLongSet theirs = otherImpl.innerSet;
+        if (mine == theirs) {
+            // The two sets share their keys, so the union is what we already hold.
+            otherImpl.assign(OrderedLongSet.EMPTY);
+        } else {
+            final boolean reversed = InsertCostEstimation.shouldInsertReversed(mine, theirs);
+            final OrderedLongSet receiver = reversed ? theirs : mine;
+            final OrderedLongSet argument = reversed ? mine : theirs;
+            final OrderedLongSet result = receiver.ixInsert(argument);
+            invalidateRowSequenceAsChunkImpl();
+            otherImpl.invalidateRowSequenceAsChunkImpl();
+            innerSet = result;
+            otherImpl.innerSet = OrderedLongSet.EMPTY;
+            // We came in holding a reference to each side and leave holding only the result. The result stands in
+            // for the receiver's reference, which is the receiver itself when it was edited in place; the argument's
+            // reference is always still ours to give back, even when the result is the argument's set, since an
+            // insert that answers with its argument takes a reference of its own to it first.
+            if (result != receiver) {
+                receiver.ixRelease();
+            }
+            argument.ixRelease();
+        }
+        otherImpl.postMutationHook();
+        postMutationHook();
+    }
+
+    @Override
     public final void remove(final long key) {
         preMutationHook();
         assign(innerSet.ixRemove(key));
@@ -668,6 +710,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     public static void addToBuilderFromImpl(final OrderedLongSet.BuilderRandom builder,
             final WritableRowSetImpl rowSet) {
+        if (rowSet.innerSet.ixIsEmpty()) {
+            // An empty row set's implementation is the shared empty sentinel, which is none of the three types below.
+            return;
+        }
         if (rowSet.innerSet instanceof SingleRange) {
             builder.add((SingleRange) rowSet.innerSet);
             return;

@@ -6,8 +6,14 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.join.ChangedKeyRows;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.naturaljoin.*;
 import io.deephaven.engine.table.impl.sources.*;
@@ -56,9 +62,18 @@ class NaturalJoinHelper {
             MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, NaturalJoinType joinType, JoinControl control) {
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
+        // A join that errors on duplicates needs a state per right row, so the right row count sizes the hash table
+        // exactly; a first- or last-match join collapses duplicates into one state, so its states are counted from the
+        // right data index when there is one and otherwise start from the default size and grow by rehashing.
+        final boolean rightKeysUnique =
+                joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH;
+
         try (final BucketingContext bc = new BucketingContext("naturalJoin",
-                leftTable, rightTable, columnsToMatch, columnsToAdd, control, true, true)) {
-            final JoinControl.BuildParameters.From firstBuildFrom = bc.buildParameters.firstBuildFrom();
+                leftTable, rightTable, columnsToMatch, columnsToAdd, control, rightKeysUnique, true)) {
+            // the right data index only sizes the table; the right rows themselves are built into it
+            final JoinControl.BuildParameters.From firstBuildFrom =
+                    bc.buildParameters.firstBuildFrom() == RightDataIndex ? RightInput
+                            : bc.buildParameters.firstBuildFrom();
             final int initialHashTableSize = bc.buildParameters.hashTableSize();
             final boolean rightAddOnly = rightTable.isAddOnly();
 
@@ -66,9 +81,9 @@ class NaturalJoinHelper {
             // TODO: SimpleUniqueStaticNaturalJoinManager, but not static!
             if (!rightTable.isRefreshing()
                     && control.useUniqueTable(bc.uniqueValues, bc.maximumUniqueValue, bc.minimumUniqueValue)) {
-                Assert.neqNull(bc.uniqueFunctor, "uniqueFunctor");
+                Assert.neqNull(bc.uniqueChunkType, "uniqueChunkType");
                 final SimpleUniqueStaticNaturalJoinStateManager jsm = new SimpleUniqueStaticNaturalJoinStateManager(
-                        bc.originalLeftSources, bc.uniqueValuesRange(), bc.uniqueFunctor, joinType,
+                        bc.originalLeftSources, bc.uniqueValuesRange(), bc.uniqueChunkType, bc.uniqueOffset, joinType,
                         rightTable.isAddOnly());
                 jsm.setRightSide(rightTable.getRowSet(), bc.rightSources[0]);
                 final LongArraySource leftRedirections = new LongArraySource();
@@ -78,7 +93,9 @@ class NaturalJoinHelper {
                 final WritableRowRedirection rowRedirection =
                         jsm.buildRowRedirection(leftTable, leftRedirections, control.getRedirectionType(leftTable));
 
-                final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
+                // the right side is static, so the redirection only changes when left rows are added or re-keyed
+                final QueryTable result =
+                        makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, leftTable.isRefreshing());
                 if (leftTable.isRefreshing()) {
                     leftTable.addUpdateListener(new LeftTickingListener(bc.listenerDescription, columnsToMatch,
                             columnsToAdd, leftTable, result, rowRedirection, jsm, bc.leftSources));
@@ -94,7 +111,6 @@ class NaturalJoinHelper {
 
             if (leftTable.isRefreshing() && rightTable.isRefreshing()) {
                 // We always build right first, regardless of the build parameters. This is probably irrelevant.
-
                 final BothIncrementalNaturalJoinStateManager jsm = TypedHasherFactory.makeNaturalJoin(
                         IncrementalNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
                         initialHashTableSize, control.getMaximumLoadFactor(),
@@ -149,7 +165,8 @@ class NaturalJoinHelper {
 
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
                 if (bc.leftDataIndexTable != null) {
-                    jsm.decorateLeftSide(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources, leftRedirections);
+                    jsm.decorateLeftSideIndexed(bc.leftDataIndexTable.getRowSet(), bc.leftDataIndexSources,
+                            bc.leftDataIndexRowSetSource, leftRedirections);
                     rowRedirection = jsm.buildIndexedRowRedirectionFromRedirections(leftTable,
                             bc.leftDataIndexTable.getRowSet(), leftRedirections, bc.leftDataIndexRowSetSource,
                             control.getRedirectionType(leftTable));
@@ -230,15 +247,19 @@ class NaturalJoinHelper {
                 final IntegerArraySource leftHashSlots = new IntegerArraySource();
                 jsm.buildFromLeftSide(bc.leftDataIndexTable, bc.leftDataIndexSources,
                         leftHashSlots);
-                jsm.decorateWithRightSide(rightTable, bc.rightSources);
+                try {
+                    jsm.decorateWithRightSide(rightTable, bc.rightSources);
+                } catch (DuplicateRightRowDecorationException e) {
+                    jsm.errorOnDuplicatesIndexed(leftHashSlots, bc.leftDataIndexTable.getRowSet());
+                }
                 rowRedirection = jsm.buildIndexedRowRedirectionFromHashSlots(leftTable,
                         bc.leftDataIndexTable.getRowSet(), leftHashSlots,
                         bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
             } else if (firstBuildFrom == LeftInput) {
                 final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.makeNaturalJoin(
                         StaticNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        // The static state manager doesn't allow rehashing, so we must allocate a big enough hash
-                        // table for the possibility that all left rows will have unique keys.
+                        // A build from the left side records each left row's hash slot, which a rehash would move, so
+                        // the table must be big enough for the possibility that all left rows have unique keys.
                         control.tableSize(leftTable.size()),
                         control.getMaximumLoadFactor(), control.getTargetLoadFactor(), joinType, rightAddOnly);
 
@@ -278,15 +299,18 @@ class NaturalJoinHelper {
         if (rightTable.size() > 1) {
             if ((joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH)) {
                 if (!leftTable.isEmpty()) {
-                    throw new RuntimeException(
+                    throw new IllegalStateException(
                             "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
                 }
                 // we don't care where it goes
                 rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
             } else {
-                rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
-                // immediately re-direct to the appropriate RHS row
-                updateRightRedirection(rightTable, rowRedirection, joinType);
+                // The selected right row is known here, and only a refreshing right table gets a writable
+                // redirection, so the row must be seeded rather than re-pointed afterwards.
+                rowRedirection = getSingleValueRowRedirection(rightRefreshing,
+                        joinType == NaturalJoinType.FIRST_MATCH
+                                ? rightTable.getRowSet().firstRowKey()
+                                : rightTable.getRowSet().lastRowKey());
             }
         } else if (rightTable.size() == 1) {
             rowRedirection = getSingleValueRowRedirection(rightRefreshing, rightTable.getRowSet().firstRowKey());
@@ -324,18 +348,13 @@ class NaturalJoinHelper {
 
                         checkRightTableSizeZeroKeys(leftTable, rightTable, joinType);
 
-                        if (rightChanged) {
-                            final boolean rightUpdated = updateRightRedirection(rightTable, rowRedirection, joinType);
-                            if (rightUpdated) {
-                                modifiedColumnSet.setAll(allRightColumns);
-                            } else {
-                                rightTransformer.transform(rightRecorder.getModifiedColumnSet(), modifiedColumnSet);
-                            }
-                        }
+                        final boolean rightValuesChanged = rightChanged && applyZeroKeyRightUpdate(rightTable,
+                                rowRedirection, joinType, rightRecorder.getUpdate(), rightTransformer,
+                                allRightColumns, modifiedColumnSet);
 
                         if (leftChanged) {
                             final RowSet modified;
-                            if (rightChanged) {
+                            if (rightValuesChanged) {
                                 modified = result.getRowSet().minus(leftRecorder.getAdded());
                             } else {
                                 modified = leftRecorder.getModified().copy();
@@ -344,7 +363,7 @@ class NaturalJoinHelper {
                             result.notifyListeners(new TableUpdateImpl(
                                     leftRecorder.getAdded().copy(), leftRecorder.getRemoved().copy(), modified,
                                     leftRecorder.getShifted(), modifiedColumnSet));
-                        } else if (rightChanged) {
+                        } else if (rightValuesChanged) {
                             result.notifyListeners(new TableUpdateImpl(
                                     RowSetFactory.empty(), RowSetFactory.empty(),
                                     result.getRowSet().copy(), RowSetShiftData.EMPTY, modifiedColumnSet));
@@ -380,15 +399,15 @@ class NaturalJoinHelper {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
                                 checkRightTableSizeZeroKeys(leftTable, rightTable, joinType);
-                                final boolean changed = updateRightRedirection(rightTable, rowRedirection, joinType);
                                 final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                                if (!changed) {
-                                    rightTransformer.clearAndTransform(upstream.modifiedColumnSet(), modifiedColumnSet);
+                                modifiedColumnSet.clear();
+                                if (!applyZeroKeyRightUpdate(rightTable, rowRedirection, joinType, upstream,
+                                        rightTransformer, allRightColumns, modifiedColumnSet)) {
+                                    return;
                                 }
                                 result.notifyListeners(
                                         new TableUpdateImpl(RowSetFactory.empty(), RowSetFactory.empty(),
-                                                result.getRowSet().copy(), RowSetShiftData.EMPTY,
-                                                changed ? allRightColumns : modifiedColumnSet));
+                                                result.getRowSet().copy(), RowSetShiftData.EMPTY, modifiedColumnSet));
                             }
                         });
             }
@@ -427,22 +446,72 @@ class NaturalJoinHelper {
         return changed;
     }
 
+    /**
+     * Apply a right update to a zero-key join's redirection and record which right columns may have changed for every
+     * result row. The redirection selects one right row, so only a change to that row (or a change of which row is
+     * selected) affects the result.
+     *
+     * @param modifiedColumnSet the result's modified column set, cleared by the caller; receives the affected right
+     *        columns
+     * @return whether every result row's right values may have changed
+     */
+    private static boolean applyZeroKeyRightUpdate(
+            final QueryTable rightTable,
+            final SingleValueRowRedirection rowRedirection,
+            final NaturalJoinType joinType,
+            final TableUpdate upstream,
+            final ModifiedColumnSet.Transformer rightTransformer,
+            final ModifiedColumnSet allRightColumns,
+            final ModifiedColumnSet modifiedColumnSet) {
+        // NULL_ROW_KEY when no right row was selected; it is never a member of the update's row sets below
+        final long previousRightRow = rowRedirection.getValue();
+        if (updateRightRedirection(rightTable, rowRedirection, joinType)) {
+            // the selected key changed; if the previously selected row simply shifted to the new key, it is still the
+            // selected row and only its own modifications matter
+            final long selectedRightRow = rowRedirection.getValue();
+            final boolean previousRowShiftedToSelectedKey = previousRightRow != RowSequence.NULL_ROW_KEY
+                    && upstream.removed().find(previousRightRow) < 0
+                    && upstream.shifted().apply(previousRightRow) == selectedRightRow;
+            if (!previousRowShiftedToSelectedKey) {
+                modifiedColumnSet.setAll(allRightColumns);
+                return true;
+            }
+        } else if (upstream.removed().find(previousRightRow) >= 0 || upstream.added().find(previousRightRow) >= 0) {
+            // the selected key is unchanged but holds a different row: the previous row was removed (and another row
+            // re-added or shifted into its key), or it shifted away and a new row was added at its key. Shifts preserve
+            // order, so an existing row cannot otherwise take the first or last key without that key changing.
+            modifiedColumnSet.setAll(allRightColumns);
+            return true;
+        }
+        // the same row remains selected, at its current (post-shift) key
+        if (upstream.modified().find(rowRedirection.getValue()) >= 0) {
+            rightTransformer.transform(upstream.modifiedColumnSet(), modifiedColumnSet);
+            return modifiedColumnSet.nonempty();
+        }
+        return false;
+    }
+
+    /**
+     * Check the right table's size against the join type when there are left rows to match. The exceptions match the
+     * keyed paths: a duplicate right key is an {@link IllegalStateException}, a missing exact match a
+     * {@link RuntimeException}.
+     */
     private static void checkRightTableSizeZeroKeys(
             final Table leftTable,
             final Table rightTable,
             final NaturalJoinType joinType) {
-        if (!leftTable.isEmpty()) {
-            if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE) {
-                if (rightTable.size() > 1) {
-                    throw new RuntimeException(
-                            "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
-                }
-            } else if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                if (rightTable.size() != 1) {
-                    throw new RuntimeException(
-                            "exactJoin with zero key columns must have exactly one row in the right hand side table!");
-                }
+        if (leftTable.isEmpty()) {
+            return;
+        }
+        if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
+            if (rightTable.size() > 1) {
+                throw new IllegalStateException(
+                        "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
             }
+        }
+        if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && rightTable.isEmpty()) {
+            throw new RuntimeException(
+                    "exactJoin with zero key columns must have exactly one row in the right hand side table!");
         }
     }
 
@@ -482,6 +551,8 @@ class NaturalJoinHelper {
         private final ModifiedColumnSet leftKeyColumns;
         private final ModifiedColumnSet rightModifiedColumns;
         private final ModifiedColumnSet.Transformer leftTransformer;
+        // detects which modified left rows actually changed key value
+        private final ChangedKeyRows changedKeyRows;
 
         LeftTickingListener(String description, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
                 QueryTable leftTable, QueryTable result, WritableRowRedirection rowRedirection,
@@ -498,6 +569,8 @@ class NaturalJoinHelper {
 
             leftTransformer =
                     leftTable.newModifiedColumnSetTransformer(result, leftTable.getDefinition().getColumnNamesArray());
+            changedKeyRows = new ChangedKeyRows(
+                    Arrays.stream(leftSources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new));
         }
 
         @Override
@@ -511,43 +584,111 @@ class NaturalJoinHelper {
             final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
             leftTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
 
-            if (upstream.modifiedColumnSet().containsAny(leftKeyColumns)) {
-                newLeftRedirections.ensureCapacity(downstream.modified().size());
-                // compute our new values
-                jsm.decorateLeftSide(downstream.modified(), leftSources, newLeftRedirections);
-                final MutableBoolean updatedRightRow = new MutableBoolean(false);
-                final MutableInt position = new MutableInt(0);
-                downstream.modified().forAllRowKeys((long modifiedKey) -> {
-                    final long newRedirection = newLeftRedirections.getLong(position.get());
-                    final long old;
-                    if (newRedirection == RowSequence.NULL_ROW_KEY) {
-                        old = rowRedirection.remove(modifiedKey);
-                    } else {
-                        old = rowRedirection.put(modifiedKey, newRedirection);
+            if (upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(leftKeyColumns)) {
+                // only the rows whose key value actually changed need a new redirection; the others were shifted
+                // above, so only the post-shift keys of the changed rows are needed
+                final RowSetBuilderSequential changedPostShiftBuilder = RowSetFactory.builderSequential();
+                changedKeyRows.findChanged(leftSources, upstream.getModifiedPreShift(), upstream.modified(), null,
+                        changedPostShiftBuilder, null);
+                try (final RowSet changedKeys = changedPostShiftBuilder.build()) {
+                    if (changedKeys.isNonempty()) {
+                        redirectChangedKeys(changedKeys, downstream.modifiedColumnSet());
                     }
-                    if (newRedirection != old) {
-                        updatedRightRow.setValue(true);
-                    }
-                    position.increment();
-                });
-
-                if (updatedRightRow.booleanValue()) {
-                    downstream.modifiedColumnSet().setAll(rightModifiedColumns);
                 }
             }
 
-            newLeftRedirections.ensureCapacity(downstream.added().size());
-            jsm.decorateLeftSide(downstream.added(), leftSources, newLeftRedirections);
+            final RowSet added = downstream.added();
+            if (added.isNonempty()) {
+                newLeftRedirections.ensureCapacity(added.size());
+                jsm.decorateLeftSide(added, leftSources, newLeftRedirections);
+                storeAddedRedirections(added);
+            }
+
+            result.notifyListeners(downstream);
+        }
+
+        /**
+         * Store the redirections that {@code newLeftRedirections} holds (by position) for {@code added}, one chunk at a
+         * time. An added row's key holds no redirection (the removed rows' keys were cleared and the shifted rows'
+         * redirections moved with them), so an unmatched row is left alone rather than storing the null marker, which
+         * would allocate redirection storage for it.
+         */
+        private void storeAddedRedirections(final RowSet added) {
+            final int chunkSize = (int) Math.min(JoinControl.CHUNK_SIZE, added.size());
+            try (final ChunkSource.GetContext redirectionContext = newLeftRedirections.makeGetContext(chunkSize);
+                    final ChunkSink.FillFromContext fillContext = rowRedirection.makeFillFromContext(chunkSize);
+                    final WritableLongChunk<RowKeys> matchedRedirections =
+                            WritableLongChunk.makeWritableChunk(chunkSize);
+                    final WritableLongChunk<OrderedRowKeys> matchedRows =
+                            WritableLongChunk.makeWritableChunk(chunkSize);
+                    final RowSequence.Iterator addedIterator = added.getRowSequenceIterator()) {
+                long position = 0;
+                while (addedIterator.hasMore()) {
+                    final RowSequence addedChunkRows = addedIterator.getNextRowSequenceWithLength(chunkSize);
+                    final int addedChunkSize = addedChunkRows.intSize();
+                    // noinspection unchecked
+                    final LongChunk<RowKeys> redirections = (LongChunk<RowKeys>) newLeftRedirections
+                            .getChunk(redirectionContext, position, position + addedChunkSize - 1).asLongChunk();
+                    final LongChunk<OrderedRowKeys> addedKeys = addedChunkRows.asRowKeyChunk();
+                    int unmatched = 0;
+                    for (int ii = 0; ii < addedChunkSize; ++ii) {
+                        final long redirection = redirections.get(ii);
+                        jsm.checkExactMatch(addedKeys.get(ii), redirection);
+                        if (redirection == RowSequence.NULL_ROW_KEY) {
+                            ++unmatched;
+                        }
+                    }
+                    if (unmatched == 0) {
+                        rowRedirection.fillFromChunk(fillContext, redirections, addedChunkRows);
+                    } else if (unmatched < addedChunkSize) {
+                        // compact the matched rows and their redirections into the reusable chunks, then fill only
+                        // those; the matched row keys stay in ascending order
+                        matchedRedirections.setSize(0);
+                        matchedRows.setSize(0);
+                        for (int ii = 0; ii < addedChunkSize; ++ii) {
+                            final long redirection = redirections.get(ii);
+                            if (redirection != RowSequence.NULL_ROW_KEY) {
+                                matchedRedirections.add(redirection);
+                                matchedRows.add(addedKeys.get(ii));
+                            }
+                        }
+                        try (final RowSequence matchedRowSequence =
+                                RowSequenceFactory.wrapRowKeysChunkAsRowSequence(matchedRows)) {
+                            rowRedirection.fillFromChunk(fillContext, matchedRedirections, matchedRowSequence);
+                        }
+                    }
+                    position += addedChunkSize;
+                }
+            }
+        }
+
+        /**
+         * Probe the static right side for the left rows whose key value changed and store their new redirections,
+         * marking every added column modified if any redirection differs from before.
+         */
+        private void redirectChangedKeys(final RowSet changedKeys, final ModifiedColumnSet downstreamColumns) {
+            newLeftRedirections.ensureCapacity(changedKeys.size());
+            jsm.decorateLeftSide(changedKeys, leftSources, newLeftRedirections);
+            final MutableBoolean updatedRightRow = new MutableBoolean(false);
             final MutableInt position = new MutableInt(0);
-            downstream.added().forAllRowKeys((long ll) -> {
+            changedKeys.forAllRowKeys((long modifiedKey) -> {
                 final long newRedirection = newLeftRedirections.getLong(position.get());
-                if (newRedirection != RowSequence.NULL_ROW_KEY) {
-                    rowRedirection.putVoid(ll, newRedirection);
+                jsm.checkExactMatch(modifiedKey, newRedirection);
+                final long old;
+                if (newRedirection == RowSequence.NULL_ROW_KEY) {
+                    old = rowRedirection.remove(modifiedKey);
+                } else {
+                    old = rowRedirection.put(modifiedKey, newRedirection);
+                }
+                if (newRedirection != old) {
+                    updatedRightRow.setValue(true);
                 }
                 position.increment();
             });
 
-            result.notifyListeners(downstream);
+            if (updatedRightRow.booleanValue()) {
+                downstreamColumns.setAll(rightModifiedColumns);
+            }
         }
     }
 
@@ -559,6 +700,7 @@ class NaturalJoinHelper {
         private final NaturalJoinType joinType;
         private final ModifiedColumnSet allRightColumns;
         private final ModifiedColumnSet rightKeyColumns;
+        private final ModifiedColumnSet rightAddedColumns;
         private final ModifiedColumnSet.Transformer rightTransformer;
         private final NaturalJoinModifiedSlotTracker modifiedSlotTracker = new NaturalJoinModifiedSlotTracker();
 
@@ -574,6 +716,7 @@ class NaturalJoinHelper {
             this.joinType = joinType;
 
             rightKeyColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
+            rightAddedColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToAdd));
             allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
             rightTransformer = rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
         }
@@ -591,55 +734,67 @@ class NaturalJoinHelper {
             }
 
             try (final Context pc = jsm.makeProbeContext(rightSources, maxSize)) {
-                final RowSet modifiedPreShift;
-
-                final boolean rightKeysChanged = upstream.modifiedColumnSet().containsAny(rightKeyColumns);
-
-                if (rightKeysChanged) {
-                    modifiedPreShift = upstream.getModifiedPreShift();
-                } else {
-                    modifiedPreShift = null;
-                }
+                // the modified rows whose key value actually changed (null when the key columns were not modified);
+                // the other modified rows keep their hash slot
+                final WritableRowSet changedKeysPreShift;
+                final WritableRowSet changedKeysPostShift;
 
                 // We must do all removes before shifting or there will be collisions in the RHS duplicate sets
                 if (upstream.removed().isNonempty()) {
                     jsm.removeRight(pc, upstream.removed(), rightSources, modifiedSlotTracker);
                 }
-                if (rightKeysChanged) {
-                    // It should make us somewhat sad that we have to add/remove, because we are doing two hash
-                    // lookups for keys that have not actually changed.
-                    // The alternative would be to do an initial pass that would filter out key columns that have
-                    // not actually changed.
-                    jsm.removeRight(pc, modifiedPreShift, rightSources, modifiedSlotTracker);
+                if (upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(rightKeyColumns)) {
+                    final RowSetBuilderSequential preShiftBuilder = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential postShiftBuilder = RowSetFactory.builderSequential();
+                    jsm.removeRightModifications(rightSources, upstream.getModifiedPreShift(), upstream.modified(),
+                            preShiftBuilder, postShiftBuilder, modifiedSlotTracker);
+                    changedKeysPreShift = preShiftBuilder.build();
+                    changedKeysPostShift = postShiftBuilder.build();
+                } else {
+                    changedKeysPreShift = null;
+                    changedKeysPostShift = null;
                 }
 
-                if (upstream.shifted().nonempty()) {
-                    try (final WritableRowSet previousToShift =
-                            getParent().getRowSet().prev().minus(upstream.removed())) {
-                        if (rightKeysChanged) {
-                            previousToShift.remove(modifiedPreShift);
-                        }
-                        upstream.shifted().apply((long beginRange, long endRange, long shiftDelta) -> {
-                            try (final WritableRowSet shiftedRowSet =
-                                    previousToShift.subSetByKeyRange(beginRange, endRange)) {
-                                shiftedRowSet.shiftInPlace(shiftDelta);
-                                jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta, modifiedSlotTracker);
+                try {
+                    if (upstream.shifted().nonempty()) {
+                        try (final WritableRowSet previousToShift =
+                                getParent().getRowSet().prev().minus(upstream.removed())) {
+                            if (changedKeysPreShift != null) {
+                                previousToShift.remove(changedKeysPreShift);
                             }
-                        });
+                            upstream.shifted().apply((long beginRange, long endRange, long shiftDelta) -> {
+                                try (final WritableRowSet shiftedRowSet =
+                                        previousToShift.subSetByKeyRange(beginRange, endRange)) {
+                                    shiftedRowSet.shiftInPlace(shiftDelta);
+                                    jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta,
+                                            modifiedSlotTracker);
+                                }
+                            });
+                        }
+                    }
+
+                    addedRightColumnsChanged = upstream.modified().isNonempty()
+                            && upstream.modifiedColumnSet().containsAny(rightAddedColumns);
+
+                    if (changedKeysPostShift != null) {
+                        jsm.addRightSide(pc, changedKeysPostShift, rightSources, modifiedSlotTracker);
+                        if (addedRightColumnsChanged) {
+                            try (final WritableRowSet unchangedKeys =
+                                    upstream.modified().minus(changedKeysPostShift)) {
+                                jsm.modifyByRight(pc, unchangedKeys, rightSources, modifiedSlotTracker);
+                            }
+                        }
+                    } else if (upstream.modified().isNonempty() && addedRightColumnsChanged) {
+                        jsm.modifyByRight(pc, upstream.modified(), rightSources, modifiedSlotTracker);
+                    }
+
+                    jsm.addRightSide(pc, upstream.added(), rightSources, modifiedSlotTracker);
+                } finally {
+                    if (changedKeysPostShift != null) {
+                        changedKeysPostShift.close();
+                        changedKeysPreShift.close();
                     }
                 }
-
-                final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                rightTransformer.clearAndTransform(upstream.modifiedColumnSet(), modifiedColumnSet);
-                addedRightColumnsChanged = modifiedColumnSet.size() != 0;
-
-                if (rightKeysChanged) {
-                    jsm.addRightSide(pc, upstream.modified(), rightSources, modifiedSlotTracker);
-                } else if (upstream.modified().isNonempty() && addedRightColumnsChanged) {
-                    jsm.modifyByRight(pc, upstream.modified(), rightSources, modifiedSlotTracker);
-                }
-
-                jsm.addRightSide(pc, upstream.added(), rightSources, modifiedSlotTracker);
             }
 
             final RowSetBuilderRandom modifiedLeftBuilder = RowSetFactory.builderRandom();
@@ -647,7 +802,11 @@ class NaturalJoinHelper {
                     joinType, addedRightColumnsChanged);
             modifiedSlotTracker.forAllModifiedSlots(slotUpdater);
             final ModifiedColumnSet modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-            if (slotUpdater.changedRedirection) {
+            modifiedColumnSet.clear();
+            if (slotUpdater.rightValuesModified) {
+                rightTransformer.transform(upstream.modifiedColumnSet(), modifiedColumnSet);
+            }
+            if (slotUpdater.selectedRightRowChanged) {
                 modifiedColumnSet.setAll(allRightColumns);
             }
 
@@ -667,7 +826,17 @@ class NaturalJoinHelper {
         private final WritableRowRedirection rowRedirection;
         private final NaturalJoinType joinType;
         private final boolean rightAddedColumnsChanged;
-        boolean changedRedirection = false;
+        /**
+         * Whether some slot's left rows are now redirected to a different right row than before (as opposed to the same
+         * right row at a shifted key), in which case every added column may have a new value.
+         */
+        boolean selectedRightRowChanged = false;
+        /**
+         * Whether some slot's left rows are reported as modified because the right row they select had an added column
+         * modified (a modify probe reached the slot), in which case the right table's modified added columns have new
+         * values for them.
+         */
+        boolean rightValuesModified = false;
 
         private ModifiedSlotUpdater(IncrementalNaturalJoinStateManager jsm, RowSetBuilderRandom modifiedLeftBuilder,
                 WritableRowRedirection rowRedirection, NaturalJoinType joinType, boolean rightAddedColumnsChanged) {
@@ -679,9 +848,13 @@ class NaturalJoinHelper {
         }
 
         @Override
-        public void accept(int updatedSlot, long originalRightValue, byte flag) {
+        public void accept(int updatedSlot, long originalRightValue, byte flag, long leftAddedCount) {
             final RowSet leftIndices = jsm.getLeftRowSet(updatedSlot);
-            if (leftIndices == null || leftIndices.isEmpty()) {
+            // The rows added to the left table this cycle already hold the redirection found for them against the
+            // right side as it stands after this cycle's right updates, and an added row is never reported as modified,
+            // so a slot's right change affects only the left rows that were present before this cycle (including rows
+            // that moved into the slot because their key value changed).
+            if (leftIndices == null || leftIndices.size() <= leftAddedCount) {
                 return;
             }
 
@@ -700,11 +873,23 @@ class NaturalJoinHelper {
             }
             final long rightRowKey = rowKey;
 
-            final boolean unchangedRedirection = rightRowKey == originalRightValue;
+            // Whether the redirection stored for the left rows must be rewritten. A shift rewrites it to the same
+            // right row at its new key; only a right change (or a right add to a previously unmatched key) selects a
+            // different right row.
+            final boolean unchangedRedirection;
+            if (IncrementalNaturalJoinStateManager.isDuplicateRightState(originalRightValue)) {
+                // The slot held several right rows when it was first recorded, and the token does not identify which
+                // of them the left rows were redirected to. The flags decide instead: a change or shift of the deciding
+                // right row is recorded as such, while a modify probe leaves the redirection alone.
+                unchangedRedirection = (flag & (NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE
+                        | NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT)) == 0;
+            } else {
+                unchangedRedirection = rightRowKey == originalRightValue;
+            }
+            final boolean rightAdded = (flag & NaturalJoinModifiedSlotTracker.FLAG_RIGHT_ADD) != 0;
 
             // if we have no right columns that have changed, and our redirection is identical we can quit here
-            if (unchangedRedirection && !rightAddedColumnsChanged
-                    && (flag & NaturalJoinModifiedSlotTracker.FLAG_RIGHT_ADD) == 0) {
+            if (unchangedRedirection && !rightAddedColumnsChanged && !rightAdded) {
                 return;
             }
 
@@ -714,14 +899,19 @@ class NaturalJoinHelper {
                 // we do not want to mark the state as modified if the only thing that changed was a shift
                 // otherwise we know the left side is modified
                 modifiedLeftBuilder.addRowSet(leftIndices);
+                if ((flag & NaturalJoinModifiedSlotTracker.FLAG_RIGHT_MODIFY_PROBE) != 0) {
+                    rightValuesModified = true;
+                }
             }
 
             // but we might not need to update the row redirection
-            if (unchangedRedirection && (flag & NaturalJoinModifiedSlotTracker.FLAG_RIGHT_ADD) == 0) {
+            if (unchangedRedirection && !rightAdded) {
                 return;
             }
 
-            changedRedirection = true;
+            if (rightAdded || (flag & NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE) != 0) {
+                selectedRightRowChanged = true;
+            }
 
             if (rightRowKey == RowSequence.NULL_ROW_KEY) {
                 jsm.checkExactMatch(leftIndices.firstRowKey(), rightRowKey);
@@ -742,6 +932,7 @@ class NaturalJoinHelper {
         private final NaturalJoinType joinType;
         private final ModifiedColumnSet rightKeyColumns;
         private final ModifiedColumnSet leftKeyColumns;
+        private final ModifiedColumnSet rightAddedColumns;
         private final ModifiedColumnSet allRightColumns;
         private final ModifiedColumnSet.Transformer rightTransformer;
         private final ModifiedColumnSet.Transformer leftTransformer;
@@ -774,6 +965,7 @@ class NaturalJoinHelper {
 
             rightKeyColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
             leftKeyColumns = leftTable.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToMatch));
+            rightAddedColumns = rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToAdd));
             allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
 
             leftTransformer = leftTable.newModifiedColumnSetTransformer(result,
@@ -809,56 +1001,69 @@ class NaturalJoinHelper {
                         probeSize == 0 ? null : jsm.makeProbeContext(rightSources, probeSize);
                         final Context bc =
                                 buildSize == 0 ? null : jsm.makeBuildContext(rightSources, buildSize)) {
-                    final RowSet modifiedPreShift;
-
                     final RowSetShiftData rightShifted = rightRecorder.getShifted();
-
-                    if (rightKeysModified) {
-                        modifiedPreShift = rightRecorder.getModifiedPreShift();
-                    } else {
-                        modifiedPreShift = null;
-                    }
 
                     if (rightRemoved.isNonempty()) {
                         jsm.removeRight(pc, rightRemoved, rightSources, modifiedSlotTracker);
                     }
 
-                    rightTransformer.transform(rightModifiedColumns, modifiedColumnSet);
-                    addedRightColumnsChanged = modifiedColumnSet.size() > 0;
+                    addedRightColumnsChanged =
+                            rightModified.isNonempty() && rightModifiedColumns.containsAny(rightAddedColumns);
 
+                    // the modified rows whose key value actually changed (null when the key columns were not
+                    // modified); the other modified rows keep their hash slot
+                    final WritableRowSet changedKeysPreShift;
+                    final WritableRowSet changedKeysPostShift;
                     if (rightKeysModified) {
-                        // It should make us somewhat sad that we have to add/remove, because we are doing two hash
-                        // lookups for keys that have not actually changed.
-                        // The alternative would be to do an initial pass that would filter out key columns that have
-                        // not actually changed.
-                        jsm.removeRight(pc, modifiedPreShift, rightSources, modifiedSlotTracker);
+                        final RowSetBuilderSequential preShiftBuilder = RowSetFactory.builderSequential();
+                        final RowSetBuilderSequential postShiftBuilder = RowSetFactory.builderSequential();
+                        jsm.removeRightModifications(rightSources, rightRecorder.getModifiedPreShift(),
+                                rightModified, preShiftBuilder, postShiftBuilder, modifiedSlotTracker);
+                        changedKeysPreShift = preShiftBuilder.build();
+                        changedKeysPostShift = postShiftBuilder.build();
+                    } else {
+                        changedKeysPreShift = null;
+                        changedKeysPostShift = null;
                     }
 
-                    if (rightShifted.nonempty()) {
-                        try (final WritableRowSet previousToShift =
-                                rightRecorder.getParent().getRowSet().prev().minus(rightRemoved)) {
-                            if (rightKeysModified) {
-                                previousToShift.remove(modifiedPreShift);
-                            }
-                            rightShifted.apply((long beginRange, long endRange, long shiftDelta) -> {
-                                try (final WritableRowSet shiftedRowSet =
-                                        previousToShift.subSetByKeyRange(beginRange, endRange)) {
-                                    shiftedRowSet.shiftInPlace(shiftDelta);
-                                    jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta,
-                                            modifiedSlotTracker);
+                    try {
+                        if (rightShifted.nonempty()) {
+                            try (final WritableRowSet previousToShift =
+                                    rightRecorder.getParent().getRowSet().prev().minus(rightRemoved)) {
+                                if (changedKeysPreShift != null) {
+                                    previousToShift.remove(changedKeysPreShift);
                                 }
-                            });
+                                rightShifted.apply((long beginRange, long endRange, long shiftDelta) -> {
+                                    try (final WritableRowSet shiftedRowSet =
+                                            previousToShift.subSetByKeyRange(beginRange, endRange)) {
+                                        shiftedRowSet.shiftInPlace(shiftDelta);
+                                        jsm.applyRightShift(pc, rightSources, shiftedRowSet, shiftDelta,
+                                                modifiedSlotTracker);
+                                    }
+                                });
+                            }
                         }
-                    }
 
-                    if (rightKeysModified) {
-                        jsm.addRightSide(bc, rightModified, rightSources, modifiedSlotTracker);
-                    } else if (rightModified.isNonempty() && addedRightColumnsChanged) {
-                        jsm.modifyByRight(pc, rightModified, rightSources, modifiedSlotTracker);
-                    }
+                        if (changedKeysPostShift != null) {
+                            jsm.addRightSide(bc, changedKeysPostShift, rightSources, modifiedSlotTracker);
+                            if (addedRightColumnsChanged) {
+                                try (final WritableRowSet unchangedKeys =
+                                        rightModified.minus(changedKeysPostShift)) {
+                                    jsm.modifyByRight(pc, unchangedKeys, rightSources, modifiedSlotTracker);
+                                }
+                            }
+                        } else if (rightModified.isNonempty() && addedRightColumnsChanged) {
+                            jsm.modifyByRight(pc, rightModified, rightSources, modifiedSlotTracker);
+                        }
 
-                    if (rightAdded.isNonempty()) {
-                        jsm.addRightSide(bc, rightAdded, rightSources, modifiedSlotTracker);
+                        if (rightAdded.isNonempty()) {
+                            jsm.addRightSide(bc, rightAdded, rightSources, modifiedSlotTracker);
+                        }
+                    } finally {
+                        if (changedKeysPostShift != null) {
+                            changedKeysPostShift.close();
+                            changedKeysPreShift.close();
+                        }
                     }
                 }
             } else {
@@ -914,15 +1119,13 @@ class NaturalJoinHelper {
                     rowRedirection.removeAll(leftRemoved);
                     jsm.removeLeft(pc, leftRemoved, leftSources, modifiedSlotTracker);
 
-                    if (leftKeyChanges) {
-                        // the changed rows were already removed from the hash slots by removeLeftModifications above;
-                        // here we only need to drop their redirections
-                        rowRedirection.removeAll(changedKeysPreShift);
-                    }
-
+                    // The rows whose key value changed were removed from their hash slots by removeLeftModifications
+                    // above, but they keep their previous redirection (shifted along with the other rows) until their
+                    // new one is stored, so that the two can be compared.
                     if (leftShifted.nonempty()) {
                         try (final WritableRowSet prevRowSet = leftRecorder.getParent().getRowSet().copyPrev()) {
                             prevRowSet.remove(leftRemoved);
+                            rowRedirection.applyShift(prevRowSet, leftShifted);
 
                             if (leftKeyChanges) {
                                 prevRowSet.remove(changedKeysPreShift);
@@ -931,39 +1134,29 @@ class NaturalJoinHelper {
                             final RowSetShiftData.Iterator sit = leftShifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
-                                try (final RowSet shiftedRowSet = prevRowSet
-                                        .subSetByKeyRange(sit.beginRange(), sit.endRange()).shift(sit.shiftDelta())) {
-                                    jsm.applyLeftShift(pc, leftSources, shiftedRowSet, sit.shiftDelta());
+                                try (final WritableRowSet shiftedRowSet =
+                                        prevRowSet.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
+                                    shiftedRowSet.shiftInPlace(sit.shiftDelta());
+                                    jsm.applyLeftShift(pc, leftSources, shiftedRowSet, sit.shiftDelta(),
+                                            modifiedSlotTracker);
                                 }
                             }
-
-                            rowRedirection.applyShift(prevRowSet, leftShifted);
                         }
                     }
 
                     if (leftKeyChanges) {
-                        // add the post-shift rows whose key value actually changed
-                        jsm.addLeftSide(bc, changedKeysPostShift, leftSources, leftRedirections, modifiedSlotTracker);
-                        copyRedirections(changedKeysPostShift, leftRedirections);
-
-                        // TODO: This column mask could be made better if we were to keep more careful track of the
-                        // original left hash slots during removal.
-                        // We are almost able to fix this, because we know the hash slot and the result redirection for
-                        // the left modified row; which is the new value.
-                        // We could get the hash slot from the removal, and compare them, but the hash slot outside of a
-                        // modified slot tracker is unstable [and we don't want two of them].
-                        // On removal, we could ask our modified slot tracker if, (i) our cookie is valid, and if so
-                        // (ii) what the original right value was what the right value was
-                        // [presuming we add that for right side point 1]. This would let us report our original
-                        // row redirection as part of the jsm.removeLeft. We could then compare
-                        // the old redirections to the new redirections, only lighting up allRightColumns if there was
-                        // indeed a change.
-                        modifiedColumnSet.setAll(allRightColumns);
+                        // add the post-shift rows whose key value actually changed; every added column may have a new
+                        // value for a row that now selects a different right row (or none)
+                        jsm.addLeftSide(bc, changedKeysPostShift, leftSources, leftRedirections, modifiedSlotTracker,
+                                false);
+                        if (storeRedirections(changedKeysPostShift, leftRedirections, true)) {
+                            modifiedColumnSet.setAll(allRightColumns);
+                        }
                     }
 
                     if (leftAdditions) {
-                        jsm.addLeftSide(bc, leftAdded, leftSources, leftRedirections, modifiedSlotTracker);
-                        copyRedirections(leftAdded, leftRedirections);
+                        jsm.addLeftSide(bc, leftAdded, leftSources, leftRedirections, modifiedSlotTracker, true);
+                        storeRedirections(leftAdded, leftRedirections, false);
                     }
                 } finally {
                     if (changedKeysPostShift != null) {
@@ -983,7 +1176,10 @@ class NaturalJoinHelper {
             final ModifiedSlotUpdater slotUpdater = new ModifiedSlotUpdater(jsm, modifiedLeftBuilder, rowRedirection,
                     joinType, addedRightColumnsChanged);
             modifiedSlotTracker.forAllModifiedSlots(slotUpdater);
-            if (slotUpdater.changedRedirection) {
+            if (slotUpdater.rightValuesModified) {
+                rightTransformer.transform(rightRecorder.getModifiedColumnSet(), modifiedColumnSet);
+            }
+            if (slotUpdater.selectedRightRowChanged) {
                 modifiedColumnSet.setAll(allRightColumns);
             }
 
@@ -995,18 +1191,36 @@ class NaturalJoinHelper {
                     leftShifted, modifiedColumnSet));
         }
 
-        private void copyRedirections(final RowSet leftRows, @NotNull final LongArraySource leftRedirections) {
+        /**
+         * Store the redirection found for each of {@code leftRows} (by position in {@code leftRedirections}).
+         *
+         * @param compareWithPrevious whether the rows may already hold a redirection, in which case the previous value
+         *        is read back and compared
+         * @return whether some row's redirection differs from the one it held before; always false when
+         *         {@code compareWithPrevious} is false
+         */
+        private boolean storeRedirections(final RowSet leftRows, @NotNull final LongArraySource leftRedirections,
+                final boolean compareWithPrevious) {
             final MutableInt position = new MutableInt(0);
+            final MutableBoolean changed = new MutableBoolean(false);
             leftRows.forAllRowKeys((long ll) -> {
                 final long rightKey = leftRedirections.getLong(position.get());
                 jsm.checkExactMatch(ll, rightKey);
-                if (rightKey == RowSequence.NULL_ROW_KEY) {
+                if (compareWithPrevious) {
+                    final long previous = rightKey == RowSequence.NULL_ROW_KEY
+                            ? rowRedirection.remove(ll)
+                            : rowRedirection.put(ll, rightKey);
+                    if (previous != rightKey) {
+                        changed.setTrue();
+                    }
+                } else if (rightKey == RowSequence.NULL_ROW_KEY) {
                     rowRedirection.removeVoid(ll);
                 } else {
                     rowRedirection.putVoid(ll, rightKey);
                 }
                 position.increment();
             });
+            return changed.booleanValue();
         }
     }
 

@@ -95,8 +95,16 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public interface Operation<T extends DynamicNode & NotificationStepReceiver> {
 
-        default boolean snapshotNeeded() {
-            return true;
+        /**
+         * Whether this operation must initialize under a snapshot control. By default, that is whenever the parent is
+         * refreshing. An operation with other inputs that may tick, such as a filter over a refreshing set table, needs
+         * one for a static parent as well.
+         *
+         * @param parent The parent table for the operation
+         * @return Whether a snapshot control is needed
+         */
+        default boolean snapshotNeeded(@NotNull final QueryTable parent) {
+            return parent.isRefreshing();
         }
 
         /**
@@ -1104,6 +1112,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {
         private final QueryTable source;
+        // The where listener is written by the thread that instantiates this table, which may hold no update graph
+        // lock, and read by the update graph thread when a filter requests a recompute. The request methods and
+        // setWhereListener() synchronize on this table so that the update graph thread observes the write. The request
+        // flags are set and consumed (in doRefilter()) on the update graph thread alone, and so need no monitor.
         private boolean refilterMatchedRequested = false;
         private boolean refilterUnmatchedRequested = false;
         private WritableRowSet refilterRequestedRowset = null;
@@ -1123,15 +1135,15 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         @Override
-        public void requestRecompute() {
+        public synchronized void requestRecompute() {
             refilterMatchedRequested = refilterUnmatchedRequested = true;
-            Require.neqNull(whereListener, "whereListener").notifyChanges();
+            notifyWhereListener();
         }
 
         @Override
-        public void requestRecomputeUnmatched() {
+        public synchronized void requestRecomputeUnmatched() {
             refilterUnmatchedRequested = true;
-            Require.neqNull(whereListener, "whereListener").notifyChanges();
+            notifyWhereListener();
         }
 
         /**
@@ -1139,19 +1151,32 @@ public class QueryTable extends BaseTable<QueryTable> {
          * re-evaluated.
          */
         @Override
-        public void requestRecomputeMatched() {
+        public synchronized void requestRecomputeMatched() {
             refilterMatchedRequested = true;
-            Require.neqNull(whereListener, "whereListener").notifyChanges();
+            notifyWhereListener();
         }
 
         @Override
-        public void requestRecompute(RowSet rowSet) {
+        public synchronized void requestRecompute(RowSet rowSet) {
             if (refilterRequestedRowset == null) {
                 refilterRequestedRowset = rowSet.copy();
             } else {
                 refilterRequestedRowset.insert(rowSet);
             }
-            Require.neqNull(whereListener, "whereListener").notifyChanges();
+            notifyWhereListener();
+        }
+
+        @Override
+        public synchronized void requestFailure(
+                @NotNull final Throwable error,
+                @Nullable final TableListener.Entry sourceEntry) {
+            if (whereListener == null) {
+                // No listener yet, so there is no result to fail; see notifyWhereListener for why dropping is safe.
+                return;
+            }
+            // The listener fails this table exactly once, inside its own notification, where the failure cannot
+            // collide with an update it might otherwise deliver for this step.
+            whereListener.notifyOnUpstreamError(error, sourceEntry);
         }
 
         /**
@@ -1242,7 +1267,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             previouslyMatched.remove(upstream.added());
                             previouslyMatched.remove(upstream.modified());
                         }
-                        newMapping.insert(previouslyMatched);
+                        newMapping.subsume(previouslyMatched);
                     }
                     completeRefilterUpdate(listener, upstream, update, adds);
                 }, exception -> errorRefilterUpdate(listener, exception, upstream));
@@ -1282,7 +1307,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     // add back what we previously matched, except for modifications and removals
                     try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
                         previouslyMatched.remove(rowsToFilter);
-                        newMapping.insert(previouslyMatched);
+                        newMapping.subsume(previouslyMatched);
                     }
                     completeRefilterUpdate(listener, upstream, update, adds);
                 }, exception -> errorRefilterUpdate(listener, exception, upstream));
@@ -1309,7 +1334,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                 if (upstream != null) {
                     upstream.shifted().unapply(postShiftRemovals);
                 }
-                update.removed.writableCast().insert(postShiftRemovals);
+                update.removed.writableCast().subsume(postShiftRemovals);
             }
 
             if (upstream == null || upstream.modified().isEmpty()) {
@@ -1342,7 +1367,23 @@ public class QueryTable extends BaseTable<QueryTable> {
             listener.finalizeUpdate(upstream);
         }
 
-        private void setWhereListener(MergedListener whereListener) {
+        /**
+         * Notify the {@link WhereListener} that a refilter has been requested, if there is one yet.
+         * <p>
+         * The where listener is installed only after the initial filter completes, so a filter that requests before
+         * then is dropped. A {@link NotificationAwareDependency} cannot request before then, because it does not begin
+         * following its inputs until this operation's snapshot attempt commits, which is after the listener is
+         * installed. A filter that follows something else, such as a clock, can, and dropping such a request is the
+         * behavior it has always had. Callers hold this table's monitor, which is what makes the listener written by
+         * {@link #setWhereListener} visible here.
+         */
+        private void notifyWhereListener() {
+            if (whereListener != null) {
+                whereListener.notifyChanges();
+            }
+        }
+
+        private synchronized void setWhereListener(MergedListener whereListener) {
             this.whereListener = whereListener;
         }
     }
@@ -1510,22 +1551,24 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                     .map(di -> (NotificationQueue.Dependency) di.table())
                                                     .collect(Collectors.toList())
                                             : List.of();
-                            final OperationSnapshotControl snapshotControl = createSnapshotControlIfRefreshing(
-                                    (final BaseTable<?> parent) -> {
-                                        final NotificationQueue.Dependency[] filterDependencies = Stream.concat(
-                                                dataIndexDependencies.stream(),
-                                                WhereListener.extractDependencies(extractedFilters).stream())
-                                                .toArray(NotificationQueue.Dependency[]::new);
-                                        getUpdateGraph(filterDependencies);
-                                        return filterDependencies.length > 0
-                                                ? new OperationSnapshotControlEx(parent, filterDependencies)
-                                                : new OperationSnapshotControl(parent);
-                                    });
+                            final NotificationQueue.Dependency[] filterDependencies = Stream.concat(
+                                    dataIndexDependencies.stream(),
+                                    WhereListener.extractDependencies(extractedFilters).stream())
+                                    .toArray(NotificationQueue.Dependency[]::new);
+                            getUpdateGraph(filterDependencies);
+
+                            // Note that a static source may still need snapshot control, because a filter may have
+                            // refreshing dependencies (e.g. a DynamicWhereFilter with a refreshing set table).
+                            final OperationSnapshotControl snapshotControl =
+                                    isRefreshing() || filterDependencies.length > 0
+                                            ? filterDependencies.length > 0
+                                                    ? new OperationSnapshotControlEx(this, filterDependencies)
+                                                    : new OperationSnapshotControl(this)
+                                            : null;
 
                             final Mutable<QueryTable> result = new MutableObject<>();
                             initializeWithSnapshot("where", snapshotControl,
-                                    (prevRequested, beforeClock) -> {
-                                        final boolean usePrev = prevRequested && isRefreshing();
+                                    (usePrev, beforeClock) -> {
                                         final RowSet rowSetToUse = usePrev ? rowSet.prev() : rowSet;
 
                                         final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
@@ -1578,16 +1621,28 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         }
 
                                         if (snapshotControl != null) {
-                                            final ListenerRecorder recorder = new ListenerRecorder(
-                                                    whereDescription, QueryTable.this,
-                                                    filteredTable);
-                                            final WhereListener whereListener = new WhereListener(
-                                                    log, this, recorder, filteredTable, extractedFilters);
-                                            filteredTable.setWhereListener(whereListener);
-                                            recorder.setMergedListener(whereListener);
-                                            snapshotControl.setListenerAndResult(recorder, filteredTable);
-                                            filteredTable.addParentReference(whereListener);
+                                            if (!isRefreshing()) {
+                                                // Static source, but had dependencies requiring snapshot control.
+                                                if (refreshingFilters) {
+                                                    final WhereListener whereListener = new WhereListener(
+                                                            log, this, null, filteredTable, extractedFilters);
+                                                    filteredTable.setWhereListener(whereListener);
+                                                    filteredTable.addParentReference(whereListener);
+                                                }
+                                                snapshotControl.setListenerAndResult(null, filteredTable);
+                                            } else {
+                                                // Refreshing source, possibly refreshing filters with dependencies.
+                                                final ListenerRecorder recorder = new ListenerRecorder(whereDescription,
+                                                        QueryTable.this, filteredTable);
+                                                final WhereListener whereListener = new WhereListener(
+                                                        log, this, recorder, filteredTable, extractedFilters);
+                                                filteredTable.setWhereListener(whereListener);
+                                                recorder.setMergedListener(whereListener);
+                                                snapshotControl.setListenerAndResult(recorder, filteredTable);
+                                                filteredTable.addParentReference(whereListener);
+                                            }
                                         } else if (refreshingFilters) {
+                                            // Refreshing filters, but a static table.
                                             final WhereListener whereListener = new WhereListener(
                                                     log, this, null, filteredTable, extractedFilters);
                                             filteredTable.setWhereListener(whereListener);
@@ -1623,39 +1678,12 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget(
                 "whereIn(rightTable, " + inclusion + ", " + matchString(columnsToMatch) + ")",
                 sizeForInstrumentation(), () -> {
-                    checkInitiateOperation(rightTable);
-
-                    final Table distinctValues;
-                    final boolean setRefreshing = rightTable.isRefreshing();
-
-                    final String[] rightColumnNames = MatchPair.getRightColumns(columnsToMatch);
-                    final DataIndex rightIndex = DataIndexer.getDataIndex(rightTable, rightColumnNames);
-                    if (rightIndex != null) {
-                        // We have a distinct index table, let's use it.
-                        distinctValues = rightIndex.table();
-                    } else if (setRefreshing) {
-                        distinctValues = rightTable.selectDistinct(rightColumnNames);
-                    } else {
-                        final TableDefinition rightDef = rightTable.getDefinition();
-                        final boolean allPartitioning =
-                                Arrays.stream(rightColumnNames).allMatch(cn -> rightDef.getColumn(cn).isPartitioning());
-                        if (allPartitioning) {
-                            distinctValues = rightTable.selectDistinct(rightColumnNames);
-                        } else {
-                            distinctValues = rightTable.coalesce();
-                        }
-                    }
-
-                    final DynamicWhereFilter dynamicWhereFilter =
-                            new DynamicWhereFilter((QueryTable) distinctValues, inclusion, columnsToMatch);
-                    final Table where = whereInternal(dynamicWhereFilter);
-                    if (distinctValues.isRefreshing()) {
-                        where.addParentReference(distinctValues);
-                    }
-                    if (dynamicWhereFilter.isRefreshing()) {
-                        where.addParentReference(dynamicWhereFilter);
-                    }
-                    return where;
+                    // The filter derives its own set table from rightTable, and manages it. Reachability, liveness
+                    // and dependent-satisfaction of the actual set table are therefore imposed by the filter, which
+                    // the result reaches through its WhereListener, so no parent reference is needed here. Note that
+                    // a reference to rightTable would in any case be the wrong table to retain, since the set table
+                    // actually used may be a data index table or a selectDistinct of it.
+                    return whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch));
                 });
     }
 
@@ -3318,12 +3346,8 @@ public class QueryTable extends BaseTable<QueryTable> {
             final Mutable<T> resultTable = new MutableObject<>();
 
             try (final SafeCloseable ignored = operation.beginOperation(this)) {
-                final OperationSnapshotControl snapshotControl;
-                if (isRefreshing() && operation.snapshotNeeded()) {
-                    snapshotControl = operation.newSnapshotControl(this);
-                } else {
-                    snapshotControl = null;
-                }
+                final OperationSnapshotControl snapshotControl =
+                        operation.snapshotNeeded(this) ? operation.newSnapshotControl(this) : null;
 
                 initializeWithSnapshot(operation.getLogPrefix(), snapshotControl, (usePrev, beforeClockValue) -> {
                     final Operation.Result<T> result = operation.initialize(usePrev, beforeClockValue);

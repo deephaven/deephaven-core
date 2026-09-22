@@ -48,13 +48,15 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
     }
 
     /**
-     * Starts a snapshot.
+     * Starts a snapshot. Overriding methods must call {@link #clearListenerAndResult()} in order to discard any
+     * listener and result left behind by a previous attempt.
      *
      * @param beforeClockValue the logical clock value we are starting a snapshot on
      * @return true if we should use previous values, false if we should use current values.
      */
     @Override
     public synchronized Boolean usePreviousValues(final long beforeClockValue) {
+        clearListenerAndResult();
         lastNotificationStep = sourceTable.getLastNotificationStep();
 
         final long beforeStep = LogicalClock.getStep(beforeClockValue);
@@ -127,10 +129,42 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
             return false;
         }
 
-        // Be sure to record initial last notification step before subscribing
+        // Be sure to record the result's initial last notification step before subscribing.
         eventualResult.setLastNotificationStep(lastNotificationStep);
-        return eventualListener == null || subscribeForUpdates(eventualListener);
+        if (!maybeSubscribeDependencies()) {
+            // There were dependencies that could not be subscribed consistently. Fail the snapshot.
+            return false;
+        }
+        final boolean sourceSubscribed;
+        try {
+            sourceSubscribed = eventualListener == null || subscribeForUpdates(eventualListener);
+        } catch (RuntimeException e) {
+            maybeUnsubscribeDependencies();
+            throw e;
+        }
+        if (!sourceSubscribed) {
+            // The source table could not be subscribed consistently. Unwind the dependency subscriptions and fail the
+            // snapshot.
+            maybeUnsubscribeDependencies();
+            return false;
+        }
+        return true;
     }
+
+    /**
+     * Subscribe to dependencies this operation needs (other than {@link #sourceTable}). A failure to subscribe any
+     * dependency will reject the snapshot attempt.
+     *
+     * @return Whether every such dependency was subscribed
+     */
+    boolean maybeSubscribeDependencies() {
+        return true;
+    }
+
+    /**
+     * Undo {@link #maybeSubscribeDependencies()} when a later step rejects the attempt.
+     */
+    void maybeUnsubscribeDependencies() {}
 
     /**
      * @return Whether we are in the initial notification window and can continue with the snapshot
@@ -148,6 +182,16 @@ public class OperationSnapshotControl implements ConstructSnapshot.SnapshotContr
      */
     boolean subscribeForUpdates(@NotNull final TableUpdateListener listener) {
         return sourceTable.addUpdateListener(listener, lastNotificationStep);
+    }
+
+    /**
+     * Discard the listener and result recorded by a previous attempt. Every attempt runs the snapshot function again
+     * and must set them afresh, so an attempt whose function fails without setting them must not commit an earlier
+     * attempt's already-discarded result.
+     */
+    synchronized void clearListenerAndResult() {
+        eventualListener = null;
+        eventualResult = null;
     }
 
     /**

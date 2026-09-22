@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -38,6 +39,17 @@ public interface SafeCloseable extends AutoCloseable {
      */
     static <ACT extends AutoCloseable> void closeAll(@NotNull final Stream<ACT> stream) {
         closeAll(stream.iterator());
+    }
+
+    /**
+     * {@link #close() Close} all non-{@code null} {@link AutoCloseable} elements of {@code collection}. The collection
+     * itself is left alone, neither closed nor cleared.
+     *
+     * @param collection The {@link Collection} of {@link AutoCloseable AutoCloseables} to {@link #close() close}
+     * @param <ACT> the auto closable type
+     */
+    static <ACT extends AutoCloseable> void closeAll(@NotNull final Collection<ACT> collection) {
+        closeAll(collection.iterator());
     }
 
     /**

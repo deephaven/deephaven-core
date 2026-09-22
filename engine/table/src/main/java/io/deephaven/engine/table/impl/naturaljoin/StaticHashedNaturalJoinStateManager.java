@@ -41,6 +41,22 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
             final ColumnSource<?>[] leftSources,
             final LongArraySource leftRedirections);
 
+    /**
+     * Probe the rows of a left data index table, storing one redirection per group. A duplicate right key error names
+     * the key of the offending group's first left row, since {@code keySourcesForErrorMessages} are columns of the left
+     * table rather than of the data index table.
+     *
+     * @param indexTableRowSet the data index table's row set
+     * @param indexSources the data index table's key columns
+     * @param indexRowSets the data index table's row set column, mapping each group to its left rows
+     * @param leftRedirections receives the right row key (or {@link RowSet#NULL_ROW_KEY}) for each group, by position
+     */
+    public abstract void decorateLeftSideIndexed(
+            final RowSet indexTableRowSet,
+            final ColumnSource<?>[] indexSources,
+            final ColumnSource<RowSet> indexRowSets,
+            final LongArraySource leftRedirections);
+
     public abstract void decorateWithRightSide(
             final Table rightTable,
             final ColumnSource<?>[] rightSources);
@@ -146,23 +162,42 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
         checkExactMatch(errorRowKey, NO_RIGHT_ENTRY_VALUE);
     }
 
-    public void errorOnDuplicates(IntegerArraySource leftHashSlots, long size,
-            LongUnaryOperator indexPositionToRightSide, LongUnaryOperator firstLeftKey) {
+    /**
+     * Throw the duplicate right key error for the first build position whose slot was marked as a duplicate.
+     *
+     * @param size the number of build positions
+     * @param positionToRightSide maps a build position to its slot's right state
+     * @param positionToErrorRowKey maps a build position to a row key in the keyspace of
+     *        {@code keySourcesForErrorMessages} (the left table when built from the left input, the data index table
+     *        when built from a left data index)
+     */
+    public void errorOnDuplicates(long size, LongUnaryOperator positionToRightSide,
+            LongUnaryOperator positionToErrorRowKey) {
         for (int ii = 0; ii < size; ++ii) {
-            final long rightSide = indexPositionToRightSide.applyAsLong(ii);
+            final long rightSide = positionToRightSide.applyAsLong(ii);
             if (rightSide == DUPLICATE_RIGHT_VALUE) {
                 throw new IllegalStateException("Natural Join found duplicate right key for "
-                        + extractKeyStringFromSourceTable(firstLeftKey.applyAsLong(ii)));
+                        + extractKeyStringFromSourceTable(positionToErrorRowKey.applyAsLong(ii)));
             }
         }
     }
 
-    public void errorOnDuplicatesIndexed(IntegerArraySource leftHashSlots, long size,
-            ObjectArraySource<RowSet> rowSetSource) {
-        throw new UnsupportedOperationException();
-    }
+    /**
+     * Throw the duplicate right key error after a build from a left data index; the error key sources are columns of
+     * the data index table.
+     *
+     * @param leftHashSlots the hash slot of each data index table row, by position
+     * @param indexTableRowSet the data index table's row set
+     */
+    public abstract void errorOnDuplicatesIndexed(IntegerArraySource leftHashSlots, RowSet indexTableRowSet);
 
-    public void errorOnDuplicatesSingle(IntegerArraySource leftHashSlots, long size, RowSet rowSet) {
-        throw new UnsupportedOperationException();
-    }
+    /**
+     * Throw the duplicate right key error after a build from the left table; the error key sources are columns of the
+     * left table.
+     *
+     * @param leftHashSlots the hash slot of each left row, by position
+     * @param size the number of left rows
+     * @param rowSet the left table's row set
+     */
+    public abstract void errorOnDuplicatesSingle(IntegerArraySource leftHashSlots, long size, RowSet rowSet);
 }

@@ -1,7 +1,8 @@
 ---
 name: deephaven-doc-structure-review
-description: Critique the structure, organization, and readability of a deephaven-core (Community) documentation page — will a new reader find it easy to follow, are concepts introduced in a sensible order, is content duplicated or interleaved oddly? Use this when a doc "feels hard to follow," when asked to review organization/flow/readability specifically (not facts or prose style), when drafting or substantially restructuring a long conceptual guide, or when a reviewer's feedback is about the document's shape rather than its content. Complements `deephaven-core-accuracy-check` (is it true?) and `deephaven-writing-style` (is each sentence/heading/example styled correctly?) — this skill asks whether the document as a whole is organized so a reader can follow it.
-allowed-tools: Read, Grep, Glob, Edit, Bash(awk *)
+description: >
+  Critique the structure, organization, and readability of a deephaven-core (Community) documentation page — will a new reader find it easy to follow, are concepts introduced in a sensible order, is content duplicated or interleaved oddly? **Use this skill when:** drafting, restructuring, or outlining a crash course, concept guide, how-to, or overview; someone says a doc "feels hard to follow" or asks to "review organization/flow/readability" or "is this outline right"; or a reviewer's feedback is about the document's shape rather than its content. Complements `deephaven-core-accuracy-check` (is it true?) and `deephaven-writing-style` (is each sentence styled correctly?) — this skill asks whether the document as a whole is organized so a reader can follow it. Calibrates checks by doc category via `ref-deephaven-doc-categories`. **Do NOT use for:** fact-checking (use accuracy-check), prose style (use writing-style), or Enterprise/deephaven-ent docs.
+allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(awk *)
 ---
 
 # Deephaven documentation structure review
@@ -14,6 +15,31 @@ Run `deephaven-core-accuracy-check` and `deephaven-writing-style` separately for
 and prose-level style — don't duplicate their checklists here, and don't let a structural
 rewrite silently break a technical claim or introduce a style violation (re-run those skills
 after a structural edit that moves or merges prose).
+
+## 0. Identify the doc's category
+
+Read `ref-deephaven-doc-categories` and determine which of the four categories (Tutorial —
+Crash Course only, How-to guide, Concept guide, Reference guide) this doc is — check that file's
+"Pages outside the four categories" section first if it doesn't obviously fit one (e.g.
+`intro.md`, or a contributor-facing tooling README); for an out-of-taxonomy page, skip the
+category weighting below entirely and apply only the generic structural checks in step 2. For a
+page that does fit one of the four, category changes how severely several checks below should
+weigh:
+
+- **Tutorial** (Crash Course): treat any branch or "if you want X instead" aside as a bigger
+  defect than elsewhere — the category's whole point is one linear path for every reader.
+- **Concept guide**: the category most exposed to split/duplicated explanations and topic
+  interleaving, since it's usually the longest and most narrative. Weight those checks up.
+- **Reference guide**: an orphaned aside or a gap in an enumerated list matters more here than in
+  a concept guide — a reference reader is scanning for one fact, not reading linearly. This does
+  not apply to individual `reference/community-questions/*` Q&A pages, which are one question and
+  one answer per page, not an enumerable reference — weight those like a how-to guide instead.
+  `cq-index.md` itself is the exception to that exception (see `ref-deephaven-doc-categories`) and
+  stays on the normal enumerable/reference weighting — a missing or stale card entry there is a
+  real gap, not exempt just because it lives in the same directory as the Q&A pages.
+- **How-to guide**: branching and offered alternatives are expected and not a defect by
+  themselves; judge flow by whether the reader can still complete their own goal, not by whether
+  every reader follows the identical path.
 
 ## 1. Build the structure map before reading prose in depth
 
@@ -140,6 +166,15 @@ they'd actually confuse a first-time reader, not by document order.
 
 Do not rewrite the document as part of this review unless asked to — a structural critique is a
 report first. If the user then asks you to apply the restructuring, do it as an explicit,
-reviewable diff, and re-run `deephaven-core-accuracy-check` and `deephaven-writing-style` on the
-result before considering it done: moving and merging prose is exactly the kind of edit that can
-quietly drop a caveat, break a cross-reference, or introduce a style violation.
+reviewable diff, and — **when invoked standalone** — re-run `deephaven-core-accuracy-check` and
+`deephaven-writing-style` on the result before considering it done: moving and merging prose is
+exactly the kind of edit that can quietly drop a caveat, break a cross-reference, or introduce a
+style violation.
+
+**When invoked as the middle step of `deephaven-docs-review-full`**, skip that re-run: the
+orchestrator's own steps 3 (targeted spot-check re-verification) and 4 (style) already cover it,
+in a more scoped and correctly-ordered way than re-running the full accuracy and style skills
+here would. Running the full re-run here too would duplicate step 4 and pre-empt step 3 with a
+full accuracy pass before the orchestrator's lighter, targeted one — say so in your output
+("structural edits applied; deferring re-verification to the orchestrator's steps 3-4") rather
+than silently doing the full re-run.

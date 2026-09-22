@@ -4,7 +4,9 @@ title: TailInitializationFilter
 
 `TailInitializationFilter` reduces the input size for downstream operations by limiting initialization to only the most recent rows from each partition. This is particularly useful when working with large datasets that periodically publish new snapshots, and you intend to run a `lastBy` on the data to retrieve the most recent snapshot.
 
-The filter is designed to work with add-only source tables with one or more partitions. If the input table is in Parquet or Enterprise format, partitions are detected automatically. Otherwise, each contiguous range of row keys is assumed to represent a partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
+The filter is designed to work with add-only source tables with one or more partitions. `mostRecent` detects partitions from the timestamp column. When that column's source is regioned (for example, Parquet-backed tables), one partition is assumed per region. Otherwise, each contiguous range of row keys is assumed to represent a single partition. Each partition must be sorted by timestamp, with the most recent timestamp at the end.
+
+`mostRecentRows` never reads the timestamp column and does not require sorted timestamps. Since it has no timestamp argument, it detects partitions the same way `mostRecent` does, but checks whether any column in the table is regioned rather than the timestamp column specifically. It keeps the trailing rows of each partition by row position.
 
 Once initialized, the filter passes through all new rows. Rows that have already been filtered are not removed or modified.
 
@@ -28,7 +30,7 @@ The source table to filter. Must be add-only with partitions sorted by timestamp
 </Param>
 <Param name="timestampName" type="String">
 
-The name of the timestamp column used to determine recency.
+The name of the timestamp column used to determine recency. The column must be typed as an `Instant`; a column that stores epoch nanoseconds as a plain integer type is not accepted.
 
 </Param>
 <Param name="period" type="String">
@@ -50,7 +52,7 @@ The source table to filter. Must be add-only with partitions sorted by timestamp
 </Param>
 <Param name="timestampName" type="String">
 
-The name of the timestamp column used to determine recency.
+The name of the timestamp column used to determine recency. The column must be typed as an `Instant`; a column that stores epoch nanoseconds as a plain integer type is not accepted.
 
 </Param>
 <Param name="nanos" type="long">
@@ -77,35 +79,37 @@ The number of rows to include per partition.
 
 ## Returns
 
-A table containing only the most recent values from each partition in the source table.
+A table containing each partition's most recent values as of initialization. If the source table is refreshing, the result is too, and every row added to the source afterward is included in the result — the trimming applies only to the table's initial state, not to an ongoing rolling window.
 
 ## How it works
 
-For each partition, the filter uses the last row's timestamp as the reference point. It subtracts the specified period from this timestamp and performs a binary search to identify rows within that time window.
+For each partition, `mostRecent` uses the last row's timestamp as the reference point. It subtracts the specified period from this timestamp and performs a binary search to identify rows within that time window.
 
-The filter makes these assumptions:
+`mostRecent` makes these assumptions:
 
 - The source table is add-only (no modifications, shifts, or removals).
 - Each partition is sorted by timestamp.
 - Null timestamps are not permitted.
 
-If any of these assumptions are violated, the result table is undefined.
+Violating the add-only requirement raises an `IllegalArgumentException`. The binary search reads only the first, last, and midpoint timestamps of each partition, not every row. It raises an `IllegalArgumentException` if one of those is null, but a null elsewhere in the partition may go undetected. If a partition is not correctly sorted by timestamp, the result table is undefined.
+
+`mostRecentRows` never reads timestamps, so the sorting and null-timestamp assumptions do not apply to it. Only the add-only requirement does.
 
 ## Examples
 
 ### Filter by time period
 
-This example uses a time table and filters to show only rows from the last 10 seconds:
+This example filters a table of historical snapshots to show only rows from the last 10 seconds of the partition's timeline:
 
 ```groovy order=result,source
 import io.deephaven.engine.table.impl.util.TailInitializationFilter
 
-source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
+source = emptyTable(20).update("Timestamp = '2026-01-01T00:00:00 UTC' + ii * SECOND", "Value = ii")
 
 result = TailInitializationFilter.mostRecent(source, "Timestamp", "PT00:00:10")
 ```
 
-This filters to show only rows where the timestamp is within 10 seconds of the most recent row in the table.
+`source` contains 20 rows spanning seconds 0 through 19 (19 seconds of elapsed history). The newest timestamp is second 19, so a 10-second window keeps rows from second 9 onward, inclusive; `result` contains 11 rows.
 
 ### Filter by time in nanoseconds
 
@@ -115,7 +119,7 @@ This example filters to show rows from the last 5 seconds (5 billion nanoseconds
 import io.deephaven.engine.table.impl.util.TailInitializationFilter
 import static io.deephaven.time.DateTimeUtils.SECOND
 
-source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
+source = emptyTable(20).update("Timestamp = '2026-01-01T00:00:00 UTC' + ii * SECOND", "Value = ii")
 
 result = TailInitializationFilter.mostRecent(source, "Timestamp", 5 * SECOND)
 ```
@@ -125,7 +129,7 @@ result = TailInitializationFilter.mostRecent(source, "Timestamp", 5 * SECOND)
 The `mostRecentRows` method filters to show a specified number of rows from the end of each partition:
 
 ```groovy order=result,source
-source = timeTable("2026-01-01T00:00:00 America/New_York", "PT00:00:01").update("Value = ii")
+source = emptyTable(20).update("Timestamp = '2026-01-01T00:00:00 UTC' + ii * SECOND", "Value = ii")
 rowCount = 10
 result = TailInitializationFilter.mostRecentRows(source, rowCount)
 ```

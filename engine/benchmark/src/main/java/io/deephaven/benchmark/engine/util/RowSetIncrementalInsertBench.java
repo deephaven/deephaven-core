@@ -4,8 +4,11 @@
 package io.deephaven.benchmark.engine.util;
 
 import io.deephaven.benchmarking.BenchUtil;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetUnionBatcher;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
@@ -24,6 +27,9 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.RunnerException;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -32,12 +38,21 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>
  * Each cycle a contiguous run of {@code addedPerCycle} rows arrives at the top of a {@code rows}-key table. Rows are
- * dealt round robin across {@code buckets} buckets, so a bucket's rows are single keys spaced {@code buckets} apart,
- * and each dirty bucket reports the added rows it received plus the {@code windowRows} rows before them as a small row
- * set: a {@link SortedRanges} when there are many buckets, an {@link RspBitmap} when there are few and each bucket's
- * rows are dense. {@code updateBy} accumulates those per-bucket sets into one row set (the modified rows, and the rows
- * each input source must supply), so the accumulator sees one small insert per dirty bucket: an {@link RspBitmap} once
- * it outgrows {@link SortedRanges}, and every insert lands well below its last block.
+ * dealt across {@code buckets} buckets according to {@code layout}, and each dirty bucket reports the added rows it
+ * received plus the {@code windowRows} rows before them as a small row set: a {@link SortedRanges} when there are many
+ * buckets, an {@link RspBitmap} when there are few and each bucket's rows are dense. {@code updateBy} accumulates those
+ * per-bucket sets into one row set (the modified rows, and the rows each input source must supply), so the accumulator
+ * sees one small insert per dirty bucket: an {@link RspBitmap} once it outgrows {@link SortedRanges}, and every insert
+ * lands well below its last block.
+ *
+ * <p>
+ * The layout decides whether merging two buckets' sets shrinks anything. Under {@link Layout#ROUND_ROBIN} a bucket's
+ * rows are single keys exactly {@code buckets} apart, so buckets adjacent in key order have adjacent keys and every
+ * pairwise merge coalesces ranges; the merge tree's later passes are over ever fewer ranges. Under
+ * {@link Layout#RANDOM} each row lands in a uniformly random bucket, which is how the nightly {@code updateBy}
+ * benchmarks generate their keys and what keyed data generally looks like: a bucket's rows are still single keys, but
+ * adjacent keys land in unrelated buckets, so the sets that are neighbours after sorting by first key rarely have keys
+ * that touch, little coalescing happens, and the merge tree's passes stay close to the full range count throughout.
  *
  * <p>
  * {@link #rspIxInsert} is the current {@link RspBitmap#ixInsert} path, which for a {@link SortedRanges} runs a pre-pass
@@ -73,43 +88,108 @@ public class RowSetIncrementalInsertBench {
     @Param({"50"})
     private int windowRows;
 
+    /** How rows are dealt to buckets; see the class comment for what each does to the merge. */
+    @Param({"ROUND_ROBIN", "RANDOM"})
+    private Layout layout;
+
+    public enum Layout {
+        /** Row {@code k} belongs to bucket {@code k % buckets}. */
+        ROUND_ROBIN,
+        /** Each row belongs to a uniformly random bucket. */
+        RANDOM
+    }
+
+    /** {@link RowSetFactory#unionStrategy} for the {@link #rowSetApiUnion} and {@link #rowSetApiUnionBatcher} cells. */
+    @Param({"MERGE_IN_PASSES", "RADIX"})
+    private RowSetFactory.UnionStrategy unionStrategy;
+
+    /** {@link RowSetUnionBatcher#maxBatchSize} for the {@link #rowSetApiUnionBatcher} cells. */
+    @Param({"8192"})
+    private int batchCap;
+
     private long frontier;
     private OrderedLongSet[] bucketAffectedSets;
     private WritableRowSet[] bucketAffectedRowSets;
 
     @Setup
     public void setup() {
+        RowSetFactory.unionStrategy = unionStrategy;
+        RowSetUnionBatcher.maxBatchSize = batchCap;
         frontier = rows - addedPerCycle;
         final long windowStart = Math.max(0, frontier - (long) windowRows * buckets);
         bucketAffectedSets = new OrderedLongSet[buckets];
         bucketAffectedRowSets = new WritableRowSet[buckets];
+        final Random random = new Random(RANDOM_SEED);
+        // Every key from the start of the window region through the end of the added rows belongs to exactly one
+        // bucket, so each bucket's affected set averages windowRows plus addedPerCycle / buckets keys under either
+        // layout; only where those keys fall differs.
+        final RowSetBuilderSequential[] builders = new RowSetBuilderSequential[buckets];
+        for (int bucket = 0; bucket < buckets; ++bucket) {
+            builders[bucket] = RowSetFactory.builderSequential();
+        }
+        final boolean[] dirty = new boolean[buckets];
+        for (long key = windowStart; key < rows; ++key) {
+            final int bucket = layout == Layout.ROUND_ROBIN
+                    ? (int) Math.floorMod(key, (long) buckets)
+                    : random.nextInt(buckets);
+            builders[bucket].appendKey(key);
+            if (key >= frontier) {
+                dirty[bucket] = true;
+            }
+        }
+        // Only buckets that received an added row are dirty, and updateBy unions only those; under a random layout
+        // some buckets receive none this cycle and are left out, lookback rows and all.
+        int dirtyCount = 0;
         long totalKeys = 0;
         for (int bucket = 0; bucket < buckets; ++bucket) {
-            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            long key = windowStart + Math.floorMod(bucket - windowStart, (long) buckets);
-            for (; key < rows; key += buckets) {
-                builder.appendKey(key);
-                ++totalKeys;
+            final WritableRowSet affected = builders[bucket].build();
+            if (!dirty[bucket]) {
+                affected.close();
+                continue;
             }
-            final WritableRowSet affected = builder.build();
-            bucketAffectedRowSets[bucket] = affected;
-            bucketAffectedSets[bucket] = ((WritableRowSetImpl) affected).getInnerSet();
+            totalKeys += affected.size();
+            bucketAffectedRowSets[dirtyCount] = affected;
+            bucketAffectedSets[dirtyCount++] = ((WritableRowSetImpl) affected).getInnerSet();
         }
+        bucketAffectedRowSets = Arrays.copyOf(bucketAffectedRowSets, dirtyCount);
+        bucketAffectedSets = Arrays.copyOf(bucketAffectedSets, dirtyCount);
         // Buckets go dirty in an order unrelated to their keys.
-        final Random random = new Random(RANDOM_SEED);
-        for (int i = buckets - 1; i > 0; --i) {
-            final int j = random.nextInt(i + 1);
-            final OrderedLongSet set = bucketAffectedSets[i];
-            bucketAffectedSets[i] = bucketAffectedSets[j];
-            bucketAffectedSets[j] = set;
-            final WritableRowSet rs = bucketAffectedRowSets[i];
-            bucketAffectedRowSets[i] = bucketAffectedRowSets[j];
-            bucketAffectedRowSets[j] = rs;
+        for (int ii = dirtyCount - 1; ii > 0; --ii) {
+            final int jj = random.nextInt(ii + 1);
+            final OrderedLongSet set = bucketAffectedSets[ii];
+            bucketAffectedSets[ii] = bucketAffectedSets[jj];
+            bucketAffectedSets[jj] = set;
+            final WritableRowSet rs = bucketAffectedRowSets[ii];
+            bucketAffectedRowSets[ii] = bucketAffectedRowSets[jj];
+            bucketAffectedRowSets[jj] = rs;
         }
-        System.out.println("buckets=" + buckets + " keysPerBucket=" + (totalKeys / buckets)
-                + " keysInsertedPerCycle=" + totalKeys
+        System.out.println("buckets=" + buckets + " dirtyBuckets=" + dirtyCount
+                + " keysPerDirtyBucket=" + (totalKeys / dirtyCount) + " keysInsertedPerCycle=" + totalKeys
                 + " bucketSetType=" + bucketAffectedSets[0].getClass().getSimpleName());
         describeWorkload();
+        checkUnionAgreesWithInsert();
+    }
+
+    /**
+     * The merge under test is configurable, so make sure the configuration in force still produces the same row set as
+     * the insert loop before timing it.
+     */
+    private void checkUnionAgreesWithInsert() {
+        final List<RowSet> toUnion = new ArrayList<>(bucketAffectedRowSets.length + 1);
+        try (final WritableRowSet expected = RowSetFactory.fromRange(frontier, rows - 1);
+                final WritableRowSet seed = RowSetFactory.fromRange(frontier, rows - 1)) {
+            for (final WritableRowSet affected : bucketAffectedRowSets) {
+                expected.insert(affected);
+            }
+            toUnion.add(seed);
+            toUnion.addAll(Arrays.asList(bucketAffectedRowSets));
+            try (final WritableRowSet actual = RowSetFactory.union(toUnion)) {
+                if (!actual.equals(expected)) {
+                    throw new IllegalStateException("union disagrees with insert under " + unionStrategy + ": "
+                            + actual.size() + " vs " + expected.size());
+                }
+            }
+        }
     }
 
     /**
@@ -137,7 +217,7 @@ public class RowSetIncrementalInsertBench {
             accumulator = accumulator.ixInsert(affected);
             maxSpans = Math.max(maxSpans, accumulator.size());
         }
-        System.out.println("rangesPerBucketSet=" + (ranges / buckets)
+        System.out.println("rangesPerBucketSet=" + (ranges / bucketAffectedSets.length)
                 + " rangesInSameBlockAsPrevious=" + (100 * rangesInSameBlockAsPrevious / ranges) + "%"
                 + " accumulatorSpansMax=" + maxSpans + " accumulatorSpansFinal=" + accumulator.size()
                 + " accumulatorBlocks=" + ((rows - 1) / RspBitmap.BLOCK_SIZE
@@ -150,6 +230,79 @@ public class RowSetIncrementalInsertBench {
             for (final WritableRowSet affected : bucketAffectedRowSets) {
                 accumulator.insert(affected);
             }
+            return accumulator.size();
+        }
+    }
+
+    /**
+     * The same accumulation through {@link RowSetFactory#union}, which orders the per-bucket sets and merges them in
+     * passes instead of inserting each one into a single growing accumulator. {@code updateBy} builds its per-window
+     * and downstream modified row sets with the insert loop above, so this is what moving those to the factory costs or
+     * saves. The list is built per invocation because a caller would have to build one too.
+     */
+    @Benchmark
+    public long rowSetApiUnion() {
+        final List<RowSet> toUnion = new ArrayList<>(bucketAffectedRowSets.length + 1);
+        try (final WritableRowSet seed = RowSetFactory.fromRange(frontier, rows - 1)) {
+            toUnion.add(seed);
+            toUnion.addAll(Arrays.asList(bucketAffectedRowSets));
+            try (final WritableRowSet accumulator = RowSetFactory.union(toUnion)) {
+                return accumulator.size();
+            }
+        }
+    }
+
+    /**
+     * The same accumulation through {@link RowSetUnionBatcher}, as the call sites other than {@code updateBy} reach the
+     * union: each set handed over as a copy, {@link #batchCap} to a batch. {@code updateBy} itself calls the union on
+     * the whole list, so this measures what routing it through the batcher would cost.
+     */
+    @Benchmark
+    public long rowSetApiUnionBatcher() {
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(bucketAffectedRowSets.length + 1)) {
+            batcher.add(RowSetFactory.fromRange(frontier, rows - 1));
+            for (final WritableRowSet affected : bucketAffectedRowSets) {
+                batcher.add(affected.copy());
+            }
+            try (final WritableRowSet accumulator = batcher.build()) {
+                return accumulator.size();
+            }
+        }
+    }
+
+    /**
+     * The same accumulation through a random builder, walking each per-bucket set range by range. This is what
+     * {@link io.deephaven.engine.rowset.RowSetBuilderRandom#addRowSet} did before the builder took the row set's
+     * implementation whole, and is kept alongside {@link #rowSetBuilderRandom} to show what that is worth.
+     */
+    @Benchmark
+    public long rowSetBuilderRandomPerRange() {
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+        builder.addRange(frontier, rows - 1);
+        for (final WritableRowSet affected : bucketAffectedRowSets) {
+            try (final RowSet.RangeIterator it = affected.rangeIterator()) {
+                while (it.hasNext()) {
+                    it.next();
+                    builder.addRange(it.currentRangeStart(), it.currentRangeEnd());
+                }
+            }
+        }
+        try (final WritableRowSet accumulator = builder.build()) {
+            return accumulator.size();
+        }
+    }
+
+    /**
+     * The same accumulation through a random builder, which takes each per-bucket set whole rather than walking it.
+     */
+    @Benchmark
+    public long rowSetBuilderRandom() {
+        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+        builder.addRange(frontier, rows - 1);
+        for (final WritableRowSet affected : bucketAffectedRowSets) {
+            builder.addRowSet(affected);
+        }
+        try (final WritableRowSet accumulator = builder.build()) {
             return accumulator.size();
         }
     }

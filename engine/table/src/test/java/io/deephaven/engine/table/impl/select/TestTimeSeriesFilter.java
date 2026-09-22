@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.DateGenerator;
@@ -446,5 +447,31 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
 
         final WhereFilter inverted = WhereFilterInvertedImpl.of(timeSeriesFilter);
         assertTrue(inverted instanceof WhereFilterInvertedImpl);
+    }
+
+    /**
+     * A filter that asks for specific rows to be re-evaluated, rather than for all of them, also re-evaluates the match
+     * column. A time series filter is the only filter that makes that request.
+     */
+    public void testMatchWithRowSetRecomputeRequests() {
+        final Instant[] times = new Instant[10];
+        final long startMillis = System.currentTimeMillis() - (10 * times.length);
+        for (int ii = 0; ii < times.length; ++ii) {
+            times[ii] = DateTimeUtils.epochNanosToInstant((startMillis + (ii * 1000)) * 1000000L);
+        }
+        final Table source = TableTools.newTable(col("Timestamp", times));
+        final TestClock clock = new TestClock().setMillis(startMillis);
+        final TimeSeriesFilter filter = TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp").period("PT00:00:05").clock(clock).build();
+
+        final Table result = source.wouldMatch(new WouldMatchPair("M", filter));
+        assertEquals(10, result.where("M").size());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            clock.addMillis(10_000);
+            filter.runForUnitTests();
+        });
+        assertEquals(5, result.where("M").size());
     }
 }
