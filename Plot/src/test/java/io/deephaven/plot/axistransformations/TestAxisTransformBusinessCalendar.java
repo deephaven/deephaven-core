@@ -6,14 +6,19 @@ package io.deephaven.plot.axistransformations;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.calendar.CalendarInit;
 import io.deephaven.time.calendar.Calendars;
-import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Objects;
 
-public class TestAxisTransformBusinessCalendar extends TestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class TestAxisTransformBusinessCalendar {
 
     private static final ZoneId TZ_JP = ZoneId.of("Asia/Tokyo");
 
@@ -40,7 +45,7 @@ public class TestAxisTransformBusinessCalendar extends TestCase {
     private final Instant bus32 = DateTimeUtils.parseInstant("2017-01-11T12:45:00 JP");
     private final Instant close3 = DateTimeUtils.parseInstant("2017-01-11T20:00:00 JP");
 
-    @Override
+    @Before
     public void setUp() throws Exception {
         CalendarInit.init();
         final String path = Paths
@@ -51,15 +56,14 @@ public class TestAxisTransformBusinessCalendar extends TestCase {
 
         Calendars.addCalendarFromFile(path);
         bt = new AxisTransformBusinessCalendar(Calendars.calendar("JPOSE"));
-        super.setUp();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         Calendars.removeCalendar("JPOSE");
-        super.tearDown();
     }
 
+    @Test
     public void testIsVisible() {
         assertFalse(bt.isVisible((double) DateTimeUtils.epochNanos(holiday)));
         assertFalse(bt.isVisible((double) DateTimeUtils.epochNanos(weekend)));
@@ -82,6 +86,7 @@ public class TestAxisTransformBusinessCalendar extends TestCase {
         assertFalse(bt.isVisible((double) DateTimeUtils.epochNanos(close3)));
     }
 
+    @Test
     public void testTransform() {
 
         testTransform(holiday, DateTimeUtils.parseInstant("2017-01-04T09:00:00 JP"));
@@ -106,6 +111,7 @@ public class TestAxisTransformBusinessCalendar extends TestCase {
     }
 
     // tests bugs where first day was transformed incorrectly
+    @Test
     public void testFirstTransformedDay() {
         AxisTransform transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE_EXAMPLE"));
         double d = transform.transform(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2018-02-02T09:30:01 NY")));

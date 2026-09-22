@@ -3,6 +3,9 @@
 //
 package io.deephaven.base.testing;
 
+import org.junit.After;
+import org.junit.Before;
+
 /**
  * A "fishlib JUnit" compatible test class with a timeout that can fail tests after a given timeout expires.
  *
@@ -11,13 +14,13 @@ package io.deephaven.base.testing;
  * If you are writing any new tests using junit 4+, instead use @Test(timeout=15_000) to set timeouts directly on each
  * method.
  */
-public abstract class TimeLimitedTest extends BaseCachedJMockTestCase {
+public abstract class TimeLimitedTest {
 
     private Thread timeout;
 
-    @Override
     @SuppressWarnings("deprecation")
-    protected void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
         final Thread running = Thread.currentThread();
         final long ttl = maxMillis();
         final long deadline = System.currentTimeMillis() + ttl;
@@ -55,11 +58,9 @@ public abstract class TimeLimitedTest extends BaseCachedJMockTestCase {
         return 15_000;
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         timeout.interrupt();
-        super.tearDown();
     }
-
 
 }

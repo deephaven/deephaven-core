@@ -3,14 +3,16 @@
 //
 package io.deephaven.plot.util.functions;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
 import groovy.lang.Closure;
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class TestClosureDoubleUnaryOperator extends BaseArrayTestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
+public class TestClosureDoubleUnaryOperator {
 
+    @Test
     public void testClousureDoubleUnaryOperator() {
         ClosureDoubleUnaryOperator op = new ClosureDoubleUnaryOperator<>(new Closure<Double>(null) {
             @Override
@@ -31,7 +33,7 @@ public class TestClosureDoubleUnaryOperator extends BaseArrayTestCase {
 
         try {
             new ClosureDoubleUnaryOperator<Double>(null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RequirementFailure e) {
             assertTrue(e.getMessage().contains("null"));
         }
