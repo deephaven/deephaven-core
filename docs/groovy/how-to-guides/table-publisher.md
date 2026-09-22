@@ -20,7 +20,7 @@ A table publisher uses the [`TablePublisher.of`](../reference/table-operations/c
 
 More sophisticated use cases will add steps but follow the same basic formula.
 
-### Construct the Table Publisher and its associated blink table
+### Construct the table publisher and its associated blink table
 
 The [`TablePublisher.of`](../reference/table-operations/create/TablePublisher.md) function returns a [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher). The following code block creates a table publisher named `My publisher` that publishes to a [blink table](../conceptual/table-types.md#specialization-3-blink) with two columns, `X` and `Y`, which are `int` and `double` data types, respectively.
 
@@ -85,7 +85,7 @@ publisher.publishFailure(new RuntimeException("Publisher shut down by user."))
 
 ### Example: threading
 
-The following example adds new data to the publisher with [`emptyTable`](./new-and-empty-table.md#emptytable) every second for 5 seconds in a separate thread. Note how the current [execution context](../conceptual/execution-context.md) is captured and used to add data to the publisher. Attempting to perform table operations in a separate thread without specifying an [execution context](../conceptual/execution-context.md) will raise an exception.
+The following example adds new data to the publisher with [`emptyTable`](../reference/table-operations/create/emptyTable.md) every second for 5 seconds in a separate thread. Note how the current [execution context](../conceptual/execution-context.md) is captured and used to add data to the publisher. Attempting to perform table operations in a separate thread without specifying an [execution context](../conceptual/execution-context.md) will raise an exception.
 
 > [!IMPORTANT]
 > A ticking table in a thread must be updated from within an [execution context](../conceptual/execution-context.md).
@@ -132,7 +132,7 @@ thread = new Thread(myFunc).start()
 
 ## Data history
 
-Table publishers create blink tables. Blink tables do not store any data history - data is gone forever at the start of a new update cycle. In most use cases, you will want to store some or all of the rows written during previous update cycles. There are two ways to do this:
+Table publishers create blink tables. Blink tables do not store any data history — data is gone forever at the start of a new update cycle. In most use cases, you will want to store some or all of the rows written during previous update cycles. There are two ways to do this:
 
 - Store some data history by creating a downstream ring table with [`RingTableTools.of`](../reference/cheat-sheets/simple-table-constructors.md#ringtabletoolsof).
 - Store all data history by creating a downstream append-only table with [`blinkToAppendOnly`](../reference/table-operations/create/blink-to-append-only.md).
@@ -237,7 +237,7 @@ def thread = Thread.start {
 
 <LoopedVideo src='../assets/how-to/DynamicTableWriter_Video1.mp4' />
 
-### Example: Trig Functions
+### Example: Trig functions
 
 The following example writes rows containing `X`, `sin(X)`, `cos(X)`, and `tan(X)` and plots the functions as the table updates.
 

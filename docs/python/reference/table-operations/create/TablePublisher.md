@@ -10,11 +10,11 @@ The `table_publisher` method creates a `TablePublisher`. A `TablePublisher` prod
 table_publisher(
     name: str,
     col_defs: dict[str, DType],
-    on_flush_callback: Callable[[TablePublisher], None] = None
+    on_flush_callback: Callable[[TablePublisher], None] = None,
     on_shutdown_callback: Callable[[], None] = None,
     update_graph: UpdateGraph = None,
     chunk_size: int = 2048
-) -> TablePublisher
+) -> tuple[Table, TablePublisher]
 ```
 
 ## Parameters
@@ -37,24 +37,24 @@ The on-flush callback, if present, is called once at the beginning of each updat
 </Param>
 <Param name="on_shutdown_callback" type="Callable" optional>
 
-An on-shutdown callback method. It will be called once when the caller should stop adding new data and release any related resources. The default is `None`.
+An on-shutdown callback method. It is called once when the caller should stop adding new data and release any related resources. The default is `None`.
 
 </Param>
 <Param name="update_graph" type="UpdateGraph" optional>
 
-The [update graph](../../../conceptual/dag.md) that the resulting table will belong to. The default is `None`, which uses the update graph of the current [execution context](../../../conceptual/execution-context.md).
+The [update graph](../../../conceptual/dag.md) that the resulting table belongs to. The default is `None`, which uses the update graph of the current [execution context](../../../conceptual/execution-context.md).
 
 </Param>
 <Param name="chunk_size" type="int" optional>
 
-The size at which chunks of data will be filled from the source table during an add. The default is 2048 bytes.
+The size at which chunks of data are filled from the source table during an add. The default is 2048 rows.
 
 </Param>
 </ParamTable>
 
 ## Returns
 
-A [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher).
+A tuple containing the resulting blink [`Table`](./newTable.md) and the [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher) used to populate it.
 
 ## Methods
 
@@ -66,7 +66,7 @@ A [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deep
 
 ## Examples
 
-The following example creates a `TablePublisher` with three columns. It adds a table with three rows using `add` and [`new_table`](./newTable.md). `add_to_table` calls `my_publisher.add`, which adds three new rows to `my_blink_table`. Because `my_blink_table` is a blink table, each subsequent call to `add_to_table` will reset the state of the table.
+The following example creates a `TablePublisher` with three columns. It adds a table with three rows using `add` and [`new_table`](./newTable.md). `add_to_table` calls `my_publisher.add`, which adds three new rows to `my_blink_table`. Because `my_blink_table` is a blink table, each subsequent call to `add_to_table` resets the state of the table.
 
 ```python test-set=1 order=null
 from deephaven.stream.table_publisher import table_publisher
@@ -98,7 +98,7 @@ add_to_table()
 
 ![The table `my_blink_table` created by the above query](../../../assets/reference/table-operations/my_blink_table.png)
 
-Subsequent calls to `add_to_table` in later update cycles will show only the rows created in that update cycle.
+Subsequent calls to `add_to_table` in later update cycles show only the rows created in that update cycle.
 
 ```python test-set=1
 add_to_table()

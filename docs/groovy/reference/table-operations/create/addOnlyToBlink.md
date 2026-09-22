@@ -4,7 +4,7 @@ title: addOnlyToBlink
 
 The `AddOnlyToBlinkTableAdapter.toBlink` method converts an add-only or append-only table to a blink table.
 
-Blink tables keep only the set of rows received during the current update cycle. The table only consists of rows added in the previous update cycle, and no rows persist for more than one update cycle.
+Blink tables keep only the set of rows received during the current update cycle. The table only consists of rows added in that update cycle, and no rows persist for more than one update cycle.
 
 ## Syntax
 
