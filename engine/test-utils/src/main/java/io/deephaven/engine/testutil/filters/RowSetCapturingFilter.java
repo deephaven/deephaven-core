@@ -124,6 +124,16 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements WhereFilte
     }
 
     @Override
+    public boolean canPushdown() {
+        return innerFilter == null || innerFilter.canPushdown();
+    }
+
+    @Override
+    public boolean hasVirtualRowVariables() {
+        return innerFilter != null && innerFilter.hasVirtualRowVariables();
+    }
+
+    @Override
     public void setRecomputeListener(WhereFilter.RecomputeListener result) {
         if (innerFilter != null) {
             innerFilter.setRecomputeListener(result);

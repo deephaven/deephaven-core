@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
+import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.literal.Literal;
@@ -1458,6 +1459,32 @@ public class QueryTableSelectUpdateTest {
         final double duration = endTime - startTime;
         System.out.println("Density: " + new DecimalFormat("0.0000").format(density) + ", Nanos: " + (long) duration
                 + ", per cell=" + new DecimalFormat("0.00").format(duration / (size * numIterations)));
+    }
+
+    /**
+     * A composed filter reports virtual row variables when any component uses them, so a disjunction containing
+     * {@code ii} is refused by select/update and wouldMatch exactly as a bare {@code ii} filter is. Before
+     * {@code ComposedFilter} propagated {@code hasVirtualRowVariables()}, such a disjunction slipped past these checks.
+     */
+    @Test
+    public void testComposedFilterExpressionWithVirtualRowVariables() {
+        final QueryTable table = TstUtils.testRefreshingTable(intCol("A", 1, 1, 2, 3, 5, 8, 9, 9));
+        final Filter composed = Filter.or(RawString.of("A = 1"), RawString.of("ii > 5"));
+
+        final UncheckedTableException ue = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.update(List.of(Selectable.of(ColumnName.of("AWM"), composed))));
+        assertTrue(ue.getMessage(), ue.getMessage().startsWith(
+                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView:"));
+
+        final UncheckedTableException ve = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.view(List.of(Selectable.of(ColumnName.of("AWM"), composed))));
+        assertTrue(ve.getMessage(), ve.getMessage().startsWith(
+                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView:"));
+
+        final UncheckedTableException wme = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.wouldMatch(new WouldMatchPair("AWM", composed)));
+        assertTrue(wme.getMessage(),
+                wme.getMessage().startsWith("wouldMatch filters cannot use virtual row variables (i, ii, and k):"));
     }
 
     @Test

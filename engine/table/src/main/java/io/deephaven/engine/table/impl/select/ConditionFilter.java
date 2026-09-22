@@ -36,8 +36,10 @@ import org.jpy.PyObject;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -55,10 +57,10 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     private Future<Class<?>> filterKernelClassFuture = null;
     /**
-     * The columns and special variables used by this filter. Assigned by {@link #getClassBody}, which
-     * {@link AbstractConditionFilter#checkAndInitializeVectorization} deliberately skips for a vectorizable Python
-     * function -- it marks the filter initialized having set up a chunk filter instead. Defaulting to empty rather than
-     * null keeps {@link #getNumInputsUsed()} answerable on that path.
+     * The columns and special variables used by this filter, paired with the types the generated kernel consumes them
+     * as. Assigned by {@link #getClassBody}, which {@link AbstractConditionFilter#checkAndInitializeVectorization}
+     * skips for a vectorizable Python function (it installs a chunk filter and marks the filter initialized instead).
+     * Never null, so that {@link #permitParallelization()} is answerable on that path too.
      */
     private List<Pair<String, Class<?>>> usedInputs = List.of();
     private String classBody;
@@ -106,13 +108,27 @@ public class ConditionFilter extends AbstractConditionFilter {
      * Get the number of inputs (columns and special variables) used by this filter.
      *
      * <p>
-     * Returns {@code 0} when the inputs have not been determined -- before {@link #init(TableDefinition)}, and for a
-     * filter initialized from a vectorizable Python function, which never runs {@link #getClassBody}. Callers using
-     * this to decide whether the filter is usable as a single-column chunk filter therefore decline rather than fail.
+     * The count is derived from the formula analysis that {@link #init(TableDefinition)} performs, so it is answerable
+     * for every initialized filter, including one initialized from a vectorizable Python function, which never runs
+     * {@link #getClassBody}. Returns {@code 0} before initialization.
      * </p>
      */
     public int getNumInputsUsed() {
-        return usedInputs.size();
+        if (usedColumns == null) {
+            return 0;
+        }
+        // The vectorized Python path records i/ii/k in usedColumns as well as in the flags, so de-duplicate.
+        final Set<String> inputs = new HashSet<>(usedColumns);
+        if (usesI) {
+            inputs.add("i");
+        }
+        if (usesII) {
+            inputs.add("ii");
+        }
+        if (usesK) {
+            inputs.add("k");
+        }
+        return inputs.size();
     }
 
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {

@@ -195,8 +195,8 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
                 // Probe a copy rather than this context's own filter. filter() is not guaranteed to be free of side
                 // effects, so probing the live object would initialize any state the filter carries against the dummy
                 // table instead of the real one. The copy is init'ed against the dummy definition because copy() is
-                // not required to preserve initialization; init() is idempotent for filters whose copy does preserve
-                // it.
+                // not required to preserve initialization. The engine's own filters do preserve it, so for them init()
+                // is a no-op and the probe costs one shallow copy per context.
                 final WhereFilter probeFilter = filter.copy();
                 probeFilter.init(nullTestDummyTable.getDefinition());
                 try (final RowSet result = probeFilter.filter(rowSet, rowSet, nullTestDummyTable, false)) {

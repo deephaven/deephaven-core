@@ -71,6 +71,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongConsumer;
+import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
@@ -90,6 +91,7 @@ public abstract class QueryTableWhereTest {
     private boolean oldDisable;
     private int oldSegments;
     private long oldSize;
+    private boolean oldUseDataIndex;
 
     @Before
     public void setUp() throws Exception {
@@ -97,6 +99,7 @@ public abstract class QueryTableWhereTest {
         oldDisable = QueryTable.DISABLE_PARALLEL_WHERE;
         oldSegments = QueryTable.PARALLEL_WHERE_SEGMENTS;
         oldSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
+        oldUseDataIndex = QueryTable.USE_DATA_INDEX_FOR_WHERE;
     }
 
     @After
@@ -105,6 +108,7 @@ public abstract class QueryTableWhereTest {
         QueryTable.DISABLE_PARALLEL_WHERE = oldDisable;
         QueryTable.PARALLEL_WHERE_SEGMENTS = oldSegments;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = oldSize;
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = oldUseDataIndex;
     }
 
     @Test
@@ -1806,6 +1810,56 @@ public abstract class QueryTableWhereTest {
         final TableInitializationException thrown =
                 assertThrows(TableInitializationException.class, () -> table.where("X >= 50"));
         assertInjectedPushdownFailure(thrown);
+    }
+
+    /**
+     * A fresh 100-row table with {@code A = ii % 3}. Only the instances the caller indexes carry a data index. The
+     * modulus matters: with {@code % 10} the index table would have 10 rows in {@code A} order, and {@code ii % 2 == 0}
+     * evaluated against it would coincidentally agree with the source predicate.
+     */
+    private static QueryTable makeVirtualRowVariableTable() {
+        return (QueryTable) testRefreshingTable(RowSetFactory.flat(100).toTracking()).update("A = (int) (ii % 3)");
+    }
+
+    /**
+     * Runs {@code A = 1 || ii % 2 == 0}, a disjunction {@code where()} cannot split, against an indexed table and
+     * against an unindexed oracle, and requires the two to agree. If the composed filter were pushed down to the data
+     * index, {@code ii} would be evaluated against the 3-row index table and select whole {@code A} groups instead of
+     * the even source rows.
+     */
+    private void assertVirtualRowVariableDisjunctionNotPushedDown(final UnaryOperator<Filter> wrapper) {
+        final Filter filter = wrapper.apply(Filter.or(RawString.of("A = 1"), RawString.of("ii % 2 == 0")));
+
+        final QueryTable indexedTable = makeVirtualRowVariableTable();
+        DataIndexer.getOrCreateDataIndex(indexedTable, "A");
+
+        final Table oracle;
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = false;
+        try {
+            oracle = makeVirtualRowVariableTable().where(filter).coalesce();
+        } finally {
+            QueryTable.USE_DATA_INDEX_FOR_WHERE = oldUseDataIndex;
+        }
+
+        assertTableEquals(oracle, indexedTable.where(filter).coalesce());
+    }
+
+    /**
+     * A composed filter that uses virtual row variables must not be pushed down to a data index (see
+     * {@code ComposedFilter#hasVirtualRowVariables()}).
+     */
+    @Test
+    public void testVirtualRowVariableDisjunctionNotPushedDownToDataIndex() {
+        assertVirtualRowVariableDisjunctionNotPushedDown(UnaryOperator.identity());
+    }
+
+    /**
+     * The same through a barrier wrapper, which must report the wrapped filter's virtual row variables (see
+     * {@code WhereFilterDelegatingBase#hasVirtualRowVariables()}).
+     */
+    @Test
+    public void testBarrierWrappedVirtualRowVariableDisjunctionNotPushedDownToDataIndex() {
+        assertVirtualRowVariableDisjunctionNotPushedDown(f -> f.withDeclaredBarriers("VIRTUAL_ROW_VARIABLE_BARRIER"));
     }
 
     /**

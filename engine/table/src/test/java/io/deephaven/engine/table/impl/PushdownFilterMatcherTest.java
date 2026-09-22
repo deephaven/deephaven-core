@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.RawString;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
@@ -15,6 +16,7 @@ import io.deephaven.engine.table.impl.select.ReindexingFilter;
 import io.deephaven.engine.table.impl.select.UnsortedClockFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterDelegatingBase;
+import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
@@ -134,6 +136,60 @@ public class PushdownFilterMatcherTest {
 
         assertFalse("a composed filter with a non-pushable component must not be pushed down",
                 PushdownFilterMatcher.canPushdownFilter(composed));
+    }
+
+    /** {@code Int = 1 || ii % 2 == 0}: a disjunction, which {@code where()} cannot split into separate filters. */
+    private static Filter virtualRowVariableDisjunction() {
+        return Filter.or(RawString.of("Int = 1"), RawString.of("ii % 2 == 0"));
+    }
+
+    /**
+     * A composed filter must report that it uses virtual row variables when any component does. Without this, a
+     * disjunction containing an {@code ii} filter passes the eligibility gate and is evaluated against a data index
+     * table, where {@code ii} means index-table positions rather than source positions.
+     */
+    @Test
+    public void testComposedFilterReportsVirtualRowVariables() {
+        final WhereFilter filter = WhereFilter.of(virtualRowVariableDisjunction());
+        filter.init(clockTable.getDefinition());
+
+        assertTrue("a disjunction containing an `ii` filter uses virtual row variables",
+                filter.hasVirtualRowVariables());
+        assertFalse("a filter using `ii` must not be pushed down", PushdownFilterMatcher.canPushdownFilter(filter));
+    }
+
+    /**
+     * The same through the delegating wrappers, which must answer {@link WhereFilter#hasVirtualRowVariables()} from the
+     * wrapped filter.
+     */
+    @Test
+    public void testCanPushdownFilterRejectsWrappedVirtualRowVariableDisjunction() {
+        for (final UnaryOperator<WhereFilter> wrapper : List.<UnaryOperator<WhereFilter>>of(
+                f -> f.withDeclaredBarriers("BARRIER"),
+                f -> f.withRespectedBarriers("BARRIER"),
+                WhereFilter::withSerial,
+                RowSetCapturingFilter::new)) {
+            final WhereFilter filter = wrapper.apply(WhereFilter.of(virtualRowVariableDisjunction()));
+            filter.init(clockTable.getDefinition());
+
+            assertTrue("wrapper must report the wrapped filter's virtual row variables: "
+                    + filter.getClass().getSimpleName(), filter.hasVirtualRowVariables());
+            assertFalse("a wrapped filter using `ii` must not be pushed down: " + filter.getClass().getSimpleName(),
+                    PushdownFilterMatcher.canPushdownFilter(filter));
+        }
+    }
+
+    /**
+     * The test-utility wrapper {@link RowSetCapturingFilter} is a {@code WhereFilterDelegating} implementation outside
+     * {@link WhereFilterDelegatingBase}, so it must delegate {@link WhereFilter#canPushdown()} itself.
+     */
+    @Test
+    public void testCanPushdownFilterRejectsRowSetCapturingWrappedNonPushableFilter() {
+        final WhereFilter filter = new RowSetCapturingFilter(new UnsortedClockFilter("Timestamp", clock, true));
+        filter.init(clockTable.getDefinition());
+
+        assertFalse("RowSetCapturingFilter must not make a non-pushable filter pushable",
+                PushdownFilterMatcher.canPushdownFilter(filter));
     }
 
     @Test
