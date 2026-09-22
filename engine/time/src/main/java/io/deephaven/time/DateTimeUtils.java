@@ -2722,7 +2722,7 @@ public class DateTimeUtils {
             return NULL_INT;
         }
 
-        return (int) (epochNanos(instant) % 1000000);
+        return (int) Math.floorMod(epochNanos(instant), 1000000L);
     }
 
     /**
@@ -2755,7 +2755,7 @@ public class DateTimeUtils {
             return NULL_INT;
         }
 
-        return (int) Math.round((epochNanos(instant) % 1000000) / 1000d);
+        return (int) Math.round(Math.floorMod(epochNanos(instant), 1000000L) / 1000d);
     }
 
     /**

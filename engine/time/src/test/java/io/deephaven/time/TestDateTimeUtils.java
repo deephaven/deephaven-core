@@ -3322,6 +3322,21 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(dt3));
         TestCase.assertEquals(NULL_INT, DateTimeUtils.nanosOfMilli((ZonedDateTime) null));
+
+        // Pre-Epoch, where epoch nanos are negative. The result is an offset into the millisecond, so it must stay
+        // non-negative rather than following the sign of the epoch offset.
+        final Instant pre2 = DateTimeUtils.parseInstant("1900-06-15T12:30:00.123456789 UTC");
+        TestCase.assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(pre2));
+        TestCase.assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(pre2.atZone(TZ_JP)));
+
+        // One nanosecond before the Epoch, the largest possible offset into the millisecond.
+        final Instant preEpochNano = DateTimeUtils.epochNanosToInstant(-1L);
+        TestCase.assertEquals(999999, DateTimeUtils.nanosOfMilli(preEpochNano));
+        TestCase.assertEquals(999999, DateTimeUtils.nanosOfMilli(preEpochNano.atZone(TZ_JP)));
+
+        // The Epoch itself, and one nanosecond after it.
+        TestCase.assertEquals(0, DateTimeUtils.nanosOfMilli(DateTimeUtils.epochNanosToInstant(0L)));
+        TestCase.assertEquals(1, DateTimeUtils.nanosOfMilli(DateTimeUtils.epochNanosToInstant(1L)));
     }
 
     public void testNanosOfDay() {
@@ -3576,6 +3591,15 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(457, DateTimeUtils.microsOfMilli(dt3));
         TestCase.assertEquals(NULL_INT, DateTimeUtils.microsOfMilli((ZonedDateTime) null));
+
+        // Pre-Epoch, where epoch nanos are negative. The same sub-millisecond remainder must round the same way.
+        final Instant pre2 = DateTimeUtils.parseInstant("1900-06-15T12:30:00.123456789 UTC");
+        TestCase.assertEquals(457, DateTimeUtils.microsOfMilli(pre2));
+        TestCase.assertEquals(457, DateTimeUtils.microsOfMilli(pre2.atZone(TZ_JP)));
+
+        // The Epoch itself, and one nanosecond after it.
+        TestCase.assertEquals(0, DateTimeUtils.microsOfMilli(DateTimeUtils.epochNanosToInstant(0L)));
+        TestCase.assertEquals(0, DateTimeUtils.microsOfMilli(DateTimeUtils.epochNanosToInstant(1L)));
     }
 
     public void testAtMidnight() {
