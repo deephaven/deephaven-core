@@ -7,7 +7,7 @@ The `AddOnlyToBlinkTableAdapter.toBlink` method converts an add-only or append-o
 Blink tables keep only the set of rows received during the current update cycle; see [Specialized semantics for blink tables](../../../conceptual/table-types.md#specialized-semantics-for-blink-tables) for details.
 
 > [!NOTE]
-> The use of this method should be limited to add-only or append-only tables that are not fully in-memory, or when blink-table specific aggregation semantics are desired. If the table is fully in-memory, creating a downstream blink table is not recommended because it does not achieve the main benefit of blink tables, which is to reduce memory usage but instead increases memory usage.
+> Limit the use of this method to add-only or append-only tables that are not fully in-memory, or when blink-table specific aggregation semantics are desired. If the table is fully in-memory, creating a downstream blink table is not recommended because it does not achieve the main benefit of blink tables, which is to reduce memory usage but instead increases memory usage.
 
 ## Syntax
 
