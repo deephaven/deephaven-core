@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.TableTimeConversions;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import org.junit.Rule;
@@ -245,6 +246,27 @@ public class UnionSourcePushdownTest {
         }
 
         assertTableEquals(view.select().where("T > 50"), view.where("T > 50"));
+    }
+
+    /**
+     * The user-facing route to {@link UnionColumnSource}'s reinterpretation: the time conversions are
+     * {@code updateView}s of a {@link io.deephaven.engine.table.impl.select.ReinterpretedColumn ReinterpretedColumn},
+     * whose data view is {@code unionSource.reinterpret(long.class)} and becomes the result's column source directly. A
+     * {@code where()} over the converted column then resolves its filter source to that reinterpretation.
+     */
+    @Test
+    public void reinterpretedUnionSourceViaTimeConversionIsCorrect() {
+        final Table constituent = TableTools.emptyTable(ROWS_PER_CONSTITUENT)
+                .update("T = DateTimeUtils.epochNanosToInstant(ii)");
+        final Table merged = TableTools.merge(constituent, constituent);
+        final Table nanos = TableTimeConversions.asEpochNanos(merged, "Nanos = T");
+
+        // The conversion is what produces a reinterpreted union source; without this the test proves nothing.
+        assertThat(nanos.getColumnSource("Nanos")).isInstanceOf(UnionColumnSource.class);
+        assertThat(nanos.getColumnSource("Nanos")).isNotSameAs(merged.getColumnSource("T"));
+
+        // Pre-fix this threw IllegalArgumentException from makePushdownFilterContext, failing the whole where().
+        assertTableEquals(nanos.select().where("Nanos > 50"), nanos.where("Nanos > 50"));
     }
 
     /**
