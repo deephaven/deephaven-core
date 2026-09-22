@@ -316,7 +316,7 @@ class NaturalJoinHelper {
             rowRedirection = getSingleValueRowRedirection(rightRefreshing, rightTable.getRowSet().firstRowKey());
         } else {
             if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && !leftTable.isEmpty()) {
-                throw new RuntimeException(
+                throw new IllegalStateException(
                         "exactJoin with zero key columns must have exactly one row in the right hand side table!");
             }
             rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
@@ -492,9 +492,8 @@ class NaturalJoinHelper {
     }
 
     /**
-     * Check the right table's size against the join type when there are left rows to match. The exceptions match the
-     * keyed paths: a duplicate right key is an {@link IllegalStateException}, a missing exact match a
-     * {@link RuntimeException}.
+     * Check the right table's size against the join type when there are left rows to match. As in the keyed paths, a
+     * duplicate right key and a missing exact match are both reported as an {@link IllegalStateException}.
      */
     private static void checkRightTableSizeZeroKeys(
             final Table leftTable,
@@ -510,7 +509,7 @@ class NaturalJoinHelper {
             }
         }
         if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && rightTable.isEmpty()) {
-            throw new RuntimeException(
+            throw new IllegalStateException(
                     "exactJoin with zero key columns must have exactly one row in the right hand side table!");
         }
     }

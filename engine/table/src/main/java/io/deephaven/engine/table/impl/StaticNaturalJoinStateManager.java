@@ -42,7 +42,7 @@ public abstract class StaticNaturalJoinStateManager {
     @SuppressWarnings("WeakerAccess")
     public void checkExactMatch(long leftKeyIndex, long rightSide) {
         if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && rightSide == NO_RIGHT_ENTRY_VALUE) {
-            throw new RuntimeException("Tables don't have one-to-one mapping - no mappings for key "
+            throw new IllegalStateException("Tables don't have one-to-one mapping - no mappings for key "
                     + extractKeyStringFromSourceTable(leftKeyIndex) + ".");
         }
     }

@@ -1631,7 +1631,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         // a plain natural join tolerates the unmatched key
         assertEquals(3, leftTable.naturalJoin(rightTable, "String").size());
 
-        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+        final IllegalStateException e = assertThrowsExactly(IllegalStateException.class,
                 () -> leftTable.exactJoin(rightTable, "String"));
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
@@ -1645,7 +1645,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table rightTable = testTable(col("String", "c", "e", "q", "r"), col("v", 1, 2, 3, 4));
 
-        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+        final IllegalStateException e = assertThrowsExactly(IllegalStateException.class,
                 () -> leftTable.exactJoin(rightTable, "String"));
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
@@ -1657,7 +1657,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table rightTable = testTable(col("String", "c", "e", "q", "r"), col("v", 1, 2, 3, 4));
 
-        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+        final IllegalStateException e = assertThrowsExactly(IllegalStateException.class,
                 () -> leftTable.exactJoin(rightTable, "String"));
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
@@ -1671,7 +1671,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table rightTable = testTable(col("String", "c", "e", "h", "j"), col("v", 1, 2, 3, 4));
 
-        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+        final IllegalStateException e = assertThrowsExactly(IllegalStateException.class,
                 () -> leftTable.exactJoin(rightTable, "String"));
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
@@ -3372,7 +3372,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 NaturalJoinType.EXACTLY_ONE_MATCH}) {
             assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(twoRightRows, "", "C", joinType));
         }
-        assertThrowsExactly(RuntimeException.class,
+        assertThrowsExactly(IllegalStateException.class,
                 () -> left.naturalJoin(testTable(intCol("C")), "", "C", NaturalJoinType.EXACTLY_ONE_MATCH));
 
         final QueryTable right = testRefreshingTable(i(0).toTracking(), intCol("C", 100));
@@ -3782,5 +3782,40 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTrue("R is not marked modified although the left row's R changed from 10 to 11: "
                 + update.modifiedColumnSet(), update.modifiedColumnSet().containsAny(rightColumn));
         listener.close();
+    }
+
+    /**
+     * An exact join's two invariant violations, a duplicate right key and a left row without a match, are both reported
+     * as an {@link IllegalStateException}. A right update that removes the only row of one key and adds a duplicate row
+     * of another key violates both at once: a static left detects the duplicate while hashing the added row, while a
+     * refreshing left reaches the unmatched key first, and the result fails with the same exception class either way.
+     */
+    public void testExactJoinSameCycleRemoveAndDuplicateFailWithIllegalStateException() {
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            final QueryTable left = leftRefreshing
+                    ? testRefreshingTable(i(0, 1).toTracking(), longCol("K", 1, 2), intCol("L", 1, 2))
+                    : testTable(i(0, 1).toTracking(), longCol("K", 1, 2), intCol("L", 1, 2));
+            final QueryTable right =
+                    testRefreshingTable(i(0, 1).toTracking(), longCol("K", 1, 2), intCol("R", 10, 20));
+            final Table result = left.naturalJoin(right, "K", "R", NaturalJoinType.EXACTLY_ONE_MATCH);
+            assertTableEquals(newTable(longCol("K", 1, 2), intCol("L", 1, 2), intCol("R", 10, 20)), result);
+
+            final ErrorListener listener = new ErrorListener(result);
+            result.addUpdateListener(listener);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            try (final ErrorExpectation ignored = new ErrorExpectation()) {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    removeRows(right, i(0));
+                    addToTable(right, i(2), longCol("K", 2), intCol("R", 21));
+                    right.notifyListeners(i(2), i(0), i());
+                });
+            }
+
+            final Throwable failure = listener.originalException();
+            assertNotNull(failure);
+            assertEquals("left refreshing: " + leftRefreshing + ", failure: " + failure,
+                    IllegalStateException.class, failure.getClass());
+        }
     }
 }
