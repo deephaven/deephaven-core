@@ -33,8 +33,8 @@ import io.deephaven.engine.table.impl.util.compact.CharCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Arrays;
@@ -44,14 +44,16 @@ import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.TreeMap;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 @Category(ParallelTest.class)
 public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
 
+    @Test
     public void testInsertion() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 10; ++seed) {
@@ -63,6 +65,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRemove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 10; ++seed) {
@@ -74,6 +77,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testInsertAndRemove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         final int nSeeds = scaleToDesiredTestLength(100);
@@ -86,6 +90,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         final int nSeeds = scaleToDesiredTestLength(200);
@@ -98,6 +103,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testEqualsArray() {
         // exercise the singleton (size == 1), single-leaf (partial, then exactly full), and multi-leaf (exactly two
         // full leaves, then several with a partial tail) representations
@@ -108,6 +114,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         checkEqualsArray(20);
     }
 
+    @Test
     public void testIterator() {
         // node sizes that put the same value counts in different representations
         for (final int nodeSize : new int[] {4, 8}) {
@@ -124,6 +131,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
      * and multi-leaf representations so the copy cannot drift -- equals() accepts any Vector with matching contents,
      * so a divergence here would silently break the hashCode contract.
      */
+    @Test
     public void testHashCodeMatchesVectorHelper() {
         for (final int valueCount : new int[] {0, 1, 3, 4, 8, 20}) {
             final char[] values = new char[valueCount];
@@ -141,6 +149,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMoveSingletonSource() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -151,6 +160,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMoveSingletonMerge() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -195,6 +205,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testInsertIntoMiddleLeafSplit() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -225,6 +236,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         verifySsm(ssm, expected, desc);
     }
 
+    @Test
     public void testRemoveMaxMultiLeaf() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -240,6 +252,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         verifySsm(dest, new char[] {(char) ('a' + 4), (char) ('a' + 4), (char) ('a' + 5)}, desc);
     }
 
+    @Test
     public void testRemoveMaxSizeOne() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -262,6 +275,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         verifySsm(dest2, new char[] {(char) ('a' + 3), (char) ('a' + 3), (char) ('a' + 6)}, desc);
     }
 
+    @Test
     public void testMoveFrontToBackPartialAppend() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -292,6 +306,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMoveBackToFrontCompleteLeaves() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -311,6 +326,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 (char) ('a' + 7), (char) ('a' + 8), (char) ('a' + 9), (char) ('a' + 10)}, desc);
     }
 
+    @Test
     public void testScalarInsertRemove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         final int alphabet = 12;
@@ -378,6 +394,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         assertEquals(total, ssm.totalSize());
     }
 
+    @Test
     public void testInsertRemoveWithOffset() {
         final int nodeSize = 4;
         final int prefix = 3;
@@ -401,6 +418,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
      * offsets outside {@code [0, size())}, which read as the null value rather than throwing. Pin every representation
      * against {@link CharVectorDirect}, the reference implementation of that contract.
      */
+    @Test
     public void testPartialCopy() {
         // node sizes that put the same value counts in different representations
         for (final int nodeSize : new int[] {4, 8}) {
@@ -423,10 +441,10 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         assertArrayEquals(prefix, values, ssm.toArray()/*EXTRA*/);
 
         // an offset outside [0, size()) reads as null; it is neither an error nor a peek at a leaf's unused slots
-        assertEquals(prefix, NULL_CHAR, ssm.get(-1));
-        assertEquals(prefix, NULL_CHAR, ssm.get(valueCount));
-        assertEquals(prefix, NULL_CHAR, ssm.get(valueCount + 1));
-        assertEquals(prefix, NULL_CHAR, ssm.get(Long.MAX_VALUE));
+        assertEquals(prefix, NULL_CHAR, ssm.get(-1)/*EXTRA*/);
+        assertEquals(prefix, NULL_CHAR, ssm.get(valueCount)/*EXTRA*/);
+        assertEquals(prefix, NULL_CHAR, ssm.get(valueCount + 1)/*EXTRA*/);
+        assertEquals(prefix, NULL_CHAR, ssm.get(Long.MAX_VALUE)/*EXTRA*/);
 
         // sub-ranges that fall short of, span, and overrun each end
         for (int from = -3; from <= valueCount + 3; ++from) {
@@ -437,7 +455,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 assertEquals(message, to - from, actual.size());
                 assertArrayEquals(message, expected.toArray(), actual.toArray()/*EXTRA*/);
                 for (int ii = 0; ii < to - from; ++ii) {
-                    assertEquals(message, expected.get(ii), actual.get(ii));
+                    assertEquals(message, expected.get(ii), actual.get(ii)/*EXTRA*/);
                 }
             }
         }
@@ -450,6 +468,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
     }
 
     // region SortFixupSanityCheck
+    @Test
     public void testSanity() {
         QueryTable john = TstUtils.testRefreshingTable(TableTools.charCol("John", NULL_CHAR, NULL_CHAR, (char)0x0, (char)0x1, Character.MAX_VALUE, Character.MAX_VALUE));
         final ColumnSource<Character> valueSource = john.getColumnSource("John");
@@ -494,7 +513,6 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                             CharCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.remove(removeContext, chunk, counts);
                         }
-
 
                         if (added.isNonempty()) {
                             valueSource.fillChunk(fillContext, chunk, added);
@@ -557,7 +575,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 assertEquals(totalExpectedSize, ssmLo.totalSize() + ssmHi.totalSize());
 
             } catch (AssertionFailure e) {
-                TestCase.fail("Moving lo to hi failed at " + desc + ": " + e.getMessage());
+                fail("Moving lo to hi failed at " + desc + ": " + e.getMessage());
             }
 
             try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asCharacter.intSize());
@@ -590,7 +608,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 assertEquals(newHiCount, ssmHi.totalSize());
                 assertEquals(totalExpectedSize, ssmLo.totalSize() + ssmHi.totalSize());
             } catch (AssertionFailure e) {
-                TestCase.fail("Moving hi to lo failed at " + desc + ": " + e.getMessage());
+                fail("Moving hi to lo failed at " + desc + ": " + e.getMessage());
             }
         }
 
@@ -649,13 +667,13 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
 
                 final MutableInt offset = new MutableInt(0);
                 checkMap.forEach((key, count) -> {
-                    assertEquals((char) key, keys.get(offset.get()));
+                    assertEquals((char) key, keys.get(offset.get())/*EXTRA*/);
                     assertEquals((long) count, counts.get(offset.get()));
                     offset.increment();
                 });
             }
         } catch (AssertionFailure e) {
-            TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
+            fail("Check failed at " + desc + ": " + e.getMessage());
         }
     }
 
@@ -726,7 +744,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
             }
             subject.insert(valuesChunk, countsChunk, prefix, values.length);
             for (int ii = 0; ii < prefix; ++ii) {
-                assertEquals(junk, valuesChunk.get(ii));
+                assertEquals(junk, valuesChunk.get(ii)/*EXTRA*/);
             }
         }
 
@@ -765,7 +783,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
             }
             subject.remove(removeContext, valuesChunk, countsChunk, prefix, values.length);
             for (int ii = 0; ii < prefix; ++ii) {
-                assertEquals(junk, valuesChunk.get(ii));
+                assertEquals(junk, valuesChunk.get(ii)/*EXTRA*/);
             }
         }
 
@@ -783,7 +801,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
              final WritableLongChunk<?> referenceCounts = reference.countChunk()) {
             assertEquals(referenceKeys.size(), subjectKeys.size());
             for (int ii = 0; ii < referenceKeys.size(); ++ii) {
-                assertEquals(referenceKeys.get(ii), subjectKeys.get(ii));
+                assertEquals(referenceKeys.get(ii), subjectKeys.get(ii)/*EXTRA*/);
                 assertEquals(referenceCounts.get(ii), subjectCounts.get(ii));
             }
         }
@@ -888,7 +906,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
             assertEquals(prefix, valueCount, it.remaining());
             for (int ii = 0; ii < valueCount; ++ii) {
                 assertTrue(prefix, it.hasNext());
-                assertEquals(prefix, values[ii], it.nextChar());
+                assertEquals(prefix, values[ii], it.nextChar()/*EXTRA*/);
             }
             assertFalse(prefix, it.hasNext());
         }
@@ -903,7 +921,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                     assertEquals(message, to - from, it.remaining());
                     for (int ii = from; ii < to; ++ii) {
                         assertTrue(message, it.hasNext());
-                        assertEquals(message, reference.get(ii), it.nextChar());
+                        assertEquals(message, reference.get(ii), it.nextChar()/*EXTRA*/);
                         assertEquals(message, to - ii - 1, it.remaining());
                     }
                     assertFalse(message, it.hasNext());
@@ -922,7 +940,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                      final ValueIteratorOfChar sliceIt = ssm.subVector(from, to).iterator()) {
                     while (sliceIt.hasNext()) {
                         assertTrue(message, it.hasNext());
-                        assertEquals(message, sliceIt.nextChar(), it.nextChar());
+                        assertEquals(message, sliceIt.nextChar(), it.nextChar()/*EXTRA*/);
                     }
                     assertFalse(message, it.hasNext());
                 }
@@ -931,6 +949,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
     }
 
     // region NullEquals
+    @Test
     public void testEqualsArrayNull() {
         // a singleton holding the null sentinel
         checkEqualsArrayNull(4, new char[] {NULL_CHAR});

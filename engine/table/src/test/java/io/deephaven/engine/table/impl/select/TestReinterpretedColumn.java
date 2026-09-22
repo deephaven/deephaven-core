@@ -43,6 +43,8 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static org.junit.Assert.*;
+
 public class TestReinterpretedColumn extends RefreshingTableTestCase {
     final int ROW_COUNT = 60;
     private final long baseLongTime = DateTimeUtils.parseEpochNanos("2021-10-20T09:30:00.000 NY");

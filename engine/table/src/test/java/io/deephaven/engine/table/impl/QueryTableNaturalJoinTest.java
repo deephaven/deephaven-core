@@ -31,8 +31,9 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 import org.junit.experimental.categories.Category;
 
 import java.io.File;
@@ -52,12 +53,12 @@ import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
+    @Test
     public void testNaturalJoinRehash() {
         setExpectError(false);
 
@@ -106,7 +107,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 addToTable(leftTable, addRowSet, stringCol("JoinKey", leftJoinKey),
                         intCol("LeftSentinel", leftSentinel));
                 leftTable.notifyListeners(addRowSet.copy(), i(), i());
-
 
                 final RowSetBuilderSequential modIndexBuilder = RowSetFactory.builderSequential();
 
@@ -163,6 +163,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinIncremental() {
         setExpectError(false);
 
@@ -196,6 +197,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinLeftIncrementalRightStatic() {
         for (JoinIncrement joinIncrement : new JoinIncrement[] {leftStepShift, leftStep}) {
             final int sz = 5;
@@ -224,6 +226,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinLeftStaticRightIncremental() {
         for (JoinIncrement joinIncrement : new JoinIncrement[] {rightStepShift, rightStep}) {
             final int sz = 5;
@@ -363,6 +366,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinMixedGrouping() {
         testNaturalJoinMixedGroupingLeftStatic(10, 10, 0, 20);
         testNaturalJoinMixedGroupingLeftStatic(1000, 1000, 1, 10);
@@ -441,11 +445,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinSimpleStatic() {
         // noinspection unchecked
         testNaturalJoinSimpleStatic(TableTools::col);
     }
 
+    @Test
     public void testNaturalJoinGroupedStatic() {
         testNaturalJoinSimpleStatic(TstUtils::colIndexed);
     }
@@ -462,7 +468,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj = left.naturalJoin(right, "Symbol");
         TableTools.showWithRowSet(cj);
-        assertEquals(new int[] {10, 11, NULL_INT}, intColumn(cj, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 11, NULL_INT}, intColumn(cj, "RightSentinel"));
         // the two wheres check for filling null keys
         final Table cjw = cj.where("RightObjectSentinel = null");
         final Table cjw2 =
@@ -475,7 +481,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj2 = left2.naturalJoin(right2, "Symbol");
         TableTools.showWithRowSet(cj2);
-        assertEquals(new int[] {10, 11, NULL_INT, 10}, intColumn(cj2, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 11, NULL_INT, 10}, intColumn(cj2, "RightSentinel"));
 
         final int collision = 16384;
         final Table left3 = newTable(lC.make("Int", 10, collision + 10, collision * 2 + 10, collision * 3 + 10),
@@ -488,7 +494,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj3 = left3.naturalJoin(right3, "Int");
         TableTools.showWithRowSet(cj3);
-        assertEquals(new int[] {10, 11, NULL_INT, NULL_INT}, intColumn(cj3, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 11, NULL_INT, NULL_INT}, intColumn(cj3, "RightSentinel"));
 
         final Table left4 = newTable(
                 lC.make("String", "c", "e", "g"),
@@ -496,8 +502,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right4 = newTable(col("String", "c", "e"), col("RightSentinel", 10, 11));
         final Table cj4 = left4.naturalJoin(right4, "String");
         TableTools.showWithRowSet(cj4);
-        assertEquals(new int[] {10, 11, NULL_INT}, intColumn(cj4, "RightSentinel"));
-
+        assertArrayEquals(new int[] {10, 11, NULL_INT}, intColumn(cj4, "RightSentinel"));
 
         final Table left5 = newTable(
                 lC.make("String", "c", "e", "g"),
@@ -505,7 +510,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right5 = newTable(col("RightSentinel", 10));
         final Table cj5 = left5.naturalJoin(right5, "");
         TableTools.showWithRowSet(cj5);
-        assertEquals(new int[] {10, 10, 10}, intColumn(cj5, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 10, 10}, intColumn(cj5, "RightSentinel"));
 
         final Table left6 = newTable(
                 lC.make("String", "c", "e", "g"),
@@ -513,7 +518,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right6 = newTable(intCol("RightSentinel"));
         final Table cj6 = left6.naturalJoin(right6, "");
         TableTools.showWithRowSet(cj6);
-        assertEquals(new int[] {NULL_INT, NULL_INT, NULL_INT}, intColumn(cj6, "RightSentinel"));
+        assertArrayEquals(new int[] {NULL_INT, NULL_INT, NULL_INT}, intColumn(cj6, "RightSentinel"));
 
         final Table left7 = newTable(
                 lC.make("String", ArrayTypeUtils.EMPTY_STRING_ARRAY),
@@ -529,7 +534,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 col("RightSentinel", 10, 11, 12, 13, 14, 15, 16));
         final Table cj8 = left8.naturalJoin(right8, "Symbol");
         TableTools.showWithRowSet(cj8);
-        assertEquals(new int[] {10, 11, NULL_INT}, intColumn(cj8, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 11, NULL_INT}, intColumn(cj8, "RightSentinel"));
 
         // inactive right hand side state, build using the right
         final Table left9 =
@@ -537,9 +542,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right9 = newTable(col("Symbol", "A", "D", "D"), col("RightSentinel", 10, 11, 12));
         final Table cj9 = left9.naturalJoin(right9, "Symbol");
         TableTools.showWithRowSet(cj9);
-        assertEquals(new int[] {10, NULL_INT, NULL_INT, 10, NULL_INT, NULL_INT}, intColumn(cj9, "RightSentinel"));
+        assertArrayEquals(new int[] {10, NULL_INT, NULL_INT, 10, NULL_INT, NULL_INT}, intColumn(cj9, "RightSentinel"));
     }
 
+    @Test
     public void testNaturalJoinDuplicateRights() {
         // build from right
         final Table left = testTable(col("Symbol", "A", "B", "C", "D"), col("LeftSentinel", 1, 2, 3, 4));
@@ -564,6 +570,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinDuplicateReinterpret() {
         testNaturalJoinDuplicateRightReinterpret(true, true);
         testNaturalJoinDuplicateRightReinterpret(true, false);
@@ -624,6 +631,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         return table.updateView("Symbol=(" + clazz.getCanonicalName() + ")Symbol");
     }
 
+    @Test
     public void testNaturalJoinDuplicateRightsRefreshingRight() {
         testNaturalJoinDuplicateRightsRefreshingRight(String.class, Function.identity());
         testNaturalJoinDuplicateRightsRefreshingRight(Instant.class, QueryTableNaturalJoinTest::makeInstantKey);
@@ -671,6 +679,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(dupMsg + a, listener.originalException().getMessage());
     }
 
+    @Test
     public void testNaturalJoinDuplicateRightsRefreshingBoth() {
         testNaturalJoinDuplicateRightsRefreshingBoth(String.class, Function.identity());
         testNaturalJoinDuplicateRightsRefreshingBoth(Instant.class, QueryTableNaturalJoinTest::makeInstantKey);
@@ -715,13 +724,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(dupMsg + a, listener.originalException().getMessage());
     }
 
-
+    @Test
     public void testNaturalJoinReinterprets() {
         final Table left = testTable(col("JBool", true, false, null, true), col("LeftSentinel", 1, 2, 3, 4));
         final Table right = newTable(col("JBool", true, false, null), col("RightSentinel", 10, 11, 12));
         final Table cj = left.naturalJoin(right, "JBool");
         TableTools.showWithRowSet(cj);
-        assertEquals(new int[] {10, 11, 12, 10}, intColumn(cj, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 11, 12, 10}, intColumn(cj, "RightSentinel"));
 
         final Instant time1 = DateTimeUtils.parseInstant("2019-05-10T09:45:00 NY");
         final Instant time2 = DateTimeUtils.parseInstant("2019-05-10T21:45:00 NY");
@@ -730,15 +739,16 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right2 = newTable(col("JDate", time2, time1, null), col("RightSentinel", 10, 11, 12));
         final Table cj2 = left2.naturalJoin(right2, "JDate");
         TableTools.showWithRowSet(cj2);
-        assertEquals(new int[] {11, 10, 12, 10}, intColumn(cj2, "RightSentinel"));
+        assertArrayEquals(new int[] {11, 10, 12, 10}, intColumn(cj2, "RightSentinel"));
     }
 
+    @Test
     public void testNaturalJoinFloats() {
         final Table left = testTable(floatCol("JF", 1.0f, 2.0f, Float.NaN, 3.0f), col("LeftSentinel", 1, 2, 3, 4));
         final Table right = newTable(floatCol("JF", Float.NaN, 1.0f, 2.0f), col("RightSentinel", 10, 11, 12));
         final Table cj = left.naturalJoin(right, "JF");
         TableTools.showWithRowSet(cj);
-        assertEquals(new int[] {11, 12, 10, NULL_INT}, intColumn(cj, "RightSentinel"));
+        assertArrayEquals(new int[] {11, 12, 10, NULL_INT}, intColumn(cj, "RightSentinel"));
 
         final Table left2 =
                 testTable(doubleCol("JD", 10.0, 20.0, Double.NaN, io.deephaven.util.QueryConstants.NULL_DOUBLE),
@@ -748,9 +758,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         col("RightSentinel", 10, 11, 12));
         final Table cj2 = left2.naturalJoin(right2, "JD");
         TableTools.showWithRowSet(cj2);
-        assertEquals(new int[] {12, NULL_INT, 11, 10}, intColumn(cj2, "RightSentinel"));
+        assertArrayEquals(new int[] {12, NULL_INT, 11, 10}, intColumn(cj2, "RightSentinel"));
     }
 
+    @Test
     public void testNaturalJoinZeroKeys() {
         setExpectError(false);
 
@@ -799,6 +810,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     }
 
+    @Test
     public void testNaturalJoinZeroKeysStaticRight() {
         setExpectError(false);
 
@@ -830,6 +842,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     }
 
+    @Test
     public void testNaturalJoinZeroKeysStaticLeft() {
         setExpectError(false);
 
@@ -870,6 +883,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     }
 
+    @Test
     public void testNaturalJoin() {
         final Table c0 = TstUtils.testRefreshingTable(col("USym0", "A", "B"), intCol("X", 1, 2));
         final Table c1 = TstUtils.testRefreshingTable(col("USym1", "A", "D"), intCol("Y", 1, 2));
@@ -879,7 +893,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         cj = c0.naturalJoin(c1, "USym0=USym1", "USym1,Y");
         cj.select();
-
 
         final Table lTable = TstUtils.testRefreshingTable(
                 col("String", "a", "b", "c"),
@@ -898,7 +911,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(result, "Int").toArray());
         assertArrayEquals(new int[] {10, 20, 30}, ColumnVectors.ofInt(result, "Int2").toArray());
 
-
         Table table1 = TstUtils.testRefreshingTable(
                 col("String", "c", "e", "g"));
 
@@ -913,7 +925,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
                 .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
         assertArrayEquals(new int[] {1, 2, NULL_INT}, ColumnVectors.ofInt(pairMatch, "v").toArray());
-
 
         table2 = TstUtils.testRefreshingTable(
                 col("String", "c", "e", "g"), col("v", 1, 2, 3));
@@ -966,13 +977,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(2, vValues.get(1));
         assertEquals(3, vValues.get(2));
 
-
         table1 = TstUtils.testRefreshingTable(
                 col("String1", "c", "e", "g"));
 
         table2 = TstUtils.testRefreshingTable(
                 col("String2", "c", "e", "g"), col("v", 1, 2, 3));
-
 
         pairMatch = table1.naturalJoin(table2, "String1=String2", "String2,v");
 
@@ -991,7 +1000,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new int[] {1, 2, 3},
                 ColumnVectors.ofInt(pairMatch, pairMatch.getDefinition().getColumns().get(2).getName()).toArray());
 
-
         pairMatch = table2.naturalJoin(table1, "String2=String1", "String1");
 
         assertEquals(3, pairMatch.size());
@@ -1009,6 +1017,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
     }
 
+    @Test
     public void testNaturalJoinNull() {
         final Table c0 = TstUtils.testRefreshingTable(col("USym0", "A", null), col("X", 1, 2));
         final Table c1 = TstUtils.testRefreshingTable(col("USym1", "A", null), col("Y", 3, 4));
@@ -1025,6 +1034,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(4, yValues.get(1));
     }
 
+    @Test
     public void testNaturalJoinInactive() {
         setExpectError(false);
 
@@ -1079,6 +1089,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(4, yValues.get(2));
     }
 
+    @Test
     public void testNaturalJoinLeftIncrementalRightStaticSimple() {
         final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("Sym", "aa", "bc", "aa", "aa"),
@@ -1110,6 +1121,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TstUtils.validate(en);
     }
 
+    @Test
     public void testNaturalJoinIterative() {
         final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("Sym", "aa", "bc", "aa", "aa"),
@@ -1124,7 +1136,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 col("Sym", "aa", "bc", "aa"),
                 col("xCol", 11, 20, 20),
                 col("yCol", 1.1, 2.2, 5.5));
-
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
@@ -1231,7 +1242,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable1, i(4, 6), col("Sym", "bc", "aa"), col("xCol", 66, 44), col("yCol", 7.6, 6.7));
             rightQueryTable1.notifyListeners(i(), i(), i(4, 6));
@@ -1258,13 +1268,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-
         updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(rightQueryTable1, i(4));
             rightQueryTable1.notifyListeners(i(), i(4), i());
         });
         TstUtils.validate(en);
-
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable2, i(40), col("Sym", "bc"),
@@ -1320,6 +1328,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println(sb);
     }
 
+    @Test
     public void testNaturalJoinIterative2() {
         final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("Sym", "aa", "bc", "aa", "aa"),
@@ -1330,7 +1339,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 col("Sym", "aa", "bc", "aa"),
                 col("xCol", 11, 20, 20),
                 col("yCol", 1.1, 2.2, 5.5));
-
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
@@ -1393,6 +1401,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TstUtils.validate(en);
     }
 
+    @Test
     public void testNaturalJoinSortedData() {
         final QueryTable leftTable = TstUtils.testRefreshingTable(
                 col("Sym", "a", "b", "c"),
@@ -1498,17 +1507,17 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     }
 
+    @Test
     public void testExactJoin() {
         Table table1 = testRefreshingTable(
                 col("String", "c", "e", "g"));
 
         try {
             table1.exactJoin(testRefreshingTable(col("String", "c", "e"), col("v", 1, 2)), "String");
-            TestCase.fail("Previous statement should have thrown an exception");
+            fail("Previous statement should have thrown an exception");
         } catch (Exception e) {
             assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
         }
-
 
         Table table2 = testRefreshingTable(col("String", "c", "e", "g"), col("v", 1, 2, 3));
 
@@ -1616,6 +1625,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(pairMatch, njTable);
     }
 
+    @Test
     public void testExactJoinIndexedErrorMessageBuildRight() {
         // a refreshing left table forces the build from the right side
         // sparse left row keys, so no index-table group position is a valid left row key
@@ -1633,6 +1643,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
 
+    @Test
     public void testExactJoinIndexedErrorMessageBuildLeft() {
         // a static left table with a data index smaller than the right table builds from the left data index
         // sparse left row keys, so no index-table group position is a valid left row key
@@ -1647,6 +1658,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
 
+    @Test
     public void testExactJoinIndexedErrorMessageContiguous() {
         // a flat static left table produces a contiguous row redirection
         final Table leftTable = testTable(col("String", "c", "e", "g")).flatten();
@@ -1659,6 +1671,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
 
+    @Test
     public void testExactJoinIndexedErrorMessageHash() {
         // left row keys spread across distant blocks make a sparse redirection too wasteful, producing a hashed one
         final QueryTable leftTable = testRefreshingTable(
@@ -1690,6 +1703,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     final int[] sizes = new int[] {10, 100, 1_000, 10_000};
     final int NUM_STEPS = 10;
 
+    @Test
     public void testNaturalJoinTypeSimpleStatic() {
         final Table lhs = testTable(col("JBool", true, false, null, true), col("LeftSentinel", 1, 2, 3, 4));
         final Table rhsRaw =
@@ -1747,6 +1761,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(expected, actual);
     }
 
+    @Test
     public void testNaturalJoinFirstByStatic() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -1761,6 +1776,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinLastByStatic() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -1856,6 +1872,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeIncremental() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -1873,6 +1890,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeShiftIncremental() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -1890,6 +1908,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeRightIncremental() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -1907,6 +1926,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeRightShiftIncremental() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -2020,6 +2040,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeAppend() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -2038,6 +2059,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeRightAppend() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -2055,6 +2077,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testAddOnlyFirstMatchIncremental() {
         final QueryTable lhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S1"));
         lhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -2111,6 +2134,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(expected, actual);
     }
 
+    @Test
     public void testAddOnlyFirstMatchRight() {
         final QueryTable lhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S1"));
         lhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -2176,6 +2200,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     /**
      * Force testing of the RedirectionType.Contiguous type.
      */
+    @Test
     public void testContiguousHashing() {
         final Random lhs_random = new Random(12345678);
         final Random rhs_random = new Random(87654321);
@@ -2238,13 +2263,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(expected, actual);
     }
 
+    @Test
     public void testSymbolTableJoin() throws IOException {
         diskBackedTestHarness((left, right) -> {
             final Table result = left.naturalJoin(right, "Symbol");
             TableTools.showWithRowSet(result);
 
             final int[] rightSide = intColumn(result, "RightSentinel");
-            assertEquals(new int[] {101, 102, 103, NULL_INT, 101, 103, 102, 102, 103}, rightSide);
+            assertArrayEquals(new int[] {101, 102, 103, NULL_INT, 101, 103, 102, 102, 103}, rightSide);
         });
     }
 
@@ -2254,6 +2280,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
      * path to store {@link QueryConstants#NULL_LONG} (Long.MIN_VALUE) instead, which sent downstream readers (e.g.
      * Parquet) off to garbage offsets.
      */
+    @Test
     public void testSymbolTableJoinUnmatchedRowRedirection() throws IOException {
         diskBackedTestHarness((left, right) -> {
             // Flatten the left so JoinControl picks the Contiguous redirection. The Sparse path's
@@ -2292,6 +2319,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
      * row, so {@code JoinControl.getRedirectionType} picks {@code Hash} (sparse overhead exceeded). Unmatched left rows
      * must redirect to {@link RowSequence#NULL_ROW_KEY}, not {@link QueryConstants#NULL_LONG}.
      */
+    @Test
     public void testSymbolTableJoinUnmatchedRowRedirectionHash() throws IOException {
         final File leftDirectory = Files.createTempDirectory("QueryTableJoinTest-Left").toFile();
         final File rightDirectory = Files.createTempDirectory("QueryTableJoinTest-Right").toFile();
@@ -2365,6 +2393,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     /** Test #1 for DHC issue #3202 */
+    @Test
     public void testDHC3202_v1() {
         // flood the hashtable with large updates
         final Random random = new Random(0x31313131);
@@ -2394,6 +2423,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     /** Test #1 for DHC issue #3202 */
+    @Test
     public void testDHC3202_v2() {
         // flood the hashtable with large updates
         final Random random = new Random(0x31313131);
@@ -2422,6 +2452,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testCyclingBuckets() {
         final QueryTable cells = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 999).toTracking());
 
@@ -2453,7 +2484,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 addToTable(cells, added);
                 cells.notifyListeners(added, removed, RowSetFactory.empty());
             });
-            TestCase.assertEquals(1100, joined.size());
+            assertEquals(1100, joined.size());
 
             long currentBucket = (step + 1) * 1000 - 100;
             try (final CloseablePrimitiveIteratorOfLong bucketIt = joined.longColumnIterator("Bucket");
@@ -2463,9 +2494,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     final long bucket = bucketIt.nextLong();
                     final long lsentinel = leftIt.nextLong();
                     final long rsentinel = rightIt.nextLong();
-                    TestCase.assertEquals(currentBucket++, bucket);
-                    TestCase.assertEquals(bucket + 1_000_000_000L, lsentinel);
-                    TestCase.assertEquals(bucket + 2_000_000_000L, rsentinel);
+                    assertEquals(currentBucket++, bucket);
+                    assertEquals(bucket + 1_000_000_000L, lsentinel);
+                    assertEquals(bucket + 2_000_000_000L, rsentinel);
                 }
             }
         }
@@ -2475,6 +2506,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println(sample);
     }
 
+    @Test
     public void testGetDirectAfterNaturalJoin() {
         final Table sodiumLeft = emptyTable(3).updateView("Value=(i%5==0? null : i*2)", "ColLeft=`LeftOnlyContents`");
         final Table peppermintRight =
@@ -2538,6 +2570,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         return ParquetTools.readTable(rightLocation.getPath());
     }
 
+    @Test
     public void testLeftRemoveDuplicateRightNoSpuriousModifiedColumns() {
         testLeftRemoveDuplicateRightNoSpuriousModifiedColumns(NaturalJoinType.FIRST_MATCH);
         testLeftRemoveDuplicateRightNoSpuriousModifiedColumns(NaturalJoinType.LAST_MATCH);
@@ -2593,6 +2626,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         listener.close();
     }
 
+    @Test
     public void testExactJoinLeftRefreshingRightStaticUnmatchedLeftUpdate() {
         // a refreshing left with a static right uses the LeftTickingListener, which must enforce the exact-match
         // requirement for rows that arrive or change key after instantiation just as the initial build does
@@ -2641,6 +2675,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         return listener.originalException().getMessage();
     }
 
+    @Test
     public void testNaturalJoinDuplicateRightsStaticLeftDataIndex() {
         // a static left with a data index smaller than the right table builds from the left data index; a duplicate
         // right key detected while decorating with the right side must be reported like the other static build paths
@@ -2657,6 +2692,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinDuplicateRightsBothRefreshingLeftAdd() {
         testNaturalJoinDuplicateRightsBothRefreshingLeftAdd(NaturalJoinType.ERROR_ON_DUPLICATE);
         testNaturalJoinDuplicateRightsBothRefreshingLeftAdd(NaturalJoinType.EXACTLY_ONE_MATCH);
@@ -2687,6 +2723,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(dupMsg + "a", listener.originalException().getMessage());
     }
 
+    @Test
     public void testNaturalJoinDuplicateRightsBothRefreshingLeftDataIndex() {
         // sparse left row keys, so no data index table row key is a valid left row key; the error must be rendered from
         // a left table row key rather than a data index table row key
@@ -2707,12 +2744,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     private static final NaturalJoinType[] FIRST_AND_LAST_MATCH =
             new NaturalJoinType[] {NaturalJoinType.FIRST_MATCH, NaturalJoinType.LAST_MATCH};
 
+    @Test
     public void testRightModifyOnDuplicateKeyReportsOnlyModifiedColumnsRightIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightModifyOnDuplicateKeyReportsOnlyModifiedColumns(false, joinType);
         }
     }
 
+    @Test
     public void testRightModifyOnDuplicateKeyReportsOnlyModifiedColumnsBothIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightModifyOnDuplicateKeyReportsOnlyModifiedColumns(true, joinType);
@@ -2810,12 +2849,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         listener.close();
     }
 
+    @Test
     public void testRightShiftOnDuplicateKeyReportsNoModificationsRightIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightShiftOnDuplicateKeyReportsNoModifications(false, joinType);
         }
     }
 
+    @Test
     public void testRightShiftOnDuplicateKeyReportsNoModificationsBothIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightShiftOnDuplicateKeyReportsNoModifications(true, joinType);
@@ -2863,12 +2904,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         listener.close();
     }
 
+    @Test
     public void testRightShiftAndModifyReportsOnlyModifiedColumnsRightIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightShiftAndModifyReportsOnlyModifiedColumns(false, joinType);
         }
     }
 
+    @Test
     public void testRightShiftAndModifyReportsOnlyModifiedColumnsBothIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightShiftAndModifyReportsOnlyModifiedColumns(true, joinType);
@@ -2919,5 +2962,16 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 intCol("D", selectedD, 2000)), result);
 
         listener.close();
+    }
+
+    /**
+     * JUnit 4's {@link org.junit.Assert#assertThrows} also accepts subclasses of the expected type; this keeps the
+     * stricter "exactly this type" check the test relied on.
+     */
+    private static <T extends Throwable> T assertThrowsExactly(final Class<T> expectedType,
+            final ThrowingRunnable runnable) {
+        final T thrown = assertThrows(expectedType, runnable);
+        assertEquals(expectedType, thrown.getClass());
+        return thrown;
     }
 }

@@ -17,7 +17,7 @@ import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -25,11 +25,11 @@ import java.util.Random;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.show;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
+    @Test
     public void testMatch() {
         final QueryTable t1 = testRefreshingTable(
                 col("Text", "Hey", "Yo", "Lets go", "Dog", "Cat", "Cheese"),
@@ -124,6 +124,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(t1Matched, "Compound", Boolean.class).toArray());
     }
 
+    @Test
     public void testMatchRefilter() {
         doTestMatchRefilter(false);
         doTestMatchRefilter(true);
@@ -207,6 +208,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testMatchIterative() {
         final Random random = new Random(0xDEADDEAD);
         final ColumnInfo<?, ?>[] columnInfo =
@@ -232,6 +234,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testColumnSourceMatch() {
         final Random random = new Random(0xDEADDEAD);
         final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(new String[] {"Sym", "Sentinel"},
@@ -264,6 +267,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testMatchDynamicIterative() {
         final ColumnInfo<?, ?>[] symSetInfo;
         final ColumnInfo<?, ?>[] numSetInfo;
@@ -332,18 +336,19 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 validate(en);
             }
         } catch (Exception e) {
-            TestCase.fail(e.getMessage());
+            fail(e.getMessage());
         }
     }
 
     /**
      * A match column that collides with an existing column would silently shadow it, so the operation refuses it.
      */
+    @Test
     public void testMatchRejectsACollidingColumnName() {
         final QueryTable source = testRefreshingTable(col("Text", "Hey", "Yo"), col("Number", 0, 1));
         try {
             source.wouldMatch("Text=Number > 0");
-            TestCase.fail("Expected a colliding match column to be rejected");
+            fail("Expected a colliding match column to be rejected");
         } catch (final UncheckedTableException expected) {
             assertTrue(expected.getMessage(), expected.getMessage().contains("already contains"));
         }
@@ -353,11 +358,12 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
      * The match column is evaluated against a row set that is not the result's own, so the virtual row variables would
      * not mean what they appear to mean.
      */
+    @Test
     public void testMatchRejectsVirtualRowVariables() {
         final QueryTable source = testRefreshingTable(col("Number", 0, 1, 2));
         try {
             source.wouldMatch("M=i > 1");
-            TestCase.fail("Expected virtual row variables to be rejected");
+            fail("Expected virtual row variables to be rejected");
         } catch (final UncheckedTableException expected) {
             assertTrue(expected.getMessage(), expected.getMessage().contains("virtual row variables"));
         }
@@ -366,11 +372,12 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
     /**
      * Column vectors have the same problem as the virtual row variables, and are refused for the same reason.
      */
+    @Test
     public void testMatchRejectsColumnVectors() {
         final QueryTable source = testRefreshingTable(col("Number", 0, 1, 2));
         try {
             source.wouldMatch("M=Number_.size() > 1");
-            TestCase.fail("Expected column vectors to be rejected");
+            fail("Expected column vectors to be rejected");
         } catch (final UncheckedTableException expected) {
             assertTrue(expected.getMessage(), expected.getMessage().contains("column Vectors"));
         }
@@ -380,6 +387,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
      * A static table with a static filter needs no snapshot control, no listener and no merged listener at all. This is
      * the only shape of {@code wouldMatch} that needs none of them, so it is the only one that exercises skipping them.
      */
+    @Test
     public void testStaticMatch() {
         final QueryTable source = testTable(col("Text", "Hey", "Yo", "Lets go"), col("Number", 0, 1, 2));
         final Table result = source.wouldMatch("M=Number > 0");
@@ -393,6 +401,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
      * The match column answers for previous values as well as current ones, both a row at a time and through the match
      * that a {@code where} on the match column uses.
      */
+    @Test
     public void testMatchColumnPreviousValues() {
         final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), col("Number", 0, 1, 2));
         final Table result = source.wouldMatch("M=Number > 1");
@@ -434,6 +443,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
      * Matching a boolean column against both {@code true} and {@code false} answers for every row, or, inverted, for
      * none of them, without consulting the match column's row set at all.
      */
+    @Test
     public void testMatchColumnAgainstBothBooleans() {
         final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), col("Number", 0, 1, 2));
         final Table result = source.wouldMatch("M=Number > 1");
@@ -452,6 +462,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
      * A filter that asks for a full recompute, rather than for matched or unmatched rows, re-evaluates the match column
      * on the next cycle. An incremental release filter is the simplest such filter.
      */
+    @Test
     public void testMatchWithFullRecomputeRequests() {
         final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), col("Number", 0, 1, 2));
         final IncrementalReleaseFilter releaseFilter = new IncrementalReleaseFilter(1, 1);

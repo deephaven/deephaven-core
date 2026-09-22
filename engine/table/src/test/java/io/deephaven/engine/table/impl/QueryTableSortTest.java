@@ -46,19 +46,21 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.LongUnaryOperator;
 
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.util.QueryConstants.*;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableSortTest extends QueryTableTestBase {
 
     private static final float DELTA = 0.000001f;
 
+    @Test
     public void testSortStatic() {
         Table source;
         Table result;
@@ -254,6 +256,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(result, "DataToSort", String.class).toArray());
     }
 
+    @Test
     public void testSortRefreshing() {
         final QueryTable table = testRefreshingTable(i(10, 20, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));
@@ -307,6 +310,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTableEquals(sorted, sortA);
     }
 
+    @Test
     public void testGroupedSortRefreshing() {
         final Table table = testRefreshingTable(RowSetFactory.flat(9).toTracking(),
                 colIndexed("A", "Apple", "Apple", "Apple", "Banana", "Banana", "Banana", "Canteloupe", "Canteloupe",
@@ -342,6 +346,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 col("Sentinel", 7, 8, 6, 4, 5, 3, 1, 2, 0)), sorted3);
     }
 
+    @Test
     public void testIndexedSortHistorical() {
         testIndexedSortHistorical(10000);
         testIndexedSortHistorical(1000000);
@@ -407,6 +412,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTableEquals(sortedNoGroups, sortedIndexed);
     }
 
+    @Test
     public void testSortBool() {
         final QueryTable table = testRefreshingTable(i(10, 20, 30, 40, 50).toTracking(),
                 col("boolCol", false, true, null, true, false));
@@ -419,6 +425,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTableEquals(descending, testRefreshingTable(col("boolCol", true, true, false, false, null)));
     }
 
+    @Test
     public void testSortIncremental2() {
         final int[] sizes = {10, 100, 1000};
         for (int size : sizes) {
@@ -426,6 +433,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testMultiColumnRuns() {
         final Random random = new Random(0);
         final ColumnInfo<?, ?>[] columnInfo;
@@ -541,6 +549,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testComparators() {
         final int[] sizes = {10, 100, 1000};
         for (int size : sizes) {
@@ -643,6 +652,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     /**
      * Test sort performance on a variety of scenarios.
      */
+    @Test
     public void testSortPerformance() {
         final long large = 100000000;
         // sequence: 0, 10, 20, 30, ...
@@ -759,6 +769,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         simpleListener.close();
     }
 
+    @Test
     public void testSortIncremental() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("Sym", "aa", "bc", "aa", "aa"),
@@ -804,6 +815,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
     }
 
+    @Test
     public void testSortFloatIncremental() {
         final Random random = new Random(0);
         final ColumnInfo<?, ?>[] columnInfo;
@@ -840,6 +852,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testGrowingMergeReinterpret() {
         final QueryTable table = testRefreshingTable(i(1).toTracking(), col("Sentinel", 1));
         final Table viewed = table.update("Timestamp='2019-04-11T09:30 NY' + (ii * 60L * 1000000000L)");
@@ -858,10 +871,12 @@ public class QueryTableSortTest extends QueryTableTestBase {
         TableTools.show(sorted);
     }
 
+    @Test
     public void testMergedReintrepret() throws IOException {
         diskBackedTestHarness(this::doReinterpretTest);
     }
 
+    @Test
     public void testMergedReintrepretIncremental() throws IOException {
         diskBackedTestHarness(this::doReinterpretTestIncremental);
     }
@@ -928,7 +943,6 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 sentinels);
         sentinels.clear();
 
-
         mergeSorted2.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
         assertEquals("sentinels",
                 new IntArrayList(
@@ -951,6 +965,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         sentinels.clear();
     }
 
+    @Test
     public void testDh11506() {
         final Table x = TableTools.newTable(
                 col("Symbol", "B", "B", "B", "B"),
@@ -976,6 +991,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTableEquals(ss, s);
     }
 
+    @Test
     public void testSymbolTableSort() throws IOException {
         diskBackedTestHarness(this::doSymbolTableTest);
     }
@@ -1004,6 +1020,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         sentinels.clear();
     }
 
+    @Test
     public void testSymbolTableSortIncremental() throws IOException {
         diskBackedTestHarness(this::doSymbolTableIncrementalTest);
     }
@@ -1066,6 +1083,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testAlreadySorted() {
         final Table t = emptyTable(10000).update("Key=i");
         final Table s = t.sort("Key");
@@ -1103,6 +1121,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testStringArrays() {
         // Use the registry for somethign that is not a comparable
         final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15, 21),
@@ -1118,6 +1137,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 .update("Sentinel=Sentinel==25 ? 15 : Sentinel==26 ? 21 : Sentinel"), s2);
     }
 
+    @Test
     public void testIntArray() {
         final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15),
                 col("IntArray", new int[] {10}, new int[] {}, new int[] {20}, new int[] {10, 20, 30},
@@ -1126,6 +1146,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTableEquals(x.sort("Sentinel"), s);
     }
 
+    @Test
     public void testDoubleArray() {
         final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15, 100, 75),
                 col("DoubleArray", new double[] {10}, new double[] {}, new double[] {20}, new double[] {10, 20, 30},
@@ -1135,6 +1156,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTableEquals(x.sort("Sentinel"), s);
     }
 
+    @Test
     public void testBadComparator() {
         final Table x = TableTools.newTable(intCol("Sentinel", 20, 10, 50, 40, 30, 15, 100, 75),
                 col("ObjArray", new Object[] {10}, new Object[] {}, new Object[] {20}, new Object[] {10, 20, 30},
@@ -1149,6 +1171,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertEquals("ObjArray is not a sortable type: class [Ljava.lang.Object;", iae2.getMessage());
     }
 
+    @Test
     public void testAlreadySortedEmpty() {
         final Table x = TableTools.newTable(intCol("Sentinel"), intCol("Value"));
         final Table s = x.sort("Value");
@@ -1156,6 +1179,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTrue(((QueryTable.CopiedTable) s).checkParent(x));
     }
 
+    @Test
     public void testSymbolTable() throws IOException {
         final TemporaryFolder tempFolder = new TemporaryFolder();
         tempFolder.create();
@@ -1197,6 +1221,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testOneValuePerPartition() throws IOException {
         final TemporaryFolder tempFolder = new TemporaryFolder();
         tempFolder.create();
@@ -1225,6 +1250,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         return Arrays.stream(instants).map(vv -> vv.atZone(ZoneId.of("Europe/London"))).toArray(ZonedDateTime[]::new);
     }
 
+    @Test
     public void testInstantArray() {
         Instant lt_a = DateTimeUtils.parseInstant("2024-01-01T00:00:00 NY");
         Instant a = DateTimeUtils.parseInstant("2025-01-01T00:00:00 NY");
