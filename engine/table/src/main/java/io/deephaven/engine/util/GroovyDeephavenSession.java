@@ -345,7 +345,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
      * Replaces the GroovyShell and its class loader, and clears cached .class files. This ensures that classes will be
      * recompiled from source on the next execution.
      *
-     * @throws IllegalStateException if the cache directory does not exist
+     * @throws IllegalStateException if the cache directory does not exist, or cached classes cannot be cleared
      */
     private void resetGroovyShell() {
         // If no cache directory exists, this is an error - we shouldn't be trying to reset without a cache
@@ -768,7 +768,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
      * Recursively delete all .class files from the cache directory to force recompilation. This is necessary because
      * GroovyClassLoader can reload .class files from disk even after clearCache().
      *
+     * <p>
+     * Bytecode left behind stays on the {@link QueryCompiler}'s classpath, where a class that is no longer being
+     * recompiled - one whose remote source the client has stopped serving - can still be resolved from its previous
+     * compilation. Failing to delete is therefore treated as a failure to reset rather than as a warning.
+     *
      * @param directory the directory to recursively search for .class files
+     * @throws IllegalStateException if the directory cannot be listed or a cached class file cannot be deleted
      */
     private void deleteCachedClassFiles(@NotNull File directory) {
         if (!directory.exists() || !directory.isDirectory()) {
@@ -777,7 +783,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         File[] files = directory.listFiles();
         if (files == null) {
-            return;
+            throw new IllegalStateException("Cannot reset Groovy shell: unable to list class cache directory: "
+                    + directory.getAbsolutePath());
         }
 
         log.debug().append("Deleting ").append(files.length).append(" files from class cache directory: ")
@@ -788,7 +795,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 deleteCachedClassFiles(file);
             } else if (file.getName().endsWith(".class")) {
                 if (!file.delete()) {
-                    log.warn("Failed to delete cached class file: " + file.getAbsolutePath());
+                    throw new IllegalStateException("Cannot reset Groovy shell: failed to delete cached class file: "
+                            + file.getAbsolutePath());
                 }
             }
         }
