@@ -17,9 +17,9 @@ import io.deephaven.plugin.type.PluginMarker;
  * established, a RemoteFileSourceMessageStream is created to handle bidirectional message passing between client and
  * server.
  * <p>
- * Each RemoteFileSourceMessageStream instance registers itself as a provider with the RemoteFileSourceClassLoader when
- * created and unregisters when closed. The RemoteFileSourceClassLoader uses isActive() to determine which registered
- * provider should handle resource requests.
+ * A RemoteFileSourceMessageStream serves resources for a script evaluation only once its client has declared them; see
+ * {@link io.deephaven.engine.util.RemoteFileSourceClassLoader} for how a declaration is claimed by the run it was made
+ * for.
  */
 @AutoService(ObjectType.class)
 public class RemoteFileSourcePlugin extends ObjectTypeBase {

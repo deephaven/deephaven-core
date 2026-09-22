@@ -4,8 +4,10 @@ plugins {
 
 dependencies {
     implementation project(':plugin')
-    implementation project(':server')
     implementation project(':engine-base')
+    // The server loads this plugin via ServiceLoader, so it is always present at runtime. Depending on it only at
+    // compile time keeps the published runtime dependencies acyclic, since :server declares this project runtimeOnly.
+    compileOnly project(':server')
     implementation project(':proto:proto-backplane-grpc')
     implementation project(':proto:proto-backplane-grpc-flight')
 
