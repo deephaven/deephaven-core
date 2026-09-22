@@ -71,9 +71,11 @@ publishedTable = publisher.table()
 
 Add data to the blink table by calling the [`add`](../reference/table-operations/create/TablePublisher.md#methods) method.
 
-```groovy test-set=1 order=publishedTable
+```groovy test-set=1 order=null
 publisher.add(emptyTable(5).update("X = randomInt(0, 10)", "Y = randomDouble(0.0, 100.0)", "Z = randomDouble(0.0, 100.0)"))
 ```
+
+![The `publishedTable` blink table after data has been added](../assets/how-to/table-publisher-getting-started.png)
 
 The `TablePublisher` can be shut down by calling [`publishFailure`](../reference/table-operations/create/TablePublisher.md#methods).
 

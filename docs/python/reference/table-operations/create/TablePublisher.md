@@ -68,7 +68,7 @@ A [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deep
 
 The following example creates a `TablePublisher` with three columns. It adds a table with three rows using `add` and [`new_table`](./newTable.md). `add_to_table` calls `my_publisher.add`, which adds three new rows to `my_blink_table`. Because `my_blink_table` is a blink table, each subsequent call to `add_to_table` will reset the state of the table.
 
-```python test-set=1 order=my_blink_table
+```python test-set=1 order=null
 from deephaven.stream.table_publisher import table_publisher
 from deephaven import dtypes as dht
 from deephaven import new_table

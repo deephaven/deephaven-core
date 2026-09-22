@@ -86,9 +86,11 @@ source = publisher.table()
 
 To add data to blink table, call `add`.
 
-```groovy test-set=1 order=source
+```groovy test-set=1 order=null
 publisher.add(emptyTable(10).update("X = randomInt(-100, 100)", "Y = randomDouble(-5.0, 5.0)", "Z = randomDouble(100.0, 1000.0)"))
 ```
+
+![The `source` blink table after data has been added](../../../assets/reference/table-operations/table-publisher-1.png)
 
 To shut the publisher down, call `publishFailure`.
 

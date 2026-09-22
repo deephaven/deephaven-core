@@ -72,9 +72,11 @@ def when_done():
 
 Subsequent calls of `add_table` will add data to `my_table`.
 
-```python test-set=1 order=my_table
+```python test-set=1 order=null
 add_table(10)
 ```
+
+![The `my_table` blink table after data has been added](../assets/how-to/table-publisher-getting-started.png)
 
 The `TablePublisher` can be shut down by calling [`publish_failure`](../reference/table-operations/create/TablePublisher.md#methods). In this case, the `when_done` function invokes it.
 

@@ -8,7 +8,7 @@ This guide will show you how to convert a refreshing add-only or append-only tab
 
 In this example, we will create a time table that refreshes every second, then convert it to a blink table using [`toBlink`](../reference/table-operations/create/toBlink.md).
 
-```groovy order=result,source
+```groovy order=null
 import io.deephaven.engine.table.impl.AddOnlyToBlinkTableAdapter
 
 // create source table
@@ -17,6 +17,8 @@ source = timeTable("PT1S")
 // convert `source` table to a blink table
 result = AddOnlyToBlinkTableAdapter.toBlink(source)
 ```
+
+![The `source` and `result` tables ticking side-by-side in the Deephaven console](../assets/how-to/add-only-to-blink.png)
 
 ## Related documentation
 
