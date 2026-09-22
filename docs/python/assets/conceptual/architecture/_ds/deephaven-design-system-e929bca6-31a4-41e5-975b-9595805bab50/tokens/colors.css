@@ -1,109 +1,110 @@
 /* Deephaven color palette
    Scales run 100 (darkest / most saturated) -> 1100 (lightest).
-   Sampled from the official brand color reference. */
+   Values taken from the official brand reference at
+   https://deephaven.io/company/brand/ */
 :root {
   /* Primary — deep indigo/blue (brand core) */
-  --dh-primary-100: #031055;
-  --dh-primary-200: #011568;
-  --dh-primary-300: #00197e;
-  --dh-primary-400: #011e93;
-  --dh-primary-500: #0121a9;
-  --dh-primary-600: #0824c1;
-  --dh-primary-700: #243aca;
-  --dh-primary-800: #384dd5;
-  --dh-primary-900: #485fe0;
-  --dh-primary-1000: #5a70e8;
-  --dh-primary-1100: #6b81f1;
+  --dh-primary-100: #031155;
+  --dh-primary-200: #011569;
+  --dh-primary-300: #001a7e;
+  --dh-primary-400: #001e94;
+  --dh-primary-500: #0121aa;
+  --dh-primary-600: #0625c0;
+  --dh-primary-700: #2439cb;
+  --dh-primary-800: #384cd6;
+  --dh-primary-900: #495ee0;
+  --dh-primary-1000: #596fe9;
+  --dh-primary-1100: #6a81f2;
 
   /* Secondary — cyan / teal */
-  --dh-secondary-100: #20454f;
-  --dh-secondary-200: #356270;
-  --dh-secondary-300: #4e8290;
-  --dh-secondary-400: #64a4b4;
-  --dh-secondary-500: #7ec5da;
-  --dh-secondary-600: #98e9ff;
-  --dh-secondary-700: #aaecff;
-  --dh-secondary-800: #b8f2ff;
+  --dh-secondary-100: #1f454f;
+  --dh-secondary-200: #35636f;
+  --dh-secondary-300: #4d8391;
+  --dh-secondary-400: #65a4b4;
+  --dh-secondary-500: #7fc6d9;
+  --dh-secondary-600: #99eaff;
+  --dh-secondary-700: #a9edff;
+  --dh-secondary-800: #b9f1ff;
   --dh-secondary-900: #c8f4ff;
   --dh-secondary-1000: #d7f7ff;
-  --dh-secondary-1100: #e4fbff;
+  --dh-secondary-1100: #e5faff;
 
   /* Negative — red / magenta (errors, sell, down) */
   --dh-negative-100: #7a0d28;
-  --dh-negative-200: #901634;
+  --dh-negative-200: #911534;
   --dh-negative-300: #a91d40;
-  --dh-negative-400: #c2254c;
-  --dh-negative-500: #d92e59;
-  --dh-negative-600: #f23766;
-  --dh-negative-700: #f54b71;
-  --dh-negative-800: #f5597e;
-  --dh-negative-900: #f66888;
-  --dh-negative-1000: #f77794;
-  --dh-negative-1100: #f7829f;
+  --dh-negative-400: #c1254c;
+  --dh-negative-500: #da2e59;
+  --dh-negative-600: #f33666;
+  --dh-negative-700: #f54a72;
+  --dh-negative-800: #f65a7d;
+  --dh-negative-900: #f76989;
+  --dh-negative-1000: #f87694;
+  --dh-negative-1100: #f883a0;
 
   /* Positive — green (success, buy, up) */
-  --dh-positive-100: #29780d;
-  --dh-positive-200: #368e16;
-  --dh-positive-300: #40a61f;
-  --dh-positive-400: #4cc024;
-  --dh-positive-500: #59d92f;
-  --dh-positive-600: #63f337;
-  --dh-positive-700: #72f548;
+  --dh-positive-100: #28780d;
+  --dh-positive-200: #348f15;
+  --dh-positive-300: #3fa71d;
+  --dh-positive-400: #4cc025;
+  --dh-positive-500: #58d92e;
+  --dh-positive-600: #65f336;
+  --dh-positive-700: #72f549;
   --dh-positive-800: #7ef758;
-  --dh-positive-900: #88fa66;
-  --dh-positive-1000: #92fb70;
-  --dh-positive-1100: #9dfc7d;
+  --dh-positive-900: #89f966;
+  --dh-positive-1000: #93fa72;
+  --dh-positive-1100: #9dfc7e;
 
   /* Warn — amber / gold */
   --dh-warn-100: #997915;
-  --dh-warn-200: #ab8a1e;
-  --dh-warn-300: #c09c27;
-  --dh-warn-400: #d3ac2f;
-  --dh-warn-500: #e8bd36;
-  --dh-warn-600: #fdd042;
-  --dh-warn-700: #fed455;
-  --dh-warn-800: #feda66;
-  --dh-warn-900: #ffdd74;
-  --dh-warn-1000: #ffe083;
-  --dh-warn-1100: #ffe490;
+  --dh-warn-200: #ac8a1e;
+  --dh-warn-300: #c09b27;
+  --dh-warn-400: #d4ac2f;
+  --dh-warn-500: #e8be38;
+  --dh-warn-600: #fdd041;
+  --dh-warn-700: #fdd455;
+  --dh-warn-800: #fed966;
+  --dh-warn-900: #fedd75;
+  --dh-warn-1000: #ffe183;
+  --dh-warn-1100: #ffe590;
 
   /* Info — purple / magenta */
-  --dh-info-100: #792a88;
-  --dh-info-200: #8c2c9d;
-  --dh-info-300: #a32fb1;
-  --dh-info-400: #b632c6;
-  --dh-info-500: #cd35dd;
-  --dh-info-600: #e336f2;
-  --dh-info-700: #e64df3;
-  --dh-info-800: #e960f5;
-  --dh-info-900: #ec6ff7;
-  --dh-info-1000: #ee7ef8;
-  --dh-info-1100: #ef8df9;
+  --dh-info-100: #792989;
+  --dh-info-200: #8d2c9d;
+  --dh-info-300: #a22fb2;
+  --dh-info-400: #b732c7;
+  --dh-info-500: #cd34dd;
+  --dh-info-600: #e336f3;
+  --dh-info-700: #e64df4;
+  --dh-info-800: #e960f6;
+  --dh-info-900: #eb70f7;
+  --dh-info-1000: #ee7ff8;
+  --dh-info-1100: #f08df9;
 
   /* Foreground — dark navy neutrals (text, chrome) */
-  --dh-fg-100: #000930;
-  --dh-fg-200: #121b3d;
+  --dh-fg-100: #010930;
+  --dh-fg-200: #131b3d;
   --dh-fg-300: #252a4b;
-  --dh-fg-400: #383a58;
-  --dh-fg-500: #494a67;
-  --dh-fg-600: #5b5c75;
-  --dh-fg-700: #6c6d84;
-  --dh-fg-800: #7f8095;
-  --dh-fg-900: #9293a3;
-  --dh-fg-1000: #a4a5b4;
-  --dh-fg-1100: #b9bac3;
+  --dh-fg-400: #373a59;
+  --dh-fg-500: #484a68;
+  --dh-fg-600: #5a5c76;
+  --dh-fg-700: #6c6d85;
+  --dh-fg-800: #7e8095;
+  --dh-fg-900: #9193a4;
+  --dh-fg-1000: #a4a6b4;
+  --dh-fg-1100: #b8bac4;
 
   /* Background — cool grays */
-  --dh-bg-100: #9b9fa3;
-  --dh-bg-200: #a6abb0;
+  --dh-bg-100: #9ba0a4;
+  --dh-bg-200: #a7acb0;
   --dh-bg-300: #b4b9bc;
-  --dh-bg-400: #bfc4c8;
-  --dh-bg-500: #ccd2d5;
-  --dh-bg-600: #dadfe1;
-  --dh-bg-700: #dee3e6;
-  --dh-bg-800: #e3e8eb;
-  --dh-bg-900: #e8ecf0;
-  --dh-bg-1000: #edf2f5;
+  --dh-bg-400: #c0c5c9;
+  --dh-bg-500: #cdd2d5;
+  --dh-bg-600: #dadfe2;
+  --dh-bg-700: #dfe4e7;
+  --dh-bg-800: #e4e9ec;
+  --dh-bg-900: #e9edf0;
+  --dh-bg-1000: #eef2f5;
   --dh-bg-1100: #f3f7fa;
 
   /* Absolute logo accents */
