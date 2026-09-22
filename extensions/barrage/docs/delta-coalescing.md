@@ -290,7 +290,7 @@ one template, so the duplication costs one file of maintenance.
 | Trigger on memory freed, measured against the whole queue | Compaction costs processor time and buys memory, so it should run only when there is memory to reclaim; measuring against the queue rather than the last compaction's output makes the copying bound hold throughout the interval |
 | An absolute floor as well as a fraction | A one-row delta fills a minimum pool chunk per column, so a tiny-delta stream looks over 90% wasted forever; the floor makes it wait until a job is worth running |
 | One estimated row set per side, not per column | Exact figures would cost a row-set pass per column per cycle on the update-graph thread; the union only ever delays a compaction |
-| The estimate counts rows, not chunk capacity | Keeps it to two multiplications; it understates what a compaction leaves by at most one chunk per column per side, which the floor covers |
+| The estimate counts chunk capacity, as the queue does | Counting rows credited a compaction with pool rounding it cannot free; charging both sides the same way scores a queue of small deltas on the memory it really holds |
 | `tryLock`, never block the scheduler thread | A held lock means a flush is imminent, which makes compaction moot |
 | Delta chunks stay pooled; last chunk asks for the exact remainder | Pooling dominates; the rounding on one chunk per column is acceptable |
 | Blink tables are never compacted | Their deltas are coalesced by concatenation, so nothing is ever superseded |
