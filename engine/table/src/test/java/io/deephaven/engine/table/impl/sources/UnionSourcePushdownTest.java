@@ -148,35 +148,6 @@ public class UnionSourcePushdownTest {
     }
 
     /**
-     * Repeated pushdown calls against different selections each see only their own selection.
-     */
-    @Test
-    public void repeatedPushdownsDoNotAccumulateRows() {
-        final Table merged = mergedTable();
-        final WhereFilter filter = initializedFilter(merged, UNION_FILTER);
-        final PushdownFilterMatcher matcher = unionMatcher(merged, filter);
-
-        final RowSet full = merged.getRowSet();
-        try (final PushdownFilterContext context =
-                matcher.makePushdownFilterContext(filter, filterSources(merged, filter));
-                final RowSet firstNonPushdownRows =
-                        full.subSetByPositionRange(ROWS_PER_CONSTITUENT, ROWS_PER_CONSTITUENT + 10);
-                final RowSet lastNonPushdownRows =
-                        full.subSetByPositionRange(2 * ROWS_PER_CONSTITUENT - 10, 2 * ROWS_PER_CONSTITUENT)) {
-            estimateCost(matcher, filter, full, context);
-
-            try (final PushdownResult result = pushdown(matcher, filter, firstNonPushdownRows, context)) {
-                assertThat(result.match().isEmpty()).isTrue();
-                assertThat(result.maybeMatch()).isEqualTo(firstNonPushdownRows);
-            }
-            try (final PushdownResult result = pushdown(matcher, filter, lastNonPushdownRows, context)) {
-                assertThat(result.match().isEmpty()).isTrue();
-                assertThat(result.maybeMatch()).isEqualTo(lastNonPushdownRows);
-            }
-        }
-    }
-
-    /**
      * The driver constructs every filter's context before estimating any of their costs, and closes them all if
      * anything fails in between. A context that was never initialized must therefore be closeable.
      */

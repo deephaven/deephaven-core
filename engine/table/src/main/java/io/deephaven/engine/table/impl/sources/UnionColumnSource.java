@@ -876,7 +876,9 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
 
         // The manager knows the original sources by name, not their reinterpretations, so a filter over this source
-        // cannot be routed to the constituents. Decline pushdown rather than delegate to the manager.
+        // cannot be routed to the constituents. The inherited overrides delegate to the manager, which would throw, so
+        // all three must be overridden back to the AbstractColumnSource defaults to decline pushdown. They go together:
+        // the manager casts whatever context it is handed to its own type.
 
         @Override
         public void estimatePushdownFilterCost(
