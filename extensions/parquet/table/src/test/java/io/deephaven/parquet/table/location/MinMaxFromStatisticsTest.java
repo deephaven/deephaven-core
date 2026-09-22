@@ -924,15 +924,14 @@ public class MinMaxFromStatisticsTest {
     }
 
     /**
-     * This test verifies that the statistics builder logic for NaN values automatically handles NaN values. This
-     * behavior is important because DH currently writes NaN values to statistics which automatically gets fixed by the
-     * statistics builder.
+     * This test verifies that the statistics builder logic for NaN values automatically handles NaN values.
      */
-    // TODO (DH-10771): DH should not write NaN values to statistics.
     @Test
     public void testStatisticsWithNaN() {
-        final Statistics.Builder builder = Statistics.getBuilderForReading(
-                new PrimitiveType(Type.Repetition.REQUIRED, FLOAT, "floatColumn"));
+        final PrimitiveType primitiveType =
+                (PrimitiveType) (new PrimitiveType(Type.Repetition.REQUIRED, FLOAT, "floatColumn")
+                        .withColumnOrder(ColumnOrder.typeDefined()));
+        final Statistics.Builder builder = Statistics.getBuilderForReading(primitiveType);
         builder.withMin(BytesUtils.intToBytes(Float.floatToIntBits(Float.NaN)));
         builder.withMax(BytesUtils.intToBytes(Float.floatToIntBits(1.2f)));
         builder.withNumNulls(0);
