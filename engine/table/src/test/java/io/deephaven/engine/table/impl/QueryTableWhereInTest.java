@@ -21,7 +21,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.test.types.OutOfBandTest;
-import junit.framework.TestCase;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 
@@ -33,7 +32,6 @@ import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 @Category(OutOfBandTest.class)
 public class QueryTableWhereInTest {
@@ -135,9 +133,9 @@ public class QueryTableWhereInTest {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
-            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
-            TestCase.assertTrue(composed.satisfied(updateGraph.clock().currentStep()));
+            assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
+            assertTrue(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
+            assertTrue(composed.satisfied(updateGraph.clock().currentStep()));
         });
 
         if (setRefreshing) {
@@ -556,7 +554,7 @@ public class QueryTableWhereInTest {
                 validate(en);
             }
         } catch (Exception e) {
-            TestCase.fail(e.getClass().getName() + ": " + e.getMessage());
+            fail(e.getClass().getName() + ": " + e.getMessage());
         }
     }
 

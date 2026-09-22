@@ -3,11 +3,12 @@
 //
 package io.deephaven.engine.table.impl;
 
-import junit.framework.TestCase;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import java.util.Map;
+
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link LiveAttributeMap}.
@@ -31,6 +32,6 @@ public class TestLiveAttributeMap {
     public void testEmpty() {
         final AttrMap empty = new AttrMap(null);
         final Map<String, Object> emptyAttrs = empty.getAttributes();
-        TestCase.assertTrue(emptyAttrs.isEmpty());
+        assertTrue(emptyAttrs.isEmpty());
     }
 }

@@ -3,21 +3,26 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.function.Supplier;
+
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link ColumnRegionChar}.
  */
-@SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase"})
+
 public class TstColumnRegionChar {
 
     @SuppressWarnings("unused")
@@ -57,30 +62,29 @@ public class TstColumnRegionChar {
 
     public static class TestNull extends TstColumnRegionPrimative<ColumnRegionChar<Values>> {
 
-        @Override
+        @Before
         public void setUp() throws Exception {
-            super.setUp();
             SUT = ColumnRegionChar.createNull(Long.MAX_VALUE);
         }
 
         @Override
+        @Test
         public void testGet() {
-            TestCase.assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(0));
-            TestCase.assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(1));
-            TestCase.assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(Integer.MAX_VALUE));
-            TestCase.assertEquals(QueryConstants.NULL_CHAR, SUT.getChar((1L << 40) - 2));
-            TestCase.assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(Long.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(0)/* EXTRA */);
+            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(1)/* EXTRA */);
+            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(Integer.MAX_VALUE)/* EXTRA */);
+            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar((1L << 40) - 2)/* EXTRA */);
+            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(Long.MAX_VALUE)/* EXTRA */);
         }
     }
 
     public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionChar<Values>> {
 
-        @Override
+        @Before
         public void setUp() throws Exception {
-            super.setUp();
             // noinspection unchecked
-            regionSupplier = mock(Supplier.class, "R1");
-            checking(new Expectations() {
+            regionSupplier = jmock.mock(Supplier.class, "R1");
+            jmock.checking(new Expectations() {
                 {
                     oneOf(regionSupplier).get();
                     will(returnValue(new Identity()));
@@ -90,11 +94,12 @@ public class TstColumnRegionChar {
         }
 
         @Override
+        @Test
         public void testGet() {
-            assertEquals((char) 8, SUT.getChar(8));
-            assertIsSatisfied();
-            assertEquals((char) 272, SUT.getChar(272));
-            assertIsSatisfied();
+            assertEquals((char) 8, SUT.getChar(8)/* EXTRA */);
+            jmock.assertIsSatisfied();
+            assertEquals((char) 272, SUT.getChar(272)/* EXTRA */);
+            jmock.assertIsSatisfied();
         }
     }
 }

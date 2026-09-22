@@ -7,14 +7,18 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
+import org.junit.Test;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static org.junit.Assert.*;
 
 /**
  * Test class for {@link RegionedColumnSourceDouble}.
  */
-@SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
+
 public class TestRegionedColumnSourceDouble extends
         TstRegionedColumnSourcePrimitive<Double, Values, ColumnRegionDouble<Values>, ColumnRegionDouble<Values>> {
 
@@ -28,7 +32,7 @@ public class TestRegionedColumnSourceDouble extends
             final double output,
             final boolean prev,
             final boolean boxed) {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(cr[expectedRegionIndex]).getDouble(elementIndex);
                 will(returnValue(output));
@@ -37,9 +41,9 @@ public class TestRegionedColumnSourceDouble extends
         if (boxed) {
             assertEquals(output == NULL_DOUBLE ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {
-            assertEquals(output, prev ? SUT.getPrevDouble(elementIndex) : SUT.getDouble(elementIndex));
+            assertEquals(output, prev ? SUT.getPrevDouble(elementIndex) : SUT.getDouble(elementIndex), .000001f);
         }
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @Override
@@ -51,6 +55,7 @@ public class TestRegionedColumnSourceDouble extends
     }
 
     @Override
+    @Test
     public void testGet() {
         fillRegions();
 
@@ -71,6 +76,7 @@ public class TestRegionedColumnSourceDouble extends
     }
 
     @Override
+    @Test
     public void testGetPrev() {
         fillRegions();
 
@@ -91,6 +97,7 @@ public class TestRegionedColumnSourceDouble extends
     }
 
     @Override
+    @Test
     public void testGetDouble() {
         fillRegions();
 
@@ -111,6 +118,7 @@ public class TestRegionedColumnSourceDouble extends
     }
 
     @Override
+    @Test
     public void testGetPrevDouble() {
         fillRegions();
 

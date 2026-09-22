@@ -7,14 +7,18 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
+import org.junit.Test;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static org.junit.Assert.*;
 
 /**
  * Test class for {@link RegionedColumnSourceInt}.
  */
-@SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
+
 public class TestRegionedColumnSourceInt extends
         TstRegionedColumnSourcePrimitive<Integer, Values, ColumnRegionInt<Values>, ColumnRegionInt<Values>> {
 
@@ -28,7 +32,7 @@ public class TestRegionedColumnSourceInt extends
             final int output,
             final boolean prev,
             final boolean boxed) {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(cr[expectedRegionIndex]).getInt(elementIndex);
                 will(returnValue(output));
@@ -37,9 +41,9 @@ public class TestRegionedColumnSourceInt extends
         if (boxed) {
             assertEquals(output == NULL_INT ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {
-            assertEquals(output, prev ? SUT.getPrevInt(elementIndex) : SUT.getInt(elementIndex));
+            assertEquals(output, prev ? SUT.getPrevInt(elementIndex) : SUT.getInt(elementIndex)/* EXTRA */);
         }
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @Override
@@ -51,6 +55,7 @@ public class TestRegionedColumnSourceInt extends
     }
 
     @Override
+    @Test
     public void testGet() {
         fillRegions();
 
@@ -71,6 +76,7 @@ public class TestRegionedColumnSourceInt extends
     }
 
     @Override
+    @Test
     public void testGetPrev() {
         fillRegions();
 
@@ -91,6 +97,7 @@ public class TestRegionedColumnSourceInt extends
     }
 
     @Override
+    @Test
     public void testGetInt() {
         fillRegions();
 
@@ -111,6 +118,7 @@ public class TestRegionedColumnSourceInt extends
     }
 
     @Override
+    @Test
     public void testGetPrevInt() {
         fillRegions();
 

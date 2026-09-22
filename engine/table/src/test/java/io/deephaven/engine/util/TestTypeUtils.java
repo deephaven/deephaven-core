@@ -4,17 +4,19 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.verify.Require;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.ArrayUtils;
+import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
 
 import static io.deephaven.util.type.TypeUtils.*;
+import static org.junit.Assert.*;
 
-public class TestTypeUtils extends TestCase {
+public class TestTypeUtils {
 
+    @Test
     public void testGetBoxedType() {
         Require.equals(getBoxedType(boolean.class), "getBoxedType(boolean.class)", Boolean.class, "Boolean.class");
         Require.equals(getBoxedType(byte.class), "getBoxedType(byte.class)", Byte.class, "Byte.class");
@@ -35,13 +37,13 @@ public class TestTypeUtils extends TestCase {
         Require.equals(getBoxedType(Float.class), "getBoxedType(Float.class)", Float.class, "Float.class");
         Require.equals(getBoxedType(Double.class), "getBoxedType(Double.class)", Double.class, "Double.class");
 
-
         Require.equals(getBoxedType(Object.class), "getBoxedType(Object.class)", Object.class, "Object.class");
         Require.equals(getBoxedType(CharSequence.class), "getBoxedType(CharSequence.class)", CharSequence.class,
                 "CharSequence.class");
         Require.equals(getBoxedType(String.class), "getBoxedType(String.class)", String.class, "String.class");
     }
 
+    @Test
     public void testGetUnboxedType() {
         Require.equals(getUnboxedType(Boolean.class), "getUnboxedType(Boolean.class)", boolean.class, "boolean.class");
         Require.equals(getUnboxedType(Byte.class), "getUnboxedType(Byte.class)", byte.class, "byte.class");
@@ -61,12 +63,12 @@ public class TestTypeUtils extends TestCase {
         Require.equals(getUnboxedType(float.class), "getUnboxedType(float.class)", float.class, "float.class");
         Require.equals(getUnboxedType(double.class), "getUnboxedType(double.class)", double.class, "double.class");
 
-
         Require.eqNull(getUnboxedType(Object.class), "getUnboxedType(Object.class)");
         Require.eqNull(getUnboxedType(CharSequence.class), "getUnboxedType(CharSequence.class)");
         Require.eqNull(getUnboxedType(String.class), "getUnboxedType(String.class)");
     }
 
+    @Test
     public void testPrimitiveTypesSet() {
         Require.eq(PRIMITIVE_TYPES.size(), "PRIMITIVE_TYPES.size()", 8);
         Require.contains(PRIMITIVE_TYPES, "PRIMITIVE_TYPES", boolean.class, "boolean.class");
@@ -79,6 +81,7 @@ public class TestTypeUtils extends TestCase {
         Require.contains(PRIMITIVE_TYPES, "PRIMITIVE_TYPES", double.class, "double.class");
     }
 
+    @Test
     public void testBoxedTypesSet() {
         Require.eq(BOXED_TYPES.size(), "BOXED_TYPES.size()", 8);
         Require.contains(BOXED_TYPES, "BOXED_TYPES", Boolean.class, "Boolean.class");
@@ -91,6 +94,7 @@ public class TestTypeUtils extends TestCase {
         Require.contains(BOXED_TYPES, "BOXED_TYPES", Double.class, "Double.class");
     }
 
+    @Test
     public void testTypesSetOrdering() {
         final Class[] primitiveTypes = PRIMITIVE_TYPES.toArray(new Class[0]);
         final int charIndex = ArrayUtils.indexOf(primitiveTypes, char.class);
@@ -127,6 +131,7 @@ public class TestTypeUtils extends TestCase {
                 "Arrays.equals(PRIMITIVE_TYPES.toArray(), BOXED_TYPES.stream().map(TypeUtils::getUnboxedType).toArray())");
     }
 
+    @Test
     public void testIsType() {
         assertFalse(io.deephaven.util.type.TypeUtils.isCharacter(Instant.class));
         assertFalse(io.deephaven.util.type.TypeUtils.isCharacter(Date.class));

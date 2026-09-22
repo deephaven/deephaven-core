@@ -8,7 +8,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -16,8 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for liveness code.
@@ -54,7 +52,7 @@ public class TestLiveness {
         }
         try {
             a1.manage(a2);
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (LivenessStateException expected) {
             expected.printStackTrace();
         }
@@ -66,7 +64,7 @@ public class TestLiveness {
         }
         try {
             a3.manage(a4);
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (LivenessStateException expected) {
             expected.printStackTrace();
         }
@@ -78,7 +76,7 @@ public class TestLiveness {
         }
         try {
             a5.manage(a6);
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (LivenessStateException expected) {
             expected.printStackTrace();
         }
@@ -125,7 +123,7 @@ public class TestLiveness {
         }
 
         if (a4.tryManage(a1)) {
-            TestCase.fail("Expected not to manage a1");
+            fail("Expected not to manage a1");
         }
 
         scope.release();
@@ -134,13 +132,13 @@ public class TestLiveness {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             a5 = new NamedLivenessArtifact("a5", strong);
             if (a5.tryManage(a1)) {
-                TestCase.fail("Expected not to manage a1");
+                fail("Expected not to manage a1");
             }
             if (a5.tryManage(a2)) {
-                TestCase.fail("Expected not to manage a2");
+                fail("Expected not to manage a2");
             }
             if (a5.tryManage(a3)) {
-                TestCase.fail("Expected not to manage a3");
+                fail("Expected not to manage a3");
             }
         }
     }

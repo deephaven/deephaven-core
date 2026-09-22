@@ -3,11 +3,12 @@
 //
 package io.deephaven.util.datastructures.linked;
 
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.stream.IntStream;
+
+import static org.junit.Assert.*;
 
 public class TestIntrusiveSinglyLinkedQueue {
     private static class IntNode {
@@ -46,18 +47,18 @@ public class TestIntrusiveSinglyLinkedQueue {
     public void testEmpty() {
         final IntrusiveSinglyLinkedQueue<TestIntrusiveSinglyLinkedQueue.IntNode> queue =
                 new IntrusiveSinglyLinkedQueue<>(new TestIntrusiveSinglyLinkedQueue.IntNodeAdapter());
-        TestCase.assertTrue(queue.isEmpty());
-        TestCase.assertNull(queue.peek());
-        TestCase.assertNull(queue.poll());
+        assertTrue(queue.isEmpty());
+        assertNull(queue.peek());
+        assertNull(queue.poll());
 
         final IntNode node = new IntNode(42);
-        TestCase.assertTrue(queue.offer(node));
-        TestCase.assertEquals(node, queue.peek());
-        TestCase.assertEquals(node, queue.poll());
+        assertTrue(queue.offer(node));
+        assertEquals(node, queue.peek());
+        assertEquals(node, queue.poll());
 
-        TestCase.assertTrue(queue.isEmpty());
-        TestCase.assertNull(queue.peek());
-        TestCase.assertNull(queue.poll());
+        assertTrue(queue.isEmpty());
+        assertNull(queue.peek());
+        assertNull(queue.poll());
     }
 
     /**
@@ -77,8 +78,8 @@ public class TestIntrusiveSinglyLinkedQueue {
 
         int ti = 0;
         while (!queue.isEmpty()) {
-            TestCase.assertEquals(ti++, queue.poll().value);
+            assertEquals(ti++, queue.poll().value);
         }
-        TestCase.assertEquals(nodeCount, ti);
+        assertEquals(nodeCount, ti);
     }
 }

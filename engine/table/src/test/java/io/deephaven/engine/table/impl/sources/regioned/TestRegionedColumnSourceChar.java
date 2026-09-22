@@ -3,14 +3,18 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
+import org.junit.Test;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static org.junit.Assert.*;
 
 /**
  * Test class for {@link RegionedColumnSourceChar}.
  */
-@SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
+
 public class TestRegionedColumnSourceChar extends
         TstRegionedColumnSourcePrimitive<Character, Values, ColumnRegionChar<Values>, ColumnRegionChar<Values>> {
 
@@ -24,7 +28,7 @@ public class TestRegionedColumnSourceChar extends
             final char output,
             final boolean prev,
             final boolean boxed) {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(cr[expectedRegionIndex]).getChar(elementIndex);
                 will(returnValue(output));
@@ -33,9 +37,9 @@ public class TestRegionedColumnSourceChar extends
         if (boxed) {
             assertEquals(output == NULL_CHAR ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {
-            assertEquals(output, prev ? SUT.getPrevChar(elementIndex) : SUT.getChar(elementIndex));
+            assertEquals(output, prev ? SUT.getPrevChar(elementIndex) : SUT.getChar(elementIndex)/* EXTRA */);
         }
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @Override
@@ -47,6 +51,7 @@ public class TestRegionedColumnSourceChar extends
     }
 
     @Override
+    @Test
     public void testGet() {
         fillRegions();
 
@@ -67,6 +72,7 @@ public class TestRegionedColumnSourceChar extends
     }
 
     @Override
+    @Test
     public void testGetPrev() {
         fillRegions();
 
@@ -87,6 +93,7 @@ public class TestRegionedColumnSourceChar extends
     }
 
     @Override
+    @Test
     public void testGetChar() {
         fillRegions();
 
@@ -107,6 +114,7 @@ public class TestRegionedColumnSourceChar extends
     }
 
     @Override
+    @Test
     public void testGetPrevChar() {
         fillRegions();
 

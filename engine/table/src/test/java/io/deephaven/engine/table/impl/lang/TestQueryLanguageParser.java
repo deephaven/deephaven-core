@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.lang;
 
 import groovy.lang.Closure;
 import io.deephaven.base.Pair;
-import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.base.testing.JMockRule;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.*;
@@ -25,6 +25,8 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.awt.*;
 import java.time.Instant;
@@ -33,9 +35,13 @@ import java.util.*;
 
 import static io.deephaven.engine.table.ColumnDefinition.ColumnType;
 import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.isWideningPrimitiveConversion;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("InstantiatingObjectToGetClassObject")
-public class TestQueryLanguageParser extends BaseArrayTestCase {
+public class TestQueryLanguageParser {
+
+    @Rule
+    public final JMockRule jmock = new JMockRule();
 
     private HashSet<Package> packageImports;
     private HashSet<Class<?>> classImports;
@@ -45,7 +51,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     private HashMap<String, Class<?>[]> variableParameterizedTypes;
 
     @Before
-    @Override
     public void setUp() throws Exception {
         packageImports = new HashSet<>();
         packageImports.add(Package.getPackage("java.lang"));
@@ -154,6 +159,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variableParameterizedTypes.put("myArrayParameterizedClass", new Class[] {new String[0].getClass()});
     }
 
+    @Test
     public void testSimpleCalculations() throws Exception {
         String expression = "1+1";
         String resultExpression = "plus(1, 1)";
@@ -281,6 +287,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     /**
      * Test literal ints and longs
      */
+    @Test
     public void testIntegralLiterals() throws Exception {
         String expression = "42";
         String resultExpression = "42";
@@ -306,6 +313,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     /**
      * Test literal floats and doubles
      */
+    @Test
     public void testDecimalLiterals() throws Exception {
         String expression = "42d";
         String resultExpression = "42d";
@@ -348,6 +356,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     /**
      * Test hexadecimal literals (ints and longs)
      */
+    @Test
     public void testHexadecimalLiterals() throws Exception {
         String expression = "0x00";
         String resultExpression = "0x00";
@@ -365,6 +374,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     /**
      * Test binary literals (ints and longs)
      */
+    @Test
     public void testBinaryLiterals() throws Exception {
         String expression = "0b0";
         String resultExpression = "0b0";
@@ -392,6 +402,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
      * The query language will automatically convert an integer literal to a long literal if the value is too big to
      * store as an int. (Normal Java would not do this; it would just result in a compilation error.)
      */
+    @Test
     public void testAutoPromotedLiterals() throws Exception {
         String expression, resultExpression;
 
@@ -409,6 +420,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, long.class, new String[] {});
     }
 
+    @Test
     public void testBooleanLiterals() throws Exception {
         String expression = "true";
         String resultExpression = "true";
@@ -427,6 +439,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Boolean.class, new String[] {});
     }
 
+    @Test
     public void testCharLiterals() throws Exception {
         String expression = "'c'";
         String resultExpression = "'c'";
@@ -450,6 +463,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, char.class, new String[] {});
     }
 
+    @Test
     public void testConvertBackticks() {
         Require.equals(
                 QueryLanguageParser.convertBackticks("`hello`"),
@@ -528,6 +542,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                 "\"`\\\"'\\\\\"");
     }
 
+    @Test
     public void testConvertSingleEquals() {
         Require.equals(
                 QueryLanguageParser.convertSingleEquals("a=b"),
@@ -577,6 +592,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
      * @see #testPrimitiveLiteralCasts()
      * @see #testBoxedToPrimitiveCasts()
      */
+    @Test
     public void testMiscellaneousCasts() throws Exception {
         String expression;
         String resultExpression;
@@ -626,6 +642,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     /**
      * This is an older version of {@link #testPrimitiveVariableCasts()}, operating with literals instead of variables.
      */
+    @Test
     public void testPrimitiveLiteralCasts() throws Exception {
         String expression, resultExpression;
 
@@ -707,6 +724,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
      *
      * @see #testBoxedToPrimitiveCasts()
      */
+    @Test
     public void testPrimitiveVariableCasts() throws Exception {
         String expression, resultExpression;
 
@@ -809,6 +827,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
      * @see #testPrimitiveLiteralCasts()
      * @see #testBoxedToPrimitiveCasts()
      */
+    @Test
     public void testBoxedToPrimitiveCasts() {
         String expression, resultExpression;
 
@@ -870,6 +889,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
      * <p>
      * This should be a narrowing and unboxing conversion.
      */
+    @Test
     public void testObjectToPrimitiveOrBoxedCasts() throws Exception {
         String expression, resultExpression;
 
@@ -891,6 +911,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     /**
      * Test casting all primitive types and all boxed types to Object. (Can't hurt.)
      */
+    @Test
     public void testPrimitiveAndBoxedToObjectCasts() throws Exception {
         String expression, resultExpression;
 
@@ -909,6 +930,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testPyObjectToPrimitiveCasts() throws Exception {
         String expression = "(int)myPyObject";
         String resultExpression = "intPyCast(myPyObject)";
@@ -951,6 +973,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Boolean.class, new String[] {"myPyObject"});
     }
 
+    @Test
     public void testVariables() throws Exception {
         String expression = "1+myInt";
         String resultExpression = "plus(1, myInt)";
@@ -1013,6 +1036,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {"myDoubleArray"});
     }
 
+    @Test
     public void testConditionalExpressions() throws Exception {
         String expression = "1==1 ? myString : null";
         String resultExpression = "eq(1, 1) ? myString : null";
@@ -1043,6 +1067,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Boolean.class, new String[0]);
     }
 
+    @Test
     public void testEqualsNull() throws Exception {
         String expression = "myString == null ? myString : null";
         String resultExpression = "isNull(myString) ? myString : null";
@@ -1121,6 +1146,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, double.class, new String[] {"myDouble"});
     }
 
+    @Test
     public void testNotEqualsNull() throws Exception {
         String expression = "myString != null ? myString : null";
         String resultExpression = "!isNull(myString) ? myString : null";
@@ -1199,6 +1225,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, double.class, new String[] {"myDouble"});
     }
 
+    @Test
     public void testOperatorOverloading() throws Exception {
         String expression = "myTestClass+1";
         String resultExpression = "plus(myTestClass, 1)";
@@ -1221,6 +1248,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {});
     }
 
+    @Test
     public void testNegation() throws Exception {
         String expression = "!myBoolean";
         String resultExpression = "!myBoolean";
@@ -1251,6 +1279,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myInt", "myIntArray", "myOtherInt"});
     }
 
+    @Test
     public void testArrayOperatorOverloading() throws Exception {
         String expression = "myIntArray+myDoubleArray";
         String resultExpression = "plusArray(myIntArray, myDoubleArray)";
@@ -1317,6 +1346,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                 new String[] {"myTestClass", "myTestClassArray"});
     }
 
+    @Test
     public void testArrayAccessOperatorOverloading() throws Exception {
         String expression = "myIntArray[15]";
         String resultExpression = "myIntArray[15]";
@@ -1351,6 +1381,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Double.class, new String[] {"myParameterizedHashMap"});
     }
 
+    @Test
     public void testResolution() throws Exception {
         String expression = "Math.sqrt(5.0)";
         String resultExpression = "Math.sqrt(5.0)";
@@ -1401,7 +1432,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {});
     }
 
-
+    @Test
     public void testMethodOverloading() throws Exception {
         String expression = "LanguageParserDummyClass.overloadedStaticMethod()";
         String resultExpression = "LanguageParserDummyClass.overloadedStaticMethod()";
@@ -1431,6 +1462,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     /**
      * Test implicit argument type conversions (e.g. primitive casts and converting Vectors to Java arrays)
      */
+    @Test
     public void testImplicitConversion() throws Exception {
         String expression = "testVarArgs(myInt, 'a', myDouble, 1.0, 5.0, myDouble)";
         String resultExpression = "testVarArgs(myInt, 'a', new double[] { myDouble, 1.0, 5.0, myDouble })";
@@ -1491,6 +1523,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
     }
 
+    @Test
     public void testImplicitConversionByType_varargs() throws Exception {
         String expression = "testImplicitConversion_char(myChar, myChar)";
         String resultExpression = "testImplicitConversion_char(new char[] { myChar, myChar })";
@@ -1530,6 +1563,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
      *
      * @throws Exception
      */
+    @Test
     public void testImplicitConversionByType_vector() throws Exception {
         String expression = "testImplicitConversion_char(myCharVector)";
         String resultExpression = "testImplicitConversion_char(VectorConversions.nullSafeVectorToArray(myCharVector))";
@@ -1568,6 +1602,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector"});
     }
 
+    @Test
     public void testImplicitConversion_Object() throws Exception {
         String expression = "testImplicitConversion_Object(myVector, myVector)";
         String resultExpression = "testImplicitConversion_Object(myVector, myVector)";
@@ -1608,6 +1643,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray", "myInt"});
     }
 
+    @Test
     public void testExplicitClosureCall() throws Exception {
         String expression = "myClosure.call()";
         String resultExpression = "myClosure.call()";
@@ -1622,6 +1658,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Object.class, new String[] {"myClosure"});
     }
 
+    @Test
     public void testImplicitClosureCall() throws Exception {
         String expression = "myClosure()";
         String resultExpression = "myClosure.call()";
@@ -1636,6 +1673,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Object.class, new String[] {"myClosure"});
     }
 
+    @Test
     public void testPyObject() throws Exception {
         String expression = "myPyObject";
         String resultExpression = "myPyObject";
@@ -1686,6 +1724,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myPyObject"});
     }
 
+    @Test
     public void testPyCallable() throws Exception {
         String expression = "myPyCallable.FIELD";
         String resultExpression = "myPyCallable.getAttribute(\"FIELD\")";
@@ -1718,6 +1757,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     /**
      * Test converting implicit python calls into explicit ones.
      */
+    @Test
     public void testImplicitPythonCallNoScope() throws Exception {
         final PyCallableWrapper mockPyCallable0 = getMockPyCallable();
         final PyCallableWrapper mockPyCallable1 = getMockPyCallable(int.class);
@@ -1767,6 +1807,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     /**
      * Test converting implicit python calls into explicit ones.
      */
+    @Test
     public void testImplicitPythonCallWithScope() throws Exception {
         try (SafeCloseable ignored = TestExecutionContext.createForUnitTests().open()) {
             String expression = "myPyObject.myPyMethod()";
@@ -1789,6 +1830,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     /**
      * Test calling the default methods from {@link Object}. (In the past, these were not recognized on interfaces.)
      */
+    @Test
     public void testObjectMethods() throws Exception {
         // Call hashCode() on an Object
         String expression = "myObject.hashCode()";
@@ -1820,6 +1862,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testFieldAccess() throws Exception {
 
         String expression = "`a_b_c_d_e`.split(`_`).length";
@@ -1899,6 +1942,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     /**
      * Test bad field access expressions
      */
+    @Test
     public void testBadFieldAccess() throws Exception {
         String expression, resultExpression;
 
@@ -1945,7 +1989,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                 }
             }
 
-
             try {
                 expression = "LanguageParserNonExistentDummyClass.StaticNestedClass.staticVar";
                 resultExpression = "LanguageParserNonExistentDummyClass.StaticNestedClass.staticVar";
@@ -1957,8 +2000,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                     fail("Useless exception message!\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
                 }
             }
-
-
 
             /*
              * Also test within a method call. This is essentially the case that prompted the fix. The actual issue with
@@ -1996,12 +2037,12 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                 }
             }
 
-
         } finally {
             p.restore();
         }
     }
 
+    @Test
     public void testEnums() throws Exception {
         String expression = "myEnumValue";
         String resultExpression = "myEnumValue";
@@ -2048,6 +2089,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {"myEnumValue"});
     }
 
+    @Test
     public void testBoxing() throws Exception {
         String expression = "myIntObj";
         String resultExpression = "myIntObj";
@@ -2094,6 +2136,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myIntObj"});
     }
 
+    @Test
     public void testUnboxAndWiden() throws Exception {
         // ensure we can find the original method
         String expression = "io.deephaven.time.DateTimeUtils.plus(myInstant, myLong)";
@@ -2166,6 +2209,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testEqualsConversion() throws Exception {
         QueryLanguageParser.Result result =
                 new QueryLanguageParser("1==1", null, null, staticImports, null, null).getResult();
@@ -2195,6 +2239,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
      * In order to support the null values defined in {@link QueryConstants}, language parser converts the equality and
      * relational operators into method calls.
      */
+    @Test
     public void testComparisonConversion() throws Exception {
         String expression = "myTestClass>myIntObj";
         String resultExpression = "greater(myTestClass, myIntObj.intValue())";
@@ -2237,6 +2282,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myTestClass"});
     }
 
+    @Test
     public void testArrayAllocation() throws Exception {
         String expression = "new Integer[5]";
         String resultExpression = "new Integer[5]";
@@ -2277,6 +2323,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                 new String[] {"myDummyInnerClass"});
     }
 
+    @Test
     public void testArraysAsArguments() throws Exception {
         String expression = "LanguageParserDummyClass.arrayAndVectorFunction(myIntVector)";
         String resultExpression = "LanguageParserDummyClass.arrayAndVectorFunction(myIntVector)";
@@ -2302,6 +2349,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testObjectConstruction() throws Exception {
         String expression = "new Integer(myInt)";
         String resultExpression = "new Integer(myInt)";
@@ -2352,6 +2400,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Instant.class, new String[] {});
     }
 
+    @Test
     public void testIntToLongConversion() throws Exception {
         String expression = "1+1283209200466";
         String resultExpression = "plus(1, 1283209200466L)";
@@ -2362,6 +2411,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, long.class, new String[] {});
     }
 
+    @Test
     public void testGenericMethods() throws Exception {
         String expression = "genericSingleToSingle(myDoubleObj)";
         String resultExpression = "genericSingleToSingle(myDoubleObj)";
@@ -2400,6 +2450,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new Double[0].getClass(), new String[] {"myVector"});
     }
 
+    @Test
     public void testVectorUnboxing() throws Exception {
         String expression = "genericArrayToSingle(myVector)";
         String resultExpression = "genericArrayToSingle(VectorConversions.nullSafeVectorToArray(myVector))";
@@ -2441,6 +2492,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, String.class, new String[] {"myByteVector"});
     }
 
+    @Test
     public void testVarArgsUnboxing() throws Exception {
         String expression = "testImplicitConversion_double(myInt)";
         String resultExpression = "testImplicitConversion_double(new double[] { doubleCast(myInt) })";
@@ -2456,6 +2508,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt", "myLong"});
     }
 
+    @Test
     public void testInnerClassesMethods() throws Exception {
         String expression = "myDummyClass.innerClassInstance.innerClassMethod()";
         String resultExpression = "myDummyClass.innerClassInstance.innerClassMethod()";
@@ -2470,6 +2523,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, String.class, new String[] {"myDummyInnerClass"});
     }
 
+    @Test
     public void testStaticNestedClassMethod() throws Exception {
         String expression = "LanguageParserDummyClass.StaticNestedClass.staticMethod()";
         String resultExpression = "LanguageParserDummyClass.StaticNestedClass.staticMethod()";
@@ -2484,6 +2538,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, String.class, new String[] {"myDummyStaticNestedClass"});
     }
 
+    @Test
     public void testInnerClasses() throws Exception {
         QueryLanguageParser.Result result =
                 new QueryLanguageParser(
@@ -2493,6 +2548,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                 result.getConvertedExpression());
     }
 
+    @Test
     public void testComplexExpressions() throws Exception {
         String expression =
                 "java.util.stream.Stream.of(new String[]{ `a`, `b`, `c`, myInt > 0 ? myString=Double.toString(myDouble) ? `1` : `2` : new LanguageParserDummyClass().toString() }).count()";
@@ -2578,6 +2634,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, float.class, new String[] {"myInt", "myIntObj"});
     }
 
+    @Test
     public void testUnsupportedOperators() throws Exception {
         String expression, resultExpression;
 
@@ -2688,6 +2745,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testIsWideningPrimitiveConversion() {
         {
             Require.eqFalse(isWideningPrimitiveConversion(byte.class, byte.class),
@@ -2706,7 +2764,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
             Require.eqTrue(isWideningPrimitiveConversion(byte.class, double.class),
                     "isWideningPrimitiveConversion(byte.class, double.class)");
         }
-
 
         {
             Require.eqFalse(isWideningPrimitiveConversion(short.class, byte.class),
@@ -2774,13 +2831,11 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
             Require.eqFalse(isWideningPrimitiveConversion(long.class, long.class),
                     "isWideningPrimitiveConversion(long.class, long.class)");
 
-
             Require.eqTrue(isWideningPrimitiveConversion(long.class, float.class),
                     "isWideningPrimitiveConversion(long.class, float.class)");
             Require.eqTrue(isWideningPrimitiveConversion(long.class, double.class),
                     "isWideningPrimitiveConversion(long.class, double.class)");
         }
-
 
         {
             Require.eqFalse(isWideningPrimitiveConversion(float.class, byte.class),
@@ -2836,6 +2891,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     }
 
     @SuppressWarnings("ClassGetClass") // class.getClass() is the purpose of this test
+    @Test
     public void testClassExpr() throws Exception {
         String expression = "Integer.class";
         String resultExpression = "Integer.class";
@@ -2858,6 +2914,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, LanguageParserDummyInterface.class.getClass(), new String[] {});
     }
 
+    @Test
     public void testClassImports() throws Exception {
         String expression = "LanguageParserDummyClass.value";
         String resultExpression = "LanguageParserDummyClass.value";
@@ -2876,7 +2933,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, LanguageParserDummyClass.class, new String[] {"myObject"});
     }
 
-
+    @Test
     public void testStaticImports() throws Exception {
         // test using imports from io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.StaticNestedClass
         String expression = "staticVar";
@@ -2925,7 +2982,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         }
     }
 
-
+    @Test
     public void testGenericMethodCall() throws Exception {
         String expression = "LanguageParserDummyClass.typedRefWithCapture(`hello`)";
         String resultExpression = "LanguageParserDummyClass.typedRefWithCapture(\"hello\")";
@@ -2988,12 +3045,14 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
     // */
     // }
 
+    @Test
     public void testGenericReturnTypeOfScopeVar() throws Exception {
         String expression = "myParameterizedHashMap.get(0)";
         String resultExpression = "myParameterizedHashMap.get(0)";
         check(expression, resultExpression, Double.class, new String[] {"myParameterizedHashMap"});
     }
 
+    @Test
     public void testGenericClass() throws Exception {
         // String expression = "myParameterizedClass.var";
         // String resultExpression = "myParameterizedClass.var";
@@ -3048,6 +3107,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 //     }
 //@formatter:on
 
+    @Test
     public void testDhqlIsAssignableFrom() {
         assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(String.class, String.class));
         assertTrue(QueryLanguageParser.dhqlIsAssignableFrom(Object.class, String.class));
@@ -3074,6 +3134,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         assertFalse(QueryLanguageParser.dhqlIsAssignableFrom(double[].class, Vector.class));
     }
 
+    @Test
     public void testInvalidExpr() throws Exception {
         String expression = "1+";
         expectFailure(expression, int.class);
@@ -3143,6 +3204,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
             implements TestGenericInterfaceSub<TestGenericResult4>, TestGenericInterfaceSibling<TestGenericResult5> {
     }
 
+    @Test
     public void testGenericReturnTypeResolution() throws Exception {
         final String[] resultVarsUsed = new String[] {"genericSub"};
 
@@ -3197,7 +3259,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
         Arrays.sort(resultVarsUsed);
         Arrays.sort(variablesUsed);
-        assertEquals(resultVarsUsed, variablesUsed);
+        assertArrayEquals(resultVarsUsed, variablesUsed);
     }
 
     @SuppressWarnings("InnerClassMayBeStatic")

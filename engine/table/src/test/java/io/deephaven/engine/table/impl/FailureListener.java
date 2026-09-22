@@ -4,7 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.TableUpdate;
-import junit.framework.TestCase;
+
+import static org.junit.Assert.*;
 
 public class FailureListener extends InstrumentedTableUpdateListener {
     public FailureListener() {
@@ -17,6 +18,6 @@ public class FailureListener extends InstrumentedTableUpdateListener {
     @Override
     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         originalException.printStackTrace();
-        TestCase.fail(originalException.getMessage());
+        fail(originalException.getMessage());
     }
 }
