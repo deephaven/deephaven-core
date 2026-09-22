@@ -3362,8 +3362,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     /**
      * A zero-key join fails the same way as a keyed join when the right side has several rows under a join type that
-     * rejects duplicates: an IllegalStateException, at construction and from the listener alike. A missing exact match
-     * remains a plain RuntimeException, as it is for a keyed exact join.
+     * rejects duplicates, or no row under an exact join: an IllegalStateException, at construction and from the
+     * listener alike.
      */
     public void testNaturalJoinZeroKeysDuplicateRightRowsExceptionType() {
         final QueryTable left = testTable(intCol("L", 1, 2));
@@ -3389,6 +3389,41 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             });
         }
         assertEquals(IllegalStateException.class, listener.originalException().getClass());
+
+        // the right side of an exact join loses its only row
+        final QueryTable exactRight = testRefreshingTable(i(0).toTracking(), intCol("C", 100));
+        final Table exactResult = left.naturalJoin(exactRight, "", "C", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(newTable(intCol("L", 1, 2), intCol("C", 100, 100)), exactResult);
+
+        final ErrorListener exactListener = new ErrorListener(exactResult);
+        exactResult.addUpdateListener(exactListener);
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(exactRight, i(0));
+                exactRight.notifyListeners(i(), i(0), i());
+            });
+        }
+        assertEquals(IllegalStateException.class, exactListener.originalException().getClass());
+        assertEquals("exactJoin with zero key columns must have exactly one row in the right hand side table!",
+                exactListener.originalException().getMessage());
+
+        // the left side of an exact join gains its first row while the static right side is empty
+        final QueryTable emptyLeft = testRefreshingTable(i().toTracking(), intCol("L"));
+        final Table leftArrives = emptyLeft.naturalJoin(testTable(intCol("C")), "", "C",
+                NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(newTable(intCol("L"), intCol("C")), leftArrives);
+
+        final ErrorListener leftListener = new ErrorListener(leftArrives);
+        leftArrives.addUpdateListener(leftListener);
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(emptyLeft, i(0), intCol("L", 1));
+                emptyLeft.notifyListeners(i(0), i(), i());
+            });
+        }
+        assertEquals(IllegalStateException.class, leftListener.originalException().getClass());
+        assertEquals("exactJoin with zero key columns must have exactly one row in the right hand side table!",
+                leftListener.originalException().getMessage());
     }
 
     public void testLeftKeyChangeReportsRightColumnsOnlyWhenRedirectionChangesStaticRight() {
