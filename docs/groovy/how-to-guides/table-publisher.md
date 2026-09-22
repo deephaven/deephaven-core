@@ -195,7 +195,7 @@ import io.deephaven.engine.table.impl.util.DynamicTableWriter
 
 chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray()
 
-// Create a DynamicTableWriter with two columns: `A` (int) and `B` (String)
+// Create a DynamicTableWriter with two columns: `A` (int) and `B` (char)
 columnNames = ["A", "B"] as String[]
 columnTypes = [int.class, char.class] as Class[]
 tableWriter = new DynamicTableWriter(columnNames, columnTypes)

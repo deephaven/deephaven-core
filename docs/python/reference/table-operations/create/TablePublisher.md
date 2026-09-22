@@ -66,7 +66,7 @@ A tuple containing the resulting blink [`Table`](/core/pydoc/code/deephaven.tabl
 
 ## Examples
 
-The following example creates a `TablePublisher` with three columns. It adds a table with three rows using `add` and [`new_table`](./newTable.md). `add_to_table` calls `my_publisher.add`, which adds three new rows to `my_blink_table`. Because `my_blink_table` is a blink table, each subsequent call to `add_to_table` resets the state of the table.
+The following example creates a `TablePublisher` with three columns. It adds a table with three rows using `add` and [`new_table`](./newTable.md). `add_to_table` calls `my_publisher.add`, which adds three new rows to `my_blink_table`. Because `my_blink_table` is a blink table, it only reflects the rows added during the most recent update cycle; the two calls to `add_to_table` below happen within the same update cycle, so all six rows appear together.
 
 ```python ticking-table test-set=1 order=null
 from deephaven.stream.table_publisher import table_publisher
