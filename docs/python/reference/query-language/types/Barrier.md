@@ -10,7 +10,7 @@ By default, Deephaven is free to parallelize column calculations and filters tha
 
 A barrier alone does not force either operation to run serially. If an operation has shared mutable state that could race across its own rows, you typically need **both** [`with_serial`](./ConcurrencyControl.md#with_serial) (for sequential row processing within that operation) **and** a barrier (for ordering between operations).
 
-## Creating a barrier
+## Creating a Barrier
 
 ```python syntax
 from deephaven.concurrency_control import Barrier
