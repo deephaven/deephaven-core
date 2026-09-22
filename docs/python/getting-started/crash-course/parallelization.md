@@ -46,13 +46,13 @@ Within a single table, Deephaven splits the data into chunks and processes the c
 ```python test-set=parallel order=large_table
 from deephaven import empty_table
 
-# Calculate values for 20 million rows
-large_table = empty_table(20_000_000).update(
+large_table = empty_table(100).update(
     ["Price = i * 0.01", "Quantity = i % 1000", "Total = Price * Quantity"]
 )
 ```
 
-With 20 million rows and 4 cores, Deephaven divides each column's computation into four chunks of roughly 5 million rows each, independently for `Price`, `Quantity`, and `Total`. All four cores compute their chunks simultaneously, so the work completes faster than if a single core processed all rows sequentially. This assumes the default operation-initialization thread pool, which uses one thread per core; a differently-sized pool changes the chunk count, and scheduling overhead means the speedup is rarely a perfectly linear 4x.
+> [!NOTE]
+> This example uses 100 rows for clarity — well below the threshold where Deephaven would actually parallelize it. With 20 million rows and 4 cores, Deephaven would divide each column's computation into four chunks of roughly 5 million rows each, independently for `Price`, `Quantity`, and `Total`. All four cores would compute their chunks simultaneously, so the work would complete faster than if a single core processed all rows sequentially. This assumes the default operation-initialization thread pool, which uses one thread per core; a differently-sized pool changes the chunk count, and scheduling overhead means the speedup is rarely a perfectly linear 4x.
 
 Deephaven only splits a single column's row-wise computation across cores once a table is large enough (at least a few million rows). Below that threshold, that column's own computation runs on a single core, though independent columns and other downstream tables can still run concurrently.
 
