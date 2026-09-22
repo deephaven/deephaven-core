@@ -16,6 +16,7 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.IntChunkHasher;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -301,7 +302,7 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
                             final long rightRowKey;
                             if (rightRowKeyForState <= FIRST_DUPLICATE) {
                                 if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                                    throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
+                                    throw new DuplicateRightKeyException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                                 }
                                 final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
                                 final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
@@ -346,7 +347,7 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
                     final long rightRowKey;
                     if (rightRowKeyForState <= FIRST_DUPLICATE) {
                         if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
+                            throw new DuplicateRightKeyException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                         }
                         final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
                         final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
