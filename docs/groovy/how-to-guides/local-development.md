@@ -162,14 +162,18 @@ test {
 Or in Maven:
 
 ```xml
-<plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-surefire-plugin</artifactId>
-    <version>3.2.5</version>
-    <configuration>
-        <argLine>--add-exports=java.management/sun.management=ALL-UNNAMED</argLine>
-    </configuration>
-</plugin>
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.2.5</version>
+            <configuration>
+                <argLine>--add-exports=java.management/sun.management=ALL-UNNAMED</argLine>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
 ```
 
 > **Note:** Advanced use cases like the Barrage Java client may require an additional JVM argument: `--add-opens=java.base/java.nio=ALL-UNNAMED`.
