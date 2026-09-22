@@ -334,11 +334,9 @@ When you mark a partition filter as serial, Deephaven must evaluate it on all ro
 
 Use the [Quick reference](#quick-reference) table above for a fast lookup. In more detail:
 
-**Use default parallel execution when** the formula only uses values from the current row, has no side effects, doesn't depend on row processing order, and is thread-safe — this covers most formulas, including the [stateless examples above](#when-parallelization-is-safe-by-default).
-
-**Use `with_serial` when** rows must be processed in order within a single operation, or the formula updates global state sequentially, as in the [counter example above](#example-a-counter-needs-serialization). Common cases: sequential numbering, processing events in chronological sequence, cumulative calculations, file I/O or logging.
-
-**Use barriers when** you need to control ordering _between_ different operations — one must finish before another starts, as in the [barrier example above](#example-extending-the-counter-with-a-barrier). Common cases: one column or filter populates a cache or resource that another reads from.
+- **Use default parallel execution when** the formula only uses values from the current row, has no side effects, doesn't depend on row processing order, and is thread-safe — this covers most formulas, including the [stateless examples above](#when-parallelization-is-safe-by-default).
+- **Use `with_serial` when** rows must be processed in order within a single operation, or the formula updates global state sequentially, as in the [counter example above](#example-a-counter-needs-serialization). Common cases: sequential numbering, processing events in chronological sequence, cumulative calculations, file I/O or logging.
+- **Use barriers when** you need to control ordering _between_ different operations — one must finish before another starts, as in the [barrier example above](#example-extending-the-counter-with-a-barrier). Common cases: one column or filter populates a cache or resource that another reads from.
 
 ## Key takeaways
 
