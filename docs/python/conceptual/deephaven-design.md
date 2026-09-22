@@ -153,7 +153,7 @@ renamed = source.view(["A", "C = B"])  # Shares A's ColumnSource
 # Only one copy of column A exists in memory, shared by all three tables
 ```
 
-<iframe src="../assets/conceptual/architecture/table-structure.html" title="Diagram showing table structure with RowSets and ColumnSources" loading="lazy" style={{width: '100%', height: '900px', border: 'none'}} />
+<iframe src="../assets/conceptual/architecture/table-structure.html" title="Diagram showing table structure with RowSets and ColumnSources" loading="lazy" style={{width: '100%', aspectRatio: '840 / 888', border: 'none'}} />
 
 _Filtering_ ([`where`](../how-to-guides/use-filters.md) operations) creates a new [`RowSet`](#tables-designed-for-sharing-and-updating) that is a subset of an existing `RowSet`; _sorting_ creates a redirecting `RowSet`.
 

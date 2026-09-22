@@ -107,11 +107,16 @@
   --dh-bg-1000: #eef2f5;
   --dh-bg-1100: #f3f7fa;
 
-  /* Absolute logo accents */
-  --dh-logo-indigo: #3d51b3;
-  --dh-logo-cyan: #4dccfa;
-  --dh-logo-red: #f33666;
-  --dh-logo-yellow: #fdd041;
+  /* Logo accents — expressed in the brand scales.
+     *-text variants are the darkest step that clears WCAG AA (4.5:1)
+     on the light surfaces these diagrams use; the base steps are the
+     nearest brand match and are for lines, borders and fills only. */
+  --dh-logo-indigo: var(--dh-primary-800);
+  --dh-logo-cyan: var(--dh-secondary-500);
+  --dh-logo-cyan-text: var(--dh-secondary-200);
+  --dh-logo-red: var(--dh-negative-600);
+  --dh-logo-red-text: var(--dh-negative-400);
+  --dh-logo-yellow: var(--dh-warn-600);
   --dh-white: #ffffff;
   --dh-black: #000000;
 
