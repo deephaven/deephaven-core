@@ -8,7 +8,7 @@ Parallelization is running multiple calculations at the same time on different C
 > [!IMPORTANT]
 > **Breaking change in Deephaven 41+**: Deephaven 40 and earlier assumed all formulas required sequential processing by default. Deephaven 41 and later assumes all formulas can run in parallel by default. Code that modifies shared variables or depends on rows being processed in a specific order will now produce incorrect results unless you mark it with [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial).
 >
-> **Quick check**: Does your code use global variables, depend on rows being processed in a specific order, or modify external state? If yes, see [Controlling execution order](#controlling-execution-order) below, or the [crash course guide](../../getting-started/crash-course/parallelization.md) for a faster introduction.
+> **Quick check**: Does your code use global variables, depend on rows being processed in a specific order, or modify external state? If yes, see [Controlling execution order](#controlling-execution-order) below, or the [Crash Course guide](../../getting-started/crash-course/parallelization.md) for a faster introduction.
 
 ## Quick reference
 
@@ -349,7 +349,7 @@ Deephaven automatically parallelizes queries across all available CPU cores. Mos
 - Use **barriers** when one operation must complete before another starts.
 - Both thread pools use all CPU cores by default.
 
-For a quick introduction, see the [crash course](../../getting-started/crash-course/parallelization.md).
+For a quick introduction, see the [Crash Course](../../getting-started/crash-course/parallelization.md).
 
 ## Related documentation
 
