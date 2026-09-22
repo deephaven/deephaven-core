@@ -30,7 +30,7 @@ The on-flush callback. If not `null`, the consumer is called once at the beginni
 
 </Param><Param name="onShutdownCallback" type="Runnable">
 
-The on-shutdown callback. If not `null`, the runnable is called one time when the caller should stop adding new data and release any related resources, whether that is because [`publishFailure`](#methods) was called or because the blink table is no longer reachable.
+The on-shutdown callback. If not `null`, the runnable is called one time when the caller should stop adding new data and release any related resources — for example, because [`publishFailure`](#methods) was called, the blink table is no longer reachable, or an internal failure occurred.
 
 </Param>
 <Param name="updateGraph" type="UpdateGraph">
@@ -84,7 +84,7 @@ source = publisher.table()
 
 To add data to blink table, call `add`.
 
-```groovy test-set=1 order=null
+```groovy ticking-table test-set=1 order=null
 publisher.add(emptyTable(10).update("X = randomInt(-100, 100)", "Y = randomDouble(-5.0, 5.0)", "Z = randomDouble(100.0, 1000.0)"))
 ```
 

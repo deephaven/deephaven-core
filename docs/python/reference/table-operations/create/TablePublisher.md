@@ -54,7 +54,7 @@ The size at which chunks of data are filled from the source table during an add.
 
 ## Returns
 
-A tuple containing the resulting blink `Table` and the [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher) used to populate it.
+A tuple containing the resulting blink [`Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) and the [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher) used to populate it.
 
 ## Methods
 
