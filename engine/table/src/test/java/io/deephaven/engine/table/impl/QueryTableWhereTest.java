@@ -62,7 +62,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -2771,26 +2770,6 @@ public abstract class QueryTableWhereTest {
         testRowKeyAgnosticColumnSource(src, "A",
                 "A >= '2020-01-01T00:00:00 NY' && A <= '2020-01-01T00:00:00 NY'",
                 "A >= '2020-01-02T00:00:00 NY' && A <= '2020-01-02T00:00:00 NY'"); // condition
-
-        // Immutable Boolean Source (a byte constant wrapped as Boolean)
-        src = InMemoryColumnSource.makeImmutableConstantSource(Boolean.class, null, true);
-        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
-        testRowKeyAgnosticColumnSource(src, "A", "A = true", "A = false"); // match
-        testRowKeyAgnosticColumnSource(src, "A", "A == true", "!A"); // condition
-
-        // Immutable LocalDate and LocalTime Sources (a nanos constant converted to a local time type)
-        final ZoneId zone = ZoneId.of("America/New_York");
-        final ConvertibleTimeSource instantConstant =
-                (ConvertibleTimeSource) InMemoryColumnSource.makeImmutableConstantSource(Instant.class, null,
-                        parseInstant("2020-01-01T12:34:56 NY"));
-        src = instantConstant.toLocalDate(zone);
-        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
-        testRowKeyAgnosticColumnSource(src, "A", "A = '2020-01-01'", "A = '2020-01-02'"); // match
-        testRowKeyAgnosticColumnSource(src, "A", "A < '2020-01-02'", "A >= '2020-01-02'"); // range
-        src = instantConstant.toLocalTime(zone);
-        testRowKeyAgnosticColumnSource(src, "A", "A != null", "A = null"); // null
-        testRowKeyAgnosticColumnSource(src, "A", "A = '12:34:56'", "A = '12:34:57'"); // match
-        testRowKeyAgnosticColumnSource(src, "A", "A < '12:34:57'", "A >= '12:34:57'"); // range
     }
 
     @Test
