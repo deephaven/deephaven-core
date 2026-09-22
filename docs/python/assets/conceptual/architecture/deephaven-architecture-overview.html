@@ -4,6 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
+<script>
+/* Scale the fixed 1280px canvas to whatever width the docs column gives us.
+   Numeric zoom affects layout, so the document height tracks the width
+   exactly -- the embedding iframe uses a matching aspect-ratio, which is
+   what keeps the frame free of both clipping and dead space.
+
+   This drives a stylesheet rule rather than the element's inline style on
+   purpose: the x-dc renderer replaces the canvas node after mount, which
+   discards an inline style and leaves nothing to re-trigger it. A rule
+   matches whatever .dh-canvas exists at any moment, so it survives the
+   swap. ":root" outranks the no-JS media queries below regardless of
+   cascade order. */
+(function () {
+  var BASE = 1280;
+  var sheet;
+  function fit() {
+    var head = document.head || document.getElementsByTagName('head')[0];
+    if (!head) return;
+    if (!sheet) { sheet = document.createElement('style'); head.appendChild(sheet); }
+    var w = document.documentElement.clientWidth;
+    if (!w) return;
+    var css = ':root .dh-canvas{zoom:' + (w / BASE).toFixed(4) + ';}';
+    if (sheet.textContent !== css) sheet.textContent = css;
+  }
+  fit();
+  addEventListener('resize', fit);
+  addEventListener('load', fit);
+  document.addEventListener('DOMContentLoaded', fit);
+})();
+</script>
 </head>
 <body>
 <x-dc>
@@ -17,6 +47,14 @@
   <script src="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/_ds_bundle.js"></script>
   <style>
     html, body { margin: 0; padding: 0; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+    /* No-JS fallback: step down so the diagram never clips.
+       With JS the fit is continuous (see dh-fit below). */
+    @media (max-width: 1279px) { .dh-canvas { zoom: 0.67; } }
+    @media (max-width: 820px)  { .dh-canvas { zoom: 0.50; } }
+    @media (max-width: 620px)  { .dh-canvas { zoom: 0.34; } }
     @keyframes dh-tick-flow {
       0% { offset-distance: 0%; opacity: 0; }
       15% { opacity: 1; }
@@ -37,7 +75,7 @@
   </defs>
 </svg>
 
-<div style="width:1280px;box-sizing:border-box;padding:40px;background:var(--dh-surface-page);font-family:var(--dh-font-sans);color:var(--dh-text-primary);">
+<div class="dh-canvas" style="width:1280px;box-sizing:border-box;padding:40px;background:var(--dh-surface-page);font-family:var(--dh-font-sans);color:var(--dh-text-primary);">
 
   <div style="margin-bottom:28px;text-align:center;">
     <h1 style="margin:0;font-size:28px;font-weight:700;letter-spacing:var(--dh-tracking-tight);color:var(--dh-text-primary);">Deephaven architecture overview</h1>
@@ -196,13 +234,13 @@
     <div style="display:flex;justify-content:center;">
       <svg width="16" height="34" viewBox="0 0 16 34" style="overflow:visible;">
         <path d="M 8 2 L 8 28" stroke="var(--dh-warn-500)" stroke-width="2" marker-end="url(#dh-arch-flow-arrow)"></path>
-        <circle r="3.5" fill="var(--dh-warn-500)" style="offset-path:path('M 8 2 L 8 28');animation:dh-tick-flow 2.2s cubic-bezier(0.2,0,0.2,1) infinite;"></circle>
+        <circle r="3.5" fill="var(--dh-warn-500)" style="opacity:0;offset-path:path('M 8 2 L 8 28');animation:dh-tick-flow 2.2s cubic-bezier(0.2,0,0.2,1) infinite;"></circle>
       </svg>
     </div>
     <div style="display:flex;justify-content:center;">
       <svg width="16" height="34" viewBox="0 0 16 34" style="overflow:visible;">
         <path d="M 8 2 L 8 28" stroke="var(--dh-warn-500)" stroke-width="2" marker-end="url(#dh-arch-flow-arrow)"></path>
-        <circle r="3.5" fill="var(--dh-warn-500)" style="offset-path:path('M 8 2 L 8 28');animation:dh-tick-flow 2.2s cubic-bezier(0.2,0,0.2,1) infinite 0.5s;"></circle>
+        <circle r="3.5" fill="var(--dh-warn-500)" style="opacity:0;offset-path:path('M 8 2 L 8 28');animation:dh-tick-flow 2.2s cubic-bezier(0.2,0,0.2,1) infinite 0.5s;"></circle>
       </svg>
     </div>
   </div>
@@ -239,5 +277,6 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280}}"></script>
+
 </body>
 </html>
