@@ -791,6 +791,56 @@ public class MinMaxFromStatisticsTest {
                 max, LocalDateTime.ofEpochSecond(0, 500_000_000, ZoneOffset.UTC));
     }
 
+    /**
+     * Pre-Epoch statistics carry a negative offset, whose fractional part must not leak into the seconds. A truncating
+     * conversion yields a negative nano-of-second and fails outright; getting the seconds wrong instead would silently
+     * widen or narrow the bounds used for filter pushdown.
+     */
+    @Test
+    public void timestampMillisNonUTCPreEpochStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.MILLIS, /* adjustedToUTC */ false,
+                -2194687799877L, -1L);
+        final MutableObject<LocalDateTime> min = new MutableObject<>();
+        final MutableObject<LocalDateTime> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLocalDateTimes(stats, min::setValue, max::setValue),
+                min, LocalDateTime.parse("1900-06-15T12:30:00.123"),
+                max, LocalDateTime.parse("1969-12-31T23:59:59.999"));
+    }
+
+    /**
+     * Pre-Epoch microsecond statistics, as in {@link #timestampMillisNonUTCPreEpochStatisticsAreMaterialised()}.
+     */
+    @Test
+    public void timestampMicrosNonUTCPreEpochStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.MICROS, /* adjustedToUTC */ false,
+                -2194687799876544L, -1L);
+        final MutableObject<LocalDateTime> min = new MutableObject<>();
+        final MutableObject<LocalDateTime> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLocalDateTimes(stats, min::setValue, max::setValue),
+                min, LocalDateTime.parse("1900-06-15T12:30:00.123456"),
+                max, LocalDateTime.parse("1969-12-31T23:59:59.999999"));
+    }
+
+    /**
+     * Pre-Epoch nanosecond statistics, as in {@link #timestampMillisNonUTCPreEpochStatisticsAreMaterialised()}.
+     */
+    @Test
+    public void timestampNanosNonUTCPreEpochStatisticsAreMaterialised() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.NANOS, /* adjustedToUTC */ false,
+                -2194687799876543211L, -1L);
+        final MutableObject<LocalDateTime> min = new MutableObject<>();
+        final MutableObject<LocalDateTime> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForLocalDateTimes(stats, min::setValue, max::setValue),
+                min, LocalDateTime.parse("1900-06-15T12:30:00.123456789"),
+                max, LocalDateTime.parse("1969-12-31T23:59:59.999999999"));
+    }
+
     @Test
     public void timestampUTCStatisticsAreRejectedForLocalDateTime() {
         final Statistics<?> stats = buildTimestampStats(
