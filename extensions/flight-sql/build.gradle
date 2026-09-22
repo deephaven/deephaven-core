@@ -112,3 +112,8 @@ check.dependsOn jdbcTest
 
 apply plugin: 'io.deephaven.java-open-nio'
 apply plugin: 'io.deephaven.java-netty-unsafe'
+
+// Repeat the Netty unsafe configuration, but for the shaded class in the arrow jdbc jar
+tasks.withType(Test).configureEach {
+    jvmArgs += ['-Dorg.apache.arrow.driver.jdbc.shaded.io.netty.noUnsafe=false']
+}
