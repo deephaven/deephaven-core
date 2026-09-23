@@ -36,7 +36,7 @@ Deephaven's architecture is built on several key innovations:
 
 This document provides technical depth on each component. For a conceptual introduction to DAGs, start with our [DAG concept guide](./dag.md).
 
-![Deephaven architecture overview](../assets/conceptual/architecture/architecture-overview-diagram.png)
+<iframe src="../assets/conceptual/architecture/deephaven-architecture-overview.html" title="Diagram of the Deephaven architecture, from the Java query engine through language integration and network protocols to the client APIs" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 1231', border: 'none'}} />
 
 ## Table update model
 
@@ -127,7 +127,7 @@ result2 = liveTrades.where("Price > 100").aggBy([AggAvg("Price")], "Symbol")
 // result2 updates in real-time as new trades arrive
 ```
 
-![Unified batch and streaming](../assets/conceptual/architecture/unified-batch-streaming-diagram.png)
+<iframe src="../assets/conceptual/architecture/unified-batch-streaming.html" title="Diagram comparing a traditional multi-system batch and streaming stack with Deephaven's unified single-system model" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 1007', border: 'none'}} />
 
 ## Unified batch and streaming
 
