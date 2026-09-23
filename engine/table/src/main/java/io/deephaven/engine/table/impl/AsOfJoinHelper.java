@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.asofjoin.StaticHashedAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.asofjoin.BucketedChunkedAjMergedListener;
 import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.exceptions.MismatchedJoinKeyException;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.asofjoin.ZeroKeyChunkedAjMergedListener;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
@@ -83,12 +84,12 @@ public class AsOfJoinHelper {
             if (leftType != rightType) {
                 if (leftType.getName().equals(rightType.getName())) {
                     // identical names would print the same type twice, so report where each side's class came from
-                    throw new IllegalArgumentException("Mismatched join types in " + columnsToMatch[ii]
+                    throw new MismatchedJoinKeyException("Mismatched join types in " + columnsToMatch[ii]
                             + ", but both sides have the same name '" + leftType.getName()
                             + "'. Was the class redefined or one side loaded from a different classloader? Left type classloader: "
                             + leftType.getClassLoader() + ", right type classloader: " + rightType.getClassLoader());
                 }
-                throw new IllegalArgumentException(
+                throw new MismatchedJoinKeyException(
                         "Mismatched join types, " + columnsToMatch[ii] + ": " + leftType + " != " + rightType);
             }
         }
@@ -98,8 +99,8 @@ public class AsOfJoinHelper {
         final Class<?> leftStampType = originalLeftStampSource.getType();
         final Class<?> rightStampType = originalRightStampSource.getType();
         if (leftStampType != rightStampType) {
-            throw new IllegalArgumentException("Can not aj() with different stamp types: left=" + leftStampType
-                    + ", right=" + rightStampType);
+            throw new MismatchedJoinKeyException("Can not " + (order == SortingOrder.Descending ? "raj" : "aj")
+                    + "() with different stamp types: left=" + leftStampType + ", right=" + rightStampType);
         }
 
         // each pair of matched columns is reinterpreted to a primitive only when both sides can be, so that the two

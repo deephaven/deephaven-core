@@ -22,6 +22,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.exceptions.MismatchedJoinKeyException;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.testutil.QueryTableTestBase.JoinIncrement;
@@ -88,7 +89,7 @@ public class QueryTableAjTest {
         try {
             left.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
             fail("Expected mismatched key type exception!");
-        } catch (IllegalArgumentException e) {
+        } catch (MismatchedJoinKeyException e) {
             assertEquals("Mismatched join types, Key=Key: int != long", e.getMessage());
         }
 
@@ -97,7 +98,7 @@ public class QueryTableAjTest {
         try {
             instantLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
             fail("Expected mismatched key type exception!");
-        } catch (IllegalArgumentException e) {
+        } catch (MismatchedJoinKeyException e) {
             assertEquals("Mismatched join types, Key=Key: class java.time.Instant != long", e.getMessage());
         }
     }
@@ -110,10 +111,21 @@ public class QueryTableAjTest {
         try {
             left.aj(right, "LeftStamp>=RightStamp", "Sentinel");
             fail("Expected mismatched stamp type exception!");
-        } catch (IllegalArgumentException e) {
+        } catch (MismatchedJoinKeyException e) {
             assertEquals("Can not aj() with different stamp types: left=class java.time.Instant, right=long",
                     e.getMessage());
         }
+    }
+
+    @Test
+    public void testRajMismatchedStampTypes() {
+        final Table left = TableTools.newTable(instantCol("LeftStamp", DateTimeUtils.epochNanosToInstant(5)));
+        final Table right = TableTools.newTable(longCol("RightStamp", 1L), intCol("Sentinel", 1));
+
+        final MismatchedJoinKeyException stampMismatch = assertThrows(MismatchedJoinKeyException.class,
+                () -> left.raj(right, "LeftStamp<=RightStamp", "Sentinel"));
+        assertEquals("Can not raj() with different stamp types: left=class java.time.Instant, right=long",
+                stampMismatch.getMessage());
     }
 
     /**
