@@ -790,8 +790,6 @@ public class AsOfJoinHelper {
                         final SizedChunk<Values> rightStampChunk = new SizedChunk<>(stampChunkType);
                         final SizedLongChunk<RowKeys> insertedIndices = new SizedLongChunk<>();
                         final SizedBooleanChunk<Any> retainStamps = new SizedBooleanChunk<>();
-                        final SizedSafeCloseable<ColumnSource.FillContext> rightStampFillContext =
-                                new SizedSafeCloseable<>(rightStampSource::makeFillContext);
                         final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                 ResettableWritableLongChunk.makeResettableChunk();
                         final ResettableWritableChunk<Values> leftValuesChunk =
