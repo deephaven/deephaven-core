@@ -124,11 +124,6 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements WhereFilte
     }
 
     @Override
-    public boolean canPushdown() {
-        return innerFilter == null || innerFilter.canPushdown();
-    }
-
-    @Override
     public boolean hasVirtualRowVariables() {
         return innerFilter != null && innerFilter.hasVirtualRowVariables();
     }

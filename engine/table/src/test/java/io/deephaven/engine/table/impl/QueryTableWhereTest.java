@@ -1812,6 +1812,74 @@ public abstract class QueryTableWhereTest {
         assertInjectedPushdownFailure(thrown);
     }
 
+    /** An {@link Error} that {@link ErrorPushdownContextSource} throws, distinguishable from any other. */
+    private static final class InjectedPushdownError extends Error {
+        InjectedPushdownError() {
+            super("injected pushdown context construction error");
+        }
+    }
+
+    /** An {@link AbstractColumnSource} whose pushdown context construction throws an {@link Error}. */
+    private static final class ErrorPushdownContextSource extends IntegerArraySource {
+        @Override
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
+            throw new InjectedPushdownError();
+        }
+    }
+
+    /** An {@link AbstractColumnSource} whose pushdown contexts record whether they were closed. */
+    private static final class CloseTrackingPushdownContextSource extends IntegerArraySource {
+        final List<MutableBoolean> contextsClosed = Collections.synchronizedList(new ArrayList<>());
+
+        @Override
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
+            final MutableBoolean closed = new MutableBoolean(false);
+            contextsClosed.add(closed);
+            return new BasePushdownFilterContextImpl(filter, filterSources) {
+                @Override
+                public void close() {
+                    closed.setTrue();
+                    super.close();
+                }
+            };
+        }
+    }
+
+    /**
+     * An {@link Error} while constructing one filter's pushdown context must not leak the contexts already built for
+     * the filters before it.
+     */
+    @Test
+    public void testPushdownContextConstructionErrorClosesEarlierContexts() {
+        final int size = 100;
+        final CloseTrackingPushdownContextSource tracking = new CloseTrackingPushdownContextSource();
+        final ErrorPushdownContextSource failing = new ErrorPushdownContextSource();
+        for (final IntegerArraySource source : List.of(tracking, failing)) {
+            source.ensureCapacity(size, false);
+            for (int ii = 0; ii < size; ii++) {
+                source.set(ii, ii);
+            }
+        }
+        final QueryTable table = new QueryTable(RowSetFactory.flat(size).toTracking(),
+                Map.of("X", tracking, "Y", failing));
+
+        final Throwable thrown = assertThrows(Throwable.class, () -> table.where("X >= 50", "Y >= 50"));
+        boolean found = false;
+        for (Throwable t = thrown; t != null; t = t.getCause()) {
+            found |= t instanceof InjectedPushdownError;
+        }
+        assertTrue("injected error not found in cause chain of " + thrown, found);
+
+        assertFalse("sanity: the first filter built a context", tracking.contextsClosed.isEmpty());
+        for (final MutableBoolean closed : tracking.contextsClosed) {
+            assertTrue("the first filter's context must be closed", closed.booleanValue());
+        }
+    }
+
     /**
      * A fresh 100-row table with {@code A = ii % 3}. Only the instances the caller indexes carry a data index. The
      * modulus matters: with {@code % 10} the index table would have 10 rows in {@code A} order, and {@code ii % 2 == 0}
@@ -3403,6 +3471,31 @@ public abstract class QueryTableWhereTest {
             final Table t3 = fromDisk.where("Value = `2`").coalesce();
             // make sure we have the same behavior for the regioned column sources
             assertTableEquals(t1.view("Partition=`p0`", "Key", "Value", "Sentinel").head(0), t3);
+        } finally {
+            FileUtils.deleteRecursively(tmpDir);
+        }
+    }
+
+    /**
+     * A filter on a partitioned table that uses virtual row variables must not be applied to the location table, where
+     * {@code i} and {@code ii} are location positions: it would keep or drop whole partitions instead of rows.
+     */
+    @Test
+    public void testVirtualRowVariableFilterNotAppliedToPartitions() throws IOException {
+        final File tmpDir = Files.createTempDirectory("QueryTableWhereTest-PartitionVirtualRowVariables").toFile();
+        try {
+            for (final String partition : List.of("A", "B", "C")) {
+                ParquetTools.writeTable(emptyTable(4).update("V = (int) ii"),
+                        tmpDir + "/PC=" + partition + "/data.parquet");
+            }
+            final Table fromDisk = ParquetTools.readTable(tmpDir.getPath());
+            assertTrue("sanity: a partitioned table, was " + fromDisk.getClass(),
+                    fromDisk instanceof PartitionAwareSourceTable);
+            final Table inMemory = fromDisk.select();
+
+            for (final String filter : List.of("ii % 2 == 0", "i % 2 == 0", "PC == `A` || ii % 2 == 0")) {
+                assertTableEquals(filter, inMemory.where(filter), fromDisk.where(filter).coalesce());
+            }
         } finally {
             FileUtils.deleteRecursively(tmpDir);
         }

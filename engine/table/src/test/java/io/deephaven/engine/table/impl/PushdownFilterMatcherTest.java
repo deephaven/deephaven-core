@@ -6,9 +6,12 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
@@ -17,12 +20,14 @@ import io.deephaven.engine.table.impl.select.RangeFilter;
 import io.deephaven.engine.table.impl.select.ReindexingFilter;
 import io.deephaven.engine.table.impl.select.UnsortedClockFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterDelegatingBase;
+import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -92,7 +97,7 @@ public class PushdownFilterMatcherTest {
      * The same gate reached through the wrappers {@code withDeclaredBarriers}, {@code withRespectedBarriers} and
      * {@code withSerial} produce. Unlike {@code ComposedFilter} and {@code WhereFilterInvertedImpl} -- both of which
      * reject {@link ReindexingFilter} components outright -- these wrappers accept one, so the gate must see through
-     * them; {@link WhereFilterDelegatingBase} answers {@link WhereFilter#canPushdown()} from the wrapped filter.
+     * them.
      */
     @Test
     public void testCanPushdownFilterRejectsWrappedReindexingFilter() {
@@ -210,15 +215,111 @@ public class PushdownFilterMatcherTest {
     }
 
     /**
-     * The test-utility wrapper {@link RowSetCapturingFilter} is a {@code WhereFilterDelegating} implementation outside
-     * {@link WhereFilterDelegatingBase}, so it must delegate {@link WhereFilter#canPushdown()} itself.
+     * A {@link WhereFilterDelegating} wrapper that delegates filtering but not {@link WhereFilter#canPushdown()} or
+     * {@link WhereFilter#hasVirtualRowVariables()}, so it answers both with the interface defaults.
+     */
+    private static final class NonDelegatingWrapper extends WhereFilterImpl implements WhereFilterDelegating {
+        private final WhereFilter wrapped;
+
+        private NonDelegatingWrapper(final WhereFilter wrapped) {
+            this.wrapped = wrapped;
+        }
+
+        @Override
+        public WhereFilter getWrappedFilter() {
+            return wrapped;
+        }
+
+        @Override
+        public WhereFilter maybeUnwrapFilter() {
+            return wrapped;
+        }
+
+        @Override
+        public List<String> getColumns() {
+            return wrapped.getColumns();
+        }
+
+        @Override
+        public List<String> getColumnArrays() {
+            return wrapped.getColumnArrays();
+        }
+
+        @Override
+        public void init(@NotNull final TableDefinition tableDefinition) {
+            wrapped.init(tableDefinition);
+        }
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull final RowSet selection, @NotNull final RowSet fullSet, @NotNull final Table table,
+                final boolean usePrev) {
+            return wrapped.filter(selection, fullSet, table, usePrev);
+        }
+
+        @Override
+        public boolean isSimpleFilter() {
+            return wrapped.isSimpleFilter();
+        }
+
+        @Override
+        public void setRecomputeListener(final RecomputeListener result) {}
+
+        @Override
+        public WhereFilter copy() {
+            return new NonDelegatingWrapper(wrapped.copy());
+        }
+    }
+
+    /**
+     * The gate checks the filters a wrapper contains itself, so a wrapper that fails to delegate
+     * {@link WhereFilter#canPushdown()} or {@link WhereFilter#hasVirtualRowVariables()} cannot make its contents
+     * pushable.
      */
     @Test
-    public void testCanPushdownFilterRejectsRowSetCapturingWrappedNonPushableFilter() {
-        final WhereFilter filter = new RowSetCapturingFilter(new UnsortedClockFilter("Timestamp", clock, true));
+    public void testCanPushdownFilterSeesThroughNonDelegatingWrapper() {
+        final WhereFilter reindexing = new NonDelegatingWrapper(new UnsortedClockFilter("Timestamp", clock, true));
+        reindexing.init(clockTable.getDefinition());
+        assertTrue("sanity: the wrapper itself answers canPushdown() with the default", reindexing.canPushdown());
+        assertFalse("a ReindexingFilter behind a non-delegating wrapper must not be pushed down",
+                PushdownFilterMatcher.canPushdownFilter(reindexing));
+
+        final WhereFilter virtualRowVariables = new NonDelegatingWrapper(WhereFilter.of(RawString.of("Int > ii")));
+        virtualRowVariables.init(clockTable.getDefinition());
+        assertFalse("sanity: the wrapper itself answers hasVirtualRowVariables() with the default",
+                virtualRowVariables.hasVirtualRowVariables());
+        assertFalse("a filter using `ii` behind a non-delegating wrapper must not be pushed down",
+                PushdownFilterMatcher.canPushdownFilter(virtualRowVariables));
+
+        final WhereFilter composed = ConjunctiveFilter.of(
+                WhereFilter.of(RawString.of("Int > 1")),
+                new NonDelegatingWrapper(WhereFilter.of(RawString.of("Int > ii"))));
+        composed.init(clockTable.getDefinition());
+        assertFalse("a composed filter containing such a wrapper must not be pushed down",
+                PushdownFilterMatcher.canPushdownFilter(composed));
+
+        final WhereFilter pushable = new NonDelegatingWrapper(WhereFilter.of(RawString.of("Int > 1")));
+        pushable.init(clockTable.getDefinition());
+        assertTrue("control: the wrapper around a plain condition filter is pushable",
+                PushdownFilterMatcher.canPushdownFilter(pushable));
+    }
+
+    /**
+     * A {@link ReindexingFilter} whose class hierarchy overrides {@link WhereFilter#canPushdown()} to return true -- a
+     * superclass method beats the interface default -- must still be rejected.
+     */
+    @Test
+    public void testCanPushdownFilterRejectsReindexingFilterOverridingCanPushdown() {
+        final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true) {
+            @Override
+            public boolean canPushdown() {
+                return true;
+            }
+        };
         filter.init(clockTable.getDefinition());
 
-        assertFalse("RowSetCapturingFilter must not make a non-pushable filter pushable",
+        assertFalse("a ReindexingFilter must not be pushed down whatever canPushdown() says",
                 PushdownFilterMatcher.canPushdownFilter(filter));
     }
 

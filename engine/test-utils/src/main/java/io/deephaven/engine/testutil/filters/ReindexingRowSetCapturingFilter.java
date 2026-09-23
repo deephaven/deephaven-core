@@ -47,13 +47,6 @@ public class ReindexingRowSetCapturingFilter extends RowSetCapturingFilter imple
     }
 
     @Override
-    public boolean canPushdown() {
-        // A ReindexingFilter is never pushed down. The delegating override inherited from RowSetCapturingFilter would
-        // otherwise take precedence over ReindexingFilter's default.
-        return false;
-    }
-
-    @Override
     public WhereFilter copy() {
         if (innerFilter != null) {
             final WhereFilter newInner = innerFilter.copy();

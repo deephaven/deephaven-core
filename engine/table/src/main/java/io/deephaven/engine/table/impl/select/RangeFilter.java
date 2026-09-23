@@ -153,6 +153,7 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     @Override
     public boolean canPushdown() {
+        // The real filter is not visible to a walk of the filter tree, so answer for it here.
         return filter == null || filter.canPushdown();
     }
 

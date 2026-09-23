@@ -36,10 +36,8 @@ import org.jpy.PyObject;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -117,18 +115,19 @@ public class ConditionFilter extends AbstractConditionFilter {
         if (usedColumns == null) {
             return 0;
         }
-        // The vectorized Python path records i/ii/k in usedColumns as well as in the flags, so de-duplicate.
-        final Set<String> inputs = new HashSet<>(usedColumns);
-        if (usesI) {
-            inputs.add("i");
+        // usedColumns holds no duplicates, but the vectorized Python path records i/ii/k in it as well as in the flags,
+        // so count a flag only when its variable is not already there.
+        int count = usedColumns.size();
+        if (usesI && !usedColumns.contains("i")) {
+            ++count;
         }
-        if (usesII) {
-            inputs.add("ii");
+        if (usesII && !usedColumns.contains("ii")) {
+            ++count;
         }
-        if (usesK) {
-            inputs.add("k");
+        if (usesK && !usedColumns.contains("k")) {
+            ++count;
         }
-        return inputs.size();
+        return count;
     }
 
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {

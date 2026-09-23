@@ -206,15 +206,9 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                 : null;
         try {
             return new DataIndexPushdownContext(this, filter, filterSources, wrappedContext);
-        } catch (final RuntimeException e) {
+        } catch (final RuntimeException | Error e) {
             // Nothing owns the wrapped context until the outer one exists, so close it rather than leak it.
-            if (wrappedContext != null) {
-                try {
-                    wrappedContext.close();
-                } catch (final RuntimeException closeException) {
-                    e.addSuppressed(closeException);
-                }
-            }
+            SafeCloseable.closeAllDuringFailure(e, wrappedContext);
             throw e;
         }
     }

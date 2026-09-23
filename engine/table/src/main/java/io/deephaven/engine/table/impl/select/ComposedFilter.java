@@ -161,11 +161,6 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
     }
 
     @Override
-    public boolean canPushdown() {
-        return Arrays.stream(componentFilters).allMatch(WhereFilter::canPushdown);
-    }
-
-    @Override
     public boolean isSerial() {
         return Arrays.stream(componentFilters).anyMatch(WhereFilter::isSerial);
     }

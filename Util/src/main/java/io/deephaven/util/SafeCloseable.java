@@ -82,6 +82,29 @@ public interface SafeCloseable extends AutoCloseable {
     }
 
     /**
+     * {@link #close() Close} all non-{@code null} {@link AutoCloseable} arguments while {@code primary} is propagating.
+     * A failure while closing is attached to {@code primary} as {@link Throwable#addSuppressed(Throwable) suppressed},
+     * as try-with-resources does, rather than replacing it, and closing continues with the remaining arguments. The
+     * caller rethrows {@code primary}.
+     *
+     * @param primary the failure that is propagating
+     * @param autoCloseables {@link AutoCloseable AutoCloseables} to {@link #close() close}
+     */
+    static void closeAllDuringFailure(@NotNull final Throwable primary,
+            @NotNull final AutoCloseable... autoCloseables) {
+        for (final AutoCloseable autoCloseable : autoCloseables) {
+            if (autoCloseable == null) {
+                continue;
+            }
+            try {
+                autoCloseable.close();
+            } catch (final Throwable closeFailure) {
+                primary.addSuppressed(closeFailure);
+            }
+        }
+    }
+
+    /**
      * {@link #close() Close} a single {@link AutoCloseable} argument if it is non-{@code null}.
      *
      * @param autoCloseable The {@link AutoCloseable} to {@link #close() close}

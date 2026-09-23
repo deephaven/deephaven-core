@@ -477,9 +477,7 @@ abstract class AbstractFilterExecution {
      * <p>
      * A failure while building the matcher or the context propagates to the caller and fails the operation, like any
      * other failure during filter execution. The only things that can fail here are broken engine invariants, which
-     * should surface rather than silently degrade the query. A context that was built but not handed to a
-     * {@code StatelessFilter} is closed before the failure propagates; if closing it fails too, that failure is
-     * attached to the original as suppressed rather than replacing it.
+     * should surface rather than silently degrade the query.
      * </p>
      *
      * @param filterIdx the index of this filter in the collection
@@ -491,38 +489,24 @@ abstract class AbstractFilterExecution {
             final int filterIdx,
             final WhereFilter filter,
             final Map<Object, Collection<Object>> barrierDependencies) {
-        // Held here so that it is closed rather than leaked if we abandon it below; ownership passes to the
-        // StatelessFilter once one has been constructed around it.
-        PushdownFilterContext context = null;
-        try {
-            final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
-                    .map(sourceTable::getColumnSource)
-                    .collect(Collectors.toList());
+        final List<ColumnSource<?>> filterSources = filter.getColumns().stream()
+                .map(sourceTable::getColumnSource)
+                .collect(Collectors.toList());
 
-            PushdownFilterMatcher executor =
-                    PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
-            // Wrap the executor to add DataIndex support (if applicable).
-            executor = DataIndexPushdownManager.wrap(filterDataIndexMap.get(filter), executor);
-            // Wrap the executor to add SortedColumn support (if applicable)
-            executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
-            if (executor != null) {
-                context = executor.makePushdownFilterContext(filter, filterSources);
-                final StatelessFilter statelessFilter =
-                        new StatelessFilter(filterIdx, filter, executor, context, barrierDependencies);
-                context = null;
-                return statelessFilter;
-            }
-        } catch (final RuntimeException | Error e) {
-            if (context != null) {
-                try {
-                    context.close();
-                } catch (final RuntimeException closeException) {
-                    e.addSuppressed(closeException);
-                }
-            }
-            throw e;
+        PushdownFilterMatcher executor =
+                PushdownFilterMatcher.getPushdownFilterMatcher(filter, filterSources);
+        // Wrap the executor to add DataIndex support (if applicable).
+        executor = DataIndexPushdownManager.wrap(filterDataIndexMap.get(filter), executor);
+        // Wrap the executor to add SortedColumn support (if applicable)
+        executor = SortedColumnPushdownManager.wrap(sourceTable, filter, filterSources, executor);
+        if (executor == null) {
+            return new StatelessFilter(filterIdx, filter, null, null, barrierDependencies);
         }
-        return new StatelessFilter(filterIdx, filter, null, null, barrierDependencies);
+        // The context is the last thing that can fail. The StatelessFilter owns it from here, and nothing in the
+        // constructor can fail for a non-null matcher and context, so it cannot be leaked in between.
+        return new StatelessFilter(filterIdx, filter, executor,
+                executor.makePushdownFilterContext(filter, filterSources),
+                barrierDependencies);
     }
 
     /**
@@ -574,6 +558,10 @@ abstract class AbstractFilterExecution {
         } catch (final Exception ex) {
             informAndCloseAll(collectionNec, ex, statelessFilters);
             return;
+        } catch (final Error err) {
+            // Cleanup before propagating the error.
+            SafeCloseable.closeAllDuringFailure(err, statelessFilters);
+            throw err;
         }
 
         // Sort the filters by cost, with the lowest cost first.

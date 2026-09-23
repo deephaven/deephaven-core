@@ -218,6 +218,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     @Override
     public boolean canPushdown() {
+        // The failover is not visible to a walk of the filter tree, so answer for it here.
         final WhereFilter failover = getFailoverFilterIfCached();
         return failover == null || failover.canPushdown();
     }

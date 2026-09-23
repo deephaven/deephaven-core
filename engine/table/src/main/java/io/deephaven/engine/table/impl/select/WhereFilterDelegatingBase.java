@@ -132,11 +132,6 @@ public abstract class WhereFilterDelegatingBase
     }
 
     @Override
-    public boolean canPushdown() {
-        return filter.canPushdown();
-    }
-
-    @Override
     public boolean isSerial() {
         return filter.isSerial();
     }

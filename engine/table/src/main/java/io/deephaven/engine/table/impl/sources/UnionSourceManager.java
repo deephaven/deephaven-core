@@ -993,8 +993,13 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         @Override
         public void close() {
-            contexts.forEach(io.deephaven.engine.table.impl.PushdownFilterContext::close);
-            super.close();
+            try {
+                if (contexts != null) {
+                    SafeCloseable.closeAll(contexts);
+                }
+            } finally {
+                super.close();
+            }
         }
     }
 
