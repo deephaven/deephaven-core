@@ -100,6 +100,8 @@ At Deephaven, we have designed and implemented a unified table API that offers t
 ```python syntax
 from deephaven.parquet import read
 from deephaven.stream.kafka import consume as consume_kafka
+from deephaven.stream.kafka.consumer import json_spec, KeyValueSpec
+from deephaven import dtypes as dht
 from deephaven import agg
 
 # Works with static Parquet data
@@ -107,7 +109,12 @@ static_trades = read("/data/historical_trades.parquet")
 result1 = static_trades.where("Price > 100").agg_by([agg.avg("Price")], by=["Symbol"])
 
 # Identical code works with live Kafka stream
-live_trades = consume_kafka({"bootstrap.servers": "localhost:9092"}, "trades")
+live_trades = consume_kafka(
+    {"bootstrap.servers": "localhost:9092"},
+    "trades",
+    key_spec=KeyValueSpec.IGNORE,
+    value_spec=json_spec({"Symbol": dht.string, "Price": dht.double}),
+)
 result2 = live_trades.where("Price > 100").agg_by([agg.avg("Price")], by=["Symbol"])
 
 # result2 updates in real-time as new trades arrive
