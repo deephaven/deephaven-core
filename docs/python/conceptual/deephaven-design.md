@@ -99,7 +99,7 @@ At Deephaven, we have designed and implemented a unified table API that offers t
 
 ```python syntax
 from deephaven.parquet import read
-from deephaven.stream.kafka import consume as consume_kafka
+from deephaven.stream.kafka.consumer import consume as consume_kafka
 from deephaven.stream.kafka.consumer import json_spec, KeyValueSpec
 from deephaven import dtypes as dht
 from deephaven import agg
