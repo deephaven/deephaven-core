@@ -76,6 +76,42 @@ public class QueryTableAjTest {
     }
 
     @Test
+    public void testAjMismatchedKeyTypes() {
+        final Table left = TableTools.newTable(intCol("Key", 1), intCol("LeftStamp", 5));
+        final Table right = TableTools.newTable(longCol("Key", 1L), intCol("RightStamp", 1), intCol("Sentinel", 1));
+
+        try {
+            left.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+            fail("Expected mismatched key type exception!");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Mismatched join types, Key=Key: int != long", e.getMessage());
+        }
+
+        final Table instantLeft = TableTools.newTable(instantCol("Key", DateTimeUtils.epochNanosToInstant(1)),
+                intCol("LeftStamp", 5));
+        try {
+            instantLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+            fail("Expected mismatched key type exception!");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Mismatched join types, Key=Key: class java.time.Instant != long", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testAjMismatchedStampTypes() {
+        final Table left = TableTools.newTable(instantCol("LeftStamp", DateTimeUtils.epochNanosToInstant(5)));
+        final Table right = TableTools.newTable(longCol("RightStamp", 1L), intCol("Sentinel", 1));
+
+        try {
+            left.aj(right, "LeftStamp>=RightStamp", "Sentinel");
+            fail("Expected mismatched stamp type exception!");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Can not aj() with different stamp types: left=class java.time.Instant, right=long",
+                    e.getMessage());
+        }
+    }
+
+    @Test
     public void testAjNull() {
         final Table left = TableTools.newTable(
                 col("Bucket", "A", "B", "A", "C", "D", "A"),
