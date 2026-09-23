@@ -36,7 +36,7 @@ Deephaven's architecture is built on several key innovations:
 
 This document provides technical depth on each component. For a conceptual introduction to DAGs, start with our [DAG concept guide](./dag.md).
 
-<iframe src="../assets/conceptual/architecture/deephaven-architecture-overview.html" title="Diagram of the Deephaven architecture, from the Java query engine through language integration and network protocols to the client APIs" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 1231', border: 'none'}} />
+<iframe src="../assets/conceptual/architecture/deephaven-architecture-overview.html" title="Diagram of the Deephaven architecture, from the Java query engine through language integration and network protocols to the client APIs" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 1259', border: 'none'}} />
 
 ## Table update model
 

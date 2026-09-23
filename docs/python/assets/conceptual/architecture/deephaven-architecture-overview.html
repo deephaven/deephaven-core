@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./support.js"></script>
 <script>
 /* Scale the fixed 1280px canvas to whatever width the docs column gives us.
    Numeric zoom affects layout, so the document height tracks the width
@@ -34,17 +33,12 @@
   document.addEventListener('DOMContentLoaded', fit);
 })();
 </script>
-</head>
-<body>
-<x-dc>
-<helmet>
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/fonts.css">
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/colors.css">
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/typography.css">
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/spacing.css">
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/effects.css">
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/styles.css">
-  <script src="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/_ds_bundle.js"></script>
   <style>
     html, body { margin: 0; padding: 0; }
     @media (prefers-reduced-motion: reduce) {
@@ -62,7 +56,8 @@
       100% { offset-distance: 100%; opacity: 0; }
     }
   </style>
-</helmet>
+</head>
+<body>
 
 <svg width="0" height="0" style="position:absolute;">
   <defs>
@@ -275,8 +270,6 @@
 
 </div>
 
-</x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280}}"></script>
 
 </body>
 </html>
