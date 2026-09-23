@@ -9,7 +9,7 @@ By default, Deephaven has no notion of which column or columns make a row unique
 
 ## Select every row with a matching key
 
-Use `withKeys` when rows can legitimately share the same key value, such as several rows that belong to the same group, and you want selecting one of them to select all of them.
+Use [`withKeys`](../reference/table-operations/select/withKeys.md) when rows can legitimately share the same key value, such as several rows that belong to the same group, and you want selecting one of them to select all of them.
 
 ```groovy test-set=1 order=null
 notKeyed = emptyTable(100).update("Key1=i%3", "Key2=(i+1)%3", "Value=i")
@@ -30,7 +30,7 @@ See [`withKeys`](../reference/table-operations/select/withKeys.md) for the full 
 
 ## Select a single row
 
-If your key columns identify exactly one row apiece, a true primary key, use `withUniqueKeys` instead. It sets the same key-column metadata as `withKeys`, but also tells the UI that no two rows share a key, so selecting a row never pulls in any others.
+Your key columns form a true primary key when each combination of their values identifies exactly one row. Use [`withUniqueKeys`](../reference/table-operations/select/withUniqueKeys.md) for these keys instead of `withKeys`. It sets the same key-column metadata, but also tells the UI that no two rows share a key, so selecting a row never pulls in any others.
 
 ```groovy test-set=2 order=null
 notKeyed = emptyTable(100).update("Key1=i", "Key2=i+1", "Value=i*2")
@@ -52,7 +52,7 @@ See [`withUniqueKeys`](../reference/table-operations/select/withUniqueKeys.md) f
 
 ## Keep key columns through later operations
 
-Key columns are just table attributes, so only specific operations carry them forward automatically. [`where`](../reference/table-operations/filter/where.md), [`sort`](../reference/table-operations/sort/sort.md), [`reverse`](../reference/table-operations/sort/reverse.md), [`flatten`](../reference/table-operations/create/flatten.md), [`updateView`](../reference/table-operations/select/update-view.md), [`naturalJoin`](../reference/table-operations/join/natural-join.md), [`exactJoin`](../reference/table-operations/join/exact-join.md), and [`wouldMatch`](../reference/table-operations/filter/would-match.md) all preserve them. Most other operations, including [`select`](../reference/table-operations/select/select.md), [`update`](../reference/table-operations/select/update.md), [`join`](../reference/table-operations/join/join.md), and [`dropColumns`](../reference/table-operations/select/drop-columns.md), do not.
+Key columns are just table attributes, so only specific operations carry them forward automatically — among them [`where`](../reference/table-operations/filter/where.md), [`sort`](../reference/table-operations/sort/sort.md), [`reverse`](../reference/table-operations/sort/reverse.md), [`flatten`](../reference/table-operations/create/flatten.md), [`updateView`](../reference/table-operations/select/update-view.md), [`naturalJoin`](../reference/table-operations/join/natural-join.md), and [`exactJoin`](../reference/table-operations/join/exact-join.md). Most other operations, including [`select`](../reference/table-operations/select/select.md), [`update`](../reference/table-operations/select/update.md), [`join`](../reference/table-operations/join/join.md), [`dropColumns`](../reference/table-operations/select/drop-columns.md), and [`wouldMatch`](../reference/table-operations/filter/would-match.md), do not.
 
 [`view`](../reference/table-operations/select/view.md) is an easy one to trip over: it looks like `updateView`'s sibling, but it does _not_ preserve key columns, while `updateView` does.
 

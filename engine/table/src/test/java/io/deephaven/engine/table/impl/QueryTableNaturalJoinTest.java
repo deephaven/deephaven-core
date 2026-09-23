@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.*;
@@ -31,8 +33,9 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 import org.junit.experimental.categories.Category;
 
 import java.io.File;
@@ -41,6 +44,7 @@ import java.nio.file.Files;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiConsumer;
@@ -52,12 +56,12 @@ import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
+    @Test
     public void testNaturalJoinRehash() {
         setExpectError(false);
 
@@ -106,7 +110,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 addToTable(leftTable, addRowSet, stringCol("JoinKey", leftJoinKey),
                         intCol("LeftSentinel", leftSentinel));
                 leftTable.notifyListeners(addRowSet.copy(), i(), i());
-
 
                 final RowSetBuilderSequential modIndexBuilder = RowSetFactory.builderSequential();
 
@@ -163,6 +166,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinIncremental() {
         setExpectError(false);
 
@@ -196,6 +200,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinLeftIncrementalRightStatic() {
         for (JoinIncrement joinIncrement : new JoinIncrement[] {leftStepShift, leftStep}) {
             final int sz = 5;
@@ -224,6 +229,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinLeftStaticRightIncremental() {
         for (JoinIncrement joinIncrement : new JoinIncrement[] {rightStepShift, rightStep}) {
             final int sz = 5;
@@ -363,6 +369,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinMixedGrouping() {
         testNaturalJoinMixedGroupingLeftStatic(10, 10, 0, 20);
         testNaturalJoinMixedGroupingLeftStatic(1000, 1000, 1, 10);
@@ -441,11 +448,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinSimpleStatic() {
         // noinspection unchecked
         testNaturalJoinSimpleStatic(TableTools::col);
     }
 
+    @Test
     public void testNaturalJoinGroupedStatic() {
         testNaturalJoinSimpleStatic(TstUtils::colIndexed);
     }
@@ -462,7 +471,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj = left.naturalJoin(right, "Symbol");
         TableTools.showWithRowSet(cj);
-        assertEquals(new int[] {10, 11, NULL_INT}, intColumn(cj, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 11, NULL_INT}, intColumn(cj, "RightSentinel"));
         // the two wheres check for filling null keys
         final Table cjw = cj.where("RightObjectSentinel = null");
         final Table cjw2 =
@@ -475,7 +484,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj2 = left2.naturalJoin(right2, "Symbol");
         TableTools.showWithRowSet(cj2);
-        assertEquals(new int[] {10, 11, NULL_INT, 10}, intColumn(cj2, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 11, NULL_INT, 10}, intColumn(cj2, "RightSentinel"));
 
         final int collision = 16384;
         final Table left3 = newTable(lC.make("Int", 10, collision + 10, collision * 2 + 10, collision * 3 + 10),
@@ -488,7 +497,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj3 = left3.naturalJoin(right3, "Int");
         TableTools.showWithRowSet(cj3);
-        assertEquals(new int[] {10, 11, NULL_INT, NULL_INT}, intColumn(cj3, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 11, NULL_INT, NULL_INT}, intColumn(cj3, "RightSentinel"));
 
         final Table left4 = newTable(
                 lC.make("String", "c", "e", "g"),
@@ -496,8 +505,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right4 = newTable(col("String", "c", "e"), col("RightSentinel", 10, 11));
         final Table cj4 = left4.naturalJoin(right4, "String");
         TableTools.showWithRowSet(cj4);
-        assertEquals(new int[] {10, 11, NULL_INT}, intColumn(cj4, "RightSentinel"));
-
+        assertArrayEquals(new int[] {10, 11, NULL_INT}, intColumn(cj4, "RightSentinel"));
 
         final Table left5 = newTable(
                 lC.make("String", "c", "e", "g"),
@@ -505,7 +513,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right5 = newTable(col("RightSentinel", 10));
         final Table cj5 = left5.naturalJoin(right5, "");
         TableTools.showWithRowSet(cj5);
-        assertEquals(new int[] {10, 10, 10}, intColumn(cj5, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 10, 10}, intColumn(cj5, "RightSentinel"));
 
         final Table left6 = newTable(
                 lC.make("String", "c", "e", "g"),
@@ -513,7 +521,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right6 = newTable(intCol("RightSentinel"));
         final Table cj6 = left6.naturalJoin(right6, "");
         TableTools.showWithRowSet(cj6);
-        assertEquals(new int[] {NULL_INT, NULL_INT, NULL_INT}, intColumn(cj6, "RightSentinel"));
+        assertArrayEquals(new int[] {NULL_INT, NULL_INT, NULL_INT}, intColumn(cj6, "RightSentinel"));
 
         final Table left7 = newTable(
                 lC.make("String", ArrayTypeUtils.EMPTY_STRING_ARRAY),
@@ -529,7 +537,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 col("RightSentinel", 10, 11, 12, 13, 14, 15, 16));
         final Table cj8 = left8.naturalJoin(right8, "Symbol");
         TableTools.showWithRowSet(cj8);
-        assertEquals(new int[] {10, 11, NULL_INT}, intColumn(cj8, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 11, NULL_INT}, intColumn(cj8, "RightSentinel"));
 
         // inactive right hand side state, build using the right
         final Table left9 =
@@ -537,9 +545,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right9 = newTable(col("Symbol", "A", "D", "D"), col("RightSentinel", 10, 11, 12));
         final Table cj9 = left9.naturalJoin(right9, "Symbol");
         TableTools.showWithRowSet(cj9);
-        assertEquals(new int[] {10, NULL_INT, NULL_INT, 10, NULL_INT, NULL_INT}, intColumn(cj9, "RightSentinel"));
+        assertArrayEquals(new int[] {10, NULL_INT, NULL_INT, 10, NULL_INT, NULL_INT}, intColumn(cj9, "RightSentinel"));
     }
 
+    @Test
     public void testNaturalJoinDuplicateRights() {
         // build from right
         final Table left = testTable(col("Symbol", "A", "B", "C", "D"), col("LeftSentinel", 1, 2, 3, 4));
@@ -564,6 +573,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinDuplicateReinterpret() {
         testNaturalJoinDuplicateRightReinterpret(true, true);
         testNaturalJoinDuplicateRightReinterpret(true, false);
@@ -624,6 +634,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         return table.updateView("Symbol=(" + clazz.getCanonicalName() + ")Symbol");
     }
 
+    @Test
     public void testNaturalJoinDuplicateRightsRefreshingRight() {
         testNaturalJoinDuplicateRightsRefreshingRight(String.class, Function.identity());
         testNaturalJoinDuplicateRightsRefreshingRight(Instant.class, QueryTableNaturalJoinTest::makeInstantKey);
@@ -671,6 +682,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(dupMsg + a, listener.originalException().getMessage());
     }
 
+    @Test
     public void testNaturalJoinDuplicateRightsRefreshingBoth() {
         testNaturalJoinDuplicateRightsRefreshingBoth(String.class, Function.identity());
         testNaturalJoinDuplicateRightsRefreshingBoth(Instant.class, QueryTableNaturalJoinTest::makeInstantKey);
@@ -715,13 +727,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(dupMsg + a, listener.originalException().getMessage());
     }
 
-
+    @Test
     public void testNaturalJoinReinterprets() {
         final Table left = testTable(col("JBool", true, false, null, true), col("LeftSentinel", 1, 2, 3, 4));
         final Table right = newTable(col("JBool", true, false, null), col("RightSentinel", 10, 11, 12));
         final Table cj = left.naturalJoin(right, "JBool");
         TableTools.showWithRowSet(cj);
-        assertEquals(new int[] {10, 11, 12, 10}, intColumn(cj, "RightSentinel"));
+        assertArrayEquals(new int[] {10, 11, 12, 10}, intColumn(cj, "RightSentinel"));
 
         final Instant time1 = DateTimeUtils.parseInstant("2019-05-10T09:45:00 NY");
         final Instant time2 = DateTimeUtils.parseInstant("2019-05-10T21:45:00 NY");
@@ -730,15 +742,16 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right2 = newTable(col("JDate", time2, time1, null), col("RightSentinel", 10, 11, 12));
         final Table cj2 = left2.naturalJoin(right2, "JDate");
         TableTools.showWithRowSet(cj2);
-        assertEquals(new int[] {11, 10, 12, 10}, intColumn(cj2, "RightSentinel"));
+        assertArrayEquals(new int[] {11, 10, 12, 10}, intColumn(cj2, "RightSentinel"));
     }
 
+    @Test
     public void testNaturalJoinFloats() {
         final Table left = testTable(floatCol("JF", 1.0f, 2.0f, Float.NaN, 3.0f), col("LeftSentinel", 1, 2, 3, 4));
         final Table right = newTable(floatCol("JF", Float.NaN, 1.0f, 2.0f), col("RightSentinel", 10, 11, 12));
         final Table cj = left.naturalJoin(right, "JF");
         TableTools.showWithRowSet(cj);
-        assertEquals(new int[] {11, 12, 10, NULL_INT}, intColumn(cj, "RightSentinel"));
+        assertArrayEquals(new int[] {11, 12, 10, NULL_INT}, intColumn(cj, "RightSentinel"));
 
         final Table left2 =
                 testTable(doubleCol("JD", 10.0, 20.0, Double.NaN, io.deephaven.util.QueryConstants.NULL_DOUBLE),
@@ -748,9 +761,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         col("RightSentinel", 10, 11, 12));
         final Table cj2 = left2.naturalJoin(right2, "JD");
         TableTools.showWithRowSet(cj2);
-        assertEquals(new int[] {12, NULL_INT, 11, 10}, intColumn(cj2, "RightSentinel"));
+        assertArrayEquals(new int[] {12, NULL_INT, 11, 10}, intColumn(cj2, "RightSentinel"));
     }
 
+    @Test
     public void testNaturalJoinZeroKeys() {
         setExpectError(false);
 
@@ -799,6 +813,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     }
 
+    @Test
     public void testNaturalJoinZeroKeysStaticRight() {
         setExpectError(false);
 
@@ -830,6 +845,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     }
 
+    @Test
     public void testNaturalJoinZeroKeysStaticLeft() {
         setExpectError(false);
 
@@ -870,6 +886,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     }
 
+    @Test
     public void testNaturalJoin() {
         final Table c0 = TstUtils.testRefreshingTable(col("USym0", "A", "B"), intCol("X", 1, 2));
         final Table c1 = TstUtils.testRefreshingTable(col("USym1", "A", "D"), intCol("Y", 1, 2));
@@ -879,7 +896,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         cj = c0.naturalJoin(c1, "USym0=USym1", "USym1,Y");
         cj.select();
-
 
         final Table lTable = TstUtils.testRefreshingTable(
                 col("String", "a", "b", "c"),
@@ -898,7 +914,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(result, "Int").toArray());
         assertArrayEquals(new int[] {10, 20, 30}, ColumnVectors.ofInt(result, "Int2").toArray());
 
-
         Table table1 = TstUtils.testRefreshingTable(
                 col("String", "c", "e", "g"));
 
@@ -913,7 +928,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
                 .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
         assertArrayEquals(new int[] {1, 2, NULL_INT}, ColumnVectors.ofInt(pairMatch, "v").toArray());
-
 
         table2 = TstUtils.testRefreshingTable(
                 col("String", "c", "e", "g"), col("v", 1, 2, 3));
@@ -966,13 +980,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(2, vValues.get(1));
         assertEquals(3, vValues.get(2));
 
-
         table1 = TstUtils.testRefreshingTable(
                 col("String1", "c", "e", "g"));
 
         table2 = TstUtils.testRefreshingTable(
                 col("String2", "c", "e", "g"), col("v", 1, 2, 3));
-
 
         pairMatch = table1.naturalJoin(table2, "String1=String2", "String2,v");
 
@@ -991,7 +1003,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new int[] {1, 2, 3},
                 ColumnVectors.ofInt(pairMatch, pairMatch.getDefinition().getColumns().get(2).getName()).toArray());
 
-
         pairMatch = table2.naturalJoin(table1, "String2=String1", "String1");
 
         assertEquals(3, pairMatch.size());
@@ -1009,6 +1020,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
     }
 
+    @Test
     public void testNaturalJoinNull() {
         final Table c0 = TstUtils.testRefreshingTable(col("USym0", "A", null), col("X", 1, 2));
         final Table c1 = TstUtils.testRefreshingTable(col("USym1", "A", null), col("Y", 3, 4));
@@ -1025,6 +1037,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(4, yValues.get(1));
     }
 
+    @Test
     public void testNaturalJoinInactive() {
         setExpectError(false);
 
@@ -1079,6 +1092,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(4, yValues.get(2));
     }
 
+    @Test
     public void testNaturalJoinLeftIncrementalRightStaticSimple() {
         final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("Sym", "aa", "bc", "aa", "aa"),
@@ -1110,6 +1124,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TstUtils.validate(en);
     }
 
+    @Test
     public void testNaturalJoinIterative() {
         final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("Sym", "aa", "bc", "aa", "aa"),
@@ -1124,7 +1139,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 col("Sym", "aa", "bc", "aa"),
                 col("xCol", 11, 20, 20),
                 col("yCol", 1.1, 2.2, 5.5));
-
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
@@ -1231,7 +1245,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable1, i(4, 6), col("Sym", "bc", "aa"), col("xCol", 66, 44), col("yCol", 7.6, 6.7));
             rightQueryTable1.notifyListeners(i(), i(), i(4, 6));
@@ -1258,13 +1271,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-
         updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(rightQueryTable1, i(4));
             rightQueryTable1.notifyListeners(i(), i(4), i());
         });
         TstUtils.validate(en);
-
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable2, i(40), col("Sym", "bc"),
@@ -1320,6 +1331,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println(sb);
     }
 
+    @Test
     public void testNaturalJoinIterative2() {
         final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("Sym", "aa", "bc", "aa", "aa"),
@@ -1330,7 +1342,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 col("Sym", "aa", "bc", "aa"),
                 col("xCol", 11, 20, 20),
                 col("yCol", 1.1, 2.2, 5.5));
-
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
@@ -1393,6 +1404,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TstUtils.validate(en);
     }
 
+    @Test
     public void testNaturalJoinSortedData() {
         final QueryTable leftTable = TstUtils.testRefreshingTable(
                 col("Sym", "a", "b", "c"),
@@ -1498,17 +1510,17 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     }
 
+    @Test
     public void testExactJoin() {
         Table table1 = testRefreshingTable(
                 col("String", "c", "e", "g"));
 
         try {
             table1.exactJoin(testRefreshingTable(col("String", "c", "e"), col("v", 1, 2)), "String");
-            TestCase.fail("Previous statement should have thrown an exception");
+            fail("Previous statement should have thrown an exception");
         } catch (Exception e) {
             assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
         }
-
 
         Table table2 = testRefreshingTable(col("String", "c", "e", "g"), col("v", 1, 2, 3));
 
@@ -1616,6 +1628,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(pairMatch, njTable);
     }
 
+    @Test
     public void testExactJoinIndexedErrorMessageBuildRight() {
         // a refreshing left table forces the build from the right side
         // sparse left row keys, so no index-table group position is a valid left row key
@@ -1633,6 +1646,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
 
+    @Test
     public void testExactJoinIndexedErrorMessageBuildLeft() {
         // a static left table with a data index smaller than the right table builds from the left data index
         // sparse left row keys, so no index-table group position is a valid left row key
@@ -1647,6 +1661,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
 
+    @Test
     public void testExactJoinIndexedErrorMessageContiguous() {
         // a flat static left table produces a contiguous row redirection
         final Table leftTable = testTable(col("String", "c", "e", "g")).flatten();
@@ -1659,6 +1674,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
 
+    @Test
     public void testExactJoinIndexedErrorMessageHash() {
         // left row keys spread across distant blocks make a sparse redirection too wasteful, producing a hashed one
         final QueryTable leftTable = testRefreshingTable(
@@ -1690,6 +1706,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     final int[] sizes = new int[] {10, 100, 1_000, 10_000};
     final int NUM_STEPS = 10;
 
+    @Test
     public void testNaturalJoinTypeSimpleStatic() {
         final Table lhs = testTable(col("JBool", true, false, null, true), col("LeftSentinel", 1, 2, 3, 4));
         final Table rhsRaw =
@@ -1747,6 +1764,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(expected, actual);
     }
 
+    @Test
     public void testNaturalJoinFirstByStatic() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -1761,6 +1779,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinLastByStatic() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -1856,6 +1875,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeIncremental() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -1873,6 +1893,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeShiftIncremental() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -1890,6 +1911,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeRightIncremental() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -1907,6 +1929,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeRightShiftIncremental() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -2020,6 +2043,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeAppend() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -2038,6 +2062,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNaturalJoinTypeRightAppend() {
         for (final int leftSize : sizes) {
             for (final int rightSize : sizes) {
@@ -2055,6 +2080,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testAddOnlyFirstMatchIncremental() {
         final QueryTable lhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S1"));
         lhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -2111,6 +2137,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(expected, actual);
     }
 
+    @Test
     public void testAddOnlyFirstMatchRight() {
         final QueryTable lhsRaw = TstUtils.testRefreshingTable(intCol("Key"), intCol("S1"));
         lhsRaw.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -2176,6 +2203,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     /**
      * Force testing of the RedirectionType.Contiguous type.
      */
+    @Test
     public void testContiguousHashing() {
         final Random lhs_random = new Random(12345678);
         final Random rhs_random = new Random(87654321);
@@ -2238,13 +2266,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(expected, actual);
     }
 
+    @Test
     public void testSymbolTableJoin() throws IOException {
         diskBackedTestHarness((left, right) -> {
             final Table result = left.naturalJoin(right, "Symbol");
             TableTools.showWithRowSet(result);
 
             final int[] rightSide = intColumn(result, "RightSentinel");
-            assertEquals(new int[] {101, 102, 103, NULL_INT, 101, 103, 102, 102, 103}, rightSide);
+            assertArrayEquals(new int[] {101, 102, 103, NULL_INT, 101, 103, 102, 102, 103}, rightSide);
         });
     }
 
@@ -2254,6 +2283,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
      * path to store {@link QueryConstants#NULL_LONG} (Long.MIN_VALUE) instead, which sent downstream readers (e.g.
      * Parquet) off to garbage offsets.
      */
+    @Test
     public void testSymbolTableJoinUnmatchedRowRedirection() throws IOException {
         diskBackedTestHarness((left, right) -> {
             // Flatten the left so JoinControl picks the Contiguous redirection. The Sparse path's
@@ -2292,6 +2322,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
      * row, so {@code JoinControl.getRedirectionType} picks {@code Hash} (sparse overhead exceeded). Unmatched left rows
      * must redirect to {@link RowSequence#NULL_ROW_KEY}, not {@link QueryConstants#NULL_LONG}.
      */
+    @Test
     public void testSymbolTableJoinUnmatchedRowRedirectionHash() throws IOException {
         final File leftDirectory = Files.createTempDirectory("QueryTableJoinTest-Left").toFile();
         final File rightDirectory = Files.createTempDirectory("QueryTableJoinTest-Right").toFile();
@@ -2365,6 +2396,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     /** Test #1 for DHC issue #3202 */
+    @Test
     public void testDHC3202_v1() {
         // flood the hashtable with large updates
         final Random random = new Random(0x31313131);
@@ -2394,6 +2426,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     /** Test #1 for DHC issue #3202 */
+    @Test
     public void testDHC3202_v2() {
         // flood the hashtable with large updates
         final Random random = new Random(0x31313131);
@@ -2422,6 +2455,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testCyclingBuckets() {
         final QueryTable cells = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 999).toTracking());
 
@@ -2453,7 +2487,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 addToTable(cells, added);
                 cells.notifyListeners(added, removed, RowSetFactory.empty());
             });
-            TestCase.assertEquals(1100, joined.size());
+            assertEquals(1100, joined.size());
 
             long currentBucket = (step + 1) * 1000 - 100;
             try (final CloseablePrimitiveIteratorOfLong bucketIt = joined.longColumnIterator("Bucket");
@@ -2463,9 +2497,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     final long bucket = bucketIt.nextLong();
                     final long lsentinel = leftIt.nextLong();
                     final long rsentinel = rightIt.nextLong();
-                    TestCase.assertEquals(currentBucket++, bucket);
-                    TestCase.assertEquals(bucket + 1_000_000_000L, lsentinel);
-                    TestCase.assertEquals(bucket + 2_000_000_000L, rsentinel);
+                    assertEquals(currentBucket++, bucket);
+                    assertEquals(bucket + 1_000_000_000L, lsentinel);
+                    assertEquals(bucket + 2_000_000_000L, rsentinel);
                 }
             }
         }
@@ -2475,6 +2509,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println(sample);
     }
 
+    @Test
     public void testGetDirectAfterNaturalJoin() {
         final Table sodiumLeft = emptyTable(3).updateView("Value=(i%5==0? null : i*2)", "ColLeft=`LeftOnlyContents`");
         final Table peppermintRight =
@@ -2538,6 +2573,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         return ParquetTools.readTable(rightLocation.getPath());
     }
 
+    @Test
     public void testLeftRemoveDuplicateRightNoSpuriousModifiedColumns() {
         testLeftRemoveDuplicateRightNoSpuriousModifiedColumns(NaturalJoinType.FIRST_MATCH);
         testLeftRemoveDuplicateRightNoSpuriousModifiedColumns(NaturalJoinType.LAST_MATCH);
@@ -2593,6 +2629,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         listener.close();
     }
 
+    @Test
     public void testExactJoinLeftRefreshingRightStaticUnmatchedLeftUpdate() {
         // a refreshing left with a static right uses the LeftTickingListener, which must enforce the exact-match
         // requirement for rows that arrive or change key after instantiation just as the initial build does
@@ -2641,6 +2678,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         return listener.originalException().getMessage();
     }
 
+    @Test
     public void testNaturalJoinDuplicateRightsStaticLeftDataIndex() {
         // a static left with a data index smaller than the right table builds from the left data index; a duplicate
         // right key detected while decorating with the right side must be reported like the other static build paths
@@ -2648,15 +2686,284 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         DataIndexer.getOrCreateDataIndex(left, "Key");
         final Table right = testTable(col("Key", "a", "a", "b", "c", "d", "e"), intCol("R", 10, 11, 20, 30, 40, 50));
 
-        try {
-            final Table result = left.naturalJoin(right, "Key");
-            showWithRowSet(result);
-            fail("Expected exception");
-        } catch (IllegalStateException e) {
-            assertEquals(dupMsg + "a", e.getMessage());
-        }
+        final IllegalStateException e =
+                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key"));
+        assertEquals(dupMsg + "a", e.getMessage());
     }
 
+    @Test
+    public void testNaturalJoinZeroKeysRightTickReportingStaticLeft() {
+        testNaturalJoinZeroKeysRightTickReporting(false);
+    }
+
+    @Test
+    public void testNaturalJoinZeroKeysRightTickReportingRefreshingLeft() {
+        testNaturalJoinZeroKeysRightTickReporting(true);
+    }
+
+    private void testNaturalJoinZeroKeysRightTickReporting(final boolean leftRefreshing) {
+        // a zero-key join redirects every left row to one right row; a right update that does not touch that row must
+        // not be reported downstream, and one that modifies it must report only the modified columns
+        final QueryTable left = leftRefreshing
+                ? testRefreshingTable(i(0, 1, 2).toTracking(), intCol("L", 1, 2, 3))
+                : testTable(i(0, 1, 2).toTracking(), intCol("L", 1, 2, 3));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), intCol("C", 100, 101),
+                intCol("D", 1000, 1001));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "", "C,D", NaturalJoinType.FIRST_MATCH);
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 100, 100, 100), intCol("D", 1000, 1000, 1000)),
+                result);
+
+        final ModifiedColumnSet cColumn = result.newModifiedColumnSet("C");
+        final ModifiedColumnSet dColumn = result.newModifiedColumnSet("D");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // append a right row after the first match
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(2), intCol("C", 102), intCol("D", 1002));
+            right.notifyListeners(i(2), i(), i());
+        });
+        assertEquals(0, listener.getCount());
+
+        // modify a right row that is not the first match
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(1), intCol("C", 151), intCol("D", 1001));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("C")));
+        });
+        assertEquals(0, listener.getCount());
+
+        // modify only C on the first match
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(0), intCol("C", 150), intCol("D", 1000));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("C")));
+        });
+        assertEquals(1, listener.getCount());
+        TableUpdate update = listener.getUpdate();
+        assertEquals(i(0, 1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertFalse(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 150, 150, 150), intCol("D", 1000, 1000, 1000)),
+                result);
+
+        // remove the first match, so the next row is selected and every right column may have changed
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(right, i(0));
+            right.notifyListeners(i(), i(0), i());
+        });
+        assertEquals(2, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(0, 1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertTrue(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 151, 151, 151), intCol("D", 1001, 1001, 1001)),
+                result);
+
+        // remove the first match and shift the next row into its key: the redirection value is unchanged, but it
+        // now selects a different row, so every right column may have changed
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(2, 2, -1);
+            removeRows(right, i(1, 2));
+            addToTable(right, i(1), intCol("C", 102), intCol("D", 1002));
+            right.notifyListeners(new TableUpdateImpl(i(), i(1), i(), builder.build(), ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(3, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(0, 1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertTrue(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 102, 102, 102), intCol("D", 1002, 1002, 1002)),
+                result);
+
+        // shift the first match away and add a new row at its old key: the redirection value is unchanged, but it
+        // now selects the added row, so every right column may have changed
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(1, 1, 1);
+            removeRows(right, i(1));
+            addToTable(right, i(1, 2), intCol("C", 103, 102), intCol("D", 1003, 1002));
+            right.notifyListeners(new TableUpdateImpl(i(1), i(), i(), builder.build(), ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(4, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(0, 1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertTrue(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 103, 103, 103), intCol("D", 1003, 1003, 1003)),
+                result);
+
+        // shift both right rows: the same row remains the first match, so nothing is reported
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(1, 2, 5);
+            removeRows(right, i(1, 2));
+            addToTable(right, i(6, 7), intCol("C", 103, 102), intCol("D", 1003, 1002));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(), builder.build(), ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(4, listener.getCount());
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 103, 103, 103), intCol("D", 1003, 1003, 1003)),
+                result);
+
+        // shift the first match and modify only its D in the same cycle: only D is reported
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(6, 6, -2);
+            removeRows(right, i(6));
+            addToTable(right, i(4), intCol("C", 103), intCol("D", 1103));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(4), builder.build(),
+                    right.newModifiedColumnSet("D")));
+        });
+        assertEquals(5, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(0, 1, 2), update.modified());
+        assertFalse(update.modifiedColumnSet().containsAny(cColumn));
+        assertTrue(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("C", 103, 103, 103), intCol("D", 1103, 1103, 1103)),
+                result);
+
+        if (leftRefreshing) {
+            // a left-only modification reports only the modified left row, with no right columns
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(1), intCol("L", 20));
+                left.notifyListeners(i(), i(), i(1));
+            });
+            assertEquals(6, listener.getCount());
+            update = listener.getUpdate();
+            assertEquals(i(1), update.modified());
+            assertFalse(update.modifiedColumnSet().containsAny(cColumn));
+            assertFalse(update.modifiedColumnSet().containsAny(dColumn));
+        }
+
+        listener.close();
+    }
+
+    @Test
+    public void testLeftKeyColumnModifiedRightStatic() {
+        // a refreshing left with a static right uses the LeftTickingListener: a modification that names the key
+        // column but leaves the key value unchanged must not disturb the redirection, while one that changes the key
+        // value re-probes the right side
+        final QueryTable left = testRefreshingTable(i(0, 1, 2).toTracking(), col("Key", "a", "b", "c"),
+                intCol("L", 1, 2, 3));
+        final Table right = testTable(col("Key", "a", "b"), intCol("R", 10, 20));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key");
+        assertTableEquals(newTable(col("Key", "a", "b", "c"), intCol("L", 1, 2, 3), intCol("R", 10, 20, NULL_INT)),
+                result);
+
+        final ModifiedColumnSet rColumn = result.newModifiedColumnSet("R");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // the key column is marked modified on rows 0 and 1, but only row 0's L actually changes
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(0, 1), col("Key", "a", "b"), intCol("L", 11, 2));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(0, 1), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("Key", "L")));
+        });
+        assertEquals(1, listener.getCount());
+        TableUpdate update = listener.getUpdate();
+        assertEquals(i(0, 1), update.modified());
+        assertFalse(update.modifiedColumnSet().containsAny(rColumn));
+        assertTableEquals(newTable(col("Key", "a", "b", "c"), intCol("L", 11, 2, 3), intCol("R", 10, 20, NULL_INT)),
+                result);
+
+        // row 1's key changes to "c" (unmatched) and row 2's key changes to "a" (matched)
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(1, 2), col("Key", "c", "a"), intCol("L", 2, 3));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(1, 2), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("Key")));
+        });
+        assertEquals(2, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(rColumn));
+        assertTableEquals(newTable(col("Key", "a", "c", "a"), intCol("L", 11, 2, 3), intCol("R", 10, NULL_INT, 10)),
+                result);
+
+        listener.close();
+    }
+
+    @Test
+    public void testRightKeyColumnModifiedRightIncremental() {
+        testRightKeyColumnModified(false);
+    }
+
+    @Test
+    public void testRightKeyColumnModifiedBothIncremental() {
+        testRightKeyColumnModified(true);
+    }
+
+    private void testRightKeyColumnModified(final boolean leftRefreshing) {
+        // a right modification that names the key column but leaves the key value unchanged must be treated like any
+        // other modification of that row, while one that changes the key value moves the row between keys
+        final QueryTable left = leftRefreshing
+                ? testRefreshingTable(i(0, 1, 2).toTracking(), col("Key", "a", "b", "c"), intCol("L", 1, 2, 3))
+                : testTable(i(0, 1, 2).toTracking(), col("Key", "a", "b", "c"), intCol("L", 1, 2, 3));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), col("Key", "a", "b"),
+                intCol("C", 100, 101), intCol("D", 1000, 1001));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "C,D");
+        assertTableEquals(newTable(col("Key", "a", "b", "c"), intCol("L", 1, 2, 3), intCol("C", 100, 101, NULL_INT),
+                intCol("D", 1000, 1001, NULL_INT)), result);
+
+        final ModifiedColumnSet cColumn = result.newModifiedColumnSet("C");
+        final ModifiedColumnSet dColumn = result.newModifiedColumnSet("D");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // the key column is marked modified on both rows, but only row 0's C actually changes
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(0, 1), col("Key", "a", "b"), intCol("C", 150, 101), intCol("D", 1000, 1001));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(0, 1), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("Key", "C")));
+        });
+        assertEquals(1, listener.getCount());
+        TableUpdate update = listener.getUpdate();
+        assertEquals(i(0, 1), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertFalse(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(col("Key", "a", "b", "c"), intCol("L", 1, 2, 3), intCol("C", 150, 101, NULL_INT),
+                intCol("D", 1000, 1001, NULL_INT)), result);
+
+        // row 1's key changes from "b" to "c": left "b" loses its match and left "c" gains one
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(1), col("Key", "c"), intCol("C", 101), intCol("D", 1001));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("Key")));
+        });
+        assertEquals(2, listener.getCount());
+        update = listener.getUpdate();
+        assertEquals(i(1, 2), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(cColumn));
+        assertTrue(update.modifiedColumnSet().containsAny(dColumn));
+        assertTableEquals(newTable(col("Key", "a", "b", "c"), intCol("L", 1, 2, 3), intCol("C", 150, NULL_INT, 101),
+                intCol("D", 1000, NULL_INT, 1001)), result);
+
+        listener.close();
+    }
+
+    @Test
+    public void testNaturalJoinDuplicateRightsUniqueTable() {
+        // a single boolean key selects the SimpleUniqueStaticNaturalJoinStateManager, whose duplicate right key error
+        // must read like the hashed state managers' error
+        final Table left = testTable(col("Key", true, false), intCol("L", 1, 2));
+        final Table right = testTable(col("Key", true, true, false), intCol("R", 10, 11, 20));
+
+        final IllegalStateException e =
+                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key"));
+        assertEquals(dupMsg + "true", e.getMessage());
+    }
+
+    @Test
     public void testNaturalJoinDuplicateRightsBothRefreshingLeftAdd() {
         testNaturalJoinDuplicateRightsBothRefreshingLeftAdd(NaturalJoinType.ERROR_ON_DUPLICATE);
         testNaturalJoinDuplicateRightsBothRefreshingLeftAdd(NaturalJoinType.EXACTLY_ONE_MATCH);
@@ -2687,6 +2994,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(dupMsg + "a", listener.originalException().getMessage());
     }
 
+    @Test
     public void testNaturalJoinDuplicateRightsBothRefreshingLeftDataIndex() {
         // sparse left row keys, so no data index table row key is a valid left row key; the error must be rendered from
         // a left table row key rather than a data index table row key
@@ -2695,24 +3003,22 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         DataIndexer.getOrCreateDataIndex(left, "Key");
         final QueryTable right = testRefreshingTable(col("Key", "a", "a"), intCol("R", 10, 11));
 
-        try {
-            final Table result = left.naturalJoin(right, "Key");
-            showWithRowSet(result);
-            fail("Expected exception");
-        } catch (IllegalStateException e) {
-            assertEquals(dupMsg + "a", e.getMessage());
-        }
+        final IllegalStateException e =
+                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key"));
+        assertEquals(dupMsg + "a", e.getMessage());
     }
 
     private static final NaturalJoinType[] FIRST_AND_LAST_MATCH =
             new NaturalJoinType[] {NaturalJoinType.FIRST_MATCH, NaturalJoinType.LAST_MATCH};
 
+    @Test
     public void testRightModifyOnDuplicateKeyReportsOnlyModifiedColumnsRightIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightModifyOnDuplicateKeyReportsOnlyModifiedColumns(false, joinType);
         }
     }
 
+    @Test
     public void testRightModifyOnDuplicateKeyReportsOnlyModifiedColumnsBothIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightModifyOnDuplicateKeyReportsOnlyModifiedColumns(true, joinType);
@@ -2810,12 +3116,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         listener.close();
     }
 
+    @Test
     public void testRightShiftOnDuplicateKeyReportsNoModificationsRightIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightShiftOnDuplicateKeyReportsNoModifications(false, joinType);
         }
     }
 
+    @Test
     public void testRightShiftOnDuplicateKeyReportsNoModificationsBothIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightShiftOnDuplicateKeyReportsNoModifications(true, joinType);
@@ -2863,12 +3171,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         listener.close();
     }
 
+    @Test
     public void testRightShiftAndModifyReportsOnlyModifiedColumnsRightIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightShiftAndModifyReportsOnlyModifiedColumns(false, joinType);
         }
     }
 
+    @Test
     public void testRightShiftAndModifyReportsOnlyModifiedColumnsBothIncremental() {
         for (final NaturalJoinType joinType : FIRST_AND_LAST_MATCH) {
             testRightShiftAndModifyReportsOnlyModifiedColumns(true, joinType);
@@ -2918,6 +3228,641 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(newTable(col("Key", "dup", "solo"), intCol("L", 1, 2), intCol("C", 150, 250),
                 intCol("D", selectedD, 2000)), result);
 
+        listener.close();
+    }
+
+    /**
+     * JUnit 4's {@link org.junit.Assert#assertThrows} also accepts subclasses of the expected type; this keeps the
+     * stricter "exactly this type" check the test relied on.
+     */
+    private static <T extends Throwable> T assertThrowsExactly(final Class<T> expectedType,
+            final ThrowingRunnable runnable) {
+        final T thrown = assertThrows(expectedType, runnable);
+        assertEquals(expectedType, thrown.getClass());
+        return thrown;
+    }
+
+    @Test
+    public void testNaturalJoinZeroKeysStaticRightMultipleRowsFirstMatch() {
+        final Table left = newTable(intCol("L", 1, 2, 3));
+        final Table right = newTable(intCol("R", 10, 20));
+        final Table result = left.naturalJoin(right, "", "R", NaturalJoinType.FIRST_MATCH);
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("R", 10, 10, 10)), result);
+    }
+
+    @Test
+    public void testNaturalJoinZeroKeysStaticRightMultipleRowsLastMatch() {
+        final Table left = newTable(intCol("L", 1, 2, 3));
+        final Table right = newTable(intCol("R", 10, 20));
+        final Table result = left.naturalJoin(right, "", "R", NaturalJoinType.LAST_MATCH);
+        assertTableEquals(newTable(intCol("L", 1, 2, 3), intCol("R", 20, 20, 20)), result);
+    }
+
+    /**
+     * The unique-table natural join maps key values through a functor that owns a pooled chunk. A refreshing left table
+     * probes that functor on every tick, long after the {@link BucketingContext} that built the join is gone, so the
+     * functor must not outlive the pass over the keys that uses it.
+     */
+    @Test
+    public void testNaturalJoinUniqueTableDoesNotRetainAPooledChunk() {
+        final QueryTable left = testRefreshingTable(i(1, 2).toTracking(),
+                byteCol("Key", (byte) 1, (byte) 2), intCol("L", 1, 2));
+        final QueryTable right = testTable(i(1, 2).toTracking(),
+                byteCol("Key", (byte) 1, (byte) 2), intCol("R", 10, 20));
+
+        final Table result = left.naturalJoin(right, "Key", "R");
+        assertTableEquals(newTable(byteCol("Key", (byte) 1, (byte) 2), intCol("L", 1, 2), intCol("R", 10, 20)),
+                result);
+
+        // The pool is LIFO, so a chunk the join wrongly kept would be handed straight back to us here.
+        try (final WritableIntChunk<Values> recycled = WritableIntChunk.makeWritableChunk(JoinControl.CHUNK_SIZE)) {
+            recycled.fillWithValue(0, JoinControl.CHUNK_SIZE, -12345);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(3), byteCol("Key", (byte) 1), intCol("L", 3));
+                left.notifyListeners(i(3), i(), i());
+            });
+
+            assertEquals(JoinControl.CHUNK_SIZE, recycled.size());
+            assertEquals(-12345, recycled.get(0));
+        }
+
+        assertTableEquals(newTable(byteCol("Key", (byte) 1, (byte) 2, (byte) 1), intCol("L", 1, 2, 3),
+                intCol("R", 10, 20, 10)), result);
+    }
+
+    @Test
+    public void testRightKeyChangeCreatingUnselectedDuplicateReportsNoModificationsRightIncremental() {
+        testRightKeyChangeCreatingUnselectedDuplicate(false);
+    }
+
+    @Test
+    public void testRightKeyChangeCreatingUnselectedDuplicateReportsNoModificationsBothIncremental() {
+        testRightKeyChangeCreatingUnselectedDuplicate(true);
+    }
+
+    /**
+     * A right key change that turns a slot's single right row into a duplicate set only affects the left rows when it
+     * changes which right row they select. Under FIRST_MATCH an arriving row after the selected one leaves every added
+     * column value alone, so there is nothing to report downstream.
+     */
+    private void testRightKeyChangeCreatingUnselectedDuplicate(final boolean leftRefreshing) {
+        final QueryTable left = leftRefreshing
+                ? testRefreshingTable(i(0).toTracking(), col("Key", "a"), intCol("L", 1))
+                : testTable(i(0).toTracking(), col("Key", "a"), intCol("L", 1));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(),
+                col("Key", "a", "c"), intCol("C", 100, 200), intCol("D", 1000, 2000));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "C,D", NaturalJoinType.FIRST_MATCH);
+        final Table expected = newTable(col("Key", "a"), intCol("L", 1), intCol("C", 100), intCol("D", 1000));
+        assertTableEquals(expected, result);
+
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(1), col("Key", "a"), intCol("C", 201), intCol("D", 2000));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("Key", "C")));
+        });
+
+        // right row 0 remains the FIRST_MATCH for "a", so C and D are unchanged
+        assertTableEquals(expected, result);
+        assertEquals(0, listener.getCount());
+        listener.close();
+    }
+
+    @Test
+    public void testRightShiftAndReAddAtVacatedKeyFirstMatchStaticLeft() {
+        testRightShiftAndReAddAtVacatedKey(false, NaturalJoinType.FIRST_MATCH);
+    }
+
+    @Test
+    public void testRightShiftAndReAddAtVacatedKeyFirstMatchRefreshingLeft() {
+        testRightShiftAndReAddAtVacatedKey(true, NaturalJoinType.FIRST_MATCH);
+    }
+
+    @Test
+    public void testRightShiftAndReAddAtVacatedKeyLastMatchStaticLeft() {
+        testRightShiftAndReAddAtVacatedKey(false, NaturalJoinType.LAST_MATCH);
+    }
+
+    @Test
+    public void testRightShiftAndReAddAtVacatedKeyLastMatchRefreshingLeft() {
+        testRightShiftAndReAddAtVacatedKey(true, NaturalJoinType.LAST_MATCH);
+    }
+
+    /**
+     * When the selected right row shifts away from its row key and a new right row for the same join key is added at
+     * the vacated key, the left rows hold the same row key but it names a different row, so the added columns must be
+     * reported modified.
+     */
+    private void testRightShiftAndReAddAtVacatedKey(final boolean leftRefreshing,
+            final NaturalJoinType joinType) {
+        final QueryTable left = leftRefreshing
+                ? testRefreshingTable(i(0).toTracking(), col("Key", "a"), intCol("L", 1))
+                : testTable(i(0).toTracking(), col("Key", "a"), intCol("L", 1));
+        final QueryTable right =
+                testRefreshingTable(i(5, 6).toTracking(), col("Key", "a", "b"), intCol("C", 100, 200));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "C", joinType);
+        final Table downstream = result.update("E=C");
+        assertTableEquals(newTable(col("Key", "a"), intCol("L", 1), intCol("C", 100)), result);
+
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        // FIRST_MATCH: the matched row moves up and the new row lands below it; LAST_MATCH: the reverse
+        final long delta = joinType == NaturalJoinType.FIRST_MATCH ? 2 : -2;
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(5, 6, delta);
+            removeRows(right, i(5, 6));
+            addToTable(right, i(5 + delta, 6 + delta), col("Key", "a", "b"), intCol("C", 100, 200));
+            addToTable(right, i(5), col("Key", "a"), intCol("C", 300));
+            right.notifyListeners(new TableUpdateImpl(i(5), i(), i(), builder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        assertTableEquals(newTable(col("Key", "a"), intCol("L", 1), intCol("C", 300)), result);
+        assertEquals(1, listener.getCount());
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAny(result.newModifiedColumnSet("C")));
+        assertTableEquals(newTable(col("Key", "a"), intCol("L", 1), intCol("C", 300), intCol("E", 300)), downstream);
+        listener.close();
+    }
+
+    /**
+     * A refreshing left table with a data index joined to a static right table probes the rows of the data index table
+     * against the right side. A duplicate right key error must name the offending key, which is rendered from the left
+     * table's key columns: with sparse left row keys the group's data index row key is not a left row key at all.
+     */
+    @Test
+    public void testDuplicateRightKeyErrorLeftRefreshingWithDataIndexSparseRows() {
+        final QueryTable left =
+                testRefreshingTable(i(10, 20, 30).toTracking(), col("Key", "a", "b", "c"), intCol("L", 1, 2, 3));
+        DataIndexer.getOrCreateDataIndex(left, "Key");
+        final Table right = testTable(col("Key", "a", "a", "b"), intCol("R", 10, 11, 20));
+
+        for (final NaturalJoinType joinType : new NaturalJoinType[] {NaturalJoinType.ERROR_ON_DUPLICATE,
+                NaturalJoinType.EXACTLY_ONE_MATCH}) {
+            final IllegalStateException e = assertThrowsExactly(IllegalStateException.class,
+                    () -> left.naturalJoin(right, "Key", "R", joinType));
+            assertEquals("Natural Join found duplicate right key for a", e.getMessage());
+        }
+    }
+
+    /**
+     * With dense left row keys the group's data index row key is a valid left row key, but of a row with a different
+     * key; the error must still name the duplicated key.
+     */
+    @Test
+    public void testDuplicateRightKeyErrorLeftRefreshingWithDataIndexDenseRows() {
+        // left rows 0..3 hold a, a, b, c; the data index table holds a, b, c at rows 0..2, so the group for c is index
+        // row 2 while left row 2 holds b
+        final QueryTable left = testRefreshingTable(i(0, 1, 2, 3).toTracking(), col("Key", "a", "a", "b", "c"),
+                intCol("L", 1, 2, 3, 4));
+        DataIndexer.getOrCreateDataIndex(left, "Key");
+        final Table right = testTable(col("Key", "c", "c", "b"), intCol("R", 10, 11, 20));
+
+        final IllegalStateException e =
+                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key", "R"));
+        assertEquals("Natural Join found duplicate right key for c", e.getMessage());
+    }
+
+    /**
+     * A zero-key join fails the same way as a keyed join when the right side has several rows under a join type that
+     * rejects duplicates: an IllegalStateException, at construction and from the listener alike. A missing exact match
+     * remains a plain RuntimeException, as it is for a keyed exact join.
+     */
+    @Test
+    public void testNaturalJoinZeroKeysDuplicateRightRowsExceptionType() {
+        final QueryTable left = testTable(intCol("L", 1, 2));
+        final Table twoRightRows = testTable(intCol("C", 100, 200));
+        for (final NaturalJoinType joinType : new NaturalJoinType[] {NaturalJoinType.ERROR_ON_DUPLICATE,
+                NaturalJoinType.EXACTLY_ONE_MATCH}) {
+            assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(twoRightRows, "", "C", joinType));
+        }
+        assertThrowsExactly(RuntimeException.class,
+                () -> left.naturalJoin(testTable(intCol("C")), "", "C", NaturalJoinType.EXACTLY_ONE_MATCH));
+
+        final QueryTable right = testRefreshingTable(i(0).toTracking(), intCol("C", 100));
+        final Table result = left.naturalJoin(right, "", "C");
+        assertTableEquals(newTable(intCol("L", 1, 2), intCol("C", 100, 100)), result);
+
+        final ErrorListener listener = new ErrorListener(result);
+        result.addUpdateListener(listener);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(right, i(1), intCol("C", 200));
+                right.notifyListeners(i(1), i(), i());
+            });
+        }
+        assertEquals(IllegalStateException.class, listener.originalException().getClass());
+    }
+
+    @Test
+    public void testLeftKeyChangeReportsRightColumnsOnlyWhenRedirectionChangesStaticRight() {
+        testLeftKeyChangeReportsRightColumnsOnlyWhenRedirectionChanges(false);
+    }
+
+    @Test
+    public void testLeftKeyChangeReportsRightColumnsOnlyWhenRedirectionChangesRefreshingRight() {
+        testLeftKeyChangeReportsRightColumnsOnlyWhenRedirectionChanges(true);
+    }
+
+    /**
+     * A left key change re-probes the row against the right side; the added columns are reported modified only when the
+     * row now selects a different right row (or none), whether or not the row also shifted in the same cycle.
+     */
+    private void testLeftKeyChangeReportsRightColumnsOnlyWhenRedirectionChanges(final boolean rightRefreshing) {
+        final QueryTable left = testRefreshingTable(i(0, 1).toTracking(), longCol("Key", 1, 2), intCol("L", 10, 20));
+        final QueryTable right = rightRefreshing
+                ? testRefreshingTable(longCol("Key", 1), intCol("R", 100))
+                : testTable(longCol("Key", 1), intCol("R", 100));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "R");
+        assertTableEquals(newTable(longCol("Key", 1, 2), intCol("L", 10, 20), intCol("R", 100, NULL_INT)), result);
+
+        final ModifiedColumnSet keyColumn = result.newModifiedColumnSet("Key");
+        final ModifiedColumnSet rColumn = result.newModifiedColumnSet("R");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // unmatched to unmatched: only the key column changed
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(1), longCol("Key", 3), intCol("L", 20));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("Key")));
+        });
+        assertEquals(1, listener.getCount());
+        assertEquals(i(1), listener.getUpdate().modified());
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAny(keyColumn));
+        assertFalse(listener.getUpdate().modifiedColumnSet().containsAny(rColumn));
+
+        // unmatched to matched
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(left, i(1), longCol("Key", 1), intCol("L", 20));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("Key")));
+        });
+        assertEquals(2, listener.getCount());
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAny(rColumn));
+        assertTableEquals(newTable(longCol("Key", 1, 1), intCol("L", 10, 20), intCol("R", 100, 100)), result);
+
+        // matched to unmatched, while the row also shifts
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(1, 1, 4);
+            removeRows(left, i(1));
+            addToTable(left, i(5), longCol("Key", 4), intCol("L", 20));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(5), builder.build(),
+                    left.newModifiedColumnSet("Key")));
+        });
+        assertEquals(3, listener.getCount());
+        assertEquals(i(5), listener.getUpdate().modified());
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAny(rColumn));
+        assertTableEquals(newTable(longCol("Key", 1, 4), intCol("L", 10, 20), intCol("R", 100, NULL_INT)), result);
+
+        // unmatched to unmatched, while the row also shifts: only the key column changed
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(5, 5, 1);
+            removeRows(left, i(5));
+            addToTable(left, i(6), longCol("Key", 7), intCol("L", 20));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(6), builder.build(),
+                    left.newModifiedColumnSet("Key")));
+        });
+        assertEquals(4, listener.getCount());
+        assertEquals(i(6), listener.getUpdate().modified());
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAny(keyColumn));
+        assertFalse(listener.getUpdate().modifiedColumnSet().containsAny(rColumn));
+        assertTableEquals(newTable(longCol("Key", 1, 7), intCol("L", 10, 20), intCol("R", 100, NULL_INT)), result);
+
+        // matched to matched on the same right row is impossible, but a matched row that shifts without a key change
+        // is not modified at all
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+            builder.shiftRange(0, 0, 2);
+            removeRows(left, i(0));
+            addToTable(left, i(2), longCol("Key", 1), intCol("L", 10));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(), builder.build(), ModifiedColumnSet.EMPTY));
+        });
+        assertEquals(5, listener.getCount());
+        assertTrue(listener.getUpdate().modified().isEmpty());
+        assertTableEquals(newTable(longCol("Key", 1, 7), intCol("L", 10, 20), intCol("R", 100, NULL_INT)), result);
+
+        listener.close();
+    }
+
+    /**
+     * A first- or last-match join against a static right table sizes its hash table from the right data index when
+     * there is one, rather than from the right row count, which overstates the states when keys repeat.
+     */
+    @Test
+    public void testStaticRightHashTableSizedFromRightDataIndex() {
+        final int distinctKeys = 4;
+        final long[] largestRequest = {-1};
+        final JoinControl control = new JoinControl() {
+            @Override
+            int tableSize(final long expectedEntries) {
+                largestRequest[0] = Math.max(largestRequest[0], expectedEntries);
+                return super.tableSize(expectedEntries);
+            }
+        };
+
+        final QueryTable right = (QueryTable) emptyTable(100_000)
+                .update("Key = (long) (ii % " + distinctKeys + ")", "RS = (int) ii");
+        DataIndexer.getOrCreateDataIndex(right, "Key");
+        final Table expected = newTable(longCol("Key", 0, 1, 2, 3), intCol("LS", 1, 2, 3, 4),
+                intCol("RS", 99_996, 99_997, 99_998, 99_999));
+
+        // a refreshing left builds from the right side
+        final QueryTable refreshingLeft = testRefreshingTable(longCol("Key", 0, 1, 2, 3), intCol("LS", 1, 2, 3, 4));
+        assertTableEquals(expected, NaturalJoinHelper.naturalJoin(refreshingLeft, right,
+                MatchPairFactory.getExpressions("Key"), MatchPairFactory.getExpressions("RS"),
+                NaturalJoinType.LAST_MATCH, control));
+        assertEquals(distinctKeys, largestRequest[0]);
+
+        // a static left larger than the right data index also builds from the right side
+        largestRequest[0] = -1;
+        final QueryTable staticLeft = testTable(longCol("Key", 0, 1, 2, 3, 0), intCol("LS", 1, 2, 3, 4, 5));
+        assertTableEquals(newTable(longCol("Key", 0, 1, 2, 3, 0), intCol("LS", 1, 2, 3, 4, 5),
+                intCol("RS", 99_996, 99_997, 99_998, 99_999, 99_996)),
+                NaturalJoinHelper.naturalJoin(staticLeft, right,
+                        MatchPairFactory.getExpressions("Key"), MatchPairFactory.getExpressions("RS"),
+                        NaturalJoinType.LAST_MATCH, control));
+        assertEquals(distinctKeys, largestRequest[0]);
+    }
+
+    @Test
+    public void testStaticRightRehashFirstMatch() {
+        testStaticRightRehash(NaturalJoinType.FIRST_MATCH);
+    }
+
+    @Test
+    public void testStaticRightRehashLastMatch() {
+        testStaticRightRehash(NaturalJoinType.LAST_MATCH);
+    }
+
+    /**
+     * Without a right data index, a first- or last-match join against a static right table starts from the default hash
+     * table size and grows by rehashing as states are added; the redirections found after the rehashes, and by later
+     * left probes, must match a join against the deduplicated right table.
+     */
+    private void testStaticRightRehash(final NaturalJoinType joinType) {
+        // a tiny initial table forces many rehashes while the right side is built
+        final JoinControl control = new JoinControl() {
+            @Override
+            int initialBuildSize() {
+                return 16;
+            }
+        };
+        final int distinctKeys = 3_000;
+        final QueryTable right = (QueryTable) emptyTable(20_000)
+                .update("Key = `k` + (ii % " + distinctKeys + ")", "RS = (int) ii");
+        final Table deduplicatedRight =
+                joinType == NaturalJoinType.FIRST_MATCH ? right.firstBy("Key") : right.lastBy("Key");
+
+        // half of the left keys match; the other half are absent from the right
+        final QueryTable left = (QueryTable) emptyTable(distinctKeys)
+                .update("Key = `k` + (ii * 2)", "LS = (int) ii");
+        final QueryTable refreshingLeft = testRefreshingTable(left.getRowSet().copy().toTracking(),
+                col("Key", ColumnVectors.ofObject(left, "Key", String.class).toArray()),
+                intCol("LS", ColumnVectors.ofInt(left, "LS").toArray()));
+
+        for (final QueryTable leftTable : new QueryTable[] {left, refreshingLeft}) {
+            final Table result = NaturalJoinHelper.naturalJoin(leftTable, right,
+                    MatchPairFactory.getExpressions("Key"), MatchPairFactory.getExpressions("RS"), joinType, control);
+            assertTableEquals(leftTable.naturalJoin(deduplicatedRight, "Key", "RS"), result);
+
+            if (leftTable.isRefreshing()) {
+                // later left probes read the rehashed table
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    addToTable(leftTable, i(distinctKeys, distinctKeys + 1), col("Key", "k1", "k2999"),
+                            intCol("LS", -1, -2));
+                    leftTable.notifyListeners(i(distinctKeys, distinctKeys + 1), i(), i());
+                });
+                assertTableEquals(leftTable.naturalJoin(deduplicatedRight, "Key", "RS"), result);
+            }
+        }
+    }
+
+    @Test
+    public void testTombstonedSlotDiscardsTrackerEntryLeftRemoval() {
+        testTombstonedSlotDiscardsTrackerEntry(false);
+    }
+
+    @Test
+    public void testTombstonedSlotDiscardsTrackerEntryRightDuplicateRemoval() {
+        testTombstonedSlotDiscardsTrackerEntry(true);
+    }
+
+    /**
+     * A modified slot tracker entry is keyed by hash slot and lives until the end of the cycle. When a slot is
+     * tombstoned later in the same cycle, its entry must be discarded: a key added afterwards in the cycle may reuse
+     * the tombstone, and applying the dead key's entry to it would report the right columns modified (and, for a key
+     * migrated into the tombstone by a rehash, report its rows modified) although no surviving row's right match
+     * changed.
+     *
+     * @param rightDuplicates whether the dying keys have two right rows and no left rows, so that the slot is
+     *        tombstoned by the removal of the last right row (rather than by the removal of the last left row after the
+     *        right row's removal)
+     */
+    private void testTombstonedSlotDiscardsTrackerEntry(final boolean rightDuplicates) {
+        final int dCount = 1000; // keys whose slots die in the final cycle
+        final int eCount = 2000; // keys that never change; one of them gets a left-only column modification
+        final int nCount = 3000; // left-only keys added in the final cycle, many of which reuse D tombstones
+
+        // distinct pseudo-random keys, so that key ranges collide in the hash table the way real data does
+        final Random random = new Random(20260920);
+        final LinkedHashSet<Integer> keySet = new LinkedHashSet<>();
+        while (keySet.size() < dCount + eCount + nCount) {
+            keySet.add(random.nextInt());
+        }
+        final int[] allKeys = keySet.stream().mapToInt(Integer::intValue).toArray();
+        final int[] dKeys = Arrays.copyOfRange(allKeys, 0, dCount);
+        final int[] eKeys = Arrays.copyOfRange(allKeys, dCount, dCount + eCount);
+        final int[] nKeys = Arrays.copyOfRange(allKeys, dCount + eCount, dCount + eCount + nCount);
+
+        final WritableRowSet dRows = RowSetFactory.fromRange(0, dCount - 1);
+        final WritableRowSet eRows = RowSetFactory.fromRange(dCount, dCount + eCount - 1);
+        final WritableRowSet nRows = RowSetFactory.fromRange(dCount + eCount, dCount + eCount + nCount - 1);
+        // the second right row of each D key, for the duplicate variant
+        final WritableRowSet dRowsAgain = RowSetFactory.fromRange(10_000, 10_000 + dCount - 1);
+
+        final QueryTable left = rightDuplicates
+                ? testRefreshingTable(eRows.copy().toTracking(), intCol("Key", eKeys), intCol("LV", new int[eCount]))
+                : testRefreshingTable(dRows.union(eRows).toTracking(),
+                        intCol("Key", IntStream.concat(Arrays.stream(dKeys), Arrays.stream(eKeys)).toArray()),
+                        intCol("LV", new int[dCount + eCount]));
+        final QueryTable right = testRefreshingTable(dRows.union(eRows).toTracking(),
+                intCol("Key", IntStream.concat(Arrays.stream(dKeys), Arrays.stream(eKeys)).toArray()),
+                intCol("RV", IntStream.range(0, dCount + eCount).toArray()));
+        if (rightDuplicates) {
+            addToTable(right, dRowsAgain, intCol("Key", dKeys), intCol("RV", new int[dCount]));
+        }
+
+        final Table result = left.naturalJoin(right, "Key", "RV", NaturalJoinType.FIRST_MATCH);
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        // the one legitimately modified row: a left-only column of an E key
+        final long modifiedERow = dCount;
+        final int modifiedEKey = eKeys[0];
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet rightRemoved = rightDuplicates ? dRows.union(dRowsAgain) : dRows.copy();
+            removeRows(right, rightRemoved);
+            right.notifyListeners(RowSetFactory.empty(), rightRemoved, RowSetFactory.empty());
+
+            if (!rightDuplicates) {
+                removeRows(left, dRows);
+            }
+            addToTable(left, nRows, intCol("Key", nKeys), intCol("LV", new int[nCount]));
+            addToTable(left, i(modifiedERow), intCol("Key", modifiedEKey), intCol("LV", 1));
+            left.notifyListeners(new TableUpdateImpl(nRows.copy(), rightDuplicates ? i() : dRows.copy(),
+                    i(modifiedERow), RowSetShiftData.EMPTY, left.newModifiedColumnSet("LV")));
+        });
+
+        assertEquals(1, listener.getCount());
+        assertEquals(nRows, listener.getUpdate().added());
+        assertEquals(rightDuplicates ? i() : dRows, listener.getUpdate().removed());
+        assertEquals(i(modifiedERow), listener.getUpdate().modified());
+
+        // only LV changed for the modified row; its right match (and every other surviving right match) is untouched
+        final ModifiedColumnSet rightColumns = ((QueryTable) result).newModifiedColumnSet("RV");
+        final ModifiedColumnSet leftColumns = ((QueryTable) result).newModifiedColumnSet("LV");
+        assertTrue(listener.getUpdate().modifiedColumnSet().containsAll(leftColumns));
+        assertFalse("right column RV reported modified although no surviving row's right match changed: "
+                + listener.getUpdate().modifiedColumnSet(),
+                listener.getUpdate().modifiedColumnSet().containsAny(rightColumns));
+        listener.close();
+    }
+
+    /**
+     * A right modification of a row that no left row matches, in the same cycle as a modification of a left row's own
+     * (non-key) column: the result reports the left row as modified with only the left table's columns in the modified
+     * column set, since no left row's right values changed.
+     */
+    @Test
+    public void testRightModifyOfUnmatchedRowDoesNotMarkRightColumnForLeftModification() {
+        final QueryTable left = testRefreshingTable(i(0, 1).toTracking(),
+                stringCol("Key", "a", "b"), intCol("L", 1, 2));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(),
+                stringCol("Key", "a", "c"), intCol("R", 10, 30));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "R");
+        assertTableEquals(newTable(stringCol("Key", "a", "b"), intCol("L", 1, 2),
+                intCol("R", 10, NULL_INT)), result);
+
+        final ModifiedColumnSet rightColumn = result.newModifiedColumnSet("R");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // the unmatched right row "c" changes its value
+            addToTable(right, i(1), stringCol("Key", "c"), intCol("R", 31));
+            right.notifyListeners(new TableUpdateImpl(i(), i(),
+                    i(1), RowSetShiftData.EMPTY, right.newModifiedColumnSet("R")));
+            // the left row "b" changes its own value
+            addToTable(left, i(1), stringCol("Key", "b"), intCol("L", 20));
+            left.notifyListeners(new TableUpdateImpl(i(), i(),
+                    i(1), RowSetShiftData.EMPTY, left.newModifiedColumnSet("L")));
+        });
+
+        assertTableEquals(newTable(stringCol("Key", "a", "b"), intCol("L", 1, 20),
+                intCol("R", 10, NULL_INT)), result);
+        assertEquals(1, listener.getCount());
+        final TableUpdate update = listener.getUpdate();
+        assertEquals(i(1), update.modified());
+        assertTrue(update.modifiedColumnSet().containsAny(result.newModifiedColumnSet("L")));
+        assertFalse("R is marked modified although no result row's R changed: " + update.modifiedColumnSet(),
+                update.modifiedColumnSet().containsAny(rightColumn));
+        listener.close();
+    }
+
+    /**
+     * A right row arrives for a key whose only left rows are added in the same cycle, while another left row's own
+     * (non-key) column is modified: the added left row is reported as added and the modified left row as modified, with
+     * only the left table's columns in the modified column set, since no pre-existing left row's right values changed.
+     */
+    @Test
+    public void testRightAddMatchedOnlyByAddedLeftRowsDoesNotMarkRightColumn() {
+        final QueryTable left = testRefreshingTable(i(0, 1).toTracking(),
+                stringCol("Key", "a", "b"), intCol("L", 1, 2));
+        final QueryTable right = testRefreshingTable(i(0).toTracking(),
+                stringCol("Key", "a"), intCol("R", 10));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "R");
+        assertTableEquals(newTable(stringCol("Key", "a", "b"), intCol("L", 1, 2),
+                intCol("R", 10, NULL_INT)), result);
+
+        final ModifiedColumnSet rightColumn = result.newModifiedColumnSet("R");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // a right row for "c" arrives
+            addToTable(right, i(1), stringCol("Key", "c"), intCol("R", 30));
+            right.notifyListeners(i(1), i(), i());
+            // a left row for "c" arrives, and the left row "b" changes its own value
+            addToTable(left, i(1, 2), stringCol("Key", "b", "c"), intCol("L", 20, 3));
+            left.notifyListeners(new TableUpdateImpl(i(2), i(),
+                    i(1), RowSetShiftData.EMPTY, left.newModifiedColumnSet("L")));
+        });
+
+        assertTableEquals(newTable(stringCol("Key", "a", "b", "c"), intCol("L", 1, 20, 3),
+                intCol("R", 10, NULL_INT, 30)), result);
+        assertEquals(1, listener.getCount());
+        final TableUpdate update = listener.getUpdate();
+        assertEquals(i(2), update.added());
+        assertEquals(i(1), update.modified());
+        assertFalse("R is marked modified although no pre-existing row's R changed: " + update.modifiedColumnSet(),
+                update.modifiedColumnSet().containsAny(rightColumn));
+        listener.close();
+    }
+
+    /**
+     * A left row and its matching right row change to the same new key in one cycle while the right row's added column
+     * is also modified: the left row keeps its right row, whose new value it must report, so the right column is in the
+     * modified column set even though the redirection itself is unchanged.
+     */
+    @Test
+    public void testReKeyedLeftRowReportsModifiedValueOfReKeyedRightRow() {
+        final QueryTable left = testRefreshingTable(i(0).toTracking(), stringCol("Key", "a"), intCol("L", 1));
+        final QueryTable right = testRefreshingTable(i(0).toTracking(), stringCol("Key", "a"), intCol("R", 10));
+
+        final QueryTable result = (QueryTable) left.naturalJoin(right, "Key", "R");
+        assertTableEquals(newTable(stringCol("Key", "a"), intCol("L", 1), intCol("R", 10)), result);
+
+        final ModifiedColumnSet rightColumn = result.newModifiedColumnSet("R");
+        final SimpleListener listener = new SimpleListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(0), stringCol("Key", "b"), intCol("R", 11));
+            right.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                    right.newModifiedColumnSet("Key", "R")));
+            addToTable(left, i(0), stringCol("Key", "b"), intCol("L", 1));
+            left.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                    left.newModifiedColumnSet("Key")));
+        });
+
+        assertTableEquals(newTable(stringCol("Key", "b"), intCol("L", 1), intCol("R", 11)), result);
+        assertEquals(1, listener.getCount());
+        final TableUpdate update = listener.getUpdate();
+        assertEquals(i(0), update.modified());
+        assertTrue("R is not marked modified although the left row's R changed from 10 to 11: "
+                + update.modifiedColumnSet(), update.modifiedColumnSet().containsAny(rightColumn));
         listener.close();
     }
 }

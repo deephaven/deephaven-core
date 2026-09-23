@@ -10,7 +10,6 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -20,6 +19,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.base.ArrayUtil.swap;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class RowRedirectionLockFreeTest {
@@ -65,7 +65,7 @@ public class RowRedirectionLockFreeTest {
             failed |= rwb.hasFailed();
         }
         if (failed) {
-            TestCase.fail("WritableRowRedirection had some corrupt values");
+            fail("WritableRowRedirection had some corrupt values");
         }
     }
 

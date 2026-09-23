@@ -8,10 +8,14 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class RowRedirectionTest extends RefreshingTableTestCase {
     private final Logger log = LoggerFactory.getLogger(RowRedirectionTest.class);
 
+    @Test
     public void testBasic() {
         final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
         for (int i = 0; i < 3; i++) {
@@ -48,6 +52,7 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
         });
     }
 
+    @Test
     public void testContiguous() {
         final WritableRowRedirection rowRedirection = new ContiguousWritableRowRedirection(10);
 

@@ -24,7 +24,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReflexiveUse;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -38,9 +37,7 @@ import java.util.concurrent.*;
 
 import static io.deephaven.engine.context.TestExecutionContext.OPERATION_INITIALIZATION;
 import static io.deephaven.engine.util.TableTools.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestEventDrivenUpdateGraph {
     EventDrivenUpdateGraph defaultUpdateGraph;
@@ -127,10 +124,10 @@ public class TestEventDrivenUpdateGraph {
 
             int steps = 0;
             do {
-                TestCase.assertEquals(steps, updated.size());
+                assertEquals(steps, updated.size());
                 eventDrivenUpdateGraph.requestRefresh();
             } while (steps++ < 100);
-            TestCase.assertEquals(steps, updated.size());
+            assertEquals(steps, updated.size());
         }
     }
 
@@ -148,7 +145,7 @@ public class TestEventDrivenUpdateGraph {
 
             int steps = 0;
             do {
-                TestCase.assertEquals(1, updated.size());
+                assertEquals(1, updated.size());
                 eventDrivenUpdateGraph.requestRefresh();
 
                 TableTools.showWithRowSet(modifySource);
@@ -156,9 +153,9 @@ public class TestEventDrivenUpdateGraph {
                 final TrackingRowSet rowSet = updated.getRowSet();
                 System.out.println("Step = " + steps);
                 final long xv = xcs.getLong(rowSet.firstRowKey());
-                TestCase.assertEquals(2L * (steps + 1), xv);
+                assertEquals(2L * (steps + 1), xv);
             } while (steps++ < 100);
-            TestCase.assertEquals(1, updated.size());
+            assertEquals(1, updated.size());
         }
     }
 
@@ -389,10 +386,10 @@ public class TestEventDrivenUpdateGraph {
 
             int step = 0;
             do {
-                TestCase.assertEquals(1, updated.size());
+                assertEquals(1, updated.size());
                 eventDrivenUpdateGraph.requestRefresh();
             } while (++step < steps);
-            TestCase.assertEquals(1, updated.size());
+            assertEquals(1, updated.size());
 
             // so that we do not lose the reference
             return updated;

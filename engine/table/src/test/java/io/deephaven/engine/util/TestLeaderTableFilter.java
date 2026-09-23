@@ -22,7 +22,6 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -971,7 +970,7 @@ public class TestLeaderTableFilter {
 
         @Override
         public void onUpdate(TableUpdate upstream) {
-            TestCase.fail("Expected exception.");
+            fail("Expected exception.");
         }
     }
 

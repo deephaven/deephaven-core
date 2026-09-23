@@ -194,7 +194,7 @@ final class RightIncrementalNaturalJoinHasherChar extends RightIncrementalNatura
                         Assert.eq(duplicateSize, "duplicateSize", duplicates.size() - 1, "duplicates.size() - 1");
                         if (inputKey == newKey) {
                             // we have a new output key for the LHS rows;
-                            modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                            modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                         }
                     } else {
                         // we have a duplicate, how to handle it?;
@@ -206,13 +206,13 @@ final class RightIncrementalNaturalJoinHasherChar extends RightIncrementalNatura
                             final long newKey = Math.min(rightRowKeyForState, inputKey);
                             if (newKey != rightRowKeyForState) {
                                 rightRowKey.set(tableLocation, newKey);
-                                modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                             }
                         } else if (addOnly && joinType == NaturalJoinType.LAST_MATCH) {
                             final long newKey = Math.max(rightRowKeyForState, inputKey);
                             if (newKey != rightRowKeyForState) {
                                 rightRowKey.set(tableLocation, newKey);
-                                modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                             }
                         } else {
                             // create a duplicate rowset and add the new row to it;
@@ -220,7 +220,9 @@ final class RightIncrementalNaturalJoinHasherChar extends RightIncrementalNatura
                             final WritableRowSet duplicates = RowSetFactory.fromKeys(rightRowKeyForState, inputKey);
                             rightSideDuplicateRowSets.set(duplicateLocation, duplicates);
                             rightRowKey.set(tableLocation, rowKeyFromDuplicateLocation(duplicateLocation));
-                            modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                            if (duplicateCreationChangesState(duplicates, rightRowKeyForState, joinType)) {
+                                modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMainRightAdd(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, rightRowKeyForState, inputKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                            }
                         }
                     }
                     break;

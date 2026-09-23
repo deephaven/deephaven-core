@@ -29,7 +29,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
@@ -59,6 +58,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link HierarchicalTable#snapshot(SnapshotState, Table, ColumnName, BitSet, RowSequence, WritableChunk[])
@@ -259,7 +259,7 @@ public class TestHierarchicalTableSnapshots {
         TableTools.showWithRowSet(snapshotSort);
 
         // first we know that the size of the tables must be the same
-        TestCase.assertEquals(snapshot.size(), snapshotSort.size());
+        assertEquals(snapshot.size(), snapshotSort.size());
         // and the first row must be the same, because it is the parent
         assertTableEquals(snapshot.head(1), snapshotSort.head(1));
         // then we have six rows of banana, and that should be identical
@@ -592,11 +592,11 @@ public class TestHierarchicalTableSnapshots {
             final RollupTable customRollup = rollupTable.withNodeOperations(
                     rollupTable.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated)
                             .updateView("iPlus1 = ii + 1"));
-            TestCase.fail("Expected exception not thrown");
+            fail("Expected exception not thrown");
         } catch (Exception ex) {
             if (!(ex instanceof IllegalArgumentException)
                     || !ex.toString().contains("updateView does not support virtual row variables")) {
-                TestCase.fail("Expected IllegalArgumentException, got " + ex.getClass().getSimpleName() + ": " + ex);
+                fail("Expected IllegalArgumentException, got " + ex.getClass().getSimpleName() + ": " + ex);
             }
         }
     }

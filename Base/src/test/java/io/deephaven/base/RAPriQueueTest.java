@@ -3,9 +3,11 @@
 //
 package io.deephaven.base;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class RAPriQueueTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class RAPriQueueTest {
 
     class Element {
         int value;
@@ -31,6 +33,7 @@ public class RAPriQueueTest extends TestCase {
         }
     }
 
+    @Test
     public void testEnqueueDequeue() {
         Element[] a = new Element[10];
         for (int i = 0; i < a.length; ++i) {
@@ -103,6 +106,7 @@ public class RAPriQueueTest extends TestCase {
         assertTrue(pq.isEmpty());
     }
 
+    @Test
     public void testRandomRemove() {
         Element[] a = new Element[10];
         for (int i = 0; i < a.length; ++i) {
@@ -171,6 +175,7 @@ public class RAPriQueueTest extends TestCase {
         assertTrue(pq.isEmpty());
     }
 
+    @Test
     public void testReversal() {
         Element[] a = new Element[10];
         for (int i = 0; i < a.length; ++i) {

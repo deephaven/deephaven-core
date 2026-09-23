@@ -153,7 +153,7 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
         onComplete.accept(PushdownResult.allMaybeMatch(selection));
     }
 
-    public static class DataIndexPushdownContext extends BasePushdownFilterContextImpl {
+    public static class DataIndexPushdownContext extends ForwardingPushdownFilterContext {
         private final Map<String, String> renameMap;
         private final PushdownFilterContext wrappedContext;
 
@@ -164,6 +164,9 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                 final PushdownFilterContext wrappedContext) {
             super(filter, columnSources);
             this.wrappedContext = wrappedContext;
+            if (wrappedContext != null) {
+                addChildContext(wrappedContext);
+            }
 
             final List<String> filterColumns = filter.getColumns();
             Require.eq(filterColumns.size(), "filterColumns.size()",
@@ -186,14 +189,6 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                     renameMap.put(filterColumnName, indexColumnName);
                 }
             }
-        }
-
-        @Override
-        public void close() {
-            if (wrappedContext != null) {
-                wrappedContext.close();
-            }
-            super.close();
         }
     }
 

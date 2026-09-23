@@ -5,7 +5,6 @@ package io.deephaven.util.profiling;
 
 import io.deephaven.util.QueryConstants;
 import com.sun.management.ThreadMXBean;
-import junit.framework.TestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -13,6 +12,8 @@ import org.junit.Test;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link ThreadProfiler}.
@@ -74,23 +75,23 @@ public class TestThreadProfiler {
         final int count = 10;
         final int size = 1024;
         final long startBytes = SUT.getCurrentThreadAllocatedBytes();
-        TestCase.assertFalse(startBytes == QueryConstants.NULL_LONG);
+        assertFalse(startBytes == QueryConstants.NULL_LONG);
 
         for (int ii = 0; ii < count; ++ii) {
             items.add(new byte[size]);
         }
 
         final long endBytes = SUT.getCurrentThreadAllocatedBytes();
-        TestCase.assertFalse(endBytes == QueryConstants.NULL_LONG);
+        assertFalse(endBytes == QueryConstants.NULL_LONG);
         final long allocatedBytes = endBytes - startBytes;
 
         System.out.println("TestThreadProfiler: Allocated " + allocatedBytes + " with items hash " + items.hashCode());
         if (STRICT_MODE) {
             final long minimumExpectedBytes = count * size;
             final long maximumExpectedBytes = count * (128 + size);
-            TestCase.assertTrue(allocatedBytes >= minimumExpectedBytes && allocatedBytes <= maximumExpectedBytes);
+            assertTrue(allocatedBytes >= minimumExpectedBytes && allocatedBytes <= maximumExpectedBytes);
         } else {
-            TestCase.assertTrue(allocatedBytes >= 0);
+            assertTrue(allocatedBytes >= 0);
         }
     }
 
@@ -102,9 +103,9 @@ public class TestThreadProfiler {
         }
 
         final long startCpuNanos = SUT.getCurrentThreadCpuTime();
-        TestCase.assertFalse(startCpuNanos == QueryConstants.NULL_LONG);
+        assertFalse(startCpuNanos == QueryConstants.NULL_LONG);
         final long startUserNanos = SUT.getCurrentThreadUserTime();
-        TestCase.assertFalse(startUserNanos == QueryConstants.NULL_LONG);
+        assertFalse(startUserNanos == QueryConstants.NULL_LONG);
 
         long fib_prev = 0;
         long fib_curr = 1;
@@ -115,20 +116,20 @@ public class TestThreadProfiler {
         }
 
         final long endUserNanos = SUT.getCurrentThreadUserTime();
-        TestCase.assertFalse(endUserNanos == QueryConstants.NULL_LONG);
+        assertFalse(endUserNanos == QueryConstants.NULL_LONG);
         final long endCpuNanos = SUT.getCurrentThreadCpuTime();
-        TestCase.assertFalse(endCpuNanos == QueryConstants.NULL_LONG);
+        assertFalse(endCpuNanos == QueryConstants.NULL_LONG);
         final long elapsedCpuNanos = endCpuNanos - startCpuNanos;
         final long elapsedUserNanos = endUserNanos - startUserNanos;
 
         System.out.println("TestThreadProfiler: Spent " + elapsedCpuNanos + "ns (" + elapsedUserNanos
                 + " ns user) calculating fib(92) == " + fib_curr);
-        TestCase.assertEquals(7540113804746346429L, fib_curr);
+        assertEquals(7540113804746346429L, fib_curr);
         if (STRICT_MODE) {
-            TestCase.assertTrue(elapsedUserNanos <= elapsedCpuNanos);
+            assertTrue(elapsedUserNanos <= elapsedCpuNanos);
         } else {
-            TestCase.assertTrue(elapsedUserNanos >= 0);
-            TestCase.assertTrue(elapsedCpuNanos >= 0);
+            assertTrue(elapsedUserNanos >= 0);
+            assertTrue(elapsedCpuNanos >= 0);
         }
     }
 }

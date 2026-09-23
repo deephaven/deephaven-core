@@ -50,10 +50,10 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.IntVector;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import javax.inject.Singleton;
@@ -81,6 +81,7 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
+import static org.junit.Assert.*;
 
 /**
  * Barrage round-trip coverage for subscription and viewport changes: column subscriptions, forward and reverse
@@ -89,6 +90,7 @@ import static io.deephaven.engine.util.TableTools.col;
 @Category(OutOfBandTest.class)
 public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRoundTripTestBase {
 
+    @Test
     public void testColumnSubChange() {
         for (final int size : new int[] {10, 100, 1000}) {
             for (final int numProducerCoalesce : new int[] {1, 4}) {
@@ -133,6 +135,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    @Test
     public void testViewportChange() {
         for (final int size : new int[] {10, 100}) {
             for (final int numProducerCoalesce : new int[] {1, 4}) {
@@ -181,6 +184,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    @Test
     public void testViewportDirectionChange() {
         for (final int size : new int[] {10, 100}) {
             for (final int numProducerCoalesce : new int[] {1, 4}) {
@@ -229,6 +233,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    @Test
     public void testOverlappedColumnSubsChange() {
         for (final int size : new int[] {10, 100, 1000}) {
             for (final int numProducerCoalesce : new int[] {1, 4}) {
@@ -272,6 +277,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    @Test
     public void testViewportSubscribeMidCycle() {
         // This is a regression test for IDS-6392. It catches a race between when a subscription becomes active and
         // when the viewport becomes active post-snapshot.
@@ -326,6 +332,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    @Test
     public void testOverlappingViewportChange() {
         for (final int size : new int[] {10, 100, 1000}) {
             for (final int numProducerCoalesce : new int[] {1, 4}) {
@@ -374,6 +381,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    @Test
     public void testSimultaneousSubscriptionChanges() {
         for (final int size : new int[] {10, 100, 1000}) {
             final int numProducerCoalesce = 8;
@@ -415,6 +423,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
      * is computed as a data-position-space distance but then used as a row-index count, so modOffsets.get(endRange) can
      * return a data position past the chunk boundary, triggering "Subset is out of bounds for context of size N".
      */
+    @Test
     public void testModColumnChunkBoundaryWithGappedViewport() {
         final BitSet allColumns = new BitSet(1);
         allColumns.set(0);
@@ -504,6 +513,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
      * The source is then ticked so that the deltas following the growth are validated against the contents the
      * replicated table was left holding.
      */
+    @Test
     public void testGrowingFullSubscriptionAppendOnly() {
         // The server ships at most MIN_SNAPSHOT_CELL_COUNT cells per growth round, so a single-column table needs more
         // rows than that for the subscription to be grown across multiple messages.
@@ -565,6 +575,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
      * before the server acknowledges the subscription would silently never hear about them. Attaching one must fail
      * instead.
      */
+    @Test
     public void testListenToIncompleteFullSubscription() {
         final int size = (int) (BarrageUtil.MIN_SNAPSHOT_CELL_COUNT * 3);
         final int[] values = new int[size];
@@ -591,7 +602,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
 
         try {
             client.barrageTable.addUpdateListener(new FailureListener("Listener on incomplete table"));
-            TestCase.fail("expected an IllegalStateException listening to an incomplete table");
+            fail("expected an IllegalStateException listening to an incomplete table");
         } catch (final IllegalStateException expected) {
             assertTrue(expected.getMessage(), expected.getMessage().contains("incomplete table"));
         }

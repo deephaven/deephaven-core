@@ -31,6 +31,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.*;
@@ -42,6 +43,7 @@ import static io.deephaven.api.TableOperationsDefaults.splitToCollection;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase {
@@ -112,7 +114,6 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 numRightBitsToReserve, joinControl);
     }
 
-
     Table doLeftOuterJoin(final Table left, final Table right, final String columnsToMatch) {
         return doLeftOuterJoin(left, right, columnsToMatch, "");
     }
@@ -121,6 +122,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         return doLeftOuterJoin(left, right, "", "");
     }
 
+    @Test
     public void testZeroKeyJoinBitExpansionOnAdd() {
         // Looking to force our index space to need more keys.
         final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
@@ -155,6 +157,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         Assert.eq(listener.update.shifted().size(), "listener.update.shifted().size()", lTable.size(), "lTable.size()");
     }
 
+    @Test
     public void testZeroKeyJoinBitExpansionOnBoundaryShift() {
         // Looking to force our index space to need more keys.
         final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
@@ -196,6 +199,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 "2 * lTable.size()");
     }
 
+    @Test
     public void testZeroKeyJoinBitExpansionWithInnerShift() {
         // Looking to force our index space to need more keys.
         final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
@@ -234,6 +238,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 "3 * lTable.size()");
     }
 
+    @Test
     public void testZeroKeyJoinCompoundShift() {
         // rightTable shift, leftTable shift, and bit expansion
         final QueryTable lTable = testRefreshingTable(col("X", "a", "b", "c", "d"));
@@ -281,6 +286,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         TstUtils.validate(en);
     }
 
+    @Test
     public void testIncrementalZeroKeyJoin() {
         final int maxSteps = 50;
         final int[] sizes = {10, 100, 1000};
@@ -293,6 +299,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
     }
 
+    @Test
     public void testIncrementalZeroKeyJoinArrays() {
         final int maxSteps = 10;
         final int[] sizes = {10};
@@ -362,6 +369,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
     }
 
+    @Test
     public void testZeroKeyLeftOuterJoinSimple() {
         final QueryTable left = TstUtils.testRefreshingTable(intCol("LS", 1, 2, 3, 4, 5));
         final QueryTable right = TstUtils.testRefreshingTable(intCol("RS", 10, 20));
@@ -473,6 +481,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         // listener.reset();
     }
 
+    @Test
     public void testZeroKeyTransitions() {
         final QueryTable left = TstUtils.testRefreshingTable(i(10).toTracking(), intCol("LS", 1), intCol("LS2", 100));
         final QueryTable right = TstUtils.testRefreshingTable(intCol("RS"));
@@ -630,6 +639,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         listener.reset();
     }
 
+    @Test
     public void testLeftOuterJoinSimpleStatic() {
         testLeftOuterJoinSimpleStatic(TestJoinControl.BUILD_LEFT_CONTROL);
         testLeftOuterJoinSimpleStatic(TestJoinControl.BUILD_RIGHT_CONTROL);
@@ -646,6 +656,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 joined);
     }
 
+    @Test
     public void testLeftOuterJoinSimpleStaticEmpty() {
         testLeftOuterJoinSimpleStaticEmpty(TestJoinControl.BUILD_LEFT_CONTROL);
         testLeftOuterJoinSimpleStaticEmpty(TestJoinControl.BUILD_RIGHT_CONTROL);
@@ -672,6 +683,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 intCol("RS", NULL_INT, NULL_INT, NULL_INT, NULL_INT, NULL_INT, NULL_INT)), right2);
     }
 
+    @Test
     public void testLeftOuterJoinSimpleIncremental() {
         testLeftOuterJoinSimpleIncremental(TestJoinControl.BUILD_LEFT_CONTROL);
     }
@@ -788,6 +800,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 intCol("RS", 70, NULL_INT, 40, 50, 60, 30, NULL_INT, NULL_INT, 40, 50, 60)), joined);
     }
 
+    @Test
     public void testLeftOuterJoinShiftAndTransitionToFull() {
         final QueryTable left = TstUtils.testRefreshingTable(intCol("LK", 1), intCol("LS", 1));
         final QueryTable right = TstUtils.testRefreshingTable(intCol("RK", 2), intCol("RS", 10));
@@ -834,6 +847,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         listener.reset();
     }
 
+    @Test
     public void testLeftOuterJoinShiftAndRightBitsIncrease() {
         final QueryTable left = TstUtils.testRefreshingTable(i(1).toTracking(), intCol("LK", 1), intCol("LS", 1));
         final QueryTable right = TstUtils.testRefreshingTable(intCol("RK", 2), intCol("RS", 10));
@@ -879,7 +893,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         listener.reset();
     }
 
-
+    @Test
     public void testLeftOuterJoinShiftAndTransitionToEmpty() {
         final QueryTable left = TstUtils.testRefreshingTable(i(10).toTracking(), intCol("LK", 1), intCol("LS", 1));
         final QueryTable right = TstUtils.testRefreshingTable(intCol("RK", 1), intCol("RS", 10));
@@ -925,6 +939,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         listener.reset();
     }
 
+    @Test
     public void testLeftOuterJoinSimpleLeftIncremental() {
         testLeftOuterJoinSimpleLeftIncremental(TestJoinControl.BUILD_LEFT_CONTROL);
     }
@@ -971,6 +986,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 intCol("RS", NULL_INT, 10, 20, NULL_INT, 30, 10, 20, 10, 20, NULL_INT)), joined);
     }
 
+    @Test
     public void testLeftTickingRightStaticRemoveWithoutRightState() {
         final QueryTable left = TstUtils.testRefreshingTable(i(10, 20).toTracking(), intCol("LK", 1, 1),
                 intCol("LS", 1, 2));
@@ -1009,7 +1025,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         listener.reset();
     }
 
-
+    @Test
     public void testLeftOuterJoinSimpleRightIncremental() {
         testLeftOuterJoinSimpleRightIncremental(TestJoinControl.DEFAULT_JOIN_CONTROL);
     }
@@ -1118,6 +1134,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         return errorListener;
     }
 
+    @Test
     public void testSmallStaticJoin() {
         final String[] types = new String[] {"single", "none", "multi"};
         final int[] cardinality = new int[] {1, 0, 3};
@@ -1137,6 +1154,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
     }
 
+    @Test
     public void testLargeStaticJoin() {
         final String[] types = new String[26];
         final int[] cardinality = new int[26];
@@ -1154,6 +1172,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
     }
 
+    @Test
     public void testLargeStaticJoinWithOverflow() {
         final String[] types = new String[26];
         final int[] cardinality = new int[26];
@@ -1289,6 +1308,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
     }
 
+    @Test
     public void testStaticVsNaturalJoin() {
         final int size = 10000;
         final Table x = TableTools.emptyTable(size).update("Col1=i");
@@ -1299,6 +1319,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertTableEquals(z2, z);
     }
 
+    @Test
     public void testStaticVsNaturalJoin2() {
         final int size = 10000;
 
@@ -1328,6 +1349,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertTableEquals(z2, z);
     }
 
+    @Test
     public void testIncrementalOverflow() {
         final int[] sizes = {100};
 
@@ -1345,6 +1367,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
     }
 
+    @Test
     public void testLeftIncrementalOverflowRemove() {
         final int size = 32;
         final int sentinelOffset = 10000;
@@ -1400,6 +1423,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertTableEquals(expected2, result);
     }
 
+    @Test
     public void testRightIncrementalOverflowModifyKeys() {
         final int size = 32;
         final int sentinelOffset = 10000;
@@ -1466,6 +1490,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertTableEquals(expected2, result);
     }
 
+    @Test
     public void testIncrementalWithKeyColumns() {
         final int maxSteps = 100;
         final int[] sizes = {10, 100, 1000};
@@ -1480,6 +1505,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
     }
 
+    @Test
     public void testIncrementalWithKeyColumnArraysArray() {
         final int maxSteps = 10;
         final int[] sizes = {10, 10};
@@ -1552,6 +1578,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
     }
 
+    @Test
     public void testColumnSourceCanReuseContextWithSmallerOrderedKeys() {
         final QueryTable t1 = testRefreshingTable(i(0, 1).toTracking());
         final QueryTable t2 = (QueryTable) t1.update("K=k", "A=1");
@@ -1568,6 +1595,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
     }
 
+    @Test
     public void testShiftingDuringRehash() {
         final int maxSteps = 2500;
         final MutableInt numSteps = new MutableInt();
@@ -1646,6 +1674,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
     }
 
+    @Test
     public void testMultipleKeyColumns() {
         testMultipleKeyColumns(true, true);
         testMultipleKeyColumns(true, false);

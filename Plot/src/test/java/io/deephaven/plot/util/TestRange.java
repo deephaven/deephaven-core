@@ -3,11 +3,14 @@
 //
 package io.deephaven.plot.util;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
+import org.junit.Test;
 
-public class TestRange extends BaseArrayTestCase {
+import static org.junit.Assert.*;
 
+public class TestRange {
+
+    @Test
     public void testRangeBadOrder() {
         final double min = 1.0;
         final double max = -1.0;
@@ -20,6 +23,7 @@ public class TestRange extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testRangeDefault() {
         final double min = -1.0;
         final double max = 1.0;
@@ -34,6 +38,7 @@ public class TestRange extends BaseArrayTestCase {
         assertFalse(r.inRange(+1.1));
     }
 
+    @Test
     public void testRangeOpen() {
         final double min = -1.0;
         final double max = 1.0;
@@ -50,6 +55,7 @@ public class TestRange extends BaseArrayTestCase {
         assertFalse(r.inRange(+1.1));
     }
 
+    @Test
     public void testRangeClosed() {
         final double min = -1.0;
         final double max = 1.0;

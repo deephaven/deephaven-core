@@ -3,10 +3,13 @@
 //
 package io.deephaven.modelfarm.util;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 
-public class TestKeyedPriorityBlockingQueue extends BaseArrayTestCase {
+import static org.junit.Assert.*;
 
+public class TestKeyedPriorityBlockingQueue {
+
+    @Test
     public void testQueue() throws InterruptedException {
         final KeyedPriorityBlockingQueue<String> queue = new KeyedPriorityBlockingQueue<>();
         assertTrue(queue.isEmpty());

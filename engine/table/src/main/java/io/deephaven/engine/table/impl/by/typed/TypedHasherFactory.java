@@ -48,6 +48,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.function.LongUnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -181,7 +182,7 @@ public class TypedHasherFactory {
                     .stateType(long.class).mainStateName("mainRightRowKey")
                     .emptyStateName("EMPTY_RIGHT_STATE")
                     .includeOriginalSources(true)
-                    .supportRehash(false)
+                    .supportRehash(true)
                     .addConstructorParameter(ParameterSpec.builder(NaturalJoinType.class, "joinType").build())
                     .addConstructorParameter(ParameterSpec.builder(boolean.class, "addOnly").build());
 
@@ -195,7 +196,8 @@ public class TypedHasherFactory {
                     false, TypedNaturalJoinFactory::staticProbeDecorateLeftFound,
                     TypedNaturalJoinFactory::staticProbeDecorateLeftMissing,
                     ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
-                    ParameterSpec.builder(long.class, "redirectionOffset").build()));
+                    ParameterSpec.builder(long.class, "redirectionOffset").build(),
+                    ParameterSpec.builder(LongUnaryOperator.class, "probedRowKeyToErrorRowKey").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
                     true, true, true, TypedNaturalJoinFactory::staticBuildRightFound,
@@ -322,8 +324,7 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("applyLeftShift", null, true,
                     TypedNaturalJoinFactory::incrementalShiftLeftFound,
                     TypedNaturalJoinFactory::incrementalShiftLeftMissing,
-                    ParameterSpec.builder(long.class, "shiftDelta").build(),
-                    probeContextParam));
+                    modifiedSlotTrackerParam));
         } else if (baseClass.equals(StaticAsOfJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticAsOfJoinHasher").packageGroup("asofjoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
@@ -845,12 +846,14 @@ public class TypedHasherFactory {
             builder.addStatement("destKeyArray$L[destinationTableLocation] = k$L", ii, ii);
         }
         builder.addStatement("destState[destinationTableLocation] = originalStateArray[sourceBucket]");
-        if (!hasherConfig.alwaysMoveMain) {
-            builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
-        }
-        hasherConfig.moveMainFull.accept(builder);
-        if (!hasherConfig.alwaysMoveMain) {
-            builder.endControlFlow();
+        if (hasherConfig.moveMainFull != null) {
+            if (!hasherConfig.alwaysMoveMain) {
+                builder.beginControlFlow("if (sourceBucket != destinationTableLocation)");
+            }
+            hasherConfig.moveMainFull.accept(builder);
+            if (!hasherConfig.alwaysMoveMain) {
+                builder.endControlFlow();
+            }
         }
         builder.addStatement("break");
         builder.endControlFlow();

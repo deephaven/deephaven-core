@@ -3,23 +3,26 @@
 //
 package io.deephaven.base.testing;
 
-import io.deephaven.base.verify.Assert;
-import junit.framework.TestCase;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.jmock.Mockery;
-import org.jmock.Sequence;
-import org.jmock.States;
 import org.jmock.api.Imposteriser;
 import org.jmock.api.Invocation;
 import org.jmock.api.Invokable;
-import org.jmock.auto.internal.Mockomatic;
 import org.jmock.imposters.ByteBuddyClassImposteriser;
-import org.jmock.internal.ExpectationBuilder;
 import org.jmock.lib.action.CustomAction;
+import org.jmock.Sequence;
+import org.jmock.States;
+import org.jmock.internal.ExpectationBuilder;
 import org.jmock.lib.concurrent.Synchroniser;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,18 +30,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-abstract public class BaseCachedJMockTestCase extends TestCase {
-    protected final Mockery context;
+/**
+ * JMock fixture as a {@link TestRule}: owns a {@link Mockery} with Deephaven's threading policy and caching
+ * imposteriser, and asserts that it is satisfied once the test has finished.
+ *
+ * <p>
+ * Use it as {@code @Rule public final JMockRule jmock = new JMockRule();}. Composing it as a rule rather than
+ * inheriting a base class leaves the single superclass slot free for whatever else a test needs.
+ */
+public class JMockRule implements TestRule {
 
-    {
-        // use an initializer rather than setUp so forgetting to
-        // call super.setUp won't use the wrong imposteriser
+    private final Mockery context;
+
+    public JMockRule() {
         context = new Mockery();
         context.setThreadingPolicy(new Synchroniser());
         context.setImposteriser(CachingImposteriser.INSTANCE);
-        new Mockomatic(context).fillIn(this);
     }
 
+    public Mockery context() {
+        return context;
+    }
 
     public <T> T mock(Class<T> tClass) {
         return context.mock(tClass);
@@ -65,9 +77,14 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
     }
 
     @Override
-    protected void tearDown() throws Exception {
-        context.assertIsSatisfied();
-        super.tearDown();
+    public Statement apply(Statement statement, Description description) {
+        return new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                statement.evaluate();
+                context.assertIsSatisfied();
+            }
+        };
     }
 
     public static class Expectations extends org.jmock.Expectations {
@@ -112,7 +129,7 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
     // ----------------------------------------------------------------
     public static class CachingImposteriser implements Imposteriser {
 
-        public static final BaseCachedJMockTestCase.CachingImposteriser INSTANCE = new CachingImposteriser();
+        public static final CachingImposteriser INSTANCE = new CachingImposteriser();
 
         private final static Class[] CONSTRUCTOR_PARAMS = {InvocationHandler.class};
 
@@ -152,21 +169,21 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
         /** Based on {@link org.jmock.lib.JavaReflectionImposteriser}. */
         private Function<Invokable, ?> createInterfaceConstructor(
                 ProxyInfo proxyInfo) {
-            ClassLoader proxyClassLoader = BaseCachedJMockTestCase.class.getClassLoader();
+            ClassLoader proxyClassLoader = JMockRule.class.getClassLoader();
             Class proxyClass = Proxy.getProxyClass(proxyClassLoader, proxyInfo.proxiedClasses);
 
             final Constructor constructor;
             try {
                 constructor = proxyClass.getConstructor(CONSTRUCTOR_PARAMS);
             } catch (NoSuchMethodException e) {
-                throw Assert.exceptionNeverCaught(e);
+                throw io.deephaven.base.verify.Assert.exceptionNeverCaught(e);
             }
             return invokable -> {
                 try {
                     return constructor.newInstance((InvocationHandler) (proxy, method, args) -> invokable
                             .invoke(new Invocation(proxy, method, args)));
                 } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                    throw Assert.exceptionNeverCaught(e);
+                    throw io.deephaven.base.verify.Assert.exceptionNeverCaught(e);
                 }
             };
         }

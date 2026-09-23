@@ -23,14 +23,16 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.*;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static org.junit.Assert.*;
 
 public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
+    @Test
     public void testStatic() {
         final Table in = TableTools.newTable(stringCol("Sym", "AAPL", "SPY"), intCol("Val1", 1, 2),
                 intCol("Val2", 3, 4), intCol("Val3", 5, 6));
@@ -84,6 +86,7 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
         assertTableEquals(expectMulti, outMulti);
     }
 
+    @Test
     public void testBadSharedContext() {
         final Table in = TableTools.newTable(stringCol("Sym", "AAPL", "SPY", "TSLA", "VXX"),
                 intCol("Sentinel", 100, 101, 102, 103));
@@ -112,30 +115,32 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
         }
     }
 
-
+    @Test
     public void testTypeMismatch() {
         final Table in = TableTools.newTable(stringCol("Sym", "AAPL", "SPY"), intCol("Val1", 1, 2),
                 intCol("Val2", 3, 4), intCol("Val3", 5, 6), doubleCol("Val4", 7.0, 8.0));
         try {
             ColumnsToRowsTransform.columnsToRows(in, "Name", "Value", "Val1", "Val2", "Val4");
-            TestCase.fail("Expected an exception for mismatched types.");
+            fail("Expected an exception for mismatched types.");
         } catch (IllegalArgumentException iae) {
-            TestCase.assertEquals("Incompatible transpose types Val1 is int, Val4 is double", iae.getMessage());
+            assertEquals("Incompatible transpose types Val1 is int, Val4 is double", iae.getMessage());
         }
     }
 
+    @Test
     public void testMisalignment() {
         final Table in = TableTools.newTable(stringCol("Sym", "AAPL", "SPY"), intCol("Val1", 1, 2),
                 intCol("Val2", 3, 4), intCol("Val3", 5, 6), doubleCol("Val4", 7.0, 8.0));
         try {
             ColumnsToRowsTransform.columnsToRows(in, "Name", new String[] {"Foo", "Bar"}, new String[] {"A", "B"},
                     new String[][] {new String[] {"Val1", "Val2"}, new String[] {"Val4"}});
-            TestCase.fail("Expected an exception for mismatched types.");
+            fail("Expected an exception for mismatched types.");
         } catch (IllegalArgumentException iae) {
-            TestCase.assertEquals("2 labels defined, but 1 transpose columns defined for Bar.", iae.getMessage());
+            assertEquals("2 labels defined, but 1 transpose columns defined for Bar.", iae.getMessage());
         }
     }
 
+    @Test
     public void testIncremental() {
         for (int seed = 0; seed < 1; ++seed) {
             testIncremental(seed);
