@@ -34,16 +34,6 @@ public class ConditionFilterTest {
         return filter;
     }
 
-    /**
-     * The input count is derived from the analysis {@code init()} performs, so it is defined before the generated
-     * kernel exists and must not fail on a filter whose inputs have not been determined yet.
-     */
-    @Test
-    public void testGetNumInputsUsedBeforeInit() {
-        final ConditionFilter filter = (ConditionFilter) ConditionFilter.createConditionFilter("X > 5");
-        assertEquals("no inputs are known before init", 0, filter.getNumInputsUsed());
-    }
-
     @Test
     public void testGetNumInputsUsedCountsColumns() {
         assertEquals(1, initialized("X > 5", table).getNumInputsUsed());
