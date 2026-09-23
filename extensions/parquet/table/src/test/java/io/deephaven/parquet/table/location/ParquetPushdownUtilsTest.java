@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.location;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.parquet.bytes.BytesUtils;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.junit.Test;
@@ -18,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Category(OutOfBandTest.class)
 public class ParquetPushdownUtilsTest {
     private static Statistics<?> doubleStats(final double minInc, final double maxInc) {
-        final PrimitiveType col = Types.required(DOUBLE).named("doubleCol");
+        final PrimitiveType col = Types.required(DOUBLE).columnOrder(ColumnOrder.typeDefined()).named("doubleCol");
         return Statistics.getBuilderForReading(col)
                 .withMin(BytesUtils.longToBytes(Double.doubleToLongBits(minInc)))
                 .withMax(BytesUtils.longToBytes(Double.doubleToLongBits(maxInc)))

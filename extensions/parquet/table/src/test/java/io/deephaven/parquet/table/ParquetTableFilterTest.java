@@ -1491,14 +1491,18 @@ public final class ParquetTableFilterTest {
         // Read the reference parquet file with NaN values generated using PyArrow.
         final String path = ParquetTableFilterTest.class.getResource("/ReferenceFloatingPointNan.parquet").getFile();
 
+        // Pyarrow's parquet writing code does (/did) not write NaN values to statistics
         {
-            // Pyarrow's parquet writing code does not write NaN values to statistics
             final Statistics<?> floatStats = getColumnStatistics(new File(path), "Floats");
             assertTrue(floatStats.hasNonNullValue());
+            assertFalse(floatStats.isNanCountSet());
             assertEquals(-4.56f, floatStats.genericGetMin());
             assertEquals(1.23f, floatStats.genericGetMax());
+        }
+        {
             final Statistics<?> doubleStats = getColumnStatistics(new File(path), "Doubles");
             assertTrue(doubleStats.hasNonNullValue());
+            assertFalse(doubleStats.isNanCountSet());
             assertEquals(-4.56, doubleStats.genericGetMin());
             assertEquals(1.23, doubleStats.genericGetMax());
         }
@@ -1512,14 +1516,22 @@ public final class ParquetTableFilterTest {
                 doubleCol("Doubles", 1.23, Double.NaN, -4.56));
         writeTable(source, dest);
 
+        // Deephaven's parquet writing code writes NaN values to statistics
         {
-            // Deephaven's parquet writing code writes NaN values to statistics, which are then corrected by Parquet
-            // reading code.
-            // TODO (DH-10771): Fix this so DH does not write NaN values to statistics.
             final Statistics<?> floatStats = getColumnStatistics(new File(dest), "Floats");
-            assertFalse(floatStats.hasNonNullValue());
+            assertTrue(floatStats.hasNonNullValue());
+            assertTrue(floatStats.isNanCountSet());
+            assertEquals(1, floatStats.getNanCount());
+            assertEquals(-4.56f, floatStats.genericGetMin());
+            assertEquals(1.23f, floatStats.genericGetMax());
+        }
+        {
             final Statistics<?> doubleStats = getColumnStatistics(new File(dest), "Doubles");
-            assertFalse(doubleStats.hasNonNullValue());
+            assertTrue(doubleStats.hasNonNullValue());
+            assertTrue(doubleStats.isNanCountSet());
+            assertEquals(1, doubleStats.getNanCount());
+            assertEquals(-4.56, doubleStats.genericGetMin());
+            assertEquals(1.23, doubleStats.genericGetMax());
         }
 
         testFilteringNanImpl(readTable(dest));
