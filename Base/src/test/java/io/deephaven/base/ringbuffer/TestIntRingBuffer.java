@@ -9,13 +9,14 @@ package io.deephaven.base.ringbuffer;
 
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.AssertionFailure;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertThrows;
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
-public class TestIntRingBuffer extends TestCase {
+public class TestIntRingBuffer {
 
     final int SENTINEL = Integer.MIN_VALUE;
 
@@ -105,6 +106,7 @@ public class TestIntRingBuffer extends TestCase {
     int E = 'E';
     int F = 'F';
 
+    @Test
     public void testAddRemove() {
 
         IntRingBuffer rb = new IntRingBuffer(3);
@@ -185,6 +187,7 @@ public class TestIntRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testOfferPoll() {
         IntRingBuffer rb = new IntRingBuffer(3);
 
@@ -244,6 +247,7 @@ public class TestIntRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testGrowSimple() {
         IntRingBuffer rb = new IntRingBuffer(4);
 
@@ -268,6 +272,7 @@ public class TestIntRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testGrowComplex() {
         IntRingBuffer rb = new IntRingBuffer(5);
 
@@ -297,6 +302,7 @@ public class TestIntRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testIterator() {
         IntRingBuffer rb = new IntRingBuffer(3);
 
@@ -355,6 +361,7 @@ public class TestIntRingBuffer extends TestCase {
                 iterFinal::remove);
     }
 
+    @Test
     public void testBack() {
         IntRingBuffer rb = new IntRingBuffer(5);
 
@@ -366,6 +373,7 @@ public class TestIntRingBuffer extends TestCase {
         assertEquals(rb.back(), C);
     }
 
+    @Test
     public void testBackWhenEmpty() {
         IntRingBuffer rb = new IntRingBuffer(5);
         try {
@@ -376,6 +384,7 @@ public class TestIntRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testBackTailIsZero() {
         IntRingBuffer rb = new IntRingBuffer(5, false);
 
@@ -390,6 +399,7 @@ public class TestIntRingBuffer extends TestCase {
         assertEquals(rb.back(), F);
     }
 
+    @Test
     public void testLargeAmounts() {
         IntRingBuffer rb = new IntRingBuffer(3);
 
@@ -409,6 +419,7 @@ public class TestIntRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testAddExceptionWhenFull() {
         IntRingBuffer rb = new IntRingBuffer(4, false);
         assert (rb.add(A));
@@ -421,6 +432,7 @@ public class TestIntRingBuffer extends TestCase {
                 () -> rb.add(E));
     }
 
+    @Test
     public void testAddOverwriteAndOffer() {
         IntRingBuffer rb = new IntRingBuffer(4, false);
         assert (4 == rb.remaining());
@@ -466,7 +478,7 @@ public class TestIntRingBuffer extends TestCase {
         assert (A == rb.peekBack(A));
     }
 
-
+    @Test
     public void testMultipleRemove() {
         IntRingBuffer rb = new IntRingBuffer(10, false);
 
@@ -509,6 +521,7 @@ public class TestIntRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testAddRemoveUnsafe() {
         IntRingBuffer rbNoGrow = new IntRingBuffer(3, false);
 
@@ -532,7 +545,6 @@ public class TestIntRingBuffer extends TestCase {
         assertEquals(rbNoGrow.removeUnsafe(), C);
         assertEmpty(rbNoGrow);
 
-
         IntRingBuffer rbGrow = new IntRingBuffer(3, true);
 
         for (int size = 10; size < 1_000_000; size *= 10) {
@@ -544,6 +556,7 @@ public class TestIntRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testOverflow() {
         IntRingBuffer rbA = new IntRingBuffer(0);
         // this should throw

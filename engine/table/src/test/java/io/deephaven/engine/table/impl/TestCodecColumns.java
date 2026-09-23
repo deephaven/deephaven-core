@@ -15,7 +15,6 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.qst.type.Type;
 import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.codec.*;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,6 +25,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for ObjectCodec ColumnSource and AppendableColumn implementations.
@@ -122,9 +123,9 @@ public class TestCodecColumns {
         final Table result =
                 ParquetTools.readParquetSchemaAndTable(dest, ParquetInstructions.EMPTY, instructionsOut);
         TableTools.show(result);
-        TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
+        assertEquals(TABLE_DEFINITION, result.getDefinition());
         final ParquetInstructions readInstructions = instructionsOut.getValue();
-        TestCase.assertTrue(
+        assertTrue(
                 ParquetInstructions.sameColumnNamesAndCodecMappings(expectedReadInstructions, readInstructions));
         TstUtils.assertTableEquals(table, result);
     }
@@ -133,9 +134,9 @@ public class TestCodecColumns {
     public void doCacheTest() {
         try {
             CodecCache.DEFAULT.getCodec("java.lang.String", "param");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (CodecCacheException e) {
-            TestCase.assertEquals(e.getCause().getClass(), ClassCastException.class);
+            assertEquals(e.getCause().getClass(), ClassCastException.class);
         }
     }
 }

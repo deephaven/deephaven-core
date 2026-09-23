@@ -7,6 +7,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import org.junit.Test;
 
 import java.time.Instant;
 
@@ -15,6 +16,7 @@ import java.time.Instant;
  */
 public class TestSimulationClock extends RefreshingTableTestCase {
 
+    @Test
     public void testSignal() {
         final Instant start = DateTimeUtils.now();
         final SimulationClock clock = new SimulationClock(start, start.plusNanos(1), 1);

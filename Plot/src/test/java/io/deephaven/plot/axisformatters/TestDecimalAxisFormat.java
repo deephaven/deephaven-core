@@ -3,12 +3,15 @@
 //
 package io.deephaven.plot.axisformatters;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 
 import java.text.NumberFormat;
 
-public class TestDecimalAxisFormat extends BaseArrayTestCase {
+import static org.junit.Assert.*;
 
+public class TestDecimalAxisFormat {
+
+    @Test
     public void testFormat() {
         final DecimalAxisFormat format = new DecimalAxisFormat();
         final NumberFormat f = format.getNumberFormatter();
@@ -16,6 +19,7 @@ public class TestDecimalAxisFormat extends BaseArrayTestCase {
         assertEquals(f.format(11123.45), "11,123.45");
     }
 
+    @Test
     public void testFormatPattern() {
         final DecimalAxisFormat format = new DecimalAxisFormat();
         format.setPattern("#,#00.00 $MM");

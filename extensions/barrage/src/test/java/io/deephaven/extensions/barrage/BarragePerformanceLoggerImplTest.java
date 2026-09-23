@@ -14,6 +14,7 @@ import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger.Stat
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.time.DateTimeUtils;
 import org.HdrHistogram.Histogram;
+import org.junit.Test;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -122,6 +123,7 @@ public class BarragePerformanceLoggerImplTest extends RefreshingTableTestCase {
         return hist;
     }
 
+    @Test
     public void testSubscriptionSinkReceivesRawNanos() {
         final RecordingSubscriptionSink sink = new RecordingSubscriptionSink();
         final BarrageSubscriptionPerformanceLoggerImpl impl = new BarrageSubscriptionPerformanceLoggerImpl(sink);
@@ -144,6 +146,7 @@ public class BarragePerformanceLoggerImplTest extends RefreshingTableTestCase {
         assertThat(entry.max).isGreaterThan(9_000L);
     }
 
+    @Test
     public void testSubscriptionBlinkTableReceivesRawNanos() {
         final BarrageSubscriptionPerformanceLoggerImpl impl =
                 new BarrageSubscriptionPerformanceLoggerImpl(BarrageSubscriptionPerformanceSink.Noop.INSTANCE);
@@ -170,6 +173,7 @@ public class BarragePerformanceLoggerImplTest extends RefreshingTableTestCase {
         TstUtils.assertTableEquals(expected, impl.blinkTable());
     }
 
+    @Test
     public void testSubscriptionSinkFailureIsIsolated() {
         final AtomicInteger calls = new AtomicInteger();
         final BarrageSubscriptionPerformanceLoggerImpl impl =
@@ -190,6 +194,7 @@ public class BarragePerformanceLoggerImplTest extends RefreshingTableTestCase {
         assertThat(impl.blinkTable().size()).isEqualTo(2L);
     }
 
+    @Test
     public void testSnapshotSinkReceivesRawNanosAndBytes() {
         final RecordingSnapshotSink sink = new RecordingSnapshotSink();
         final BarrageSnapshotPerformanceLoggerImpl impl = new BarrageSnapshotPerformanceLoggerImpl(sink);
@@ -214,6 +219,7 @@ public class BarragePerformanceLoggerImplTest extends RefreshingTableTestCase {
         assertThat(entry.bytesWritten).isEqualTo(4_096L);
     }
 
+    @Test
     public void testSnapshotBlinkTableReceivesRawNanosAndBytes() {
         final BarrageSnapshotPerformanceLoggerImpl impl =
                 new BarrageSnapshotPerformanceLoggerImpl(BarrageSnapshotPerformanceSink.Noop.INSTANCE);
@@ -240,6 +246,7 @@ public class BarragePerformanceLoggerImplTest extends RefreshingTableTestCase {
         TstUtils.assertTableEquals(expected, impl.blinkTable());
     }
 
+    @Test
     public void testSnapshotSinkFailureIsIsolated() {
         final AtomicInteger calls = new AtomicInteger();
         final BarrageSnapshotPerformanceLoggerImpl impl = new BarrageSnapshotPerformanceLoggerImpl(

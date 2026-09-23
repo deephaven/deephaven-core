@@ -25,7 +25,10 @@ import java.util.function.BiFunction;
 
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestSort extends RefreshingTableTestCase {
@@ -45,6 +48,7 @@ public class TestSort extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSortMulti() {
         for (int ncols = 1; ncols <= 4; ++ncols) {
             for (int size = 1; size <= 32768; size *= 2) {
@@ -54,6 +58,7 @@ public class TestSort extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSortTypes() {
         for (int ncols = 1; ncols <= 2; ++ncols) {
             for (int size = 1024; size <= 8192; size *= 2) {
@@ -67,6 +72,7 @@ public class TestSort extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRestrictedSortingwhere() {
         QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
 
@@ -102,6 +108,7 @@ public class TestSort extends RefreshingTableTestCase {
         temp.assertSortable(temp.getDefinition().getColumnNamesArray());
     }
 
+    @Test
     public void testRestrictedSortingSelect() {
         QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(10));
 
@@ -117,6 +124,7 @@ public class TestSort extends RefreshingTableTestCase {
         testRestrictedSortingViewSelect((t, a) -> (QueryTable) (a == null || a.length <= 0 ? t.select() : t.select(a)));
     }
 
+    @Test
     public void testRestrictSortingView() {
         testRestrictedSortingViewSelect((t, a) -> (QueryTable) t.view(a));
     }
@@ -169,10 +177,12 @@ public class TestSort extends RefreshingTableTestCase {
                 NotSortableException.class);
     }
 
+    @Test
     public void testRestrictedSortingUpdate() {
         testRestrictedSortingUpdateUpdateView((t, a) -> (QueryTable) t.update(a));
     }
 
+    @Test
     public void testRestrictedSortingUpdateView() {
         testRestrictedSortingUpdateUpdateView((t, a) -> (QueryTable) t.updateView(a));
     }
@@ -226,6 +236,7 @@ public class TestSort extends RefreshingTableTestCase {
                 NotSortableException.class);
     }
 
+    @Test
     public void testRestrictedSortingDropColumns() {
         QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
 
@@ -250,6 +261,7 @@ public class TestSort extends RefreshingTableTestCase {
                 NotSortableException.class);
     }
 
+    @Test
     public void testRestrictedSortingRenameColumns() {
         QueryTable source = generateSortTesterTable(4, 1024, new IntGenerator(1000));
 

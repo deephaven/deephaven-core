@@ -3,8 +3,8 @@
 //
 package io.deephaven.time.calendar;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
+import org.junit.Test;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -15,7 +15,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Objects;
 
-public class TestBusinessCalendarXMLParser extends BaseArrayTestCase {
+import static org.junit.Assert.*;
+
+public class TestBusinessCalendarXMLParser {
 
     public static void assertParserTestCal(final BusinessCalendar cal) {
         assertEquals("PARSER_TEST_CAL", cal.name());
@@ -41,6 +43,7 @@ public class TestBusinessCalendarXMLParser extends BaseArrayTestCase {
         assertFalse(cal.calendarDay("2015-04-07").isInclusiveEnd());
     }
 
+    @Test
     public void testLoad() throws URISyntaxException {
         final String path = Paths
                 .get(Objects.requireNonNull(TestBusinessCalendarXMLParser.class.getResource("/PARSER-TEST.calendar"))
@@ -76,6 +79,7 @@ public class TestBusinessCalendarXMLParser extends BaseArrayTestCase {
         assertEquals(DateTimeUtils.parseInstant("2007-12-28T11:30 Asia/Tokyo"), halfDay.businessEnd());
     }
 
+    @Test
     public void testLoadLegacy() throws URISyntaxException {
         final String path = Paths
                 .get(Objects.requireNonNull(TestBusinessCalendarXMLParser.class.getResource("/LEGACY.calendar"))

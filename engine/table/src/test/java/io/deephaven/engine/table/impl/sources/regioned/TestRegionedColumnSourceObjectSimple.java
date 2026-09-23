@@ -3,12 +3,13 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import junit.framework.TestCase;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link RegionedColumnSourceObject} with simple strings.
@@ -46,7 +47,7 @@ public class TestRegionedColumnSourceObjectSimple extends TstRegionedColumnSourc
         super.setUp();
         // noinspection unchecked
         SUT = new RegionedColumnSourceObject.AsValues<>(manager, String.class);
-        TestCase.assertEquals(String.class, SUT.getType());
+        assertEquals(String.class, SUT.getType());
     }
 
     private static byte[] objectToBytes(String inObject) {

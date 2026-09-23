@@ -10,8 +10,6 @@ import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.chunk.util.hashing.ToIntFunctor;
-import io.deephaven.chunk.util.hashing.ToIntegerCast;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -54,7 +52,9 @@ class BucketingContext implements SafeCloseable {
     final boolean uniqueValues;
     final long minimumUniqueValue;
     final long maximumUniqueValue;
-    final ToIntFunctor<Values> uniqueFunctor;
+    /** The chunk type and offset that map a key value onto a unique-table slot; null when there is no unique table. */
+    final ChunkType uniqueChunkType;
+    final int uniqueOffset;
 
     BucketingContext(
             @NotNull final String listenerPrefix,
@@ -130,7 +130,8 @@ class BucketingContext implements SafeCloseable {
         boolean localUniqueValues = false;
         long localMinimumUniqueValue = Integer.MIN_VALUE;
         long localMaximumUniqueValue = Integer.MAX_VALUE;
-        ToIntFunctor<Values> localUniqueFunctor = null;
+        ChunkType localUniqueChunkType = null;
+        int localUniqueOffset = 0;
 
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             final Class<?> leftType = TypeUtils.getUnboxedTypeIfBoxed(leftSources[ii].getType());
@@ -183,8 +184,8 @@ class BucketingContext implements SafeCloseable {
                     localUniqueValues = true;
                     localMinimumUniqueValue = BooleanUtils.NULL_BOOLEAN_AS_BYTE;
                     localMaximumUniqueValue = BooleanUtils.TRUE_BOOLEAN_AS_BYTE;
-                    localUniqueFunctor = ToIntegerCast.makeToIntegerCast(ChunkType.Byte,
-                            JoinControl.CHUNK_SIZE, -BooleanUtils.NULL_BOOLEAN_AS_BYTE);
+                    localUniqueChunkType = ChunkType.Byte;
+                    localUniqueOffset = -BooleanUtils.NULL_BOOLEAN_AS_BYTE;
                 }
             } else if (leftType == String.class) {
                 if (control.considerSymbolTables(leftTable, rightTable,
@@ -235,8 +236,8 @@ class BucketingContext implements SafeCloseable {
                             localUniqueValues = true;
                             localMinimumUniqueValue = 0;
                             localMaximumUniqueValue = symbolTableCombiner.getMaximumIdentifier();
-                            localUniqueFunctor = ToIntegerCast.makeToIntegerCast(ChunkType.Int,
-                                    JoinControl.CHUNK_SIZE, 0);
+                            localUniqueChunkType = ChunkType.Int;
+                            localUniqueOffset = 0;
                         }
                     }
                 }
@@ -245,38 +246,37 @@ class BucketingContext implements SafeCloseable {
                     localUniqueValues = true;
                     localMinimumUniqueValue = Byte.MIN_VALUE;
                     localMaximumUniqueValue = Byte.MAX_VALUE;
-                    localUniqueFunctor = ToIntegerCast.makeToIntegerCast(ChunkType.Byte,
-                            JoinControl.CHUNK_SIZE, -Byte.MIN_VALUE);
+                    localUniqueChunkType = ChunkType.Byte;
+                    localUniqueOffset = -Byte.MIN_VALUE;
                 }
             } else if (leftType == char.class) {
                 if (leftSources.length == 1) {
                     localUniqueValues = true;
                     localMinimumUniqueValue = Character.MIN_VALUE;
                     localMaximumUniqueValue = Character.MAX_VALUE;
-                    localUniqueFunctor = ToIntegerCast.makeToIntegerCast(ChunkType.Char,
-                            JoinControl.CHUNK_SIZE, -Character.MIN_VALUE);
+                    localUniqueChunkType = ChunkType.Char;
+                    localUniqueOffset = -Character.MIN_VALUE;
                 }
             } else if (leftType == short.class) {
                 if (leftSources.length == 1) {
                     localUniqueValues = true;
                     localMinimumUniqueValue = Short.MIN_VALUE;
                     localMaximumUniqueValue = Short.MAX_VALUE;
-                    localUniqueFunctor = ToIntegerCast.makeToIntegerCast(ChunkType.Short,
-                            JoinControl.CHUNK_SIZE, -Short.MIN_VALUE);
+                    localUniqueChunkType = ChunkType.Short;
+                    localUniqueOffset = -Short.MIN_VALUE;
                 }
             }
         }
         this.uniqueValues = localUniqueValues;
         this.minimumUniqueValue = localMinimumUniqueValue;
         this.maximumUniqueValue = localMaximumUniqueValue;
-        this.uniqueFunctor = localUniqueFunctor;
+        this.uniqueChunkType = localUniqueChunkType;
+        this.uniqueOffset = localUniqueOffset;
     }
 
     @Override
     public void close() {
-        if (uniqueFunctor != null) {
-            uniqueFunctor.close();
-        }
+        // The sources and data index tables gathered here are owned by their tables; there is nothing to release.
     }
 
     int uniqueValuesRange() {

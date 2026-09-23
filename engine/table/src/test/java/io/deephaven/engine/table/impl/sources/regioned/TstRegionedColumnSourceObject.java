@@ -3,13 +3,16 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Base class for tests of {@link RegionedColumnSourceObject} implementations.
  */
-@SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase"})
+
 public abstract class TstRegionedColumnSourceObject<DATA_TYPE> extends
         TstRegionedColumnSourcePrimitive<DATA_TYPE, Values, ColumnRegionObject<DATA_TYPE, Values>, ColumnRegionObject<DATA_TYPE, Values>> {
 
@@ -38,7 +41,7 @@ public abstract class TstRegionedColumnSourceObject<DATA_TYPE> extends
             final int expectedRegionIndex,
             final Value<?> output,
             final boolean prev) {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 atMost(1).of(cr[expectedRegionIndex]).getObject(with(elementIndex));
                 will(returnValue(output.decoded));
@@ -49,7 +52,7 @@ public abstract class TstRegionedColumnSourceObject<DATA_TYPE> extends
             }
         });
         assertEquals(output.decoded, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @Test

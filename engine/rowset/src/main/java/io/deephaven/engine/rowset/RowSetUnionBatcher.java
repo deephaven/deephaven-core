@@ -4,7 +4,10 @@
 package io.deephaven.engine.rowset;
 
 import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
+import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
@@ -35,10 +38,11 @@ import java.util.List;
  *
  * <p>
  * Two things are handled here rather than at the merge. {@link RowSet#isEmpty() Empty} row sets are dropped as they
- * arrive, so a batch never spends a slot on one. A row set that only appends past the end of the last entry is spliced
- * onto it in place instead of taking a slot of its own, which the row set implementations satisfy without merging range
- * by range; input that arrives in ascending order therefore collapses into a single row set that {@link #build()} hands
- * over as it stands, with no union at all.
+ * arrive, so a batch never spends a slot on one. A row set that falls clear of the last entry is folded into it in
+ * place instead of taking a slot of its own: past the end always, since the row set implementations splice rather than
+ * merge range by range, and below the start when the entry it would be folded into is no larger than it is. Input that
+ * arrives in ascending order therefore collapses into a single row set that {@link #build()} hands over as it stands,
+ * with no union at all, as does a descending stream of row sets each at least as large as what it has already gathered.
  *
  * <p>
  * {@link #build()} is what releases the result to the caller. Everything this batcher is still holding at
@@ -117,9 +121,10 @@ public final class RowSetUnionBatcher implements SafeCloseable {
             rowSet.close();
             return;
         }
-        if (appendsToRun(rowSet)) {
+        if (joinsRun(rowSet)) {
+            // Ownership passed to us, so this may reuse either side's storage for the result.
             try (rowSet) {
-                run.insert(rowSet);
+                run.subsume(rowSet);
             }
             return;
         }
@@ -143,11 +148,45 @@ public final class RowSetUnionBatcher implements SafeCloseable {
     }
 
     /**
-     * Whether inserting {@code rowSet} into the run only extends it past its last row key, which the row set
-     * implementations satisfy by splicing rather than by merging range by range.
+     * Whether {@code rowSet} lies clear of the run on one side or the other, and is worth folding into it rather than
+     * taking a slot of its own.
+     *
+     * <p>
+     * Above the run is always worth it: the row set implementations splice onto the end, so it costs what is spliced
+     * and nothing per entry already there. Below the run is not the mirror image, and not because the direction is
+     * chosen badly -- {@link WritableRowSet#subsume subsume} picks the cheaper of the two and picks it well. It is that
+     * both directions are proportional to the run rather than to what arrived: opening room at the front moves the run,
+     * and appending the run onto what arrived copies it. Keys are held in order, so something has to move either way.
+     *
+     * <p>
+     * What that leaves the batcher is not which direction but whether to fold at all, since it is the batcher that
+     * decides how often the cost is paid. Over {@link RspBitmap} pairs a 64 entry run takes a 256K entry row set in
+     * under a microsecond, where a 256K entry run takes a 64 entry row set in half a millisecond; paying the second of
+     * those once per row set is quadratic over a descending stream. So a prepend is folded only when the run is no
+     * larger than what is being added, which pays for the move with the entries it arrives with. Anything else starts a
+     * run of its own and reaches the batch merge, which sorts before it merges and does not care what order the input
+     * came in.
      */
-    private boolean appendsToRun(final RowSet rowSet) {
-        return run != null && rowSet.firstRowKey() > run.lastRowKey();
+    private boolean joinsRun(final RowSet rowSet) {
+        if (run == null) {
+            return false;
+        }
+        if (rowSet.firstRowKey() > run.lastRowKey()) {
+            return true;
+        }
+        return rowSet.lastRowKey() < run.firstRowKey() && entryCount(run) <= entryCount(rowSet);
+    }
+
+    /**
+     * The entries {@code rowSet} stores, which is what moving it costs.
+     */
+    private static long entryCount(final RowSet rowSet) {
+        // Every row set the engine builds is one of these. Answering some sentinel for anything else would not be
+        // the safe reading it looks like: two of them would compare equal and fold every prepend, which is the
+        // quadratic this guard exists to prevent.
+        Assert.assertion(rowSet instanceof WritableRowSetImpl, "rowSet instanceof WritableRowSetImpl",
+                rowSet.getClass(), "rowSet.getClass()");
+        return ((WritableRowSetImpl) rowSet).getInnerSet().ixEntryCount();
     }
 
     private void startRun(final WritableRowSet rowSet) {

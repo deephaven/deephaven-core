@@ -26,7 +26,6 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableLong;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
 
@@ -36,11 +35,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.api.agg.Aggregation.AggSortedFirst;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestPartitionBy extends QueryTableTestBase {
@@ -109,6 +110,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testPartitionBy() {
         final Random random = new Random(0);
         final int size = 50;
@@ -133,6 +135,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testErrorPropagation() {
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
@@ -177,6 +180,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNewKeysAfterResultReleased() {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
@@ -292,6 +296,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testNewKeysBeforeResultReleased() {
         final QueryTable table =
                 TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
@@ -404,6 +409,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testReleaseRaceRollup() {
         setExpectError(false);
         final ExecutorService pool = Executors.newFixedThreadPool(1);
@@ -470,16 +476,18 @@ public class TestPartitionBy extends QueryTableTestBase {
         try {
             mutableFuture.get().get();
         } catch (InterruptedException | ExecutionException e) {
-            TestCase.fail(e.getMessage());
+            fail(e.getMessage());
         }
 
         pool.shutdownNow();
     }
 
+    @Test
     public void testPopulateKeysStatic() {
         testPopulateKeys(false);
     }
 
+    @Test
     public void testPopulateKeysRefreshing() {
         testPopulateKeys(true);
     }
@@ -494,10 +502,11 @@ public class TestPartitionBy extends QueryTableTestBase {
         Table table1 = pt.table();
         final String[] keys = ColumnVectors.ofObject(table1, keyColumnName, String.class).toArray();
         System.out.println(Arrays.toString(keys));
-        assertEquals(keys, new String[] {"SPY", "AAPL"});
+        assertArrayEquals(keys, new String[] {"SPY", "AAPL"});
         assertEquals(pt.table().isRefreshing(), refreshing);
     }
 
+    @Test
     public void testPartitionByWithShifts() {
         for (int seed = 0; seed < 100; ++seed) {
             System.out.println("Seed = " + seed);

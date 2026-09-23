@@ -1012,7 +1012,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             try (final WritableRowSet scoped = scopedViewBuilder.build()) {
                 upstream.shifted().apply(scoped); // we built scoped rows in prev-keyspace
                 scoped.retain(rowSet); // we only record valid rows
-                addsToRecord.insert(scoped);
+                addsToRecord.subsume(scoped);
             }
         }
 

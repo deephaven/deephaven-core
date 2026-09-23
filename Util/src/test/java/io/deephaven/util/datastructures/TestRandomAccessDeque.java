@@ -3,13 +3,15 @@
 //
 package io.deephaven.util.datastructures;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class TestRandomAccessDeque extends BaseArrayTestCase {
+import static org.junit.Assert.*;
+
+public class TestRandomAccessDeque {
+    @Test
     public void testSimple() {
         List<Integer> values = new ArrayList<>(Arrays.asList(2, 3, 4, 5));
 
@@ -30,11 +32,11 @@ public class TestRandomAccessDeque extends BaseArrayTestCase {
         Iterator<Integer> vit = values.iterator();
         Iterator<Integer> dit = values.iterator();
         while (vit.hasNext()) {
-            TestCase.assertEquals(vit.hasNext(), dit.hasNext());
+            assertEquals(vit.hasNext(), dit.hasNext());
             Integer vv = vit.next();
             Integer dd = dit.next();
-            TestCase.assertEquals(vv, dd);
-            TestCase.assertEquals(vit.hasNext(), dit.hasNext());
+            assertEquals(vv, dd);
+            assertEquals(vit.hasNext(), dit.hasNext());
         }
 
         show(values, deque);
@@ -43,11 +45,11 @@ public class TestRandomAccessDeque extends BaseArrayTestCase {
         vit = values.iterator();
         dit = deque.iterator();
         while (vit.hasNext()) {
-            TestCase.assertEquals(vit.hasNext(), dit.hasNext());
+            assertEquals(vit.hasNext(), dit.hasNext());
             Integer vv = vit.next();
             Integer dd = dit.next();
-            TestCase.assertEquals(vv, dd);
-            TestCase.assertEquals(vit.hasNext(), dit.hasNext());
+            assertEquals(vv, dd);
+            assertEquals(vit.hasNext(), dit.hasNext());
             if (++n % 2 == 0) {
                 vit.remove();
                 dit.remove();
@@ -64,9 +66,9 @@ public class TestRandomAccessDeque extends BaseArrayTestCase {
 
         assertFalse(deque.removeIf(x -> x == 999));
 
-        TestCase.assertTrue(Arrays.equals(values.toArray(), deque.toArray()));
-        TestCase.assertTrue(Arrays.equals(values.toArray(new Integer[0]), deque.toArray(new Integer[0])));
-        TestCase.assertTrue(
+        assertTrue(Arrays.equals(values.toArray(), deque.toArray()));
+        assertTrue(Arrays.equals(values.toArray(new Integer[0]), deque.toArray(new Integer[0])));
+        assertTrue(
                 Arrays.equals(values.toArray(new Integer[values.size()]), deque.toArray(new Integer[deque.size()])));
 
         values.addAll(Arrays.asList(7, 8, 9));
@@ -87,7 +89,7 @@ public class TestRandomAccessDeque extends BaseArrayTestCase {
         checkEquals(values, deque);
 
         deque.clear();
-        TestCase.assertEquals(true, deque.isEmpty());
+        assertEquals(true, deque.isEmpty());
         values.clear();
         checkEquals(values, deque);
 
@@ -103,7 +105,7 @@ public class TestRandomAccessDeque extends BaseArrayTestCase {
 
         // noinspection SimplifyStreamApiCallChains
         List<Integer> streamResult = deque.stream().collect(Collectors.toList());
-        TestCase.assertEquals(values, streamResult);
+        assertEquals(values, streamResult);
 
         Set<Integer> psResult = new HashSet<>(deque.parallelStream().collect(Collectors.toSet()));
         Set<Integer> valuesSet = new HashSet<>(values);
@@ -116,7 +118,7 @@ public class TestRandomAccessDeque extends BaseArrayTestCase {
         missing2.removeAll(valuesSet);
         System.out.println("Missing from values: " + missing2);
 
-        TestCase.assertEquals(valuesSet, psResult);
+        assertEquals(valuesSet, psResult);
     }
 
     private void show(List<Integer> values, RandomAccessDeque<Integer> deque) {
@@ -159,9 +161,9 @@ public class TestRandomAccessDeque extends BaseArrayTestCase {
     }
 
     private void checkEquals(List<Integer> values, RandomAccessDeque<Integer> deque) {
-        TestCase.assertEquals(values.size(), deque.size());
+        assertEquals(values.size(), deque.size());
         for (int ii = 0; ii < deque.size(); ++ii) {
-            TestCase.assertEquals(values.get(ii), deque.get(ii));
+            assertEquals(values.get(ii), deque.get(ii));
         }
     }
 }

@@ -14,14 +14,16 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.List;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.col;
+import static org.junit.Assert.*;
 
 public class TestSystemicObjectMarking extends RefreshingTableTestCase {
+    @Test
     public void testSystemicObjectMarking() {
         final QueryTable source = TstUtils.testRefreshingTable(col("Str", "a", "b"), col("Str2", "A", "B"));
         final Table updated = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
@@ -61,7 +63,7 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
 
         try {
             updated2.addUpdateListener(new ErrorListener(updated2));
-            TestCase.fail("Should not be allowed to listen to failed table");
+            fail("Should not be allowed to listen to failed table");
         } catch (TableAlreadyFailedException tafe) {
             assertEquals("Can not listen to failed table QueryTable", tafe.getMessage());
         }
@@ -84,7 +86,6 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
         assertEquals("In formula: UC = Str.toUpperCase()", errorListener.originalException().getMessage());
 
     }
-
 
     private static boolean isNpe(List<Throwable> throwables) {
         if (1 != throwables.size()) {

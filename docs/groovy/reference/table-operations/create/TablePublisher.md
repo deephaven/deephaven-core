@@ -30,7 +30,7 @@ The on-flush callback. If not `null`, the consumer is called once at the beginni
 
 </Param><Param name="onShutdownCallback" type="Runnable">
 
-The on-shutdown callback. If not `null`, the runnable is called one time when [`publishFailure`](#methods) is called.
+The on-shutdown callback. If not `null`, the runnable is called one time when the caller should stop adding new data and release any related resources — for example, because [`publishFailure`](#methods) was called, the blink table is no longer reachable, or an internal failure occurred.
 
 </Param>
 <Param name="updateGraph" type="UpdateGraph">
@@ -55,8 +55,9 @@ A new `TablePublisher`.
 
 - [`add(table)`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#add(io.deephaven.engine.table.Table)) - Adds a table to the blink table.
 - [`definition`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#definition()) - Gets the table definition.
+- [`inputTable`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#inputTable()) - Gets the blink table with an `InputTableUpdater` attribute installed, so it can be used as an input table. Deleting rows is not supported. May return `null` if called more than once without the initial caller retaining a strong reference to the result.
 - [`isAlive`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#isAlive()) - Checks if the table publisher is alive.
-- [`publishFailure(failure)`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#publishFailure(java.lang.Throwable)) - Indicate that data publication has hailed. Listeners will be notified, the on-shutdown callback will be invoked (if it hasn't already been), and future calls to `add` will return without doing anything.
+- [`publishFailure(failure)`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#publishFailure(java.lang.Throwable)) - Indicates that data publication has failed. Listeners are notified, the on-shutdown callback is invoked (if it hasn't already been), and future calls to `add` return without doing anything.
 - [`table`](https://deephaven.io/core/javadoc/io/deephaven/stream/TablePublisher.html#table()) - Gets the blink table.
 
 ## Examples
@@ -64,7 +65,6 @@ A new `TablePublisher`.
 In this example, `TablePublisher` is used to create a blink table with three columns (`X`, `Y`, and `Z`). The columns are of type `int`, `double`, and `double`, respectively.
 
 ```groovy test-set=1 order=source
-import io.deephaven.csv.util.MutableBoolean
 import io.deephaven.engine.table.ColumnDefinition
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.stream.TablePublisher
@@ -77,8 +77,6 @@ definition = TableDefinition.of(
 
 shutDown = {println "Finished using My Publisher."}
 
-onShutdown = new MutableBoolean()
-
 publisher = TablePublisher.of("My Publisher", definition, null, shutDown)
 
 source = publisher.table()
@@ -86,9 +84,11 @@ source = publisher.table()
 
 To add data to blink table, call `add`.
 
-```groovy test-set=1 order=source
+```groovy ticking-table test-set=1 order=null
 publisher.add(emptyTable(10).update("X = randomInt(-100, 100)", "Y = randomDouble(-5.0, 5.0)", "Z = randomDouble(100.0, 1000.0)"))
 ```
+
+![The `source` blink table after data has been added](../../../assets/reference/table-operations/table-publisher-1.png)
 
 To shut the publisher down, call `publishFailure`.
 

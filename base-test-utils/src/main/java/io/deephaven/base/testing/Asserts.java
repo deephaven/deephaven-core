@@ -3,7 +3,28 @@
 //
 package io.deephaven.base.testing;
 
-abstract public class BaseArrayTestCase extends BaseCachedJMockTestCase {
+import org.junit.Assert;
+
+import static org.junit.Assert.*;
+
+/**
+ * The {@code assertEquals} overload set Deephaven's tests are written against, on top of {@link org.junit.Assert}.
+ *
+ * <p>
+ * It differs from Assert in two ways that these tests rely on. Arrays are compared element-wise rather than by
+ * identity, with a tolerance for the floating point ones. And there is deliberately no two-argument double or float
+ * form, so {@code assertEquals(1.0, x)} boxes and compares exactly - Assert's two-argument form is deprecated to always
+ * fail, and demands a delta.
+ *
+ * <p>
+ * Import it as {@code import static io.deephaven.base.testing.Asserts.assertEquals;} next to
+ * {@code import static org.junit.Assert.*;}. Being a single static import it shadows Assert's {@code assertEquals}
+ * entirely, which is why every overload a caller needs is declared here; every other assertion still comes from Assert.
+ */
+public class Asserts {
+
+    private Asserts() {}
+
 
     public static void assertEquals(String name, final double[][] a, final double[][] b) {
         assertEquals(name, a, b, 1e-10);
@@ -14,7 +35,7 @@ abstract public class BaseArrayTestCase extends BaseCachedJMockTestCase {
             assertTrue(a == b);
         } else {
             assertTrue(b != null);
-            assertEquals(name + ".length", a.length, b.length);
+            Assert.assertEquals(name + ".length", a.length, b.length);
             for (int i = 0; i < a.length; i++) {
                 assertEquals(name + "[" + i + "]", a[i], b[i], tolerance);
             }
@@ -492,5 +513,46 @@ abstract public class BaseArrayTestCase extends BaseCachedJMockTestCase {
         } else {
             return "<" + s + ">";
         }
+    }
+
+    //
+    // Scalar assertEquals, delegated to org.junit.Assert.
+    //
+    // Callers static-import assertEquals from this class, which shadows the on-demand org.junit.Assert import for
+    // that one name, so every overload they can reach has to live here. The set below is deliberately the same one
+    // junit.framework.Assert offered: note the absence of a two-argument double/float form, so such a call boxes to
+    // assertEquals(Object, Object) and compares exactly, as it always did.
+    //
+
+    public static void assertEquals(Object expected, Object actual) {
+        Assert.assertEquals(expected, actual);
+    }
+
+    public static void assertEquals(String message, Object expected, Object actual) {
+        Assert.assertEquals(message, expected, actual);
+    }
+
+    public static void assertEquals(long expected, long actual) {
+        Assert.assertEquals(expected, actual);
+    }
+
+    public static void assertEquals(String message, long expected, long actual) {
+        Assert.assertEquals(message, expected, actual);
+    }
+
+    public static void assertEquals(double expected, double actual, double delta) {
+        Assert.assertEquals(expected, actual, delta);
+    }
+
+    public static void assertEquals(String message, double expected, double actual, double delta) {
+        Assert.assertEquals(message, expected, actual, delta);
+    }
+
+    public static void assertEquals(float expected, float actual, float delta) {
+        Assert.assertEquals(expected, actual, delta);
+    }
+
+    public static void assertEquals(String message, float expected, float actual, float delta) {
+        Assert.assertEquals(message, expected, actual, delta);
     }
 }

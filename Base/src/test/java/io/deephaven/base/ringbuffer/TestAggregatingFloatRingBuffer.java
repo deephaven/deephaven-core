@@ -7,12 +7,15 @@
 // @formatter:off
 package io.deephaven.base.ringbuffer;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-public class TestAggregatingFloatRingBuffer extends TestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class TestAggregatingFloatRingBuffer {
 
     private void assertEmpty(AggregatingFloatRingBuffer rb) {
         assertTrue(rb.isEmpty());
@@ -33,6 +36,7 @@ public class TestAggregatingFloatRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testLargeAmounts() {
         final AggregatingFloatRingBuffer rb = new AggregatingFloatRingBuffer(3, (float) 0, (a, b) -> (float) (a + b));
 
@@ -55,6 +59,7 @@ public class TestAggregatingFloatRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMinLargeAmounts() {
         final AggregatingFloatRingBuffer rb =
                 new AggregatingFloatRingBuffer(3, Float.MAX_VALUE, (a, b) -> (float) Math.min(a, b));
@@ -71,6 +76,7 @@ public class TestAggregatingFloatRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMaxLargeAmounts() {
         final AggregatingFloatRingBuffer rb =
                 new AggregatingFloatRingBuffer(3, Float.MIN_VALUE, (a, b) -> (float) Math.max(a, b));
@@ -89,6 +95,7 @@ public class TestAggregatingFloatRingBuffer extends TestCase {
 
     // region non-byte-tests
 
+    @Test
     public void testEvaluateSumLargeAmounts() {
         final AggregatingFloatRingBuffer rb = new AggregatingFloatRingBuffer(3, (float) 0, (a, b) -> (float) (a + b));
         float runningSum = (float) 0;
@@ -123,6 +130,7 @@ public class TestAggregatingFloatRingBuffer extends TestCase {
         return (float) (n * (n - 1) / 2);
     }
 
+    @Test
     public void testEvaluationEdgeCase() {
         AggregatingFloatRingBuffer rb = new AggregatingFloatRingBuffer(512, (float) 0, (a, b) -> (float) (a + b));
 
@@ -201,7 +209,6 @@ public class TestAggregatingFloatRingBuffer extends TestCase {
             assertEquals((float) 0, rb.evaluate());
         }
 
-
         rb = new AggregatingFloatRingBuffer(512, (float) 0, (a, b) -> (float) (a + b));
         // need to get the buffer to state where we have clean pushes and a wrapped pop
 
@@ -232,6 +239,7 @@ public class TestAggregatingFloatRingBuffer extends TestCase {
     }
     // endregion non-byte-tests
 
+    @Test
     public void testPushPopUnsafe() {
         final AggregatingFloatRingBuffer rb =
                 new AggregatingFloatRingBuffer(3, (float) -Float.MAX_VALUE, (a, b) -> (float) Math.max(a, b));
@@ -264,6 +272,7 @@ public class TestAggregatingFloatRingBuffer extends TestCase {
         assertEquals((float) 99, rb.evaluate()); // last value added is max
     }
 
+    @Test
     public void testPopMultiple() {
         final AggregatingFloatRingBuffer rb = new AggregatingFloatRingBuffer(3, (float) 0, (a, b) -> (float) (a + b));
 
@@ -292,6 +301,7 @@ public class TestAggregatingFloatRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testSpecialCaseA() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingFloatRingBuffer rb = new AggregatingFloatRingBuffer(4, (float) 0, (a, b) -> (float) (a + b));
@@ -302,6 +312,7 @@ public class TestAggregatingFloatRingBuffer extends TestCase {
         assertEquals((float) 5, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseB() {
         // push the full capacity while wrapped
         final AggregatingFloatRingBuffer rb = new AggregatingFloatRingBuffer(64, (float) 0, (a, b) -> (float) (a + b));
@@ -314,6 +325,7 @@ public class TestAggregatingFloatRingBuffer extends TestCase {
         assertEquals((float) 64, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseC() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingFloatRingBuffer rb = new AggregatingFloatRingBuffer(16, (float) 0, (a, b) -> (float) (a + b));

@@ -26,6 +26,24 @@ The key column name(s). Must name at least one existing column in the source tab
 
 A table that shares the underlying data and schema with the source table, with the `keyColumns` attribute set to the specified column names. If the source table already has this exact set of key columns, the source table itself may be returned.
 
+> [!NOTE]
+> `with_keys` only sets `keyColumns`; it does not clear an existing `uniqueKeys` attribute. If the source table was previously marked with [`with_unique_keys`](./withUniqueKeys.md), `uniqueKeys` remains `True` after calling `with_keys`, even though the new key columns may no longer be unique. To fully convert such a table, also remove the attribute with [`without_attributes`](./withoutAttributes.md): `table.with_keys(cols).without_attributes("uniqueKeys")`, where `cols` is the same key column name(s) passed to `with_keys`.
+
+## Preserved through table operations
+
+The `keyColumns` and `uniqueKeys` attributes are preserved by:
+
+- [`where`](../filter/where.md), [`where_in`](../filter/where-in.md), [`where_not_in`](../filter/where-not-in.md), and [`where_one_of`](../filter/where-one-of.md)
+- [`sort`](../sort/sort.md) and [`sort_descending`](../sort/sort-descending.md)
+- [`reverse`](../sort/reverse.md)
+- [`flatten`](../select/flatten.md)
+- [`update_view`](../select/update-view.md) and [`lazy_update`](../select/lazy-update.md)
+- [`natural_join`](../join/natural-join.md) and [`exact_join`](../join/exact-join.md)
+
+Other operations that build a new result from the table's data — including [`select`](../select/select.md), [`update`](../select/update.md), [`view`](../select/view.md), [`join`](../join/join.md), and [`drop_columns`](../select/drop-columns.md) — clear both attributes. Call `with_keys` or `with_unique_keys` again on the result to restore them.
+
+[`with_attributes`](./withAttributes.md) and [`without_attributes`](./withoutAttributes.md) are a separate case: they preserve every attribute they aren't explicitly asked to add or remove, so `keyColumns` and `uniqueKeys` survive them unless you target those specific keys.
+
 ## Examples
 
 In this example, `Key1` and `Key2` together form the key column set for `keyed_table`. Because the same combination of values repeats across rows, selecting one of them in the Deephaven UI selects every row that shares that combination.
