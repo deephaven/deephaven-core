@@ -730,7 +730,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             table.applySort(new Sort[] {iColumn.sort().asc()});
                             TableViewportSubscription subscription = table.setViewport(0, 9, null);
 
-                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2508);
+                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2509);
                             Promise<Void> snapshotCheck =
                                     subscription.snapshot(JsRangeSet.ofRange(0, 9), Js.cast(table.getColumns()))
                                             .then(data -> {
@@ -792,7 +792,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         return Promise.resolve((Object) null).then(ignore -> {
                             TableViewportSubscription subscription = table.setViewport(0, 9, null);
 
-                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2507);
+                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2512);
                             Promise<Void> snapshotCheck =
                                     subscription.snapshot(JsRangeSet.ofRange(0, 9), Js.cast(table.getColumns()))
                                             .then(data -> {
@@ -804,7 +804,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             table.applySort(new Sort[] {iColumn.sort().asc()});
                             TableViewportSubscription subscription = table.setViewport(0, 9, null);
 
-                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2508);
+                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2513);
                             Promise<Void> snapshotCheck =
                                     subscription.snapshot(JsRangeSet.ofRange(0, 9), Js.cast(table.getColumns()))
                                             .then(data -> {
@@ -863,7 +863,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         return Promise.resolve((Object) null).then(ignore -> {
                             TableViewportSubscription subscription = table.setViewport(0, 9, null);
 
-                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2507);
+                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2514);
                             Promise<Void> snapshotCheck =
                                     subscription.snapshot(JsRangeSet.ofRange(0, 9), Js.cast(table.getColumns()))
                                             .then(data -> {
@@ -875,7 +875,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             table.applySort(new Sort[] {iColumn.sort().asc()});
                             TableViewportSubscription subscription = table.setViewport(0, 9, null);
 
-                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2508);
+                            Promise<JsTable> viewportCheck = assertUpdateReceived(table, check::apply, 2515);
                             Promise<Void> snapshotCheck =
                                     subscription.snapshot(JsRangeSet.ofRange(0, 9), Js.cast(table.getColumns()))
                                             .then(data -> {
