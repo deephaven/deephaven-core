@@ -118,22 +118,29 @@ public final class HashMapLockFreeK4V4 extends HashMapK4V4 implements NullableLo
     @Override
     public void get(LongChunk<? extends Any> keys, WritableLongChunk<? extends Any> result) {
         // Take the volatile read once: like every read operation, a chunked get sees one consistent snapshot of the
-        // array.
+        // array, whose header carries its reciprocal.
         final long[] localKvs = keysAndValues;
-        // The reciprocal comes from the snapshot's own header — published with the array and immutable
-        // thereafter, so it cannot tear against it.
-        final long numBucketsReciprocal = localKvs == null ? 0 : reciprocalOf(localKvs);
-        final int size = keys.size();
+        final int n = keys.size();
         if (localKvs == null) {
-            // Never populated, or reset: every key is a miss, and we need not probe to know it.
-            result.fillWithValue(0, size, defaultReturnValue());
-            result.setSize(size);
+            result.fillWithValue(0, n, defaultReturnValue());
+            result.setSize(n);
             return;
         }
-        for (int ii = 0; ii < size; ++ii) {
-            result.set(ii, getImpl(localKvs, numBucketsReciprocal, keys.get(ii)));
+        // Adaptive read strategy: when the map's footprint is beyond the last-level cache — its whole job is
+        // overlapping the misses that a cache-resident table simply does not have — service the chunk through the
+        // AMAC window; otherwise use the serial loop, which ties or wins when the table is cache-resident. Footprint
+        // is a function of the snapshot's own length, so the choice is stable between rehashes and flips exactly when
+        // the array grows past the cache. (Occupancy is deliberately not consulted; see wantWindowedReads.) Reads are
+        // pure, so the windowed path may resolve lookups out of index order, invisibly to the caller.
+        if (NullableLongLongMaps.wantWindowedReads((localKvs.length - HEADER_LONGS) / 2)) {
+            getBatchImpl(localKvs, reciprocalOf(localKvs), keys, result);
+        } else {
+            final long numBucketsReciprocal = reciprocalOf(localKvs);
+            for (int ii = 0; ii < n; ++ii) {
+                result.set(ii, getImpl(localKvs, numBucketsReciprocal, keys.get(ii)));
+            }
         }
-        result.setSize(size);
+        result.setSize(n);
     }
 
     @Override

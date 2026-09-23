@@ -102,6 +102,8 @@ public class NullableLongLongMapBench {
 
     public enum Impl {
         // The third factory argument is the noEntryValue; -1 is the maps' default.
+        // K4V4's reads adapt by footprint (array size vs cache); K4V4AMAC forces the window unconditionally (the
+        // pricing control).
         // @formatter:off
         K1V1((desiredEntries, loadFactor) -> HashMapLockFreeK1V1.of(desiredEntries, loadFactor, -1)),
         K2V2((desiredEntries, loadFactor) -> HashMapLockFreeK2V2.of(desiredEntries, loadFactor, -1)),

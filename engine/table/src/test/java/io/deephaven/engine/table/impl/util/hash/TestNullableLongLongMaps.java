@@ -24,20 +24,17 @@ public class TestNullableLongLongMaps {
             cursor.put(key, key + 1_000_000);
             reference.put(key, key + 1_000_000);
         }
-        // Leave some tombstones behind, so the drain has to walk past them.
         for (long key = 0; key < 10_000; key += 3) {
             cursor.remove(key);
             reference.remove(key);
         }
-
         final NullableLongLongMap upgraded = NullableLongLongMaps.maybeUpgrade(map, DENSE, 1);
-        assertTrue(upgraded instanceof HashMapLockFreeK4V4WithAMAC);
+        assertTrue(upgraded instanceof HashMapLockFreeK4V4);
         assertEquals(NO_ENTRY_VALUE, upgraded.defaultReturnValue());
         assertEquals(reference.size(), upgraded.size());
         cursor.reset(upgraded);
         for (long key = 0; key < 10_000; ++key) {
-            final long expected = reference.getOrDefault(key, NO_ENTRY_VALUE);
-            assertEquals(expected, cursor.get(key));
+            assertEquals((long) reference.getOrDefault(key, NO_ENTRY_VALUE), cursor.get(key));
         }
     }
 
@@ -52,23 +49,12 @@ public class TestNullableLongLongMaps {
     }
 
     @Test
-    public void alreadyWindowedReturnsTheSameMap() {
-        final NullableLongLongMap map = HashMapLockFreeK4V4WithAMAC.of(16, DENSE, NO_ENTRY_VALUE);
-        final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
-        for (long key = 0; key < 100; ++key) {
-            cursor.put(key, key);
-        }
-        assertSame(map, NullableLongLongMaps.maybeUpgrade(map, DENSE, 1));
-    }
-
-    @Test
     public void sparseLoadFactorReturnsTheSameMap() {
         final NullableLongLongMap map = HashMapLockFreeK1V1.of(16, SPARSE, NO_ENTRY_VALUE);
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
         for (long key = 0; key < 100; ++key) {
             cursor.put(key, key);
         }
-        // Big enough (threshold 1) but not dense enough: no upgrade.
         assertSame(map, NullableLongLongMaps.maybeUpgrade(map, SPARSE, 1));
     }
 
@@ -79,10 +65,8 @@ public class TestNullableLongLongMaps {
         for (long key = 0; key < 100; ++key) {
             cursor.put(key, key + 1);
         }
-        // Sparse and below the size threshold, but "within reach of the ceiling" (tiny ceiling for the test):
-        // forced-dense wins the argument.
         final NullableLongLongMap upgraded = NullableLongLongMaps.maybeUpgrade(map, SPARSE, 1000, 50);
-        assertTrue(upgraded instanceof HashMapLockFreeK4V4WithAMAC);
+        assertTrue(upgraded instanceof HashMapLockFreeK4V4);
         assertEquals(100, upgraded.size());
         cursor.reset(upgraded);
         for (long key = 0; key < 100; ++key) {
@@ -91,13 +75,27 @@ public class TestNullableLongLongMaps {
     }
 
     @Test
-    public void ofExpectedSizeChoosesShapeBySizeAndDensity() {
-        assertTrue(NullableLongLongMaps.ofExpectedSize(10, DENSE, NO_ENTRY_VALUE,
-                1000) instanceof HashMapLockFreeK4V4);
-        assertTrue(NullableLongLongMaps.ofExpectedSize(1000, DENSE, NO_ENTRY_VALUE,
-                1000) instanceof HashMapLockFreeK4V4WithAMAC);
-        // Big enough but not dense enough: serial.
-        assertTrue(NullableLongLongMaps.ofExpectedSize(1000, SPARSE, NO_ENTRY_VALUE,
-                1000) instanceof HashMapLockFreeK4V4);
+    public void alreadyWideReturnsTheSameMap() {
+        for (final NullableLongLongMap map : new NullableLongLongMap[] {
+                HashMapLockFreeK4V4.of(16, DENSE, NO_ENTRY_VALUE),
+                HashMapLockFreeK4V4WithAMAC.of(16, DENSE, NO_ENTRY_VALUE)}) {
+            final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(map);
+            for (long key = 0; key < 100; ++key) {
+                cursor.put(key, key);
+            }
+            assertSame(map, NullableLongLongMaps.maybeUpgrade(map, DENSE, 1));
+        }
+    }
+
+    @Test
+    public void wantWindowedReadsGatesOnFootprint() {
+        final int threshold = NullableLongLongMaps.DEFAULT_AMAC_THRESHOLD_ENTRIES;
+        // At and above the footprint threshold: windowed, however full the map happens to be (occupancy is not an
+        // input — it sawtooths with rehash and turned out to be second-order; see the javadoc).
+        assertTrue(NullableLongLongMaps.wantWindowedReads(threshold));
+        assertTrue(NullableLongLongMaps.wantWindowedReads(Integer.MAX_VALUE));
+        // Below it (cache-resident): serial.
+        assertFalse(NullableLongLongMaps.wantWindowedReads(threshold - 1));
+        assertFalse(NullableLongLongMaps.wantWindowedReads(0));
     }
 }

@@ -164,11 +164,12 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         // in turn can only happen once prev tracking has been turned on). We copy updates to baseline and reset the
         // updates map.
         final NullableLongLongMap updates = instance.updates;
-        // A baseline that has become dense — deliberately (grown past the AMAC threshold while LOAD_FACTOR is at
-        // or above the policy's density floor; never at the default 0.5) or forcibly (creeping toward the absolute
-        // capacity ceiling, where rehash clamps and occupancy climbs regardless of LOAD_FACTOR) — is rebuilt as the
-        // windowed shape before the merge, so the merge's own puts also run against the upgraded map. Readers pick
-        // up the swap through the usual publication chains; one still holding the old map sees a consistent
+        // A baseline that has become big and dense — deliberately (grown past the AMAC threshold while LOAD_FACTOR
+        // is at or above the policy's density floor; never at the default 0.5) or forcibly (creeping toward the
+        // absolute capacity ceiling, where rehash clamps and occupancy climbs regardless of LOAD_FACTOR) — is
+        // rebuilt into the wide-bucket K4V4 shape before the merge, so the merge's own puts also run against the
+        // upgraded map; that map's reads then adapt to the AMAC window by footprint on their own. Readers
+        // pick up the swap through the usual publication chains; one still holding the old map sees a consistent
         // pre-commit snapshot, which the commit boundary permits.
         final NullableLongLongMap baseline =
                 NullableLongLongMaps.maybeUpgrade(instance.baseline, LOAD_FACTOR, AMAC_THRESHOLD_ENTRIES);

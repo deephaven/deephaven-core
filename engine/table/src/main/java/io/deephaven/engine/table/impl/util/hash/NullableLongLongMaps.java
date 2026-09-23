@@ -10,9 +10,15 @@ package io.deephaven.engine.table.impl.util.hash;
  */
 public final class NullableLongLongMaps {
     /**
-     * Entry count at and above which a map's working set is comfortably beyond any last-level cache, so chunked gets
-     * are miss-dominated and the AMAC window pays for its bookkeeping (measured: parity at 100K entries, 2.5x on
-     * shuffled lookups at 10M dense). Below it, the serial maps' simpler loop ties or wins.
+     * Entry capacity at and above which a K4V4 map services chunked gets through the AMAC window (16 bytes per entry,
+     * so 1M entries is a 16MB array). This is a FOOTPRINT threshold. The footprint sweep on a Ryzen 9 9950X3D2 (1MB L2,
+     * ~96MB per-CCD L3; serial vs forced-window, 2M..16M entries, load factors 0.5 and 0.9, sorted and shuffled, three
+     * forks) found the window winning or tying at EVERY size from 2M up — 13-38% faster on shuffled lookups and 12-20%
+     * on sorted at load factor 0.9 — even though a 2M-entry array (32MB) fits in that L3: the window overlaps L3
+     * latency, not just DRAM latency, so the real boundary is near L2, not the last-level cache. At 100K entries
+     * (1.6MB) the two strategies measured as parity. The crossover therefore lies between 100K and 2M, and this value
+     * sits inside that bracket, bounded below by parity and above by a measured win. Re-sweep before trusting it on
+     * hardware with a materially larger L2.
      */
     public static final int DEFAULT_AMAC_THRESHOLD_ENTRIES = 1 << 20;
 
@@ -38,29 +44,29 @@ public final class NullableLongLongMaps {
     private NullableLongLongMaps() {}
 
     /**
-     * Creates a map presized for {@code expectedSize} entries, choosing the shape by size and density: the windowed
-     * {@link HashMapLockFreeK4V4WithAMAC} when the map will be both big (at or above {@code amacThresholdEntries}) and
-     * dense — deliberately (load factor at or above {@link #AMAC_LOAD_FACTOR_FLOOR}) or forcibly (within reach of the
-     * absolute capacity ceiling, {@link #DEFAULT_CEILING_CUTOVER_ENTRIES}); the serial {@link HashMapLockFreeK4V4}
-     * otherwise.
+     * Should a K4V4-shaped map service chunked gets through the AMAC window right now? Yes exactly when its FOOTPRINT
+     * is beyond the last-level cache — entry capacity at or above {@link #DEFAULT_AMAC_THRESHOLD_ENTRIES} — because the
+     * window's whole job is overlapping cache misses, and a cache-resident table has none to overlap (there the window
+     * is pure bookkeeping, measured as a tax). Footprint is the first-order predictor. Occupancy turned out to be
+     * second-order and is deliberately NOT an input: at a fixed large footprint the window ties or wins at every
+     * occupancy measured, and open-addressing occupancy sawtooths in [loadFactor/2, loadFactor] as rehash doubles
+     * overshoot, so it never sits where a threshold calibrated on load factor expects it (a lesson learned the hard
+     * way). Capacity changes only at rehash, so this answer is stable between rehashes and flips exactly when the array
+     * grows past the cache.
      */
-    public static NullableLongLongMap ofExpectedSize(final int expectedSize, final double loadFactor,
-            final long noEntryValue, final int amacThresholdEntries) {
-        final boolean deliberatelyDense =
-                expectedSize >= amacThresholdEntries && loadFactor >= AMAC_LOAD_FACTOR_FLOOR;
-        final boolean forcedDense = expectedSize >= DEFAULT_CEILING_CUTOVER_ENTRIES;
-        return deliberatelyDense || forcedDense
-                ? HashMapLockFreeK4V4WithAMAC.ofExpectedSize(expectedSize, loadFactor, noEntryValue)
-                : HashMapLockFreeK4V4.ofExpectedSize(expectedSize, loadFactor, noEntryValue);
+    public static boolean wantWindowedReads(final int entryCapacity) {
+        return entryCapacity >= DEFAULT_AMAC_THRESHOLD_ENTRIES;
     }
 
     /**
-     * If {@code map} is not already the windowed shape and is dense — deliberately (grown to
+     * If {@code map} is not already a wide-bucket K4V4-shaped map and is dense — deliberately (grown to
      * {@code amacThresholdEntries} entries or more, to be rebuilt at a {@code loadFactor} at or above
      * {@link #AMAC_LOAD_FACTOR_FLOOR}) or forcibly (within reach of the absolute capacity ceiling,
      * {@link #DEFAULT_CEILING_CUTOVER_ENTRIES}, where the configured load factor no longer matters) — returns a
-     * presized {@link HashMapLockFreeK4V4WithAMAC} holding the same mappings and the same noEntryValue; otherwise
-     * returns {@code map} unchanged. The replacement is presized, so the drain performs no rehashes.
+     * presized {@link HashMapLockFreeK4V4} holding the same mappings and the same noEntryValue; otherwise returns
+     * {@code map} unchanged. This is a LAYOUT change only (four entries per bucket, one cache line, at density); that
+     * map's reads then adapt to the AMAC window by footprint on their own (see {@link #wantWindowedReads}). The
+     * replacement is presized, so the drain performs no rehashes.
      *
      * <p>
      * The caller owns the swap: it must be the map's single writer, it must publish the returned map through the same
@@ -76,7 +82,7 @@ public final class NullableLongLongMaps {
     // Package-visible so tests can exercise the ceiling trigger without building a 750M-entry map.
     static NullableLongLongMap maybeUpgrade(final NullableLongLongMap map, final double loadFactor,
             final int amacThresholdEntries, final int ceilingCutoverEntries) {
-        if (map instanceof HashMapLockFreeK4V4WithAMAC) {
+        if (map instanceof HashMapK4V4) {
             return map;
         }
         final boolean deliberatelyDense =
@@ -86,7 +92,7 @@ public final class NullableLongLongMaps {
             return map;
         }
         final NullableLongLongMap upgraded =
-                HashMapLockFreeK4V4WithAMAC.ofExpectedSize(map.size(), loadFactor, map.defaultReturnValue());
+                HashMapLockFreeK4V4.ofExpectedSize(map.size(), loadFactor, map.defaultReturnValue());
         final NullableLongLongMap.ScalarAccess cursor = new NullableLongLongMap.ScalarAccess(upgraded);
         map.forEach(cursor::put);
         return upgraded;
