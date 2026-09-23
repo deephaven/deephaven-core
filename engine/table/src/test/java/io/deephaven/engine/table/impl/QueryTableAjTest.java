@@ -509,45 +509,6 @@ public class QueryTableAjTest {
                 intColumn(reverseResultGt, "Sentinel"));
     }
 
-    private void tickCheck(Table left, boolean key, final String stampColumn, final String firstUnsorted,
-            final String secondUnsorted) {
-        final QueryTable right = TstUtils.testRefreshingTable(stringCol("SingleKey", "Key", "Key", "Key"),
-                byteCol("ByteCol", (byte) 1, (byte) 2, (byte) 3),
-                longCol("LongCol", 1, 2, 3),
-                doubleCol("DoubleCol", 1, 2.0, 3),
-                col("BoolCol", null, false, true),
-                stringCol("StringCol", "A", "B", "C"));
-
-        final QueryTable result1 =
-                (QueryTable) left.aj(right, (key ? "SingleKey," : "") + stampColumn, "Dummy<=LongCol");
-        try {
-            base.setExpectError(true);
-            final io.deephaven.engine.table.impl.ErrorListener listener =
-                    new io.deephaven.engine.table.impl.ErrorListener(result1);
-            result1.addUpdateListener(listener);
-
-            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-            updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(right, i(4, 5, 6),
-                        stringCol("SingleKey", "Key", "Key", "Key"),
-                        byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),
-                        longCol("LongCol", 4, 6, 5),
-                        doubleCol("DoubleCol", 4, 6, 5),
-                        stringCol("StringCol", "A", "D", "C"),
-                        col("BoolCol", null, true, false));
-                right.notifyListeners(i(4, 5, 6), i(), i());
-            });
-
-            assertNotNull(listener.originalException());
-            assertEquals(
-                    "Right stamp columns must be sorted, but are not for " + (key ? "Key " : "[] (zero key columns) ")
-                            + firstUnsorted + " came before " + secondUnsorted,
-                    listener.originalException().getMessage());
-        } finally {
-            base.setExpectError(false);
-        }
-    }
-
     @Test
     public void testAjRandomStatic() {
         for (int seed = 0; seed < 10; ++seed) {
