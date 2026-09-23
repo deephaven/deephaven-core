@@ -11,6 +11,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.annotations.VisibleForTesting;
 
 public interface ChunkFilter {
     /**
@@ -118,6 +119,29 @@ public interface ChunkFilter {
      */
     long INTERRUPTION_GOAL_MILLIS =
             Configuration.getInstance().getLongWithDefault("ChunkFilter.interruptionGoalMillis", 100);
+    /**
+     * The most values we filter between interruption checks, however quickly the filter runs
+     */
+    long MAX_INTERRUPTION_SIZE =
+            Configuration.getInstance().getLongWithDefault("ChunkFilter.maxInterruptionSize", 1 << 26);
+
+    /**
+     * Compute how many chunks to filter before the next interruption check, so that checks happen about every
+     * {@link #INTERRUPTION_GOAL_MILLIS} milliseconds.
+     *
+     * @param chunksBetweenChecks the number of chunks filtered between the previous two checks
+     * @param checkDurationMillis how long, in milliseconds, those chunks took to filter
+     * @return the number of chunks to filter before the next check; at least one, and no more than
+     *         {@link #MAX_INTERRUPTION_SIZE} values' worth
+     */
+    @VisibleForTesting
+    static long nextChunksBetweenChecks(final long chunksBetweenChecks, final long checkDurationMillis) {
+        final long maxChunksBetweenChecks = Math.max(1, MAX_INTERRUPTION_SIZE / FILTER_CHUNK_SIZE);
+        final long desired = checkDurationMillis <= 0
+                ? chunksBetweenChecks * 2
+                : chunksBetweenChecks * INTERRUPTION_GOAL_MILLIS / checkDurationMillis;
+        return Math.max(1, Math.min(maxChunksBetweenChecks, desired));
+    }
 
     /**
      * Apply a chunk filter to a RowSet and column source, producing a new WritableRowSet that is responsive to the
@@ -143,7 +167,7 @@ public interface ChunkFilter {
                 final WritableLongChunk<OrderedRowKeys> longChunk = WritableLongChunk.makeWritableChunk(contextSize);
                 final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
             while (rsIt.hasMore()) {
-                if (filteredChunks++ == chunksBetweenChecks) {
+                if (filteredChunks++ >= chunksBetweenChecks) {
                     if (Thread.interrupted()) {
                         throw new CancellationException("interrupted while filtering data");
                     }
@@ -152,10 +176,10 @@ public interface ChunkFilter {
                     final long checkDuration = now - lastInterruptCheck;
 
                     // tune so that we check at the desired interval, never less than one chunk
-                    chunksBetweenChecks = Math.max(1, Math.min(1, checkDuration <= 0 ? chunksBetweenChecks * 2
-                            : chunksBetweenChecks * INTERRUPTION_GOAL_MILLIS / checkDuration));
+                    chunksBetweenChecks = nextChunksBetweenChecks(chunksBetweenChecks, checkDuration);
                     lastInterruptCheck = now;
-                    filteredChunks = 0;
+                    // the chunk filtered in this iteration is the first of the next interval
+                    filteredChunks = 1;
                 }
                 final RowSequence okChunk = rsIt.getNextRowSequenceWithLength(contextSize);
                 final LongChunk<OrderedRowKeys> keyChunk = okChunk.asRowKeyChunk();
