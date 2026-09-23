@@ -1831,7 +1831,11 @@ public abstract class QueryTableWhereTest {
         final Filter filter = wrapper.apply(Filter.or(RawString.of("A = 1"), RawString.of("ii % 2 == 0")));
 
         final QueryTable indexedTable = makeVirtualRowVariableTable();
-        DataIndexer.getOrCreateDataIndex(indexedTable, "A");
+        // where() only uses fully-populated indexes (WhereListener.extractFilterDataIndexMap checks tableIsCached()),
+        // so materialize the index table; otherwise both sides take the plain filtering path.
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(indexedTable, "A");
+        dataIndex.table();
+        assertTrue("the data index must be cached for where() to consider it", dataIndex.tableIsCached());
 
         final Table oracle;
         QueryTable.USE_DATA_INDEX_FOR_WHERE = false;
