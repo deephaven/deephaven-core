@@ -1773,15 +1773,15 @@ public final class ByteSegmentedSortedArray implements SegmentedSortedArray {
             final int startIndex = Math.max(0, indexWithinLeaf);
             if (leafCount == 1) {
                 indexWithinLeaf = upperBound(directoryValues, startIndex, size, value);
-                if (indexWithinLeaf == 0 && disallowExactMatch ? lt(value, directoryValues[0])
-                        : leq(value, directoryValues[0])) {
+                if (indexWithinLeaf == 0 && (disallowExactMatch ? lt(value, directoryValues[0])
+                        : leq(value, directoryValues[0]))) {
                     // we want the user to call next() to get to the relevant value
                     indexWithinLeaf--;
                 }
             } else {
                 indexWithinLeaf = upperBound(leafValues[leafIndex], startIndex, leafSizes[leafIndex], value);
-                if (indexWithinLeaf == 0 && disallowExactMatch ? lt(value, leafValues[leafIndex][0])
-                        : leq(value, leafValues[leafIndex][0])) {
+                if (indexWithinLeaf == 0 && (disallowExactMatch ? lt(value, leafValues[leafIndex][0])
+                        : leq(value, leafValues[leafIndex][0]))) {
                     // we want the user to call next() to get to the relevant value
                     indexWithinLeaf--;
                 }
