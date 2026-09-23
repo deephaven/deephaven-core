@@ -36,6 +36,10 @@ import java.util.Optional;
  * <li>GREATER_THAN</li>
  * <li>GREATER_THAN_OR_EQUAL</li>
  * </ul>
+ *
+ * <p>
+ * A query-scope parameter is converted to the column's type as {@link MatchFilter} converts it; a value with no exact
+ * equivalent in that type is evaluated as a {@link ConditionFilter} instead.
  */
 public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
 

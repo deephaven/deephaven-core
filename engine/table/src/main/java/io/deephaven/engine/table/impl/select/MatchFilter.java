@@ -12,7 +12,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
-import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -156,6 +155,30 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return retained;
     }
 
+    /**
+     * Converts directly supplied values to the column's type the same way query-scope parameters are converted, so that
+     * a value is never narrowed to one the caller did not ask for. The supplied array is not modified.
+     *
+     * <p>
+     * A NaN searched for under {@link MatchOptions#nanMatch()} on a column whose type has no NaN is removed rather than
+     * converted: no value of such a column is NaN, which is also what {@code isNaN} answers for it.
+     */
+    private Object[] convertDirectValues(final ColumnTypeConvertor convertor, final Object[] directValues) {
+        final boolean dropNaN = matchOptions.nanMatch() && isPrimitiveWithoutNaN(columnType);
+        final List<Object> converted = new ArrayList<>(directValues.length);
+        for (final Object value : directValues) {
+            if (dropNaN && isNaN(value)) {
+                continue;
+            }
+            converted.add(value == null ? null : convertor.convertParamValue(value));
+        }
+        return converted.toArray();
+    }
+
+    private static boolean isPrimitiveWithoutNaN(final Class<?> type) {
+        return type.isPrimitive() && type != double.class && type != float.class;
+    }
+
     private static boolean isNaN(final Object value) {
         return value instanceof Double && ((Double) value).isNaN()
                 || value instanceof Float && ((Float) value).isNaN();
@@ -234,15 +257,17 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                 }
             }
             columnType = column.getDataType();
+            final ColumnTypeConvertor convertor = ColumnTypeConvertorFactory.getConvertor(column.getDataType());
             if (strValues == null) {
-                values = maybeDropNaN(values);
+                if (values != null) {
+                    values = maybeDropNaN(convertDirectValues(convertor, values));
+                }
                 initialized = true;
                 return;
             }
             final List<Object> valueList = new ArrayList<>();
             final Map<String, Object> queryScopeVariables =
                     compilationProcessor.getFormulaImports().getQueryScopeVariables();
-            final ColumnTypeConvertor convertor = ColumnTypeConvertorFactory.getConvertor(column.getDataType());
             for (String strValue : strValues) {
                 convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
             }
@@ -426,10 +451,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if (paramValue instanceof Byte || paramValue == null) {
                             return paramValue;
                         }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.byteCast(boxer.get(paramValue));
+                        return FilterValueCoercion.toPrimitive(paramValue, byte.class);
                     }
                 };
             }
@@ -449,10 +471,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if (paramValue instanceof Short || paramValue == null) {
                             return paramValue;
                         }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.shortCast(boxer.get(paramValue));
+                        return FilterValueCoercion.toPrimitive(paramValue, short.class);
                     }
                 };
             }
@@ -472,10 +491,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if (paramValue instanceof Integer || paramValue == null) {
                             return paramValue;
                         }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.intCast(boxer.get(paramValue));
+                        return FilterValueCoercion.toPrimitive(paramValue, int.class);
                     }
                 };
             }
@@ -495,10 +511,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if (paramValue instanceof Long || paramValue == null) {
                             return paramValue;
                         }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.longCast(boxer.get(paramValue));
+                        return FilterValueCoercion.toPrimitive(paramValue, long.class);
                     }
                 };
             }
@@ -518,10 +531,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if (paramValue instanceof Float || paramValue == null) {
                             return paramValue;
                         }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.floatCast(boxer.get(paramValue));
+                        return FilterValueCoercion.toPrimitive(paramValue, float.class);
                     }
                 };
             }
@@ -541,10 +551,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if (paramValue instanceof Double || paramValue == null) {
                             return paramValue;
                         }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.doubleCast(boxer.get(paramValue));
+                        return FilterValueCoercion.toPrimitive(paramValue, double.class);
                     }
                 };
             }
@@ -593,10 +600,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                         if (paramValue instanceof Character || paramValue == null) {
                             return paramValue;
                         }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        return QueryLanguageFunctionUtils.charCast(boxer.get(paramValue));
+                        return FilterValueCoercion.toPrimitive(paramValue, char.class);
                     }
                 };
             }
@@ -613,23 +617,10 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     @Override
                     Object convertParamValue(Object paramValue) {
                         paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof BigDecimal || paramValue == null) {
-                            return paramValue;
-                        }
-                        if (paramValue instanceof BigInteger) {
-                            return new BigDecimal((BigInteger) paramValue);
-                        }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        final Object boxedValue = boxer.get(paramValue);
-                        if (boxedValue == null) {
+                        if (paramValue == null) {
                             return null;
                         }
-                        if (boxedValue instanceof Number) {
-                            return BigDecimal.valueOf(((Number) boxedValue).doubleValue());
-                        }
-                        return paramValue;
+                        return FilterValueCoercion.toBigDecimal(paramValue);
                     }
                 };
             }
@@ -646,23 +637,10 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     @Override
                     Object convertParamValue(Object paramValue) {
                         paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof BigInteger || paramValue == null) {
-                            return paramValue;
-                        }
-                        if (paramValue instanceof BigDecimal) {
-                            return ((BigDecimal) paramValue).toBigInteger();
-                        }
-                        // noinspection unchecked
-                        final TypeUtils.TypeBoxer<Object> boxer =
-                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
-                        final Object boxedValue = boxer.get(paramValue);
-                        if (boxedValue == null) {
+                        if (paramValue == null) {
                             return null;
                         }
-                        if (boxedValue instanceof Number) {
-                            return BigInteger.valueOf(((Number) boxedValue).longValue());
-                        }
-                        return paramValue;
+                        return FilterValueCoercion.toBigInteger(paramValue);
                     }
                 };
             }
