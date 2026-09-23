@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.util.OuterJoinTools;
+import io.deephaven.engine.exceptions.MismatchedJoinKeyException;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -25,6 +27,7 @@ import io.deephaven.engine.util.TableTools;
 
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Random;
 
 import org.jetbrains.annotations.NotNull;
@@ -47,6 +50,20 @@ public class QueryTableJoinTest {
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
+
+    @Test
+    public void testMismatchedJoinKeyTypes() {
+        final Table left = TableTools.newTable(intCol("Key", 1), intCol("LeftValue", 5));
+        final Table right = TableTools.newTable(longCol("Key", 1L), intCol("RightValue", 1));
+        final String expectedMessage = "Mismatched join types, Key=Key: int != long";
+
+        assertEquals(expectedMessage, assertThrows(MismatchedJoinKeyException.class,
+                () -> left.naturalJoin(right, "Key", "RightValue")).getMessage());
+        assertEquals(expectedMessage, assertThrows(MismatchedJoinKeyException.class,
+                () -> left.join(right, "Key", "RightValue")).getMessage());
+        assertEquals(expectedMessage, assertThrows(MismatchedJoinKeyException.class,
+                () -> OuterJoinTools.leftOuterJoin(left, right, List.of("Key"), List.of("RightValue"))).getMessage());
+    }
 
     @Test
     public void testAjIncremental() {
