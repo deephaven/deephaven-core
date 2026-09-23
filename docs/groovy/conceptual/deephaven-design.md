@@ -127,7 +127,7 @@ result2 = liveTrades.where("Price > 100").aggBy([AggAvg("Price")], "Symbol")
 // result2 updates in real-time as new trades arrive
 ```
 
-<iframe src="../assets/conceptual/architecture/unified-batch-streaming.html" title="Diagram comparing a traditional multi-system batch and streaming stack with Deephaven's unified single-system model" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 1007', border: 'none'}} />
+<iframe src="../assets/conceptual/architecture/unified-batch-streaming.html" title="Diagram comparing a traditional multi-system batch and streaming stack with Deephaven's unified single-system model" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 1024', border: 'none'}} />
 
 ## Unified batch and streaming
 

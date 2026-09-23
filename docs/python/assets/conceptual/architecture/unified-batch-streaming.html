@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./support.js"></script>
 <script>
 /* Scale the fixed 1280px canvas to whatever width the docs column gives us.
    Numeric zoom affects layout, so the document height tracks the width
@@ -34,17 +33,12 @@
   document.addEventListener('DOMContentLoaded', fit);
 })();
 </script>
-</head>
-<body>
-<x-dc>
-<helmet>
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/fonts.css">
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/colors.css">
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/typography.css">
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/spacing.css">
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/tokens/effects.css">
   <link rel="stylesheet" href="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/styles.css">
-  <script src="_ds/deephaven-design-system-e929bca6-31a4-41e5-975b-9595805bab50/_ds_bundle.js"></script>
   <style>
     html, body { margin: 0; padding: 0; }
     /* No-JS fallback: step down so the diagram never clips.
@@ -62,7 +56,8 @@
       100% { offset-distance: 100%; opacity: 0; }
     }
   </style>
-</helmet>
+</head>
+<body>
 
 <div class="dh-canvas" style="width:1280px;box-sizing:border-box;padding:40px;background:var(--dh-surface-page);font-family:var(--dh-font-sans);color:var(--dh-text-primary);">
 
@@ -184,7 +179,11 @@
   </div>
 
   <div style="margin-top:20px;">
-    <x-import component-from-global-scope="DeephavenDesignSystem_e929bc.Card" title="Code example: same API for both" padding="md" hint-size="1200px,auto">
+    <div style="background:var(--dh-surface-card);border:1px solid var(--dh-border);border-radius:var(--dh-radius-lg);color:var(--dh-text-primary);font-family:var(--dh-font-sans);overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--dh-space-4);padding:var(--dh-space-4) var(--dh-space-6);border-bottom:1px solid var(--dh-border);">
+        <div style="font-size:var(--dh-text-md);font-weight:var(--dh-weight-semibold);">Code example: same API for both</div>
+      </div>
+      <div style="padding:var(--dh-space-6);">
       <div style="font-size:12px;color:var(--dh-text-secondary);margin-bottom:14px;">Python code works identically for batch and real-time data:</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div>
@@ -208,13 +207,12 @@
         <div>Identical operations! The only difference is the data source.</div>
         <div>Both use the same DAG, both maintain consistency, both support all table operations.</div>
       </div>
-    </x-import>
+    </div>
+    </div>
   </div>
 
 </div>
 
-</x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280}}"></script>
 
 </body>
 </html>

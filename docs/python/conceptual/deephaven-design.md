@@ -120,7 +120,7 @@ result2 = live_trades.where("Price > 100").agg_by([agg.avg("Price")], by=["Symbo
 # result2 updates in real-time as new trades arrive
 ```
 
-<iframe src="../assets/conceptual/architecture/unified-batch-streaming.html" title="Diagram comparing a traditional multi-system batch and streaming stack with Deephaven's unified single-system model" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 970', border: 'none'}} />
+<iframe src="../assets/conceptual/architecture/unified-batch-streaming.html" title="Diagram comparing a traditional multi-system batch and streaming stack with Deephaven's unified single-system model" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 988', border: 'none'}} />
 
 ## Unified batch and streaming
 
