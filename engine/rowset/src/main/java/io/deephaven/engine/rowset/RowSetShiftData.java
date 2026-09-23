@@ -718,13 +718,54 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         final Builder builder = new Builder();
 
         final int size = size();
-        for (int idx = 0; idx < size; ++idx) {
-            if (rowSet.overlapsRange(getBeginRange(idx), getEndRange(idx))) {
-                builder.shiftRange(getBeginRange(idx), getEndRange(idx), getShiftDelta(idx));
+        if (size == 0 || rowSet.isEmpty()) {
+            return builder.build();
+        }
+
+        // The shift ranges and the row set are walked together. Each step either advances the row set to the next
+        // shift range's start, or bisects the shift ranges past those that end before the row set's current key, so
+        // the cost is bounded by the smaller of the two range counts times a logarithm rather than by the shift size.
+        try (final RowSet.RangeIterator rangeIterator = rowSet.rangeIterator()) {
+            int idx = 0;
+            while (idx < size) {
+                if (!rangeIterator.advance(getBeginRange(idx))) {
+                    break;
+                }
+                // the first row key at or after the start of shift range idx
+                final long firstKey = rangeIterator.currentRangeStart();
+                idx = firstEndAtOrAfter(idx, size, firstKey);
+                if (idx == size) {
+                    break;
+                }
+                // no row key lies in [getBeginRange(original idx), firstKey), and shift range idx ends at or after
+                // firstKey; it overlaps when it begins within the current row set range
+                final long beginRange = getBeginRange(idx);
+                if (beginRange <= rangeIterator.currentRangeEnd()) {
+                    builder.shiftRange(beginRange, getEndRange(idx), getShiftDelta(idx));
+                    ++idx;
+                }
             }
         }
 
         return builder.build();
+    }
+
+    /**
+     * @return the first shift range index in {@code [fromIdx, size)} whose end is at or after {@code key}, or
+     *         {@code size} if there is none
+     */
+    private int firstEndAtOrAfter(final int fromIdx, final int size, final long key) {
+        int lo = fromIdx;
+        int hi = size;
+        while (lo < hi) {
+            final int mid = (lo + hi) >>> 1;
+            if (getEndRange(mid) < key) {
+                lo = mid + 1;
+            } else {
+                hi = mid;
+            }
+        }
+        return lo;
     }
 
     /**
