@@ -722,9 +722,11 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             return builder.build();
         }
 
-        // The shift ranges and the row set are walked together. Each step either advances the row set to the next
-        // shift range's start, or bisects the shift ranges past those that end before the row set's current key, so
-        // the cost is bounded by the smaller of the two range counts times a logarithm rather than by the shift size.
+        // The shift ranges and the row set are walked together, and neither is ever revisited. Each step advances the
+        // row set to the next shift range's start, gallops the shift ranges past a run that ends before the row set's
+        // current key, or emits an overlapping shift range. A run of shift ranges that the row set skips is crossed in
+        // time logarithmic in its length, and the row set's own ranges are skipped by its iterator, so the work is
+        // driven by the overlapping shift ranges rather than by the number of shifted keys.
         try (final RowSet.RangeIterator rangeIterator = rowSet.rangeIterator()) {
             int idx = 0;
             while (idx < size) {
@@ -751,12 +753,27 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     }
 
     /**
+     * Gallops forward from {@code fromIdx} and then bisects the bracketed interval, so a result near {@code fromIdx}
+     * costs a constant number of probes and one {@code d} positions away costs O(log d).
+     *
      * @return the first shift range index in {@code [fromIdx, size)} whose end is at or after {@code key}, or
      *         {@code size} if there is none
      */
     private int firstEndAtOrAfter(final int fromIdx, final int size, final long key) {
+        if (getEndRange(fromIdx) >= key) {
+            return fromIdx;
+        }
+        // getEndRange(lo) < key holds throughout; hi is either size or an index whose end is at or after key
         int lo = fromIdx;
-        int hi = size;
+        int step = 1;
+        int hi = fromIdx + step;
+        while (hi < size && getEndRange(hi) < key) {
+            lo = hi;
+            // the step saturates at size, so doubling it can never overflow
+            step = step <= (size >>> 1) ? step << 1 : size;
+            hi = size - lo > step ? lo + step : size;
+        }
+        ++lo;
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             if (getEndRange(mid) < key) {

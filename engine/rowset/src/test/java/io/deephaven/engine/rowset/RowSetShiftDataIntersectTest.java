@@ -79,7 +79,8 @@ public class RowSetShiftDataIntersectTest {
         final Random random = new Random(0);
         for (int iteration = 0; iteration < 2000; ++iteration) {
             final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
-            final int rangeCount = random.nextInt(30);
+            // enough ranges that sparse row sets gallop across long runs of non-overlapping shifts
+            final int rangeCount = random.nextInt(200);
             long next = random.nextInt(5);
             for (int ii = 0; ii < rangeCount; ++ii) {
                 final long begin = next + 2 + random.nextInt(10);
