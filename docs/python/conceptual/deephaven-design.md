@@ -123,7 +123,7 @@ At Deephaven, we have designed and implemented a unified table API that offers t
 ```python syntax
 from deephaven.parquet import read
 from deephaven.stream.kafka.consumer import consume as consume_kafka
-from deephaven.stream.kafka.consumer import json_spec, KeyValueSpec
+from deephaven.stream.kafka.consumer import json_spec, KeyValueSpec, TableType
 from deephaven import dtypes as dht
 from deephaven import agg
 
@@ -137,13 +137,14 @@ live_trades = consume_kafka(
     "trades",
     key_spec=KeyValueSpec.IGNORE,
     value_spec=json_spec({"Symbol": dht.string, "Price": dht.double}),
+    table_type=TableType.append(),
 )
 result2 = live_trades.where("Price > 100").agg_by([agg.avg("Price")], by=["Symbol"])
 
 # result2 updates in real-time as new trades arrive
 ```
 
-<iframe src="../assets/conceptual/architecture/unified-batch-streaming.html" title="Diagram comparing a traditional multi-system batch and streaming stack with Deephaven's unified single-system model" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 988', border: 'none'}} />
+<iframe src="../assets/conceptual/architecture/unified-batch-streaming.html" title="Diagram comparing a traditional multi-system batch and streaming stack with Deephaven's unified single-system model" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 1006', border: 'none'}} />
 
 ## Unified batch and streaming
 

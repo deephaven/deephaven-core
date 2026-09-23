@@ -197,7 +197,8 @@
         <div>
           <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);margin-bottom:6px;">Real-time (Live):</div>
           <div style="box-sizing:border-box;padding:12px;background:var(--dh-surface-sunken);border:1px solid var(--dh-warn-500);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);line-height:var(--dh-leading-relaxed);">
-            <div>live = consume_kafka(kafka_config, "trades")</div>
+            <div>live = consume_kafka(kafka_config, "trades",</div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;table_type=TableType.append())</div>
             <div>result = live.where("Price &gt; 100")</div>
             <div>&nbsp;&nbsp;.agg_by([agg.avg("Price")], by=["Symbol"])</div>
           </div>
@@ -205,7 +206,7 @@
       </div>
       <div style="margin-top:14px;font-size:12px;color:var(--dh-text-secondary);">
         <div>Identical operations! The only difference is the data source.</div>
-        <div>Both use the same DAG, both maintain consistency, both support all table operations.</div>
+        <div>Both use the same DAG, both maintain consistency, both support the same table operations.</div>
       </div>
     </div>
     </div>
