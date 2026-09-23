@@ -1179,29 +1179,35 @@ public class AsOfJoinHelper {
         final int leftSize = leftTable.intSize();
         final WritableChunk<Values> leftStampValues = stampChunkType.makeWritableChunk(leftSize);
         final WritableLongChunk<RowKeys> leftStampKeys = WritableLongChunk.makeWritableChunk(leftSize);
-        leftTable.getRowSet().fillRowKeyChunk(leftStampKeys);
-        try (final ColumnSource.FillContext context = leftStampSource.makeFillContext(leftSize)) {
-            leftStampSource.fillChunk(context, leftStampValues, leftTable.getRowSet());
-        }
-
-        try (final LongSortKernel<Values, RowKeys> sortKernel =
-                LongSortKernel.makeContext(stampChunkType, order, leftSize, true)) {
-            sortKernel.sort(leftStampKeys, leftStampValues);
-        }
-
         final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, reverse);
-        try (final WritableLongChunk<RowKeys> rightKeysForLeft = WritableLongChunk.makeWritableChunk(leftSize)) {
-            chunkSsaStamp.processEntry(leftStampValues, leftStampKeys, ssa, rightKeysForLeft, disallowExactMatch);
+        final QueryTable result;
+        // if we fail to create the table, then we should make sure to close the left stamp chunks; if we are
+        // successful, then the listener owns them and is responsible for closing them
+        try (final SafeCloseableList closeableList = new SafeCloseableList(leftStampValues, leftStampKeys)) {
+            leftTable.getRowSet().fillRowKeyChunk(leftStampKeys);
+            try (final ColumnSource.FillContext context = leftStampSource.makeFillContext(leftSize)) {
+                leftStampSource.fillChunk(context, leftStampValues, leftTable.getRowSet());
+            }
 
-            for (int ii = 0; ii < leftStampKeys.size(); ++ii) {
-                final long index = rightKeysForLeft.get(ii);
-                if (index != RowSequence.NULL_ROW_KEY) {
-                    rowRedirection.put(leftStampKeys.get(ii), index);
+            try (final LongSortKernel<Values, RowKeys> sortKernel =
+                    LongSortKernel.makeContext(stampChunkType, order, leftSize, true)) {
+                sortKernel.sort(leftStampKeys, leftStampValues);
+            }
+
+            try (final WritableLongChunk<RowKeys> rightKeysForLeft = WritableLongChunk.makeWritableChunk(leftSize)) {
+                chunkSsaStamp.processEntry(leftStampValues, leftStampKeys, ssa, rightKeysForLeft, disallowExactMatch);
+
+                for (int ii = 0; ii < leftStampKeys.size(); ++ii) {
+                    final long index = rightKeysForLeft.get(ii);
+                    if (index != RowSequence.NULL_ROW_KEY) {
+                        rowRedirection.put(leftStampKeys.get(ii), index);
+                    }
                 }
             }
-        }
 
-        final QueryTable result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
+            result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
+            closeableList.clear();
+        }
         final ModifiedColumnSet rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());
         final ModifiedColumnSet allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
         final ModifiedColumnSet.Transformer rightTransformer =
