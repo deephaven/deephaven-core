@@ -670,7 +670,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(table("small"))
                 .then(t -> {
-                    delayTestFinish(20_876);
+                    delayTestFinish(20_876 * TIMEOUT_SCALE);
                     // Add a timestamp column, and format the number/timestamp, style the row and cells
                     t.applyCustomColumns(JsArray.of(
                             JsTable.CustomColumnArgUnionType
@@ -742,7 +742,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     });
                 })
                 .then(t -> {
-                    delayTestFinish(20_877);
+                    delayTestFinish(20_877 * TIMEOUT_SCALE);
                     // Repeat, this time also with a row style
                     t.applyCustomColumns(JsArray.of(
                             JsTable.CustomColumnArgUnionType
@@ -816,7 +816,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     });
                 })
                 .then(t -> {
-                    delayTestFinish(20_878);
+                    delayTestFinish(20_878 * TIMEOUT_SCALE);
                     // Repeat, once more with a row style but no column style
                     t.applyCustomColumns(JsArray.of(
                             JsTable.CustomColumnArgUnionType
