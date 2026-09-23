@@ -27,7 +27,7 @@ Deephaven's architecture is built on several key innovations:
 | Capability             | Traditional Approach                    | Deephaven                            |
 | ---------------------- | --------------------------------------- | ------------------------------------ |
 | **Batch + Real-time**  | Separate systems (e.g., Spark + Flink)  | Unified table API for both           |
-| **Update model**       | Recompute full datasets                 | Incremental (only changed rows)      |
+| **Update model**       | Recompute full datasets                 | Incremental (only affected rows)     |
 | **Memory efficiency**  | Copy-on-write, data duplication         | Shared `RowSets` and `ColumnSources` |
 | **Query consistency**  | Manual coordination required            | Automatic via DAG and logical clock  |
 | **UI development**     | Separate front-end team/codebase        | Pure Python (`deephaven.ui`) or JS   |
@@ -48,7 +48,7 @@ Queries automatically form a DAG where:
 
 - **Vertices** represent tables or data operations.
 - **Edges** represent dependencies and data flow.
-- **Updates** propagate incrementally - only changed data recomputes.
+- **Updates** propagate incrementally - only the affected data recomputes.
 - **Consistency** is guaranteed via a logical clock that coordinates update cycles.
 
 For example, consider this simple query:
@@ -68,7 +68,7 @@ aggregated = source.aggBy([AggSum("Value")])
 
 When `source` receives a new row, the DAG ensures that `filtered` and `aggregated` update automatically and consistently. The engine only recomputes what changed - if one row updates, only that row flows through the graph.
 
-**Performance impact**: Incremental updates mean a 1-row change to a million-row table triggers recomputation of only that single row, not the entire dataset. In a typical financial trading scenario with 1,000 updates per second to a 10-million-row table, Deephaven processes 1,000 rows per second while a full-recompute system would need to process 10 billion rows per second to maintain the same latency.
+**Performance impact**: Incremental updates mean a 1-row change to a million-row table recomputes only what that change affects, not the entire dataset. How far a change reaches depends on the operation: a filter or `update` touches the changed rows, while a join or aggregation updates the matching output rows or groups. In a typical financial trading scenario with 1,000 updates per second to a 10-million-row table, Deephaven's work scales with the 1,000 changed rows rather than the 10 million stored, while a full-recompute system would need to process 10 billion rows per second to maintain the same latency.
 
 ### Update graph (UG) cycles
 
