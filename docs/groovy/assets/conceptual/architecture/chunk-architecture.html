@@ -77,7 +77,7 @@
 
   <div style="position:relative;display:grid;grid-template-columns:1fr 1fr;gap:24px;">
 
-    <div style="position:absolute;top:96px;left:50%;transform:translate(-50%,-50%);z-index:1;width:34px;height:34px;border-radius:50%;background:var(--dh-surface-page);border:1px solid var(--dh-border-strong);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--dh-text-muted);">vs</div>
+    <div style="position:absolute;top:96px;left:50%;transform:translate(-50%,-50%);z-index:1;width:34px;height:34px;border-radius:50%;background:var(--dh-surface-page);border:1px solid var(--dh-border-strong);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--dh-text-secondary);">vs</div>
 
     <div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
@@ -91,7 +91,7 @@
           <div style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-sm);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);animation:dh-cell-scan 3.2s steps(1) infinite;animation-delay:0.8s;">17</div>
           <div style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-sm);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);animation:dh-cell-scan 3.2s steps(1) infinite;animation-delay:1.6s;">93</div>
           <div style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-sm);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);animation:dh-cell-scan 3.2s steps(1) infinite;animation-delay:2.4s;">28</div>
-          <div style="font-size:11px;color:var(--dh-text-muted);margin-left:4px;">... (millions more, one at a time)</div>
+          <div style="font-size:11px;color:var(--dh-text-secondary);margin-left:4px;">... (millions more, one at a time)</div>
         </div>
         <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px;">
           <div style="display:flex;align-items:center;gap:6px;">
@@ -124,7 +124,7 @@
             <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
             <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
             <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
-            <div style="font-size:10px;color:var(--dh-text-muted);margin:0 6px;">... 4092 more values ...</div>
+            <div style="font-size:10px;color:var(--dh-text-secondary);margin:0 6px;">... 4092 more values ...</div>
             <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
             <div style="width:16px;height:16px;background:var(--dh-surface-card);border:1px solid var(--dh-logo-cyan);border-radius:2px;animation:dh-chunk-flash 3.2s steps(1) infinite;"></div>
           </div>
@@ -209,12 +209,12 @@
         <div style="width:130px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);font-size:12px;font-weight:600;color:var(--dh-text-primary);">Available</div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
           <svg width="60" height="14" viewBox="0 0 60 14"><defs><marker id="dh-pool-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><polygon points="0 0, 7 3, 0 6" fill="var(--dh-text-muted)"></polygon></marker></defs><path d="M 2 7 L 56 7" stroke="var(--dh-text-muted)" stroke-width="1.5" marker-end="url(#dh-pool-arrow)"></path></svg>
-          <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-muted);">acquire()</div>
+          <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-secondary);">acquire()</div>
         </div>
         <div style="width:130px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-logo-yellow);border-radius:var(--dh-radius-md);font-size:12px;font-weight:600;color:var(--dh-text-primary);">In use</div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
           <svg width="60" height="14" viewBox="0 0 60 14"><path d="M 2 7 L 56 7" stroke="var(--dh-text-muted)" stroke-width="1.5" marker-end="url(#dh-pool-arrow)"></path></svg>
-          <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-muted);">release()</div>
+          <div style="font-family:var(--dh-font-mono);font-size:10px;color:var(--dh-text-secondary);">release()</div>
         </div>
         <div style="width:130px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--dh-bg-1000);border:1px solid var(--dh-border-strong);border-radius:var(--dh-radius-md);font-size:12px;font-weight:600;color:var(--dh-text-primary);">Returned</div>
       </div>
@@ -266,9 +266,9 @@
       </div>
       <div style="padding:var(--dh-space-6);">
       <div style="box-sizing:border-box;padding:12px;background:var(--dh-surface-sunken);border:1px solid var(--dh-border);border-radius:var(--dh-radius-md);">
-        <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-muted);">// Instead of: for (long key : rowSet) { if (predicate(getValue(key))) { ... } }</div>
-        <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-muted);margin-top:4px;">// Chunks do: Chunk values = source.getChunk(context, rowSequence);</div>
-        <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-muted);margin-top:4px;">//&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bulkFilter(values, predicate, outputKeys);&nbsp;&nbsp;// Process entire chunk at once</div>
+        <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);">// Instead of: for (long key : rowSet) { if (predicate(getValue(key))) { ... } }</div>
+        <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">// Chunks do: Chunk values = source.getChunk(context, rowSequence);</div>
+        <div style="font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-secondary);margin-top:4px;">//&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bulkFilter(values, predicate, outputKeys);&nbsp;&nbsp;// Process entire chunk at once</div>
       </div>
     </div>
     </div>
