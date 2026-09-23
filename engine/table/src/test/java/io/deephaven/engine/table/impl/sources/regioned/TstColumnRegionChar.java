@@ -70,11 +70,11 @@ public class TstColumnRegionChar {
         @Override
         @Test
         public void testGet() {
-            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(0)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(1)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(Integer.MAX_VALUE)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar((1L << 40) - 2)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(Long.MAX_VALUE)/* EXTRA */);
+            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(0));
+            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(1));
+            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(Integer.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar((1L << 40) - 2));
+            assertEquals(QueryConstants.NULL_CHAR, SUT.getChar(Long.MAX_VALUE));
         }
     }
 
@@ -96,9 +96,9 @@ public class TstColumnRegionChar {
         @Override
         @Test
         public void testGet() {
-            assertEquals((char) 8, SUT.getChar(8)/* EXTRA */);
+            assertEquals((char) 8, SUT.getChar(8));
             jmock.assertIsSatisfied();
-            assertEquals((char) 272, SUT.getChar(272)/* EXTRA */);
+            assertEquals((char) 272, SUT.getChar(272));
             jmock.assertIsSatisfied();
         }
     }

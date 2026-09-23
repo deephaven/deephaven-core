@@ -74,11 +74,11 @@ public class TstColumnRegionInt {
         @Override
         @Test
         public void testGet() {
-            assertEquals(QueryConstants.NULL_INT, SUT.getInt(0)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_INT, SUT.getInt(1)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_INT, SUT.getInt(Integer.MAX_VALUE)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_INT, SUT.getInt((1L << 40) - 2)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_INT, SUT.getInt(Long.MAX_VALUE)/* EXTRA */);
+            assertEquals(QueryConstants.NULL_INT, SUT.getInt(0));
+            assertEquals(QueryConstants.NULL_INT, SUT.getInt(1));
+            assertEquals(QueryConstants.NULL_INT, SUT.getInt(Integer.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_INT, SUT.getInt((1L << 40) - 2));
+            assertEquals(QueryConstants.NULL_INT, SUT.getInt(Long.MAX_VALUE));
         }
     }
 
@@ -100,9 +100,9 @@ public class TstColumnRegionInt {
         @Override
         @Test
         public void testGet() {
-            assertEquals((int) 8, SUT.getInt(8)/* EXTRA */);
+            assertEquals((int) 8, SUT.getInt(8));
             jmock.assertIsSatisfied();
-            assertEquals((int) 272, SUT.getInt(272)/* EXTRA */);
+            assertEquals((int) 272, SUT.getInt(272));
             jmock.assertIsSatisfied();
         }
     }

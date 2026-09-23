@@ -74,11 +74,11 @@ public class TstColumnRegionFloat {
         @Override
         @Test
         public void testGet() {
-            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(0), .000001f);
-            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(1), .000001f);
-            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(Integer.MAX_VALUE), .000001f);
-            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat((1L << 40) - 2), .000001f);
-            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(Long.MAX_VALUE), .000001f);
+            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(0));
+            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(1));
+            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(Integer.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat((1L << 40) - 2));
+            assertEquals(QueryConstants.NULL_FLOAT, SUT.getFloat(Long.MAX_VALUE));
         }
     }
 
@@ -100,9 +100,9 @@ public class TstColumnRegionFloat {
         @Override
         @Test
         public void testGet() {
-            assertEquals((float) 8, SUT.getFloat(8), .000001f);
+            assertEquals((float) 8, SUT.getFloat(8));
             jmock.assertIsSatisfied();
-            assertEquals((float) 272, SUT.getFloat(272), .000001f);
+            assertEquals((float) 272, SUT.getFloat(272));
             jmock.assertIsSatisfied();
         }
     }

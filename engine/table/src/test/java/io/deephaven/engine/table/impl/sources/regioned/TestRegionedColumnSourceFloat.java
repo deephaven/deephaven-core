@@ -41,7 +41,7 @@ public class TestRegionedColumnSourceFloat extends
         if (boxed) {
             assertEquals(output == NULL_FLOAT ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {
-            assertEquals(output, prev ? SUT.getPrevFloat(elementIndex) : SUT.getFloat(elementIndex), .000001f);
+            assertEquals(output, prev ? SUT.getPrevFloat(elementIndex) : SUT.getFloat(elementIndex));
         }
         jmock.assertIsSatisfied();
     }

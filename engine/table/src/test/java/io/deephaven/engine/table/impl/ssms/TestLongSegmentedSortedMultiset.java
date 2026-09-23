@@ -444,10 +444,10 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
         assertArrayEquals(prefix, values, ssm.toArray()/*EXTRA*/);
 
         // an offset outside [0, size()) reads as null; it is neither an error nor a peek at a leaf's unused slots
-        assertEquals(prefix, NULL_LONG, ssm.get(-1)/*EXTRA*/);
-        assertEquals(prefix, NULL_LONG, ssm.get(valueCount)/*EXTRA*/);
-        assertEquals(prefix, NULL_LONG, ssm.get(valueCount + 1)/*EXTRA*/);
-        assertEquals(prefix, NULL_LONG, ssm.get(Long.MAX_VALUE)/*EXTRA*/);
+        assertEquals(prefix, NULL_LONG, ssm.get(-1));
+        assertEquals(prefix, NULL_LONG, ssm.get(valueCount));
+        assertEquals(prefix, NULL_LONG, ssm.get(valueCount + 1));
+        assertEquals(prefix, NULL_LONG, ssm.get(Long.MAX_VALUE));
 
         // sub-ranges that fall short of, span, and overrun each end
         for (int from = -3; from <= valueCount + 3; ++from) {
@@ -458,7 +458,7 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
                 assertEquals(message, to - from, actual.size());
                 assertArrayEquals(message, expected.toArray(), actual.toArray()/*EXTRA*/);
                 for (int ii = 0; ii < to - from; ++ii) {
-                    assertEquals(message, expected.get(ii), actual.get(ii)/*EXTRA*/);
+                    assertEquals(message, expected.get(ii), actual.get(ii));
                 }
             }
         }
@@ -670,7 +670,7 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
 
                 final MutableInt offset = new MutableInt(0);
                 checkMap.forEach((key, count) -> {
-                    assertEquals((long) key, keys.get(offset.get())/*EXTRA*/);
+                    assertEquals((long) key, keys.get(offset.get()));
                     assertEquals((long) count, counts.get(offset.get()));
                     offset.increment();
                 });
@@ -747,7 +747,7 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
             }
             subject.insert(valuesChunk, countsChunk, prefix, values.length);
             for (int ii = 0; ii < prefix; ++ii) {
-                assertEquals(junk, valuesChunk.get(ii)/*EXTRA*/);
+                assertEquals(junk, valuesChunk.get(ii));
             }
         }
 
@@ -786,7 +786,7 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
             }
             subject.remove(removeContext, valuesChunk, countsChunk, prefix, values.length);
             for (int ii = 0; ii < prefix; ++ii) {
-                assertEquals(junk, valuesChunk.get(ii)/*EXTRA*/);
+                assertEquals(junk, valuesChunk.get(ii));
             }
         }
 
@@ -804,7 +804,7 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
              final WritableLongChunk<?> referenceCounts = reference.countChunk()) {
             assertEquals(referenceKeys.size(), subjectKeys.size());
             for (int ii = 0; ii < referenceKeys.size(); ++ii) {
-                assertEquals(referenceKeys.get(ii), subjectKeys.get(ii)/*EXTRA*/);
+                assertEquals(referenceKeys.get(ii), subjectKeys.get(ii));
                 assertEquals(referenceCounts.get(ii), subjectCounts.get(ii));
             }
         }
@@ -909,7 +909,7 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
             assertEquals(prefix, valueCount, it.remaining());
             for (int ii = 0; ii < valueCount; ++ii) {
                 assertTrue(prefix, it.hasNext());
-                assertEquals(prefix, values[ii], it.nextLong()/*EXTRA*/);
+                assertEquals(prefix, values[ii], it.nextLong());
             }
             assertFalse(prefix, it.hasNext());
         }
@@ -924,7 +924,7 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
                     assertEquals(message, to - from, it.remaining());
                     for (int ii = from; ii < to; ++ii) {
                         assertTrue(message, it.hasNext());
-                        assertEquals(message, reference.get(ii), it.nextLong()/*EXTRA*/);
+                        assertEquals(message, reference.get(ii), it.nextLong());
                         assertEquals(message, to - ii - 1, it.remaining());
                     }
                     assertFalse(message, it.hasNext());
@@ -943,7 +943,7 @@ public class TestLongSegmentedSortedMultiset extends RefreshingTableTestCase {
                      final ValueIteratorOfLong sliceIt = ssm.subVector(from, to).iterator()) {
                     while (sliceIt.hasNext()) {
                         assertTrue(message, it.hasNext());
-                        assertEquals(message, sliceIt.nextLong(), it.nextLong()/*EXTRA*/);
+                        assertEquals(message, sliceIt.nextLong(), it.nextLong());
                     }
                     assertFalse(message, it.hasNext());
                 }

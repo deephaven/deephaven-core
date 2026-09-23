@@ -41,7 +41,7 @@ public class TestRegionedColumnSourceLong extends
         if (boxed) {
             assertEquals(output == NULL_LONG ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {
-            assertEquals(output, prev ? SUT.getPrevLong(elementIndex) : SUT.getLong(elementIndex)/* EXTRA */);
+            assertEquals(output, prev ? SUT.getPrevLong(elementIndex) : SUT.getLong(elementIndex));
         }
         jmock.assertIsSatisfied();
     }

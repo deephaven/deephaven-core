@@ -41,7 +41,7 @@ public class TestRegionedColumnSourceDouble extends
         if (boxed) {
             assertEquals(output == NULL_DOUBLE ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {
-            assertEquals(output, prev ? SUT.getPrevDouble(elementIndex) : SUT.getDouble(elementIndex), .000001f);
+            assertEquals(output, prev ? SUT.getPrevDouble(elementIndex) : SUT.getDouble(elementIndex));
         }
         jmock.assertIsSatisfied();
     }

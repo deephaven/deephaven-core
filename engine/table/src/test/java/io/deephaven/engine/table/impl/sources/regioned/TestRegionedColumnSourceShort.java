@@ -41,7 +41,7 @@ public class TestRegionedColumnSourceShort extends
         if (boxed) {
             assertEquals(output == NULL_SHORT ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {
-            assertEquals(output, prev ? SUT.getPrevShort(elementIndex) : SUT.getShort(elementIndex)/* EXTRA */);
+            assertEquals(output, prev ? SUT.getPrevShort(elementIndex) : SUT.getShort(elementIndex));
         }
         jmock.assertIsSatisfied();
     }

@@ -41,7 +41,7 @@ public class TestRegionedColumnSourceInt extends
         if (boxed) {
             assertEquals(output == NULL_INT ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {
-            assertEquals(output, prev ? SUT.getPrevInt(elementIndex) : SUT.getInt(elementIndex)/* EXTRA */);
+            assertEquals(output, prev ? SUT.getPrevInt(elementIndex) : SUT.getInt(elementIndex));
         }
         jmock.assertIsSatisfied();
     }

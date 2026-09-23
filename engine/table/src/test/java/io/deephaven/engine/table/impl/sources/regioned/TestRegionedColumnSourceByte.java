@@ -41,7 +41,7 @@ public class TestRegionedColumnSourceByte extends
         if (boxed) {
             assertEquals(output == NULL_BYTE ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {
-            assertEquals(output, prev ? SUT.getPrevByte(elementIndex) : SUT.getByte(elementIndex)/* EXTRA */);
+            assertEquals(output, prev ? SUT.getPrevByte(elementIndex) : SUT.getByte(elementIndex));
         }
         jmock.assertIsSatisfied();
     }

@@ -37,7 +37,7 @@ public class TestRegionedColumnSourceChar extends
         if (boxed) {
             assertEquals(output == NULL_CHAR ? null : output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         } else {
-            assertEquals(output, prev ? SUT.getPrevChar(elementIndex) : SUT.getChar(elementIndex)/* EXTRA */);
+            assertEquals(output, prev ? SUT.getPrevChar(elementIndex) : SUT.getChar(elementIndex));
         }
         jmock.assertIsSatisfied();
     }

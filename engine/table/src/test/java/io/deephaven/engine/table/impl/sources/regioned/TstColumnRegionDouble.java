@@ -74,11 +74,11 @@ public class TstColumnRegionDouble {
         @Override
         @Test
         public void testGet() {
-            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(0), .000001f);
-            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(1), .000001f);
-            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(Integer.MAX_VALUE), .000001f);
-            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble((1L << 40) - 2), .000001f);
-            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(Long.MAX_VALUE), .000001f);
+            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(0));
+            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(1));
+            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(Integer.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble((1L << 40) - 2));
+            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(Long.MAX_VALUE));
         }
     }
 
@@ -100,9 +100,9 @@ public class TstColumnRegionDouble {
         @Override
         @Test
         public void testGet() {
-            assertEquals((double) 8, SUT.getDouble(8), .000001f);
+            assertEquals((double) 8, SUT.getDouble(8));
             jmock.assertIsSatisfied();
-            assertEquals((double) 272, SUT.getDouble(272), .000001f);
+            assertEquals((double) 272, SUT.getDouble(272));
             jmock.assertIsSatisfied();
         }
     }

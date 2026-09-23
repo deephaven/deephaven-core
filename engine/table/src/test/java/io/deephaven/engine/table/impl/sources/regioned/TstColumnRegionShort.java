@@ -74,11 +74,11 @@ public class TstColumnRegionShort {
         @Override
         @Test
         public void testGet() {
-            assertEquals(QueryConstants.NULL_SHORT, SUT.getShort(0)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_SHORT, SUT.getShort(1)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_SHORT, SUT.getShort(Integer.MAX_VALUE)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_SHORT, SUT.getShort((1L << 40) - 2)/* EXTRA */);
-            assertEquals(QueryConstants.NULL_SHORT, SUT.getShort(Long.MAX_VALUE)/* EXTRA */);
+            assertEquals(QueryConstants.NULL_SHORT, SUT.getShort(0));
+            assertEquals(QueryConstants.NULL_SHORT, SUT.getShort(1));
+            assertEquals(QueryConstants.NULL_SHORT, SUT.getShort(Integer.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_SHORT, SUT.getShort((1L << 40) - 2));
+            assertEquals(QueryConstants.NULL_SHORT, SUT.getShort(Long.MAX_VALUE));
         }
     }
 
@@ -100,9 +100,9 @@ public class TstColumnRegionShort {
         @Override
         @Test
         public void testGet() {
-            assertEquals((short) 8, SUT.getShort(8)/* EXTRA */);
+            assertEquals((short) 8, SUT.getShort(8));
             jmock.assertIsSatisfied();
-            assertEquals((short) 272, SUT.getShort(272)/* EXTRA */);
+            assertEquals((short) 272, SUT.getShort(272));
             jmock.assertIsSatisfied();
         }
     }
