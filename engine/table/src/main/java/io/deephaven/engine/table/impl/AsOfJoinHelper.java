@@ -37,6 +37,7 @@ import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.*;
@@ -162,9 +163,15 @@ public class AsOfJoinHelper {
             WritableRowRedirection rowRedirection) {
 
         // region This block is mostly copied to other entry points
-        final DataIndex leftDataIndex = control.dataIndexToUse(leftTable, originalLeftSources);
+        final DataIndex leftCandidateIndex = control.dataIndexToUse(leftTable, originalLeftSources);
+        final ColumnSource<?>[] leftIndexKeySources =
+                dataIndexKeySources(leftCandidateIndex, originalLeftSources, leftSources);
+        final DataIndex leftDataIndex = leftIndexKeySources == null ? null : leftCandidateIndex;
         final Table leftDataIndexTable = leftDataIndex == null ? null : leftDataIndex.table();
-        final DataIndex rightDataIndex = control.dataIndexToUse(rightTable, originalRightSources);
+        final DataIndex rightCandidateIndex = control.dataIndexToUse(rightTable, originalRightSources);
+        final ColumnSource<?>[] rightIndexKeySources =
+                dataIndexKeySources(rightCandidateIndex, originalRightSources, rightSources);
+        final DataIndex rightDataIndex = rightIndexKeySources == null ? null : rightCandidateIndex;
         final Table rightDataIndexTable = rightDataIndex == null ? null : rightDataIndex.table();
         final JoinControl.BuildParameters buildParameters =
                 control.buildParameters(leftTable, leftDataIndexTable, rightTable, rightDataIndexTable);
@@ -177,8 +184,7 @@ public class AsOfJoinHelper {
         if (leftDataIndexTable != null) {
             Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftInput);
             leftRowSetToUse = leftDataIndexTable.getRowSet();
-            leftSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.keyColumns(originalLeftSources));
+            leftSourcesToUse = leftIndexKeySources;
         } else {
             leftRowSetToUse = leftTable.getRowSet();
             leftSourcesToUse = leftSources;
@@ -186,8 +192,7 @@ public class AsOfJoinHelper {
         if (rightDataIndexTable != null) {
             Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.RightInput);
             rightRowSetToUse = rightDataIndexTable.getRowSet();
-            rightSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.keyColumns(originalRightSources));
+            rightSourcesToUse = rightIndexKeySources;
         } else {
             rightRowSetToUse = rightTable.getRowSet();
             rightSourcesToUse = rightSources;
@@ -511,9 +516,15 @@ public class AsOfJoinHelper {
         final ChunkSsaStamp chunkSsaStamp = ChunkSsaStamp.make(stampChunkType, reverse);
 
         // region This block is mostly copied from rightStaticAj
-        final DataIndex leftDataIndex = control.dataIndexToUse(leftTable, originalLeftSources);
+        final DataIndex leftCandidateIndex = control.dataIndexToUse(leftTable, originalLeftSources);
+        final ColumnSource<?>[] leftIndexKeySources =
+                dataIndexKeySources(leftCandidateIndex, originalLeftSources, leftSources);
+        final DataIndex leftDataIndex = leftIndexKeySources == null ? null : leftCandidateIndex;
         final Table leftDataIndexTable = leftDataIndex == null ? null : leftDataIndex.table();
-        final DataIndex rightDataIndex = control.dataIndexToUse(rightTable, originalRightSources);
+        final DataIndex rightCandidateIndex = control.dataIndexToUse(rightTable, originalRightSources);
+        final ColumnSource<?>[] rightIndexKeySources =
+                dataIndexKeySources(rightCandidateIndex, originalRightSources, rightSources);
+        final DataIndex rightDataIndex = rightIndexKeySources == null ? null : rightCandidateIndex;
         final Table rightDataIndexTable = rightDataIndex == null ? null : rightDataIndex.table();
         final JoinControl.BuildParameters buildParameters =
                 control.buildParameters(leftTable, leftDataIndexTable, rightTable, rightDataIndexTable);
@@ -526,8 +537,7 @@ public class AsOfJoinHelper {
         if (leftDataIndexTable != null) {
             Assert.eq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftDataIndex);
             leftRowSetToUse = leftDataIndexTable.getRowSet();
-            leftSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.keyColumns(originalLeftSources));
+            leftSourcesToUse = leftIndexKeySources;
         } else {
             Assert.eq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftInput);
             leftRowSetToUse = leftTable.getRowSet();
@@ -535,8 +545,7 @@ public class AsOfJoinHelper {
         }
         if (rightDataIndexTable != null) {
             rightRowSetToUse = rightDataIndexTable.getRowSet();
-            rightSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.keyColumns(originalRightSources));
+            rightSourcesToUse = rightIndexKeySources;
         } else {
             rightRowSetToUse = rightTable.getRowSet();
             rightSourcesToUse = rightSources;
@@ -944,9 +953,15 @@ public class AsOfJoinHelper {
         final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
 
         // region This block is mostly copied from rightStaticAj
-        final DataIndex leftDataIndex = control.dataIndexToUse(leftTable, originalLeftSources);
+        final DataIndex leftCandidateIndex = control.dataIndexToUse(leftTable, originalLeftSources);
+        final ColumnSource<?>[] leftIndexKeySources =
+                dataIndexKeySources(leftCandidateIndex, originalLeftSources, leftSources);
+        final DataIndex leftDataIndex = leftIndexKeySources == null ? null : leftCandidateIndex;
         final Table leftDataIndexTable = leftDataIndex == null ? null : leftDataIndex.table();
-        final DataIndex rightDataIndex = control.dataIndexToUse(rightTable, originalRightSources);
+        final DataIndex rightCandidateIndex = control.dataIndexToUse(rightTable, originalRightSources);
+        final ColumnSource<?>[] rightIndexKeySources =
+                dataIndexKeySources(rightCandidateIndex, originalRightSources, rightSources);
+        final DataIndex rightDataIndex = rightIndexKeySources == null ? null : rightCandidateIndex;
         final Table rightDataIndexTable = rightDataIndex == null ? null : rightDataIndex.table();
         final JoinControl.BuildParameters buildParameters =
                 control.buildParameters(leftTable, leftDataIndexTable, rightTable, rightDataIndexTable);
@@ -959,8 +974,7 @@ public class AsOfJoinHelper {
         if (leftDataIndexTable != null) {
             Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.LeftInput);
             leftRowSetToUse = leftDataIndexTable.getRowSet();
-            leftSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(leftDataIndex.keyColumns(originalLeftSources));
+            leftSourcesToUse = leftIndexKeySources;
         } else {
             leftRowSetToUse = leftTable.getRowSet();
             leftSourcesToUse = leftSources;
@@ -968,8 +982,7 @@ public class AsOfJoinHelper {
         if (rightDataIndexTable != null) {
             Assert.neq(buildParameters.firstBuildFrom(), "build from", JoinControl.BuildParameters.From.RightInput);
             rightRowSetToUse = rightDataIndexTable.getRowSet();
-            rightSourcesToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(rightDataIndex.keyColumns(originalRightSources));
+            rightSourcesToUse = rightIndexKeySources;
         } else {
             rightRowSetToUse = rightTable.getRowSet();
             rightSourcesToUse = rightSources;
@@ -1158,6 +1171,40 @@ public class AsOfJoinHelper {
                 : MatchPair.matchString(stampPair);
         return (reverse ? "r" : "") + "aj([" + MatchPair.matchString(columnsToMatch) + ", " + stampString + "], ["
                 + MatchPair.matchString(columnsToAdd) + "])";
+    }
+
+    /**
+     * Returns the key columns of {@code dataIndex} in the representation chosen for the corresponding table sources: a
+     * key column is reinterpreted to a primitive exactly when its table source was. Returns null when there is no
+     * index, or when a key column cannot take the chosen representation, in which case the index is not used.
+     *
+     * @param dataIndex the candidate data index, or null
+     * @param originalSources the table's original key sources
+     * @param chosenSources the table's key sources as they are hashed
+     * @return the index key columns to hash, or null
+     */
+    @Nullable
+    private static ColumnSource<?>[] dataIndexKeySources(
+            final DataIndex dataIndex,
+            final ColumnSource<?>[] originalSources,
+            final ColumnSource<?>[] chosenSources) {
+        if (dataIndex == null) {
+            return null;
+        }
+        final ColumnSource<?>[] keyColumns = dataIndex.keyColumns(originalSources);
+        final ColumnSource<?>[] result = new ColumnSource<?>[keyColumns.length];
+        for (int ii = 0; ii < keyColumns.length; ++ii) {
+            if (chosenSources[ii] == originalSources[ii]) {
+                result[ii] = keyColumns[ii];
+                continue;
+            }
+            final ColumnSource<?> converted = ReinterpretUtils.maybeConvertToPrimitive(keyColumns[ii]);
+            if (converted == keyColumns[ii]) {
+                return null;
+            }
+            result[ii] = converted;
+        }
+        return result;
     }
 
     @NotNull

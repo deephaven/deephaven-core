@@ -159,6 +159,32 @@ public class QueryTableAjTest {
         assertTableEquals(expected.view("LeftStamp", "Sentinel"), result.view("LeftStamp", "Sentinel"));
     }
 
+    /**
+     * A data index on either side of a keyed as-of join supplies key columns in the same representation as the table
+     * sources, even when a nanosecond-backed ZonedDateTime key meets an object-backed one.
+     */
+    @Test
+    public void testAjZonedDateTimeKeyConvertibleAndObjectSourcesWithDataIndex() {
+        final Table objectRight =
+                TableTools.newTable(col("Key", utc(1_000L)), intCol("RightStamp", 1), intCol("Sentinel", 1));
+        final Table objectLeft = TableTools.newTable(col("Key", utc(1_000L)), intCol("LeftStamp", 5));
+        final Table expected = objectLeft.aj(objectRight, "Key,LeftStamp>=RightStamp", "Sentinel");
+
+        final QueryTable indexedConvertibleLeft = convertibleZonedTable("Key", 1_000L, "LeftStamp", 5);
+        DataIndexer.getOrCreateDataIndex(indexedConvertibleLeft, "Key");
+        assertTableEquals(expected.view("LeftStamp", "Sentinel"),
+                indexedConvertibleLeft.aj(objectRight, "Key,LeftStamp>=RightStamp", "Sentinel")
+                        .view("LeftStamp", "Sentinel"));
+
+        final QueryTable indexedObjectRight = (QueryTable) TableTools.newTable(col("Key", utc(1_000L)),
+                intCol("RightStamp", 1), intCol("Sentinel", 1));
+        DataIndexer.getOrCreateDataIndex(indexedObjectRight, "Key");
+        final QueryTable convertibleLeft = convertibleZonedTable("Key", 1_000L, "LeftStamp", 5);
+        assertTableEquals(expected.view("LeftStamp", "Sentinel"),
+                convertibleLeft.aj(indexedObjectRight, "Key,LeftStamp>=RightStamp", "Sentinel")
+                        .view("LeftStamp", "Sentinel"));
+    }
+
     @Test
     public void testAjNull() {
         final Table left = TableTools.newTable(
