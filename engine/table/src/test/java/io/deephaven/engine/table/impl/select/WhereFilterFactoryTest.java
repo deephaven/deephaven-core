@@ -3,7 +3,9 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
+import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -22,6 +24,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static io.deephaven.base.testing.Asserts.assertEquals;
 import static org.junit.Assert.*;
@@ -516,5 +519,25 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(RowSetFactory.fromKeys(1, 3, 5, 12), result);
+    }
+
+    @Test
+    public void testUnparseableQuickFilterSkipsFloatingPointColumns() {
+        // an unparseable quick filter must produce no filter for a floating point column, boxed or not; a match
+        // against NaN would match nothing, and so would empty the result in conjunctive quick filter modes
+        for (final Class<?> type : new Class<?>[] {float.class, Float.class, double.class, Double.class}) {
+            final TableDefinition definition = TableDefinition.of(ColumnDefinition.fromGenericType("V", type));
+            for (final QuickFilterMode mode : new QuickFilterMode[] {QuickFilterMode.NORMAL, QuickFilterMode.NUMERIC,
+                    QuickFilterMode.MULTI}) {
+                assertEquals(type + " " + mode, 0,
+                        WhereFilterFactory.expandQuickFilter(definition, "abc", mode, Set.of("V")).length);
+            }
+        }
+
+        // arrays of boxed floats are ordinary columns, and hand their boxed component type to the quick filter
+        final Table table = TableTools.emptyTable(1).update("A = new Float[] {1.5f}", "D = new Double[] {1.5}");
+        assertEquals(Float.class, table.getDefinition().getColumn("A").getComponentType());
+        assertEquals(0, WhereFilterFactory.expandQuickFilter(table.getDefinition(), "abc", Set.of("A")).length);
+        assertEquals(0, WhereFilterFactory.expandQuickFilter(table.getDefinition(), "abc", Set.of("D")).length);
     }
 }

@@ -342,7 +342,7 @@ public class WhereFilterFactory {
             } catch (NumberFormatException ignored) {
                 return new MatchFilter(MatchOptions.REGULAR, colName, typeData.doubleVal);
             }
-        } else if (colClass == Float.class || colClass == float.class && (!Float.isNaN(typeData.floatVal))) {
+        } else if ((colClass == Float.class || colClass == float.class) && (!Float.isNaN(typeData.floatVal))) {
             try {
                 return FloatRangeFilter.makeRange(colName, quickFilter);
             } catch (NumberFormatException ignored) {
