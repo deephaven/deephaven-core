@@ -478,7 +478,8 @@ abstract class AbstractFilterExecution {
      * A failure while building the matcher or the context propagates to the caller and fails the operation, like any
      * other failure during filter execution. The only things that can fail here are broken engine invariants, which
      * should surface rather than silently degrade the query. A context that was built but not handed to a
-     * {@code StatelessFilter} is closed before the failure propagates.
+     * {@code StatelessFilter} is closed before the failure propagates; if closing it fails too, that failure is
+     * attached to the original as suppressed rather than replacing it.
      * </p>
      *
      * @param filterIdx the index of this filter in the collection
@@ -511,10 +512,15 @@ abstract class AbstractFilterExecution {
                 context = null;
                 return statelessFilter;
             }
-        } finally {
+        } catch (final RuntimeException | Error e) {
             if (context != null) {
-                context.close();
+                try {
+                    context.close();
+                } catch (final RuntimeException closeException) {
+                    e.addSuppressed(closeException);
+                }
             }
+            throw e;
         }
         return new StatelessFilter(filterIdx, filter, null, null, barrierDependencies);
     }
