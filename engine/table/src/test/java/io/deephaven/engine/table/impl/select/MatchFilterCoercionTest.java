@@ -49,7 +49,8 @@ public class MatchFilterCoercionTest {
         Throwable cause = err;
         while (cause != null) {
             if (cause instanceof IllegalArgumentException && cause.getMessage() != null
-                    && cause.getMessage().startsWith("Cannot convert value")) {
+                    && (cause.getMessage().startsWith("Cannot convert value")
+                            || cause.getMessage().contains("cannot be matched against column"))) {
                 return;
             }
             cause = cause.getCause();
@@ -178,6 +179,25 @@ public class MatchFilterCoercionTest {
         assertEquals(2, t.where(Filter.not(Filter.isNaN(ColumnName.of("X")))).size());
         assertEquals(0, t.where(Filter.isNaN(ColumnName.of("L"))).size());
         assertEquals(0, t.where(Filter.isNaN(ColumnName.of("C"))).size());
+    }
+
+    @Test
+    public void wronglyTypedParamIsRejected() {
+        QueryScope.addParam("coercionVal", 42);
+        final Table t = newTable(stringCol("S", "a", "42"));
+
+        assertRejected(() -> t.where("S in coercionVal"));
+    }
+
+    @Test
+    public void wronglyTypedDirectValueIsRejected() {
+        final Table t = newTable(stringCol("S", "aaa", "bbb", "ccc"));
+
+        // the unsorted path used to answer "no match" and the sorted binary search used to throw
+        // ClassCastException; both now reject the value when the filter is initialized
+        assertRejected(() -> t.where(new MatchFilter(MatchOptions.REGULAR, "S", 42)));
+        assertRejected(() -> new MatchFilter(MatchOptions.REGULAR, "S", 42)
+                .init(TableDefinition.of(ColumnDefinition.ofString("S"))));
     }
 
     @Test

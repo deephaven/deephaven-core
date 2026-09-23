@@ -129,10 +129,10 @@ class FilterTestCase(BaseTestCase):
                 filter_in = in_("A", [2, "3"])
                 t.where(filter_in)
 
-            # inconsistent behavior observed, should fail with https://deephaven.atlassian.net/browse/DH-21232 fixed
-            filter_in = in_("B", [2, "3"])
-            rt = t.where(filter_in)
-            self.assertEqual(1, rt.size)
+            # a value that is not of the column's type can never match, and is rejected
+            with self.assertRaises(DHError) as cm:
+                filter_in = in_("B", [2, "3"])
+                t.where(filter_in)
 
         t1 = t.update(["C = (java.lang.Object)B"]).update("C = C == `2`? 2: C")
         with self.subTest("object values"):

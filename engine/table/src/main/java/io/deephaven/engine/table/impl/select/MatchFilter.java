@@ -179,6 +179,25 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return type.isPrimitive() && type != double.class && type != float.class;
     }
 
+    /**
+     * Verifies that every value is null or an instance of the column's (boxed) type. A value of any other type can
+     * never equal a value of the column, and consumers that order values rather than test equality -- the sorted binary
+     * search, for instance -- cannot compare it at all; a filter holding one is an error, not an empty match.
+     *
+     * @return {@code checkValues}
+     */
+    private Object[] checkValueTypes(final ColumnDefinition<?> column, final Object[] checkValues) {
+        final Class<?> boxedType = TypeUtils.getBoxedType(column.getDataType());
+        for (final Object value : checkValues) {
+            if (value != null && !boxedType.isInstance(value)) {
+                throw new IllegalArgumentException(String.format(
+                        "Value <%s> of type %s cannot be matched against column \"%s\" of type %s",
+                        value, value.getClass().getName(), column.getName(), column.getDataType().getName()));
+            }
+        }
+        return checkValues;
+    }
+
     private static boolean isNaN(final Object value) {
         return value instanceof Double && ((Double) value).isNaN()
                 || value instanceof Float && ((Float) value).isNaN();
@@ -260,7 +279,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             final ColumnTypeConvertor convertor = ColumnTypeConvertorFactory.getConvertor(column.getDataType());
             if (strValues == null) {
                 if (values != null) {
-                    values = maybeDropNaN(convertDirectValues(convertor, values));
+                    values = maybeDropNaN(checkValueTypes(column, convertDirectValues(convertor, values)));
                 }
                 initialized = true;
                 return;
@@ -271,7 +290,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             for (String strValue : strValues) {
                 convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
             }
-            values = maybeDropNaN(valueList.toArray());
+            values = maybeDropNaN(checkValueTypes(column, valueList.toArray()));
         } catch (final RuntimeException err) {
             if (failoverFilter == null) {
                 throw err;
