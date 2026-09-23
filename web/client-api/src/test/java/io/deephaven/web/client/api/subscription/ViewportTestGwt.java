@@ -685,7 +685,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                                     CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`",
                                     null))));
                     // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
-                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 10_000, 2025).then(table -> {
+                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 10_025, 2025).then(table -> {
                         Column iColumn = table.findColumn("I");
                         Column strColumn = table.findColumn("Str");
                         Column timestampColumn = table.findColumn("Timestamp");
@@ -759,7 +759,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             JsTable.CustomColumnArgUnionType.of(
                                     Column.formatRowColor("background(RED)", new CustomColumnOptions()))));
                     // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
-                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 10_000, 2025).then(table -> {
+                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 10_027, 2027).then(table -> {
                         Column iColumn = table.findColumn("I");
                         Column strColumn = table.findColumn("Str");
                         Column timestampColumn = table.findColumn("Timestamp");
@@ -830,7 +830,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             JsTable.CustomColumnArgUnionType.of(
                                     Column.formatRowColor("background(RED)", new CustomColumnOptions()))));
                     // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
-                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 10_000, 2025).then(table -> {
+                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 10_028, 2028).then(table -> {
                         Column iColumn = table.findColumn("I");
                         Column strColumn = table.findColumn("Str");
                         Column timestampColumn = table.findColumn("Timestamp");
