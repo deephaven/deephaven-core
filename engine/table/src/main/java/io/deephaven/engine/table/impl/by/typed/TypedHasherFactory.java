@@ -360,9 +360,11 @@ public class TypedHasherFactory {
             builder.classPrefix("RightIncrementalAsOfJoinHasher").packageGroup("asofjoin")
                     .packageMiddle("rightincopen")
                     .openAddressedAlternate(true)
+                    .supportTombstones(true)
                     .stateType(byte.class).mainStateName("stateSource")
                     .overflowOrAlternateStateName("alternateStateSource")
                     .emptyStateName("ENTRY_EMPTY_STATE")
+                    .tombstoneStateName("ENTRY_TOMBSTONE_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
                     .moveMainFull(TypedAsOfJoinFactory::rightIncrementalMoveMainFull)
@@ -1360,9 +1362,13 @@ public class TypedHasherFactory {
         if (foundBlockRequired) {
             builder.beginControlFlow("if (!$L)", foundName);
             if (hasherConfig.supportTombstones && !alternate) {
-                builder.beginControlFlow("if (!searchAlternate)");
-                ps.missing.accept(builder);
-                builder.nextControlFlow("else");
+                if (ps.missing == null) {
+                    builder.beginControlFlow("if (searchAlternate)");
+                } else {
+                    builder.beginControlFlow("if (!searchAlternate)");
+                    ps.missing.accept(builder);
+                    builder.nextControlFlow("else");
+                }
             }
             if (hasherConfig.openAddressedAlternate && !alternate) {
                 doProbeSearch(hasherConfig, ps, chunkTypes, builder, true);

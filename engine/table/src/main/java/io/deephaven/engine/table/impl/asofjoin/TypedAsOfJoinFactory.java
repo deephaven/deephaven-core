@@ -84,6 +84,7 @@ public class TypedAsOfJoinFactory {
 
         builder.addStatement("final long cookie  = alternateCookieSource.getUnsafe(locationToMigrate)");
         builder.addStatement("migrateCookie(cookie, destinationTableLocation)");
+        builder.addStatement("migrateTombstoneCandidate(currentStateValue, destinationTableLocation)");
     }
 
     public static void rightIncrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,

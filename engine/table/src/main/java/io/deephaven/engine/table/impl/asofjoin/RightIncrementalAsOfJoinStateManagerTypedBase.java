@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.asofjoin;
 
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
@@ -37,6 +38,11 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChun
 public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends RightIncrementalHashedAsOfJoinStateManager {
 
     public static final byte ENTRY_EMPTY_STATE = QueryConstants.NULL_BYTE;
+    /**
+     * A bucket whose left and right sides have both become empty. The slot retains its key, so that a probe for that
+     * key can stop at the tombstone, and a build may reuse the slot for any key.
+     */
+    public static final byte ENTRY_TOMBSTONE_STATE = 0x40;
     private static final int ALTERNATE_SWITCH_MASK = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
     private static final int ALTERNATE_INNER_MASK = (int) AlternatingColumnSource.ALTERNATE_INNER_MASK;
 
@@ -50,11 +56,24 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     // how much of the alternate sources are necessary to rehash?
     protected int rehashPointer = 0;
 
+    /** How many entries are taking up slots in the main hash table (includes tombstones)? */
     protected long numEntries = 0;
+    /** How many values do we have that are live (in both main and alternate)? */
+    protected long liveEntries = 0;
+    /** How many entries are in the alternate table (includes tombstones)? */
+    protected long alternateEntries = 0;
+
+    /**
+     * Slots that may hold an empty bucket at the end of the cycle, each including its main or alternate insert mask. A
+     * slot may appear more than once, and an entry may be stale when its bucket has migrated; the migration records the
+     * bucket's new slot when it is empty.
+     */
+    private final IntegerArraySource tombstoneCandidates = new IntegerArraySource();
+    private int tombstoneCandidateCount = 0;
 
     @Override
     public long getNumEntries() {
-        return numEntries;
+        return liveEntries;
     }
 
 
@@ -437,8 +456,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         @Override
         public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
             if (sequentialBuilders != null) {
-                // each probed row reports at most one new slot, and there are at most numEntries slots
-                final long slotCapacity = Math.min(nextCookie + chunkOk.size(), numEntries);
+                // each probed row reports at most one new slot, and there are at most liveEntries slots
+                final long slotCapacity = Math.min(nextCookie + chunkOk.size(), liveEntries);
                 hashSlots.ensureCapacity(slotCapacity);
                 sequentialBuilders.ensureCapacity(slotCapacity);
             }
@@ -890,6 +909,103 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         return ssa;
     }
 
+    @Override
+    public void ensureTombstoneCandidateCapacity(int additionalCandidates) {
+        tombstoneCandidates.ensureCapacity((long) tombstoneCandidateCount + additionalCandidates);
+    }
+
+    @Override
+    public void addTombstoneCandidate(int slot) {
+        tombstoneCandidates.set(tombstoneCandidateCount++, slot);
+    }
+
+    /**
+     * Called as a bucket migrates from the alternate table to the main table. While the cycle has tombstone candidates,
+     * an empty bucket's new slot becomes a candidate as well: every removal in a cycle precedes every build that can
+     * migrate a bucket, so a candidate that is empty at the end of the cycle is already empty when it moves.
+     *
+     * @param state the state of the migrated bucket
+     * @param destinationLocation the bucket's location in the main table
+     */
+    protected void migrateTombstoneCandidate(byte state, int destinationLocation) {
+        if (tombstoneCandidateCount > 0
+                && isSideEmpty(leftEntryAsRightType(state), leftRowSetSource.getUnsafe(destinationLocation))
+                && isSideEmpty(getRightEntryType(state), rightRowSetSource.getUnsafe(destinationLocation))) {
+            // a rehash may migrate any number of buckets, so a migrated candidate reserves its own entry
+            ensureTombstoneCandidateCapacity(1);
+            addTombstoneCandidate(destinationLocation | mainInsertMask);
+        }
+    }
+
+    @Override
+    public void releaseEmptyBuckets() {
+        for (int ii = 0; ii < tombstoneCandidateCount; ++ii) {
+            final int slot = tombstoneCandidates.getUnsafe(ii);
+            final int location = slot & ALTERNATE_INNER_MASK;
+            final ImmutableByteArraySource source;
+            final ImmutableObjectArraySource<Object> leftSource;
+            final ImmutableObjectArraySource<Object> rightSource;
+            if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+                source = stateSource;
+                leftSource = leftRowSetSource;
+                rightSource = rightRowSetSource;
+            } else {
+                if (location >= rehashPointer) {
+                    // the bucket has migrated to the main table, which recorded its new slot if it is empty
+                    continue;
+                }
+                source = alternateStateSource;
+                leftSource = alternateLeftRowSetSource;
+                rightSource = alternateRightRowSetSource;
+            }
+
+            final byte state = source.getUnsafe(location);
+            if (state == ENTRY_EMPTY_STATE || state == ENTRY_TOMBSTONE_STATE) {
+                continue;
+            }
+            final byte leftType = leftEntryAsRightType(state);
+            final byte rightType = getRightEntryType(state);
+            final Object leftObject = leftSource.getUnsafe(location);
+            final Object rightObject = rightSource.getUnsafe(location);
+            if (!isSideEmpty(leftType, leftObject) || !isSideEmpty(rightType, rightObject)) {
+                continue;
+            }
+
+            if (leftType == ENTRY_RIGHT_IS_ROWSET) {
+                ((WritableRowSet) leftObject).close();
+            }
+            if (rightType == ENTRY_RIGHT_IS_ROWSET) {
+                ((WritableRowSet) rightObject).close();
+            }
+            leftSource.set(location, null);
+            rightSource.set(location, null);
+            source.set(location, ENTRY_TOMBSTONE_STATE);
+            liveEntries--;
+        }
+        tombstoneCandidateCount = 0;
+    }
+
+    /**
+     * @param sideType the entry type of one side of a bucket, expressed with the right side constants
+     * @param sideObject the builder, row set, or SSA that holds that side
+     * @return true if that side of the bucket holds no rows
+     */
+    private static boolean isSideEmpty(final byte sideType, final Object sideObject) {
+        switch (sideType) {
+            case ENTRY_RIGHT_IS_EMPTY:
+                return true;
+            case ENTRY_RIGHT_IS_BUILDER:
+                // a builder is only created to hold a row
+                return false;
+            case ENTRY_RIGHT_IS_ROWSET:
+                return ((RowSet) sideObject).isEmpty();
+            case ENTRY_RIGHT_IS_SSA:
+                return ((SegmentedSortedArray) sideObject).size() == 0;
+            default:
+                throw new IllegalStateException("Unexpected side type " + sideType);
+        }
+    }
+
     /**
      * After creating the new alternate key states, advise the derived classes, so they can cast them to the typed
      * versions of the column source and adjust the derived class pointers.
@@ -909,6 +1025,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         if (numEntries > 0) {
             rehashPointer = alternateTableSize;
         }
+        alternateEntries = numEntries;
+        numEntries = 0;
 
         alternateRightRowSetSource = rightRowSetSource;
         rightRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
@@ -936,6 +1054,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     protected void clearAlternate() {
+        alternateEntries = 0;
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
@@ -967,18 +1086,13 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             }
         }
 
-        int oldTableSize = tableSize;
-        while (rehashRequired(nextChunkSize)) {
-            tableSize *= 2;
-
-            if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
-                throw new UnsupportedOperationException("Hash table exceeds maximum size!");
-            }
-        }
-
-        if (oldTableSize == tableSize) {
+        if (!rehashRequired(nextChunkSize)) {
             return false;
         }
+
+        // the new table may be the same size as the old one, in which case the rehash only discards tombstones
+        final int oldTableSize = tableSize;
+        tableSize = computeTableSize(nextChunkSize);
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
         if (rehashCredits.get() > 0) {
@@ -988,10 +1102,14 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         if (fullRehash) {
             // if we are doing a full rehash, we need to ditch the alternate
             if (rehashPointer > 0) {
-                rehashInternalPartial((int) numEntries);
+                rehashInternalPartial((int) alternateEntries);
+                Assert.eqZero(alternateEntries, "alternateEntries");
                 clearAlternate();
             }
 
+            // a full rehash copies every entry, so it must not see a tombstone; buckets are only tombstoned after the
+            // initial build
+            Assert.eq(numEntries, "numEntries", liveEntries, "liveEntries");
             rehashInternalFull(oldTableSize);
 
             return false;
@@ -1005,6 +1123,19 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
     public boolean rehashRequired(int nextChunkSize) {
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
+    }
+
+    private int computeTableSize(int nextChunkSize) {
+        // we use the number of liveEntries multiplied by 2, so that as we rehash we can both consume a slot for the
+        // live entry from the alternate table; and also consume a slot for the new value. This ensures that we will
+        // burn down our rehash requirements before we need to initiate a new partial rehash.
+        final long desiredEntries = Math.max(liveEntries * 2, liveEntries + nextChunkSize);
+        final long newTableSize =
+                MathUtil.roundUpPowerOf2(Math.max(tableSize, (long) Math.ceil(desiredEntries / maximumLoadFactor)));
+        if (newTableSize <= 1 || newTableSize > MAX_TABLE_SIZE) {
+            throw new UnsupportedOperationException("Hash table exceeds maximum size!");
+        }
+        return Math.toIntExact(newTableSize);
     }
 
     protected int hashToTableLocation(int hash) {

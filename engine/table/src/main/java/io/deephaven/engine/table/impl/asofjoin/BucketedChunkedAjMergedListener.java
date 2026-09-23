@@ -204,6 +204,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         final int removedSlotCount =
                                 asOfJoinStateManager.markForRemoval(leftRestampRemovals, leftKeySources,
                                         slots, sequentialBuilders);
+                        // each removed slot can leave at most one bucket empty
+                        asOfJoinStateManager.ensureTombstoneCandidateCapacity(removedSlotCount);
 
                         final MutableObject<WritableRowSet> leftIndexOutput = new MutableObject<>();
 
@@ -213,8 +215,12 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 final SegmentedSortedArray leftSsa =
                                         asOfJoinStateManager.getLeftSsaOrRowSet(slot, leftIndexOutput);
                                 if (leftSsa == null) {
-                                    leftIndexOutput.getValue().remove(leftRemoved);
+                                    final WritableRowSet leftRowSet = leftIndexOutput.getValue();
                                     leftIndexOutput.setValue(null);
+                                    leftRowSet.remove(leftRemoved);
+                                    if (leftRowSet.isEmpty()) {
+                                        asOfJoinStateManager.addTombstoneCandidate(slot);
+                                    }
                                     continue;
                                 }
 
@@ -233,6 +239,9 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                                         leftSsa.remove(leftStampValues, leftStampKeys);
                                     }
+                                }
+                                if (leftSsa.size() == 0) {
+                                    asOfJoinStateManager.addTombstoneCandidate(slot);
                                 }
                             }
                         }
@@ -334,6 +343,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     final int removedSlotCount =
                             asOfJoinStateManager.markForRemoval(rightRestampRemovals, rightKeySources,
                                     slots, sequentialBuilders);
+                    // each removed slot can leave at most one bucket empty
+                    asOfJoinStateManager.ensureTombstoneCandidateCapacity(removedSlotCount);
 
                     final MutableObject<WritableRowSet> rowSetOutput = new MutableObject<>();
                     try (final WritableLongChunk<RowKeys> priorRedirections =
@@ -351,7 +362,12 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 final SegmentedSortedArray rightSsa =
                                         asOfJoinStateManager.getRightSsaOrRowSet(slot, rowSetOutput);
                                 if (rightSsa == null) {
-                                    rowSetOutput.getValue().remove(rightRemoved);
+                                    final WritableRowSet rightRowSet = rowSetOutput.getValue();
+                                    rowSetOutput.setValue(null);
+                                    rightRowSet.remove(rightRemoved);
+                                    if (rightRowSet.isEmpty()) {
+                                        asOfJoinStateManager.addTombstoneCandidate(slot);
+                                    }
                                     continue;
                                 }
 
@@ -376,6 +392,9 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                         ssaSsaStamp.processRemovals(leftSsa, rightStampValues, rightStampKeys,
                                                 priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
                                     }
+                                }
+                                if (rightSsa.size() == 0) {
+                                    asOfJoinStateManager.addTombstoneCandidate(slot);
                                 }
                             }
                         }
@@ -796,6 +815,10 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
             SafeCloseable.closeAll(leftSsaFactory, rightSsaFactory);
         }
+
+        // no slot reported during this cycle is used past this point, so buckets that are now empty on both sides
+        // can be released
+        asOfJoinStateManager.releaseEmptyBuckets();
 
         try (final RowSet modifiedByRightStamps = modifiedBuilder.build()) {
             downstream.modified = leftRecorder.getModified().union(modifiedByRightStamps);
