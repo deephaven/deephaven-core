@@ -205,7 +205,19 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
         final PushdownFilterContext wrappedContext = wrappedMatcher != null
                 ? wrappedMatcher.makePushdownFilterContext(filter, filterSources)
                 : null;
-        return new DataIndexPushdownContext(this, filter, filterSources, wrappedContext);
+        try {
+            return new DataIndexPushdownContext(this, filter, filterSources, wrappedContext);
+        } catch (final RuntimeException e) {
+            // Nothing owns the wrapped context until the outer one exists, so close it rather than leak it.
+            if (wrappedContext != null) {
+                try {
+                    wrappedContext.close();
+                } catch (final RuntimeException closeException) {
+                    e.addSuppressed(closeException);
+                }
+            }
+            throw e;
+        }
     }
 
     /**

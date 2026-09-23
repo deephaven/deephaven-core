@@ -1837,14 +1837,13 @@ public abstract class QueryTableWhereTest {
         dataIndex.table();
         assertTrue("the data index must be cached for where() to consider it", dataIndex.tableIsCached());
 
+        // Pin the flag on both sides so the comparison holds whatever the test JVM's configured default is; tearDown
+        // restores it.
         final Table oracle;
         QueryTable.USE_DATA_INDEX_FOR_WHERE = false;
-        try {
-            oracle = makeVirtualRowVariableTable().where(filter).coalesce();
-        } finally {
-            QueryTable.USE_DATA_INDEX_FOR_WHERE = oldUseDataIndex;
-        }
+        oracle = makeVirtualRowVariableTable().where(filter).coalesce();
 
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = true;
         assertTableEquals(oracle, indexedTable.where(filter).coalesce());
     }
 
