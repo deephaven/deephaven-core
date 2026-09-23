@@ -46,7 +46,7 @@ public class ForwardingPushdownFilterContext extends BasePushdownFilterContextIm
 
     @Override
     public void close() {
-        // Closes every child, then super.close(), each even if an earlier close fails.
+        // Closes the children, then super.close() even if closing a child fails.
         try (final SafeCloseable ignoredSuper = super::close) {
             SafeCloseable.closeAll(childContexts);
         }
