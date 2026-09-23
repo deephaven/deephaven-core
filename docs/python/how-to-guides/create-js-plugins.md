@@ -97,7 +97,7 @@ registration_cls = "my_plugin:MyPluginRegistration"
 
 ### JavaScript structure
 
-The JS plugin must export modules that the Deephaven web UI can load. For element plugins extending `deephaven.ui`, the main export is typically a React component.
+The JS plugin's entry point must have a default export that the Deephaven web UI can load. The default export is a plugin object that tells the web UI what kind of plugin it is and which React components to use. See [Plugin types](#plugin-types) for the available kinds.
 
 Key requirements for JS plugins:
 
@@ -154,6 +154,82 @@ export default defineConfig({
   },
 });
 ```
+
+### Plugin types
+
+Every plugin object has a `name` and a `type`. The `name` identifies the plugin and must be unique. The `type` is one of the values in `PluginType` from the `@deephaven/plugin` package, and it determines which other properties the web UI expects:
+
+| Type                           | Purpose                                                                                                                                                                |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PluginType.WIDGET_PLUGIN`     | Renders a server-side object in a panel. The `supportedTypes` property lists the server object types the plugin handles, and `component` renders them.                |
+| `PluginType.DASHBOARD_PLUGIN`  | Mounts a `component` once per dashboard. Use it to register custom panel types or respond to dashboard events.                                                         |
+| `PluginType.ELEMENT_PLUGIN`    | Maps custom element names to React components for [`deephaven.ui`](./deephaven-ui.md).                                                                                  |
+| `PluginType.TABLE_PLUGIN`      | Adds a custom `component` to table panels.                                                                                                                              |
+| `PluginType.THEME_PLUGIN`      | Provides one or more custom `themes`. See [Custom themes](./custom-themes.md).                                                                                           |
+| `PluginType.AUTH_PLUGIN`       | Adds a login method to the web UI.                                                                                                                                      |
+| `PluginType.MIDDLEWARE_PLUGIN` | Wraps the component of a widget plugin to add behavior without replacing it.                                                                                            |
+| `PluginType.MULTI_PLUGIN`      | Bundles several of the plugins above into one package. See [Register multiple plugins from one package](#register-multiple-plugins-from-one-package).                  |
+
+For the full set of properties each type accepts, see [`PluginTypes.ts`](https://github.com/deephaven/web-client-ui/blob/main/packages/plugin/src/PluginTypes.ts) in the web-client-ui repository.
+
+The following `src/index.tsx` exports a widget plugin. The `supportedTypes` value must match the name of an object type that a server-side plugin registers. See [Create your own plugin](./create-plugins.md) for how to register object types on the server:
+
+```typescript
+import { type WidgetPlugin, PluginType } from "@deephaven/plugin";
+import { vsGraph } from "@deephaven/icons";
+import { MyWidget } from "./MyWidget";
+
+export const MyWidgetPlugin: WidgetPlugin = {
+  name: "@my-org/my-plugin",
+  type: PluginType.WIDGET_PLUGIN,
+  supportedTypes: "my_plugin.MyObject",
+  component: MyWidget,
+  icon: vsGraph,
+};
+
+export default MyWidgetPlugin;
+```
+
+## Register multiple plugins from one package
+
+A package's default export normally registers a single plugin. To register several plugins from one package, export a `MultiPlugin` instead. A `MultiPlugin` is a plugin object with `type: PluginType.MULTI_PLUGIN` and a `plugins` array. When the web UI loads the package, it registers each plugin in the array individually, under that plugin's own `name`.
+
+A `MultiPlugin` is useful when a package needs to:
+
+- Provide more than one kind of plugin, such as a widget plugin and a dashboard plugin.
+- Keep a legacy plugin registered for backward compatibility while adding a newer one. For example, a dashboard plugin can continue to open panels saved in existing dashboards while a widget plugin handles new ones.
+- Register several widget plugins, each with its own `supportedTypes`, `title`, or `icon`.
+
+> [!NOTE]
+> `MultiPlugin` requires Deephaven Community Core 41.5 or later (web UI 1.17.0 or later). Earlier versions don't recognize the `MultiPlugin` type.
+
+The following `src/index.tsx` registers a widget plugin and a dashboard plugin from the same package. This is the pattern the official [`plotly-express`](https://github.com/deephaven/deephaven-plugins/blob/main/plugins/plotly-express/src/js/src/index.ts) plugin uses:
+
+```typescript
+import { type MultiPlugin, PluginType } from "@deephaven/plugin";
+import { MyWidgetPlugin } from "./MyWidgetPlugin";
+import { MyDashboardPlugin } from "./MyDashboardPlugin";
+
+const MyPluginDashboardPlugin = {
+  name: "@my-org/my-plugin.DashboardPlugin",
+  type: PluginType.DASHBOARD_PLUGIN,
+  component: MyDashboardPlugin,
+};
+
+const MyMultiPlugin: MultiPlugin = {
+  name: "@my-org/my-plugin",
+  type: PluginType.MULTI_PLUGIN,
+  plugins: [MyWidgetPlugin, MyPluginDashboardPlugin],
+};
+
+export default MyMultiPlugin;
+```
+
+Keep the following rules in mind:
+
+- Give every plugin in the `plugins` array a unique, non-empty `name`. A common convention is to append a suffix to the package name, such as `@my-org/my-plugin.DashboardPlugin`. The web UI skips inner plugins that have no name or that aren't valid plugin objects, and logs a warning to the browser console.
+- Don't nest a `MultiPlugin` inside another `MultiPlugin`. Nesting isn't supported.
+- The Python registration doesn't change. The `JsPlugin` class still points to a single `main` file. The `MultiPlugin` is only the default export of that file.
 
 ## Development workflow
 
