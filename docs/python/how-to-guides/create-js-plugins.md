@@ -278,7 +278,7 @@ export default MyMultiPlugin;
 
 Keep the following rules in mind:
 
-- Give every plugin in the `plugins` array a unique, non-empty `name`. A common convention is to append a suffix to the package name, such as `@my-org/my-plugin.DashboardPlugin`. In Community Core 41.7 and later (web UI 1.19.0 and later), the web UI skips inner plugins that have no name or that aren't valid plugin objects, and logs a warning to the browser console. Earlier versions register every entry without checking it, so an invalid entry isn't reported.
+- Give every plugin in the `plugins` array a unique, non-empty `name`. A common convention is to append a suffix to the package name, such as `@my-org/my-plugin.DashboardPlugin`. In Community Core 41.7 and later (web UI 1.19.0 and later), the web UI skips any inner plugin whose `type` isn't a recognized plugin type or whose `name` is empty, and logs a warning to the browser console. It doesn't check type-specific properties such as `component`, and every entry must be an object. Earlier versions register every entry without checking it, so an invalid entry isn't reported.
 - Don't nest a `MultiPlugin` inside another `MultiPlugin`. Nesting isn't supported.
 - The Python registration doesn't change. The `JsPlugin` class still points to a single `main` file. The `MultiPlugin` is only the default export of that file.
 
