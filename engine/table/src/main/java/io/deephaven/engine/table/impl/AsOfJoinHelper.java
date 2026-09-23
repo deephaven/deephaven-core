@@ -1125,8 +1125,8 @@ public class AsOfJoinHelper {
         final SegmentedSortedArray leftSsa = SegmentedSortedArray.make(stampChunkType, reverse, leftNodeSize);
         final SegmentedSortedArray rightSsa = SegmentedSortedArray.make(stampChunkType, reverse, rightNodeSize);
 
-        fillSsaWithSort(rightTable, rightStampSource, rightNodeSize, rightSsa, order);
-        fillSsaWithSort(leftTable, leftStampSource, leftNodeSize, leftSsa, order);
+        fillSsaWithSort(rightTable, rightStampSource, rightSsa, order);
+        fillSsaWithSort(leftTable, leftStampSource, leftSsa, order);
 
         final SsaSsaStamp ssaSsaStamp = SsaSsaStamp.make(stampChunkType, reverse);
         ssaSsaStamp.processEntry(leftSsa, rightSsa, rowRedirection, disallowExactMatch);
@@ -1207,23 +1207,28 @@ public class AsOfJoinHelper {
     }
 
 
-    private static void fillSsaWithSort(QueryTable rightTable, ColumnSource<?> stampSource, int nodeSize,
-            SegmentedSortedArray ssa, SortingOrder order) {
-        try (final ColumnSource.FillContext context = stampSource.makeFillContext(nodeSize);
-                final RowSequence.Iterator rsIt = rightTable.getRowSet().getRowSequenceIterator();
-                final WritableChunk<Values> stampChunk = stampSource.getChunkType().makeWritableChunk(nodeSize);
-                final WritableLongChunk<RowKeys> keyChunk = WritableLongChunk.makeWritableChunk(nodeSize);
+    /**
+     * Fills, sorts and inserts the whole table in one operation. An insert into an empty SSA builds its leaves directly
+     * from the sorted values, whereas each additional insert merges into every leaf it spans and splits leaves that
+     * overflow. The SSA holds an int-sized number of values, so a single fill covers any table it can hold.
+     */
+    private static void fillSsaWithSort(QueryTable table, ColumnSource<?> stampSource, SegmentedSortedArray ssa,
+            SortingOrder order) {
+        final int size = table.getRowSet().intSize("as-of join SSA fill");
+        if (size == 0) {
+            return;
+        }
+        try (final ColumnSource.FillContext context = stampSource.makeFillContext(size);
+                final WritableChunk<Values> stampChunk = stampSource.getChunkType().makeWritableChunk(size);
+                final WritableLongChunk<RowKeys> keyChunk = WritableLongChunk.makeWritableChunk(size);
                 final LongSortKernel<Values, RowKeys> sortKernel =
-                        LongSortKernel.makeContext(stampSource.getChunkType(), order, nodeSize, true)) {
-            while (rsIt.hasMore()) {
-                final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(nodeSize);
-                stampSource.fillChunk(context, stampChunk, chunkOk);
-                chunkOk.fillRowKeyChunk(keyChunk);
+                        LongSortKernel.makeContext(stampSource.getChunkType(), order, size, true)) {
+            stampSource.fillChunk(context, stampChunk, table.getRowSet());
+            table.getRowSet().fillRowKeyChunk(keyChunk);
 
-                sortKernel.sort(keyChunk, stampChunk);
+            sortKernel.sort(keyChunk, stampChunk);
 
-                ssa.insert(stampChunk, keyChunk);
-            }
+            ssa.insert(stampChunk, keyChunk);
         }
     }
 
@@ -1238,7 +1243,7 @@ public class AsOfJoinHelper {
         final int rightChunkSize = control.rightChunkSize();
         final SegmentedSortedArray ssa = SegmentedSortedArray.make(stampChunkType, reverse, rightNodeSize);
 
-        fillSsaWithSort(rightTable, rightStampSource, rightChunkSize, ssa, order);
+        fillSsaWithSort(rightTable, rightStampSource, ssa, order);
 
         final int leftSize = leftTable.intSize();
         final WritableChunk<Values> leftStampValues = stampChunkType.makeWritableChunk(leftSize);
