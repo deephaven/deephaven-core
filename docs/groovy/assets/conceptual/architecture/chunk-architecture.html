@@ -4,36 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
-<script>
-/* Scale the fixed 840px canvas to whatever width the docs column gives us.
-   Numeric zoom affects layout, so the document height tracks the width
-   exactly -- the embedding iframe uses a matching aspect-ratio, which is
-   what keeps the frame free of both clipping and dead space.
-
-   This drives a stylesheet rule rather than the element's inline style on
-   purpose: the x-dc renderer replaces the canvas node after mount, which
-   discards an inline style and leaves nothing to re-trigger it. A rule
-   matches whatever .dh-canvas exists at any moment, so it survives the
-   swap. ":root" outranks the no-JS media queries below regardless of
-   cascade order. */
-(function () {
-  var BASE = 840;
-  var sheet;
-  function fit() {
-    var head = document.head || document.getElementsByTagName('head')[0];
-    if (!head) return;
-    if (!sheet) { sheet = document.createElement('style'); head.appendChild(sheet); }
-    var w = document.documentElement.clientWidth;
-    if (!w) return;
-    var css = ':root .dh-canvas{zoom:' + (w / BASE).toFixed(4) + ';}';
-    if (sheet.textContent !== css) sheet.textContent = css;
-  }
-  fit();
-  addEventListener('resize', fit);
-  addEventListener('load', fit);
-  document.addEventListener('DOMContentLoaded', fit);
-})();
-</script>
 </head>
 <body>
 <x-dc>
@@ -274,5 +244,30 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:840}}"></script>
 
+<script>
+/* Scale the fixed 840px canvas to whatever width the docs column gives us.
+   Numeric zoom affects layout, so the document height tracks the width
+   exactly -- the embedding iframe uses a matching aspect-ratio, which is
+   what keeps the frame free of both clipping and dead space.
+   The canvas is re-created when the x-dc template mounts, so re-apply on
+   mutation as well as on resize. Writing an unchanged value is a no-op,
+   so the observer settles instead of looping. */
+(function () {
+  var BASE = 840;
+  function fit() {
+    var el = document.querySelector('.dh-canvas');
+    if (!el) return;
+    var z = (document.documentElement.clientWidth / BASE).toFixed(4);
+    if (el.style.zoom !== z) el.style.zoom = z;
+  }
+  fit();
+  if (window.MutationObserver) {
+    new MutationObserver(fit).observe(document.documentElement, { childList: true, subtree: true });
+  }
+  addEventListener('resize', fit);
+  addEventListener('load', fit);
+  document.addEventListener('DOMContentLoaded', fit);
+})();
+</script>
 </body>
 </html>
