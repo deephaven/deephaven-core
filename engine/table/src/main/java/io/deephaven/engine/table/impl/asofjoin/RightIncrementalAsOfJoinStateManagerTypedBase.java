@@ -315,7 +315,12 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
         @Override
         public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            hashSlots.ensureCapacity(nextCookie + chunkOk.intSize());
+            // each built row reports at most one new slot
+            final long slotCapacity = nextCookie + chunkOk.size();
+            hashSlots.ensureCapacity(slotCapacity);
+            if (sequentialBuilders != null) {
+                sequentialBuilders.ensureCapacity(slotCapacity);
+            }
             buildFromLeftSide(chunkOk, sourceKeyChunks, sequentialBuilders);
         }
     }
@@ -333,7 +338,12 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
         @Override
         public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            hashSlots.ensureCapacity(nextCookie + chunkOk.intSize());
+            // each built row reports at most one new slot
+            final long slotCapacity = nextCookie + chunkOk.size();
+            hashSlots.ensureCapacity(slotCapacity);
+            if (sequentialBuilders != null) {
+                sequentialBuilders.ensureCapacity(slotCapacity);
+            }
             buildFromRightSide(chunkOk, sourceKeyChunks, sequentialBuilders);
         }
     }
@@ -426,6 +436,12 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
         @Override
         public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
+            if (sequentialBuilders != null) {
+                // each probed row reports at most one new slot, and there are at most numEntries slots
+                final long slotCapacity = Math.min(nextCookie + chunkOk.size(), numEntries);
+                hashSlots.ensureCapacity(slotCapacity);
+                sequentialBuilders.ensureCapacity(slotCapacity);
+            }
             probeRightSide(chunkOk, sourceKeyChunks, sequentialBuilders);
         }
     }

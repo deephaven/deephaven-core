@@ -193,9 +193,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     leftRestampRemovals = leftRecorder.getRemoved();
                 }
 
-                final long removalSlotBound = probeSlotBound(leftRestampRemovals.size());
-                sequentialBuilders.ensureCapacity(removalSlotBound);
-                slots.ensureCapacity(removalSlotBound);
 
                 if (leftRestampRemovals.isNonempty()) {
                     rowRedirection.removeAll(leftRestampRemovals);
@@ -257,9 +254,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     final SizedLongChunk<RowKeys> stampKeys = new SizedLongChunk<>();
                                     final SizedChunk<Values> stampValues = new SizedChunk<>(stampChunkType)) {
 
-                                final long shiftSlotBound = probeSlotBound(relevantShift.size());
-                                sequentialBuilders.ensureCapacity(shiftSlotBound);
-                                slots.ensureCapacity(shiftSlotBound);
 
                                 final int shiftedSlotCount = asOfJoinStateManager.gatherShiftRowSet(relevantShift,
                                         leftKeySources, slots, sequentialBuilders);
@@ -327,9 +321,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 }
 
                 // We first do a probe pass, adding all of the removals to a builder in the as of join state manager
-                final long requiredCapacity = Math.max(rightRestampRemovals.size(), rightRestampAdditions.size());
-                sequentialBuilders.ensureCapacity(requiredCapacity);
-                slots.ensureCapacity(requiredCapacity);
                 final int removedSlotCount = asOfJoinStateManager.markForRemoval(rightRestampRemovals, rightKeySources,
                         slots, sequentialBuilders);
 
@@ -395,9 +386,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>();
                                     final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampChunkType)) {
 
-                                final long shiftSlotBound = probeSlotBound(relevantShift.size());
-                                sequentialBuilders.ensureCapacity(shiftSlotBound);
-                                slots.ensureCapacity(shiftSlotBound);
 
                                 final int shiftedSlotCount = asOfJoinStateManager.gatherShiftRowSet(relevantShift,
                                         rightKeySources, slots, sequentialBuilders);
@@ -486,9 +474,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     }
                 }
 
-                // next we do the additions; this build can create a bucket for a key it has not seen before, which is
-                // why
-                // the capacity reserved for the cycle covers the added row count rather than only the bucket count
+                // next we do the additions; this build can create a bucket for a key it has not seen before
                 final int addedSlotCount = asOfJoinStateManager.buildAdditions(false, rightRestampAdditions,
                         rightKeySources, slots, sequentialBuilders);
 
@@ -611,9 +597,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
                 // if the stamp was not modified, then we need to figure out the responsive rows to mark as modified
                 if (!rightStampModified && !rightKeysModified && rightRecorder.getModified().isNonempty()) {
-                    final long modifiedSlotBound = probeSlotBound(rightRecorder.getModified().size());
-                    slots.ensureCapacity(modifiedSlotBound);
-                    sequentialBuilders.ensureCapacity(modifiedSlotBound);
 
                     final int modifiedSlotCount = asOfJoinStateManager.gatherModifications(rightRecorder.getModified(),
                             rightKeySources, slots, sequentialBuilders);
@@ -675,8 +658,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     leftRestampAdditions = leftRecorder.getAdded();
                 }
 
-                sequentialBuilders.ensureCapacity(leftRestampAdditions.size());
-                slots.ensureCapacity(leftRestampAdditions.size());
                 final int addedSlotCount =
                         asOfJoinStateManager.buildAdditions(true, leftRestampAdditions, leftKeySources,
                                 slots, sequentialBuilders);
@@ -834,14 +815,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         }
 
         return relevantShiftKeys.build();
-    }
-
-    /**
-     * A probe reports at most one slot per occupied bucket, so the per-slot output arrays never need more capacity than
-     * the smaller of the probed row count and the bucket count.
-     */
-    private long probeSlotBound(long probedRowCount) {
-        return Math.min(probedRowCount, asOfJoinStateManager.getNumEntries());
     }
 
     private RowSet indexFromBuilder(int slotIndex) {
