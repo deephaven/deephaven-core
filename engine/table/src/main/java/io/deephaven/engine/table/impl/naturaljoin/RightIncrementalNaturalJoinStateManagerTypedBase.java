@@ -12,12 +12,14 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.JoinControl;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager;
+import io.deephaven.engine.table.impl.join.ChangedKeyRows;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
@@ -56,13 +58,17 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     protected LongArrayList freeDuplicateValues = new LongArrayList();
     protected ImmutableLongArraySource modifiedTrackerCookieSource = new ImmutableLongArraySource();
 
+    // detects which modified right rows actually changed key value
+    private final ChangedKeyRows changedKeyRows;
+
     protected RightIncrementalNaturalJoinStateManagerTypedBase(ColumnSource<?>[] tableKeySources,
             ColumnSource<?>[] keySourcesForErrorMessages, int tableSize, double maximumLoadFactor,
             NaturalJoinType joinType, boolean addOnly) {
         super(keySourcesForErrorMessages, joinType, addOnly);
 
-        // we start out with a chunk sized table, and will grow by rehashing the left as states are added
-        this.tableSize = CHUNK_SIZE;
+        // the caller sizes the table for the left states it expects (from a data index when one exists); we grow by
+        // rehashing as further left states are added
+        this.tableSize = tableSize;
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
         Require.gtZero(tableSize, "tableSize");
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);
@@ -76,6 +82,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
             mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
                     tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
+        changedKeyRows = new ChangedKeyRows(chunkTypes);
 
         this.maximumLoadFactor = maximumLoadFactor;
 
@@ -246,7 +253,10 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public String keyString(int slot) {
-        throw new UnsupportedOperationException();
+        // every slot holds at least one left row, since only left keys are entered into the table
+        final long firstLeftRowKey = leftRowSet.getUnsafe(slot).firstRowKey();
+        Assert.neq(firstLeftRowKey, "firstLeftRowKey", RowSet.NULL_ROW_KEY);
+        return extractKeyStringFromSourceTable(firstLeftRowKey);
     }
 
     @Override
@@ -275,7 +285,9 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                     throw new IllegalStateException(
                             "When converting left group position to row keys more than one LHS value was found!");
                 }
+                // Replace the single-key placeholder with the indexed row set.
                 this.leftRowSet.set(ii, rowSetSource.get(leftRowSet.firstRowKey()).copy());
+                leftRowSet.close();
             }
         }
     }
@@ -435,6 +447,17 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     protected abstract void removeRight(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+
+    @Override
+    public void removeRightModifications(
+            final ColumnSource<?>[] rightSources,
+            final RowSet modifiedPreShift, final RowSet modifiedPostShift,
+            final RowSetBuilderSequential changedPreShift, final RowSetBuilderSequential changedPostShift,
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        changedKeyRows.findChanged(rightSources, modifiedPreShift, modifiedPostShift, changedPreShift,
+                changedPostShift,
+                (changedRows, previousKeys) -> removeRight(changedRows, previousKeys, modifiedSlotTracker));
+    }
 
     @Override
     public void addRightSide(Context pc, RowSequence rightRowSet, ColumnSource<?>[] rightSources,

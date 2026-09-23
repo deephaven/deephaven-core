@@ -273,9 +273,9 @@ public class CrossJoinHelper {
                                 addBuilder.addKey(regionStart);
                             }
                         });
-                        try (final RowSet added = addBuilder.build()) {
+                        try (final WritableRowSet added = addBuilder.build()) {
                             downstream.added().writableCast().insert(added);
-                            resultRowSet.insert(added);
+                            resultRowSet.subsume(added);
                         }
 
                         resultTable.notifyListeners(downstream);
@@ -419,8 +419,8 @@ public class CrossJoinHelper {
                                             .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftRowKey(ii)));
                                     toRemoveBuilder.appendRowSequenceWithOffset(state.rightRemoved, prevOffset);
                                 });
-                                try (final RowSet toRemove = toRemoveBuilder.build()) {
-                                    downstream.removed().writableCast().insert(toRemove);
+                                try (final WritableRowSet toRemove = toRemoveBuilder.build()) {
+                                    downstream.removed().writableCast().subsume(toRemove);
                                 }
                             }
                         }
@@ -467,8 +467,8 @@ public class CrossJoinHelper {
                                     leftRowsForNullKeyRemoval.forAllRowKeys((key) -> {
                                         toRemoveBuilder.appendKey(key << prevRightBits);
                                     });
-                                    try (final RowSet toRemove = toRemoveBuilder.build()) {
-                                        downstream.removed().writableCast().insert(toRemove);
+                                    try (final WritableRowSet toRemove = toRemoveBuilder.build()) {
+                                        downstream.removed().writableCast().subsume(toRemove);
                                     }
                                 }
                             }
@@ -491,8 +491,8 @@ public class CrossJoinHelper {
                                             .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftRowKey(ii)));
                                     modifiedBuilder.appendRowSequenceWithOffset(state.rightModified, currOffset);
                                 });
-                                try (final RowSet modified = modifiedBuilder.build()) {
-                                    downstream.modified().writableCast().insert(modified);
+                                try (final WritableRowSet modified = modifiedBuilder.build()) {
+                                    downstream.modified().writableCast().subsume(modified);
                                 }
 
                                 mustCloseRowsToShift = leftChanged || !allRowsShift;
@@ -512,8 +512,8 @@ public class CrossJoinHelper {
                                         rmsToVisit.addRowSet(slotState.leftRowSet);
                                     }
                                 });
-                                try (final RowSet leftIndexesToVisitForRm = rmsToVisit.build()) {
-                                    rowsToShift.writableCast().insert(leftIndexesToVisitForRm);
+                                try (final WritableRowSet leftIndexesToVisitForRm = rmsToVisit.build()) {
+                                    rowsToShift.writableCast().subsume(leftIndexesToVisitForRm);
                                 }
                             }
                         } else {
@@ -741,14 +741,14 @@ public class CrossJoinHelper {
                         downstream.shifted = shiftBuilder.build();
 
                         try (final RowSet toRemove = toRemoveFromResultRowSet.build();
-                                final RowSet toInsert = toInsertIntoResultRowSet.build()) {
+                                final WritableRowSet toInsert = toInsertIntoResultRowSet.build()) {
                             if (prevRightBits != currRightBits) {
                                 // every row shifted
                                 resultRowSet.clear();
                             } else {
                                 resultRowSet.remove(toRemove);
                             }
-                            resultRowSet.insert(toInsert);
+                            resultRowSet.subsume(toInsert);
                         }
 
                         if (mustCloseRowsToShift) {
@@ -966,8 +966,8 @@ public class CrossJoinHelper {
                                 resultRowSet.remove(remove);
                             }
                         }
-                        try (final RowSet add = addToResultRowSet.build()) {
-                            resultRowSet.insert(add);
+                        try (final WritableRowSet add = addToResultRowSet.build()) {
+                            resultRowSet.subsume(add);
                         }
 
                         if (tracker.clear()) {
@@ -1255,8 +1255,8 @@ public class CrossJoinHelper {
                         }
                     }
 
-                    try (final RowSet newResult = newResultBuilder.build()) {
-                        resultRowSet.insert(newResult);
+                    try (final WritableRowSet newResult = newResultBuilder.build()) {
+                        resultRowSet.subsume(newResult);
                     }
                     downstream.added = addedBuilder.build();
                     downstream.removed = removedBuilder.build();

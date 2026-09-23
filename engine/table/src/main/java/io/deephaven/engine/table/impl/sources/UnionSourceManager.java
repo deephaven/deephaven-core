@@ -981,8 +981,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
                             lastRowKeys.add(lastKey);
                         } else {
                             // Skip this table, but save the rows from this constituent as "maybe"
-                            try (final RowSet localSelection = selection.subSetByKeyRange(firstKey, lastKey)) {
-                                maybeMatch.insert(localSelection);
+                            try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstKey, lastKey)) {
+                                maybeMatch.subsume(localSelection);
                             }
                         }
                     }

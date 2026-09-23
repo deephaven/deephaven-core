@@ -222,38 +222,51 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     /**
+     * This attempt's match columns, in {@link #matchColumns} order.
+     * <p>
+     * A listener captures these, and every other piece of its attempt's state, rather than reading the operation's
+     * fields, which {@link #initialize} reassigns on every attempt. A notification queued for a rejected attempt can
+     * run after a retry has replaced those fields, and a listener that followed them would act on the committed
+     * attempt's result.
+     */
+    private List<IndexWrapperColumnSource> captureMatchColumns() {
+        return matchColumns.stream().map(holder -> holder.column).collect(Collectors.toUnmodifiableList());
+    }
+
+    /**
      * A {@link MergedListener} implementation for {@link Table#wouldMatch(WouldMatchPair...)} when the parent table is
      * ticking.
      */
-    private class Listener extends MergedListener {
-        final ListenerRecorder recorder;
+    private final class Listener extends GuardedMergedListener {
+        private final ListenerRecorder recorder;
+        private final List<IndexWrapperColumnSource> columns;
+        private final ModifiedColumnSet.Transformer transformer;
 
         Listener(@NotNull ListenerRecorder recorder,
                 @NotNull List<NotificationQueue.Dependency> dependencies) {
-            super(Collections.singletonList(recorder),
-                    dependencies,
-                    "merge(" + makeDescription() + ")",
-                    resultTable);
+            super(Collections.singletonList(recorder), dependencies, "merge(" + makeDescription() + ")", resultTable);
             this.recorder = recorder;
+            this.columns = captureMatchColumns();
+            this.transformer = WouldMatchOperation.this.transformer;
         }
 
         @Override
-        protected void process() {
+        protected void processRetained() {
             final TableUpdate downstream = new TableUpdateImpl(
                     recorder.getAdded().copy(),
                     recorder.getRemoved().copy(),
                     recorder.getModified().copy(),
                     recorder.getShifted(),
-                    resultTable.getModifiedColumnSetForUpdates());
+                    result.getModifiedColumnSetForUpdates());
 
             transformer.clearAndTransform(recorder.getModifiedColumnSet(), downstream.modifiedColumnSet());
 
             // Propagate the updates to each column, inserting any additional modified rows post-shift that were
             // produced
             // by each column (ie. if a filter required a recompute
-            try (final RowSetUnionBatcher recomputed = new RowSetUnionBatcher(matchColumns.size())) {
-                matchColumns.stream()
-                        .map(vc -> vc.column.update(recorder.getAdded(),
+            try (final RowSetUnionBatcher recomputed = new RowSetUnionBatcher(columns.size())) {
+                columns.stream()
+                        .map(column -> column.update(recorder.getAdded(),
                                 recorder.getRemoved(),
                                 recorder.getModified(),
                                 recorder.getModifiedPreShift(),
@@ -264,12 +277,12 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                         .filter(Objects::nonNull)
                         .forEach(recomputed::add);
                 try (final WritableRowSet additionalModified = recomputed.build()) {
-                    downstream.modified().writableCast().insert(additionalModified);
+                    downstream.modified().writableCast().subsume(additionalModified);
                 }
             }
 
 
-            resultTable.notifyListeners(downstream);
+            result.notifyListeners(downstream);
         }
     }
 
@@ -277,42 +290,43 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
      * A {@link MergedListener} implementation for {@link Table#wouldMatch(WouldMatchPair...)} when * the parent table
      * is static (not ticking).
      */
-    private class StaticListener extends MergedListener {
+    private final class StaticListener extends GuardedMergedListener {
+        /** This attempt's state; see {@link #captureMatchColumns()} for why it is not read through the operation. */
+        private final List<IndexWrapperColumnSource> columns;
+
         StaticListener(@NotNull List<NotificationQueue.Dependency> dependencies) {
-            super(Collections.emptyList(),
-                    dependencies,
-                    "wouldMatch(" + makeDescription() + ")",
-                    resultTable);
+            super(Collections.emptyList(), dependencies, "wouldMatch(" + makeDescription() + ")", resultTable);
+            this.columns = captureMatchColumns();
         }
 
         @Override
-        protected void process() {
+        protected void processRetained() {
             TableUpdate downstream = null;
-            try (final RowSetUnionBatcher recomputed = new RowSetUnionBatcher(matchColumns.size())) {
-                for (final ColumnHolder holder : matchColumns) {
-                    if (holder.column.recomputeRequested()) {
+            try (final RowSetUnionBatcher recomputed = new RowSetUnionBatcher(columns.size())) {
+                for (final IndexWrapperColumnSource column : columns) {
+                    if (column.recomputeRequested()) {
                         if (downstream == null) {
                             downstream =
                                     new TableUpdateImpl(RowSetFactory.empty(),
                                             RowSetFactory.empty(),
                                             RowSetFactory.empty(),
                                             RowSetShiftData.EMPTY,
-                                            resultTable.getModifiedColumnSetForUpdates());
+                                            result.getModifiedColumnSetForUpdates());
                         }
 
-                        downstream.modifiedColumnSet().setAll(holder.getColumnName());
-                        recomputed.add(holder.column.recompute(parent, EMPTY_INDEX));
+                        downstream.modifiedColumnSet().setAll(column.name);
+                        recomputed.add(column.recompute(parent, EMPTY_INDEX));
                     }
                 }
                 if (downstream != null) {
                     try (final WritableRowSet modified = recomputed.build()) {
-                        downstream.modified().writableCast().insert(modified);
+                        downstream.modified().writableCast().subsume(modified);
                     }
                 }
             }
 
             if (downstream != null) {
-                resultTable.notifyListeners(downstream);
+                result.notifyListeners(downstream);
             }
         }
     }
@@ -493,6 +507,15 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             // TODO: No need to recompute the remaining rows (https://github.com/deephaven/deephaven-core/issues/6083)
             doRecompute = true;
             Require.neqNull(mergedListener, "mergedListener").notifyChanges();
+        }
+
+        @Override
+        public void requestFailure(
+                @NotNull final Throwable error,
+                @Nullable final TableListener.Entry sourceEntry) {
+            // Fail through the listener rather than directly: it fails the result exactly once, from inside its own
+            // notification, where it cannot collide with the update it might otherwise deliver for this step.
+            Require.neqNull(mergedListener, "mergedListener").notifyOnUpstreamError(error, sourceEntry);
         }
 
         @NotNull

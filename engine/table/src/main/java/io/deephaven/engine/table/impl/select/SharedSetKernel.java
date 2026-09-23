@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
@@ -19,7 +20,6 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.MatchPair;
-import io.deephaven.engine.table.impl.NotificationAwareDependency;
 import io.deephaven.engine.table.impl.NotificationStepReceiver;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
@@ -29,6 +29,7 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -56,7 +57,7 @@ import java.util.stream.LongStream;
  * The kernel is inclusion-agnostic: {@link DynamicWhereFilter} always supplies its own inclusion when matching values,
  * so one shared set serves both {@code whereIn} and {@code whereNotIn} filters over the same keys.
  */
-final class SharedSetKernel extends LivenessArtifact implements NotificationAwareDependency {
+final class SharedSetKernel extends LivenessArtifact implements NotificationQueue.Dependency {
 
     private static final int CHUNK_SIZE = 1 << 16;
 
@@ -74,10 +75,17 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
     private final SetUpdateListener setUpdateListener;
 
     /**
-     * The step on which {@link #setUpdateListener} began changing {@link #kernel}, published before the change. See
-     * {@link NotificationAwareDependency}.
+     * The step on which {@link #setUpdateListener} began changing {@link #kernel} or recorded a {@link #failure},
+     * published before the change and under the {@link #filters} registry monitor, so that
+     * {@link #addFilter(DynamicWhereFilter, long)} can check it atomically against that change.
      */
     private volatile long lastStateChangeStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+
+    /**
+     * The failure that ended this set, or {@code null} while it is alive. Written once under the {@link #filters}
+     * registry monitor, and volatile so that {@link #throwIfFailed()} can check it without taking that monitor.
+     */
+    private volatile Throwable failure;
 
     /**
      * Incremented by {@link #setUpdateListener} immediately before and immediately after it mutates {@link #kernel}, so
@@ -248,15 +256,15 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
      * {@link #failIfChangedSince(long)} as they go, so that a read overtaken by a mutation is abandoned early.
      * <p>
      * Reading without synchronization is safe because a concurrent read of the fastutil open hash set behind every
-     * kernel can return a wrong answer or throw, but cannot hang. A wrong answer is rejected by
-     * {@link #stateChangedOnStep} or the snapshot clock and the attempt is retried, and the snapshot machinery retries
-     * on an exception, so neither reaches a caller. Termination follows from the set's shape: {@code contains} reads
-     * the {@code key} array once and {@code mask} on each probe, and {@code rehash} assigns {@code key} last, so a
-     * reader can see a torn pair, but every such pair either indexes out of bounds (an exception) or probes a region
-     * that still holds a free slot, because a doubled table is at most three quarters full and a table is only ever
-     * halved when under a fifth full; in-place mutation never fills the table; and the iterator's position only
-     * decreases. This depends on every kernel being fastutil-backed, including the object kernel, which is why that one
-     * uses {@code ObjectOpenHashSet} rather than {@code HashSet}.
+     * kernel can return a wrong answer or throw, but cannot hang. A wrong answer is rejected by the snapshot control,
+     * which compares {@link #lastStateChangeStep()} against its step, or by the snapshot clock, and the attempt is
+     * retried; the snapshot machinery retries on an exception, so neither reaches a caller. Termination follows from
+     * the set's shape: {@code contains} reads the {@code key} array once and {@code mask} on each probe, and
+     * {@code rehash} assigns {@code key} last, so a reader can see a torn pair, but every such pair either indexes out
+     * of bounds (an exception) or probes a region that still holds a free slot, because a doubled table is at most
+     * three quarters full and a table is only ever halved when under a fifth full; in-place mutation never fills the
+     * table; and the iterator's position only decreases. This depends on every kernel being fastutil-backed, including
+     * the object kernel, which is why that one uses {@code ObjectOpenHashSet} rather than {@code HashSet}.
      */
     SetInclusionKernel kernel() {
         return kernel;
@@ -311,14 +319,50 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
     }
 
     /**
-     * Register {@code filter} to be told when the shared keys change. Registration is idempotent for a given filter,
-     * and weak, so a filter that becomes unreachable stops being notified without any explicit removal.
+     * Refuse an operation that cannot proceed because this set has already failed, after which no further set
+     * notification is coming.
+     *
+     * @throws TableAlreadyFailedException If maintaining this set has failed
      */
-    void addFilter(@NotNull final DynamicWhereFilter filter) {
+    void throwIfFailed() {
+        final Throwable localFailure = failure;
+        if (localFailure != null) {
+            throw new TableAlreadyFailedException("Can not filter with an already-failed set table", localFailure);
+        }
+    }
+
+    /**
+     * The step on which the shared keys last began changing; delegated here by {@link DynamicWhereFilter}.
+     */
+    long lastStateChangeStep() {
+        return lastStateChangeStep;
+    }
+
+    /**
+     * Register {@code filter} to be told when the shared keys change, for a snapshot attempt that is committing, if the
+     * keys have not changed since that attempt read them. Registration is weak, so a filter that becomes unreachable
+     * stops being notified without any explicit removal.
+     * <p>
+     * The check shares the monitor under which a change publishes its step, so a change is either delivered to
+     * {@code filter} or is the reason it is refused, with no window in between.
+     *
+     * @param filter The filter to register
+     * @param requiredLastStateChangeStep The {@link #lastStateChangeStep()} read when the attempt began
+     * @return Whether {@code filter} was registered
+     * @throws TableAlreadyFailedException If maintaining this set has failed, so that no attempt can ever commit
+     */
+    boolean addFilter(@NotNull final DynamicWhereFilter filter, final long requiredLastStateChangeStep) {
         synchronized (filters) {
-            // A failed snapshot attempt can register the same filter again; remove first to avoid a double notify.
+            throwIfFailed();
+            if (lastStateChangeStep != requiredLastStateChangeStep) {
+                // We thought we were consistent, but the set has begun changing since we read it.
+                // Must refuse this filter addition (and the current snapshot attempt).
+                return false;
+            }
+            // Previous attempts might have added this filter already, remove then add.
             filters.remove(filter);
             filters.add(filter);
+            return true;
         }
     }
 
@@ -346,11 +390,6 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
     @Override
     public boolean satisfied(final long step) {
         return setUpdateListener == null || setUpdateListener.satisfied(step);
-    }
-
-    @Override
-    public boolean stateChangedOnStep(final long step) {
-        return lastStateChangeStep == step;
     }
 
     LongStream parentPerformanceEntryIds() {
@@ -420,12 +459,15 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
 
             // We are changing the set during this step. Publish the step before publishing the new
             // kernel, never after, so that a reader which observes the change is guaranteed to
-            // observe this step and reject what it read.
+            // observe this step and reject what it read. Publishing under the registry monitor is
+            // what makes addFilter's check atomic against this change.
             // Note that a modifies-only update whose keys all compare equal below would over-report,
             // failing concurrent previous-value snapshots that in fact read this set consistently.
             // The set table is always a selectDistinct or a data index table, which produce only adds
             // and removes for a key change, so no such update arises today.
-            lastStateChangeStep = getUpdateGraph().clock().currentStep();
+            synchronized (filters) {
+                lastStateChangeStep = getUpdateGraph().clock().currentStep();
+            }
 
             // Mark a mutation in progress, so concurrent readers abandon their attempts; see kernel() for why they
             // need no more protection than that. Incremented before mutating, and again after, so that the value
@@ -493,8 +535,19 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationAwar
             if (superseded) {
                 return;
             }
-            filters.forEachValidReference(
-                    filter -> filter.onSetError(originalException, sourceEntry));
+
+            // A failure changes the state too. Record it under the registry monitor, publishing the step there as
+            // onUpdate does, so that
+            // a filter committing concurrently either registers in time to be told or is refused outright.
+            synchronized (filters) {
+                lastStateChangeStep = getUpdateGraph().clock().currentStep();
+                if (failure == null) {
+                    failure = originalException;
+                }
+            }
+
+            // No lock needed, no more adds allowed after a failure.
+            filters.forEachValidReference(filter -> filter.onSetError(originalException, sourceEntry));
         }
     }
 }

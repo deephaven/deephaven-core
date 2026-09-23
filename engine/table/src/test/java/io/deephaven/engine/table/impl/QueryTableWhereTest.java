@@ -1054,6 +1054,188 @@ public abstract class QueryTableWhereTest {
         Assert.eqTrue(whereResult.isFailed(), "whereResult.isFailed()");
     }
 
+    // region Set table failures (DH-23666)
+
+    /**
+     * Assert that every error reported to the async client error notifier is one of {@code expected}, that is, one of
+     * the failures the test itself caused. An engine error raised while propagating them is not acceptable.
+     */
+    private void assertOnlyReportedErrors(final Throwable... expected) {
+        final Set<Throwable> allowed = Collections.newSetFromMap(new IdentityHashMap<>());
+        allowed.addAll(Arrays.asList(expected));
+        for (final Throwable reported : base.getUpdateErrors()) {
+            assertTrue("unexpected error reported: " + reported, allowed.contains(reported));
+        }
+    }
+
+    private static DynamicWhereFilter keyIn(final Table setTable) {
+        return new DynamicWhereFilter(setTable, true, new MatchPair("Key", "Key"));
+    }
+
+    /**
+     * When a set table fails, every result filtered by it fails, exactly once, with the set's own error. Two filters in
+     * one {@code where} share a result, and a second {@code where} over the same set shares the set's listener, so the
+     * failure must reach each of those results once and only once.
+     */
+    @Test
+    public void testSetFailureFailsEveryResultOnceWithTwoFiltersSharingOneResult() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        // Copies of one filter share a single set listener; independent filters over the same table would not.
+        final DynamicWhereFilter filter = keyIn(setTable);
+        final Table twoFilters = source.where(Filter.and(filter.copy(), filter.copy()));
+        final Table oneFilter = source.where(filter.copy());
+        final FailureRecordingListener twoFiltersFailures = new FailureRecordingListener(twoFilters);
+        final FailureRecordingListener oneFilterFailures = new FailureRecordingListener(oneFilter);
+        assertFalse(twoFilters.isFailed());
+        assertFalse(oneFilter.isFailed());
+
+        final RuntimeException setError = new RuntimeException("set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> setTable.notifyListenersOnError(setError, null));
+        }
+
+        assertTrue("the result with two filters over the set must fail", twoFilters.isFailed());
+        assertTrue("the result with one filter over the set must fail", oneFilter.isFailed());
+        twoFiltersFailures.assertFailedOnceWith(setError);
+        oneFilterFailures.assertFailedOnceWith(setError);
+        assertOnlyReportedErrors(setError);
+    }
+
+    /**
+     * When two set tables fail on the same cycle, a result filtered by both fails exactly once, and a result filtered
+     * by only the second set still fails. The first failure to arrive fails the shared result; the second must not
+     * disturb it, and must still reach every other result of its own set.
+     */
+    @Test
+    public void testSetFailuresFailEveryResultOnceWhenTwoSetsFailInOneCycle() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable firstSet = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+        final QueryTable secondSet = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        // Copies of one filter share a single set listener, so both results hear about the second set from it.
+        final DynamicWhereFilter secondSetFilter = keyIn(secondSet);
+        final Table bothSets = source.where(Filter.and(keyIn(firstSet), secondSetFilter.copy()));
+        final Table secondSetOnly = source.where(secondSetFilter.copy());
+        final FailureRecordingListener bothSetsFailures = new FailureRecordingListener(bothSets);
+        final FailureRecordingListener secondSetOnlyFailures = new FailureRecordingListener(secondSetOnly);
+        assertFalse(bothSets.isFailed());
+        assertFalse(secondSetOnly.isFailed());
+
+        final RuntimeException firstError = new RuntimeException("first set table failure");
+        final RuntimeException secondError = new RuntimeException("second set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                firstSet.notifyListenersOnError(firstError, null);
+                secondSet.notifyListenersOnError(secondError, null);
+            });
+        }
+
+        assertTrue("the result over both sets must fail", bothSets.isFailed());
+        assertTrue("the result over the second set alone must fail", secondSetOnly.isFailed());
+        // Whichever set's failure arrives first is the one the shared result fails with; there must be only one.
+        assertEquals(1, bothSetsFailures.failureCount());
+        secondSetOnlyFailures.assertFailedOnceWith(secondError);
+        assertOnlyReportedErrors(firstError, secondError);
+    }
+
+    /**
+     * When a set table fails on the same cycle its source ticks, the result fails exactly once, on that cycle, with the
+     * set's error. The source update must not be applied to a result whose set is gone, and it must not produce a
+     * second notification of any kind.
+     */
+    @Test
+    public void testSetFailureWhileSourceTicksFailsResultOnce() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final Table result = source.where(keyIn(setTable));
+        final FailureRecordingListener failures = new FailureRecordingListener(result);
+        assertFalse(result.isFailed());
+
+        final RuntimeException setError = new RuntimeException("set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                setTable.notifyListenersOnError(setError, null);
+                addToTable(source, i(8), intCol("Key", 1));
+                source.notifyListeners(i(8), i(), i());
+            });
+        }
+
+        assertTrue("the result must fail on the cycle its set failed", result.isFailed());
+        failures.assertFailedOnceWith(setError);
+        assertOnlyReportedErrors(setError);
+    }
+
+    /**
+     * A {@code where} over a static source with a refreshing set is driven by a where listener with no recorder, which
+     * hears only from its filters. When the set fails, that listener must fail the result exactly once, with the set's
+     * error.
+     */
+    @Test
+    public void testStaticSourceSetFailureFailsResultOnce() {
+        final QueryTable source = testTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final Table result = source.where(keyIn(setTable));
+        assertTrue("a static source filtered by a refreshing set is refreshing", result.isRefreshing());
+        final FailureRecordingListener failures = new FailureRecordingListener(result);
+        assertFalse(result.isFailed());
+
+        final RuntimeException setError = new RuntimeException("set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> setTable.notifyListenersOnError(setError, null));
+        }
+
+        assertTrue("the result must fail on the cycle its set failed", result.isFailed());
+        failures.assertFailedOnceWith(setError);
+        assertOnlyReportedErrors(setError);
+    }
+
+    /**
+     * A filter error fails the result from outside its listener's notification. When the set table fails afterwards,
+     * the failure request that reaches the listener must leave the already-failed result alone, rather than failing it
+     * a second time, and must not surface as an engine error.
+     */
+    @Test
+    public void testSetFailureAfterAFilterErrorLeavesTheFailedResultAlone() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(),
+                intCol("Key", 1, 2, 3), col("y", "a", "b", "c"));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final Table result =
+                source.where(Filter.and(keyIn(setTable), WhereFilterFactory.getExpression("y.length() > 0")));
+        final FailureRecordingListener failures = new FailureRecordingListener(result);
+        assertFalse(result.isFailed());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final RuntimeException setError = new RuntimeException("set table failure");
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            // A null y makes the formula filter throw, which fails the result through the filter error path.
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(source, i(8), intCol("Key", 1), col("y", (String) null));
+                source.notifyListeners(i(8), i(), i());
+            });
+            assertTrue("the filter error must fail the result", result.isFailed());
+            assertEquals(1, failures.failureCount());
+
+            updateGraph.runWithinUnitTestCycle(() -> setTable.notifyListenersOnError(setError, null));
+        }
+
+        assertEquals("the set failure must not fail the result a second time", 1, failures.failureCount());
+        for (final Throwable reported : base.getUpdateErrors()) {
+            assertTrue("unexpected error reported: " + reported,
+                    reported == setError || reported instanceof FormulaEvaluationException);
+        }
+    }
+
+    // endregion Set table failures (DH-23666)
+
     @Test
     public void testMatchFilterFallback() {
         final Table table = emptyTable(10).update("X=i");

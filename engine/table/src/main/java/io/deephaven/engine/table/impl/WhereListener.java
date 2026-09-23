@@ -41,7 +41,7 @@ import java.util.stream.Stream;
  * Other filters may be dependent on e.g. a LiveTable to be complete before operating. It is possible we have a static
  * source table, but a refreshing filter in which case our listener recorder is null.
  */
-class WhereListener extends MergedListener {
+class WhereListener extends GuardedMergedListener {
 
     private final QueryTable sourceTable;
     private final QueryTable.FilteredTable result;
@@ -151,22 +151,28 @@ class WhereListener extends MergedListener {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * The filter work scheduled here may run on the update graph's job scheduler and complete after this method
+     * returns, on notifications of its own, and the result must stay alive until then: a result built by a rejected
+     * lock-free snapshot attempt can be released in between. So this method takes a reference of its own, over the one
+     * {@link GuardedMergedListener} holds for its duration, and {@link #finalizeUpdate} drops it, which every
+     * completion and error path reaches exactly once per step.
+     */
     @Override
-    public void process() {
-        // A recompute queued for a result that a rejected snapshot attempt has since released must not run for it.
-        if (!result.tryRetainReference()) {
-            return;
-        }
+    protected void processRetained() {
+        initialNotificationStep = getUpdateGraph().clock().currentStep();
+
+        result.retainReference();
         try {
-            processRetained();
-        } finally {
-            result.dropReference();
+            scheduleStep();
+        } catch (RuntimeException e) {
+            // Nothing was scheduled, or the failure escaped the scheduler, so nothing else will finalize this step.
+            finalizeUpdate(null);
+            throw e;
         }
     }
 
-    private void processRetained() {
-        initialNotificationStep = getUpdateGraph().clock().currentStep();
-
+    private void scheduleStep() {
         if (result.refilterRequested()) {
             final TableUpdate update = recorder != null ? recorder.getUpdate() : null;
             result.doRefilter(this, update);
@@ -217,7 +223,7 @@ class WhereListener extends MergedListener {
 
                 // Matching modifies in the current mapping are adds
                 try (final WritableRowSet modsToAdd = modifiedFilterResult.minus(currentMapping)) {
-                    update.added.writableCast().insert(modsToAdd);
+                    update.added.writableCast().subsume(modsToAdd);
                 }
 
                 // Unmatched upstream mods are removes if they are in our output rowset
@@ -229,7 +235,7 @@ class WhereListener extends MergedListener {
 
                     // Move modsToRemove into pre-shift keyspace and add to myRemoved
                     upstream.shifted().unapply(modsToRemove);
-                    update.removed.writableCast().insert(modsToRemove);
+                    update.removed.writableCast().subsume(modsToRemove);
                 }
             } else {
                 update.modified = upstream.modified().intersect(currentMapping);
@@ -265,6 +271,11 @@ class WhereListener extends MergedListener {
         finalizeUpdate(upstream);
     }
 
+    /**
+     * Finish this step's work: release the upstream update, record the final notification step, and drop the reference
+     * to the result that {@link #processRetained} took. The step is finalized at most once, so the reference is dropped
+     * at most once.
+     */
     void finalizeUpdate(@Nullable final TableUpdate upstream) {
         final long oldStep = FINAL_NOTIFICATION_STEP_UPDATER.get(this);
         final long step = getUpdateGraph().clock().currentStep();
@@ -272,6 +283,7 @@ class WhereListener extends MergedListener {
             if (upstream != null) {
                 upstream.release();
             }
+            result.dropReference();
         }
     }
 

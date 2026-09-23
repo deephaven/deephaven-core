@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.Table;
@@ -46,6 +47,25 @@ public abstract class RightIncrementalNaturalJoinStateManager extends StaticNatu
             @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     public abstract void removeRight(Context pc, RowSequence rightIndex, ColumnSource<?>[] rightSources,
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
+
+    /**
+     * In a single pass over the modified right rows, determine which rows' key value actually changed (by comparing the
+     * current key values at the post-shift row keys with the previous key values at the pre-shift row keys), remove
+     * those rows from their previous-key hash slots, and report the changed keys. Rows whose key value is unchanged
+     * keep their slot and cost no hash lookups.
+     *
+     * @param rightSources the right key sources
+     * @param modifiedPreShift the modified rows, in pre-shift key space, aligned positionally with
+     *        {@code modifiedPostShift}
+     * @param modifiedPostShift the modified rows, in post-shift key space
+     * @param changedPreShift output, ascending, receives the pre-shift keys whose key value changed (to be excluded
+     *        from the caller's shift processing)
+     * @param changedPostShift output, ascending, receives the post-shift keys whose key value changed (to be re-added
+     *        by the caller)
+     */
+    public abstract void removeRightModifications(ColumnSource<?>[] rightSources, RowSet modifiedPreShift,
+            RowSet modifiedPostShift, RowSetBuilderSequential changedPreShift, RowSetBuilderSequential changedPostShift,
             @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     public abstract void addRightSide(Context pc, RowSequence rightIndex, ColumnSource<?>[] rightSources,
