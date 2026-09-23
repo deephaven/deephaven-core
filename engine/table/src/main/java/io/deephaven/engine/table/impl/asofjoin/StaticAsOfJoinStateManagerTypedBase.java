@@ -243,6 +243,10 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
 
         @Override
         public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
+            if (hashSlots != null) {
+                // each probed row reports at most one new slot, and there are at most numEntries slots
+                hashSlots.ensureCapacity(Math.min(hashOffset.get() + chunkOk.size(), numEntries));
+            }
             decorateLeftSide(chunkOk, sourceKeyChunks, hashSlots, hashOffset, foundBuilder);
         }
     }
