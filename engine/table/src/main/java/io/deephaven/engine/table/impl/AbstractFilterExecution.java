@@ -502,11 +502,15 @@ abstract class AbstractFilterExecution {
         if (executor == null) {
             return new StatelessFilter(filterIdx, filter, null, null, barrierDependencies);
         }
-        // The context is the last thing that can fail. The StatelessFilter owns it from here, and nothing in the
-        // constructor can fail for a non-null matcher and context, so it cannot be leaked in between.
-        return new StatelessFilter(filterIdx, filter, executor,
-                executor.makePushdownFilterContext(filter, filterSources),
-                barrierDependencies);
+        final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
+        try {
+            return new StatelessFilter(filterIdx, filter, executor, context, barrierDependencies);
+        } catch (final RuntimeException | Error e) {
+            // The constructor hashes the filter's barriers, which are arbitrary user objects, so it can fail; nothing
+            // owns the context until it returns.
+            SafeCloseable.closeAllDuringFailure(e, context);
+            throw e;
+        }
     }
 
     /**

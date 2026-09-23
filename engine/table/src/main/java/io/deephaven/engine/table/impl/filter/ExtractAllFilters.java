@@ -41,7 +41,11 @@ public enum ExtractAllFilters implements WhereFilter.Visitor<Stream<WhereFilter>
     @Override
     public Stream<WhereFilter> visitOther(final WhereFilter filter) {
         if (filter instanceof WhereFilterDelegating) {
-            return withWrapped(filter, ((WhereFilterDelegating) filter).getWrappedFilter());
+            // A wrapper need not wrap anything; a wrapper with nothing inside contributes only itself.
+            final WhereFilter wrapped = ((WhereFilterDelegating) filter).getWrappedFilter();
+            if (wrapped != null) {
+                return withWrapped(filter, wrapped);
+            }
         }
         return Stream.of(filter);
     }

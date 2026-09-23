@@ -993,12 +993,12 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         @Override
         public void close() {
-            try {
+            // Closes in reverse order, each even if an earlier close fails: contexts, maybeMatch, then super.close().
+            try (final SafeCloseable ignoredSuper = super::close;
+                    final WritableRowSet ignoredMaybeMatch = maybeMatch) {
                 if (contexts != null) {
                     SafeCloseable.closeAll(contexts);
                 }
-            } finally {
-                super.close();
             }
         }
     }

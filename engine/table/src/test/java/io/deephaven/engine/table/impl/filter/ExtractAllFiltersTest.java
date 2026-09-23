@@ -58,4 +58,17 @@ public class ExtractAllFiltersTest {
             assertSame("filter " + ii, expected.get(ii), actual.get(ii));
         }
     }
+
+    /**
+     * A wrapper that wraps nothing, such as a {@link RowSetCapturingFilter} built with no filter, is streamed alone.
+     */
+    @Test
+    public void testWrapperWithoutWrappedFilter() {
+        final WhereFilter empty = new RowSetCapturingFilter();
+
+        final List<WhereFilter> actual = ExtractAllFilters.stream(empty).collect(Collectors.toList());
+
+        assertEquals(1, actual.size());
+        assertSame(empty, actual.get(0));
+    }
 }
