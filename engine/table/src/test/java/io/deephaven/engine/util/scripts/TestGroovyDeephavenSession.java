@@ -704,8 +704,8 @@ public class TestGroovyDeephavenSession {
 
         Table t1 = session.getQueryScope().readParamValue("t1");
         Table t2 = session.getQueryScope().readParamValue("t2");
-        final IllegalArgumentException iae =
-                assertThrows(IllegalArgumentException.class, () -> t1.join(t2, "Y=Y"));
+        final MismatchedJoinKeyException iae =
+                assertThrows(MismatchedJoinKeyException.class, () -> t1.join(t2, "Y=Y"));
         assertTrue(iae.getMessage().startsWith(
                 "Mismatched join types in Y=Y, but both sides have the same name 'io.deephaven.dynamic.Foo'. Was the class redefined or one side loaded from a different classloader?"));
     }
