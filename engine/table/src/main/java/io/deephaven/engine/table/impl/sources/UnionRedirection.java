@@ -216,7 +216,8 @@ public class UnionRedirection {
      */
     static long keySpaceFor(final long lastRowKey) {
         if (lastRowKey < 0) {
-            // Empty tables get one allocation unit, so that any row key can be binary searched to a slot.
+            // Every slot must own a non-empty key range: slot lookup binary searches strictly increasing first keys,
+            // and an empty table may later grow into its allocation.
             return ALLOCATION_UNIT_ROW_KEYS;
         }
         // The multiplication overflows above the quotient; the increment can only wrap when the unit is 1.

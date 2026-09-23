@@ -889,7 +889,7 @@ public class UnionSourceManager implements PushdownPredicateManager {
                         // Selected rows outside every pushdown constituent are "maybe" rows: those of constituents
                         // that cannot push down, and of any the context did not see when it was initialized.
                         try (final WritableRowSet uncovered = selection.minus(ctx.pushdownKeys)) {
-                            maybeMatch.insert(uncovered);
+                            maybeMatch.subsume(uncovered);
                         }
                         onComplete.accept(PushdownResult.of(selection, match, maybeMatch));
                     }
@@ -968,6 +968,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
             try (final ObjectColumnIterator<Table> constituents = usePrev
                     ? manager.prevConstituentIter(rowSetToUse)
                     : manager.currConstituentIter(rowSetToUse)) {
+                // Slots are visited in key order, so the pushdown ranges arrive ordered and non-overlapping.
+                final RowSetBuilderSequential pushdownKeysBuilder = RowSetFactory.builderSequential();
                 int slot = 0;
                 while (constituents.hasNext()) {
                     final Table constituent = constituents.next();
@@ -996,10 +998,13 @@ public class UnionSourceManager implements PushdownPredicateManager {
                             contexts.add(constituentContext);
                             firstRowKeys.add(firstKey);
                             lastRowKeys.add(lastKey);
-                            pushdownKeys.insertRange(firstKey, lastKey);
+                            pushdownKeysBuilder.appendRange(firstKey, lastKey);
                         }
                     }
                     ++slot;
+                }
+                try (final WritableRowSet built = pushdownKeysBuilder.build()) {
+                    pushdownKeys.subsume(built);
                 }
             }
         }

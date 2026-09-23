@@ -962,7 +962,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             final Consumer<Exception> onError) {
         final PushdownPredicateManager manager = pushdownManager();
         if (manager == null) {
-            super.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler, onComplete, onError);
+            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
             return;
         }
         manager.estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler, onComplete, onError);
@@ -980,7 +980,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             final Consumer<Exception> onError) {
         final PushdownPredicateManager manager = pushdownManager();
         if (manager == null) {
-            super.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler, onComplete, onError);
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
             return;
         }
         manager.pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler, onComplete, onError);
@@ -992,7 +992,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             final List<ColumnSource<?>> filterSources) {
         final PushdownPredicateManager manager = pushdownManager();
         if (manager == null) {
-            return super.makePushdownFilterContext(filter, filterSources);
+            return PushdownFilterContext.NO_PUSHDOWN_CONTEXT;
         }
         return manager.makePushdownFilterContext(filter, filterSources);
     }
