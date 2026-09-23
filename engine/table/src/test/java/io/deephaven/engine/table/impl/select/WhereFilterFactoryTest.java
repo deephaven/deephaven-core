@@ -557,4 +557,17 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         new FloatRangeFilter("V", 1.0f, 2.0f)
                 .init(TableDefinition.of(ColumnDefinition.fromGenericType("V", Float.class)));
     }
+
+    @Test
+    public void testRangeEndpointEqualToNullValue() {
+        // -Double.MAX_VALUE is NULL_DOUBLE, so the endpoint is null and nothing lies below it, -Infinity included
+        final Table table = TableTools.newTable(
+                TableTools.doubleCol("D", Double.NEGATIVE_INFINITY, -1.0,
+                        io.deephaven.util.QueryConstants.NULL_DOUBLE));
+        assertEquals(0, table.where(DoubleRangeFilter.lt("D", -Double.MAX_VALUE)).size());
+        QueryScope.addParam("minusMax", -Double.MAX_VALUE);
+        assertEquals(0, table.where("D < minusMax").size());
+        // an ordinary endpoint includes the null row, which sorts below every value
+        assertEquals(3, table.where(DoubleRangeFilter.lt("D", 0)).size());
+    }
 }

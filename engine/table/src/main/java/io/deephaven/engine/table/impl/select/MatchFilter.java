@@ -715,7 +715,6 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
                     @Override
                     Object convertParamValue(Object paramValue) {
                         if (paramValue instanceof String) {
-                            System.out.println("MatchFilter debug: Converting " + paramValue + " to CompressedString");
                             return new CompressedString((String) paramValue);
                         }
                         if (paramValue instanceof PyObject && ((PyObject) paramValue).isString()) {

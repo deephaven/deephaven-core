@@ -138,7 +138,6 @@ public class GeneratedFilterKernel implements io.deephaven.engine.table.impl.sel
             final double v2 =  (double)__columnChunk1.get(__my_i__);
             final boolean __newResult = "foo".equals((plus(plus(plus(p1, p2), v1), v2)) + p3);
             __results.set(__my_i__, __newResult);
-            __results.set(__my_i__, __newResult);
             // increment the count if the new result is TRUE
             __count += __newResult ? 1 : 0;
         }

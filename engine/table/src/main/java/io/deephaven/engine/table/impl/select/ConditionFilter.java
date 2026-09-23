@@ -673,7 +673,6 @@ public class ConditionFilter extends AbstractConditionFilter {
         indenter.indent(classBody, "" +
                 "final boolean __newResult = " + result.getConvertedExpression() + ";\n" +
                 "__results.set(__my_i__, __newResult);\n" +
-                "__results.set(__my_i__, __newResult);\n" +
                 "// increment the count if the new result is TRUE\n" +
                 "__count += __newResult ? 1 : 0;\n");
 

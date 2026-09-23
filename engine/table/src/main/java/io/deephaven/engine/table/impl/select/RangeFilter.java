@@ -40,6 +40,12 @@ import java.util.Optional;
  * <p>
  * A query-scope parameter is converted to the column's type as {@link MatchFilter} converts it; a value with no exact
  * equivalent in that type is evaluated as a {@link ConditionFilter} instead.
+ *
+ * <p>
+ * For primitive columns the endpoint is compared in Deephaven's type system, where each type's null value sorts below
+ * every other value. An endpoint equal to a null value -- {@code -Double.MAX_VALUE} is {@code NULL_DOUBLE}, and
+ * {@code Long.MIN_VALUE} is {@code NULL_LONG} -- is therefore null, so {@code X < -Double.MAX_VALUE} matches no rows at
+ * all, {@code -Infinity} included.
  */
 public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
