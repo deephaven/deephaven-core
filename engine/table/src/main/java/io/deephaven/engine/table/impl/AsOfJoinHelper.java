@@ -101,10 +101,25 @@ public class AsOfJoinHelper {
                     + ", right=" + rightStampType);
         }
 
-        final ColumnSource<?>[] leftSources = ReinterpretUtils.maybeConvertToPrimitive(originalLeftSources);
-        final ColumnSource<?>[] rightSources = ReinterpretUtils.maybeConvertToPrimitive(originalRightSources);
-        final ColumnSource<?> leftStampSource = ReinterpretUtils.maybeConvertToPrimitive(originalLeftStampSource);
-        final ColumnSource<?> rightStampSource = ReinterpretUtils.maybeConvertToPrimitive(originalRightStampSource);
+        // each pair of matched columns is reinterpreted to a primitive only when both sides can be, so that the two
+        // sides always share a representation
+        final ColumnSource<?>[] leftSources = new ColumnSource[keyColumnCount];
+        final ColumnSource<?>[] rightSources = new ColumnSource[keyColumnCount];
+        for (int ii = 0; ii < keyColumnCount; ++ii) {
+            final ColumnSource<?> leftConverted = ReinterpretUtils.maybeConvertToPrimitive(originalLeftSources[ii]);
+            final ColumnSource<?> rightConverted = ReinterpretUtils.maybeConvertToPrimitive(originalRightSources[ii]);
+            final boolean convertBoth =
+                    leftConverted != originalLeftSources[ii] && rightConverted != originalRightSources[ii];
+            leftSources[ii] = convertBoth ? leftConverted : originalLeftSources[ii];
+            rightSources[ii] = convertBoth ? rightConverted : originalRightSources[ii];
+        }
+
+        final ColumnSource<?> leftStampConverted = ReinterpretUtils.maybeConvertToPrimitive(originalLeftStampSource);
+        final ColumnSource<?> rightStampConverted = ReinterpretUtils.maybeConvertToPrimitive(originalRightStampSource);
+        final boolean convertStamps =
+                leftStampConverted != originalLeftStampSource && rightStampConverted != originalRightStampSource;
+        final ColumnSource<?> leftStampSource = convertStamps ? leftStampConverted : originalLeftStampSource;
+        final ColumnSource<?> rightStampSource = convertStamps ? rightStampConverted : originalRightStampSource;
 
         final WritableRowRedirection rowRedirection = JoinRowRedirection.makeRowRedirection(control, leftTable);
         if (keyColumnCount == 0) {
