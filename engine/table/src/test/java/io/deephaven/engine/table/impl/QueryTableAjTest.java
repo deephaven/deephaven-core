@@ -172,6 +172,38 @@ public class QueryTableAjTest {
     }
 
     /**
+     * When several right rows share the closest stamp, aj matches the last of them and raj the first, whether the
+     * tables are static or refreshing and whether or not there are exact match keys.
+     */
+    @Test
+    public void testAjDuplicateRightStampTieBreak() {
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            for (final boolean rightRefreshing : new boolean[] {false, true}) {
+                final QueryTable left = leftRefreshing
+                        ? testRefreshingTable(i(0, 1).toTracking(), col("Key", "A", "B"), intCol("LeftStamp", 5, 5))
+                        : testTable(i(0, 1).toTracking(), col("Key", "A", "B"), intCol("LeftStamp", 5, 5));
+                final ColumnHolder<?>[] rightColumns = new ColumnHolder<?>[] {
+                        col("Key", "A", "A", "A", "B", "B", "B"),
+                        intCol("RightStamp", 5, 5, 5, 5, 5, 5),
+                        intCol("Sentinel", 1, 2, 3, 4, 5, 6)};
+                final QueryTable right = rightRefreshing
+                        ? testRefreshingTable(i(0, 1, 2, 3, 4, 5).toTracking(), rightColumns)
+                        : testTable(i(0, 1, 2, 3, 4, 5).toTracking(), rightColumns);
+                final String context = "leftRefreshing=" + leftRefreshing + ", rightRefreshing=" + rightRefreshing;
+
+                Asserts.assertEquals(context, new int[] {6, 6},
+                        intColumn(left.aj(right, "LeftStamp>=RightStamp", "Sentinel"), "Sentinel"));
+                Asserts.assertEquals(context, new int[] {1, 1},
+                        intColumn(left.raj(right, "LeftStamp<=RightStamp", "Sentinel"), "Sentinel"));
+                Asserts.assertEquals(context, new int[] {3, 6},
+                        intColumn(left.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel"), "Sentinel"));
+                Asserts.assertEquals(context, new int[] {1, 4},
+                        intColumn(left.raj(right, "Key,LeftStamp<=RightStamp", "Sentinel"), "Sentinel"));
+            }
+        }
+    }
+
+    /**
      * A data index on either side of a keyed as-of join supplies key columns in the same representation as the table
      * sources, even when a nanosecond-backed ZonedDateTime key meets an object-backed one.
      */
