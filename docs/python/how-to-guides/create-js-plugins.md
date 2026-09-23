@@ -113,20 +113,22 @@ setup(package_data={"my_plugin.js": ["**"]})
 
 ### Plugin types
 
-The JS plugin's entry point must have a default export that the Deephaven web UI can load. The default export is a plugin object that tells the web UI what kind of plugin it is and which React components to use.
+A JS plugin's entry point should have a default export that the Deephaven web UI can load. The default export is a plugin object that tells the web UI what kind of plugin it is and which React components to use.
+
+The web UI also still loads older plugins that use the deprecated named exports `DashboardPlugin`, `AuthPlugin`, or `TablePlugin` instead of a default export. New plugins should use a default export.
 
 Every plugin object has a `name` and a `type`. The `name` identifies the plugin and must be unique. The `type` is one of the values in `PluginType` from the `@deephaven/plugin` package, and it determines which other properties the web UI expects. For the full set of properties each type accepts, see [`PluginTypes.ts`](https://github.com/deephaven/web-client-ui/blob/main/packages/plugin/src/PluginTypes.ts) in the web-client-ui repository.
 
-| Type                           | Purpose                                                                                                                                                 |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PluginType.ELEMENT_PLUGIN`    | Maps custom element names to React components for [`deephaven.ui`](./deephaven-ui.md).                                                                   |
+| Type                           | Purpose                                                                                                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PluginType.ELEMENT_PLUGIN`    | Maps custom element names to React components for [`deephaven.ui`](./deephaven-ui.md).                                                                 |
 | `PluginType.WIDGET_PLUGIN`     | Renders a server-side object in a panel. The `supportedTypes` property lists the server object types the plugin handles, and `component` renders them. |
-| `PluginType.DASHBOARD_PLUGIN`  | Mounts a `component` once per dashboard. Use it to register custom panel types or respond to dashboard events.                                          |
-| `PluginType.TABLE_PLUGIN`      | Adds a custom `component` to table panels.                                                                                                               |
-| `PluginType.THEME_PLUGIN`      | Provides one or more custom `themes`. See [Custom themes](./custom-themes.md).                                                                            |
-| `PluginType.AUTH_PLUGIN`       | Adds a login method to the web UI.                                                                                                                       |
-| `PluginType.MIDDLEWARE_PLUGIN` | Wraps the component of a widget plugin to add behavior without replacing it. Requires Community Core 41.7 or later (web UI 1.19.0 or later).             |
-| `PluginType.MULTI_PLUGIN`      | Bundles several of the plugins above into one package. See [Register multiple plugins from one package](#register-multiple-plugins-from-one-package).   |
+| `PluginType.DASHBOARD_PLUGIN`  | Mounts a `component` once per dashboard. Use it to register custom panel types or respond to dashboard events.                                         |
+| `PluginType.TABLE_PLUGIN`      | Adds a custom `component` to table panels.                                                                                                             |
+| `PluginType.THEME_PLUGIN`      | Provides one or more custom `themes`. See [Custom themes](./custom-themes.md).                                                                         |
+| `PluginType.AUTH_PLUGIN`       | Adds a login method to the web UI.                                                                                                                     |
+| `PluginType.MIDDLEWARE_PLUGIN` | Wraps the component of a widget plugin to add behavior without replacing it. Requires Community Core 41.7 or later (web UI 1.19.0 or later).           |
+| `PluginType.MULTI_PLUGIN`      | Bundles several of the plugins above into one package. See [Register multiple plugins from one package](#register-multiple-plugins-from-one-package).  |
 
 The following `src/js/src/index.tsx` exports an element plugin, which is what the `element` cookiecutter template generates. Each key in `mapping` is an element name that a `deephaven.ui` component on the server refers to, and each value is the React component that renders it:
 
@@ -145,11 +147,11 @@ const MyElementPlugin: ElementPlugin = {
 export default MyElementPlugin;
 ```
 
-A widget plugin instead renders a server-side object directly. Its `supportedTypes` value must match the name of an object type that a server-side plugin registers. A widget plugin does nothing on its own; the Python package must also register a matching object type. See [Create your own plugin](./create-plugins.md) for how to register object types on the server. The following `src/js/src/MyWidgetPlugin.tsx` defines a widget plugin:
+A widget plugin instead renders a server-side object directly. Its `supportedTypes` value must match the name of an object type registered on the server. The object type can come from any server plugin, in Python or Java, not just from the same package as the JS plugin. If no plugin on the server registers a matching object type, the widget plugin never renders anything. See [Create your own plugin](./create-plugins.md) for how to register an object type. The following `src/js/src/MyWidgetPlugin.tsx` defines a widget plugin:
 
 ```typescript
-import { type WidgetPlugin, PluginType } from "@deephaven/plugin";
 import { vsGraph } from "@deephaven/icons";
+import { PluginType, type WidgetPlugin } from "@deephaven/plugin";
 import { MyWidget } from "./MyWidget";
 
 export const MyWidgetPlugin: WidgetPlugin = {
@@ -251,11 +253,15 @@ A `MultiPlugin` is useful when a package needs to:
 The following `src/js/src/index.tsx` registers a widget plugin and a dashboard plugin from the same package. It imports the widget plugin from the `MyWidgetPlugin.tsx` file shown in [Plugin types](#plugin-types), and makes the `MultiPlugin`, rather than the widget plugin, the default export. This is the pattern the official [`plotly-express`](https://github.com/deephaven/deephaven-plugins/blob/main/plugins/plotly-express/src/js/src/index.ts) plugin uses:
 
 ```typescript
-import { type MultiPlugin, PluginType } from "@deephaven/plugin";
-import { MyWidgetPlugin } from "./MyWidgetPlugin";
+import {
+  type DashboardPlugin,
+  type MultiPlugin,
+  PluginType,
+} from "@deephaven/plugin";
 import { MyDashboardPlugin } from "./MyDashboardPlugin";
+import { MyWidgetPlugin } from "./MyWidgetPlugin";
 
-const MyPluginDashboardPlugin = {
+const MyPluginDashboardPlugin: DashboardPlugin = {
   name: "@my-org/my-plugin.DashboardPlugin",
   type: PluginType.DASHBOARD_PLUGIN,
   component: MyDashboardPlugin,
@@ -272,7 +278,7 @@ export default MyMultiPlugin;
 
 Keep the following rules in mind:
 
-- Give every plugin in the `plugins` array a unique, non-empty `name`. A common convention is to append a suffix to the package name, such as `@my-org/my-plugin.DashboardPlugin`. The web UI skips inner plugins that have no name or that aren't valid plugin objects, and logs a warning to the browser console.
+- Give every plugin in the `plugins` array a unique, non-empty `name`. A common convention is to append a suffix to the package name, such as `@my-org/my-plugin.DashboardPlugin`. In Community Core 41.7 and later (web UI 1.19.0 and later), the web UI skips inner plugins that have no name or that aren't valid plugin objects, and logs a warning to the browser console. Earlier versions register every entry without checking it, so an invalid entry isn't reported.
 - Don't nest a `MultiPlugin` inside another `MultiPlugin`. Nesting isn't supported.
 - The Python registration doesn't change. The `JsPlugin` class still points to a single `main` file. The `MultiPlugin` is only the default export of that file.
 
