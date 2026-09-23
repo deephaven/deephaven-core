@@ -14,20 +14,23 @@ import io.deephaven.chunk.sized.SizedChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
-class ChunkedAjUtils {
+public class ChunkedAjUtils {
     static void bothIncrementalLeftSsaShift(RowSetShiftData shiftData, SegmentedSortedArray leftSsa,
             RowSet restampRemovals, QueryTable table,
             int nodeSize, ColumnSource<?> stampSource) {
         final ChunkType stampChunkType = stampSource.getChunkType();
         final SortingOrder sortOrder = leftSsa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending;
 
-        try (final RowSet fullPrevRowSet = table.getRowSet().copyPrev();
-                final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
+        final RowSet prevRowSet = table.getRowSet().prev();
+        try (final RowSet relevantShiftedRows = relevantShiftedRows(shiftData, prevRowSet, restampRemovals);
                 final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                         new SizedSafeCloseable<>(stampSource::makeFillContext);
                 final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
@@ -38,7 +41,7 @@ class ChunkedAjUtils {
             final RowSetShiftData.Iterator sit = shiftData.applyIterator();
             while (sit.hasNext()) {
                 sit.next();
-                final RowSet rowSetToShift = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
+                final RowSet rowSetToShift = relevantShiftedRows.subSetByKeyRange(sit.beginRange(), sit.endRange());
                 if (rowSetToShift.isEmpty()) {
                     rowSetToShift.close();
                     continue;
@@ -81,5 +84,53 @@ class ChunkedAjUtils {
                 }
             }
         }
+    }
+
+    /**
+     * Returns the rows of {@code prevRowSet} that fall within a range of {@code shifted}, excluding
+     * {@code restampRemovals}. The result is proportional to the shifted rows and the removals rather than to the whole
+     * table.
+     *
+     * @param shifted the upstream shift data
+     * @param prevRowSet the table's row set in the previous (pre-shift) key space
+     * @param restampRemovals rows already removed from the SSA this cycle, in the previous key space
+     * @return the rows that must be shifted within the SSA
+     */
+    public static WritableRowSet relevantShiftedRows(RowSetShiftData shifted, RowSet prevRowSet,
+            RowSet restampRemovals) {
+        final RowSetBuilderSequential relevantShiftKeys = RowSetFactory.builderSequential();
+
+        try (final RowSet.RangeIterator it = prevRowSet.rangeIterator()) {
+            for (int ii = 0; ii < shifted.size(); ++ii) {
+                final long beginRange = shifted.getBeginRange(ii);
+                final long endRange = shifted.getEndRange(ii);
+                if (!it.advance(beginRange)) {
+                    break;
+                }
+                if (it.currentRangeStart() > endRange) {
+                    continue;
+                }
+
+                while (true) {
+                    final long startOfNewRange = Math.max(it.currentRangeStart(), beginRange);
+                    final long endOfNewRange = Math.min(it.currentRangeEnd(), endRange);
+                    relevantShiftKeys.appendRange(startOfNewRange, endOfNewRange);
+                    if (it.currentRangeEnd() < endRange) {
+                        if (!it.hasNext())
+                            break;
+                        it.next();
+                        if (it.currentRangeStart() > endRange) {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        final WritableRowSet relevantShiftedRows = relevantShiftKeys.build();
+        relevantShiftedRows.remove(restampRemovals);
+        return relevantShiftedRows;
     }
 }

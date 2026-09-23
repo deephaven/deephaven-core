@@ -238,11 +238,12 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 final RowSetShiftData leftShifted = leftRecorder.getShifted();
                 if (leftShifted.nonempty()) {
 
-                    try (final RowSet fullPrevRowSet = leftTable.getRowSet().copyPrev();
-                            final RowSet previousToShift = fullPrevRowSet.minus(leftRestampRemovals);
-                            final RowSet relevantShift = getRelevantShifts(leftShifted, previousToShift)) {
-                        // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
-                        rowRedirection.applyShift(previousToShift, leftShifted);
+                    final RowSet prevRowSet = leftTable.getRowSet().prev();
+                    try (final RowSet relevantShift =
+                            ChunkedAjUtils.relevantShiftedRows(leftShifted, prevRowSet, leftRestampRemovals)) {
+                        // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp; every
+                        // left row that still holds a redirection and lies in a shifted range is in relevantShift
+                        rowRedirection.applyShift(relevantShift, leftShifted);
 
                         if (relevantShift.isNonempty()) {
                             try (final SizedSafeCloseable<ColumnSource.FillContext> leftShiftFillContext =
@@ -373,9 +374,10 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 final RowSetShiftData rightShifted = rightRecorder.getShifted();
 
                 if (rightShifted.nonempty()) {
-                    try (final RowSet fullPrevRowSet = rightTable.getRowSet().copyPrev();
-                            final RowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
-                            final RowSet relevantShift = getRelevantShifts(rightShifted, previousToShift)) {
+                    final RowSet prevRowSet = rightTable.getRowSet().prev();
+                    try (final RowSet relevantShift =
+                            ChunkedAjUtils.relevantShiftedRows(rightShifted, prevRowSet,
+                                    rightRestampRemovals)) {
 
                         if (relevantShift.isNonempty()) {
                             try (final SizedSafeCloseable<ColumnSource.FillContext> rightShiftFillContext =
@@ -782,40 +784,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
         result.notifyListeners(downstream);
     }
 
-    private RowSet getRelevantShifts(RowSetShiftData shifted, RowSet previousToShift) {
-        final RowSetBuilderSequential relevantShiftKeys = RowSetFactory.builderSequential();
-
-        try (final RowSet.RangeIterator it = previousToShift.rangeIterator()) {
-            for (int ii = 0; ii < shifted.size(); ++ii) {
-                final long beginRange = shifted.getBeginRange(ii);
-                final long endRange = shifted.getEndRange(ii);
-                if (!it.advance(beginRange)) {
-                    break;
-                }
-                if (it.currentRangeStart() > endRange) {
-                    continue;
-                }
-
-                while (true) {
-                    final long startOfNewRange = Math.max(it.currentRangeStart(), beginRange);
-                    final long endOfNewRange = Math.min(it.currentRangeEnd(), endRange);
-                    relevantShiftKeys.appendRange(startOfNewRange, endOfNewRange);
-                    if (it.currentRangeEnd() < endRange) {
-                        if (!it.hasNext())
-                            break;
-                        it.next();
-                        if (it.currentRangeStart() > endRange) {
-                            break;
-                        }
-                    } else {
-                        break;
-                    }
-                }
-            }
-        }
-
-        return relevantShiftKeys.build();
-    }
 
     private RowSet indexFromBuilder(int slotIndex) {
         final RowSet rowSet = sequentialBuilders.get(slotIndex).build();

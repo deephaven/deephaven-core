@@ -185,9 +185,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                 final RowSetShiftData leftShifted = leftRecorder.getShifted();
                 if (leftShifted.nonempty()) {
                     // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
-                    try (final RowSet prevRowSet = leftTable.getRowSet().copyPrev()) {
-                        rowRedirection.applyShift(prevRowSet, leftShifted);
-                    }
+                    rowRedirection.applyShift(leftTable.getRowSet().prev(), leftShifted);
                     ChunkedAjUtils.bothIncrementalLeftSsaShift(leftShifted, leftSsa, leftRestampRemovals, leftTable,
                             cycleLeftChunkSize, leftStampSource);
                 }
@@ -242,8 +240,9 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
                     final RowSetShiftData rightShifted = rightRecorder.getShifted();
                     if (rightShifted.nonempty()) {
-                        try (final RowSet fullPrevRowSet = rightTable.getRowSet().copyPrev();
-                                final RowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
+                        final RowSet prevRowSet = rightTable.getRowSet().prev();
+                        try (final RowSet relevantShiftedRows = ChunkedAjUtils.relevantShiftedRows(rightShifted,
+                                prevRowSet, rightRestampRemovals);
                                 final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                                         new SizedSafeCloseable<>(rightStampSource::makeFillContext);
                                 final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
@@ -255,7 +254,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                             while (sit.hasNext()) {
                                 sit.next();
                                 final RowSet rowSetToShift =
-                                        previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
+                                        relevantShiftedRows.subSetByKeyRange(sit.beginRange(), sit.endRange());
                                 if (rowSetToShift.isEmpty()) {
                                     rowSetToShift.close();
                                     continue;

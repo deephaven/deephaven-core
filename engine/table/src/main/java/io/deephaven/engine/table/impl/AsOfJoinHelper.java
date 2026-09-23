@@ -14,6 +14,7 @@ import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.asofjoin.ChunkedAjUtils;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
@@ -300,9 +301,7 @@ public class AsOfJoinHelper {
                     restampKeys = upstream.added();
                 }
 
-                try (final RowSet prevLeftRowSet = leftTable.getRowSet().copyPrev()) {
-                    rowRedirection.applyShift(prevLeftRowSet, upstream.shifted());
-                }
+                rowRedirection.applyShift(leftTable.getRowSet().prev(), upstream.shifted());
 
                 if (restampKeys.isNonempty()) {
                     final RowSetBuilderRandom foundBuilder = RowSetFactory.builderRandom();
@@ -718,9 +717,10 @@ public class AsOfJoinHelper {
 
                 // After all the removals are done, we do the shifts
                 if (upstream.shifted().nonempty()) {
-                    try (final RowSet fullPrevRowSet = rightTable.getRowSet().copyPrev();
-                            final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals)) {
-                        if (previousToShift.isNonempty()) {
+                    final RowSet prevRowSet = rightTable.getRowSet().prev();
+                    try (final RowSet relevantShiftedRows = ChunkedAjUtils.relevantShiftedRows(upstream.shifted(),
+                            prevRowSet, restampRemovals)) {
+                        if (relevantShiftedRows.isNonempty()) {
                             try (final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                     ResettableWritableLongChunk.makeResettableChunk();
                                     final ResettableWritableChunk<Values> leftValuesChunk =
@@ -729,7 +729,7 @@ public class AsOfJoinHelper {
                                 while (sit.hasNext()) {
                                     sit.next();
                                     final RowSet rowSetToShift =
-                                            previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
+                                            relevantShiftedRows.subSetByKeyRange(sit.beginRange(), sit.endRange());
                                     if (rowSetToShift.isEmpty()) {
                                         rowSetToShift.close();
                                         continue;
@@ -1467,8 +1467,9 @@ public class AsOfJoinHelper {
             WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
             WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
 
-        try (final RowSet fullPrevRowSet = table.getRowSet().copyPrev();
-                final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
+        final RowSet prevRowSet = table.getRowSet().prev();
+        try (final RowSet relevantShiftedRows =
+                ChunkedAjUtils.relevantShiftedRows(shiftData, prevRowSet, restampRemovals);
                 final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                         new SizedSafeCloseable<>(stampSource::makeFillContext);
                 final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
@@ -1480,7 +1481,8 @@ public class AsOfJoinHelper {
             final RowSetShiftData.Iterator sit = shiftData.applyIterator();
             while (sit.hasNext()) {
                 sit.next();
-                try (final RowSet rowSetToShift = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
+                try (final RowSet rowSetToShift =
+                        relevantShiftedRows.subSetByKeyRange(sit.beginRange(), sit.endRange())) {
                     if (rowSetToShift.isEmpty()) {
                         continue;
                     }
@@ -1604,9 +1606,7 @@ public class AsOfJoinHelper {
                                         restampKeys = upstream.added();
                                     }
 
-                                    try (final RowSet prevLeftRowSet = leftTable.getRowSet().copyPrev()) {
-                                        rowRedirection.applyShift(prevLeftRowSet, upstream.shifted());
-                                    }
+                                    rowRedirection.applyShift(leftTable.getRowSet().prev(), upstream.shifted());
 
                                     try (final AsOfStampContext stampContext =
                                             new AsOfStampContext(order, disallowExactMatch, leftStampSource,
