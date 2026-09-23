@@ -717,6 +717,11 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
          * message-ordering invariants that a lenient reader would otherwise paper over.
          */
         final List<Byte> observedHeaderTypes = new ArrayList<>();
+        /**
+         * Every error the producer has sent this subscriber. Recorded because the producer delivers errors through
+         * {@code GrpcUtil.safelyError}, which swallows what {@link #onError} throws.
+         */
+        final List<Throwable> errors = new ArrayList<>();
 
         DummyObserver(final BarrageDataMarshaller marshaller, final Queue<BarrageMessage> receivedCommands) {
             this.marshaller = marshaller;
@@ -766,6 +771,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
 
         @Override
         public void onError(final Throwable throwable) {
+            errors.add(throwable);
             throw new IllegalStateException(throwable);
         }
 

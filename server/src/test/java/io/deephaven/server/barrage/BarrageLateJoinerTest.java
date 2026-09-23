@@ -19,6 +19,9 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.mutable.MutableInt;
+import io.grpc.StatusRuntimeException;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -340,12 +343,18 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * message either way.
      */
     private static int pendingDeltaCount(final BarrageMessageProducer producer) {
+        synchronized (producer) {
+            return pendingDeltas(producer).size();
+        }
+    }
+
+    /** The producer's pending queue itself, read reflectively; the caller must hold the producer's monitor. */
+    @SuppressWarnings("unchecked")
+    private static List<BarrageMessageDelta> pendingDeltas(final BarrageMessageProducer producer) {
         try {
             final Field field = BarrageMessageProducer.class.getDeclaredField("pendingDeltas");
             field.setAccessible(true);
-            synchronized (producer) {
-                return ((List<?>) field.get(producer)).size();
-            }
+            return (List<BarrageMessageDelta>) field.get(producer);
         } catch (final ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
@@ -584,6 +593,98 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
 
         flushClients(nugget);
         nugget.validate("after joining during a snapshot");
+    }
+
+    /**
+     * A failure while the producer propagates is terminal for every subscription it has: each subscriber is told once,
+     * the queued deltas are released, and the producer is left serving no one. The failure here is a snapshot that
+     * throws, injected through the producer's snapshot hook. The producer stays attached to its table, so a subscriber
+     * that joins afterwards is served by the same producer, and its bookkeeping must say it had no subscriptions: a
+     * stale full-subscription count would record rows outside the newcomer's viewport, and a stale growing count would
+     * leave the propagation job taking snapshots for no one, forever.
+     */
+    @Test
+    public void testFailedPropagationFailsEverySubscriber() {
+        final QueryTable sourceTable = newSourceTable();
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final BarrageMessageProducer producer = nugget.barrageMessageProducer;
+
+        final RemoteClient existingClient = nugget.newClient(null, allColumns(), "existing-full");
+        flushProducerTable();
+        flushClients(nugget);
+        nugget.validate("existing subscription satisfied");
+
+        // Armed, the hook throws on the next snapshot; otherwise it permits snapshotsAllowed more and fails the test on
+        // any beyond them. It runs before the snapshot is built, so the injected failure leaves no message behind.
+        final MutableBoolean failNextSnapshot = new MutableBoolean(false);
+        final MutableInt snapshotsAllowed = new MutableInt(Integer.MAX_VALUE);
+        producer.setOnGetSnapshot(() -> {
+            if (failNextSnapshot.isTrue()) {
+                failNextSnapshot.setFalse();
+                throw new IllegalStateException("injected snapshot failure");
+            }
+            if (snapshotsAllowed.addAndGet(-1) < 0) {
+                // an Error, so that the propagation job's catch of Exception cannot turn it into another failure
+                throw new AssertionError("the producer took a snapshot no subscription asked for");
+            }
+        }, true);
+
+        // With an update interval gone by, the first delta schedules the propagation job immediately, and the
+        // newcomer's subscription joins that same run rather than queuing another. So the run that fails is the only
+        // one scheduled, and if the failure left the queue alone, nothing would ever drain it.
+        scheduler.runUntil(scheduler.timeAfterMs(UPDATE_INTERVAL));
+        queueDeltas(sourceTable, 3, TABLE_SIZE / 2);
+        assertEquals("deltas queued for the existing subscriber", 3, pendingDeltaCount(producer));
+
+        failNextSnapshot.setTrue();
+        final RemoteClient failedClient = nugget.newClient(null, allColumns(), "late-full");
+        flushProducerTable();
+        assertFalse("the newcomer's snapshot should have failed", failNextSnapshot.booleanValue());
+
+        assertOneError("existing-full", existingClient);
+        assertOneError("late-full", failedClient);
+        assertEquals("the failure should release the queued deltas", 0, pendingDeltaCount(producer));
+        final int existingMessages = existingClient.pendingMessageCount();
+        final int failedMessages = failedClient.pendingMessageCount();
+
+        queueDeltas(sourceTable, 2, TABLE_SIZE);
+        assertEquals("nothing is recorded with no subscribers", 0, pendingDeltaCount(producer));
+
+        // exactly one snapshot, the newcomer's; the hook fails the flush if the producer keeps going
+        snapshotsAllowed.set(1);
+        final RemoteClient rejoinedClient;
+        try (final RowSet viewport = RowSetFactory.fromRange(0, 9)) {
+            rejoinedClient = nugget.newClient(viewport.copy(), allColumns(), "rejoined-viewport");
+        }
+        flushProducerTable();
+        assertSnapshotFirst("rejoined-viewport", rejoinedClient);
+
+        queueDeltas(sourceTable, 1, TABLE_SIZE);
+        synchronized (producer) {
+            final List<BarrageMessageDelta> deltas = pendingDeltas(producer);
+            assertEquals("one delta per cycle", 1, deltas.size());
+            assertEquals("with only a viewport subscribed, only the viewport's rows are recorded",
+                    10, deltas.get(0).recordedMods.size());
+        }
+        flushProducerTable();
+
+        assertEquals("existing-full should receive nothing after failing", existingMessages,
+                existingClient.pendingMessageCount());
+        assertEquals("late-full should receive nothing after failing", failedMessages,
+                failedClient.pendingMessageCount());
+        assertOneError("existing-full", existingClient);
+        assertOneError("late-full", failedClient);
+
+        rejoinedClient.flushEventsToReplicatedTable();
+        updateGraph().runWithinUnitTestCycle(updateSourceCombiner::run);
+        rejoinedClient.validate("after rejoining a failed producer", sourceTable);
+    }
+
+    private static void assertOneError(final String label, final RemoteClient client) {
+        final List<Throwable> errors = client.dummyObserver.errors;
+        assertEquals(label + ": expected exactly one error, got " + errors, 1, errors.size());
+        assertTrue(label + ": expected a gRPC status, got " + errors.get(0),
+                errors.get(0) instanceof StatusRuntimeException);
     }
 
     /**
