@@ -74,26 +74,37 @@ public class AsOfJoinHelper {
 
         final ColumnSource<?>[] originalLeftSources = Arrays.stream(columnsToMatch).limit(keyColumnCount)
                 .map(mp -> leftTable.getColumnSource(mp.leftColumn)).toArray(ColumnSource[]::new);
-        final ColumnSource<?>[] leftSources = new ColumnSource[originalLeftSources.length];
-        for (int ii = 0; ii < leftSources.length; ++ii) {
-            leftSources[ii] = ReinterpretUtils.maybeConvertToPrimitive(originalLeftSources[ii]);
-        }
         final ColumnSource<?>[] originalRightSources = Arrays.stream(columnsToMatch).limit(keyColumnCount)
                 .map(mp -> rightTable.getColumnSource(mp.rightColumn)).toArray(ColumnSource[]::new);
-        final ColumnSource<?>[] rightSources = new ColumnSource[originalLeftSources.length];
-        for (int ii = 0; ii < leftSources.length; ++ii) {
-            rightSources[ii] = ReinterpretUtils.maybeConvertToPrimitive(originalRightSources[ii]);
+        for (int ii = 0; ii < keyColumnCount; ++ii) {
+            final Class<?> leftType = originalLeftSources[ii].getType();
+            final Class<?> rightType = originalRightSources[ii].getType();
+            if (leftType != rightType) {
+                if (leftType.getName().equals(rightType.getName())) {
+                    // identical names would print the same type twice, so report where each side's class came from
+                    throw new IllegalArgumentException("Mismatched join types in " + columnsToMatch[ii]
+                            + ", but both sides have the same name '" + leftType.getName()
+                            + "'. Was the class redefined or one side loaded from a different classloader? Left type classloader: "
+                            + leftType.getClassLoader() + ", right type classloader: " + rightType.getClassLoader());
+                }
+                throw new IllegalArgumentException(
+                        "Mismatched join types, " + columnsToMatch[ii] + ": " + leftType + " != " + rightType);
+            }
         }
 
-        final ColumnSource<?> leftStampSource =
-                ReinterpretUtils.maybeConvertToPrimitive(leftTable.getColumnSource(stampPair.leftColumn()));
+        final ColumnSource<?> originalLeftStampSource = leftTable.getColumnSource(stampPair.leftColumn());
         final ColumnSource<?> originalRightStampSource = rightTable.getColumnSource(stampPair.rightColumn());
-        final ColumnSource<?> rightStampSource = ReinterpretUtils.maybeConvertToPrimitive(originalRightStampSource);
-
-        if (leftStampSource.getType() != rightStampSource.getType()) {
-            throw new IllegalArgumentException("Can not aj() with different stamp types: left="
-                    + leftStampSource.getType() + ", right=" + rightStampSource.getType());
+        final Class<?> leftStampType = originalLeftStampSource.getType();
+        final Class<?> rightStampType = originalRightStampSource.getType();
+        if (leftStampType != rightStampType) {
+            throw new IllegalArgumentException("Can not aj() with different stamp types: left=" + leftStampType
+                    + ", right=" + rightStampType);
         }
+
+        final ColumnSource<?>[] leftSources = ReinterpretUtils.maybeConvertToPrimitive(originalLeftSources);
+        final ColumnSource<?>[] rightSources = ReinterpretUtils.maybeConvertToPrimitive(originalRightSources);
+        final ColumnSource<?> leftStampSource = ReinterpretUtils.maybeConvertToPrimitive(originalLeftStampSource);
+        final ColumnSource<?> rightStampSource = ReinterpretUtils.maybeConvertToPrimitive(originalRightStampSource);
 
         final WritableRowRedirection rowRedirection = JoinRowRedirection.makeRowRedirection(control, leftTable);
         if (keyColumnCount == 0) {

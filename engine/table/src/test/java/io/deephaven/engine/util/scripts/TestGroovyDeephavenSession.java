@@ -709,6 +709,28 @@ public class TestGroovyDeephavenSession {
                 "Mismatched join types in Y=Y, but both sides have the same name 'io.deephaven.dynamic.Foo'. Was the class redefined or one side loaded from a different classloader?"));
     }
 
+    // This test is here rather than in engine-table because we need to have bytecode available in the classpath
+    // in order for the query compiler to reference it
+    @Test
+    public void testAjOfSameNamedTypeFromDifferentClassloader() {
+        ScriptSession.Changes c = session.evaluateScript(
+                "class Foo {}\n" +
+                        "t1 = emptyTable(1).updateView(\"Y = new io.deephaven.dynamic.Foo()\", \"S = ii\")\n");
+        c.throwIfError();
+
+        c = session.evaluateScript(
+                "class Foo {}\n" +
+                        "t2 = emptyTable(1).updateView(\"Y = new io.deephaven.dynamic.Foo()\", \"S = ii\")\n");
+        c.throwIfError();
+
+        Table t1 = session.getQueryScope().readParamValue("t1");
+        Table t2 = session.getQueryScope().readParamValue("t2");
+        final IllegalArgumentException iae =
+                assertThrows(IllegalArgumentException.class, () -> t1.aj(t2, "Y,S>=S"));
+        assertTrue(iae.getMessage().startsWith(
+                "Mismatched join types in Y=Y, but both sides have the same name 'io.deephaven.dynamic.Foo'. Was the class redefined or one side loaded from a different classloader?"));
+    }
+
     @Test
     public void testStaticImportsFromGroovyClass() {
         ScriptSession.Changes c = session.evaluateScript("class MyClass {" +
