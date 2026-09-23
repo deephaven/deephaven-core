@@ -523,6 +523,7 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
      * initialized failover. The copy is marked initialized, so its own init() is a no-op; without the failover it would
      * match on the null values the failed conversion left behind.
      */
+    @Test
     public void testCopyOfInitializedFailoverMatchFilter() {
         final Table t = TableTools.emptyTable(10).update("A = (int) (ii % 3)");
         for (final String expression : List.of("A == ii", "A != ii")) {
