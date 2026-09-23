@@ -1828,14 +1828,29 @@ public abstract class QueryTableWhereTest {
      * the even source rows.
      */
     private void assertVirtualRowVariableDisjunctionNotPushedDown(final UnaryOperator<Filter> wrapper) {
-        final Filter filter = wrapper.apply(Filter.or(RawString.of("A = 1"), RawString.of("ii % 2 == 0")));
+        assertIndexedWhereMatchesUnindexed(
+                wrapper.apply(Filter.or(RawString.of("A = 1"), RawString.of("ii % 2 == 0"))));
+    }
 
+    /**
+     * Returns a fresh {@link #makeVirtualRowVariableTable()} with a cached data index on {@code A}. where() only uses
+     * fully-populated indexes (WhereListener.extractFilterDataIndexMap checks tableIsCached()), so the index table is
+     * materialized; otherwise the table would take the plain filtering path.
+     */
+    private static QueryTable makeIndexedVirtualRowVariableTable() {
         final QueryTable indexedTable = makeVirtualRowVariableTable();
-        // where() only uses fully-populated indexes (WhereListener.extractFilterDataIndexMap checks tableIsCached()),
-        // so materialize the index table; otherwise both sides take the plain filtering path.
         final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(indexedTable, "A");
         dataIndex.table();
         assertTrue("the data index must be cached for where() to consider it", dataIndex.tableIsCached());
+        return indexedTable;
+    }
+
+    /**
+     * Runs {@code filter} against an indexed {@link #makeVirtualRowVariableTable()} and against an unindexed oracle,
+     * and requires the two to agree.
+     */
+    private void assertIndexedWhereMatchesUnindexed(final Filter filter) {
+        final QueryTable indexedTable = makeIndexedVirtualRowVariableTable();
 
         // Pin the flag on both sides so the comparison holds whatever the test JVM's configured default is; tearDown
         // restores it.
@@ -1863,6 +1878,101 @@ public abstract class QueryTableWhereTest {
     @Test
     public void testBarrierWrappedVirtualRowVariableDisjunctionNotPushedDownToDataIndex() {
         assertVirtualRowVariableDisjunctionNotPushedDown(f -> f.withDeclaredBarriers("VIRTUAL_ROW_VARIABLE_BARRIER"));
+    }
+
+    /**
+     * {@code A >= ii} parses to a {@link RangeFilter} whose value cannot be converted, so it falls back to a
+     * {@link ConditionFilter} that uses {@code ii}. The {@link RangeFilter} must report that, or it is pushed down to
+     * the data index and {@code ii} selects index-table positions: every {@code A} group passes instead of the three
+     * source rows where {@code A >= ii}.
+     */
+    @Test
+    public void testRangeFilterWithVirtualRowVariableNotPushedDownToDataIndex() {
+        final WhereFilter filter = WhereFilter.of(RawString.of("A >= ii"));
+        filter.init(makeVirtualRowVariableTable().getDefinition());
+        assertTrue("sanity: parses to a RangeFilter, was " + filter.getClass(), filter instanceof RangeFilter);
+        assertTrue("sanity: falls back to a ConditionFilter",
+                ((RangeFilter) filter).getRealFilter() instanceof ConditionFilter);
+
+        assertIndexedWhereMatchesUnindexed(RawString.of("A >= ii"));
+    }
+
+    /**
+     * {@code A == ii} parses to a {@link MatchFilter} that fails over to a {@link ConditionFilter} that uses
+     * {@code ii}. The {@link MatchFilter} must report that, or it is pushed down to the data index.
+     */
+    @Test
+    public void testMatchFilterWithVirtualRowVariableNotPushedDownToDataIndex() {
+        final WhereFilter filter = WhereFilter.of(RawString.of("A == ii"));
+        filter.init(makeVirtualRowVariableTable().getDefinition());
+        assertTrue("sanity: parses to a MatchFilter, was " + filter.getClass(), filter instanceof MatchFilter);
+        assertNotNull("sanity: fails over to a ConditionFilter", ((MatchFilter) filter).getFailoverFilterIfCached());
+
+        assertIndexedWhereMatchesUnindexed(RawString.of("A == ii"));
+    }
+
+    /**
+     * A filter on {@code A} that fails when it is evaluated against any table with other columns -- in particular the
+     * data index table, which adds the row set column -- and otherwise accepts every row.
+     */
+    private static final class IndexTableRejectingFilter extends WhereFilterImpl {
+        static final String MESSAGE = "injected failure evaluating against the data index table";
+
+        @Override
+        public List<String> getColumns() {
+            return List.of("A");
+        }
+
+        @Override
+        public List<String> getColumnArrays() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public void init(@NotNull final TableDefinition tableDefinition) {}
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull final RowSet selection, @NotNull final RowSet fullSet, @NotNull final Table table,
+                final boolean usePrev) {
+            if (!table.getDefinition().getColumnNames().equals(List.of("A"))) {
+                throw new IllegalStateException(MESSAGE);
+            }
+            return selection.copy();
+        }
+
+        @Override
+        public boolean isSimpleFilter() {
+            return true;
+        }
+
+        @Override
+        public void setRecomputeListener(final RecomputeListener result) {}
+
+        @Override
+        public WhereFilter copy() {
+            return new IndexTableRejectingFilter();
+        }
+    }
+
+    /**
+     * A failure while applying a filter to the data index table must reach the caller with the original failure in its
+     * cause chain. The error message must not be built from something that can itself throw and mask it.
+     */
+    @Test
+    public void testDataIndexFilterFailureKeepsCause() {
+        final QueryTable indexedTable = makeIndexedVirtualRowVariableTable();
+        QueryTable.USE_DATA_INDEX_FOR_WHERE = true;
+
+        final TableInitializationException thrown = assertThrows(TableInitializationException.class,
+                () -> indexedTable.where(new IndexTableRejectingFilter()));
+        for (Throwable t = thrown; t != null; t = t.getCause()) {
+            if (t instanceof IllegalStateException && IndexTableRejectingFilter.MESSAGE.equals(t.getMessage())) {
+                return;
+            }
+        }
+        throw new AssertionError("injected failure not found in cause chain of " + thrown, thrown);
     }
 
     /**

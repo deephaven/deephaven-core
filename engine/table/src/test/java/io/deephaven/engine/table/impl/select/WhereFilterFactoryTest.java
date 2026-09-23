@@ -504,4 +504,30 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         result = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(RowSetFactory.fromKeys(1, 3, 5, 12), result);
     }
+
+    /**
+     * A copy of an initialized {@link MatchFilter} that failed over to a {@link ConditionFilter} must carry the
+     * initialized failover. The copy is marked initialized, so its own init() is a no-op; without the failover it would
+     * match on the null values the failed conversion left behind.
+     */
+    public void testCopyOfInitializedFailoverMatchFilter() {
+        final Table t = TableTools.emptyTable(10).update("A = (int) (ii % 3)");
+        for (final String expression : List.of("A == ii", "A != ii")) {
+            final WhereFilter f = WhereFilterFactory.getExpression(expression);
+            f.init(t.getDefinition());
+            assertTrue(f instanceof MatchFilter);
+            assertNotNull("sanity: " + expression + " fails over", ((MatchFilter) f).getFailoverFilterIfCached());
+
+            final WhereFilter copy = f.copy();
+            assertNotNull(expression + ": the copy must carry the failover",
+                    ((MatchFilter) copy).getFailoverFilterIfCached());
+            assertNotSame(((MatchFilter) f).getFailoverFilterIfCached(),
+                    ((MatchFilter) copy).getFailoverFilterIfCached());
+
+            try (final RowSet expected = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
+                    final RowSet actual = copy.filter(t.getRowSet().copy(), t.getRowSet(), t, false)) {
+                assertEquals(expression, expected, actual);
+            }
+        }
+    }
 }

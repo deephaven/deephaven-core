@@ -9,13 +9,16 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.RangeFilter;
 import io.deephaven.engine.table.impl.select.ReindexingFilter;
 import io.deephaven.engine.table.impl.select.UnsortedClockFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterDelegatingBase;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -176,6 +179,33 @@ public class PushdownFilterMatcherTest {
                     + filter.getClass().getSimpleName(), filter.hasVirtualRowVariables());
             assertFalse("a wrapped filter using `ii` must not be pushed down: " + filter.getClass().getSimpleName(),
                     PushdownFilterMatcher.canPushdownFilter(filter));
+        }
+    }
+
+    /**
+     * {@link RangeFilter} and {@link MatchFilter} fall back to a {@link ConditionFilter} when their value is not a
+     * literal, taking their columns from it. They must take its virtual row variables too, or {@code Int >= ii} and
+     * {@code Int == ii} pass the gate.
+     */
+    @Test
+    public void testCanPushdownFilterRejectsRangeAndMatchFallbackWithVirtualRowVariables() {
+        for (final String expression : List.of("Int >= ii", "Int == ii", "Int != i", "Int < k")) {
+            final WhereFilter filter = WhereFilterFactory.getExpression(expression);
+            filter.init(clockTable.getDefinition());
+            assertTrue("sanity: " + expression + " parses to a RangeFilter or MatchFilter, was " + filter.getClass(),
+                    filter instanceof RangeFilter || filter instanceof MatchFilter);
+
+            assertTrue(expression + " uses virtual row variables", filter.hasVirtualRowVariables());
+            assertFalse(expression + " must not be pushed down", PushdownFilterMatcher.canPushdownFilter(filter));
+        }
+
+        // Controls: the same filter types with literal values need no fallback and stay pushable.
+        for (final String expression : List.of("Int >= 2", "Int == 2")) {
+            final WhereFilter filter = WhereFilterFactory.getExpression(expression);
+            filter.init(clockTable.getDefinition());
+
+            assertFalse(expression + " uses no virtual row variables", filter.hasVirtualRowVariables());
+            assertTrue(expression + " is pushable", PushdownFilterMatcher.canPushdownFilter(filter));
         }
     }
 

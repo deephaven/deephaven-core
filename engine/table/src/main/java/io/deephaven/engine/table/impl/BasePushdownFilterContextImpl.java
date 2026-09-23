@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.Strings;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -219,7 +218,7 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
     @Override
     public final UnifiedChunkFilter createChunkFilter(final int maxChunkSize) {
         if (!supportsChunkFiltering) {
-            throw new IllegalStateException("Filter does not support chunk filtering: " + Strings.of(filter));
+            throw new IllegalStateException("Filter does not support chunk filtering: " + filter);
         }
         final Optional<ChunkFilter> chunkFilter = ExposesChunkFilter.chunkFilter(filter);
         if (chunkFilter.isPresent()) {
@@ -239,7 +238,7 @@ public class BasePushdownFilterContextImpl implements BasePushdownFilterContext 
             }
         } else {
             throw new UnsupportedOperationException(
-                    "Filter does not support chunk filtering: " + Strings.of(filter));
+                    "Filter does not support chunk filtering: " + filter);
         }
     }
 
