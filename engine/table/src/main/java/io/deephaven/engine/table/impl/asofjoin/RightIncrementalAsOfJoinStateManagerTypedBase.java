@@ -923,7 +923,12 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
-
+        // every entry has been migrated to the main table, so the old table's arrays are released; the alternate is
+        // only read below rehashPointer, which is now zero
+        alternateLeftRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
+        alternateRightRowSetSource = new ImmutableObjectArraySource<>(Object.class, null);
+        alternateStateSource = new ImmutableByteArraySource();
+        alternateCookieSource = null;
     }
 
     /**
