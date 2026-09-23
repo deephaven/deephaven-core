@@ -18,9 +18,12 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import org.junit.Test;
 
 import java.util.BitSet;
 import java.util.List;
+
+import static org.junit.Assert.*;
 
 /**
  * Direct coverage of {@link BarrageMessageDelta#coalesce} for the one run shape the round-trip tests cannot arrange
@@ -91,6 +94,7 @@ public class BarrageMessageDeltaCoalesceTest extends RefreshingTableTestCase {
      * Delta 1, generation 1, all three columns: adds rows 10 and 11, modifies row 5. Delta 2, generation 2, only the
      * first two columns: adds row 20, modifies row 11 (an add of delta 1). Coalesced from the base row set 0-9.
      */
+    @Test
     public void testNarrowerLaterGeneration() {
         final BitSet wide = columns(INT_COL, DOUBLE_COL, STR_COL);
         final BitSet narrow = columns(INT_COL, DOUBLE_COL);
@@ -149,6 +153,7 @@ public class BarrageMessageDeltaCoalesceTest extends RefreshingTableTestCase {
     }
 
     /** The same run with equal column sets, as compaction always sees, keeps every column. */
+    @Test
     public void testEqualColumnSetsKeepEverything() {
         final BitSet wide = columns(INT_COL, DOUBLE_COL, STR_COL);
 
@@ -190,6 +195,7 @@ public class BarrageMessageDeltaCoalesceTest extends RefreshingTableTestCase {
      * Here the first delta modifies two columns and the second modifies all three, so the first two columns are
      * modified by the same deltas and share, while the third is modified by only one of them and does not.
      */
+    @Test
     public void testColumnsModifiedTogetherShareOneMapping() {
         final BitSet wide = columns(INT_COL, DOUBLE_COL, STR_COL);
         final BitSet twoColumns = columns(INT_COL, DOUBLE_COL);

@@ -19,6 +19,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.test.types.OutOfBandTest;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.lang.reflect.Field;
@@ -26,6 +27,8 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Set;
+
+import static org.junit.Assert.*;
 
 /**
  * Round-trip coverage for subscribers that join a {@link BarrageMessageProducer} while other subscribers already have
@@ -477,11 +480,13 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * A subscriber joining while other subscribers hold pending deltas must receive a snapshot and nothing that
      * predates it, while the existing subscribers receive the queued deltas as an ordinary (non-snapshot) update.
      */
+    @Test
     public void testFullSubscriberJoinsWithPendingDeltas() {
         checkJoinWithPendingDeltas(null, "late-full");
     }
 
     /** As {@link #testFullSubscriberJoinsWithPendingDeltas}, but the newcomer requests a viewport. */
+    @Test
     public void testViewportSubscriberJoinsWithPendingDeltas() {
         try (final RowSet viewport = RowSetFactory.fromRange(10, 40)) {
             checkJoinWithPendingDeltas(viewport, "late-viewport");
@@ -536,6 +541,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * Deltas recorded while a newcomer's snapshot is being built land after the snapshot step, so they must reach the
      * newcomer too -- its snapshot predates them. The existing subscribers see both halves of the split.
      */
+    @Test
     public void testSubscriberJoinsWhileSnapshotIsTaken() {
         final QueryTable sourceTable = newSourceTable();
 
@@ -584,6 +590,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * Ten subscribers join at ten different points in the delta stream. Each join drains the pending queue, so no
      * subscriber ever receives data from a generation other than its own.
      */
+    @Test
     public void testManySubscribersJoinAtDifferentOffsets() {
         final QueryTable sourceTable = newSourceTable();
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
@@ -626,11 +633,13 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * existing subscribers receive the compacted head and what followed it as one non-snapshot update, the newcomer
      * receives its snapshot and nothing that predates it, and the replicated tables match the source afterwards.
      */
+    @Test
     public void testFullSubscriberJoinsAfterCompaction() {
         checkJoinAfterCompaction(null, "late-full");
     }
 
     /** As {@link #testFullSubscriberJoinsAfterCompaction}, but the newcomer requests a viewport. */
+    @Test
     public void testViewportSubscriberJoinsAfterCompaction() {
         try (final RowSet viewport = RowSetFactory.fromRange(10, 40)) {
             checkJoinAfterCompaction(viewport, "late-viewport");
@@ -679,6 +688,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * a distinct recorded-modification row set per column, shared where two columns were modified on identical rows,
      * and is coalesced once more with a partial-column update recorded behind it when the queue propagates.
      */
+    @Test
     public void testPartialColumnModificationsAfterCompaction() {
         final QueryTable sourceTable = newSourceTable(COMPACTION_TABLE_SIZE);
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
@@ -732,6 +742,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * until the superseded copies are worth reclaiming. Coalescing walks the run latest first, so the compacted delta
      * draws the middle two chunks from the last delta and the first chunk and the last from the one before it.
      */
+    @Test
     public void testMultiChunkMappingsAfterCompaction() {
         final int chunk = BarrageMessageProducer.DELTA_CHUNK_SIZE;
         final QueryTable sourceTable = newSourceTable(COMPACTION_TABLE_SIZE);
@@ -787,6 +798,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * the queue would coalesce to stays at one table's worth however long it grows. The test can therefore predict
      * every compaction: the first once three deltas are held, and one every two deltas after that.
      */
+    @Test
     public void testFreedFractionCompaction() {
         final QueryTable sourceTable = newSourceTable(COMPACTION_TABLE_SIZE);
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
@@ -832,6 +844,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * modification of a pre-existing row among them changes that by a single row's worth, which is what the fraction
      * measures and a count of deltas could not.
      */
+    @Test
     public void testAppendsAreNotCompacted() {
         final QueryTable sourceTable = newSourceTable();
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
@@ -871,6 +884,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * Removing everything the queue added leaves a compaction with almost nothing to copy and everything to release,
      * which is the case the freed fraction handles best: the whole queue is waste, so it compacts once and cheaply.
      */
+    @Test
     public void testRemovingEverythingCompacts() {
         final QueryTable sourceTable = newSourceTable(COMPACTION_TABLE_SIZE);
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
@@ -903,6 +917,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * As {@link #testViewportChangeWithPendingDeltas}, but the queue is compacted before the viewport changes. The
      * changing client's pre-snapshot data, now drawn from a compacted delta, is still sent under its old viewport.
      */
+    @Test
     public void testViewportChangeAfterCompaction() {
         final QueryTable sourceTable = newSourceTable(COMPACTION_TABLE_SIZE);
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
@@ -944,6 +959,7 @@ public class BarrageLateJoinerTest extends BarrageMessageRoundTripTestBase {
      * immediately and splits the pending deltas around a fresh snapshot. The changing client's pre-snapshot data is
      * sent under its <em>old</em> viewport, which is what makes the split necessary in the first place.
      */
+    @Test
     public void testViewportChangeWithPendingDeltas() {
         final QueryTable sourceTable = newSourceTable();
         final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
