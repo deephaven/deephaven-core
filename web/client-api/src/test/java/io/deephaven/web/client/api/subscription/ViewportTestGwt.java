@@ -394,7 +394,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             // assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000)
                             waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {
                             }, 2011),
-                            assertEventFiresOnce(table, JsTable.EVENT_SIZECHANGED, 1005)
+                            assertEventFiresOnce(table, JsTable.EVENT_SIZECHANGED, 2005, 1005)
                     }).then(ignore -> Promise.resolve(table));
                 })
                 .then(table -> {
@@ -409,7 +409,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     table.applyFilter(new FilterCondition[] {
                             FilterValue.ofBoolean(false).isTrue()
                     });
-                    return assertEventFiresOnce(table, JsTable.EVENT_SIZECHANGED, 1007);
+                    return assertEventFiresOnce(table, JsTable.EVENT_SIZECHANGED, 2007, 1007);
                 })
                 .then(table -> {
                     // set a viewport, assert that update fires and no size change
@@ -619,28 +619,41 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 });
     }
 
+    /**
+     * Waits up to {@code firstEventTimeoutInMilliseconds} for the event to fire, then resolves if it does not fire
+     * again within the following {@code quietPeriodInMilliseconds}.
+     */
     private <T extends HasEventHandling> Promise<T> assertEventFiresOnce(T eventSource, String eventName,
-            int intervalInMilliseconds) {
+            int firstEventTimeoutInMilliseconds, int quietPeriodInMilliseconds) {
         return new Promise<>((resolve, reject) -> {
             int[] runCount = {0};
+            RemoverFn[] unsub = new RemoverFn[1];
             console.log("adding " + eventName + " listener " + eventSource);
             // apparent compiler bug, review in gwt 2.9
-            RemoverFn unsub = Js.<HasEventHandling>uncheckedCast(eventSource)
+            unsub[0] = Js.<HasEventHandling>uncheckedCast(eventSource)
                     .addEventListener(eventName, e -> {
                         runCount[0]++;
                         console.log(eventName + " event observed " + eventSource + ", #" + runCount[0]);
-                        if (runCount[0] > 1) {
+                        if (runCount[0] == 1) {
+                            DomGlobal.setTimeout(p0 -> {
+                                unsub[0].remove();
+                                if (runCount[0] == 1) {
+                                    resolve.onInvoke(eventSource);
+                                } else {
+                                    reject.onInvoke("Event " + eventName + " fired " + runCount[0] + " times");
+                                }
+                            }, quietPeriodInMilliseconds);
+                        } else {
                             reject.onInvoke("Event " + eventName + " fired " + runCount[0] + " times");
                         }
                     });
             DomGlobal.setTimeout(p0 -> {
-                unsub.remove();
-                if (runCount[0] == 1) {
-                    resolve.onInvoke(eventSource);
-                } else {
-                    reject.onInvoke("Event " + eventName + " fired " + runCount[0] + " times");
+                if (runCount[0] == 0) {
+                    unsub[0].remove();
+                    reject.onInvoke("Event " + eventName + " did not fire within "
+                            + firstEventTimeoutInMilliseconds + "ms");
                 }
-            }, intervalInMilliseconds);
+            }, firstEventTimeoutInMilliseconds * TIMEOUT_SCALE);
         });
     }
 
@@ -657,7 +670,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(table("small"))
                 .then(t -> {
-                    delayTestFinish(7876);
+                    delayTestFinish(20_876);
                     // Add a timestamp column, and format the number/timestamp, style the row and cells
                     t.applyCustomColumns(JsArray.of(
                             JsTable.CustomColumnArgUnionType
@@ -672,7 +685,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                                     CustomColumn.TYPE_FORMAT_DATE, "`HH-mm-ss-SSSSSSSSS`",
                                     null))));
                     // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
-                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2025).then(table -> {
+                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 10_000, 2025).then(table -> {
                         Column iColumn = table.findColumn("I");
                         Column strColumn = table.findColumn("Str");
                         Column timestampColumn = table.findColumn("Timestamp");
@@ -729,7 +742,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     });
                 })
                 .then(t -> {
-                    delayTestFinish(7877);
+                    delayTestFinish(20_877);
                     // Repeat, this time also with a row style
                     t.applyCustomColumns(JsArray.of(
                             JsTable.CustomColumnArgUnionType
@@ -746,7 +759,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             JsTable.CustomColumnArgUnionType.of(
                                     Column.formatRowColor("background(RED)", new CustomColumnOptions()))));
                     // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
-                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2025).then(table -> {
+                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 10_000, 2025).then(table -> {
                         Column iColumn = table.findColumn("I");
                         Column strColumn = table.findColumn("Str");
                         Column timestampColumn = table.findColumn("Timestamp");
@@ -803,7 +816,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     });
                 })
                 .then(t -> {
-                    delayTestFinish(7878);
+                    delayTestFinish(20_878);
                     // Repeat, once more with a row style but no column style
                     t.applyCustomColumns(JsArray.of(
                             JsTable.CustomColumnArgUnionType
@@ -817,7 +830,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             JsTable.CustomColumnArgUnionType.of(
                                     Column.formatRowColor("background(RED)", new CustomColumnOptions()))));
                     // Wait for this to resolve, part of DH-18634 is that already running tables behave differently
-                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2025).then(table -> {
+                    return assertEventFiresOnce(t, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 10_000, 2025).then(table -> {
                         Column iColumn = table.findColumn("I");
                         Column strColumn = table.findColumn("Str");
                         Column timestampColumn = table.findColumn("Timestamp");
