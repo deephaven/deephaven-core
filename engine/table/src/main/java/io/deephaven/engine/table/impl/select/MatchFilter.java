@@ -347,11 +347,13 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
 
     /**
      * Return an {@link Optional} containing the {@link MatchFilter} if the provided filter is a match filter that can
-     * be pushed down (i.e. is not implemented by a ConditionFilter). Otherwise returns {@code Optional.empty()}.
+     * be pushed down (i.e. is not implemented by a ConditionFilter, and has values to match). Otherwise returns
+     * {@code Optional.empty()}.
      */
     public static Optional<MatchFilter> extractMatchFilter(WhereFilter filter) {
-        if (filter instanceof MatchFilter &&
-                ((MatchFilter) filter).getFailoverFilterIfCached() == null) {
+        if (filter instanceof MatchFilter
+                && ((MatchFilter) filter).getFailoverFilterIfCached() == null
+                && ((MatchFilter) filter).getValues() != null) {
             return Optional.of((MatchFilter) filter);
         }
         return Optional.empty();
@@ -902,9 +904,18 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
     public WhereFilter copy() {
         final MatchFilter copy;
         if (strValues != null) {
-            copy = new MatchFilter(
-                    failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
-                    matchOptions, columnName, strValues, null);
+            final ConditionFilter cachedFailover = getFailoverFilterIfCached();
+            final CachingSupplier<ConditionFilter> copiedFailover;
+            if (cachedFailover != null) {
+                // We failed over; the copy must too, or it would claim to be initialized without any values to match.
+                final ConditionFilter failoverCopy = cachedFailover.copy();
+                copiedFailover = new CachingSupplier<>(() -> failoverCopy);
+                copiedFailover.get();
+            } else {
+                copiedFailover = failoverFilter == null ? null
+                        : new CachingSupplier<>(() -> failoverFilter.get().copy());
+            }
+            copy = new MatchFilter(copiedFailover, matchOptions, columnName, strValues, null);
         } else {
             // when we're constructed with values then there is no failover filter
             copy = new MatchFilter(matchOptions, columnName, values);
