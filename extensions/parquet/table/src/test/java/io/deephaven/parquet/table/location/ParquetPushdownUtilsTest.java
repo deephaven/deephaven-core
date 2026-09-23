@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.location;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.parquet.bytes.BytesUtils;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.junit.Test;
