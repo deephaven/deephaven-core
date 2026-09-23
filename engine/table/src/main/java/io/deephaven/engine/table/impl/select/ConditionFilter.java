@@ -789,6 +789,9 @@ public class ConditionFilter extends AbstractConditionFilter {
             copy.filterKernelClassFuture = filterKernelClassFuture;
             copy.usedInputs = usedInputs;
             copy.classBody = classBody;
+            // The copy is a Python filter iff this one is; permitParallelization() consults the marker to decide
+            // whether the interpreter's threading model allows parallel evaluation.
+            copy.pythonFilter = pythonFilter;
             if (filterValidForCopy) {
                 copy.filter = filter;
             }
