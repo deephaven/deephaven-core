@@ -3,7 +3,10 @@
     {
       "name": "@deephaven_test/example1",
       "main": "dist/index.js",
-      "version": "0.1.0"
+      "version": "0.1.0",
+      "loader": {
+        "foo": "bar"
+      }
     },
     {
       "name": "@deephaven_test/example2",

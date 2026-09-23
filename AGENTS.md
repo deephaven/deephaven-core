@@ -46,7 +46,9 @@ The default `test` task **excludes** the three categorized types (`ParallelTest`
 runs *only* that category. These categorized tasks are **not** wired into `check` — run them
 explicitly by name. CI runs them nightly: the root `nightly` task and
 `.github/workflows/nightly-check-ci.yml` invoke `check`, `testParallel`, `testSerial`, and
-`testOutOfBand` directly.
+`testOutOfBand` directly. A pull request whose source branch is named `engine/**` or
+`coverage/**` additionally runs `testParallel`, `testSerial`, and `testOutOfBand` on Java 21 as
+part of `.github/workflows/check-ci.yml`, so auto-merge on such a PR is gated on them.
 
 ```bash
 # Run the (uncategorized) tests for a module
@@ -151,6 +153,16 @@ they register **`TableUpdateListener`s** on upstream tables and receive `TableUp
   (`SelectOrUpdateListener`, `SortListener`, the `By` aggregation suite, join helpers like
   `CrossJoinHelper`/`AsOfJoinHelper`, filter execution).
 
+### Updating the query engine
+
+The engine processes large, ticking datasets on the hot path, so data-movement code must be written
+for throughput. Before adding or changing engine internals (`engine/table`, `engine/rowset`,
+`engine/chunk`, aggregation/join/update-by operators, `ColumnSource`s, kernels), read
+`.github/instructions/query-engine.instructions.md` — the rules cover bulk (chunked) reads,
+dispatching to type-specialized kernels instead of per-cell virtual calls, allocating reusable
+context objects before the per-chunk loop, batching `RowSet` operations, and keeping an operation
+between two `RowSet`s ideally O(n) while avoiding accidental quadratic paths.
+
 ### Server & client integration (`server/`, `py/`, `java-client/`, `proto/`)
 
 - **`server`** exposes tables over **gRPC + Arrow Flight**; ticking data streams via the
@@ -166,6 +178,32 @@ they register **`TableUpdateListener`s** on upstream tables and receive `TableUp
   `plugin/dagger`.
 - **DI**: the server and clients are wired with Dagger; look for `@Module`/`@Component` and the
   `*-dagger` subprojects when tracing how components are assembled.
+- **`cpp-client/`** holds the C++ client: `dhcore` (client-side data model + Barrage ticking state
+  machine, no Arrow/gRPC dependency) and `dhclient` (the user-facing API, over Arrow Flight + gRPC).
+  It is also the substrate for two other clients — `R/rdeephaven` binds `dhclient` through Rcpp and
+  `py/client-ticking` binds `dhcore` through Cython — so changing a public header there can break
+  them without breaking the C++ build.
+- **`R/`** holds the R client (`rdeephaven`): R6 classes over an Rcpp module over the C++ client.
+
+**Before working in `cpp-client/` or `R/`, read the corresponding design doc** — each is written for
+this purpose and will save you a lot of exploration:
+
+- `cpp-client/DESIGN.md` — architecture, code layout, the ticking pipeline, conventions, per-file
+  summaries. (`cpp-client/README.md` indexes the rest; `cpp-client/BUILDING.md` is the build guide.)
+- `R/DESIGN.md` — the R/Rcpp/C++ layering, the Arrow data path, conventions, per-file summaries.
+  (`R/README.md` indexes the rest; `R/rdeephaven/BUILDING.md` is the build guide.)
+
+Both use stable `## ` section anchors, so `grep -n '^## ' <file>` gives you a map to read selectively.
+
+### Reviewing / updating gRPC services
+
+Server-side gRPC handlers turn untrusted client requests into engine operations, so they are a
+security boundary. Before adding or changing a handler (`server/src/.../table/ops/*GrpcImpl.java`,
+the hierarchical/partitioned/console/input-table services, or a service-loaded `TicketResolver`),
+read `.github/instructions/grpc-services.instructions.md` — the checklist covers validating
+every user-supplied expression through `ColumnExpressionValidator`, validating the exact string and
+column shape the engine compiles, request-shape and authorization checks, error mapping, and the
+tests to add.
 
 ### Other major areas
 

@@ -109,6 +109,16 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
 
         // This sort operation might leverage a data index.
         dataIndex = optimalIndex(parent);
+
+        if (QueryTable.USE_INDIRECT_SORT_KERNELS) {
+            // Resolve (compiling on demand if necessary) the multi-column sort kernel for this sort now, while we
+            // are on a thread whose ExecutionContext has a QueryCompiler; the sort listener may otherwise be the
+            // first to need it, on an update graph thread that cannot compile. This is required even when this sort
+            // has a data index: the index accelerates the initial sort, but the listener's incremental sorts of
+            // added and modified rows do not use it. For an initially empty table (a refreshing blink table, for
+            // instance) the listener is always first.
+            SortHelpers.prepareSortKernel(sortOrder, sortColumns, comparators, comparatorsRespectEquality);
+        }
     }
 
     @Override
@@ -299,7 +309,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                             dataIndex, rowSetToSort, usePrev, ALLOW_SYMBOL_TABLE)
                     .getArrayMapping();
 
-            final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortedKeys.length, .75f, -3);
+            // Size the map so the initial population completes without any rehashing.
+            final HashMapK4V4 reverseLookup = HashMapLockFreeK4V4.ofExpectedSize(sortedKeys.length, 0.75, -3);
+
             sortMapping = SortHelpers.createSortRowRedirection();
 
             // Center the keys around middleKeyToUse
@@ -421,7 +433,9 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         if (sortRedirection == null) {
             return null;
         }
-        final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortResult.intSize(), .75f, RowSequence.NULL_ROW_KEY);
+        // Size the map so the population below completes without any rehashing.
+        final HashMapK4V4 reverseLookup =
+                HashMapLockFreeK4V4.ofExpectedSize(sortResult.intSize(), 0.75, RowSequence.NULL_ROW_KEY);
         try (final LongColumnIterator innerRowKeys =
                 new ChunkedLongColumnIterator(sortRedirection, sortResult.getRowSet());
                 final RowSet.Iterator outerRowKeys = sortResult.getRowSet().iterator()) {

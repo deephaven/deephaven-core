@@ -562,4 +562,3 @@ public class ObjectColumnBinarySearchKernelTest {
         }
     }
 }
-

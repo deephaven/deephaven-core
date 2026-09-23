@@ -27,3 +27,7 @@ artifacts {
         builtBy ui
     }
 }
+
+tasks.named('assemble').configure {
+    dependsOn ui
+}

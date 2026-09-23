@@ -27,7 +27,13 @@ public class MixedBuilderRandom implements OrderedLongSet.BuilderRandom {
             accumIndex = ix;
             return;
         }
-        accumIndex = accumIndex.ixInsert(ix);
+        // ixInsert may return a new object (copy-on-write when accumIndex is shared); release the
+        // replaced reference or it is leaked.
+        final OrderedLongSet newAccumIndex = accumIndex.ixInsert(ix);
+        if (newAccumIndex != accumIndex) {
+            accumIndex.ixRelease();
+        }
+        accumIndex = newAccumIndex;
         ix.ixRelease();
     }
 
@@ -57,7 +63,15 @@ public class MixedBuilderRandom implements OrderedLongSet.BuilderRandom {
     }
 
     private void addOrderedLongSet(final OrderedLongSet ix) {
-        if (ix.ixCardinality() >= addAsIndexThreshold) {
+        if (ix.ixIsEmpty()) {
+            return;
+        }
+        // A union into the accumulator is linear in the accumulator, except when the set lies past it, which appends
+        // and costs only the set itself. The queue holds ranges, so what a set costs there is its range count, not its
+        // cardinality, and the queue sorts it for free. So: append when we can, union when the set has too many ranges
+        // to queue, and queue the rest. The first set seeds the accumulator, so an ascending stream of sets appends.
+        final boolean appends = accumIndex == null || ix.ixFirstKey() > accumIndex.ixLastKey();
+        if (appends || ix.ixRangesCountUpperBound() >= addAsIndexThreshold) {
             merge(ix.ixCowRef());
             return;
         }

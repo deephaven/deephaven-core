@@ -15,11 +15,27 @@ final class BitmapContainerRangeIterator implements SearchRangeIterator {
     }
 
     public BitmapContainerRangeIterator(final BitmapContainer p, int initialSkipCount) {
-        bitmap = p.bitmap;
-        x = 0;
+        this(p.bitmap, 0, initialSkipCount);
+    }
+
+    /**
+     * Position on the value {@code skipCountFromStartWord} values after the first value in word {@code startWord}
+     * (values in earlier words are not counted); past the last word the iterator is exhausted.
+     */
+    BitmapContainerRangeIterator(final long[] bitmap, final int startWord, final int skipCountFromStartWord) {
+        this.bitmap = bitmap;
+        if (startWord >= bitmap.length) {
+            x = bitmap.length;
+            w = 0;
+            offset = 0;
+            start = end = -1;
+            hasNext = false;
+            return;
+        }
+        x = startWord;
         offset = 0;
-        w = bitmap[0];
-        int remaining = initialSkipCount;
+        w = bitmap[x];
+        int remaining = skipCountFromStartWord;
         while (true) {
             final int bitCount = Long.bitCount(w);
             if (remaining < bitCount) {

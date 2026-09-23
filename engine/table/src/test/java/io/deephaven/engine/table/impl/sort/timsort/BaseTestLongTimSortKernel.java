@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.tuple.generated.LongLongLongTuple;
 import io.deephaven.tuple.generated.LongLongTuple;
 import io.deephaven.engine.table.impl.sort.findruns.LongFindRunsKernel;
@@ -35,13 +36,13 @@ import java.util.stream.Collectors;
 public abstract class BaseTestLongTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
     public static Comparator<LongLongTuple> getJavaComparator() {
-        return Comparator.comparing(LongLongTuple::getFirstElement);
+        return Comparator.comparing(LongLongTuple::getFirstElement, LongComparisons::compare);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
     public static Comparator<LongLongLongTuple> getJavaMultiComparator() {
-        return Comparator.comparing(LongLongLongTuple::getFirstElement).thenComparing(LongLongLongTuple::getSecondElement);
+        return Comparator.comparing(LongLongLongTuple::getFirstElement, LongComparisons::compare).thenComparing(LongLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
@@ -181,7 +182,7 @@ public abstract class BaseTestLongTimSortKernel extends TestTimSortKernel {
 
         public void run() {
             // region mergesort
-            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Long.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
+            MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> LongComparisons.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
         }
     }
@@ -515,7 +516,7 @@ public abstract class BaseTestLongTimSortKernel extends TestTimSortKernel {
 
     // region comparison functions
     private static int doComparison(long lhs, long rhs) {
-        return Long.compare(lhs, rhs);
+        return LongComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

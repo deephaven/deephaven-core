@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
+import io.deephaven.engine.primitive.value.iterator.ValueIterator;
+import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfLong;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
@@ -13,7 +15,6 @@ import io.deephaven.engine.table.impl.ssms.LongSegmentedSortedMultiset;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.util.Objects;
 
 import static io.deephaven.time.DateTimeUtils.epochNanosToInstant;
 
@@ -70,6 +71,40 @@ public class InstantSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
         @Override
         public Instant get(long index) {
             return epochNanosToInstant(underlying.get(index));
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * <p>
+         * Delegating keeps traversal linear. The inherited implementation is positional, and
+         * {@link LongSegmentedSortedMultiset#get(long)} rescans the leaf directory on every element.
+         */
+        @Override
+        public ValueIterator<Instant> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+            final ValueIteratorOfLong nanos = underlying.iterator(fromIndexInclusive, toIndexExclusive);
+            return new ValueIterator<>() {
+
+                @Override
+                public Instant next() {
+                    return epochNanosToInstant(nanos.nextLong());
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return nanos.hasNext();
+                }
+
+                @Override
+                public long remaining() {
+                    return nanos.remaining();
+                }
+
+                @Override
+                public void close() {
+                    nanos.close();
+                }
+            };
         }
 
         @Override
@@ -138,17 +173,21 @@ public class InstantSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            ValueWrapper that = (ValueWrapper) o;
-            return underlying.equals(that.underlying);
+            }
+            if (o instanceof ValueWrapper) {
+                ValueWrapper that = (ValueWrapper) o;
+                return underlying.equals(that.underlying);
+            }
+            // Equal to any ObjectVector with the same Instants, notably our own getDirect() result.
+            return ObjectVector.equals(this, o);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(underlying);
+            // Must hash like any equal ObjectVector: ObjectVectorDirect uses this helper; the SSM hashes raw longs.
+            return ObjectVector.hashCode(this);
         }
     }
 }

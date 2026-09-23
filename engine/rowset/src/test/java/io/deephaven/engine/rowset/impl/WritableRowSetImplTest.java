@@ -37,6 +37,7 @@ import org.junit.experimental.categories.Category;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.function.Function;
@@ -1611,13 +1612,20 @@ public class WritableRowSetImplTest extends TestCase {
 
     private RowSet getUnionIndexStrings(final String[] indexStrings) {
         final RowSetBuilderRandom result = RowSetFactory.builderRandom();
+        final List<RowSet> addedRowSets = new ArrayList<>(indexStrings.length);
         for (String indexString : indexStrings) {
             final RowSet rowSetToAdd = RowSetTstUtils.rowSetFromString(indexString);
             rowSetToAdd.validate();
             result.addRowSet(rowSetToAdd);
-            assertEquals(1, getRefCount(rowSetToAdd));
+            addedRowSets.add(rowSetToAdd);
         }
-        return result.build();
+        final RowSet union = result.build();
+        if (addedRowSets.size() > 1) {
+            for (final RowSet addedRowSet : addedRowSets) {
+                assertEquals(1, getRefCount(addedRowSet));
+            }
+        }
+        return union;
     }
 
     private void unionIndexStrings(final String[] indexStrings) {
@@ -3007,11 +3015,12 @@ public class WritableRowSetImplTest extends TestCase {
             if (block % 2 == 0) {
                 b.appendRange(blockKey + 11, blockKey + 20);
             } else {
+                // Five values: with the reserved slot, six shorts fill the 24 bytes the allocator rounds the array
+                // to, so a compact container has nothing to spare.
                 b.appendKey(blockKey + 12);
                 b.appendKey(blockKey + 14);
                 b.appendKey(blockKey + 16);
                 b.appendKey(blockKey + 18);
-                b.appendKey(blockKey + 20);
             }
         }
         final OrderedLongSet impl = b.getOrderedLongSet();
@@ -3396,5 +3405,38 @@ public class WritableRowSetImplTest extends TestCase {
         final RowSet ix4 = ix1.union(ix2);
         assertEquals(ix3, ix4);
         assertEquals(ix1.size() + ix2.size(), ix4.size());
+    }
+
+    public void testSubSetForPositionsDoesNotLeakInnerSetRefCount() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.add(10);
+        rb = rb.addRange(65536, 65556);
+        rb = rb.add(3 * 65536 + 7);
+        final WritableRowSetImpl rowSet = new WritableRowSetImpl(rb);
+        final int before = rowSet.refCount();
+        // Non-contiguous positions, to avoid the contiguous fast path that never creates an iterator.
+        try (final WritableRowSet positions = RowSetFactory.fromKeys(0, 2, 5);
+                final WritableRowSet result = rowSet.subSetForPositions(positions)) {
+            assertEquals(3, result.size());
+            assertEquals(10, result.firstRowKey());
+        }
+        assertEquals(before, rowSet.refCount());
+        rowSet.close();
+    }
+
+    public void testSelfAliasedMutators() {
+        final WritableRowSet rowSet = RowSetFactory.fromKeys(1, 5, 9);
+        rowSet.insert(rowSet);
+        assertEquals(3, rowSet.size());
+        rowSet.retain(rowSet);
+        assertEquals(3, rowSet.size());
+        try (final WritableRowSet other = RowSetFactory.fromKeys(100)) {
+            rowSet.update(other, rowSet); // remove everything, then add {100}
+            assertEquals(1, rowSet.size());
+            assertEquals(100, rowSet.firstRowKey());
+        }
+        rowSet.remove(rowSet);
+        assertTrue(rowSet.isEmpty());
+        rowSet.close();
     }
 }

@@ -14,6 +14,7 @@
 
 package com.google.common.io;
 
+import javaemul.internal.annotations.DoNotInline;
 import org.gwtproject.nio.Numbers;
 
 import java.io.DataInput;
@@ -91,12 +92,15 @@ public final class LittleEndianDataInputStream extends FilterInputStream impleme
         byte b1 = readAndCheckByte();
         byte b2 = readAndCheckByte();
 
-        int result = b2;
-        result = (result << 8) | (b1 & 0xFF);
+        // Edited from original Guava source to avoid
+        // https://github.com/gwtproject/gwt/issues/10389
+        int result = (b2 << 8) | (b1 & 0xFF);
 
         return result;
     }
 
+    // Marked as DoNotInline to avoid https://github.com/gwtproject/gwt/issues/10389
+    @DoNotInline
     @Override
     public int readInt() throws IOException {
         byte b1 = readAndCheckByte();
@@ -112,6 +116,8 @@ public final class LittleEndianDataInputStream extends FilterInputStream impleme
         return result;
     }
 
+    // Marked as DoNotInline to avoid https://github.com/gwtproject/gwt/issues/10389
+    @DoNotInline
     @Override
     public long readLong() throws IOException {
         byte b1 = readAndCheckByte();
@@ -145,6 +151,7 @@ public final class LittleEndianDataInputStream extends FilterInputStream impleme
      */
     @Override
     public float readFloat() throws IOException {
+        // Modified from original Guava source to transform int to float
         return Numbers.intBitsToFloat(readInt());
     }
 
@@ -158,11 +165,13 @@ public final class LittleEndianDataInputStream extends FilterInputStream impleme
      */
     @Override
     public double readDouble() throws IOException {
+        // Modified from original Guava source to transform long to double
         return Numbers.longBitsToDouble(readLong());
     }
 
     @Override
     public String readUTF() throws IOException {
+        // Modified from original Guava source to omit UTF support
         throw new UnsupportedOperationException("readUTF");
     }
 

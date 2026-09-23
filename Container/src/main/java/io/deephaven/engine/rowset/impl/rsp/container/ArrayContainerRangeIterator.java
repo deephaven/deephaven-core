@@ -84,6 +84,11 @@ final class ArrayContainerRangeIterator implements SearchRangeIterator {
     @Override
     public boolean advance(final int v) {
         if (nextPos > 0 && end > v) {
+            // The current range already covers v, but advance leaves the iterator positioned at v, so the range we
+            // report must not begin before it -- the other implementations clamp here as well.
+            if (start < v) {
+                start = v;
+            }
             return true;
         }
         int i = ContainerUtil.unsignedBinarySearch(parent.content, nextPos, parent.cardinality,

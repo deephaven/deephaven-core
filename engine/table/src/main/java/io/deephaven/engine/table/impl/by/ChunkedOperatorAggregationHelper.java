@@ -2462,9 +2462,10 @@ public class ChunkedOperatorAggregationHelper {
                         previousValues = newValues = null;
                     } else {
                         if (workingPreChunks[inputSlot] == null) {
-                            workingPreChunks[inputSlot] = ac.inputColumns[ii].getPrevChunk(getContexts[ii], preChunkOk);
+                            workingPreChunks[inputSlot] =
+                                    ac.inputColumns[inputSlot].getPrevChunk(getContexts[inputSlot], preChunkOk);
                             workingPostChunks[inputSlot] =
-                                    ac.inputColumns[ii].getChunk(postGetContexts[ii], postChunkOk);
+                                    ac.inputColumns[inputSlot].getChunk(postGetContexts[inputSlot], postChunkOk);
                         }
                         previousValues = workingPreChunks[inputSlot];
                         newValues = workingPostChunks[inputSlot];

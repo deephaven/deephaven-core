@@ -14,18 +14,26 @@ final class RunContainerRangeIterator implements SearchRangeIterator {
     }
 
     RunContainerRangeIterator(final RunContainer p, final int initialSkipCount) {
-        pos = 0;
+        this(p, 0, initialSkipCount);
+    }
+
+    /**
+     * Position on the value {@code skipCountFromStartRun} values after the first value of run {@code startRun} (values
+     * in earlier runs are not counted); past the last run the iterator is exhausted.
+     */
+    RunContainerRangeIterator(final RunContainer p, final int startRun, final int skipCountFromStartRun) {
+        pos = startRun;
         parent = p;
         end = -1;
         final int numRuns = parent.numberOfRuns();
-        if (numRuns == 0) {
+        if (pos >= numRuns) {
             return;
         }
-        if (initialSkipCount == 0) {
+        if (skipCountFromStartRun == 0) {
             start = runStart(pos);
             return;
         }
-        int remaining = initialSkipCount;
+        int remaining = skipCountFromStartRun;
         while (true) {
             int runSize = toIntUnsigned(parent.getLength(pos)) + 1;
             if (remaining < runSize) {

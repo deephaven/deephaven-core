@@ -73,10 +73,10 @@ class Docker {
      */
     abstract static class DockerTaskConfig {
 
-        private Action<? super CopySpec> copyIn;
-        private Action<? super Sync> copyOut;
-        private File dockerfileFile;
-        private Action<? super Dockerfile> dockerfileAction;
+        Action<? super CopySpec> copyIn;
+        Action<? super Sync> copyOut;
+        File dockerfileFile;
+        Action<? super Dockerfile> dockerfileAction;
 
         /**
          * Declares tasks that this group of tasks should depend on or be
@@ -669,7 +669,7 @@ class Docker {
             inspect.description = "Release management task: Updates the gradle.properties file for '${imageName}'"
             inspect.imageId.set imageName
             inspect.mustRunAfter pullImage
-            inspect.onNext { InspectImageResponse message ->
+            inspect.onNext { Object message ->
                 def m = (InspectImageResponse) message
                 if (m.repoDigests.isEmpty()) {
                     throw new RuntimeException("Image '${imageName}' from the (local) repository does not have a repo digest. " +
@@ -698,7 +698,7 @@ class Docker {
             inspect.description = "Release management task: Compares the (local) repository contents for '${imageName}' against source-control contents."
             inspect.imageId.set imageName
             inspect.mustRunAfter pullImage
-            inspect.onNext { InspectImageResponse message ->
+            inspect.onNext { Object message ->
                 def m = (InspectImageResponse) message
                 if (m.repoDigests.isEmpty()) {
                     throw new RuntimeException("Image '${imageName}' from the (local) repository does not have a repo digest. " +

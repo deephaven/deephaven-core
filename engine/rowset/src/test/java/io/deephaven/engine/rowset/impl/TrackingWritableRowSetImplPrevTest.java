@@ -7,6 +7,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClockImpl;
 import org.junit.Rule;
@@ -149,5 +150,72 @@ public class TrackingWritableRowSetImplPrevTest {
         clock.startUpdateCycle();
         assertEquals(1L, ix.sizePrev());
         assertEquals(1L, ix.lastRowKeyPrev());
+    }
+
+    @Test
+    public void testPrevViewRejectsSelfAliasedMutators() {
+        final TrackingWritableRowSet ix = RowSetFactory.fromKeys(1, 2, 3).toTracking();
+        final WritableRowSetImpl prev = (WritableRowSetImpl) ix.prev();
+        // Even as no-ops, mutators on the unmodifiable prev view must throw.
+        try {
+            prev.insert(prev);
+            org.junit.Assert.fail("expected UnsupportedOperationException");
+        } catch (UnsupportedOperationException expected) {
+        }
+        try {
+            prev.retain(prev);
+            org.junit.Assert.fail("expected UnsupportedOperationException");
+        } catch (UnsupportedOperationException expected) {
+        }
+        try {
+            prev.remove(prev);
+            org.junit.Assert.fail("expected UnsupportedOperationException");
+        } catch (UnsupportedOperationException expected) {
+        }
+        try {
+            prev.update(prev, prev);
+            org.junit.Assert.fail("expected UnsupportedOperationException");
+        } catch (UnsupportedOperationException expected) {
+        }
+        ix.close();
+    }
+
+    @Test
+    public void testPrevViewRejectsEmptyRangeMutators() {
+        final TrackingWritableRowSet ix = RowSetFactory.fromKeys(1, 2, 3).toTracking();
+        final WritableRowSetImpl prev = (WritableRowSetImpl) ix.prev();
+        // A range holding no keys is a no-op on a writable rowset, but the unmodifiable prev view must still throw.
+        for (final long[] range : new long[][] {{5, 4}, {-10, -1}, {-1, -10}}) {
+            try {
+                prev.removeRange(range[0], range[1]);
+                org.junit.Assert.fail("expected UnsupportedOperationException from removeRange");
+            } catch (UnsupportedOperationException expected) {
+            }
+            try {
+                prev.retainRange(range[0], range[1]);
+                org.junit.Assert.fail("expected UnsupportedOperationException from retainRange");
+            } catch (UnsupportedOperationException expected) {
+            }
+            try {
+                prev.insertRange(range[0], range[1]);
+                org.junit.Assert.fail("expected UnsupportedOperationException from insertRange");
+            } catch (UnsupportedOperationException expected) {
+            }
+        }
+        ix.close();
+    }
+
+    @Test
+    public void testCloseReleasesPrevReference() {
+        RspBitmap rb = RspBitmap.makeEmpty();
+        rb = rb.addRange(0, 9);
+        rb = rb.add(2L * 65536 + 5);
+        final TrackingWritableRowSet ix = new TrackingWritableRowSetImpl(rb);
+        // Materialize prev, which takes references on the inner set for both the prev cache and the prev view.
+        assertEquals(11L, ix.sizePrev());
+        ix.close();
+        // Everything must have been released; a surviving reference would force copy-on-write copies
+        // (and retention) on anything still sharing the inner set.
+        assertEquals(0, rb.refCount());
     }
 }

@@ -61,7 +61,9 @@ public abstract class DeephavenInDockerExtension {
 
     @Inject
     DeephavenInDockerExtension(Project project) {
-        awaitStatusTimeout.set 20
+        // The server is healthy once jpy and the UpdateGraph have started, which takes on the order of 20 seconds on a
+        // loaded CI runner; the container reports 'starting' until then, and this poller only accepts 'healthy'.
+        awaitStatusTimeout.set 60
         checkInterval.set 100
         shouldLog.set Specs.satisfyNone()
 
@@ -109,8 +111,9 @@ public abstract class DeephavenInDockerExtension {
         portTask = project.tasks.register('waitForPort', DockerInspectContainer) {task ->
             task.dependsOn healthyTask
             task.containerId.set containerName.get()
-            task.onNext { InspectContainerResponse inspect ->
-                getPort().set(Integer.parseInt(((InspectContainerResponse) inspect).getNetworkSettings().ports.bindings.values().first()[0].hostPortSpec))
+            task.onNext { Object obj ->
+                def inspect = (InspectContainerResponse) obj
+                getPort().set(Integer.parseInt(inspect.getNetworkSettings().ports.bindings.values().first()[0].hostPortSpec))
             }
         }
 

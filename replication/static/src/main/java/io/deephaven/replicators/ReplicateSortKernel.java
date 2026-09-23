@@ -29,17 +29,6 @@ public class ReplicateSortKernel {
     public static void main(String[] args) throws IOException {
         replicateLongToInt();
         replicateLongToByte();
-        doCharReplication(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharTimsortKernel.java");
-        doCharReplication(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
-        doCharReplication(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharIntTimsortKernel.java");
-        doCharReplication(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharByteTimsortKernel.java");
-
-        objectToComparator(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
 
         doCharMegaMergeReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/megamerge/CharLongMegaMergeKernel.java");
@@ -60,62 +49,6 @@ public class ReplicateSortKernel {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java");
         fixupObjectPermute(charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java"));
-    }
-
-    private static void doCharReplication(@NotNull final String sourceClassJavaPath) throws IOException {
-        // replicate char to each of the other types
-        final List<String> timsortPaths =
-                charToAllButBoolean(TASK, sourceClassJavaPath);
-        final String objectSortPath = charToObject(TASK, sourceClassJavaPath);
-        timsortPaths.add(sourceClassJavaPath);
-        timsortPaths.add(objectSortPath);
-
-        // now replicate each type to a descending kernel, and swap the sense of gt, lt, geq, and leq
-        for (final String path : timsortPaths) {
-            final String descendingPath = path.replace("TimsortKernel", "TimsortDescendingKernel");
-
-            if (path.contains("Double") || path.contains("Float")) {
-                FileUtils.copyFile(new File(path), new File(descendingPath));
-
-                // first we need to figure out what to do with the NaNs in our ascending kernel
-                fixupNanComparisons(path, true);
-
-                // we still need a descending kernel
-                System.out.println("Descending FP Path: " + descendingPath);
-                // we are going to fix it up ascending, then follow it up with a sense inversion
-                fixupNanComparisons(descendingPath, true);
-                invertSense(path, descendingPath);
-            } else if (path.contains("Char")) {
-                final String sourceClassName = className(sourceClassJavaPath);
-                final String nullAwareAscendingName = "NullAware" + sourceClassName;
-                final String nullAwarePath = path.replace(sourceClassName, nullAwareAscendingName);
-                final String nullAwareDescendingPath =
-                        nullAwarePath.replaceAll("TimsortKernel", "TimsortDescendingKernel");
-
-                fixupCharNullComparisons(sourceClassJavaPath, path, nullAwarePath, sourceClassName,
-                        nullAwareAscendingName, true);
-                // we are going to fix it up ascending, then follow it up with a sense inversion
-                fixupCharNullComparisons(sourceClassJavaPath, path, nullAwareDescendingPath, sourceClassName,
-                        nullAwareAscendingName, true);
-                invertSense(nullAwareDescendingPath, nullAwareDescendingPath);
-            } else if (path.contains("Object")) {
-                FileUtils.copyFile(new File(path), new File(descendingPath));
-
-                fixupObjectTimSort(path, true);
-                System.out.println("Descending Object Path: " + descendingPath);
-                fixupObjectTimSort(descendingPath, false);
-            } else {
-                System.out.println("Descending Path: " + descendingPath);
-                invertSense(path, descendingPath);
-            }
-        }
-    }
-
-    private static void objectToComparator(@NotNull final String charSourceJavaPath) throws IOException {
-        final String objectPath = charSourceJavaPath.replace("Char", "Object");
-        final String comparatorPath = objectPath.replace("Object", "Comparator");
-        FileUtils.copyFile(new File(objectPath), new File(comparatorPath));
-        fixupComparatorTimSort(comparatorPath);
     }
 
     private static void doCharMegaMergeReplication(String sourceClassJavaPath) throws IOException {
@@ -143,8 +76,6 @@ public class ReplicateSortKernel {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/LongSortKernel.java");
         fixupIntSortKernel(intSortKernelPath);
         longToInt(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
-        longToInt(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/radix/BooleanLongRadixSortKernel.java");
     }
 
@@ -152,8 +83,6 @@ public class ReplicateSortKernel {
         final String byteSortKernelPath = longToByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/LongSortKernel.java");
         fixupByteSortKernel(byteSortKernelPath);
-        longToByte(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
         longToByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/radix/BooleanLongRadixSortKernel.java");
     }
@@ -203,47 +132,6 @@ public class ReplicateSortKernel {
 
         return globalReplacements(lines, "TimsortKernel", "TimsortDescendingKernel", "\\BLongMegaMergeKernel",
                 "LongMegaMergeDescendingKernel");
-    }
-
-    private static void fixupObjectTimSort(String objectPath, boolean ascending) throws IOException {
-        final File objectFile = new File(objectPath);
-        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-
-        if (!ascending) {
-            lines = ascendingNameToDescendingName(objectPath, lines);
-        }
-
-        lines = fixupChunkAttributes(lines);
-
-        FileUtils.writeLines(objectFile, fixupObjectComparisons(lines, ascending));
-    }
-
-    private static void fixupComparatorTimSort(String comparatorPath) throws IOException {
-        final File objectFile = new File(comparatorPath);
-        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-
-        lines = globalReplacements(lines, "ObjectLongTimsortKernel", "ComparatorLongTimsortKernel");
-
-        lines = addImport(lines, java.util.Comparator.class);
-        lines = removeImport(lines, java.util.Objects.class, ObjectComparisons.class);
-
-        lines = replaceRegion(lines, "compare ops",
-                l -> l.stream().map(line -> line.replace("static boolean", "boolean")).collect(Collectors.toList()));
-        lines = replaceRegion(lines, "createContextStatic",
-                l -> l.stream().map(line -> line.replace("final int size", "final int size, Comparator comparator")
-                        .replace("()", "(comparator)")).collect(Collectors.toList()));
-
-        lines = replaceRegion(lines, "comparison functions",
-                List.of("    private int doComparison(Object lhs, Object rhs) {\n" +
-                        "        return comparator.compare(lhs, rhs);\n" +
-                        "    }"));
-        lines = replaceRegion(lines, "constructor", List.of("    private final Comparator comparator;\n" +
-                "\n" +
-                "    public ComparatorLongTimsortKernel(final Comparator comparator) {\n" +
-                "        this.comparator = comparator;\n" +
-                "    }"));
-
-        FileUtils.writeLines(objectFile, lines);
     }
 
     private static void fixupObjectMegaMerge(String objectPath, boolean ascending) throws IOException {
@@ -343,15 +231,6 @@ public class ReplicateSortKernel {
     }
 
 
-    public static void fixupNanComparisons(String path, boolean ascending) throws IOException {
-        final File file = new File(path);
-
-        final List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-
-        FileUtils.writeLines(new File(path),
-                fixupNanComparisons(lines, path.contains("Double") ? "Double" : "Float", ascending));
-    }
-
     public static List<String> fixupNanComparisons(List<String> lines, String type, boolean ascending) {
         final String lcType = type.toLowerCase();
 
@@ -362,35 +241,6 @@ public class ReplicateSortKernel {
                         "        return " + (ascending ? "" : "-1 * ") + type + "Comparisons.compare(lhs, rhs);",
                         "    }"));
         return lines;
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    private static void fixupCharNullComparisons(String sourceClassJavaPath, String path, String newPath,
-            String oldName,
-            String newName, boolean ascending) throws IOException {
-        final File file = new File(path);
-
-        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-
-        lines = ReplicationUtils.addImport(lines, QueryConstants.class, CharComparisons.class);
-
-        lines = globalReplacements(fixupCharNullComparisons(lines, ascending), oldName, newName);
-
-        // preserve the first comment of the file; typically the copyright
-        int insertionPoint = 0;
-        if (lines.size() > 0 && lines.get(0).startsWith("/*")) {
-            for (int ii = 0; ii < lines.size(); ++ii) {
-                final int offset = lines.get(ii).indexOf("*/");
-                if (offset != -1) {
-                    insertionPoint = ii + 1;
-                    break;
-                }
-            }
-        }
-
-        lines.add(insertionPoint, ReplicationUtils.fileHeaderString(TASK, oldName));
-
-        FileUtils.writeLines(new File(newPath), lines);
     }
 
     public static List<String> fixupCharNullComparisons(List<String> lines, boolean ascending) {

@@ -33,10 +33,10 @@ public class ParquetTableLocationKey extends URITableLocationKey {
 
     private static final String IMPLEMENTATION_NAME = ParquetTableLocationKey.class.getSimpleName();
 
-    private ParquetFileReader fileReader;
+    protected ParquetFileReader fileReader;
     private ParquetMetadata metadata;
     private int[] rowGroupIndices;
-    private SeekableChannelsProvider channelsProvider;
+    protected SeekableChannelsProvider channelsProvider;
 
     /**
      * Construct a new ParquetTableLocationKey for the supplied {@code parquetFileUri} and {@code partitions}.

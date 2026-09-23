@@ -52,6 +52,8 @@ application.applicationDistribution.into('bin') {
     from(createApplication('create-shared-id', 'io.deephaven.client.examples.CreateSharedId'))
     from(createApplication('print-configuration-constants', 'io.deephaven.client.examples.PrintConfigurationConstants'))
 
-    fileMode = 0755
+    filePermissions {
+        unix('0755')
+    }
 }
 

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
@@ -21,6 +22,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -276,19 +278,87 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         CURR, PREV
     }
 
+    /**
+     * Implemented by our contexts in order to expose internal state that is not otherwise observable, since it affects
+     * only how much work an access costs and never its result.
+     */
+    @VisibleForTesting
+    interface ContextInternals {
+
+        /**
+         * Expose the slot search hint this context maintains: {@link UnionRedirection#currSlotForRowKey(long, int)} and
+         * its siblings return the same slot for any hint, so a stale hint costs a search of the slot key space rather
+         * than producing a wrong answer.
+         *
+         * @return The last slot accessed via this context, or {@code 0} if no slot has been accessed yet
+         */
+        int lastSlot();
+
+        /**
+         * Expose the context this context currently holds for the constituent {@link ColumnSource} occupying its slot,
+         * which is re-made whenever the constituent source changes or the existing context is too small.
+         * <p>
+         * A {@link GetContext} reports the context held for its own accesses; the fill context it delegates to for row
+         * sequences that span multiple slots maintains its own, reachable via
+         * {@link DefaultGetContext#getFillContext(ChunkSource.GetContext)}.
+         *
+         * @return The constituent context currently held, or {@code null} if none has been made yet
+         */
+        @Nullable
+        Context constituentContext();
+    }
+
+    /**
+     * Mutable holder for the last slot accessed by a context, used to seed subsequent slot searches in
+     * {@link UnionRedirection}. All {@link SlotState slot states} belonging to a single context share one instance,
+     * which matters because a {@link GetContext} delegates to its {@link FillContext} for row sequences that span
+     * multiple slots; without sharing, the delegating context's hint would go stale and force a full search of the slot
+     * key space on its next access.
+     */
+    private static final class SlotHint {
+
+        private int lastSlot;
+    }
+
     private abstract class SlotState<SLOT_CONTEXT_TYPE extends Context> implements SafeCloseable {
 
-        int slot = -1;
+        private static final int NULL_SLOT = -1;
+        private static final int NULL_SHIFT = -1;
+
+        /**
+         * Our context's shared record of the last slot accessed, maintained by {@link #prepare}.
+         */
+        private final SlotHint slotHint;
+
+        /**
+         * Row sequence wrapper used to translate outer row keys into the row key space of the source occupying our
+         * slot.
+         */
+        private final ShiftedRowSequence sourceRowSequence = new ShiftedRowSequence();
+
+        // Fields set in prepare
+        private int slot = NULL_SLOT;
         private DataVersion dataVersion;
-        long shift;
-        ColumnSource<T> source;
-        SLOT_CONTEXT_TYPE context;
-        int capacity;
+        private long shift = NULL_SHIFT;
+        protected ColumnSource<T> source;
+
+        // Fields set in makeContext
+        protected SLOT_CONTEXT_TYPE context;
+        protected int capacity;
+
+        private SlotState(@NotNull final SlotHint slotHint) {
+            this.slotHint = slotHint;
+        }
 
         void prepare(final int sliceSlot, final DataVersion sliceDataVersion, final int sliceSize) {
-            final boolean updateSource = sliceSlot != slot || dataVersion != sliceDataVersion;
-            final boolean updateContext = updateSource || context == null || capacity < sliceSize;
-            if (updateSource) {
+            Require.geqZero(sliceSlot, "sliceSlot");
+            Require.gtZero(sliceSize, "sliceSize");
+            Require.neqNull(sliceDataVersion, "dataVersion");
+
+            slotHint.lastSlot = sliceSlot;
+
+            final ColumnSource<T> oldSource = source;
+            if (sliceSlot != slot || sliceDataVersion != dataVersion) {
                 slot = sliceSlot;
                 dataVersion = sliceDataVersion;
                 switch (dataVersion) {
@@ -300,112 +370,203 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
                         shift = unionRedirection.prevFirstRowKeyForSlot(sliceSlot);
                         source = sourceLookup.slotToPrevSource(sliceSlot);
                         break;
+                    default:
+                        throw new IllegalStateException("Unexpected data version: " + dataVersion);
                 }
             }
-            if (updateContext) {
+
+            if (oldSource != source || context == null || capacity < sliceSize) {
                 closeContext();
                 makeContext(sliceSize);
             }
         }
 
-        abstract void makeContext(int sliceSize);
+        /**
+         * Translate {@code outerRowSequence} into the row key space of the source occupying our slot.
+         *
+         * @param outerRowSequence The outer row sequence, which must lie entirely within our slot
+         * @return The translated row sequence, which is owned by this SlotState
+         */
+        RowSequence sourceRowSequence(@NotNull final RowSequence outerRowSequence) {
+            return sourceRowSequence.reset(outerRowSequence, -shift);
+        }
+
+        /**
+         * Translate {@code outerRowKey} into the row key space of the source occupying our slot.
+         *
+         * @param outerRowKey The outer row key, which must lie within our slot
+         * @return The translated row key
+         */
+        long sourceRowKey(final long outerRowKey) {
+            return outerRowKey - shift;
+        }
+
+        /**
+         * Make a new context of the appropriate type for the current {@link #source} and assign it to {@link #context},
+         * and assign the maximum slice size that context can service to {@link #capacity}.
+         * <p>
+         * This is called from {@link #prepare} whenever the source has changed, or the existing context cannot service
+         * a slice of {@code sliceSize} rows. Any previous context has already been closed and {@link #context} set to
+         * {@code null}; implementations must not attempt to close a previous context themselves.
+         * <p>
+         * {@link #capacity} may be set larger than {@code sliceSize} when the new context imposes no relevant limit of
+         * its own, in order to allow the context to be re-used for subsequent, larger slices.
+         *
+         * @param sliceSize The minimum number of rows the new context must be able to service
+         */
+        protected abstract void makeContext(int sliceSize);
 
         private void closeContext() {
-            if (context != null) {
-                context.close();
+            try (final SafeCloseable ignored = context) {
                 context = null;
+                capacity = 0;
             }
         }
 
         @Override
         public void close() {
-            slot = -1;
+            slot = NULL_SLOT;
             dataVersion = null;
+            shift = NULL_SHIFT;
             source = null;
             closeContext();
-            capacity = 0;
+            sourceRowSequence.close();
         }
     }
 
-    private class SlotFillState extends SlotState<ChunkSource.FillContext> {
+    private class FillSlotState extends SlotState<ChunkSource.FillContext> {
+
+        /**
+         * Resettable slice of the caller's destination chunk, used to append the data for a single slot.
+         */
+        private final ResettableWritableChunk<Any> sliceDestination = getChunkType().makeResettableWritableChunk();
+
+        private FillSlotState(@NotNull final SlotHint slotHint) {
+            super(slotHint);
+        }
 
         @Override
-        void makeContext(final int sliceSize) {
+        protected void makeContext(final int sliceSize) {
             context = source.makeFillContext(sliceSize);
             capacity = context.supportsUnboundedFill() ? Integer.MAX_VALUE : sliceSize;
         }
-    }
 
-    private class SlotGetState extends SlotState<ChunkSource.GetContext> {
+        void fillChunkAppend(
+                final int slot,
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final RowSequence outerRowSequence) {
+            final int sliceSize = outerRowSequence.intSize();
+            prepare(slot, DataVersion.CURR, sliceSize);
+            final int offset = destination.size();
+            destination.setSize(offset + sliceSize);
+            source.fillChunk(context,
+                    sliceDestination.resetFromChunk(destination, offset, sliceSize),
+                    sourceRowSequence(outerRowSequence));
+        }
+
+        void fillPrevChunkAppend(
+                final int slot,
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final RowSequence outerRowSequence) {
+            final int sliceSize = outerRowSequence.intSize();
+            prepare(slot, DataVersion.PREV, sliceSize);
+            final int offset = destination.size();
+            destination.setSize(offset + sliceSize);
+            source.fillPrevChunk(context,
+                    sliceDestination.resetFromChunk(destination, offset, sliceSize),
+                    sourceRowSequence(outerRowSequence));
+        }
 
         @Override
-        void makeContext(final int sliceSize) {
+        public void close() {
+            super.close();
+            sliceDestination.close();
+        }
+    }
+
+    private class GetSlotState extends SlotState<ChunkSource.GetContext> {
+
+        private GetSlotState(@NotNull final SlotHint slotHint) {
+            super(slotHint);
+        }
+
+        @Override
+        protected void makeContext(final int sliceSize) {
             context = source.makeGetContext(sliceSize);
             capacity = sliceSize;
         }
+
+        Chunk<? extends Values> getChunk(final int slot, @NotNull final RowSequence outerRowSequence) {
+            prepare(slot, DataVersion.CURR, outerRowSequence.intSize());
+            return source.getChunk(context, sourceRowSequence(outerRowSequence));
+        }
+
+        Chunk<? extends Values> getChunk(final int slot, final long firstOuterKey, final long lastOuterKey) {
+            prepare(slot, DataVersion.CURR, Math.toIntExact(lastOuterKey - firstOuterKey + 1));
+            return source.getChunk(context, sourceRowKey(firstOuterKey), sourceRowKey(lastOuterKey));
+        }
+
+        Chunk<? extends Values> getPrevChunk(final int slot, @NotNull final RowSequence outerRowSequence) {
+            prepare(slot, DataVersion.PREV, outerRowSequence.intSize());
+            return source.getPrevChunk(context, sourceRowSequence(outerRowSequence));
+        }
+
+        Chunk<? extends Values> getPrevChunk(final int slot, final long firstOuterKey, final long lastOuterKey) {
+            prepare(slot, DataVersion.PREV, Math.toIntExact(lastOuterKey - firstOuterKey + 1));
+            return source.getPrevChunk(context, sourceRowKey(firstOuterKey), sourceRowKey(lastOuterKey));
+        }
     }
 
-    private class FillContext implements ChunkSource.FillContext {
+    private class FillContext implements ChunkSource.FillContext, ContextInternals {
 
-        private final ShiftedRowSequence sourceRowSequence;
-        private final ResettableWritableChunk<Any> sliceDestination;
-        private final SlotFillState slotState;
+        private final SlotHint slotHint;
+        private final FillSlotState slotState;
 
         private FillContext() {
-            sourceRowSequence = new ShiftedRowSequence();
-            sliceDestination = getChunkType().makeResettableWritableChunk();
-            slotState = new SlotFillState();
+            slotHint = new SlotHint();
+            slotState = new FillSlotState(slotHint);
         }
 
-        private int lastSlot() {
-            return Math.max(slotState.slot, 0);
+        @Override
+        public int lastSlot() {
+            return slotHint.lastSlot;
         }
 
-        private RowSequence sourceRowSequence(@NotNull final RowSequence rowSequence) {
-            return sourceRowSequence.reset(rowSequence, -slotState.shift);
+        @Override
+        public Context constituentContext() {
+            return slotState.context;
         }
 
         private void fillChunkAppend(
                 final int slot,
                 @NotNull final WritableChunk<? super Values> destination,
                 @NotNull final RowSequence outerRowSequence) {
-            final int sliceSize = outerRowSequence.intSize();
-            slotState.prepare(slot, DataVersion.CURR, sliceSize);
-            final int offset = destination.size();
-            destination.setSize(offset + sliceSize);
-            slotState.source.fillChunk(slotState.context,
-                    sliceDestination.resetFromChunk(destination, offset, sliceSize),
-                    sourceRowSequence(outerRowSequence));
+            slotState.fillChunkAppend(slot, destination, outerRowSequence);
         }
 
         private void fillPrevChunkAppend(
                 final int slot,
                 @NotNull final WritableChunk<? super Values> destination,
                 @NotNull final RowSequence outerRowSequence) {
-            final int sliceSize = outerRowSequence.intSize();
-            slotState.prepare(slot, DataVersion.PREV, sliceSize);
-            final int offset = destination.size();
-            destination.setSize(offset + sliceSize);
-            slotState.source.fillPrevChunk(slotState.context,
-                    sliceDestination.resetFromChunk(destination, offset, sliceSize),
-                    sourceRowSequence(outerRowSequence));
+            slotState.fillPrevChunkAppend(slot, destination, outerRowSequence);
         }
 
         @Override
         public void close() {
-            sourceRowSequence.close();
-            sliceDestination.close();
             slotState.close();
         }
     }
 
-    private class GetContext extends DefaultGetContext<Values> {
+    private class GetContext extends DefaultGetContext<Values> implements ContextInternals {
 
-        private final SlotGetState slotState;
+        private final SlotHint slotHint;
+        private final GetSlotState slotState;
 
         private GetContext(final int chunkCapacity) {
             super(UnionColumnSource.this, chunkCapacity, null);
-            slotState = new SlotGetState();
+            // Share our fill context's hint; we delegate to it for row sequences that span multiple slots.
+            slotHint = getFillContext().slotHint;
+            slotState = new GetSlotState(slotHint);
         }
 
         @Override
@@ -414,35 +575,31 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return ((FillContext) super.getFillContext());
         }
 
-        private int lastSlot() {
-            return Math.max(slotState.slot, 0);
+        @Override
+        public int lastSlot() {
+            return slotHint.lastSlot;
         }
 
-        private RowSequence sourceRowSequence(@NotNull final RowSequence rowSequence) {
-            return getFillContext().sourceRowSequence.reset(rowSequence, -slotState.shift);
+        @Override
+        public Context constituentContext() {
+            return slotState.context;
         }
 
         private Chunk<? extends Values> getChunk(final int slot, @NotNull final RowSequence outerRowSequence) {
-            slotState.prepare(slot, DataVersion.CURR, outerRowSequence.intSize());
-            return slotState.source.getChunk(slotState.context, sourceRowSequence(outerRowSequence));
+            return slotState.getChunk(slot, outerRowSequence);
         }
 
         private Chunk<? extends Values> getChunk(final int slot, final long firstOuterKey, final long lastOuterKey) {
-            slotState.prepare(slot, DataVersion.CURR, Math.toIntExact(lastOuterKey - firstOuterKey + 1));
-            return slotState.source.getChunk(slotState.context,
-                    firstOuterKey - slotState.shift, lastOuterKey - slotState.shift);
+            return slotState.getChunk(slot, firstOuterKey, lastOuterKey);
         }
 
         private Chunk<? extends Values> getPrevChunk(final int slot, @NotNull final RowSequence outerRowSequence) {
-            slotState.prepare(slot, DataVersion.PREV, outerRowSequence.intSize());
-            return slotState.source.getPrevChunk(slotState.context, sourceRowSequence(outerRowSequence));
+            return slotState.getPrevChunk(slot, outerRowSequence);
         }
 
         private Chunk<? extends Values> getPrevChunk(final int slot, final long firstOuterKey,
                 final long lastOuterKey) {
-            slotState.prepare(slot, DataVersion.PREV, Math.toIntExact(lastOuterKey - firstOuterKey + 1));
-            return slotState.source.getPrevChunk(slotState.context,
-                    firstOuterKey - slotState.shift, lastOuterKey - slotState.shift);
+            return slotState.getPrevChunk(slot, firstOuterKey, lastOuterKey);
         }
 
         @Override

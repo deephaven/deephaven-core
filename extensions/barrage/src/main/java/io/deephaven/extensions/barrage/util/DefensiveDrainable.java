@@ -4,6 +4,7 @@
 package io.deephaven.extensions.barrage.util;
 
 import io.grpc.Drainable;
+import io.grpc.KnownLength;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -15,7 +16,7 @@ import java.io.OutputStream;
  * should use {@link #drainTo(OutputStream)} when applicable. If handing off to external code that needs a real
  * {@link InputStream}, use {@link #capture()}.
  */
-public abstract class DefensiveDrainable extends InputStream implements Drainable {
+public abstract class DefensiveDrainable extends InputStream implements Drainable, KnownLength {
 
     private static UnsupportedOperationException unsupportedUsagePattern() {
         return new UnsupportedOperationException(

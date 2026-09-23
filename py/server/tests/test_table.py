@@ -1264,6 +1264,34 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(len(attrs), len(rt_attrs) + 1)
         self.assertIn("BlinkTable", set(attrs.keys()) - set(rt_attrs.keys()))
 
+    def test_with_keys(self):
+        rt = self.test_table.with_keys("a")
+        self.assertEqual({"keyColumns": "a"}, rt.attributes())
+        self.assertEqual({}, self.test_table.attributes())
+
+        rt = self.test_table.with_keys(["a", "b"])
+        self.assertEqual({"keyColumns": "a,b"}, rt.attributes())
+
+        with self.assertRaises(DHError):
+            self.test_table.with_keys([])
+
+        with self.assertRaises(DHError):
+            self.test_table.with_keys("NotAColumn")
+
+    def test_with_unique_keys(self):
+        rt = self.test_table.with_unique_keys("a")
+        self.assertEqual({"keyColumns": "a", "uniqueKeys": True}, rt.attributes())
+        self.assertEqual({}, self.test_table.attributes())
+
+        rt = self.test_table.with_unique_keys(["a", "b"])
+        self.assertEqual({"keyColumns": "a,b", "uniqueKeys": True}, rt.attributes())
+
+        with self.assertRaises(DHError):
+            self.test_table.with_unique_keys([])
+
+        with self.assertRaises(DHError):
+            self.test_table.with_unique_keys("NotAColumn")
+
     def test_remove_blink(self):
         t_blink = time_table("PT1s", blink_table=True)
         t_no_blink = t_blink.remove_blink()

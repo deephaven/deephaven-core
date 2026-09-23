@@ -34,8 +34,6 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends RightIncrementalNaturalJoinStateManager {
-    public static final long FIRST_DUPLICATE = RowSet.NULL_ROW_KEY - 1;
-
     // the number of slots in our table
     protected int tableSize;
 
@@ -217,6 +215,12 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     protected void freeDuplicateLocation(long duplicateLocation) {
+        // The duplicate row set at this location is no longer reachable; the location is reused by
+        // allocateDuplicateLocation, which overwrites the slot with a freshly built row set.
+        final WritableRowSet duplicates = rightSideDuplicateRowSets.getAndSetUnsafe(duplicateLocation, null);
+        if (duplicates != null) {
+            duplicates.close();
+        }
         freeDuplicateValues.add(duplicateLocation);
     }
 

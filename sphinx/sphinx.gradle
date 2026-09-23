@@ -122,11 +122,11 @@ def cppClientDoxygenTask = Docker.registerDockerTask(project, 'cppClientDoxygen'
     parentContainers = [project(':docker-server-jetty').tasks.findByName('buildDocker-server-jetty')] // deephaven/server-jetty
     containerOutPath = '/project/doc/doxygenoutput'
     copyOut {
-        into "$buildDir/cppClientDoxygen"
+        into layout.buildDirectory.dir('cppClientDoxygen')
     }
 }
 
-def pythonDocs = makePyDocTask('pythonDocs', 'dh-python-docs', [("$projectDir/source".toString()):'source'], "$buildDir/docs")
+def pythonDocs = makePyDocTask('pythonDocs', 'dh-python-docs', [("$projectDir/source".toString()):'source'], layout.buildDirectory.dir('docs').get().asFile.path)
 //TODO why do docs depend on this, but the wheel itself doesn't? makes more sense to depend on assert, right?
 project.tasks.named('pythonDocsPrepareDocker').configure {
     dependsOn ':Generators:generateFigureImmutable'
@@ -136,22 +136,22 @@ project.tasks.named('pythonDocsPrepareDocker').configure {
 makePyDocTask('pydeephavenDocs', 'pydeephaven', [
         ("$rootDir/py/client/docs/source".toString()):'source',
         ("$rootDir/py/client/pydeephaven".toString()):'pydeephaven'
-], "$buildDir/pyclient-docs")
+], layout.buildDirectory.dir('pyclient-docs').get().asFile.path)
 
 
 def cppClientDocs = makePyDocTask('cppClientDocs', 'cpp-client', [
-        ("$buildDir/cppClientDoxygen".toString()):'source/doxygenoutput',
+        (layout.buildDirectory.dir('cppClientDoxygen').get().asFile.path):'source/doxygenoutput',
         ("$rootDir/cpp-client/doc".toString()):'source',
         ("$rootDir/cpp-client/deephaven".toString()):'deephaven',
-], "$buildDir/cppClientDocs")
+], layout.buildDirectory.dir('cppClientDocs').get().asFile.path)
 tasks.named('cppClientDocsPrepareDocker').configure {
     dependsOn cppClientDoxygenTask
 }
 
 makePyDocTask('cppExamplesDocs', 'cpp-examples', [
         ("$rootDir/cpp-client/deephaven/examples/doc".toString()):'source',
-        ("$buildDir/cppClientDocs".toString()):'cpp'
-], "$buildDir/cppExamplesDocs")
+        (layout.buildDirectory.dir('cppClientDocs').get().asFile.path):'cpp'
+], layout.buildDirectory.dir('cppExamplesDocs').get().asFile.path)
 tasks.named('cppExamplesDocsPrepareDocker').configure {
     dependsOn cppClientDocs
 }

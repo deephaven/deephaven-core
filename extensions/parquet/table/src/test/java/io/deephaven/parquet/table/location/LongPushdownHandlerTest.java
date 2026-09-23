@@ -40,51 +40,85 @@ public class LongPushdownHandlerTest {
         final Statistics<?> stats = longStats(-5_000L, 5_000L);
 
         // range wholly inside
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new LongRangeFilter("l", -1_000L, 1_000L, true, true), stats));
 
         // filter equal to statistics inclusive
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new LongRangeFilter("l", -5_000L, 5_000L, true, true), stats));
 
         // half-open overlaps
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new LongRangeFilter("l", -5_000L, 0L, true, false), stats));
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new LongRangeFilter("l", 0L, 5_000L, false, true), stats));
 
         // edge inclusive vs exclusive
-        assertFalse(LongPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new LongRangeFilter("l", -5_000L, -5_000L, false, false), stats));
-        assertFalse(LongPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new LongRangeFilter("l", 5_000L, 5_000L, false, false), stats));
 
         // single-point inside
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new LongRangeFilter("l", 42L, 42L, true, true), stats));
 
         // disjoint below and above
-        assertFalse(LongPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new LongRangeFilter("l", -20_000L, -15_000L, true, true), stats));
-        assertFalse(LongPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new LongRangeFilter("l", 15_000L, 20_000L, true, true), stats));
 
         // constructor value-swap still overlaps
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new LongRangeFilter("l", 2_000L, -2_000L, true, true), stats));
 
         // NULL bound disables push-down
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new LongRangeFilter("l", QueryConstants.NULL_LONG, 0L, true, true), stats));
 
         // stats at full domain
         final Statistics<?> statsFull = longStats(Long.MIN_VALUE, Long.MAX_VALUE);
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new LongRangeFilter("l", 0L, 0L, true, true), statsFull));
 
         // Overlapping (3,3] with stats [3, 4] should return false
-        assertFalse(LongPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new LongRangeFilter("i", 3, 3, false, true), longStats(3, 4)));
+    }
+
+    /**
+     * A null lower bound held <i>exclusively</i> -- {@code X > null} -- is the one range shape a null row does not
+     * satisfy, so the sentinel must not keep a row group alive on its own. {@code NULL_LONG} is {@code Long.MIN_VALUE},
+     * the bottom of the value domain, so a row group whose {@code min} is the sentinel has to be judged on whatever
+     * sits above it -- and one holding nothing else can be excluded outright.
+     */
+    @Test
+    public void exclusiveNullLowerBoundExcludesTheSentinel() {
+        // `X > null`, per LongRangeFilter.gt: (NULL_LONG, MAX_LONG].
+        final LongRangeFilter notNull = LongRangeFilter.gt("l", QueryConstants.NULL_LONG);
+
+        // Nothing here but the sentinel, which this filter does not match.
+        assertFalse(evaluate(notNull, longStats(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG)));
+
+        // Any ordinary value does match, whether or not the row group also reaches down to the sentinel.
+        assertTrue(evaluate(notNull, longStats(-5L, 5L)));
+        assertTrue(evaluate(notNull, longStats(QueryConstants.NULL_LONG, 5L)));
+
+        // `null < X < 5L`: the sentinel rows no longer count, so a row group holding nothing else is excluded...
+        assertFalse(evaluate(
+                new LongRangeFilter("l", QueryConstants.NULL_LONG, 5L, false, false),
+                longStats(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG)));
+
+        // ... which is exactly the row group that `X < 5L`, holding the same bound inclusively, has to keep.
+        assertTrue(evaluate(
+                new LongRangeFilter("l", QueryConstants.NULL_LONG, 5L, true, false),
+                longStats(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG)));
+
+        // A sentinel minimum with ordinary values above it overlaps either way.
+        assertTrue(evaluate(
+                new LongRangeFilter("l", QueryConstants.NULL_LONG, 5L, false, false),
+                longStats(QueryConstants.NULL_LONG, 10L)));
     }
 
     @Test
@@ -92,13 +126,13 @@ public class LongPushdownHandlerTest {
         final Statistics<?> stats = longStats(1_000L, 2_000L);
 
         // unsorted list with duplicates, one inside
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.REGULAR,
                         "l", 5_000L, 1_500L, 1_800L, 1_800L),
                 stats));
 
         // all values outside
-        assertFalse(LongPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR,
                         "l", 9_000L, 10_000L),
                 stats));
@@ -108,52 +142,73 @@ public class LongPushdownHandlerTest {
         final Object[] withInside = new Object[many.length + 1];
         System.arraycopy(many, 0, withInside, 0, many.length);
         withInside[withInside.length - 1] = 1_234L;
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "l", withInside), stats));
 
         // empty list
-        assertFalse(LongPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "l"), stats));
 
-        // list containing NULL
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        // A null among the values no longer declines push-down. To Parquet the sentinel is an ordinary value,
+        // so it is tested against min/max like any other; Parquet nulls are ruled out separately, by the
+        // null-aware check in StatisticsEvaluator.makeForFilter.
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.REGULAR, "l",
                         QueryConstants.NULL_LONG, 123L),
                 stats));
+
+        // ...but a row group whose values reach the sentinel may hold rows that read back as null.
+        assertTrue(evaluate(
+                new MatchFilter(MatchOptions.REGULAR, "l", QueryConstants.NULL_LONG),
+                longStats(QueryConstants.NULL_LONG, 2_000L)));
     }
 
     @Test
     public void longInvertMatchFilterScenarios() {
         // gaps remain inside stats
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "l", -1L, 0L, 1L),
                 longStats(-5L, 5L)));
 
         // stats fully covered by exclusion list
-        assertFalse(LongPushdownHandler.maybeOverlaps(
+        assertFalse(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "l", 42L),
                 longStats(42L, 42L)));
 
         // exclude 10-19 leaves gaps 0-9 and 20-29
         final Object[] exclude = LongStream.range(10L, 20L).boxed().toArray();
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "l", exclude),
                 longStats(0L, 29L)));
 
         // empty exclusion list
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "l"),
                 longStats(7L, 8L)));
 
         // NULL disables push-down
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "l", QueryConstants.NULL_LONG),
                 longStats(100L, 200L)));
 
-        // Inverse match of {5, 6} against statistics [5, 6] should return false but currently returns true since
-        // the implementation assumes the range (5, 6) overlaps with the statistics range [5, 6].
-        assertTrue(LongPushdownHandler.maybeOverlaps(
+        // Inverse match of {5, 6} against statistics [5, 6] could return false -- for an integral type those two
+        // excluded values cover the whole interval -- but the handler excludes only a single-valued row group, so
+        // this stays a "maybe".
+        assertTrue(evaluate(
                 new MatchFilter(MatchOptions.INVERTED, "i", 5, 6),
                 longStats(5, 6)));
     }
+
+    /**
+     * Resolves the filter to an evaluator and applies it to one row group's statistics, as
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
+     */
+    private static boolean evaluate(final LongRangeFilter filter, final Statistics<?> stats) {
+        return LongPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
+    }
+
+    private static boolean evaluate(final MatchFilter filter, final Statistics<?> stats) {
+        return LongPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
+    }
+
 }

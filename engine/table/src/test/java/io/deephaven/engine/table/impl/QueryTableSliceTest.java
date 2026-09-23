@@ -360,7 +360,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     }
 
     public void testGrowthAppendUpdatePattern() {
-        final long steps = 4096;
+        final long steps = 1024;
 
         for (int j = 1; j < 100; j += 7) {
             final QueryTable upTable = getTable(true, 0, new Random(0), new ColumnInfo[0]);

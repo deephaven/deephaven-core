@@ -76,10 +76,10 @@ idea {
   module {
     sourceDirs = []
     resourceDirs = []
-    testSourceDirs += project.sourceSets.javaToPython.java.srcDirs
-    testSourceDirs += project.sourceSets.pythonToJava.java.srcDirs
-    testResourceDirs += project.sourceSets.javaToPython.resources.srcDirs
-    testResourceDirs += project.sourceSets.pythonToJava.resources.srcDirs
+    testSources.from(project.sourceSets.javaToPython.java.srcDirs)
+    testSources.from(project.sourceSets.pythonToJava.java.srcDirs)
+    testResources.from(project.sourceSets.javaToPython.resources.srcDirs)
+    testResources.from(project.sourceSets.pythonToJava.resources.srcDirs)
   }
 }
 
@@ -122,7 +122,7 @@ Closure<TaskProvider<Task>> gradleTestInDocker = { String taskName, SourceSet so
   return Docker.registerDockerTask(project, taskName) {
     copyIn {
       dependsOn gradleWrapper
-      from ("${buildDir}/template-project") {
+      from (layout.buildDirectory.dir('template-project')) {
         into 'project'
       }
       from(project.file('src/javaToPython/build.gradle.template')) {
@@ -152,7 +152,7 @@ Closure<TaskProvider<Task>> gradleTestInDocker = { String taskName, SourceSet so
     entrypoint = ['/project/gradlew', 'test', '--info']
     containerOutPath = '/project/build/test-results/test/'
     copyOut {
-      into "${buildDir}/test-results/${taskName}"
+      into layout.buildDirectory.dir("test-results/${taskName}")
     }
   }
 }
@@ -194,7 +194,7 @@ Sync jpyConfigTask = tasks.create 'createPythonToJavaConfig', Sync, {
   // if the classpath changes, we need to rebuild this
   inputs.files sourceSets.pythonToJava.runtimeClasspath
   from('src/pythonToJava/jpyconfig.py.template')
-  into "${buildDir}/jpyConfig"
+  into layout.buildDirectory.dir('jpyConfig')
   rename { file -> 'jpyconfig.py' }
   doFirst {
     expand(
@@ -205,7 +205,7 @@ Sync jpyConfigTask = tasks.create 'createPythonToJavaConfig', Sync, {
 }
 
 Closure<TaskProvider<Task>> pyExec = { String taskName, List<String> command, boolean showLogs = false ->
-  File reportDir = project.file("${buildDir}/test-results/${taskName}")
+  File reportDir = layout.buildDirectory.dir("test-results/${taskName}").get().asFile
   return Docker.registerDockerTask(project, taskName) {
     copyIn {
       from ('src/pythonToJava/python') {

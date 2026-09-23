@@ -65,7 +65,8 @@ public class TestTableDataService {
         final TableDataService[] tableDataServices;
 
         private DummyServiceSelector(final TableLocationKey tlk1, final TableLocationKey tlk2) {
-            final FilteredTableDataService.LocationKeyFilter dummyFilter = (tlk) -> true;
+            final FilteredTableDataService.LocationKeyFilterProvider dummyFilter =
+                    tableKey -> FilteredTableDataService.LocationKeyFilter.ALL;
             tableDataServices = new TableDataService[] {
                     new FilteredTableDataService(new DummyTableDataService("dummyTds1",
                             new DummyTableLocation(StandaloneTableKey.getInstance(), tlk1)), dummyFilter),

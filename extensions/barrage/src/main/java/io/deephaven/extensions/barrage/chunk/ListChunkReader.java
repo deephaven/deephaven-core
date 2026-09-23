@@ -94,9 +94,7 @@ public class ListChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, V
                     throw new IllegalStateException(
                             "list offset buffer is too short for the expected number of elements");
                 }
-                for (int ii = 0; ii < numOffsets; ++ii) {
-                    offsets.set(ii, is.readInt());
-                }
+                readIntBuffer(is, offsets, numOffsets);
                 if (offBufRead < offsetsBufferLength) {
                     is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBufferLength - offBufRead));
                 }
@@ -109,9 +107,7 @@ public class ListChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, V
                     throw new IllegalStateException(
                             "list sizes buffer is too short for the expected number of elements");
                 }
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    lengths.set(ii, is.readInt());
-                }
+                readIntBuffer(is, lengths, nodeInfo.numElements);
                 if (lenBufRead < lengthsBufferLength) {
                     is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, lengthsBufferLength - lenBufRead));
                 }

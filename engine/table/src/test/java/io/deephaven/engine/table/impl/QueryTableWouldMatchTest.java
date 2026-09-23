@@ -3,6 +3,12 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.exceptions.UncheckedTableException;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchOptions;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ShiftObliviousListener;
@@ -20,6 +26,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.show;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertTrue;
 
 public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
@@ -328,4 +335,140 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
             TestCase.fail(e.getMessage());
         }
     }
+
+    /**
+     * A match column that collides with an existing column would silently shadow it, so the operation refuses it.
+     */
+    public void testMatchRejectsACollidingColumnName() {
+        final QueryTable source = testRefreshingTable(col("Text", "Hey", "Yo"), col("Number", 0, 1));
+        try {
+            source.wouldMatch("Text=Number > 0");
+            TestCase.fail("Expected a colliding match column to be rejected");
+        } catch (final UncheckedTableException expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("already contains"));
+        }
+    }
+
+    /**
+     * The match column is evaluated against a row set that is not the result's own, so the virtual row variables would
+     * not mean what they appear to mean.
+     */
+    public void testMatchRejectsVirtualRowVariables() {
+        final QueryTable source = testRefreshingTable(col("Number", 0, 1, 2));
+        try {
+            source.wouldMatch("M=i > 1");
+            TestCase.fail("Expected virtual row variables to be rejected");
+        } catch (final UncheckedTableException expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("virtual row variables"));
+        }
+    }
+
+    /**
+     * Column vectors have the same problem as the virtual row variables, and are refused for the same reason.
+     */
+    public void testMatchRejectsColumnVectors() {
+        final QueryTable source = testRefreshingTable(col("Number", 0, 1, 2));
+        try {
+            source.wouldMatch("M=Number_.size() > 1");
+            TestCase.fail("Expected column vectors to be rejected");
+        } catch (final UncheckedTableException expected) {
+            assertTrue(expected.getMessage(), expected.getMessage().contains("column Vectors"));
+        }
+    }
+
+    /**
+     * A static table with a static filter needs no snapshot control, no listener and no merged listener at all. This is
+     * the only shape of {@code wouldMatch} that needs none of them, so it is the only one that exercises skipping them.
+     */
+    public void testStaticMatch() {
+        final QueryTable source = testTable(col("Text", "Hey", "Yo", "Lets go"), col("Number", 0, 1, 2));
+        final Table result = source.wouldMatch("M=Number > 0");
+
+        assertFalse(result.isRefreshing());
+        assertArrayEquals(new Boolean[] {false, true, true},
+                ColumnVectors.ofObject(result, "M", Boolean.class).toArray());
+    }
+
+    /**
+     * The match column answers for previous values as well as current ones, both a row at a time and through the match
+     * that a {@code where} on the match column uses.
+     */
+    public void testMatchColumnPreviousValues() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), col("Number", 0, 1, 2));
+        final Table result = source.wouldMatch("M=Number > 1");
+        final ColumnSource<Boolean> matchColumn = result.getColumnSource("M");
+        assertEquals(Boolean.FALSE, matchColumn.get(2));
+        assertEquals(Boolean.TRUE, matchColumn.get(6));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            addToTable(source, i(2), col("Number", 7));
+            source.notifyListeners(i(), i(), i(2));
+            updateGraph.markSourcesRefreshedForUnitTests();
+            while (!result.satisfied(updateGraph.clock().currentStep())) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+
+            // The row now matches, but did not on the previous step.
+            assertEquals(Boolean.TRUE, matchColumn.get(2));
+            assertEquals(Boolean.FALSE, matchColumn.getPrev(2));
+            // A row that matched on the previous step still reports that it did.
+            assertEquals(Boolean.TRUE, matchColumn.getPrev(6));
+
+            // The same distinction through the column source's own match, which is what a where on the match column
+            // uses when it reads previous values.
+            try (final WritableRowSet currentMatches =
+                    matchColumn.match(false, MatchOptions.REGULAR, result.getRowSet(), true);
+                    final WritableRowSet previousMatches =
+                            matchColumn.match(true, MatchOptions.REGULAR, result.getRowSet(), true)) {
+                assertEquals(i(2, 6), currentMatches);
+                assertEquals(i(6), previousMatches);
+            }
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
+
+    /**
+     * Matching a boolean column against both {@code true} and {@code false} answers for every row, or, inverted, for
+     * none of them, without consulting the match column's row set at all.
+     */
+    public void testMatchColumnAgainstBothBooleans() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), col("Number", 0, 1, 2));
+        final Table result = source.wouldMatch("M=Number > 1");
+        final ColumnSource<Boolean> matchColumn = result.getColumnSource("M");
+
+        try (final WritableRowSet all =
+                matchColumn.match(false, MatchOptions.REGULAR, result.getRowSet(), true, false);
+                final WritableRowSet none =
+                        matchColumn.match(false, MatchOptions.INVERTED, result.getRowSet(), true, false)) {
+            assertEquals(result.getRowSet(), all);
+            assertTrue(none.isEmpty());
+        }
+    }
+
+    /**
+     * A filter that asks for a full recompute, rather than for matched or unmatched rows, re-evaluates the match column
+     * on the next cycle. An incremental release filter is the simplest such filter.
+     */
+    public void testMatchWithFullRecomputeRequests() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), col("Number", 0, 1, 2));
+        final IncrementalReleaseFilter releaseFilter = new IncrementalReleaseFilter(1, 1);
+        final Table result = source.wouldMatch(new WouldMatchPair("M", releaseFilter));
+        releaseFilter.start();
+
+        assertArrayEquals(new Boolean[] {true, false, false},
+                ColumnVectors.ofObject(result, "M", Boolean.class).toArray());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(releaseFilter::run);
+        assertArrayEquals(new Boolean[] {true, true, false},
+                ColumnVectors.ofObject(result, "M", Boolean.class).toArray());
+
+        updateGraph.runWithinUnitTestCycle(releaseFilter::run);
+        assertArrayEquals(new Boolean[] {true, true, true},
+                ColumnVectors.ofObject(result, "M", Boolean.class).toArray());
+    }
+
 }

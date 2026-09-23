@@ -10,6 +10,7 @@ import io.deephaven.parquet.base.materializers.LongFromBooleanMaterializer;
 import io.deephaven.parquet.base.materializers.LongFromIntMaterializer;
 import io.deephaven.parquet.base.materializers.LongFromUnsignedByteMaterializer;
 import io.deephaven.parquet.base.materializers.LongFromUnsignedIntMaterializer;
+import io.deephaven.parquet.base.materializers.LongFromUnsignedLongMaterializer;
 import io.deephaven.parquet.base.materializers.LongFromUnsignedShortMaterializer;
 import io.deephaven.parquet.base.materializers.LongMaterializer;
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +29,15 @@ public class ToLongPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
         verifyNativeType(nativeType);
         // noinspection unchecked
         return FROM_UNSIGNED_INT;
+    }
+
+    /**
+     * Values exceeding {@link Long#MAX_VALUE} are rejected while reading.
+     */
+    public static <ATTR extends Any> ToLongPage<ATTR> createFromUnsignedLong(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_UNSIGNED_LONG;
     }
 
     public static <ATTR extends Any> ToLongPage<ATTR> createFromInt(final Class<?> nativeType) {
@@ -58,6 +68,8 @@ public class ToLongPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
     private static final ToLongPage FROM_LONG = new ToLongPage<>(LongMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
     private static final ToLongPage FROM_UNSIGNED_INT = new ToLongPage<>(LongFromUnsignedIntMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToLongPage FROM_UNSIGNED_LONG = new ToLongPage<>(LongFromUnsignedLongMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
     private static final ToLongPage FROM_INT = new ToLongPage<>(LongFromIntMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")

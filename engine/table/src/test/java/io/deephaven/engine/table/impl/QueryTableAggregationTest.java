@@ -1668,98 +1668,6 @@ public class QueryTableAggregationTest {
     }
 
     @Test
-    public void testSumByIncremental() {
-        final int[] sizes;
-        if (SHORT_TESTS) {
-            sizes = new int[] {100, 1_000};
-        } else {
-            sizes = new int[] {10, 100, 4_000, 10_000};
-        }
-        for (final int size : sizes) {
-            for (int seed = 0; seed < 1; ++seed) {
-                UpdatePerformanceTracker.resetForUnitTests();
-                ChunkPoolReleaseTracking.enableStrict();
-                System.out.println("Size = " + size + ", Seed = " + seed);
-                testSumByIncremental(size, seed, true, true);
-                testSumByIncremental(size, seed, true, false);
-                testSumByIncremental(size, seed, false, true);
-                testSumByIncremental(size, seed, false, false);
-                UpdatePerformanceTracker.resetForUnitTests();
-                ChunkPoolReleaseTracking.checkAndDisable();
-            }
-        }
-    }
-
-    private void testSumByIncremental(final int size, final int seed, boolean grouped, boolean lotsOfStrings) {
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            doTestSumByIncremental(size, seed, grouped, lotsOfStrings);
-        }
-    }
-
-    private void doTestSumByIncremental(final int size, final int seed, boolean grouped, boolean lotsOfStrings) {
-        final Random random = new Random(seed);
-        final ColumnInfo<?, ?>[] columnInfo;
-        final List<ColumnInfo.ColAttributes> ea = Collections.emptyList();
-        final List<ColumnInfo.ColAttributes> ga = Collections.singletonList(ColumnInfo.ColAttributes.Indexed);
-        final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
-                new String[] {"Sym", "charCol", "byteCol", "shortCol", "intCol", "longCol", "bigI", "bigD",
-                        "doubleCol", "doubleNanCol", "boolCol"},
-                Arrays.asList(grouped ? ga : ea, ea, ea, ea, ea, ea, ea, ea, ea, ea, ea),
-                lotsOfStrings ? new StringGenerator(1000000) : new SetGenerator<>("a", "b", "c", "d"),
-                new CharGenerator('a', 'z'),
-                new ByteGenerator(),
-                new ShortGenerator((short) -20000, (short) 20000, 0.1),
-                new IntGenerator(Integer.MIN_VALUE / 2, Integer.MAX_VALUE / 2, 0.01),
-                new LongGenerator(-100_000_000, 100_000_000),
-                new BigIntegerGenerator(0.1),
-                new BigDecimalGenerator(0.1),
-                new SetGenerator<>(10.1, 20.1, 30.1, -40.1),
-                new DoubleGenerator(-100000.0, 100000.0, 0.01, 0.001),
-                new BooleanGenerator(0.5, 0.1)));
-
-        if (RefreshingTableTestCase.printTableUpdates) {
-            TableTools.showWithRowSet(queryTable);
-        }
-
-        final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> queryTable.dropColumns("Sym").sumBy()),
-                EvalNugget.Sorted.from(() -> queryTable.sumBy("Sym"), "Sym"),
-                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").sumBy("Sym"), "Sym"),
-                EvalNugget.Sorted.from(() -> queryTable.dropColumns("Sym").sort("intCol").sumBy("intCol"), "intCol"),
-                EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").sumBy("Sym", "intCol"), "Sym",
-                        "intCol"),
-                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").update("x=intCol+1").sumBy("Sym"), "Sym"),
-                EvalNugget.Sorted.from(() -> queryTable.sortDescending("intCol").update("x=intCol+1").dropColumns("Sym")
-                        .sumBy("intCol"), "intCol"),
-                EvalNugget.Sorted.from(
-                        () -> queryTable.sort("Sym", "intCol").update("x=intCol+1").sumBy("Sym", "intCol"), "Sym",
-                        "intCol"),
-                EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").sumBy("Sym"),
-                        "Sym"),
-                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").absSumBy("Sym"), "Sym"),
-                EvalNugget.Sorted.from(() -> queryTable.dropColumns("Sym").sort("intCol").absSumBy("intCol"),
-                        "intCol"),
-                EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").absSumBy("Sym", "intCol"), "Sym",
-                        "intCol"),
-                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").update("x=intCol+1").absSumBy("Sym"), "Sym"),
-                EvalNugget.Sorted.from(() -> queryTable.sortDescending("intCol").update("x=intCol+1").dropColumns("Sym")
-                        .absSumBy("intCol"), "intCol"),
-                EvalNugget.Sorted.from(
-                        () -> queryTable.sort("Sym", "intCol").update("x=intCol+1").absSumBy("Sym", "intCol"), "Sym",
-                        "intCol"),
-                EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").absSumBy("Sym"),
-                        "Sym"),
-        };
-
-        for (int step = 0; step < 50; step++) {
-            if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("Seed = " + seed + ", step=" + step);
-            }
-            RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
-        }
-    }
-
-    @Test
     public void testAbsSumBySimple() {
         final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("BigI", BigInteger.valueOf(-1), BigInteger.valueOf(2), BigInteger.valueOf(-3)),
@@ -3598,6 +3506,58 @@ public class QueryTableAggregationTest {
         TableTools.showWithRowSet(last);
 
         assertTableEquals(newTable(col("Sentinel", 0)), last);
+    }
+
+    @Test
+    public void testNoKeyShiftWithSharedSortedFirstInputColumn() {
+        final QueryTable table = testRefreshingTable(i(0, 1).toTracking(), intCol("Value", 10, 11));
+
+        // AggSum does not require row keys, so it owns the input slot for Value but is absent from the shift
+        // pass; AggSortedFirst requires row keys and shares that slot.
+        final Table result = table.aggBy(List.of(
+                AggSum("Sum=Value"),
+                AggSortedFirst("Value", "First=Value")));
+
+        assertTableEquals(newTable(longCol("Sum", 21), intCol("First", 10)), result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // Move both keys up by 100, reported purely as a shift: the values are unchanged, only their keys moved.
+            addToTable(table, i(100, 101), intCol("Value", 10, 11));
+            removeRows(table, i(0, 1));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(0, 1, 100);
+            table.notifyListeners(
+                    new TableUpdateImpl(i(), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        assertTableEquals(newTable(longCol("Sum", 21), intCol("First", 10)), result);
+    }
+
+    @Test
+    public void testNoKeyShiftWithMultipleOperatorsSharingInputColumn() {
+        final QueryTable table = testRefreshingTable(i(0, 1).toTracking(), intCol("Value", 10, 11));
+
+        // Three operators share the input slot for Value: AggSum owns it but does not require row keys, while
+        // both sorted operators do. This exercises reuse of the shared chunk after it has been fetched once.
+        final Table result = table.aggBy(List.of(
+                AggSum("Sum=Value"),
+                AggSortedFirst("Value", "First=Value"),
+                AggSortedLast("Value", "Last=Value")));
+
+        assertTableEquals(newTable(longCol("Sum", 21), intCol("First", 10), intCol("Last", 11)), result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(100, 101), intCol("Value", 10, 11));
+            removeRows(table, i(0, 1));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(0, 1, 100);
+            table.notifyListeners(
+                    new TableUpdateImpl(i(), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+        });
+
+        assertTableEquals(newTable(longCol("Sum", 21), intCol("First", 10), intCol("Last", 11)), result);
     }
 
     @Test

@@ -45,6 +45,7 @@ The `ParquetInstructions` class has the following methods:
 - `getSpecialInstructions`: Returns the special instructions set for this `ParquetInstructions` instance.
 - `getTableDefinition`: Returns the table definition.
 - `getTargetPageSize`: Returns the target page size.
+- `getUnsignedLongTarget(columnName)`: Returns the `UnsignedLongTarget` requested for the specified column, or an empty `Optional` if none was requested. Can be set with `Builder.setUnsignedLongTarget`.
 - `isLegacyParquet`: Returns a boolean indicating whether the Parquet data is in legacy format.
 - `isRefreshing`: Returns a boolean indicating whether the Parquet data represents a refreshing source.
 - `sameColumnNamesAndCodecMappings(i1, i2)`: Returns a boolean indicating whether the two `ParquetInstructions` instances have the same column names and codec mappings.
@@ -96,6 +97,10 @@ The `ParquetInstructions.Builder` class has the following methods:
 - `setSpecialInstructions(specialInstructions)`: Special instructions for reading Parquet files, useful when reading files from a non-local S3 server. These instructions are provided as an instance of [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions).
 - `setTableDefinition(tableDefinition)`: Sets the table definition.
 - `setTargetPageSize(targetPageSize)`: Sets the target page size.
+- `setUnsignedLongTarget(columnName, target)`: Sets the Deephaven type to read an unsigned 64-bit integer (`UINT_64`) column as. This applies only to reads, and only to columns that carry the `UINT_64` logical type; it is ignored when writing because Deephaven never writes `UINT_64`. Setting two different targets for one column name is not allowed. A table definition supplied with `setTableDefinition` governs the column type instead, and a definition that disagrees with this target is rejected by `build`. The available targets are:
+  - `UnsignedLongTarget.BIG_INTEGER`: (default) Read the column as `java.math.BigInteger`, which represents every `UINT_64` value exactly.
+  - `UnsignedLongTarget.LONG`: Read the column as `long`. Values greater than 2<sup>63</sup> - 1 have no `long` representation, so reading a page that contains one raises an error.
+  - `UnsignedLongTarget.SIGNED_LONG`: Read the column as `long`, reinterpreting the bit pattern as signed. Values greater than 2<sup>63</sup> - 1 read as negative numbers, and 2<sup>63</sup> reads as `NULL_LONG`, which is indistinguishable from a null.
 - `useDictionary(columnName, useDictionary)`: Set a hint that the writer should use dictionary-based encoding for writing this column; never evaluated for non-String columns.
 
 ### `S3Instructions` methods

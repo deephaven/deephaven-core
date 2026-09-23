@@ -6,6 +6,7 @@ package io.deephaven.parquet.table;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -21,6 +22,7 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -95,6 +97,40 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         METADATA_PARTITIONED
     }
 
+    /**
+     * The Deephaven type to read a {@code UINT_64} parquet column as; such values have no exact Java primitive.
+     */
+    public enum UnsignedLongTarget {
+        /**
+         * Read as {@link BigInteger}, representing every value exactly. The default.
+         */
+        BIG_INTEGER(BigInteger.class),
+
+        /**
+         * Read as a primitive {@code long}; values exceeding {@link Long#MAX_VALUE} throw when read.
+         */
+        LONG(long.class),
+
+        /**
+         * Read as a primitive {@code long}; interpreted as a signed value. Not recommended for use because of the
+         * interpretation of the value of NULL_LONG.
+         */
+        SIGNED_LONG(long.class);
+
+        private final Class<?> dataType;
+
+        UnsignedLongTarget(final Class<?> dataType) {
+            this.dataType = dataType;
+        }
+
+        /**
+         * @return The column data type, primitive where applicable ({@code long.class}, not {@code Long.class})
+         */
+        Class<?> dataType() {
+            return dataType;
+        }
+    }
+
     private static final boolean DEFAULT_GENERATE_METADATA_FILES = false;
 
     static final String UUID_TOKEN = "{uuid}";
@@ -134,6 +170,16 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      * @return the field id
      */
     public abstract OptionalInt getFieldId(final String columnName);
+
+    /**
+     * The {@link UnsignedLongTarget} requested for the given {@code columnName}. Only consulted while inferring a
+     * {@link TableDefinition}; a supplied {@link #getTableDefinition() definition} takes precedence, and one that
+     * disagrees is rejected at construction.
+     *
+     * @param columnName the Deephaven column name
+     * @return the requested target, or {@link Optional#empty()} if none was requested
+     */
+    public abstract Optional<UnsignedLongTarget> getUnsignedLongTarget(final String columnName);
 
     public abstract Object getSpecialInstructions();
 
@@ -271,6 +317,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public OptionalInt getFieldId(String columnName) {
             return OptionalInt.empty();
+        }
+
+        @Override
+        public Optional<UnsignedLongTarget> getUnsignedLongTarget(final String columnName) {
+            return Optional.empty();
         }
 
         @Override
@@ -412,6 +463,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private String codecArgs;
         private boolean useDictionary;
         private Integer fieldId;
+        private UnsignedLongTarget unsignedLongTarget;
 
         public ColumnInstructions(final String columnName) {
             this.columnName = Objects.requireNonNull(columnName);
@@ -474,6 +526,19 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                                 this.fieldId));
             }
             this.fieldId = fieldId;
+        }
+
+        public Optional<UnsignedLongTarget> unsignedLongTarget() {
+            return Optional.ofNullable(unsignedLongTarget);
+        }
+
+        public void setUnsignedLongTarget(final UnsignedLongTarget unsignedLongTarget) {
+            if (this.unsignedLongTarget != null && this.unsignedLongTarget != unsignedLongTarget) {
+                throw new IllegalArgumentException(String.format(
+                        "Inconsistent unsignedLongTarget for columnName=%s, already set unsignedLongTarget=%s",
+                        columnName, this.unsignedLongTarget));
+            }
+            this.unsignedLongTarget = unsignedLongTarget;
         }
     }
 
@@ -548,6 +613,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     throw new IllegalArgumentException("When setting columnResolver, tableDefinition must be provided");
                 }
             }
+            validateUnsignedLongTargets(columnNameToInstructions, tableDefinition);
             this.seekableChannelsProviderForWriting = seekableChannelsProviderForWriting;
             this.writeRowGroupStatistics = writeRowGroupStatistics;
         }
@@ -611,6 +677,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public OptionalInt getFieldId(String columnName) {
             return getOrDefault(columnName, OptionalInt.empty(), ColumnInstructions::fieldId);
+        }
+
+        @Override
+        public Optional<UnsignedLongTarget> getUnsignedLongTarget(final String columnName) {
+            return getOrDefault(columnName, Optional.empty(), ColumnInstructions::unsignedLongTarget);
         }
 
         @Override
@@ -746,6 +817,45 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     : (KeyedObjectHashMap<String, ColumnInstructions>) parquetColumnNameToInstructions.clone();
         }
 
+        /**
+         * A supplied definition bypasses schema inference - the hint's only consumer - so a disagreement would silently
+         * produce a type the caller did not ask for. Hints for columns absent from the definition are permitted,
+         * matching codecs, so they stay reusable across reads projecting different columns.
+         */
+        private static void validateUnsignedLongTargets(
+                @Nullable final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
+                @Nullable final TableDefinition tableDefinition) {
+            if (columnNameToInstructions == null || tableDefinition == null) {
+                return;
+            }
+            for (final ColumnInstructions ci : columnNameToInstructions.values()) {
+                final UnsignedLongTarget target = ci.unsignedLongTarget().orElse(null);
+                if (target == null) {
+                    continue;
+                }
+                final ColumnDefinition<?> columnDefinition = tableDefinition.getColumn(ci.getColumnName());
+                if (columnDefinition == null) {
+                    continue;
+                }
+                // Repeated columns carry the element type in getComponentType(), leaving the array or vector type in
+                // getDataType(); the target describes the element either way.
+                final Class<?> componentType = columnDefinition.getComponentType();
+                final Class<?> elementType =
+                        componentType != null ? componentType : columnDefinition.getDataType();
+                if (elementType != target.dataType()) {
+                    final String declared = componentType != null
+                            ? String.format("%s (elements of %s)", elementType.getCanonicalName(),
+                                    columnDefinition.getDataType().getCanonicalName())
+                            : elementType.getCanonicalName();
+                    throw new IllegalArgumentException(String.format(
+                            "Conflicting types requested for column %s: unsignedLongTarget=%s implies type %s, but the "
+                                    + "supplied TableDefinition specifies type %s. The TableDefinition takes precedence "
+                                    + "and would silently discard the hint, so specify only one of the two.",
+                            ci.getColumnName(), target, target.dataType().getCanonicalName(), declared));
+                }
+            }
+        }
+
         private static boolean sameCodecMappings(final ReadOnly r1, final ReadOnly r2) {
             final Set<String> r1ColumnNames = r1.columnNameToInstructions.keySet();
             if (r2.columnNameToInstructions.size() != r1ColumnNames.size()) {
@@ -859,6 +969,24 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
             ci.setCodecName(codecName);
             ci.setCodecArgs(codecArgs);
+            return this;
+        }
+
+        /**
+         * Set the Deephaven type to read a {@code UINT_64} parquet column as; defaults to
+         * {@link UnsignedLongTarget#BIG_INTEGER}. Only used while inferring a {@link TableDefinition}: a definition
+         * supplied via {@link #setTableDefinition(TableDefinition)} governs the type instead, and one that disagrees
+         * with this hint is rejected by {@link #build()}.
+         *
+         * <p>
+         * Setting multiple different targets for a single column name is not allowed.
+         *
+         * @param columnName The Deephaven column name
+         * @param target The type to read the column as
+         */
+        public Builder setUnsignedLongTarget(final String columnName, final UnsignedLongTarget target) {
+            final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
+            ci.setUnsignedLongTarget(Objects.requireNonNull(target, "target"));
             return this;
         }
 

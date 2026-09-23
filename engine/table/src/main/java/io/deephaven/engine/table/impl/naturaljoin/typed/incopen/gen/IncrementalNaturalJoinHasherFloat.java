@@ -22,6 +22,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.IncrementalNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
@@ -72,9 +73,6 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (rightRowKeyForState <= FIRST_DUPLICATE && (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH)) {
-                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
-                    }
                     mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition));
                     break;
                 } else {
@@ -300,7 +298,7 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                             final long rightRowKey;
                             if (rightRowKeyForState <= FIRST_DUPLICATE) {
                                 if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                                    throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rightRowKeyForState));
+                                    throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                                 }
                                 final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
                                 final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
@@ -345,7 +343,7 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                     final long rightRowKey;
                     if (rightRowKeyForState <= FIRST_DUPLICATE) {
                         if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rightRowKeyForState));
+                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                         }
                         final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
                         final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
@@ -494,7 +492,17 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                         searchAlternate = false;
                         break;
                     }
-                    mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                    final boolean selectedRightRowModified;
+                    if (IncrementalNaturalJoinStateManager.isDuplicateRightState(existingRightRowKey)) {
+                        final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocationFromRowKey(existingRightRowKey));
+                        final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
+                        selectedRightRowModified = getRightRowKeyFromDuplicates(duplicates, joinType) == rowKeyChunk.get(chunkPosition);
+                    } else {
+                        selectedRightRowModified = true;
+                    }
+                    if (selectedRightRowModified) {
+                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_MODIFY_PROBE));
+                    }
                     found = true;
                     break;
                 }
@@ -514,7 +522,17 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                                 if (isStateDeleted(existingRightRowKey)) {
                                     break;
                                 }
-                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                final boolean selectedRightRowModified;
+                                if (IncrementalNaturalJoinStateManager.isDuplicateRightState(existingRightRowKey)) {
+                                    final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocationFromRowKey(existingRightRowKey));
+                                    final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
+                                    selectedRightRowModified = getRightRowKeyFromDuplicates(duplicates, joinType) == rowKeyChunk.get(chunkPosition);
+                                } else {
+                                    selectedRightRowModified = true;
+                                }
+                                if (selectedRightRowModified) {
+                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_MODIFY_PROBE));
+                                }
                                 alternateFound = true;
                                 break;
                             }
