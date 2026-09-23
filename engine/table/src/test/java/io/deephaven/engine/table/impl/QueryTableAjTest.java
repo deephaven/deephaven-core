@@ -17,7 +17,9 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
@@ -32,8 +34,11 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -109,6 +114,49 @@ public class QueryTableAjTest {
             assertEquals("Can not aj() with different stamp types: left=class java.time.Instant, right=long",
                     e.getMessage());
         }
+    }
+
+    /**
+     * Builds a one-row table whose ZonedDateTime column is backed by a nanosecond source, which can be reinterpreted to
+     * long, alongside an int column.
+     */
+    private static QueryTable convertibleZonedTable(final String zonedName, final long epochNanos,
+            final String intName, final int intValue) {
+        final Table instants = TableTools.newTable(instantCol("Ts", DateTimeUtils.epochNanosToInstant(epochNanos)),
+                intCol(intName, intValue));
+        final ColumnSource<ZonedDateTime> zoned =
+                ((ConvertibleTimeSource) instants.getColumnSource("Ts")).toZonedDateTime(ZoneId.of("UTC"));
+        final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
+        sources.put(zonedName, zoned);
+        sources.put(intName, instants.getColumnSource(intName));
+        return new QueryTable(instants.getRowSet().copy().toTracking(), sources);
+    }
+
+    private static ZonedDateTime utc(final long epochNanos) {
+        return ZonedDateTime.ofInstant(DateTimeUtils.epochNanosToInstant(epochNanos), ZoneId.of("UTC"));
+    }
+
+    @Test
+    public void testAjZonedDateTimeStampConvertibleAndObjectSources() {
+        final Table right = TableTools.newTable(col("RightStamp", utc(1_000L)), intCol("Sentinel", 1));
+        final Table objectLeft = TableTools.newTable(col("Stamp", utc(5_000L)), intCol("Other", 0));
+        final Table expected = objectLeft.aj(right, "Stamp>=RightStamp", "Sentinel");
+
+        final QueryTable convertibleLeft = convertibleZonedTable("Stamp", 5_000L, "Other", 0);
+        final Table result = convertibleLeft.aj(right, "Stamp>=RightStamp", "Sentinel");
+        assertTableEquals(expected.view("Other", "Sentinel"), result.view("Other", "Sentinel"));
+    }
+
+    @Test
+    public void testAjZonedDateTimeKeyConvertibleAndObjectSources() {
+        final Table right =
+                TableTools.newTable(col("Key", utc(1_000L)), intCol("RightStamp", 1), intCol("Sentinel", 1));
+        final Table objectLeft = TableTools.newTable(col("Key", utc(1_000L)), intCol("LeftStamp", 5));
+        final Table expected = objectLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+
+        final QueryTable convertibleLeft = convertibleZonedTable("Key", 1_000L, "LeftStamp", 5);
+        final Table result = convertibleLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel");
+        assertTableEquals(expected.view("LeftStamp", "Sentinel"), result.view("LeftStamp", "Sentinel"));
     }
 
     @Test
