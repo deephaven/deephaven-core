@@ -4,7 +4,7 @@ title: Create a JavaScript plugin
 
 JS plugins extend the Deephaven web UI, so they work the same way regardless of which query language you use. The most common way to build and distribute a JS plugin is as a Python package, which the Python documentation covers in [Create a JavaScript plugin](https://deephaven.io/core/docs/how-to-guides/create-js-plugins/).
 
-You can also install JS-only plugins without Python by placing packaged npm plugins in the server's `js-plugins` directory. See [Configure JS plugins](./configuration/js-plugins.md).
+You can also install JS-only plugins without Python. Package them with the `pack-plugins.sh` script from the `web-plugin-packager` image and copy the `js-plugins` directory it generates to `<configDir>/js-plugins/`. The script extracts each npm package and writes the `manifest.json` file that lists them. The server only loads plugins listed in that manifest, so copying an npm package into the directory by hand doesn't register it. See [Configure JS plugins](./configuration/js-plugins.md).
 
 ## Related documentation
 

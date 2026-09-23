@@ -43,7 +43,7 @@ A JS plugin typically consists of two parts:
 1. **Python package**: Registers the plugin with the Deephaven server and specifies where the JS assets are located.
 2. **JavaScript bundle**: Contains the React components and any other client-side code.
 
-A plugin that only contains JavaScript can skip the Python package and be installed directly into the server's `js-plugins` directory instead. See [Configure JS plugins](./configuration/js-plugins.md).
+A plugin that only contains JavaScript can skip the Python package. Instead, package it with the `pack-plugins.sh` script from the `web-plugin-packager` image and copy the `js-plugins` directory it generates to `<configDir>/js-plugins/`. The script extracts each npm package and writes the `manifest.json` file that lists them. The server only loads plugins listed in that manifest, so copying an npm package into the directory by hand doesn't register it. See [Configure JS plugins](./configuration/js-plugins.md).
 
 ### Python registration
 
