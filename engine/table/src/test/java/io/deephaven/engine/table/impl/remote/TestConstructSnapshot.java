@@ -19,6 +19,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.thread.NamingThreadFactory;
 import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import java.util.BitSet;
 import java.util.List;
@@ -38,9 +39,11 @@ import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.testutil.TstUtils.testRefreshingTable;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
+import static org.junit.Assert.*;
 
 public class TestConstructSnapshot extends RefreshingTableTestCase {
 
+    @Test
     public void testClockChange() throws InterruptedException {
         final MutableLong changed = new MutableLong(0);
         final ConstructSnapshot.SnapshotControl control = new ConstructSnapshot.SnapshotControl() {
@@ -92,6 +95,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
         assertEquals(1, changed.get());
     }
 
+    @Test
     public void testConstructBackplaneSnapshot() throws ExecutionException, InterruptedException {
         final ExecutorService executor = Executors.newSingleThreadExecutor(
                 new NamingThreadFactory(TestConstructSnapshot.class, "TestConstructSnapshot Executor"));
@@ -227,6 +231,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
      * turns out to be inconsistent, the retry loop must fall back to a locked snapshot rather than attempting another
      * concurrent snapshot while holding the lock, and the lock must be released once the outermost snapshot exits.
      */
+    @Test
     public void testNestedLockedSnapshotWithinInconsistentConcurrentAttempt()
             throws InterruptedException, ExecutionException, TimeoutException {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -291,6 +296,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
      * attempt succeeds after a nested locked snapshot acquired the shared update graph lock, the lock must be released
      * when the outermost snapshot exits.
      */
+    @Test
     public void testLockReleasedAfterSuccessfulConcurrentAttemptWithNestedLockedSnapshot()
             throws InterruptedException, ExecutionException, TimeoutException {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -335,6 +341,7 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
      * concurrent attempt after a nested locked snapshot acquired the shared update graph lock, the lock must still be
      * released when the outermost snapshot exits.
      */
+    @Test
     public void testLockReleasedWhenExceptionEscapesConcurrentAttempt()
             throws InterruptedException, ExecutionException, TimeoutException {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();

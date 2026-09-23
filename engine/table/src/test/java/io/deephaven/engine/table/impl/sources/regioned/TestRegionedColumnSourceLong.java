@@ -7,14 +7,18 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
+import org.junit.Test;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static org.junit.Assert.*;
 
 /**
  * Test class for {@link RegionedColumnSourceLong}.
  */
-@SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
+
 public class TestRegionedColumnSourceLong extends
         TstRegionedColumnSourcePrimitive<Long, Values, ColumnRegionLong<Values>, ColumnRegionLong<Values>> {
 
@@ -28,7 +32,7 @@ public class TestRegionedColumnSourceLong extends
             final long output,
             final boolean prev,
             final boolean boxed) {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(cr[expectedRegionIndex]).getLong(elementIndex);
                 will(returnValue(output));
@@ -39,7 +43,7 @@ public class TestRegionedColumnSourceLong extends
         } else {
             assertEquals(output, prev ? SUT.getPrevLong(elementIndex) : SUT.getLong(elementIndex));
         }
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @Override
@@ -51,6 +55,7 @@ public class TestRegionedColumnSourceLong extends
     }
 
     @Override
+    @Test
     public void testGet() {
         fillRegions();
 
@@ -71,6 +76,7 @@ public class TestRegionedColumnSourceLong extends
     }
 
     @Override
+    @Test
     public void testGetPrev() {
         fillRegions();
 
@@ -91,6 +97,7 @@ public class TestRegionedColumnSourceLong extends
     }
 
     @Override
+    @Test
     public void testGetLong() {
         fillRegions();
 
@@ -111,6 +118,7 @@ public class TestRegionedColumnSourceLong extends
     }
 
     @Override
+    @Test
     public void testGetPrevLong() {
         fillRegions();
 

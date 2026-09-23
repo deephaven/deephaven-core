@@ -11,6 +11,7 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.Assert;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Random;
@@ -18,6 +19,7 @@ import java.util.Random;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
+import static org.junit.Assert.*;
 
 /**
  * Natural joins keyed on float and double columns holding NaN.
@@ -32,6 +34,7 @@ import static io.deephaven.util.QueryConstants.*;
 @Category(OutOfBandTest.class)
 public class QueryTableNaturalJoinNanKeyTest extends QueryTableTestBase {
 
+    @Test
     public void testStaticFloatNaNKeys() {
         final Table left = testTable(floatCol("K", Float.NaN, 1.5f, -0.0f, NULL_FLOAT), intCol("L", 1, 2, 3, 4));
         final Table right = testTable(floatCol("K", Float.NaN, 1.5f, 0.0f, NULL_FLOAT), intCol("R", 10, 20, 30, 40));
@@ -42,6 +45,7 @@ public class QueryTableNaturalJoinNanKeyTest extends QueryTableTestBase {
                 left.naturalJoin(right, "K", "R"));
     }
 
+    @Test
     public void testStaticDoubleNaNKeys() {
         final Table left = testTable(doubleCol("K", Double.NaN, 1.5, -0.0, NULL_DOUBLE), intCol("L", 1, 2, 3, 4));
         final Table right = testTable(doubleCol("K", Double.NaN, 1.5, 0.0, NULL_DOUBLE), intCol("R", 10, 20, 30, 40));
@@ -53,6 +57,7 @@ public class QueryTableNaturalJoinNanKeyTest extends QueryTableTestBase {
     }
 
     /** A NaN left key with no NaN on the right takes the unmatched null, rather than matching some other value. */
+    @Test
     public void testStaticNaNKeyUnmatched() {
         final Table left = testTable(doubleCol("K", Double.NaN, 1.5), intCol("L", 1, 2));
         final Table right = testTable(doubleCol("K", 1.5, 2.5), intCol("R", 20, 25));
@@ -63,6 +68,7 @@ public class QueryTableNaturalJoinNanKeyTest extends QueryTableTestBase {
     }
 
     /** Duplicate NaN right keys are duplicates of one key, so FIRST_MATCH and LAST_MATCH select between them. */
+    @Test
     public void testStaticNaNDuplicateRightFirstAndLastMatch() {
         final Table left = testTable(doubleCol("K", Double.NaN), intCol("L", 1));
         final Table right = testTable(doubleCol("K", Double.NaN, Double.NaN), intCol("R", 10, 11));
@@ -74,6 +80,7 @@ public class QueryTableNaturalJoinNanKeyTest extends QueryTableTestBase {
     }
 
     /** Duplicate NaN right keys are reported like any other duplicate key. */
+    @Test
     public void testStaticNaNDuplicateRightErrors() {
         final Table left = testTable(doubleCol("K", Double.NaN), intCol("L", 1));
         final Table right = testTable(doubleCol("K", Double.NaN, Double.NaN), intCol("R", 10, 11));
@@ -83,6 +90,7 @@ public class QueryTableNaturalJoinNanKeyTest extends QueryTableTestBase {
         assertTrue(err.getMessage(), err.getMessage().startsWith("Natural Join found duplicate right key for "));
     }
 
+    @Test
     public void testRightRefreshingFloatNaNKeys() {
         final QueryTable right = testRefreshingTable(i(0, 1).toTracking(),
                 floatCol("K", 1.5f, -0.0f), intCol("R", 20, 30));
@@ -110,6 +118,7 @@ public class QueryTableNaturalJoinNanKeyTest extends QueryTableTestBase {
                 intCol("R", NULL_INT, 20, 30)), result);
     }
 
+    @Test
     public void testBothRefreshingDoubleNaNKeys() {
         final QueryTable left = testRefreshingTable(i(0).toTracking(), doubleCol("K", 1.5), intCol("L", 1));
         final QueryTable right = testRefreshingTable(i(0).toTracking(), doubleCol("K", Double.NaN), intCol("R", 10));
@@ -135,6 +144,7 @@ public class QueryTableNaturalJoinNanKeyTest extends QueryTableTestBase {
     }
 
     /** A randomized incremental join over float and double keys drawn from the interesting values. */
+    @Test
     public void testIncrementalNaNKeysRandomized() {
         for (int seed = 0; seed < 3; ++seed) {
             incrementalNaNKeys(seed, true);

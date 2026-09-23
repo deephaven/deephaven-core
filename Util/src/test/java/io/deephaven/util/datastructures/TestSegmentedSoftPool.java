@@ -5,7 +5,6 @@ package io.deephaven.util.datastructures;
 
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.mutable.MutableInt;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
 import org.junit.Test;
@@ -19,6 +18,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
+import static org.junit.Assert.*;
+
 /**
  * Unit tests for {@link SegmentedSoftPool}.
  */
@@ -30,16 +31,16 @@ public class TestSegmentedSoftPool {
 
         try {
             pool.take();
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (UnsupportedOperationException expected) {
         }
 
         IntStream.range(0, 100).boxed().forEach(pool::give);
         IntStream.range(0, 100).boxed().sorted(Comparator.reverseOrder())
-                .forEach(II -> TestCase.assertEquals(II, pool.take()));
+                .forEach(II -> assertEquals(II, pool.take()));
         IntStream.range(100, 400).boxed().forEach(pool::give);
         IntStream.range(100, 400).boxed().sorted(Comparator.reverseOrder())
-                .forEach(II -> TestCase.assertEquals(II, pool.take()));
+                .forEach(II -> assertEquals(II, pool.take()));
     }
 
     @Test
@@ -58,13 +59,13 @@ public class TestSegmentedSoftPool {
 
         IntStream.range(0, 10).boxed().forEach(
                 II -> {
-                    TestCase.assertEquals((Integer) 0, pool.take());
+                    assertEquals((Integer) 0, pool.take());
                     pool.give(0);
                 });
 
-        IntStream.range(0, 1000).boxed().forEach(II -> TestCase.assertEquals(II, pool.take()));
+        IntStream.range(0, 1000).boxed().forEach(II -> assertEquals(II, pool.take()));
         IntStream.range(0, 1000).boxed().forEach(pool::give);
-        TestCase.assertEquals(sumAllocated.get(), sumCleared.get());
+        assertEquals(sumAllocated.get(), sumCleared.get());
     }
 
     private static final BitSet OUTSTANDING_INSTANCES = new BitSet(1_000_000);

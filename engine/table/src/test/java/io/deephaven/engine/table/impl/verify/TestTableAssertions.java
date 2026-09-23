@@ -17,7 +17,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -26,7 +25,7 @@ import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
-import static junit.framework.TestCase.*;
+import static org.junit.Assert.*;
 
 public class TestTableAssertions {
     @Rule
@@ -174,23 +173,23 @@ public class TestTableAssertions {
                 doubleCol("D1", QueryConstants.NULL_DOUBLE, Math.E, Math.PI, Double.NEGATIVE_INFINITY));
 
         final Table withSortedPlant = TableAssertions.assertSorted("test", test, "Plant", SortingOrder.Ascending);
-        TestCase.assertSame(test.getRowSet(), withSortedPlant.getRowSet());
+        assertSame(test.getRowSet(), withSortedPlant.getRowSet());
         final Table withSortedInt = TableAssertions.assertSorted(withSortedPlant, "Int", SortingOrder.Descending);
-        TestCase.assertSame(test.getRowSet(), withSortedInt.getRowSet());
+        assertSame(test.getRowSet(), withSortedInt.getRowSet());
         try {
             TableAssertions.assertSorted("test", test, "D1", SortingOrder.Ascending);
-            TestCase.fail("Table is not actually sorted by D1");
+            fail("Table is not actually sorted by D1");
         } catch (SortedAssertionFailure saf) {
-            TestCase.assertEquals(
+            assertEquals(
                     "Table violates sorted assertion, table description=test, column=D1, Ascending, 3.141592653589793 is out of order with respect to -Infinity!",
                     saf.getMessage());
         }
 
-        TestCase.assertEquals(SortingOrder.Ascending,
+        assertEquals(SortingOrder.Ascending,
                 SortedColumnsAttribute.getOrderForColumn(withSortedPlant, "Plant").orElse(null));
-        TestCase.assertEquals(SortingOrder.Descending,
+        assertEquals(SortingOrder.Descending,
                 SortedColumnsAttribute.getOrderForColumn(withSortedInt, "Int").orElse(null));
-        TestCase.assertEquals(Optional.empty(), SortedColumnsAttribute.getOrderForColumn(withSortedInt, "D1"));
+        assertEquals(Optional.empty(), SortedColumnsAttribute.getOrderForColumn(withSortedInt, "D1"));
     }
 
     @Test

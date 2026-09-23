@@ -3,16 +3,19 @@
 //
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.type.TypeUtils;
 import org.junit.Test;
 
+import static org.junit.Assert.*;
+
 /**
  * Test class for {@link RegionedColumnSourceBoolean}.
  */
-@SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase"})
+
 public class TestRegionedColumnSourceBoolean
         extends TstRegionedColumnSourceReferencing<Boolean, Values, ColumnRegionByte<Values>> {
 
@@ -36,7 +39,7 @@ public class TestRegionedColumnSourceBoolean
             final boolean prev,
             final boolean boxed,
             final boolean reinterpreted) {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(cr[expectedRegionIndex]).getByte(elementIndex);
                 will(returnValue(BooleanUtils.booleanAsByte(output)));
@@ -57,7 +60,7 @@ public class TestRegionedColumnSourceBoolean
                 assertEquals(output, prev ? SUT.getPrevBoolean(elementIndex) : SUT.getBoolean(elementIndex));
             }
         }
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @Override
@@ -72,6 +75,7 @@ public class TestRegionedColumnSourceBoolean
     }
 
     @Override
+    @Test
     public void testGet() {
         fillRegions();
 
@@ -92,6 +96,7 @@ public class TestRegionedColumnSourceBoolean
     }
 
     @Override
+    @Test
     public void testGetPrev() {
         fillRegions();
 
@@ -112,6 +117,7 @@ public class TestRegionedColumnSourceBoolean
     }
 
     @Override
+    @Test
     public void testGetBoolean() {
         fillRegions();
 
@@ -132,6 +138,7 @@ public class TestRegionedColumnSourceBoolean
     }
 
     @Override
+    @Test
     public void testGetPrevBoolean() {
         fillRegions();
 

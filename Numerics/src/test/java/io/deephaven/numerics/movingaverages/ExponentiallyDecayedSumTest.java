@@ -3,13 +3,16 @@
 //
 package io.deephaven.numerics.movingaverages;
 
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Test ExponentiallyDecayedSum.
  */
-public class ExponentiallyDecayedSumTest extends TestCase {
+public class ExponentiallyDecayedSumTest {
 
+    @Test
     public void testEverything() {
         double tol = 1e-10;
         double rate = 200;

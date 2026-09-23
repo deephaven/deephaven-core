@@ -10,6 +10,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.vector.FloatVectorDirect;
 import io.deephaven.vector.ObjectVectorDirect;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link FloatSegmentedSortedMultiset} behavior around the special float values that
@@ -63,6 +66,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * AND the delta-tracking should recognize that the removal cancels the prior addition, leaving both added and
      * removed sets empty.
      */
+    @Test
     public void testInsertNegativeZeroThenRemovePositiveZero() {
         final FloatSegmentedSortedMultiset ssm = trackingSsm();
 
@@ -84,6 +88,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * Insert {@code +0.0f} then remove {@code -0.0f} -- the mirror of the previous test. Same FloatComparisons
      * semantics apply.
      */
+    @Test
     public void testInsertPositiveZeroThenRemoveNegativeZero() {
         final FloatSegmentedSortedMultiset ssm = trackingSsm();
 
@@ -101,6 +106,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * Remove {@code +0.0f} from an SSM that contains {@code -0.0f} placed there outside of the tracked cycle. The
      * removal should match the existing entry and be recorded in {@code removed} exactly once.
      */
+    @Test
     public void testRemoveZeroAcrossSign() {
         final FloatSegmentedSortedMultiset ssm = new FloatSegmentedSortedMultiset(NODE_SIZE);
         // Seed the leaf without delta tracking.
@@ -118,6 +124,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * so the leaf must collapse them into a single entry with count 2 and the delta-tracking added set must contain
      * exactly one NaN entry.
      */
+    @Test
     public void testNaNsWithDifferentBitPatternsAreSameValue() {
         final FloatSegmentedSortedMultiset ssm = trackingSsm();
         final float nanA = Float.NaN; // canonical 0x7fc00000
@@ -139,6 +146,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * Insert one NaN bit pattern then remove a different NaN bit pattern. FloatComparisons treats them as equal, so the
      * leaf empties and the delta tracking should net to no change.
      */
+    @Test
     public void testInsertOneNaNThenRemoveAnotherNaN() {
         final FloatSegmentedSortedMultiset ssm = trackingSsm();
         final float nanA = Float.NaN;
@@ -160,6 +168,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * Remove a NaN with one bit pattern from an SSM seeded (outside the tracked cycle) with NaN of a different bit
      * pattern. The removal should find the existing entry and record exactly one removal.
      */
+    @Test
     public void testRemoveNaNAcrossBitPattern() {
         final FloatSegmentedSortedMultiset ssm = new FloatSegmentedSortedMultiset(NODE_SIZE);
         final float nanA = Float.NaN;
@@ -180,6 +189,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * {@link io.deephaven.util.compare.FloatComparisons#hashCode(float)}, which collapses NaN bit patterns, so
      * comparing elements with {@code ==} here would break the hashCode contract.
      */
+    @Test
     public void testEqualsAcrossNaNBitPatterns() {
         final float nanA = Float.NaN; // canonical 0x7fc00000
         final float nanB = Float.intBitsToFloat(0x7fc12345); // alternate NaN bit pattern
@@ -208,6 +218,7 @@ public class TestFloatSegmentedSortedMultisetSpecialValues extends RefreshingTab
      * The same requirement for signed zero: FloatComparisons treats {@code -0.0f} and {@code +0.0f} as one value and
      * hashes them alike, so an SSM seeded with one must compare equal to every Vector spelling of the other.
      */
+    @Test
     public void testEqualsAcrossSignedZero() {
         final float[] withNegative = new float[] {-0.0f, Float.MAX_VALUE};
         final float[] withPositive = new float[] {0.0f, Float.MAX_VALUE};

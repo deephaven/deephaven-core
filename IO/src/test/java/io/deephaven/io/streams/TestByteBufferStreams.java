@@ -4,13 +4,17 @@
 package io.deephaven.io.streams;
 
 import io.deephaven.base.ArrayUtil;
-import junit.framework.TestCase;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class TestByteBufferStreams extends TestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class TestByteBufferStreams {
 
     // buffer sink and source for the test scripts
     private ByteBuffer[] buffers = new ByteBuffer[4];
@@ -44,9 +48,8 @@ public class TestByteBufferStreams extends TestCase {
         }
     };
 
-    public void setUp() throws Exception {
-        super.setUp();
-    }
+    @Before
+    public void setUp() throws Exception {}
 
     private static class FLUSH {
     }
@@ -152,6 +155,7 @@ public class TestByteBufferStreams extends TestCase {
         assertEquals(-1, in.read());
     }
 
+    @Test
     public void testIt() throws Exception {
         script(true);
         script(false);

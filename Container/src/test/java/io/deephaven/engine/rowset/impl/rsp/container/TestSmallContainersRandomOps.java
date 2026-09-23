@@ -5,8 +5,7 @@ import org.junit.Test;
 import java.util.Random;
 import java.util.function.BiFunction;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static io.deephaven.engine.rowset.impl.rsp.container.Container.MAX_RANGE;
 
 public class TestSmallContainersRandomOps {

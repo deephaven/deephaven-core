@@ -10,8 +10,12 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class TestFigureLiveness extends RefreshingTableTestCase {
+    @Test
     public void testFigureLiveness() {
         // Scope that represents the incoming grpc call
         LivenessScope reqScope = new LivenessScope();

@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.table.impl.AsOfJoinMatchFactory.AsOfJoinResult;
 import io.deephaven.base.clock.Clock;
-import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.base.testing.Asserts;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.PartitionedTable;
@@ -28,7 +28,6 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.util.type.ArrayTypeUtils;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -49,8 +48,7 @@ import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.QueryTableTestBase.intColumn;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.util.QueryConstants.*;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNotNull;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableAjTest {
@@ -70,7 +68,7 @@ public class QueryTableAjTest {
 
         try {
             left.aj(right, "LeftStamp>=RightStamp");
-            TestCase.fail("Expected conflicting column exception!");
+            fail("Expected conflicting column exception!");
         } catch (RuntimeException e) {
             assertEquals(e.getMessage(), "Conflicting column names [Bucket]");
         }
@@ -84,7 +82,7 @@ public class QueryTableAjTest {
 
         try {
             left.aj(null, "LeftStamp>=RightStamp");
-            TestCase.fail("Expected null argument exception!");
+            fail("Expected null argument exception!");
         } catch (RuntimeException e) {
             assertEquals("aj() requires a non-null right hand side table.", e.getMessage());
         }
@@ -139,7 +137,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {1, 2, 5, NULL_INT, NULL_INT, 5}, intColumn(result, "Sentinel"));
+        Asserts.assertEquals(new int[] {1, 2, 5, NULL_INT, NULL_INT, 5}, intColumn(result, "Sentinel"));
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("LT Result");
@@ -147,7 +145,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 ltResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 2, 3, NULL_INT, NULL_INT, 5},
+        Asserts.assertEquals(new int[] {NULL_INT, 2, 3, NULL_INT, NULL_INT, 5},
                 intColumn(ltResult, "Sentinel"));
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
@@ -156,7 +154,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {1, 4, 5, NULL_INT, 6, NULL_INT},
+        Asserts.assertEquals(new int[] {1, 4, 5, NULL_INT, 6, NULL_INT},
                 intColumn(reverseResult, "Sentinel"));
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
@@ -165,7 +163,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {3, 4, NULL_INT, NULL_INT, 6, NULL_INT},
+        Asserts.assertEquals(new int[] {3, 4, NULL_INT, NULL_INT, 6, NULL_INT},
                 intColumn(reverseResultGt, "Sentinel"));
     }
 
@@ -216,7 +214,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("BucketA", "BucketB", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {1, 2, 5, NULL_INT, NULL_INT, 5}, intColumn(result, "Sentinel"));
+        Asserts.assertEquals(new int[] {1, 2, 5, NULL_INT, NULL_INT, 5}, intColumn(result, "Sentinel"));
 
         final Table ltResult = left.aj(right, "BucketA,BucketB,LeftStamp>RightStamp", "Sentinel");
         System.out.println("LT Result");
@@ -224,7 +222,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("BucketA", "BucketB", "LeftStamp", "RightStamp", "Sentinel"),
                 ltResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 2, 3, NULL_INT, NULL_INT, 5},
+        Asserts.assertEquals(new int[] {NULL_INT, 2, 3, NULL_INT, NULL_INT, 5},
                 intColumn(ltResult, "Sentinel"));
 
         final Table reverseResult = left.raj(right, "BucketA,BucketB,LeftStamp<=RightStamp", "Sentinel");
@@ -233,7 +231,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("BucketA", "BucketB", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {1, 4, 5, NULL_INT, 6, NULL_INT},
+        Asserts.assertEquals(new int[] {1, 4, 5, NULL_INT, 6, NULL_INT},
                 intColumn(reverseResult, "Sentinel"));
 
         final Table reverseResultGt = left.raj(right, "BucketA,BucketB,LeftStamp<RightStamp", "Sentinel");
@@ -242,7 +240,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("BucketA", "BucketB", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {3, 4, NULL_INT, NULL_INT, 6, NULL_INT},
+        Asserts.assertEquals(new int[] {3, 4, NULL_INT, NULL_INT, 6, NULL_INT},
                 intColumn(reverseResultGt, "Sentinel"));
     }
 
@@ -268,7 +266,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
+        Asserts.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("LT Result");
@@ -276,7 +274,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 ltResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
+        Asserts.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
                 intColumn(ltResult, "Sentinel"));
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
@@ -285,7 +283,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
+        Asserts.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
@@ -293,7 +291,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2},
+        Asserts.assertEquals(new int[] {NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2},
                 intColumn(reverseResultGt, "Sentinel"));
     }
 
@@ -322,7 +320,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
+        Asserts.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("LT Result");
@@ -330,7 +328,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 ltResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
+        Asserts.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
                 intColumn(ltResult, "Sentinel"));
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
@@ -339,7 +337,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
+        Asserts.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
@@ -347,7 +345,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2},
+        Asserts.assertEquals(new int[] {NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2},
                 intColumn(reverseResultGt, "Sentinel"));
     }
 
@@ -368,7 +366,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(ArrayTypeUtils.EMPTY_INT_ARRAY, intColumn(result, "Sentinel"));
+        Asserts.assertEquals(ArrayTypeUtils.EMPTY_INT_ARRAY, intColumn(result, "Sentinel"));
     }
 
     @Test
@@ -386,7 +384,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, NULL_INT, 1}, intColumn(result, "Sentinel"));
+        Asserts.assertEquals(new int[] {NULL_INT, NULL_INT, 1}, intColumn(result, "Sentinel"));
 
         final Table left2 = TableTools.newTable(
                 col("Bucket", 1, 2),
@@ -401,7 +399,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 1}, intColumn(result2, "Sentinel"));
+        Asserts.assertEquals(new int[] {NULL_INT, 1}, intColumn(result2, "Sentinel"));
     }
 
     @Test
@@ -426,7 +424,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
+        Asserts.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("LT Result");
@@ -434,7 +432,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 ltResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
+        Asserts.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
                 intColumn(ltResult, "Sentinel"));
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
@@ -443,7 +441,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
+        Asserts.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
@@ -451,7 +449,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2},
+        Asserts.assertEquals(new int[] {NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2},
                 intColumn(reverseResultGt, "Sentinel"));
     }
 
@@ -482,7 +480,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
                 result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {1, 5, 0, 1, 3, 5}, intColumn(result, "Sentinel"));
+        Asserts.assertEquals(new int[] {1, 5, 0, 1, 3, 5}, intColumn(result, "Sentinel"));
 
         final Table ltResult = left.aj(right, leftStamp + ">" + rightStamp, "Sentinel");
         System.out.println("LT Result");
@@ -490,7 +488,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
                 ltResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {0, 3, NULL_INT, 1, 2, 3}, intColumn(ltResult, "Sentinel"));
+        Asserts.assertEquals(new int[] {0, 3, NULL_INT, 1, 2, 3}, intColumn(ltResult, "Sentinel"));
 
         final Table reverseResult = left.raj(right, leftStamp + "<=" + rightStamp, "Sentinel");
         System.out.println("Reverse Result");
@@ -498,7 +496,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
                 reverseResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {1, 4, 0, 2, 3, 4}, intColumn(reverseResult, "Sentinel"));
+        Asserts.assertEquals(new int[] {1, 4, 0, 2, 3, 4}, intColumn(reverseResult, "Sentinel"));
 
         final Table reverseResultGt = left.raj(right, leftStamp + "<" + rightStamp, "Sentinel");
         System.out.println("Reverse Result GT");
@@ -506,7 +504,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[] {2, NULL_INT, 1, 2, 4, NULL_INT},
+        Asserts.assertEquals(new int[] {2, NULL_INT, 1, 2, 4, NULL_INT},
                 intColumn(reverseResultGt, "Sentinel"));
     }
 

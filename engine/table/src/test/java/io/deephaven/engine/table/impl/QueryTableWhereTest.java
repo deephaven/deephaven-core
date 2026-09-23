@@ -47,7 +47,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 import io.deephaven.util.datastructures.CachingSupplier;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -78,7 +77,6 @@ import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simu
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public abstract class QueryTableWhereTest {
     private final Logger log = LoggerFactory.getLogger(QueryTableWhereTest.class);
@@ -323,7 +321,7 @@ public abstract class QueryTableWhereTest {
                 validate(en);
             }
         } catch (Exception e) {
-            TestCase.fail(e.getMessage());
+            fail(e.getMessage());
         }
     }
 

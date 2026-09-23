@@ -14,7 +14,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.function.ThrowingRunnable;
-import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -28,8 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public final class TestJobScheduler {
 
@@ -558,7 +556,7 @@ public final class TestJobScheduler {
             // fatal report, which the unit test error reporter turns into a FakeFatalException.
             try {
                 updateGraph.flushOneNotificationForUnitTests();
-                TestCase.fail("Expected exception");
+                fail("Expected exception");
             } catch (UncheckedDeephavenException expected) {
                 assertTrue("FakeFatalException, but was " + expected.getCause().getCause(),
                         expected.getCause().getCause() instanceof FakeProcessEnvironment.FakeFatalException);
@@ -584,7 +582,7 @@ public final class TestJobScheduler {
             final ThrowingRunnable<T> runnable) throws T {
         try {
             updateGraph.runWithinUnitTestCycle(runnable);
-            TestCase.fail("Expected the update graph to terminate");
+            fail("Expected the update graph to terminate");
         } catch (UncheckedDeephavenException expected) {
         }
     }
@@ -592,14 +590,14 @@ public final class TestJobScheduler {
     @Test
     public void testAsDeliverableException() {
         final Exception exception = new IllegalStateException("Test exception");
-        TestCase.assertSame(exception, JobScheduler.asDeliverableException(exception));
+        assertSame(exception, JobScheduler.asDeliverableException(exception));
 
         final Error error = new TestError("Test error");
         final Exception delivered = JobScheduler.asDeliverableException(error);
-        TestCase.assertSame(error, delivered.getCause());
+        assertSame(error, delivered.getCause());
         // The wrapper carries no stack trace of its own; the one that matters belongs to the Error, and filling in
         // another is the largest allocation on a path that exists because the heap may be exhausted.
-        TestCase.assertEquals(0, delivered.getStackTrace().length);
+        assertEquals(0, delivered.getStackTrace().length);
     }
 
     /**
@@ -789,9 +787,9 @@ public final class TestJobScheduler {
                         observer::cleanup,
                         observer::onError);
             });
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (FakeProcessEnvironment.FakeFatalException expected) {
-            TestCase.assertEquals("Intentional error failure", expected.getCause().getMessage());
+            assertEquals("Intentional error failure", expected.getCause().getMessage());
         }
     }
 
@@ -828,10 +826,10 @@ public final class TestJobScheduler {
                         observer::cleanup,
                         observer::onError);
             });
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (FakeProcessEnvironment.FakeFatalException expected) {
             // This actually goes through the FakeFatalErrorReporter twice; that's an artifact of the test design
-            TestCase.assertEquals("Intentional error failure", expected.getCause().getMessage());
+            assertEquals("Intentional error failure", expected.getCause().getMessage());
         }
     }
 

@@ -44,7 +44,6 @@ import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.codec.ObjectDecoder;
 import io.deephaven.vector.*;
-import junit.framework.TestCase;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
@@ -80,8 +79,7 @@ import static io.deephaven.engine.testutil.TstUtils.tableRangesAreEqual;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
@@ -135,7 +133,7 @@ public class TestParquetTools {
                     tries++;
                 }
             } while (!success && tries < 10);
-            TestCase.assertTrue(success);
+            assertTrue(success);
         }
     }
 
@@ -277,13 +275,13 @@ public class TestParquetTools {
         final String path = testRoot + File.separator + "NoColumns.parquet";
         try {
             ParquetTools.writeTable(source, path);
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDataException expected) {
         }
         try {
             ParquetTools.writeTables(new Table[] {source}, new String[] {path},
                     ParquetInstructions.EMPTY.withTableDefinition(source.getDefinition()));
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDataException expected) {
         }
     }
@@ -334,7 +332,7 @@ public class TestParquetTools {
         new File(testRoot + File.separator + "unexpectedFile").createNewFile();
         try {
             ParquetTools.writeTable(table1, testRoot + File.separator + "unexpectedFile" + File.separator + "Table1");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             // Expected
         }
@@ -343,24 +341,24 @@ public class TestParquetTools {
         new File(testRoot + File.separator + "Table1" + File.separator + "extraFile").createNewFile();
         try {
             ParquetTools.writeTable(table1, testRoot + File.separator + "Table1");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (IllegalArgumentException e) {
             // Expected
         }
         new File(testRoot + File.separator + "Nested").mkdirs();
         try {
             ParquetTools.writeTable(brokenTable, testRoot + File.separator + "Nested" + File.separator + "Broken");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (UnsupportedOperationException e) {
             // Expected exception
         }
-        TestCase.assertFalse(new File(testRoot + File.separator + "Nested" + File.separator + "Broken").exists());
-        TestCase.assertTrue(new File(testRoot + File.separator + "Nested").isDirectory());
+        assertFalse(new File(testRoot + File.separator + "Nested" + File.separator + "Broken").exists());
+        assertTrue(new File(testRoot + File.separator + "Nested").isDirectory());
 
         new File(testRoot + File.separator + "Nested").setReadOnly();
         try {
             ParquetTools.writeTable(brokenTable, testRoot + File.separator + "Nested" + File.separator + "Broken");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (RuntimeException e) {
             // Expected exception
         }
@@ -379,7 +377,7 @@ public class TestParquetTools {
         tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result.close();
         ParquetTools.deleteTable(path);
-        TestCase.assertFalse(new File(path).exists());
+        assertFalse(new File(path).exists());
     }
 
     private Table getAggregatedResultTable() {
@@ -429,7 +427,7 @@ public class TestParquetTools {
         final Table result = ParquetTools.readTable(
                 ParquetKeyValuePartitionedLayout.create(testRootFile.toURI(), 2, ParquetInstructions.EMPTY, null),
                 ParquetInstructions.EMPTY);
-        TestCase.assertEquals(partitionedDefinition, result.getDefinition());
+        assertEquals(partitionedDefinition, result.getDefinition());
         final Table expected = TableTools.merge(
                 table1.updateView("Date=`2021-07-20`", "Num=100"),
                 table1.updateView("Date=`2021-07-20`", "Num=200"),

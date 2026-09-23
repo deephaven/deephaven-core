@@ -11,13 +11,17 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
+import static org.junit.Assert.*;
+
 public class TestParquetIndexing extends RefreshingTableTestCase {
 
+    @Test
     public void testOverflow() throws IOException {
         // TODO: Figure out why this is called testOverflow
         final File directory = Files.createTempDirectory("testOverflow").toFile();
