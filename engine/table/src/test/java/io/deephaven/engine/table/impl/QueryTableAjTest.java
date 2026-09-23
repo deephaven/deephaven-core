@@ -9,7 +9,17 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.Asserts;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.asofjoin.RightIncrementalHashedAsOfJoinStateManager;
+import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -31,6 +41,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,6 +51,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -1979,5 +1991,284 @@ public class QueryTableAjTest {
         final Table aliasFirst = left.aj(right, "LeftStamp>=RightStamp", "A=RightStamp,RightStamp,Sentinel");
         assertEquals(Arrays.asList("LeftStamp", "RightStamp", "A", "Sentinel"),
                 aliasFirst.getDefinition().getColumnNames());
+    }
+
+    /**
+     * Churns bucket keys through a bucketed as-of join over many cycles: keys appear, lose all of their rows on one or
+     * both sides, and some return after leaving. A small hash table forces rehashes while emptied buckets are released,
+     * and each cycle is compared against a static join of the current tables.
+     */
+    @Test
+    public void testAjChurningBuckets() {
+        for (int seed = 0; seed < 3; ++seed) {
+            for (final boolean leftRefreshing : new boolean[] {true, false}) {
+                for (final boolean reverse : new boolean[] {false, true}) {
+                    try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                        testAjChurningBuckets(seed, leftRefreshing, reverse);
+                    }
+                }
+            }
+        }
+    }
+
+    private void testAjChurningBuckets(final int seed, final boolean leftRefreshing, final boolean reverse) {
+        final Random random = new Random(seed);
+        final JoinControl control = new JoinControl() {
+            @Override
+            int initialBuildSize() {
+                return 1 << 3;
+            }
+
+            @Override
+            int rightSsaNodeSize() {
+                return 4;
+            }
+
+            @Override
+            int leftSsaNodeSize() {
+                return 4;
+            }
+
+            @Override
+            public int rightChunkSize() {
+                return 4;
+            }
+
+            @Override
+            public int leftChunkSize() {
+                return 4;
+            }
+        };
+
+        final ChurnSide leftSide = new ChurnSide();
+        final ChurnSide rightSide = new ChurnSide();
+
+        final QueryTable left;
+        final int staticLeftKeys = 24;
+        if (leftRefreshing) {
+            left = testRefreshingTable(i().toTracking(), intCol("Bucket"), intCol("LeftStamp"));
+        } else {
+            // a static left side holds a fixed set of keys, while the right side churns over a wider range
+            for (int key = 0; key < staticLeftKeys; ++key) {
+                leftSide.stage(key, 1 + random.nextInt(3), random);
+            }
+            left = testTable(leftSide.addedRows().toTracking(), intCol("Bucket", leftSide.addedKeys()),
+                    intCol("LeftStamp", leftSide.addedStamps()));
+            leftSide.clearStaged();
+        }
+        final QueryTable right =
+                testRefreshingTable(i().toTracking(), intCol("Bucket"), intCol("RightStamp"), intCol("Sentinel"));
+
+        // raj is a descending as-of join against the reversed right table, which is what makes it match the first of
+        // several duplicate right stamps
+        final Table result = AsOfJoinHelper.asOfJoin(control, left, reverse ? (QueryTable) right.reverse() : right,
+                MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                MatchPairFactory.getExpressions("Sentinel"),
+                reverse ? SortingOrder.Descending : SortingOrder.Ascending, false);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final IntArrayList departedKeys = new IntArrayList();
+        int nextKey = leftRefreshing ? 0 : staticLeftKeys / 2;
+        int sentinel = 0;
+
+        for (int cycle = 0; cycle < 150; ++cycle) {
+            // remove every row of some keys, from both sides or from only one of them
+            for (final int key : leftSide.union(rightSide)) {
+                if (random.nextInt(3) != 0) {
+                    continue;
+                }
+                final int sides = random.nextInt(4);
+                if (leftRefreshing && sides != 1) {
+                    leftSide.removeKey(key);
+                }
+                if (sides != 2) {
+                    rightSide.removeKey(key);
+                }
+                if (!leftSide.contains(key) && !rightSide.contains(key)) {
+                    departedKeys.add(key);
+                }
+            }
+
+            // introduce new keys, some on only one side
+            final int newKeys = 1 + random.nextInt(3);
+            for (int ii = 0; ii < newKeys; ++ii) {
+                final int key = nextKey++;
+                final int sides = random.nextInt(4);
+                if (leftRefreshing && sides != 1) {
+                    leftSide.stage(key, 1 + random.nextInt(3), random);
+                }
+                if (sides != 2) {
+                    sentinel = rightSide.stage(key, 1 + random.nextInt(3), random, sentinel);
+                }
+            }
+
+            // bring back a key that previously lost all of its rows
+            if (!departedKeys.isEmpty() && random.nextBoolean()) {
+                final int key = departedKeys.removeInt(random.nextInt(departedKeys.size()));
+                if (leftRefreshing && random.nextBoolean()) {
+                    leftSide.stage(key, 1 + random.nextInt(2), random);
+                }
+                sentinel = rightSide.stage(key, 1 + random.nextInt(2), random, sentinel);
+            }
+
+            updateGraph.runWithinUnitTestCycle(() -> {
+                if (leftRefreshing) {
+                    leftSide.apply(left, false);
+                }
+                rightSide.apply(right, true);
+            });
+
+            final Table leftSnapshot = left.snapshot();
+            final Table rightSnapshot = right.snapshot();
+            final Table expected = reverse
+                    ? leftSnapshot.raj(rightSnapshot, "Bucket,LeftStamp<=RightStamp", "Sentinel")
+                    : leftSnapshot.aj(rightSnapshot, "Bucket,LeftStamp>=RightStamp", "Sentinel");
+            assertTableEquals(expected.view("Bucket", "LeftStamp", "Sentinel"),
+                    result.view("Bucket", "LeftStamp", "Sentinel"));
+        }
+    }
+
+    /**
+     * A right incremental as-of join state manager releases buckets that lose all of their rows, so a stream of keys
+     * that each live for a single cycle occupies a hash table sized to the live keys rather than to every key seen.
+     */
+    @Test
+    public void testAjStateManagerReleasesEmptyBuckets() {
+        final int keysPerCycle = 10;
+        final int cycles = 1000;
+        final Table keyTable = TableTools.newTable(intCol("Key", IntStream.range(0, keysPerCycle * cycles).toArray()));
+        final ColumnSource<?>[] keySources = new ColumnSource<?>[] {keyTable.getColumnSource("Key")};
+
+        final RightIncrementalHashedAsOfJoinStateManager stateManager = TypedHasherFactory.make(
+                RightIncrementalAsOfJoinStateManagerTypedBase.class, keySources, keySources, 1 << 3, 0.75, 0.7);
+        final IntegerArraySource slots = new IntegerArraySource();
+        final ObjectArraySource<RowSetBuilderSequential> builders =
+                new ObjectArraySource<>(RowSetBuilderSequential.class);
+
+        for (int cycle = 0; cycle < cycles; ++cycle) {
+            if (cycle > 0) {
+                // every row of the previous cycle's keys goes away
+                try (final RowSet removed = RowSetFactory.fromRange((long) (cycle - 1) * keysPerCycle,
+                        (long) cycle * keysPerCycle - 1)) {
+                    final int removedSlots = stateManager.markForRemoval(removed, keySources, slots, builders);
+                    assertEquals(keysPerCycle, removedSlots);
+                    stateManager.ensureTombstoneCandidateCapacity(removedSlots);
+                    for (int slotIndex = 0; slotIndex < removedSlots; ++slotIndex) {
+                        final int slot = slots.getInt(slotIndex);
+                        final WritableRowSet leftRowSet = stateManager.getLeftRowSet(slot);
+                        try (final RowSet slotRemoved = builders.get(slotIndex).build()) {
+                            builders.set(slotIndex, null);
+                            leftRowSet.remove(slotRemoved);
+                        }
+                        assertTrue(leftRowSet.isEmpty());
+                        stateManager.addTombstoneCandidate(slot);
+                    }
+                }
+            }
+
+            try (final RowSet added =
+                    RowSetFactory.fromRange((long) cycle * keysPerCycle, (long) (cycle + 1) * keysPerCycle - 1)) {
+                final int addedSlots = stateManager.buildAdditions(true, added, keySources, slots, builders);
+                assertEquals(keysPerCycle, addedSlots);
+                for (int slotIndex = 0; slotIndex < addedSlots; ++slotIndex) {
+                    stateManager.setLeftRowSet(slots.getInt(slotIndex), builders.get(slotIndex).build());
+                    builders.set(slotIndex, null);
+                }
+            }
+
+            stateManager.releaseEmptyBuckets();
+            assertEquals(keysPerCycle, stateManager.getNumEntries());
+            assertTrue("tableSize=" + stateManager.getTableSize(), stateManager.getTableSize() <= 64);
+        }
+    }
+
+    /**
+     * The rows of one side of a churning bucketed join, grouped by key, along with the additions and removals staged
+     * for the next cycle. Rows are appended in increasing row key order.
+     */
+    private static class ChurnSide {
+        private final Map<Integer, LongArrayList> rowsByKey = new LinkedHashMap<>();
+        private final IntArrayList stagedKeys = new IntArrayList();
+        private final IntArrayList stagedStamps = new IntArrayList();
+        private final IntArrayList stagedSentinels = new IntArrayList();
+        private RowSetBuilderRandom removed = RowSetFactory.builderRandom();
+        private long nextRow = 0;
+        private long firstStagedRow = 0;
+
+        boolean contains(final int key) {
+            return rowsByKey.containsKey(key);
+        }
+
+        Set<Integer> union(final ChurnSide other) {
+            final Set<Integer> keys = new LinkedHashSet<>(rowsByKey.keySet());
+            keys.addAll(other.rowsByKey.keySet());
+            return keys;
+        }
+
+        void removeKey(final int key) {
+            final LongArrayList rows = rowsByKey.remove(key);
+            if (rows != null) {
+                rows.forEach(removed::addKey);
+            }
+        }
+
+        void stage(final int key, final int count, final Random random) {
+            for (int ii = 0; ii < count; ++ii) {
+                stageRow(key, random.nextInt(500_000), 0);
+            }
+        }
+
+        /**
+         * Stage right rows drawn from a few stamp values, so that buckets hold duplicate stamps and the expected match
+         * depends on which of the duplicates the join chooses.
+         */
+        int stage(final int key, final int count, final Random random, int sentinel) {
+            for (int ii = 0; ii < count; ++ii) {
+                stageRow(key, random.nextInt(5) * 100_000, sentinel);
+                ++sentinel;
+            }
+            return sentinel;
+        }
+
+        private void stageRow(final int key, final int stamp, final int sentinel) {
+            rowsByKey.computeIfAbsent(key, unused -> new LongArrayList()).add(nextRow++);
+            stagedKeys.add(key);
+            stagedStamps.add(stamp);
+            stagedSentinels.add(sentinel);
+        }
+
+        WritableRowSet addedRows() {
+            return nextRow == firstStagedRow ? i() : RowSetFactory.fromRange(firstStagedRow, nextRow - 1);
+        }
+
+        int[] addedKeys() {
+            return stagedKeys.toIntArray();
+        }
+
+        int[] addedStamps() {
+            return stagedStamps.toIntArray();
+        }
+
+        void clearStaged() {
+            stagedKeys.clear();
+            stagedStamps.clear();
+            stagedSentinels.clear();
+            firstStagedRow = nextRow;
+        }
+
+        void apply(final QueryTable table, final boolean rightSide) {
+            final RowSet removedRows = removed.build();
+            removed = RowSetFactory.builderRandom();
+            final RowSet addedRows = addedRows();
+            removeRows(table, removedRows);
+            if (rightSide) {
+                addToTable(table, addedRows, intCol("Bucket", addedKeys()), intCol("RightStamp", addedStamps()),
+                        intCol("Sentinel", stagedSentinels.toIntArray()));
+            } else {
+                addToTable(table, addedRows, intCol("Bucket", addedKeys()), intCol("LeftStamp", addedStamps()));
+            }
+            clearStaged();
+            table.notifyListeners(addedRows, removedRows, i());
+        }
     }
 }
