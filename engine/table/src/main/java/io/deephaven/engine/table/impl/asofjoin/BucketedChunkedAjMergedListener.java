@@ -210,8 +210,6 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
                         final int slot = slots.getInt(slotIndex);
                         try (final RowSet leftRemoved = indexFromBuilder(slotIndex)) {
-                            rowRedirection.removeAll(leftRemoved);
-
                             final SegmentedSortedArray leftSsa =
                                     asOfJoinStateManager.getLeftSsaOrRowSet(slot, leftIndexOutput);
                             if (leftSsa == null) {
