@@ -540,4 +540,21 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(0, WhereFilterFactory.expandQuickFilter(table.getDefinition(), "abc", Set.of("A")).length);
         assertEquals(0, WhereFilterFactory.expandQuickFilter(table.getDefinition(), "abc", Set.of("D")).length);
     }
+
+    @Test
+    public void testFloatingPointRangeFiltersValidateColumnType() {
+        final TableDefinition definition = TableDefinition.of(ColumnDefinition.ofInt("I"));
+        final RuntimeException doubleErr = assertThrows(RuntimeException.class,
+                () -> new DoubleRangeFilter("I", 1.0, 2.0).init(definition));
+        assertEquals("Column \"I\" expected to be double: int", doubleErr.getMessage());
+        final RuntimeException floatErr = assertThrows(RuntimeException.class,
+                () -> new FloatRangeFilter("I", 1.0f, 2.0f).init(definition));
+        assertEquals("Column \"I\" expected to be float: int", floatErr.getMessage());
+
+        // boxed types are accepted, as they are for the other primitive range filters
+        new DoubleRangeFilter("V", 1.0, 2.0)
+                .init(TableDefinition.of(ColumnDefinition.fromGenericType("V", Double.class)));
+        new FloatRangeFilter("V", 1.0f, 2.0f)
+                .init(TableDefinition.of(ColumnDefinition.fromGenericType("V", Float.class)));
+    }
 }
