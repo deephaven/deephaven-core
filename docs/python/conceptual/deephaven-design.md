@@ -71,7 +71,7 @@ Queries automatically form a DAG where:
 
 - **Vertices** represent tables or data operations.
 - **Edges** represent dependencies and data flow.
-- **Updates** propagate incrementally - only the affected data recomputes.
+- **Updates** propagate incrementally — only the affected data recomputes.
 - **Consistency**: A logical clock coordinates update cycles.
 
 For example, consider this simple query:
@@ -144,7 +144,7 @@ result2 = live_trades.where("Price > 100").agg_by([agg.avg("Price")], by=["Symbo
 # result2 updates in real-time as new trades arrive
 ```
 
-<iframe src="../assets/conceptual/architecture/unified-batch-streaming.html" title="Diagram comparing a traditional multi-system batch and streaming stack with Deephaven's unified single-system model" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 1006', border: 'none'}} />
+<iframe src="../assets/conceptual/architecture/unified-batch-streaming.html" title="Diagram comparing a traditional multi-system batch and streaming stack with Deephaven's unified single-system model" loading="lazy" style={{width: '100%', aspectRatio: '1280 / 1024', border: 'none'}} />
 
 ## Unified batch and streaming
 

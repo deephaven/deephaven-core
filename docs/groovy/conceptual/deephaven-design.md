@@ -71,7 +71,7 @@ Queries automatically form a DAG where:
 
 - **Vertices** represent tables or data operations.
 - **Edges** represent dependencies and data flow.
-- **Updates** propagate incrementally - only the affected data recomputes.
+- **Updates** propagate incrementally — only the affected data recomputes.
 - **Consistency** is guaranteed via a logical clock that coordinates update cycles.
 
 For example, consider this simple query:
