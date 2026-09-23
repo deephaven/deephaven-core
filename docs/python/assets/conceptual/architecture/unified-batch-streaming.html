@@ -163,7 +163,7 @@
         <div>
           <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);margin-bottom:6px;">Real-time (Live):</div>
           <div style="box-sizing:border-box;padding:12px;background:var(--dh-surface-sunken);border:1px solid var(--dh-warn-500);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);line-height:var(--dh-leading-relaxed);">
-            <div>live = consume_kafka({"topic": "trades"})</div>
+            <div>live = consume_kafka(kafka_config, "trades")</div>
             <div>result = live.where("Price &gt; 100")</div>
             <div>&nbsp;&nbsp;.agg_by([agg.avg("Price")], by=["Symbol"])</div>
           </div>

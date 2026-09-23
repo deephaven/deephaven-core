@@ -163,7 +163,9 @@
         <div>
           <div style="font-size:12px;font-weight:700;color:var(--dh-text-primary);margin-bottom:6px;">Real-time (Live):</div>
           <div style="box-sizing:border-box;padding:12px;background:var(--dh-surface-sunken);border:1px solid var(--dh-warn-500);border-radius:var(--dh-radius-md);font-family:var(--dh-font-mono);font-size:11px;color:var(--dh-text-primary);line-height:var(--dh-leading-relaxed);">
-            <div>live = KafkaTools.consumeToTable(["topic": "trades"])</div>
+            <div>live = KafkaTools.consumeToTable(kafkaProps, "trades",</div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;KafkaTools.ALL_PARTITIONS, KafkaTools.ALL_PARTITIONS_DONT_SEEK,</div>
+            <div>&nbsp;&nbsp;&nbsp;&nbsp;KafkaTools.Consume.IGNORE, valueSpec, KafkaTools.TableType.append())</div>
             <div>result = live.where("Price &gt; 100")</div>
             <div>&nbsp;&nbsp;.aggBy([AggAvg("Price")], "Symbol")</div>
           </div>

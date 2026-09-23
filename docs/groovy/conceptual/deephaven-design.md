@@ -99,6 +99,7 @@ At Deephaven, we have designed and implemented a unified table API that offers t
 
 ```groovy syntax
 import static io.deephaven.api.agg.Aggregation.AggAvg
+import io.deephaven.engine.table.ColumnDefinition
 import io.deephaven.parquet.table.ParquetTools
 import io.deephaven.kafka.KafkaTools
 
@@ -107,7 +108,20 @@ staticTrades = ParquetTools.readTable("/data/historical_trades.parquet")
 result1 = staticTrades.where("Price > 100").aggBy([AggAvg("Price")], "Symbol")
 
 // Identical code works with live Kafka stream
-liveTrades = KafkaTools.consumeToTable(["bootstrap.servers": "localhost:9092", "topic": "trades"])
+kafkaProps = new Properties()
+kafkaProps.put("bootstrap.servers", "localhost:9092")
+
+ColumnDefinition[] colDefs = [ColumnDefinition.ofString("Symbol"), ColumnDefinition.ofDouble("Price")]
+
+liveTrades = KafkaTools.consumeToTable(
+    kafkaProps,
+    "trades",
+    KafkaTools.ALL_PARTITIONS,
+    KafkaTools.ALL_PARTITIONS_DONT_SEEK,
+    KafkaTools.Consume.IGNORE,
+    KafkaTools.Consume.jsonSpec(colDefs, null, null),
+    KafkaTools.TableType.append()
+)
 result2 = liveTrades.where("Price > 100").aggBy([AggAvg("Price")], "Symbol")
 
 // result2 updates in real-time as new trades arrive

@@ -102,12 +102,12 @@ from deephaven.parquet import read
 from deephaven.stream.kafka import consume as consume_kafka
 from deephaven import agg
 
-# Works with static CSV data
-static_trades = read("/data/historical_trades.csv")
+# Works with static Parquet data
+static_trades = read("/data/historical_trades.parquet")
 result1 = static_trades.where("Price > 100").agg_by([agg.avg("Price")], by=["Symbol"])
 
 # Identical code works with live Kafka stream
-live_trades = consume_kafka({"bootstrap.servers": "localhost:9092", "topic": "trades"})
+live_trades = consume_kafka({"bootstrap.servers": "localhost:9092"}, "trades")
 result2 = live_trades.where("Price > 100").agg_by([agg.avg("Price")], by=["Symbol"])
 
 # result2 updates in real-time as new trades arrive
