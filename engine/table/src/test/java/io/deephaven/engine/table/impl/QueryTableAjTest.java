@@ -1067,7 +1067,7 @@ public class QueryTableAjTest {
             JoinControl control, Class<?> stampType) {
         testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement,
                 leftRefreshing, rightRefreshing, initialOnly, withZeroKeys, withBuckets, withReverse, false, false,
-                getJoinControlWithNodeSize(leftNodeSize, rightNodeSize), stampType);
+                control, stampType);
     }
 
     @Test
