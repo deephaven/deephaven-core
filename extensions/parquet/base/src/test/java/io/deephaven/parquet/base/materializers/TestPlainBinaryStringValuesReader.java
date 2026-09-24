@@ -219,13 +219,10 @@ class TestPlainBinaryStringValuesReader {
                 .isInstanceOf(ParquetDecodingException.class);
     }
 
-    /**
-     * A direct buffer has no backing array, so the reader must both report it unsupported and refuse to construct.
-     */
+    /** A direct buffer has no backing array, so the reader must refuse to construct. */
     @Test
     void rejectsNonHeapBuffer() {
         final ByteBuffer direct = ByteBuffer.allocateDirect(16);
-        assertThat(PlainBinaryStringValuesReader.isSupported(direct)).isFalse();
         assertThatThrownBy(() -> new PlainBinaryStringValuesReader(direct))
                 .isInstanceOf(IllegalArgumentException.class);
     }

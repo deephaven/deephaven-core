@@ -649,13 +649,16 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
 
     /**
      * Whether a factory may be offered this page. Encoding is per page, not per column, and offering a dictionary page
-     * would be a correctness bug rather than a missed optimization.
+     * would be a correctness bug rather than a missed optimization. Page buffers are heap-backed today, so the
+     * {@code hasArray} term never fires; it is what lets the factory hook be total.
      *
      * @param dataEncoding this page's encoding
      * @param primitiveTypeName the column's parquet primitive type
+     * @param in the page buffer
      */
-    private static boolean isPlainBinaryPage(final Encoding dataEncoding, final PrimitiveTypeName primitiveTypeName) {
-        return dataEncoding == Encoding.PLAIN && primitiveTypeName == PrimitiveTypeName.BINARY;
+    private static boolean isPlainBinaryPage(
+            final Encoding dataEncoding, final PrimitiveTypeName primitiveTypeName, final ByteBuffer in) {
+        return dataEncoding == Encoding.PLAIN && primitiveTypeName == PrimitiveTypeName.BINARY && in.hasArray();
     }
 
     @VisibleForTesting
@@ -667,12 +670,10 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         if (dataEncoding == Encoding.DELTA_BYTE_ARRAY) {
             throw new RuntimeException("DELTA_BYTE_ARRAY encoding not supported");
         }
-        if (isPlainBinaryPage(dataEncoding, path.getPrimitiveType().getPrimitiveTypeName())) {
+        if (pageMaterializerFactory instanceof PlainBinaryPageReaderFactory plainBinaryFactory
+                && isPlainBinaryPage(dataEncoding, path.getPrimitiveType().getPrimitiveTypeName(), in)) {
             // `in` is already positioned past the repetition and definition levels.
-            final ValuesReader preferred = pageMaterializerFactory.maybeMakePlainBinaryValuesReader(in);
-            if (preferred != null) {
-                return preferred;
-            }
+            return plainBinaryFactory.makePlainBinaryValuesReader(in);
         }
         final ValuesReader dataReader;
         if (dataEncoding.usesDictionary()) {

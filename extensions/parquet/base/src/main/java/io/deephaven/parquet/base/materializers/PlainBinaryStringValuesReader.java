@@ -30,17 +30,12 @@ public final class PlainBinaryStringValuesReader extends ValuesReader {
      * @param in A heap-backed buffer positioned at the first value and limited to the end of the page
      */
     public PlainBinaryStringValuesReader(final ByteBuffer in) {
-        if (!isSupported(in)) {
+        if (!in.hasArray()) {
             throw new IllegalArgumentException("Page buffer is not heap-backed");
         }
         array = in.array();
         position = in.arrayOffset() + in.position();
         limit = in.arrayOffset() + in.limit();
-    }
-
-    /** Whether {@code in} exposes a backing array, which is the whole point of this reader. */
-    public static boolean isSupported(final ByteBuffer in) {
-        return in.hasArray();
     }
 
     /**

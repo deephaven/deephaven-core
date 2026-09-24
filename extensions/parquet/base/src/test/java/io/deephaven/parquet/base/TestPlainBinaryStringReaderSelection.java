@@ -27,8 +27,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * The two halves of the selection rule for {@code PlainBinaryStringValuesReader}: whether the page may be offered at
- * all, and whether a factory wants it. Verified here rather than through a parquet read because class loading happens
- * whether or not the branch is taken, so it is not evidence the path fired.
+ * all, and whether the factory is one that wants it. Verified here rather than through a parquet read because class
+ * loading happens whether or not the branch is taken, so it is not evidence the path fired.
  */
 class TestPlainBinaryStringReaderSelection {
 
@@ -38,28 +38,22 @@ class TestPlainBinaryStringReaderSelection {
     /** The real factory opts in; the integration tests below use a recording stub, so this is the only check. */
     @Test
     void selectedForPlainBinaryStrings() {
-        assertThat(StringMaterializer.FACTORY.maybeMakePlainBinaryValuesReader(HEAP))
+        assertThat(StringMaterializer.FACTORY.makePlainBinaryValuesReader(HEAP))
                 .isInstanceOf(PlainBinaryStringValuesReader.class);
     }
 
     /**
-     * Declining is a correctness requirement, not a tuning choice: PlainBinaryStringValuesReader implements only bulk
+     * Opting out is a correctness requirement, not a tuning choice: PlainBinaryStringValuesReader implements only bulk
      * String decoding, so any other BINARY consumer handed one would throw from readBytes().
      */
     @Test
-    void declinedByOtherBinaryMaterializers() {
-        assertThat(BlobMaterializer.FACTORY.maybeMakePlainBinaryValuesReader(HEAP)).isNull();
-        assertThat(PageMaterializerFactory.NULL_FACTORY.maybeMakePlainBinaryValuesReader(HEAP)).isNull();
-    }
-
-    /** A direct page buffer has no backing array, so the factory must decline and let parquet's reader handle it. */
-    @Test
-    void declinedForDirectBuffers() {
-        assertThat(StringMaterializer.FACTORY.maybeMakePlainBinaryValuesReader(DIRECT)).isNull();
+    void notImplementedByOtherBinaryMaterializers() {
+        assertThat(BlobMaterializer.FACTORY).isNotInstanceOf(PlainBinaryPageReaderFactory.class);
+        assertThat(PageMaterializerFactory.NULL_FACTORY).isNotInstanceOf(PlainBinaryPageReaderFactory.class);
     }
 
     /** Records whether the hook was called, and hands back a reader that is trivially identifiable. */
-    private static final class RecordingFactory implements PageMaterializerFactory {
+    private static final class RecordingFactory implements PlainBinaryPageReaderFactory {
         private final ValuesReader supplied;
         private int calls;
 
@@ -78,7 +72,7 @@ class TestPlainBinaryStringReaderSelection {
         }
 
         @Override
-        public ValuesReader maybeMakePlainBinaryValuesReader(final ByteBuffer in) {
+        public ValuesReader makePlainBinaryValuesReader(final ByteBuffer in) {
             ++calls;
             return supplied;
         }
@@ -107,14 +101,25 @@ class TestPlainBinaryStringReaderSelection {
         assertThat(factory.calls).isEqualTo(1);
     }
 
-    /** A factory that declines must leave the page to parquet, not break the read. */
+    /** A factory that does not implement the hook must leave the page to parquet, not break the read. */
     @Test
-    void getDataReaderFallsBackWhenFactoryDeclines() {
-        final RecordingFactory factory = new RecordingFactory(null);
-
-        assertThat(readerFor(PrimitiveTypeName.BINARY, factory).getDataReader(Encoding.PLAIN, HEAP, 0, null))
+    void getDataReaderFallsBackForOtherFactories() {
+        assertThat(readerFor(PrimitiveTypeName.BINARY, PageMaterializerFactory.NULL_FACTORY)
+                .getDataReader(Encoding.PLAIN, HEAP, 0, null))
                 .isInstanceOf(BinaryPlainValuesReader.class);
-        assertThat(factory.calls).isEqualTo(1);
+    }
+
+    /**
+     * A direct page buffer has no backing array, so the page must never be offered: the hook is total, and would throw
+     * rather than decline. Today's buffers are always heap-backed, which is what makes that safe.
+     */
+    @Test
+    void getDataReaderSkipsTheFactoryForDirectBuffers() {
+        final RecordingFactory factory = new RecordingFactory(new PlainBinaryStringValuesReader(HEAP));
+
+        assertThat(readerFor(PrimitiveTypeName.BINARY, factory).getDataReader(Encoding.PLAIN, DIRECT, 0, null))
+                .isInstanceOf(BinaryPlainValuesReader.class);
+        assertThat(factory.calls).isZero();
     }
 
     /**
