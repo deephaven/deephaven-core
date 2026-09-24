@@ -207,7 +207,7 @@ public class TypedHasherFactory {
                 for (int ii = 0; ii < cts.length; ++ii) {
                     if (cts[ii] == ChunkType.Object) {
                         if (first) {
-                            mb.beginControlFlow("if (rows.isNonempty())", ii);
+                            mb.beginControlFlow("if (rows.isNonempty())");
                             first = false;
                         }
                         mb.addStatement("this.alternateKeySource$L.setNull(rows)", ii);
@@ -580,6 +580,14 @@ public class TypedHasherFactory {
                     .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incopenagg.gen.TypedHashDispatcher
+                        .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
+                    .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incopenaggts.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
