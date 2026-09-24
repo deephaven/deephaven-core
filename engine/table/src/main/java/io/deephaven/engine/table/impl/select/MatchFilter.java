@@ -164,7 +164,10 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
      * converted: no value of such a column is NaN, which is also what {@code isNaN} answers for it.
      */
     private Object[] convertDirectValues(final ColumnTypeConvertor convertor, final Object[] directValues) {
-        final boolean dropNaN = matchOptions.nanMatch() && isPrimitiveWithoutNaN(columnType);
+        final boolean dropNaN = matchOptions.nanMatch()
+                && columnType.isPrimitive()
+                && columnType != double.class
+                && columnType != float.class;
         final List<Object> converted = new ArrayList<>(directValues.length);
         for (final Object value : directValues) {
             if (dropNaN && isNaN(value)) {
@@ -173,10 +176,6 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             converted.add(value == null ? null : convertor.convertParamValue(value));
         }
         return converted.toArray();
-    }
-
-    private static boolean isPrimitiveWithoutNaN(final Class<?> type) {
-        return type.isPrimitive() && type != double.class && type != float.class;
     }
 
     /**
