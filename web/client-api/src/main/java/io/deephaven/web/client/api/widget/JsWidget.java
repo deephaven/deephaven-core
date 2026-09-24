@@ -28,7 +28,7 @@ import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
-import io.deephaven.web.client.api.event.HasEventHandling;
+import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsNullable;
@@ -97,9 +97,8 @@ import java.util.function.Supplier;
  * without the server somehow signaling that it will never reference that export again.</li>
  * </ul>
  */
-// TODO consider reconnect support? This is somewhat tricky without understanding the semantics of the widget
 @TsName(namespace = "dh", name = "Widget")
-public class JsWidget extends HasEventHandling implements ServerObject, WidgetMessageDetails {
+public class JsWidget extends HasLifecycle implements ServerObject, WidgetMessageDetails {
     /**
      * Fired when a new message is received from the server.
      * <p>
@@ -121,6 +120,12 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
     private final TypedTicket typedTicket;
 
     private boolean hasFetched;
+
+    /**
+     * Set when the connection reports this widget as disconnected, cleared when a same-session revive (via
+     * {@link #reconnect()}) succeeds. While set, the next initial response re-announces the widget to consumers.
+     */
+    private boolean awaitingRevive;
 
     private final Supplier<BiDiStream<StreamRequest, StreamResponse>> streamFactory;
     private BiDiStream<StreamRequest, StreamResponse> messageStream;
@@ -146,6 +151,26 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
         return connection;
     }
 
+    /**
+     * Marks this as a standalone, independently-reconnectable widget and registers it with the connection so it is
+     * revived on reconnect. Called only for widgets handed directly to the caller - widgets wrapped by a figure / tree
+     * / partitioned-table are revived by their owner and must not be registered here (that would double-revive them).
+     */
+    public Promise<JsWidget> markReconnectable() {
+        connection.registerSimpleReconnectable(this);
+        return Promise.resolve(this);
+    }
+
+    /**
+     * A failed revive means this widget will never reconnect, so stop tracking it as reconnectable (mirroring
+     * {@link #close()}); otherwise it keeps receiving disconnect/refetch calls on every future reconnect.
+     */
+    @Override
+    public void die(Object error) {
+        connection.unregisterSimpleReconnectable(this);
+        super.die(error);
+    }
+
     private void closeStream() {
         if (messageStream != null) {
             messageStream.end();
@@ -160,11 +185,63 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
     @JsMethod
     public void close() {
         suppressEvents();
+        connection.unregisterSimpleReconnectable(this);
         closeStream();
         connection.releaseTicket(getTicket());
     }
 
+    /**
+     * Opens (or reopens) the message stream using the widget's current ticket. Used for the initial fetch. When invoked
+     * as the connection's new-session revive hook, the export ticket is no longer valid and the server-side object may
+     * differ, so we cannot safely reconnect - the revive fails.
+     */
+    @Override
     public Promise<JsWidget> refetch() {
+        if (!awaitingRevive) {
+            // initial fetch, or an internal caller deliberately rebinding the stream
+            return openStream();
+        }
+        // A new session was created: the old export ticket is invalid and the object may differ. Fail the revive
+        // rather than silently reconnect to a different object.
+        IllegalStateException failure = new IllegalStateException("Cannot revive widget: a new session was created");
+        die(failure);
+        return (Promise<JsWidget>) (Promise) Promise.reject(failure);
+    }
+
+    /**
+     * Same-session reconnect: the export ticket is still valid, so reopen the message stream with the same ticket and
+     * re-announce to consumers on success. If the stream cannot be reopened, fail the revive.
+     */
+    @Override
+    public void reconnect() {
+        openStream().then(widget -> {
+            announceReconnect();
+            return Promise.resolve(widget);
+        }, failure -> {
+            die(failure);
+            return (Promise<JsWidget>) (Promise) Promise.reject(failure);
+        }).catch_(ignore -> {
+            // failure was already reported via die()
+            return null;
+        });
+    }
+
+    @Override
+    public void disconnected() {
+        awaitingRevive = true;
+        closeStream();
+        super.disconnected();
+    }
+
+    private void announceReconnect() {
+        awaitingRevive = false;
+        // unsuppress events and fire the reconnect event first, then re-deliver the fresh initial response as a
+        // message so that consumers re-render from the server's current state
+        super.reconnect();
+        fireEvent(EVENT_MESSAGE, new EventDetails(response.getData(), exportedObjects));
+    }
+
+    private Promise<JsWidget> openStream() {
         closeStream();
         return new Promise<>((resolve, reject) -> {
             exportedObjects = new JsArray<>();
@@ -194,7 +271,11 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
                     reject.onInvoke(status.getDescription());
                 }
                 DomGlobal.setTimeout(ignore -> {
-                    fireEvent(EVENT_CLOSE);
+                    // Skip the close event on a transport failure while the whole connection is down - the
+                    // connection's lifecycle (disconnected/reconnect/refetch) owns this widget's state instead.
+                    if (status.isOk() || connection.isConnected()) {
+                        fireEvent(EVENT_CLOSE);
+                    }
                 }, 0);
                 closeStream();
             });
