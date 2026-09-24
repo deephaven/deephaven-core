@@ -2,7 +2,8 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-"""This package is a place for Deephaven experimental features."""
+"""This package is for Deephaven experimental features that don't yet have a stable interface, and may therefore
+change."""
 
 import jpy
 
