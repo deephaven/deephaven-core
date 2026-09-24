@@ -104,6 +104,20 @@ public class QueryTableAjTest {
     }
 
     @Test
+    public void testAjMismatchedTypesWithEmptyLeft() {
+        final Table right = TableTools.newTable(longCol("Key", 1L), longCol("RightStamp", 1L), intCol("Sentinel", 1));
+        final Table emptyIntKeyLeft = TableTools.newTable(intCol("Key"), longCol("LeftStamp"));
+        final MismatchedJoinKeyException keyMismatch = assertThrows(MismatchedJoinKeyException.class,
+                () -> emptyIntKeyLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel"));
+        assertEquals("Mismatched join types, Key=Key: int != long", keyMismatch.getMessage());
+
+        final Table emptyIntStampLeft = TableTools.newTable(longCol("Key"), intCol("LeftStamp"));
+        final MismatchedJoinKeyException stampMismatch = assertThrows(MismatchedJoinKeyException.class,
+                () -> emptyIntStampLeft.aj(right, "Key,LeftStamp>=RightStamp", "Sentinel"));
+        assertEquals("Can not aj() with different stamp types: left=int, right=long", stampMismatch.getMessage());
+    }
+
+    @Test
     public void testAjMismatchedStampTypes() {
         final Table left = TableTools.newTable(instantCol("LeftStamp", DateTimeUtils.epochNanosToInstant(5)));
         final Table right = TableTools.newTable(longCol("RightStamp", 1L), intCol("Sentinel", 1));
@@ -507,7 +521,7 @@ public class QueryTableAjTest {
     @Test
     public void testAjEmpty() {
         final Table left = TableTools.newTable(
-                col("Bucket"),
+                stringCol("Bucket"),
                 intCol("LeftStamp"));
 
         final Table right = TableTools.newTable(
