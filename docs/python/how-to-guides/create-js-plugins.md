@@ -115,8 +115,6 @@ setup(package_data={"my_plugin.js": ["**"]})
 
 A JS plugin's entry point should have a default export that the Deephaven web UI can load. The default export is a plugin object that tells the web UI what kind of plugin it is and which React components to use.
 
-The web UI also still loads older plugins that use the deprecated named exports `DashboardPlugin`, `AuthPlugin`, or `TablePlugin` instead of a default export. New plugins should use a default export.
-
 Every plugin object has a `name` and a `type`. The `name` identifies the plugin and must be unique. The `type` is one of the values in `PluginType` from the `@deephaven/plugin` package, and it determines which other properties the web UI expects. For the full set of properties each type accepts, see [`PluginTypes.ts`](https://github.com/deephaven/web-client-ui/blob/main/packages/plugin/src/PluginTypes.ts) in the web-client-ui repository.
 
 | Type                           | Purpose                                                                                                                                                |
