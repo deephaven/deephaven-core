@@ -4,6 +4,7 @@
 package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
+import io.deephaven.parquet.base.PageMaterializerFactory;
 import io.deephaven.parquet.base.PlainBinaryPageReaderFactory;
 import org.apache.parquet.column.values.ValuesReader;
 
@@ -11,7 +12,7 @@ import java.nio.ByteBuffer;
 
 public class StringMaterializer extends ObjectMaterializerBase<String> implements PageMaterializer {
 
-    public static final PlainBinaryPageReaderFactory FACTORY = new PlainBinaryPageReaderFactory() {
+    public static final PageMaterializerFactory FACTORY = new PlainBinaryPageReaderFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return dataReader instanceof PlainBinaryStringValuesReader plainBinaryReader

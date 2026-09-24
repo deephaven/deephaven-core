@@ -38,7 +38,8 @@ class TestPlainBinaryStringReaderSelection {
     /** The real factory opts in; the integration tests below use a recording stub, so this is the only check. */
     @Test
     void selectedForPlainBinaryStrings() {
-        assertThat(StringMaterializer.FACTORY.makePlainBinaryValuesReader(HEAP))
+        assertThat(StringMaterializer.FACTORY).isInstanceOf(PlainBinaryPageReaderFactory.class);
+        assertThat(((PlainBinaryPageReaderFactory) StringMaterializer.FACTORY).makePlainBinaryValuesReader(HEAP))
                 .isInstanceOf(PlainBinaryStringValuesReader.class);
     }
 
