@@ -49,7 +49,7 @@ import java.util.Collection;
  */
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractColumnSource<T>
-        implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource,
+        implements FillUnordered<Values>, ShiftableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 
     /**
@@ -371,7 +371,7 @@ public abstract class ArrayBackedColumnSource<T>
      * @param <T> the type parameter for the ColumnSource's type
      * @return an in-memory column source of the requested type
      */
-    public static <T> WritableColumnSource<T> getMemoryColumnSource(final long size,
+    public static <T> ShiftableColumnSource<T> getMemoryColumnSource(final long size,
             @NotNull final Class<T> dataType) {
         return getMemoryColumnSource(size, dataType, null);
     }
@@ -390,9 +390,9 @@ public abstract class ArrayBackedColumnSource<T>
      * @param <T> the type parameter for the ColumnSource's type
      * @return an in-memory column source of the requested type
      */
-    public static <T> WritableColumnSource<T> getMemoryColumnSource(final long size,
+    public static <T> ShiftableColumnSource<T> getMemoryColumnSource(final long size,
             @NotNull final Class<T> dataType, @Nullable final Class<?> componentType) {
-        final WritableColumnSource<?> result;
+        final ShiftableColumnSource<?> result;
         if (dataType == byte.class || dataType == Byte.class) {
             result = new ByteArraySource();
         } else if (dataType == char.class || dataType == Character.class) {
@@ -422,7 +422,7 @@ public abstract class ArrayBackedColumnSource<T>
             result.ensureCapacity(size);
         }
         // noinspection unchecked
-        return (WritableColumnSource<T>) result;
+        return (ShiftableColumnSource<T>) result;
     }
 
     /**

@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.cast.ToDoubleCast;
@@ -128,5 +129,20 @@ class DoubleWeightRecordingInternalOperator implements IterativeChunkedAggregati
     @Override
     public SingletonContext makeSingletonContext(int size) {
         return new Context(chunkType, size);
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        // nothing to do
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        // nothing to do
     }
 }

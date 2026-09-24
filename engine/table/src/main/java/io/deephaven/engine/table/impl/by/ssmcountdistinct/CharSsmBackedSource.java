@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.vector.CharVector;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
@@ -93,5 +94,13 @@ public class CharSsmBackedSource extends AbstractColumnSource<CharVector>
             }
             return true;
         });
+    }
+
+    public void shift(RowSetShiftData shiftData) {
+        underlying.shift(shiftData);
+    }
+
+    public void clear(long firstKey, long lastKey) {
+        underlying.setNull(firstKey, lastKey);
     }
 }

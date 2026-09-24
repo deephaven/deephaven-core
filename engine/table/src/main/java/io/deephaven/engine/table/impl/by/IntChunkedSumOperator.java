@@ -10,6 +10,9 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.RowSequence;
@@ -219,5 +222,22 @@ public class IntChunkedSumOperator implements IterativeChunkedAggregationOperato
     @Override
     public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
         return resultColumn.makeGetContext(chunkCapacity, sharedContext);
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        resultColumn.shift(shiftData);
+        nonNullCount.shift(shiftData);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
+        nonNullCount.clear(firstOutputPosition, lastOutputPosition);
     }
 }

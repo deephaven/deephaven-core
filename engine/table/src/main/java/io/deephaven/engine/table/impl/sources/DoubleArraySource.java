@@ -12,6 +12,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -194,14 +195,30 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
     }
 
     public void move(long source, long dest, long length) {
-        if (prevBlocks != null) {
-            throw new UnsupportedOperationException();
-        }
         if (source == dest) {
             return;
         }
         if (((source - dest) & INDEX_MASK) == 0 && (source & INDEX_MASK) == 0) {
             // TODO (#3359): we can move full blocks!
+        }
+        if (prevBlocks != null) {
+            // This is a slower path that is doing one element at a time, but handles the previous values.  We can
+            // eventually do better.
+            if (source < dest && source + length >= dest) {
+                // we need to be careful about overwriting things
+                for (long ii = length - 1; ii >= 0; ) {
+                    final long sourceKey = source + ii;
+                    final long destKey = dest + ii;
+                    set(destKey, getUnsafe(sourceKey));
+                }
+            } else {
+                for (long ii = 0; ii < length; ++ii) {
+                    final long sourceKey = source + ii;
+                    final long destKey = dest + ii;
+                    set(destKey, getUnsafe(sourceKey));
+                }
+            }
+            return;
         }
         if (source < dest && source + length >= dest) {
             for (long ii = length - 1; ii >= 0; ) {
@@ -796,4 +813,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
 
     // region reinterpretation
     // endregion reinterpretation
+
+    public void shift(RowSetShiftData shiftData) {
+        if (shiftData.empty()) {
+            return;
+        }
+        shiftData.apply((s, e, d) -> move(s, s + d, e - s + 1));
+    }
 }

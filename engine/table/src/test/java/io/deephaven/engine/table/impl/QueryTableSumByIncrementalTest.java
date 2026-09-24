@@ -69,28 +69,31 @@ public class QueryTableSumByIncrementalTest {
         } else {
             sizes = new int[] {10, 100, 4_000, 10_000};
         }
+        final int maxStep = 50;
         for (final int size : sizes) {
             for (int seed = 0; seed < 1; ++seed) {
                 UpdatePerformanceTracker.resetForUnitTests();
                 ChunkPoolReleaseTracking.enableStrict();
                 System.out.println("Size = " + size + ", Seed = " + seed);
-                testSumByIncremental(size, seed, true, true);
-                testSumByIncremental(size, seed, true, false);
-                testSumByIncremental(size, seed, false, true);
-                testSumByIncremental(size, seed, false, false);
+                testSumByIncremental(size, seed, true, true, maxStep);
+                testSumByIncremental(size, seed, true, false, maxStep);
+                testSumByIncremental(size, seed, false, true, maxStep);
+                testSumByIncremental(size, seed, false, false, maxStep);
                 UpdatePerformanceTracker.resetForUnitTests();
                 ChunkPoolReleaseTracking.checkAndDisable();
             }
         }
     }
 
-    private void testSumByIncremental(final int size, final int seed, boolean grouped, boolean lotsOfStrings) {
+    private void testSumByIncremental(final int size, final int seed, boolean grouped, boolean lotsOfStrings,
+            final int maxStep) {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            doTestSumByIncremental(size, seed, grouped, lotsOfStrings);
+            doTestSumByIncremental(size, seed, grouped, lotsOfStrings, maxStep);
         }
     }
 
-    private void doTestSumByIncremental(final int size, final int seed, boolean grouped, boolean lotsOfStrings) {
+    private void doTestSumByIncremental(final int size, final int seed, boolean grouped, boolean lotsOfStrings,
+            final int maxStep) {
         final Random random = new Random(seed);
         final ColumnInfo<?, ?>[] columnInfo;
         final List<ColumnInfo.ColAttributes> ea = Collections.emptyList();
@@ -117,7 +120,7 @@ public class QueryTableSumByIncrementalTest {
 
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").sumBy()),
-                EvalNugget.Sorted.from(() -> queryTable.sumBy("Sym"), "Sym"),
+                EvalNugget.Sorted.from(() -> queryTable.view("intCol", "Sym").sumBy("Sym"), "Sym"),
                 EvalNugget.Sorted.from(() -> queryTable.sort("Sym").sumBy("Sym"), "Sym"),
                 EvalNugget.Sorted.from(() -> queryTable.dropColumns("Sym").sort("intCol").sumBy("intCol"), "intCol"),
                 EvalNugget.Sorted.from(() -> queryTable.sort("Sym", "intCol").sumBy("Sym", "intCol"), "Sym",
@@ -145,7 +148,7 @@ public class QueryTableSumByIncrementalTest {
                         "Sym"),
         };
 
-        for (int step = 0; step < 50; step++) {
+        for (int step = 0; step < maxStep; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Seed = " + seed + ", step=" + step);
             }

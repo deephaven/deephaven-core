@@ -993,7 +993,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     USE_DATA_INDEX_FOR_AGGREGATION ? AggregationControl.DEFAULT : AggregationControl.IGNORE_INDEXING;
             return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),
                     () -> ChunkedOperatorAggregationHelper.aggregation(aggregationControl,
-                            aggregationContextFactory, this, preserveEmpty, initialGroups, groupByColumns));
+                            aggregationContextFactory, this, preserveEmpty, initialGroups, true, groupByColumns));
         }
     }
 

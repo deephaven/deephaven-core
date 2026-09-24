@@ -118,7 +118,7 @@ public class TableBackedDataIndex extends AbstractDataIndex {
                             final SafeCloseable ignored2 = isRefreshing() ? LivenessScopeStack.open() : null) {
                         final QueryTable groupedTable = ChunkedOperatorAggregationHelper.aggregation(
                                 AggregationControl.IGNORE_INDEXING, AggregationProcessor.forExposeGroupRowSets(),
-                                sourceTable, false, null, ColumnName.from(keyColumnNames));
+                                sourceTable, false, null, true, ColumnName.from(keyColumnNames));
 
                         resultLookupFunction.setValue(AggregationProcessor.getRowLookup(groupedTable));
                         Assert.neqNull(resultLookupFunction.get(), "AggregationRowLookup");

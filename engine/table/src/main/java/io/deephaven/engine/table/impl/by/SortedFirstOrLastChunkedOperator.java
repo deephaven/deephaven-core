@@ -7,6 +7,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
@@ -550,5 +551,22 @@ public class SortedFirstOrLastChunkedOperator
     @Override
     public BucketedContext makeBucketedContext(int size) {
         return new SortedFirstOrLastBucketedContext(chunkType, size);
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        ssas.shift(shiftData);
+        redirections.shift(shiftData);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        ssas.setNull(firstOutputPosition, lastOutputPosition);
+        redirections.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

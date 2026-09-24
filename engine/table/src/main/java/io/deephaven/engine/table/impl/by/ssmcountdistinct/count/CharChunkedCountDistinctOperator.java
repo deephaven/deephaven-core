@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.count;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -342,4 +343,21 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
         return new SsmDistinctContext(ChunkType.Char, size);
     }
     // endregion
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        ssms.shift(shiftData);
+        resultColumn.shift(shiftData);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        ssms.clear(firstOutputPosition, lastOutputPosition);
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
+    }
 }

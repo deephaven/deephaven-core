@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
@@ -188,5 +189,20 @@ class DoubleChunkedReAvgOperator implements IterativeChunkedAggregationOperator 
     @Override
     public BucketedContext makeBucketedContext(int size) {
         return new ReAvgContext(size);
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return false;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        throw new UnsupportedOperationException("rollups cannot reclaim deleted states!");
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        throw new UnsupportedOperationException("rollups cannot reclaim deleted states!");
     }
 }

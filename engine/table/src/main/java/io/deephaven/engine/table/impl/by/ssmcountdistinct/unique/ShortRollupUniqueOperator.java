@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.*;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.ShortCompactModifications;
@@ -555,4 +556,19 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
         ssms.clear(destination);
     }
     // endregion
+
+    @Override
+    public boolean canReclaimStates() {
+        return false;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        throw new UnsupportedOperationException("rollups cannot reclaim deleted states!");
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        throw new UnsupportedOperationException("rollups cannot reclaim deleted states!");
+    }
 }

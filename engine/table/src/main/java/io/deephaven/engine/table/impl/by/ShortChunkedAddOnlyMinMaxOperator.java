@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.ShortComparisons;
@@ -182,5 +183,20 @@ class ShortChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
     @Override
     public void startTrackingPrevValues() {
         resultColumn.startTrackingPrevValues();
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        resultColumn.shift(shiftData);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

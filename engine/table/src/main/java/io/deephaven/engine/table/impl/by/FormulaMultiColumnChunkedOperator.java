@@ -10,6 +10,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink.FillFromContext;
 import io.deephaven.engine.table.*;
@@ -39,7 +40,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     private GroupByOperator groupBy;
     private boolean delegateToBy;
     private final SelectColumn selectColumn;
-    private final WritableColumnSource<?> resultColumn;
+    private final ArrayBackedColumnSource<?> resultColumn;
     private final String[] inputKeyColumns;
     @Nullable
     private final ColumnSource<Integer> formulaDepthSource;
@@ -91,7 +92,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         this.formulaDepthSource = formulaDepthSource;
         this.formulaKeyNameSource = formulaKeyNameSource;
 
-        resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(
+        resultColumn = (ArrayBackedColumnSource) ArrayBackedColumnSource.getMemoryColumnSource(
                 0, selectColumn.getReturnedType(), selectColumn.getReturnedComponentType());
     }
 
@@ -463,5 +464,20 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     public void updateGroupBy(GroupByOperator groupBy, boolean delegateToBy) {
         this.groupBy = groupBy;
         this.delegateToBy = delegateToBy;
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        resultColumn.shift(shiftData);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

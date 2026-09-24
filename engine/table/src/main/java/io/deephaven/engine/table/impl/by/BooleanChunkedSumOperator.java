@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
@@ -289,5 +290,22 @@ public final class BooleanChunkedSumOperator implements IterativeChunkedAggregat
     @Override
     public void startTrackingPrevValues() {
         resultColumn.startTrackingPrevValues();
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        resultColumn.shift(shiftData);
+        falseCount.shift(shiftData);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
+        falseCount.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

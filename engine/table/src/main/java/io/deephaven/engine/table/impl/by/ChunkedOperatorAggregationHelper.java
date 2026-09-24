@@ -29,6 +29,7 @@ import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.IntIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.sources.ShiftableColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
@@ -60,6 +61,8 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.skipRunFind", false);
     static final boolean HASHED_RUN_FIND =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
+    public static boolean RECLAIM_STATES =
+            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.reclaimStates", true);
 
     public static QueryTable aggregation(
             @NotNull final AggregationContextFactory aggregationContextFactory,
@@ -68,7 +71,7 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final Table initialKeys,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         return aggregation(AggregationControl.DEFAULT,
-                aggregationContextFactory, input, preserveEmpty, initialKeys, groupByColumns);
+                aggregationContextFactory, input, preserveEmpty, initialKeys, true, groupByColumns);
     }
 
     private static void checkGroupByColumns(String context, TableDefinition tableDefinition, String[] keyNames) {
@@ -90,6 +93,7 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final QueryTable input,
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
+            final boolean removeUnusedStates,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
         final String[] keyNames = groupByColumns.stream().map(ColumnName::name).toArray(String[]::new);
         checkGroupByColumns("input table", input.getDefinition(), keyNames);
@@ -128,7 +132,7 @@ public class ChunkedOperatorAggregationHelper {
                     "by(" + aggregationContextFactory + ", " + groupByColumns + ")", snapshotControl,
                     (usePrev, beforeClockValue) -> {
                         resultHolder.setValue(aggregation(control, snapshotControl, aggregationContextFactory,
-                                input, dataIndex, preserveEmpty, initialKeys, keyNames, usePrev));
+                                input, dataIndex, preserveEmpty, initialKeys, removeUnusedStates, keyNames, usePrev));
                         return true;
                     });
             return resultHolder.getValue();
@@ -143,6 +147,7 @@ public class ChunkedOperatorAggregationHelper {
             @Nullable final BasicDataIndex dataIndex,
             final boolean preserveEmpty,
             @Nullable final Table initialKeys,
+            boolean removeUnusedStates,
             @NotNull final String[] keyNames,
             final boolean usePrev) {
         if (keyNames.length == 0) {
@@ -188,7 +193,7 @@ public class ChunkedOperatorAggregationHelper {
         final MutableInt outputPosition = new MutableInt();
         final Supplier<OperatorAggregationStateManager> stateManagerSupplier =
                 () -> makeStateManager(control, input, keySources, reinterpretedKeySources, ac,
-                        useSymbolTable ? symbolTable : null);
+                        useSymbolTable ? symbolTable : null, removeUnusedStates);
         final OperatorAggregationStateManager stateManager;
         if (initialKeys == null) {
             stateManager = stateManagerSupplier.get();
@@ -213,8 +218,8 @@ public class ChunkedOperatorAggregationHelper {
 
         // Gather the result key columns
         final ColumnSource[] keyColumnsRaw = new ColumnSource[keyHashTableSources.length];
-        final WritableColumnSource[] keyColumnsCopied =
-                input.isRefreshing() ? new WritableColumnSource[keyHashTableSources.length] : null;
+        final ShiftableColumnSource[] keyColumnsCopied =
+                input.isRefreshing() ? new ShiftableColumnSource[keyHashTableSources.length] : null;
         for (int kci = 0; kci < keyHashTableSources.length; ++kci) {
             ColumnSource<?> resultKeyColumnSource = keyHashTableSources[kci];
             if (keySources[kci] != reinterpretedKeySources[kci]) {
@@ -238,6 +243,12 @@ public class ChunkedOperatorAggregationHelper {
                 : initialRowsBuilder.build()).toTracking();
         if (input.isRefreshing()) {
             copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
+            if (removeUnusedStates) {
+                // noinspection DataFlowIssue
+                for (ShiftableColumnSource<?> shiftableColumnSource : keyColumnsCopied) {
+                    shiftableColumnSource.startTrackingPrevValues();
+                }
+            }
         }
 
         // Construct the result table
@@ -272,12 +283,16 @@ public class ChunkedOperatorAggregationHelper {
                     if (upstreamToUse.empty()) {
                         return;
                     }
+
+                    final TrackingWritableRowSet resultRowset = result.getRowSet().writableCast();
+
                     final TableUpdate downstream;
                     try (final KeyedUpdateContext kuc = new KeyedUpdateContext(ac, incrementalStateManager,
                             reinterpretedKeySources, permuteKernels, keysUpstreamModifiedColumnSet,
                             operatorInputModifiedColumnSets, stateChangeRecorder, upstreamToUse,
                             outputPosition)) {
                         downstream = kuc.computeDownstreamIndicesAndCopyKeys(input.getRowSet(),
+                                resultRowset,
                                 keyColumnsRaw,
                                 keyColumnsCopied,
                                 result.getModifiedColumnSetForUpdates(), resultModifiedColumnSetFactories);
@@ -288,7 +303,13 @@ public class ChunkedOperatorAggregationHelper {
                         return;
                     }
 
-                    result.getRowSet().writableCast().update(downstream.added(), downstream.removed());
+                    if (((IncrementalOperatorAggregationStateManager) stateManager).canReclaim()
+                            && resultRowset.lastRowKey() + 1 != outputPosition.get()) {
+                        throw new IllegalStateException(
+                                "nextOutputPosition: " + outputPosition.get() + ", lastRowKey: "
+                                        + resultRowset.lastRowKey());
+                    }
+
                     result.notifyListeners(downstream);
                 }
 
@@ -316,14 +337,25 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final AggregationControl control, @NotNull final QueryTable input,
             @NotNull final ColumnSource<?>[] keySources, @NotNull final ColumnSource<?>[] reinterpretedKeySources,
             @NotNull final AggregationContext ac,
-            @Nullable final Table symbolTableToUse) {
+            @Nullable final Table symbolTableToUse,
+            final boolean removeUnusedStates) {
         final OperatorAggregationStateManager stateManager;
         if (input.isRefreshing()) {
-            stateManager = TypedHasherFactory.make(
-                    IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
-                    reinterpretedKeySources,
-                    keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
-                    control.getTargetLoadFactor());
+            final boolean canReclaim = RECLAIM_STATES &&
+                    Arrays.stream(ac.operators).allMatch(IterativeChunkedAggregationOperator::canReclaimStates);
+            if (removeUnusedStates && canReclaim) {
+                stateManager = TypedHasherFactory.make(
+                        IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class,
+                        reinterpretedKeySources,
+                        keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+            } else {
+                stateManager = TypedHasherFactory.make(
+                        IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
+                        reinterpretedKeySources,
+                        keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
+                        control.getTargetLoadFactor());
+            }
         } else {
             if (symbolTableToUse != null) {
                 stateManager = new StaticSymbolTableChunkedOperatorAggregationStateManager(reinterpretedKeySources[0],
@@ -532,8 +564,9 @@ public class ChunkedOperatorAggregationHelper {
 
         private TableUpdate computeDownstreamIndicesAndCopyKeys(
                 @NotNull final RowSet upstreamIndex,
+                TrackingWritableRowSet resultRowset,
                 @NotNull final ColumnSource<?>[] keyColumnsRaw,
-                @NotNull final WritableColumnSource<?>[] keyColumnsCopied,
+                @NotNull final ShiftableColumnSource<?>[] keyColumnsCopied,
                 @NotNull final ModifiedColumnSet resultModifiedColumnSet,
                 @NotNull final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories) {
             final int firstStateToAdd = outputPosition.get();
@@ -642,6 +675,10 @@ public class ChunkedOperatorAggregationHelper {
                     downstream.added().writableCast().remove(addedBack);
                     downstream.removed().writableCast().remove(addedBack);
 
+                    if (downstream.removed.isNonempty()) {
+                        incrementalStateManager.removeStates(downstream.removed);
+                    }
+
                     if (newStates.isNonempty()) {
                         downstream.added().writableCast().insert(newStates);
                         copyKeyColumns(keyColumnsRaw, keyColumnsCopied, newStates);
@@ -657,6 +694,14 @@ public class ChunkedOperatorAggregationHelper {
 
             extractDownstreamModifiedColumnSet(downstream, resultModifiedColumnSet, modifiedOperators,
                     updateUpstreamModifiedColumnSet, resultModifiedColumnSetFactories);
+
+            incrementalStateManager.reclaimFreedRows(resultRowset, downstream, outputPosition,
+                    upstream.added().size() + upstream.modified().size() + upstream.removed().size(), ac.operators);
+            if (downstream.shifted.nonempty()) {
+                for (ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
+                    keyColumn.shift(downstream.shifted());
+                }
+            }
 
             return downstream;
         }
