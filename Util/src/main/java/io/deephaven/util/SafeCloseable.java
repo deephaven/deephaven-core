@@ -84,8 +84,9 @@ public interface SafeCloseable extends AutoCloseable {
     /**
      * {@link #close() Close} all non-{@code null} {@link AutoCloseable} arguments while {@code primary} is propagating.
      * A failure while closing is attached to {@code primary} as {@link Throwable#addSuppressed(Throwable) suppressed},
-     * as try-with-resources does, rather than replacing it, and closing continues with the remaining arguments. The
-     * caller rethrows {@code primary}.
+     * as try-with-resources does, rather than replacing it, and closing continues with the remaining arguments. A close
+     * that rethrows {@code primary} itself is not attached, since a throwable cannot suppress itself. The caller
+     * rethrows {@code primary}.
      *
      * @param primary the failure that is propagating
      * @param autoCloseables {@link AutoCloseable AutoCloseables} to {@link #close() close}
@@ -99,7 +100,9 @@ public interface SafeCloseable extends AutoCloseable {
             try {
                 autoCloseable.close();
             } catch (final Throwable closeFailure) {
-                primary.addSuppressed(closeFailure);
+                if (closeFailure != primary) {
+                    primary.addSuppressed(closeFailure);
+                }
             }
         }
     }
