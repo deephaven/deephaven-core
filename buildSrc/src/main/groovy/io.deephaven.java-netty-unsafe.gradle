@@ -9,8 +9,9 @@ plugins {
 //     at io.netty.buffer.PooledByteBufAllocatorL$InnerAllocator.newDirectBufferL(PooledByteBufAllocatorL.java:185)
 //     at org.apache.arrow.memory.netty.NettyAllocationManager.<init>(NettyAllocationManager.java:74)
 // Passing -Dio.netty.noUnsafe=false re-enables netty's use of sun.misc.Unsafe (netty reads the resulting
-// io.netty.noUnsafe system property) and silences the JDK's terminally-deprecated-method warnings. The other option
-// would be to use "--sun-misc-unsafe-memory-access=allow" which doesn't exist on older JDKs.
+// io.netty.noUnsafe system property). On JDK 24+, this can emit terminally-deprecated-method warnings. The alternative
+// is "--sun-misc-unsafe-memory-access=allow", which also enables Unsafe and suppresses those warnings but is unavailable
+// on older JDKs.
 tasks.withType(JavaExec).configureEach {
     jvmArgs += ['-Dio.netty.noUnsafe=false']
 }
