@@ -289,6 +289,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
     }
 
     @Override
+    void releaseBlock(int blockIndex) {
+        blocks[blockIndex] = null;
+    }
+
+    @Override
     Object getPrevBlock(int blockIndex) {
         return prevBlocks[blockIndex];
     }

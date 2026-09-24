@@ -232,4 +232,9 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractColum
     public void setNull(final long firstKey, final long lastKey) {
         nanoSource.setNull(firstKey, lastKey);
     }
+
+    @Override
+    public void releaseBlocks(final long firstKey, final long lastKey) {
+        nanoSource.releaseBlocks(firstKey, lastKey);
+    }
 }

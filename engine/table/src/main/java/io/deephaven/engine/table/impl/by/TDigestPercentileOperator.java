@@ -389,6 +389,11 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         }
 
         @Override
+        public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+            resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        }
+
+        @Override
         public void clear(long firstOutputPosition, long lastOutputPosition) {
             resultColumn.setNull(firstOutputPosition, lastOutputPosition);
         }
@@ -404,6 +409,14 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         digests.shift(shiftData);
         for (final DoubleArraySource resultColumn : resultColumns) {
             resultColumn.shift(shiftData);
+        }
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        digests.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        for (final DoubleArraySource resultColumn : resultColumns) {
+            resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
         }
     }
 

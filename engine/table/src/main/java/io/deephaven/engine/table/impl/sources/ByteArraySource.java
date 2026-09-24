@@ -289,6 +289,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
     }
 
     @Override
+    void releaseBlock(int blockIndex) {
+        blocks[blockIndex] = null;
+    }
+
+    @Override
     Object getPrevBlock(int blockIndex) {
         return prevBlocks[blockIndex];
     }

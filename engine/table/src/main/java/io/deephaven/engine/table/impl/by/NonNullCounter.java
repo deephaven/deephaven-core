@@ -92,6 +92,10 @@ public final class NonNullCounter {
         nonNullCount.shift(shiftData);
     }
 
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        nonNullCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         for (long ii = firstOutputPosition; ii <= lastOutputPosition; ++ii) {
             nonNullCount.set(ii, 0L);

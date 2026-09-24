@@ -134,6 +134,11 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator
     }
 
     @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        redirections.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         redirections.setNull(firstOutputPosition, lastOutputPosition);
     }

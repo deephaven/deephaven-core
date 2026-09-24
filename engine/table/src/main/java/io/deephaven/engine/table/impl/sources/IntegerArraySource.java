@@ -289,6 +289,11 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
     }
 
     @Override
+    void releaseBlock(int blockIndex) {
+        blocks[blockIndex] = null;
+    }
+
+    @Override
     Object getPrevBlock(int blockIndex) {
         return prevBlocks[blockIndex];
     }

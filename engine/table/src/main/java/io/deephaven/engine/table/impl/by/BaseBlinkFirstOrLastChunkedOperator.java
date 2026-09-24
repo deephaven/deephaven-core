@@ -182,6 +182,11 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
     }
 
     @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        resultColumns.values().forEach(cs -> cs.releaseBlocks(firstOutputPosition, lastOutputPosition));
+    }
+
+    @Override
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         resultColumns.values().forEach(cs -> cs.setNull(firstOutputPosition, lastOutputPosition));
     }

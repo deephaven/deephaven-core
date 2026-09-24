@@ -15,6 +15,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
@@ -28,6 +29,7 @@ import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.SourceColumn;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
@@ -4510,6 +4512,166 @@ public class QueryTableAggregationTest {
             table.notifyListeners(i(1), i(), i());
         });
         assertTableEquals(TableTools.newTable(stringCol("Key", "A"), longCol("x", 3)), summed);
+    }
+
+    @Test
+    public void testReleaseBlocksSlidingWindow() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int window = 3 * blockSize;
+        // not a multiple of the block size, so that blocks empty part way through a cycle
+        final int step = blockSize / 2 + 7;
+
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(window).toTracking(),
+                stringCol("Key", windowKeys(0, window)), longCol("x", windowValues(0, window)));
+        final Table summed = table.sumBy("Key");
+        final Table aggregated = table.aggBy(List.of(AggMin("Min=x"), AggAvg("Avg=x"), AggCountDistinct("CD=x"),
+                AggFirst("First=x"), AggLast("Last=x"), AggUnique("U=x")), "Key");
+
+        final List<TableUpdateValidator> validators = List.of(
+                TableUpdateValidator.make("summed", (QueryTable) summed),
+                TableUpdateValidator.make("aggregated", (QueryTable) aggregated));
+        final List<FailureListener> failureListeners = new ArrayList<>();
+        for (final TableUpdateValidator validator : validators) {
+            final FailureListener failureListener = new FailureListener();
+            validator.getResultTable().addUpdateListener(failureListener);
+            failureListeners.add(failureListener);
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int cycle = 0; cycle < 20; ++cycle) {
+            final long firstRemoved = (long) cycle * step;
+            final long firstAdded = firstRemoved + window;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet removed = RowSetFactory.fromRange(firstRemoved, firstRemoved + step - 1);
+                final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + step - 1);
+                removeRows(table, removed);
+                addToTable(table, added, stringCol("Key", windowKeys(firstAdded, step)),
+                        longCol("x", windowValues(firstAdded, step)));
+                table.notifyListeners(added, removed, i());
+            });
+            assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+            assertTableEquals(table.aggBy(List.of(AggMin("Min=x"), AggAvg("Avg=x"), AggCountDistinct("CD=x"),
+                    AggFirst("First=x"), AggLast("Last=x"), AggUnique("U=x")), "Key").sort("Key"),
+                    aggregated.sort("Key"));
+        }
+
+        // the first block of output positions has been released
+        final ColumnSource<?> sums = summed.getColumnSource("x");
+        assertThrows(NullPointerException.class, () -> sums.getLong(0));
+
+        // a key whose state was released comes back as a new state
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final long added = 20L * step + window;
+            addToTable(table, i(added), stringCol("Key", "K0"), longCol("x", 7));
+            table.notifyListeners(i(added), i(), i());
+        });
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+        assertEquals(7, summed.where("Key=`K0`").getColumnSource("x").getLong(
+                summed.where("Key=`K0`").getRowSet().firstRowKey()));
+    }
+
+    @Test
+    public void testReclaimChurnWithBoundedLiveStates() {
+        // A thousand live keys at a time, but a hundred thousand distinct keys over the test: tombstones repeatedly
+        // cross the load factor while the live states fit, so the hash table rehashes at the same size, with inserts
+        // and new tombstones arriving while each rehash migrates.
+        final int window = 1000;
+        final int step = 500;
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(window).toTracking(),
+                stringCol("Key", windowKeys(0, window)), longCol("x", windowValues(0, window)));
+        final Table summed = table.sumBy("Key");
+
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testReclaimChurnWithBoundedLiveStates", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int cycle = 0; cycle < 200; ++cycle) {
+            final long firstRemoved = (long) cycle * step;
+            final long firstAdded = firstRemoved + window;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet removed = RowSetFactory.fromRange(firstRemoved, firstRemoved + step - 1);
+                final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + step - 1);
+                removeRows(table, removed);
+                addToTable(table, added, stringCol("Key", windowKeys(firstAdded, step)),
+                        longCol("x", windowValues(firstAdded, step)));
+                table.notifyListeners(added, removed, i());
+            });
+            if (cycle % 20 == 0) {
+                assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+            }
+        }
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+    }
+
+    @Test
+    public void testCollapseSparseBlocksRandomChurn() {
+        final double original = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
+        try (final SafeCloseable ignored = () -> ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = original) {
+            for (final double collapseFreeFraction : new double[] {0.5, 0.75, 0.9}) {
+                ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = collapseFreeFraction;
+                testCollapseSparseBlocksRandomChurn(collapseFreeFraction);
+            }
+        }
+    }
+
+    private void testCollapseSparseBlocksRandomChurn(final double collapseFreeFraction) {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int initialSize = 4 * blockSize;
+        final int step = blockSize / 2;
+        final Random random = new Random(0);
+
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(initialSize).toTracking(),
+                stringCol("Key", windowKeys(0, initialSize)), longCol("x", windowValues(0, initialSize)));
+        final Supplier<Table> aggregation = () -> table.aggBy(List.of(AggSum("Sum=x"), AggMin("Min=x"),
+                AggAvg("Avg=x"), AggCountDistinct("CD=x"), AggFirst("First=x"), AggLast("Last=x"), AggUnique("U=x"),
+                AggMed("Med=x"), AggDistinct("D=x")), "Key");
+        final Table aggregated = aggregation.get();
+
+        final TableUpdateValidator validated = TableUpdateValidator.make(
+                "testCollapseSparseBlocksRandomChurn-" + collapseFreeFraction, (QueryTable) aggregated);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        long nextRowKey = initialSize;
+        for (int cycle = 0; cycle < 40; ++cycle) {
+            // remove a random half of a step's worth of rows, so blocks thin out unevenly
+            final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+            final RowSet liveRows = table.getRowSet();
+            for (int ii = 0; ii < step; ++ii) {
+                removedBuilder.addKey(liveRows.get(random.nextInt(liveRows.intSize())));
+            }
+            final RowSet removed = removedBuilder.build();
+            final long firstAdded = nextRowKey;
+            final int addedCount = random.nextInt(step) + 1;
+            nextRowKey += addedCount;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + addedCount - 1);
+                removeRows(table, removed);
+                addToTable(table, added, stringCol("Key", windowKeys(firstAdded, addedCount)),
+                        longCol("x", windowValues(firstAdded, addedCount)));
+                table.notifyListeners(added, removed, i());
+            });
+            assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
+        }
+    }
+
+    private static String[] windowKeys(final long firstRowKey, final int count) {
+        final String[] keys = new String[count];
+        for (int ii = 0; ii < count; ++ii) {
+            keys[ii] = "K" + (firstRowKey + ii);
+        }
+        return keys;
+    }
+
+    private static long[] windowValues(final long firstRowKey, final int count) {
+        final long[] values = new long[count];
+        for (int ii = 0; ii < count; ++ii) {
+            values[ii] = (firstRowKey + ii) % 97;
+        }
+        return values;
     }
 
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {

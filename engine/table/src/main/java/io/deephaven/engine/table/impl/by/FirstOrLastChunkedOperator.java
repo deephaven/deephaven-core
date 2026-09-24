@@ -459,6 +459,11 @@ public class FirstOrLastChunkedOperator
         }
 
         @Override
+        public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+            // nothing to do, our enclosing class has shifted our result
+        }
+
+        @Override
         public void clear(long firstOutputPosition, long lastOutputPosition) {
             // nothing to do, our enclosing class has cleared our result
         }
@@ -648,6 +653,11 @@ public class FirstOrLastChunkedOperator
         }
 
         @Override
+        public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+            redirections.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        }
+
+        @Override
         public void clear(long firstOutputPosition, long lastOutputPosition) {
             redirections.setNull(firstOutputPosition, lastOutputPosition);
         }
@@ -662,6 +672,12 @@ public class FirstOrLastChunkedOperator
     public void shift(RowSetShiftData shiftData) {
         redirections.shift(shiftData);
         rowSets.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        redirections.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        rowSets.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
 
     @Override

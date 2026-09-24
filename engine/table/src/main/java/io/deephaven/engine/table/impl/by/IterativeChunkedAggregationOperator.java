@@ -376,4 +376,14 @@ public interface IterativeChunkedAggregationOperator {
     void shift(RowSetShiftData shiftData);
 
     void clear(long firstOutputPosition, long lastOutputPosition);
+
+    /**
+     * Release the storage for every block of output positions that lies entirely within the given range. The positions
+     * belong to states that have been removed and will never be reused; this is called once the update cycle that
+     * removed them has completed, so their values, current or previous, will not be read again.
+     *
+     * @param firstOutputPosition the first output position of the range
+     * @param lastOutputPosition the last output position of the range, inclusive
+     */
+    default void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {}
 }

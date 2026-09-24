@@ -286,6 +286,11 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
     }
 
     @Override
+    void releaseBlock(int blockIndex) {
+        blocks[blockIndex] = null;
+    }
+
+    @Override
     Object getPrevBlock(int blockIndex) {
         return prevBlocks[blockIndex];
     }

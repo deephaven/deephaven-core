@@ -372,6 +372,18 @@ abstract class FpChunkedNonNormalCounter {
         }
     }
 
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        if (nanCount != null) {
+            nanCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        }
+        if (positiveInfinityCount != null) {
+            positiveInfinityCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        }
+        if (negativeInfinityCount != null) {
+            negativeInfinityCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        }
+    }
+
 
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         if (nanCount != null) {

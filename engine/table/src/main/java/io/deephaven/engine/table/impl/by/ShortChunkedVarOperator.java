@@ -199,6 +199,14 @@ class ShortChunkedVarOperator implements IterativeChunkedAggregationOperator {
     }
 
     @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        sumSource.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        sum2Source.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        nonNullCounter.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         resultColumn.setNull(firstOutputPosition, lastOutputPosition);
         sumSource.setNull(firstOutputPosition, lastOutputPosition);
