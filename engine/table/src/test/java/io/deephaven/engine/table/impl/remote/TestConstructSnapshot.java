@@ -3,8 +3,11 @@
 //
 package io.deephaven.engine.table.impl.remote;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.ColumnSnapshotUnsuccessfulException;
 import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -31,8 +34,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.deephaven.engine.table.impl.SnapshotTestUtils.verifySnapshotBarrageMessage;
+import static org.junit.Assert.assertThrows;
+import static io.deephaven.engine.table.impl.remote.ColumnSnapshotTestSupport.ATTEMPT_OVERRUN_MILLIS;
+import static io.deephaven.engine.table.impl.remote.ColumnSnapshotTestSupport.INTERCEPTED_COLUMN_NAME;
+import static io.deephaven.engine.table.impl.remote.ColumnSnapshotTestSupport.tableWithInterceptedColumn;
+import static io.deephaven.engine.table.impl.remote.ColumnSnapshotTestSupport.withParallelColumnSnapshot;
+import static io.deephaven.engine.table.impl.remote.ColumnSnapshotTestSupport.withSerialColumnSnapshot;
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.testutil.TstUtils.testRefreshingTable;
@@ -377,4 +387,228 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
             executor.shutdownNow();
         }
     }
+
+
+    /**
+     * Regression test for DH-23733.
+     *
+     * <p>
+     * A column fill that throws must not leak the chunk it was filling — {@link RefreshingTableTestCase}'s teardown
+     * fails the test if it does. The failure the caller sees wraps one thrown from the fill site on the thread that
+     * read the column, which names that column and keeps the original exception as its cause.
+     */
+    public void testParallelColumnSnapshotFailureNamesColumnAndReleasesChunk() {
+        final RuntimeException failure = new IllegalStateException("Deliberate column fill failure");
+        final QueryTable table = tableWithInterceptedColumn(() -> {
+            throw failure;
+        });
+        withParallelColumnSnapshot(() -> {
+            final ColumnSnapshotUnsuccessfulException thrown = assertThrows(
+                    ColumnSnapshotUnsuccessfulException.class,
+                    // Close the message on the path where the snapshot unexpectedly succeeds, so that a failure of
+                    // this assertion is not compounded by a leak report from the chunks it holds.
+                    () -> ConstructSnapshot.constructBackplaneSnapshot(this, table).close());
+            final Throwable columnFailure = thrown.getCause();
+            assertTrue(String.valueOf(columnFailure), columnFailure instanceof ColumnSnapshotUnsuccessfulException);
+            assertTrue(columnFailure.getMessage(), columnFailure.getMessage().contains(INTERCEPTED_COLUMN_NAME));
+            assertSame(failure, columnFailure.getCause());
+        });
+    }
+
+    /**
+     * Companion to {@link #testParallelColumnSnapshotFailureNamesColumnAndReleasesChunk()} for the serial path, which
+     * names the failing column from the same fill site and releases the in-flight chunk.
+     */
+    public void testSerialColumnSnapshotFailureNamesColumnAndReleasesChunk() {
+        final RuntimeException failure = new IllegalStateException("Deliberate column fill failure");
+        final QueryTable table = tableWithInterceptedColumn(() -> {
+            throw failure;
+        });
+        withSerialColumnSnapshot(() -> {
+            try (final BarrageMessage ignored = ConstructSnapshot.constructBackplaneSnapshot(this, table)) {
+                fail("Expected ColumnSnapshotUnsuccessfulException");
+            } catch (ColumnSnapshotUnsuccessfulException e) {
+                assertTrue(e.getMessage(), e.getMessage().contains(INTERCEPTED_COLUMN_NAME));
+                // Both fill branches share one catch, so only the message can say which of them ran.
+                assertTrue(e.getMessage(), e.getMessage().contains("current values"));
+                assertSame(failure, e.getCause());
+            }
+        });
+    }
+
+    /**
+     * Regression test for DH-23733.
+     *
+     * <p>
+     * Interrupting the thread waiting on a parallel column snapshot must not abandon the scheduled jobs: they are still
+     * filling chunks into the {@link BarrageMessage}, which the caller closes as the failure propagates. The snapshot
+     * waits for them to finish, then propagates a {@link CancellationException} with the interrupt restored.
+     */
+    public void testParallelColumnSnapshotWaitsForJobsWhenInterrupted() throws InterruptedException {
+        final CountDownLatch fillStarted = new CountDownLatch(1);
+        final CountDownLatch releaseFill = new CountDownLatch(1);
+        final AtomicBoolean fillCompleted = new AtomicBoolean();
+        final QueryTable table = tableWithInterceptedColumn(() -> {
+            fillStarted.countDown();
+            try {
+                releaseFill.await();
+            } catch (InterruptedException e) {
+                throw new UncheckedDeephavenException(e);
+            }
+            fillCompleted.set(true);
+        });
+
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+        final AtomicBoolean fillCompletedWhenThrown = new AtomicBoolean();
+        final AtomicBoolean interruptRestored = new AtomicBoolean();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final Thread snapshotThread = new Thread(() -> withParallelColumnSnapshot(() -> {
+            try (final SafeCloseable ignored = executionContext.open();
+                    final BarrageMessage ignored2 = ConstructSnapshot.constructBackplaneSnapshot(this, table)) {
+                // Expected to throw
+            } catch (Throwable t) {
+                thrown.set(t);
+                fillCompletedWhenThrown.set(fillCompleted.get());
+                interruptRestored.set(Thread.interrupted());
+            }
+        }), "TestConstructSnapshot Interrupted Snapshot");
+        snapshotThread.start();
+
+        try {
+            assertTrue(fillStarted.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            snapshotThread.interrupt();
+            // Give an unfixed snapshot time to abandon the still-running job and return.
+            snapshotThread.join(500);
+            assertTrue("snapshotThread.isAlive()", snapshotThread.isAlive());
+        } finally {
+            // The intercepted fill occupies a common pool thread until this is released, so release it however this
+            // test ends, and do not leave the non-daemon snapshot thread behind either.
+            releaseFill.countDown();
+            snapshotThread.join(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
+            snapshotThread.interrupt();
+        }
+        assertFalse("snapshotThread.isAlive()", snapshotThread.isAlive());
+
+        assertTrue(String.valueOf(thrown.get()), thrown.get() instanceof CancellationException);
+        assertTrue("fillCompletedWhenThrown", fillCompletedWhenThrown.get());
+        assertTrue("interruptRestored", interruptRestored.get());
+    }
+
+    /**
+     * Regression test for DH-23733.
+     *
+     * <p>
+     * A job that fails while the waiting thread is being interrupted has still failed. Cancellation is what the caller
+     * asked for and is what it gets, but the column that could not be read is reported alongside it rather than
+     * dropped.
+     */
+    public void testInterruptedParallelColumnSnapshotReportsJobFailure() throws InterruptedException {
+        final RuntimeException failure = new IllegalStateException("Deliberate column fill failure");
+        final CountDownLatch fillStarted = new CountDownLatch(1);
+        final CountDownLatch releaseFill = new CountDownLatch(1);
+        final QueryTable table = tableWithInterceptedColumn(() -> {
+            fillStarted.countDown();
+            try {
+                releaseFill.await();
+            } catch (InterruptedException e) {
+                throw new UncheckedDeephavenException(e);
+            }
+            throw failure;
+        });
+
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final Thread snapshotThread = new Thread(() -> withParallelColumnSnapshot(() -> {
+            try (final SafeCloseable ignored = executionContext.open();
+                    final BarrageMessage ignored2 = ConstructSnapshot.constructBackplaneSnapshot(this, table)) {
+                // Expected to throw
+            } catch (Throwable t) {
+                thrown.set(t);
+                Thread.interrupted();
+            }
+        }), "TestConstructSnapshot Interrupted Failing Snapshot");
+        snapshotThread.start();
+
+        try {
+            assertTrue(fillStarted.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            snapshotThread.interrupt();
+        } finally {
+            releaseFill.countDown();
+            snapshotThread.join(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
+            snapshotThread.interrupt();
+        }
+        assertFalse("snapshotThread.isAlive()", snapshotThread.isAlive());
+
+        final Throwable cancellation = thrown.get();
+        assertTrue(String.valueOf(cancellation), cancellation instanceof CancellationException);
+        assertEquals("suppressed", 1, cancellation.getSuppressed().length);
+        final Throwable jobFailure = cancellation.getSuppressed()[0];
+        assertTrue(String.valueOf(jobFailure), jobFailure instanceof ColumnSnapshotUnsuccessfulException);
+        final Throwable columnFailure = jobFailure.getCause();
+        assertTrue(String.valueOf(columnFailure), columnFailure instanceof ColumnSnapshotUnsuccessfulException);
+        assertTrue(columnFailure.getMessage(), columnFailure.getMessage().contains(INTERCEPTED_COLUMN_NAME));
+        assertSame(failure, columnFailure.getCause());
+    }
+
+    /**
+     * Regression test for DH-23733.
+     *
+     * <p>
+     * The refreshing counterpart of {@link #testParallelColumnSnapshotWaitsForJobsWhenInterrupted()}. Waiting for the
+     * jobs of a cancelled attempt can take longer than {@code ConstructSnapshot.maxConcurrentAttemptDurationMillis},
+     * which is how long an attempt may run before the retry loop stops making concurrent attempts and falls back to a
+     * locked one. A cancelled attempt must not reach that fallback: taking the update graph lock and snapshotting again
+     * on behalf of a caller that has gone away is exactly what cancellation is asking us not to do.
+     */
+    public void testCancelledRefreshingSnapshotIsNotRetriedUnderLock() throws InterruptedException {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final CountDownLatch fillStarted = new CountDownLatch(1);
+        final CountDownLatch releaseFill = new CountDownLatch(1);
+        final AtomicInteger interceptedFills = new AtomicInteger();
+        final QueryTable table = tableWithInterceptedColumn(() -> {
+            interceptedFills.incrementAndGet();
+            fillStarted.countDown();
+            try {
+                releaseFill.await();
+            } catch (InterruptedException e) {
+                throw new UncheckedDeephavenException(e);
+            }
+        }, true);
+
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+        final AtomicBoolean interruptRestored = new AtomicBoolean();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final Thread snapshotThread = new Thread(() -> withParallelColumnSnapshot(() -> {
+            try (final SafeCloseable ignored = executionContext.open();
+                    final BarrageMessage ignored2 = ConstructSnapshot.constructBackplaneSnapshot(this, table)) {
+                // Expected to throw
+            } catch (Throwable t) {
+                thrown.set(t);
+                interruptRestored.set(Thread.interrupted());
+            }
+        }), "TestConstructSnapshot Cancelled Refreshing Snapshot");
+        snapshotThread.start();
+
+        try {
+            assertTrue(fillStarted.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            // Advance the clock while the attempt is parked, so that it is judged inconsistent.
+            updateGraph.startCycleForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+            snapshotThread.interrupt();
+            // Hold the attempt open past the maximum concurrent attempt duration, so that the retry loop would go on
+            // to a locked snapshot rather than to its retry delay.
+            Thread.sleep(ATTEMPT_OVERRUN_MILLIS);
+        } finally {
+            releaseFill.countDown();
+            snapshotThread.join(TimeUnit.SECONDS.toMillis(TIMEOUT_SECONDS));
+            snapshotThread.interrupt();
+        }
+        assertFalse("snapshotThread.isAlive()", snapshotThread.isAlive());
+
+        assertTrue(String.valueOf(thrown.get()), thrown.get() instanceof CancellationException);
+        assertTrue("interruptRestored", interruptRestored.get());
+        // A second fill of this column would mean the cancelled attempt was followed by a locked one.
+        assertEquals("interceptedFills", 1, interceptedFills.get());
+    }
+
 }
