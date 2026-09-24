@@ -231,6 +231,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
     }
 
     @Override
+    void releaseBlock(int blockIndex) {
+        blocks[blockIndex] = null;
+    }
+
+    @Override
     Object getPrevBlock(int blockIndex) {
         return blocks[blockIndex];
     }

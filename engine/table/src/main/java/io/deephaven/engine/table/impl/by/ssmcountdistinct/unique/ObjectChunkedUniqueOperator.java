@@ -458,6 +458,13 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
     }
 
     @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        internalResult.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        singletonCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        ssms.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         internalResult.setNull(firstOutputPosition, lastOutputPosition);
         singletonCount.setNull(firstOutputPosition, lastOutputPosition);

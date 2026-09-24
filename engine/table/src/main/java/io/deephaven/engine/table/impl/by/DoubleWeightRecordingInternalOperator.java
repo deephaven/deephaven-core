@@ -142,6 +142,11 @@ class DoubleWeightRecordingInternalOperator implements IterativeChunkedAggregati
     }
 
     @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        // nothing to do
+    }
+
+    @Override
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         // nothing to do
     }

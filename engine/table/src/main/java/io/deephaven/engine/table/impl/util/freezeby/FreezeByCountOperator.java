@@ -119,6 +119,11 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        rowCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         rowCount.setNull(firstOutputPosition, lastOutputPosition);
     }

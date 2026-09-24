@@ -40,6 +40,18 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
                     IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class,
                     "maxPermittedFreePercentage", 0.1);
 
+    /**
+     * Whether to migrate a live entry from the alternate table for each tombstone created in the main table while a
+     * rehash is in progress, so that removals drain the alternate as well as inserts.
+     */
+    public static boolean MIGRATE_ON_TOMBSTONE = Configuration.getInstance().getBooleanForClassWithDefault(
+            IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class,
+            "migrateOnTombstone", false);
+
+    /** The number of rehashes begun by all instances, for benchmarking. */
+    public static final java.util.concurrent.atomic.LongAdder REHASH_COUNT =
+            new java.util.concurrent.atomic.LongAdder();
+
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
 
@@ -260,24 +272,22 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         }
 
         if (rehashPointer > 0) {
-            // A rehash is already migrating the alternate table. Let it continue unless the main table cannot take
-            // the next chunk, in which case finish the migration so that we can start another rehash.
-            if (numEntries + nextChunkSize <= tableSize * maximumLoadFactor) {
-                return false;
-            }
-            // the alternate may hold no entries while rehashPointer still has empty slots to pass, so do not bound
-            // the work by alternateEntries
-            rehashInternalPartial(Integer.MAX_VALUE);
-            clearAlternate();
-            if (!rehashRequired(nextChunkSize)) {
-                return false;
-            }
+            // The rehash in progress chose a size at which its alternate drains before the main table fills; let it
+            // finish.
+            return false;
         }
 
-        // Rehashing discards tombstones, so grow only as far as the live entries require. When tombstones alone
-        // exceed the load factor, we rehash at the same size.
+        // Every slot in the main table is filled by a migration or an insert, and each insert is preceded by at least
+        // one migration of a live entry, so while the alternate has live entries the main table holds at most twice
+        // as many entries as have been inserted since the rehash began. Tombstones do not change that: a tombstone
+        // marks a slot that was already counted, and the migration skips tombstones in the alternate. Choosing a size
+        // at which the live entries fill at most half of the permitted load therefore guarantees that the alternate
+        // is drained before the main table needs another rehash. When tombstones alone crossed the load factor, that
+        // may be the current size, and the rehash simply leaves the tombstones behind. A full rehash, used while
+        // building the initial state, completes immediately, so it only needs room for the live entries.
+        final double targetLoadFactor = fullRehash ? maximumLoadFactor : maximumLoadFactor / 2;
         final int oldTableSize = tableSize;
-        while (liveEntries + nextChunkSize > tableSize * maximumLoadFactor) {
+        while (liveEntries + nextChunkSize > tableSize * targetLoadFactor) {
             tableSize *= 2;
 
             if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
@@ -306,6 +316,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             return false;
         }
 
+        REHASH_COUNT.increment();
         setupNewAlternate(oldTableSize);
         adviseNewAlternate();
 
@@ -447,17 +458,68 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         // if a deleted slot cannot be mistaken for a live key's slot. The keys are released when a rehash drops the
         // tombstone or a new state reuses the slot.
         freeOutputPositions.insert(removed);
-        removed.forAllRowKeys(outputPosition -> {
-            // we never actually delete anything from the output position table
-            final int hashSlot = outputPositionToHashSlot.getInt(outputPosition);
+        removed.forAllRowKeys(this::tombstone);
+    }
 
-            final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
-            if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
-                mainOutputPosition.set(slot, TOMBSTONE_STATE);
-            } else {
-                alternateOutputPosition.set(slot, TOMBSTONE_STATE);
+    @Override
+    public void tombstoneStates(final RowSet removed) {
+        liveEntries -= removed.intSize();
+        final MutableInt mainTombstones = new MutableInt();
+        removed.forAllRowKeys(outputPosition -> {
+            if (tombstone(outputPosition)) {
+                mainTombstones.increment();
             }
         });
+        if (MIGRATE_ON_TOMBSTONE && rehashPointer > 0 && mainTombstones.get() > 0) {
+            rehashInternalPartial(mainTombstones.get());
+            if (rehashPointer == 0) {
+                clearAlternate();
+            }
+        }
+    }
+
+    @Override
+    public void shiftOutputPositions(final RowSetShiftData shiftData) {
+        final RowSetShiftData.Iterator it = shiftData.applyIterator();
+        while (it.hasNext()) {
+            it.next();
+            final long begin = it.beginRange();
+            final long end = it.endRange();
+            final long delta = it.shiftDelta();
+            // states only move toward lower positions, so walking forward never overwrites a state yet to move
+            Assert.leqZero(delta, "delta");
+            for (long pos = begin; pos <= end; pos++) {
+                final int hashSlot = outputPositionToHashSlot.getUnsafe(pos);
+                final int newOutputPosition = Math.toIntExact(pos + delta);
+                outputPositionToHashSlot.set(newOutputPosition, hashSlot);
+                final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+                if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+                    mainOutputPosition.set(slot, newOutputPosition);
+                } else {
+                    alternateOutputPosition.set(slot, newOutputPosition);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void releaseOutputPositionBlocks(final long firstOutputPosition, final long lastOutputPosition) {
+        outputPositionToHashSlot.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    /**
+     * @return true if the tombstone was placed in the main table, false if in the alternate
+     */
+    private boolean tombstone(final long outputPosition) {
+        // we never actually delete anything from the output position table
+        final int hashSlot = outputPositionToHashSlot.getInt(outputPosition);
+        final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+        if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+            mainOutputPosition.set(slot, TOMBSTONE_STATE);
+            return true;
+        }
+        alternateOutputPosition.set(slot, TOMBSTONE_STATE);
+        return false;
     }
 
     @Override
@@ -536,27 +598,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             // we've figured out what we should shift, let's do it now
             downstream.shifted = shiftDataBuilder.build();
 
-            // shift the key column sources
-            RowSetShiftData.Iterator ai = downstream.shifted.applyIterator();
-            while (ai.hasNext()) {
-                ai.next();
-                final long begin = ai.beginRange();
-                final long end = ai.endRange();
-                final long delta = ai.shiftDelta();
-                for (long pos = begin; pos <= end; pos++) {
-                    final int hashSlot = outputPositionToHashSlot.getUnsafe(pos);
-                    final int newOutputPosition = Math.toIntExact(pos + delta);
-                    outputPositionToHashSlot.set(newOutputPosition, hashSlot);
-                    // we need to update the table to reflect the new output position
-
-                    final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
-                    if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
-                        mainOutputPosition.set(slot, newOutputPosition);
-                    } else {
-                        alternateOutputPosition.set(slot, newOutputPosition);
-                    }
-                }
-            }
+            shiftOutputPositions(downstream.shifted);
 
             // shift the indices
             resultRowset.remove(downstream.removed());

@@ -258,6 +258,22 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
 
     abstract UArray[] getPrevBlocks();
 
+    /**
+     * Drop the current-value storage for a block. Previous-value storage is left for {@link #commitBlocks()}.
+     *
+     * @param blockIndex the block to release
+     */
+    abstract void releaseBlock(int blockIndex);
+
+    @Override
+    public void releaseBlocks(final long firstKey, final long lastKey) {
+        final long firstBlock = (firstKey + BLOCK_SIZE - 1) >> LOG_BLOCK_SIZE;
+        final long endBlock = Math.min((lastKey + 1) >> LOG_BLOCK_SIZE, (maxIndex + 1) >> LOG_BLOCK_SIZE);
+        for (long bi = firstBlock; bi < endBlock; ++bi) {
+            releaseBlock((int) bi);
+        }
+    }
+
     abstract SoftRecycler<UArray> getRecycler();
 
     protected static class FillSparseChunkContext<UArray> {

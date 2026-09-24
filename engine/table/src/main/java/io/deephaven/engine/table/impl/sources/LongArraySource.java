@@ -312,6 +312,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
     }
 
     @Override
+    void releaseBlock(int blockIndex) {
+        blocks[blockIndex] = null;
+    }
+
+    @Override
     Object getPrevBlock(int blockIndex) {
         return prevBlocks[blockIndex];
     }

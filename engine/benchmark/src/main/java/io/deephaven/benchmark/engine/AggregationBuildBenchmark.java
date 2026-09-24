@@ -35,8 +35,8 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Measures the initial build of a keyed {@code sumBy} over a refreshing table, with and without reclaiming the states
- * of removed keys ({@code reclaimStates}). Only refreshing inputs can use the reclaiming state manager, so the input is
+ * Measures the initial build of a keyed {@code sumBy} over a refreshing table, under each way of reclaiming the states
+ * of removed keys ({@code reclaim}). Only refreshing inputs can use the reclaiming state manager, so the input is
  * refreshing even though no update is ever applied. The keys are uniformly random over {@code keyCount} distinct values
  * in row order.
  */
@@ -48,8 +48,8 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class AggregationBuildBenchmark {
 
-    @Param({"false", "true"})
-    private boolean reclaimStates;
+    @Param({"none", "compact", "blocks"})
+    private String reclaim;
 
     @Param({"10000000"})
     private int tableSize;
@@ -71,7 +71,7 @@ public class AggregationBuildBenchmark {
         updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
-        AggregationStateBenchSupport.setReclaimStates(reclaimStates);
+        AggregationStateBenchSupport.setReclaimMode(reclaim);
 
         final Random random = new Random(0);
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();

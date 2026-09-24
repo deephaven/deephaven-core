@@ -13,4 +13,15 @@ public interface ShiftableColumnSource<T> extends WritableColumnSource<T> {
      * @param shiftData the shift data to apply to this column source
      */
     void shift(RowSetShiftData shiftData);
+
+    /**
+     * Release the storage for every block that lies entirely within a range of row keys that will never be read or
+     * written again. Partially covered blocks are left alone. The values in a released block must not be accessed,
+     * including as previous values, so this may only be called once the update cycle that removed those rows has
+     * completed.
+     *
+     * @param firstKey the first row key of the range
+     * @param lastKey the last row key of the range, inclusive
+     */
+    default void releaseBlocks(long firstKey, long lastKey) {}
 }

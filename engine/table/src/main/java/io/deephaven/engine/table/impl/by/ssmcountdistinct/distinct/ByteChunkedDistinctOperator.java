@@ -352,7 +352,16 @@ public class ByteChunkedDistinctOperator implements IterativeChunkedAggregationO
 
     @Override
     public void shift(RowSetShiftData shiftData) {
+        if (touchedStates != null) {
+            // the states whose deltas are cleared at the end of the cycle move with the shift
+            shiftData.apply(touchedStates);
+        }
         internalResult.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        internalResult.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
 
     @Override

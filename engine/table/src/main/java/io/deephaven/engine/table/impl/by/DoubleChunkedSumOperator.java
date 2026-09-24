@@ -381,6 +381,14 @@ final class DoubleChunkedSumOperator extends FpChunkedNonNormalCounter
     }
 
     @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        super.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        runningSum.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        nonNullCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         super.clear(firstOutputPosition, lastOutputPosition);
         resultColumn.setNull(firstOutputPosition, lastOutputPosition);

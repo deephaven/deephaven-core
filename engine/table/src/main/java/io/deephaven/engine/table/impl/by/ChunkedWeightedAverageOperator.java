@@ -486,6 +486,17 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        normalCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        if (nanCount != null) {
+            nanCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        }
+        sumOfWeights.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        weightedSum.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    @Override
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         normalCount.setNull(firstOutputPosition, lastOutputPosition);
         if (nanCount != null) {
