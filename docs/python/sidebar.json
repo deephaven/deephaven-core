@@ -127,6 +127,14 @@
                 "path": "conceptual/deephaven-design.md"
               },
               {
+                "label": "Patterns of use",
+                "path": "conceptual/deephaven-mental-model.md"
+              },
+              {
+                "label": "The Table API",
+                "path": "conceptual/table-api.md"
+              },
+              {
                 "label": "Incremental update model",
                 "path": "conceptual/table-update-model.md"
               },
@@ -324,6 +332,10 @@
             "label": "Work with tables",
             "items": [
               {
+                "label": "Table operations overview",
+                "path": "conceptual/table-operations-overview.md"
+              },
+              {
                 "label": "Metadata",
                 "path": "how-to-guides/metadata.md"
               },
@@ -346,6 +358,10 @@
               {
                 "label": "Sort",
                 "path": "how-to-guides/sort.md"
+              },
+              {
+                "label": "Keyed row selection",
+                "path": "how-to-guides/keyed-row-selection.md"
               },
               {
                 "label": "Transpose",
@@ -806,6 +822,10 @@
                   {
                     "label": "Capture Python client tables",
                     "path": "how-to-guides/capture-tables.md"
+                  },
+                  {
+                    "label": "Stream data with input tables",
+                    "path": "how-to-guides/client-input-tables.md"
                   }
                 ]
               },
@@ -1364,6 +1384,14 @@
                       {
                         "label": "without_attributes",
                         "path": "reference/table-operations/create/withoutAttributes.md"
+                      },
+                      {
+                        "label": "with_keys",
+                        "path": "reference/table-operations/create/withKeys.md"
+                      },
+                      {
+                        "label": "with_unique_keys",
+                        "path": "reference/table-operations/create/withUniqueKeys.md"
                       }
                     ]
                   },
@@ -1822,6 +1850,10 @@
                   {
                     "label": "tail_pct",
                     "path": "reference/table-operations/filter/tail-pct.md"
+                  },
+                  {
+                    "label": "TailInitializationFilter",
+                    "path": "reference/table-operations/filter/TailInitializationFilter.md"
                   },
                   {
                     "label": "where",
@@ -2553,6 +2585,14 @@
                   {
                     "label": "Arrays",
                     "path": "reference/query-language/types/arrays.md"
+                  },
+                  {
+                    "label": "Barrier",
+                    "path": "reference/query-language/types/Barrier.md"
+                  },
+                  {
+                    "label": "ConcurrencyControl",
+                    "path": "reference/query-language/types/ConcurrencyControl.md"
                   },
                   {
                     "label": "date-time",

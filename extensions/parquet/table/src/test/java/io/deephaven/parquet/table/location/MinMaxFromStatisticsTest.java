@@ -9,6 +9,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.bytes.BytesUtils;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
@@ -33,6 +34,7 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FLOAT;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -101,7 +103,8 @@ public class MinMaxFromStatisticsTest {
 
     private static Statistics<?> buildFloatStats(
             final float min, final float max, final long nulls) {
-        final PrimitiveType colType = Types.required(FLOAT).named("floatPrimitive");
+        final PrimitiveType colType =
+                Types.required(FLOAT).columnOrder(ColumnOrder.typeDefined()).named("floatPrimitive");
         return buildStats(colType,
                 BytesUtils.intToBytes(Float.floatToIntBits(min)),
                 BytesUtils.intToBytes(Float.floatToIntBits(max)),
@@ -110,7 +113,8 @@ public class MinMaxFromStatisticsTest {
 
     private static Statistics<?> buildDoubleStats(
             final double min, final double max, final long nulls) {
-        final PrimitiveType colType = Types.required(DOUBLE).named("doublePrimitive");
+        final PrimitiveType colType =
+                Types.required(DOUBLE).columnOrder(ColumnOrder.typeDefined()).named("doublePrimitive");
         return buildStats(colType,
                 BytesUtils.longToBytes(Double.doubleToLongBits(min)),
                 BytesUtils.longToBytes(Double.doubleToLongBits(max)),
@@ -634,45 +638,66 @@ public class MinMaxFromStatisticsTest {
     // Strings
 
     @Test
-    public void stringLogicalStatisticsAreMaterialised() {
+    public void stringBytesAreReturnedVerbatim() {
         final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
                 .as(LogicalTypeAnnotation.stringType())
                 .named("strBinary");
-        final Statistics<?> stats = buildStats(
-                colType, "aaa".getBytes(StandardCharsets.UTF_8), "zzz".getBytes(StandardCharsets.UTF_8), 0L);
-        final MutableObject<String> min = new MutableObject<>();
-        final MutableObject<String> max = new MutableObject<>();
-        assertMatches(
-                MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
-                min, "aaa",
-                max, "zzz");
+        // A truncated lower bound: one complete character (U+65E5, UTF-8 E6 97 A5) followed by the lead byte of the
+        // next, as a writer truncating at byte granularity would leave it. Still a valid byte-order bound, but not
+        // valid UTF-8 -- decoding it turns the dangling byte into U+FFFD, which is what this must not do.
+        final byte[] truncatedMin = {(byte) 0xE6, (byte) 0x97, (byte) 0xA5, (byte) 0xE6};
+        final byte[] rawMax = "zzz".getBytes(StandardCharsets.UTF_8);
+        final Statistics<?> stats = buildStats(colType, truncatedMin, rawMax, 0L);
+
+        final MutableObject<byte[]> min = new MutableObject<>();
+        final MutableObject<byte[]> max = new MutableObject<>();
+        assertTrue(MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue));
+        assertArrayEquals(truncatedMin, min.getValue());
+        assertArrayEquals(rawMax, max.getValue());
     }
 
     @Test
-    public void enumLogicalStatisticsAreMaterialised() {
+    public void enumBytesAreReturned() {
         final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
                 .as(LogicalTypeAnnotation.enumType())
                 .named("enumBinary");
-        final Statistics<?> stats = buildStats(
-                colType, "ALPHA".getBytes(StandardCharsets.UTF_8), "ZETA".getBytes(StandardCharsets.UTF_8), 0L);
-        final MutableObject<String> min = new MutableObject<>();
-        final MutableObject<String> max = new MutableObject<>();
-        assertMatches(
-                MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
-                min, "ALPHA",
-                max, "ZETA");
+        final Statistics<?> stats = buildStats(colType,
+                "ALPHA".getBytes(StandardCharsets.UTF_8), "ZETA".getBytes(StandardCharsets.UTF_8), 0L);
+
+        final MutableObject<byte[]> min = new MutableObject<>();
+        final MutableObject<byte[]> max = new MutableObject<>();
+        assertTrue(MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue));
+        assertArrayEquals("ALPHA".getBytes(StandardCharsets.UTF_8), min.getValue());
+        assertArrayEquals("ZETA".getBytes(StandardCharsets.UTF_8), max.getValue());
     }
 
     @Test
-    public void binaryWithoutStringLogicalTypeIsRejected() {
+    public void stringBytesRejectBinaryWithoutLogicalType() {
         final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY).named("rawBinary");
-        final Statistics<?> stats = buildStats(
-                colType, "foo".getBytes(StandardCharsets.UTF_8), "qux".getBytes(StandardCharsets.UTF_8), 0L);
-        final MutableObject<String> min = new MutableObject<>();
-        final MutableObject<String> max = new MutableObject<>();
-        assertRejected(
-                MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue),
-                min, max);
+        final Statistics<?> stats = buildStats(colType,
+                "foo".getBytes(StandardCharsets.UTF_8), "qux".getBytes(StandardCharsets.UTF_8), 0L);
+
+        final MutableObject<byte[]> min = new MutableObject<>();
+        final MutableObject<byte[]> max = new MutableObject<>();
+        assertFalse(MinMaxFromStatistics.getMinMaxForStrings(stats, min::setValue, max::setValue));
+    }
+
+    /**
+     * String columns must not be served through the Comparable path, which would compare the decoded values in UTF-16
+     * order rather than the unsigned byte order parquet used to build the statistics.
+     */
+    @Test
+    public void comparableAccessorDeclinesStrings() {
+        final PrimitiveType colType = Types.required(PrimitiveType.PrimitiveTypeName.BINARY)
+                .as(LogicalTypeAnnotation.stringType())
+                .named("strBinary");
+        final Statistics<?> stats = buildStats(colType,
+                "aaa".getBytes(StandardCharsets.UTF_8), "zzz".getBytes(StandardCharsets.UTF_8), 0L);
+
+        final MutableObject<Comparable<?>> min = new MutableObject<>();
+        final MutableObject<Comparable<?>> max = new MutableObject<>();
+        assertFalse(MinMaxFromStatistics.getMinMaxForComparable(
+                stats, min::setValue, max::setValue, String.class));
     }
 
     // Instants
@@ -899,15 +924,14 @@ public class MinMaxFromStatisticsTest {
     }
 
     /**
-     * This test verifies that the statistics builder logic for NaN values automatically handles NaN values. This
-     * behavior is important because DH currently writes NaN values to statistics which automatically gets fixed by the
-     * statistics builder.
+     * This test verifies that the statistics builder logic for NaN values automatically handles NaN values.
      */
-    // TODO (DH-10771): DH should not write NaN values to statistics.
     @Test
     public void testStatisticsWithNaN() {
-        final Statistics.Builder builder = Statistics.getBuilderForReading(
-                new PrimitiveType(Type.Repetition.REQUIRED, FLOAT, "floatColumn"));
+        final PrimitiveType primitiveType =
+                (PrimitiveType) (new PrimitiveType(Type.Repetition.REQUIRED, FLOAT, "floatColumn")
+                        .withColumnOrder(ColumnOrder.typeDefined()));
+        final Statistics.Builder builder = Statistics.getBuilderForReading(primitiveType);
         builder.withMin(BytesUtils.intToBytes(Float.floatToIntBits(Float.NaN)));
         builder.withMax(BytesUtils.intToBytes(Float.floatToIntBits(1.2f)));
         builder.withNumNulls(0);

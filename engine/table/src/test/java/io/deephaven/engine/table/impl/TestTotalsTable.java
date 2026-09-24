@@ -12,20 +12,24 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.util.TotalsTableBuilder;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.Set;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 import static io.deephaven.function.Numeric.*;
+import static org.junit.Assert.*;
 
 public class TestTotalsTable extends RefreshingTableTestCase {
 
     private static final double EPSILON = 0.000000001;
 
+    @Test
     public void testTotalsTable() {
         final int size = 1000;
         final Random random = new Random(0);
@@ -56,9 +60,9 @@ public class TestTotalsTable extends RefreshingTableTestCase {
         assertEquals(sum(ColumnVectors.ofInt(queryTable, "intCol")),
                 totals.getColumnSource("intCol").getLong(totals.getRowSet().firstRowKey()));
         assertEquals(sum(ColumnVectors.ofDouble(queryTable, "doubleCol")),
-                totals.getColumnSource("doubleCol").getDouble(totals.getRowSet().firstRowKey()));
+                totals.getColumnSource("doubleCol").getDouble(totals.getRowSet().firstRowKey()), 0.0);
         assertEquals(sum(ColumnVectors.ofDouble(queryTable, "doubleNullCol")),
-                totals.getColumnSource("doubleNullCol").getDouble(totals.getRowSet().firstRowKey()));
+                totals.getColumnSource("doubleNullCol").getDouble(totals.getRowSet().firstRowKey()), 0.0);
         assertEquals(sum(ColumnVectors.ofFloat(queryTable, "floatCol")),
                 totals.getColumnSource("floatCol").getFloat(totals.getRowSet().firstRowKey()), 0.02);
         assertEquals(sum(ColumnVectors.ofShort(queryTable, "shortCol")),
@@ -117,6 +121,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testTotalsTableIncremental() {
         final int size = 1000;
         final Random random = new Random(0);

@@ -19,13 +19,14 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.mutable.MutableInt;
-import junit.framework.TestCase;
 
 import java.util.*;
 
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateTableUpdates;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestDataIndexer extends RefreshingTableTestCase {
@@ -47,10 +48,12 @@ public class TestDataIndexer extends RefreshingTableTestCase {
         return setList;
     }
 
+    @Test
     public void testIndex() {
         testIndex(false, new Random(0), new MutableInt(50));
     }
 
+    @Test
     public void testIndexWithImmutableColumns() {
         testIndex(true, new Random(0), new MutableInt(50));
     }
@@ -146,6 +149,7 @@ public class TestDataIndexer extends RefreshingTableTestCase {
         new IndexValidator(context, originalValue, columnSets);
     }
 
+    @Test
     public void testCombinedGrouping() {
         Random random = new Random(0);
         int size = 100;
@@ -188,43 +192,43 @@ public class TestDataIndexer extends RefreshingTableTestCase {
         assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource, doubleColumnSource));
         assertTrue(indexer.hasDataIndex(intColumnSource, symColumnSource, sym2ColumnSource, doubleColumnSource));
 
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
 
         IndexValidator.validateIndex(countingTable, new String[] {"Sym"}, false);
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
+        assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
         IndexValidator.validateIndex(countingTable, new String[] {"intCol"}, false);
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
+        assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
         IndexValidator.validateIndex(countingTable, new String[] {"intCol", "Sym"}, false);
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
+        assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
         IndexValidator.validateIndex(countingTable, new String[] {"intCol", "Sym", "Sym2"}, false);
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
+        assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
+        assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
         IndexValidator.validateIndex(countingTable, new String[] {"intCol", "Sym", "doubleCol"}, false);
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
-        TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
+        assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
+        assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
+        assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
         IndexValidator.validateIndex(countingTable, new String[] {"intCol", "Sym", "Sym2", "doubleCol"}, false);
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
     }

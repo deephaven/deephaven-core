@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.impl.rsp.container.*;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesInt;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
@@ -329,17 +330,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         modifiedSpan(i);
     }
 
-    public static long getPackedInfoLowBits(final ArrayContainer ac) {
-        final long sharedBit = ac.isShared() ? SPANINFO_ARRAYCONTAINER_SHARED_BITMASK : 0L;
-        final long cardinalityBits = SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK & (long) ac.getCardinality();
-        return sharedBit | cardinalityBits;
-    }
-
     protected static void setContainerSpanRaw(
             final long[] spanInfos, final Object[] spans, final int i, final long key, final Container container) {
         if (container instanceof ArrayContainer) {
+            // An ArrayContainer is packed: its short[] alone is the span, and the word carries its cardinality. The
+            // container's shared flag needs no room in the word because it lives in the array's reserved last slot.
             final ArrayContainer ac = (ArrayContainer) container;
-            spanInfos[i] = key | getPackedInfoLowBits(ac);
+            spanInfos[i] = key | (SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK & (long) ac.getCardinality());
             spans[i] = ac.getContent();
             return;
         }
@@ -372,10 +369,18 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         ++size;
     }
 
+    /**
+     * Store at {@code i} a share of the container span the caller observed at {@code srcIdx} of {@code src}.
+     *
+     * @param srcSpanInfo the source's word for the span as observed: for a packed ArrayContainer, its key and
+     *        cardinality, which the copy stores as is; for a Container, its key
+     * @param srcContainer the source's span as observed, a {@code short[]} or a {@link Container}
+     */
     protected void setSharedContainerMaybePackedRaw(
             final int i, final RspArray src, final int srcIdx, final long srcSpanInfo, final Object srcContainer) {
         if (srcContainer instanceof short[]) {
-            spanInfos[i] = (src.spanInfos[srcIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK);
+            ArrayContainer.markContentShared((short[]) srcContainer);
+            spanInfos[i] = srcSpanInfo;
             spans[i] = srcContainer;
             return;
         }
@@ -401,9 +406,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         dstSpans[dstIdx] = srcSpans[srcIdx];
     }
 
-    private static final long SPANINFO_ARRAYCONTAINER_SHARED_BITMASK = (1L << 15);
-    private static final long SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK =
-            ~SPANINFO_ARRAYCONTAINER_SHARED_BITMASK & (long) BLOCK_LAST;
+    /**
+     * The low bits of a packed ArrayContainer's word hold its cardinality; the high bits hold its key. Only the owner
+     * writes the word. The container's shared flag lives in the reserved last slot of the {@code short[]} itself (see
+     * {@link ArrayContainer#getContent()}), because per {@link io.deephaven.engine.rowset.impl.RefCountedCow} a reader
+     * may share the container while the owner is mutating in place, and the array the reader holds is the only thing it
+     * can mark without risk of writing over a span the owner has since replaced.
+     */
+    private static final long SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK = BLOCK_LAST;
 
     // shiftAmount is a multiple of BLOCK_SIZE.
     protected void copyKeyAndSpanMaybeSharing(
@@ -411,10 +421,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final RspArray src, final int srcIdx,
             final long[] dstSpanInfos, final Object[] dstSpans, final int dstIdx,
             final boolean tryShare) {
-        Object span = src.spans[srcIdx];
+        final Object span = src.spans[srcIdx];
         if (tryShare && src.shareContainers()) {
             if (span instanceof short[]) {
-                src.spanInfos[srcIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+                ArrayContainer.markContentShared((short[]) span);
             } else if (span instanceof Container) {
                 final Container c = (Container) span;
                 c.setCopyOnWrite();
@@ -453,28 +463,24 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     protected static final class SpanView extends ArrayContainer
             implements AutoCloseable {
         private final SpanViewRecycler recycler;
-        // The original array and index for which we loaded; we need to keep the reference
-        // for the cases where we need to update it (eg, setting a copy on write shared flag for an ArrayContainer
-        // stored as short[]).
-        private RspArray<?> arr;
-        private int arrIdx;
         private long spanInfo;
         private Object span;
 
         public SpanView(final SpanViewRecycler recycler) {
-            super(null, 0, false);
+            super(null, 0);
             this.recycler = recycler;
         }
 
         // The returned container is guaranteed to be valid until the next init() or close().
         public Container getContainer() {
             if (span instanceof short[]) {
-                shared = (spanInfo & SPANINFO_ARRAYCONTAINER_SHARED_BITMASK) != 0;
+                // The view is the packed ArrayContainer itself, over the span's short[]: its cardinality comes from
+                // the word, and its shared flag, as for any ArrayContainer, from the array's reserved last slot.
+                // Marking the view shared through setCopyOnWrite thus marks the span's array itself.
                 cardinality = (int) (spanInfo & SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK);
                 content = (short[]) span;
                 return this;
             }
-            shared = false;
             cardinality = 0;
             content = null;
             return (Container) span;
@@ -505,24 +511,17 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
 
         public void init(final RspArray<?> arr, final int arrIdx) {
-            init(arr, arrIdx, arr.spanInfos[arrIdx], arr.spans[arrIdx]);
+            init(arr.spanInfos[arrIdx], arr.spans[arrIdx]);
         }
 
-        public void init(final RspArray<?> arr, final int arrIdx, final long spanInfo, final Object span) {
-            this.arr = arr;
-            this.arrIdx = arrIdx;
+        /** Load the view with a span's word and object, already read from their array. */
+        public void init(final long spanInfo, final Object span) {
             this.spanInfo = spanInfo;
             this.span = span;
         }
 
-        @Override
-        protected void onCopyOnWrite() {
-            arr.spanInfos[arrIdx] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
-        }
-
         public void reset() {
             content = null;
-            arr = null;
             span = null;
         }
 
@@ -748,11 +747,10 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 continue;
             }
             if (span instanceof short[]) {
-                // A packed ArrayContainer's shared flag lives in its owner's spanInfo word, so unlike a Container --
-                // whose flag travels with the object -- marking only this copy would leave the source believing it
-                // still owns the short[] exclusively, free to edit it in place underneath us.
-                spanInfos[i] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
-                src.spanInfos[isrc] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+                // A packed ArrayContainer's shared flag lives in the short[] itself, so as for a Container, whose flag
+                // travels with the object, marking it once covers both sides: the source, which must no longer edit
+                // the short[] in place, and this copy.
+                ArrayContainer.markContentShared((short[]) span);
                 continue;
             }
             // span instanceof Container
@@ -1025,7 +1023,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final long card = endOffset + 1;
             final Object srcSpan = src.spans[isrc];
             if (!isSingletonSpan(srcSpan)) {
-                try (SpanView res = wd.get().borrowSpanView(src, isrc, srcSpanInfo, srcSpan)) {
+                try (SpanView res = wd.get().borrowSpanView(srcSpanInfo, srcSpan)) {
                     final Container csrc = res.getContainer();
                     // This can't be the full container or we would have copied it earlier.
                     if (endOffset == 0) {
@@ -1158,10 +1156,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
          * Releases the RspArray reference.
          */
         void release();
-
-        RspArray arr();
-
-        int arrIdx();
     }
 
     public interface SpanCursorForward extends SpanCursor {
@@ -1266,16 +1260,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             ra.release();
             ra = null;
         }
-
-        @Override
-        public RspArray arr() {
-            return ra;
-        }
-
-        @Override
-        public int arrIdx() {
-            return si;
-        }
     }
 
     public RspRangeIterator getRangeIterator() {
@@ -1340,6 +1324,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         @Override
         public boolean advance(final long key) {
+            if (key < 0) {
+                // Keys are non-negative, so nothing lies at or below a negative key. getSpanIndex compares block keys
+                // as unsigned values and would otherwise take the high bits of a negative key for the largest block.
+                si = 0;
+                return false;
+            }
             final int i = ra.getSpanIndex(0, si, highBits(key));
             return advanceSecondHalf(i);
         }
@@ -1351,16 +1341,6 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             ra.release();
             ra = null;
-        }
-
-        @Override
-        public RspArray arr() {
-            return ra;
-        }
-
-        @Override
-        public int arrIdx() {
-            return si;
         }
     }
 
@@ -1426,7 +1406,37 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (endPosExclusive == 0 || getKey(endPosExclusive - 1) == blockKey) {
             return endPosExclusive - 1;
         }
+        if (startPos < endPosExclusive && getKey(startPos) == blockKey) {
+            // Callers walking ascending keys start from the span they last found, and the next key is often in it.
+            return startPos;
+        }
         return unsignedBinarySearch(this::getKey, startPos, endPosExclusive, blockKey);
+    }
+
+    /**
+     * Whether every block from {@code firstKey}'s through {@code lastKey}'s has a span here.
+     *
+     * <p>
+     * Spans start in distinct, ascending blocks and each covers at least one block, so once the spans holding the two
+     * end blocks are found, the spans between them start in distinct blocks strictly between the ends. If there are as
+     * many of them as there are blocks between the ends, they start in every one, and no block is missing.
+     *
+     * @param firstKey a key in the first block, {@code firstKey <= lastKey}
+     * @param lastKey a key in the last block
+     */
+    protected boolean hasSpanForEveryBlockBetween(final long firstKey, final long lastKey) {
+        final long firstBlockKey = highBits(firstKey);
+        final long lastBlockKey = highBits(lastKey);
+        final int firstIdx = getSpanIndex(firstBlockKey);
+        if (firstIdx < 0) {
+            return false;
+        }
+        final int lastIdx = getSpanIndex(firstIdx, lastBlockKey);
+        if (lastIdx < 0) {
+            return false;
+        }
+        // One span holding both end blocks covers everything between them.
+        return lastIdx == firstIdx || lastIdx - firstIdx == distanceInBlocks(firstBlockKey, lastBlockKey);
     }
 
     public static boolean isFullBlockSpan(final Object s) {
@@ -1896,7 +1906,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final short[] contents = (short[]) o;
             if (contents.length < 3 || contents.length > 12) {
                 final long spanInfo = spanInfos[i];
-                try (SpanView res = workDataPerThread.get().borrowSpanView(this, i, spanInfo, contents)) {
+                try (SpanView res = workDataPerThread.get().borrowSpanView(spanInfo, contents)) {
                     final Container c = res.getContainer();
                     final Container prevContainer = c.runOptimize();
                     if (prevContainer != c) {
@@ -2362,8 +2372,28 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return get(rankIndex, pos - prevCard);
     }
 
+    /**
+     * A {@link RankCursor} bound to one span of an array, for callers that query ranks or values within a span
+     * repeatedly and in ascending order. Callers hold a span's container only through a borrowed {@link SpanView}, so
+     * they present the span index and container on every use; the cursor starts over whenever either changes and
+     * otherwise carries its position across calls.
+     */
+    static final class SpanRankCursor {
+        private final RankCursor cursor = new RankCursor();
+        private int spanIdx = -1;
+
+        RankCursor forSpan(final int idx, final Container c) {
+            if (idx != spanIdx || c != cursor.container()) {
+                cursor.reset(c);
+                spanIdx = idx;
+            }
+            return cursor;
+        }
+    }
+
     public void getKeysForPositions(final PrimitiveIterator.OfLong inputPositions, final LongConsumer outputKeys) {
         int fromIndex = 0;
+        final SpanRankCursor rankCursor = new SpanRankCursor();
         final long cardinality = isCardinalityCached() ? getCardinality() : -1;
         // An allocated but stale acc (between unsafe mutations and finishMutations*()) cannot be used for ranks;
         // take the same scanning path as get(long) does in that state.
@@ -2400,12 +2430,21 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 }
                 prevCardinality = prevCardMu.get();
             }
-            final long key = get(fromIndex, pos - prevCardinality);
+            final long key = get(fromIndex, pos - prevCardinality, rankCursor);
             outputKeys.accept(key);
         }
     }
 
     long get(final int idx, final long offset) {
+        return get(idx, offset, null);
+    }
+
+    /**
+     * The value at {@code offset} within the span at {@code idx}. When {@code rankCursor} is not null it is used to
+     * rank within the span's container, so consecutive calls for ascending offsets in one span do not each count from
+     * the start of the container.
+     */
+    long get(final int idx, final long offset, final SpanRankCursor rankCursor) {
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, idx)) {
             if (view.isSingletonSpan()) {
                 if (offset != 0) {
@@ -2423,7 +2462,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (sv != offset) {
                 throw new IllegalArgumentException("Invalid offset=" + offset + " for rowSet=" + idx);
             }
-            final short lowBits = view.getContainer().select(sv);
+            final Container c = view.getContainer();
+            final short lowBits = rankCursor == null ? c.select(sv) : rankCursor.forSpan(idx, c).select(sv);
             return paste(highBits, lowBits);
         }
     }
@@ -2475,6 +2515,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     // returns false if val is to the left of the first value in the span at startIdx;
     // otherwise calls setResult on out with the appropriate position for val or the first position after it.
     boolean findOrNext(final int startIdx, final int endIdxExclusive, final long val, final FindOutput out) {
+        return findOrNext(startIdx, endIdxExclusive, val, out, null);
+    }
+
+    /**
+     * As {@link #findOrNext(int, int, long, FindOutput)}; when {@code rankCursor} is not null it ranks {@code val}
+     * within its span's container, so consecutive searches for ascending values in one span do not each count from the
+     * start of the container.
+     */
+    boolean findOrNext(final int startIdx, final int endIdxExclusive, final long val, final FindOutput out,
+            final SpanRankCursor rankCursor) {
         final int ki = getSpanIndex(startIdx, endIdxExclusive, highBits(val));
         if (ki < 0) {
             final int i = ~ki;
@@ -2506,7 +2556,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 return true;
             }
             final Container c = view.getContainer();
-            final int cf = c.find(lowBits(val));
+            final int cf = rankCursor == null ? c.find(lowBits(val)) : rankCursor.forSpan(ki, c).find(lowBits(val));
             if (cf >= 0) {
                 out.setResult(ki, cf);
                 return true;
@@ -2530,6 +2580,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     // returns false if val is to the left of the first value in the span at startIdx;
     // otherwise calls setResult on out with the appropriate position for val or the last position before it.
     boolean findOrPrev(final int startIdx, final int endIdxExclusive, final long val, final FindOutput out) {
+        return findOrPrev(startIdx, endIdxExclusive, val, out, null);
+    }
+
+    /**
+     * As {@link #findOrPrev(int, int, long, FindOutput)}, ranking {@code val} through {@code rankCursor} when it is not
+     * null; see {@link #findOrNext(int, int, long, FindOutput, SpanRankCursor)}.
+     */
+    boolean findOrPrev(final int startIdx, final int endIdxExclusive, final long val, final FindOutput out,
+            final SpanRankCursor rankCursor) {
         final int ki = getSpanIndex(startIdx, endIdxExclusive, highBits(val));
         if (ki < 0) {
             final int i = ~ki;
@@ -2558,7 +2617,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 out.setResult(ki, val - k);
                 return true;
             }
-            final int cf = view.getContainer().find(lowBits(val));
+            final Container c = view.getContainer();
+            final int cf = rankCursor == null ? c.find(lowBits(val)) : rankCursor.forSpan(ki, c).find(lowBits(val));
             if (cf >= 0) {
                 out.setResult(ki, cf);
                 return true;
@@ -2892,8 +2952,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return false;
         }
         int p2 = 0;
+        int i1 = 0;
         final WorkData wd = workDataPerThread.get();
-        for (int i1 = 0; i1 < r1.size; ++i1) {
+        while (i1 < r1.size) {
             try (SpanView view1 = wd.borrowSpanView(r1, i1)) {
                 final long k1 = view1.getKey();
                 final long flen1 = view1.getFullBlockSpanLen();
@@ -2933,10 +2994,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                                 return true;
                             }
                         }
-                        ++p2;
+                        // Both spans cover only block k1: r1's is neither a full block span (returned above) nor
+                        // able to reach another block, and r2's likewise, so r2's cannot match a later span of ours.
+                        // Resuming past it skips whatever of r2 lay between p2 and the match.
+                        p2 = i2 + 1;
                         if (p2 >= r2.size) {
                             return false;
                         }
+                        ++i1;
                         continue;
                     }
                 }
@@ -2957,6 +3022,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     if (p2 >= r2.size) {
                         return false;
                     }
+                    i1 = spanIndexAtOrAfter(r1, i1 + 1, r2.getKey(p2));
                     continue;
                 }
                 // s1 is a Container, and its block key is not an exact match in r2.
@@ -2966,9 +3032,162 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 if (p2 >= r2.size) {
                     return false;
                 }
+                i1 = spanIndexAtOrAfter(r1, i1 + 1, r2.getKey(p2));
             }
         }
         return false;
+    }
+
+    /**
+     * A probe for callers that test many ascending ranges against this array, as
+     * {@link io.deephaven.engine.rowset.impl.sortedranges.SortedRanges#overlaps(RspBitmap)} does.
+     *
+     * @return a probe over this array; the caller closes it
+     */
+    public OverlapProbe overlapProbe() {
+        return new OverlapProbe(this);
+    }
+
+    /**
+     * A resumable form of {@link #overlapsRange(int, long, long)}, carrying both cursors a caller would otherwise
+     * re-establish on every call.
+     * <p>
+     * The one-shot form has nowhere to keep a span view, so it takes one from the thread's work data and gives it back
+     * on each call. A caller testing one key per span pays that for every key, which is what makes probing lose to
+     * simply walking this array's ranges. This holds a view of its own, as {@link RspRangeIterator} does, and
+     * re-initializes it only on moving to a different span; it also carries the span index, so an ascending caller
+     * searches from where the last probe stopped.
+     * <p>
+     * A probe reads the array directly and takes no reference on it, as {@link #overlaps(RspArray, RspArray)} does not
+     * either: it belongs to one operation and is closed before that operation returns, so the array cannot be mutated
+     * while one is open. Cursors that do outlive their caller, such as {@link SpanCursorForwardImpl}, acquire instead,
+     * which marks the array shared and makes the next mutation of it copy.
+     */
+    public static final class OverlapProbe implements SafeCloseable {
+        private final RspArray<?> arr;
+        /** Allocated on first use, since probes answered from block keys alone never need one. */
+        private SpanView view;
+        /** The span {@link #view} holds, or -1 when it holds none. */
+        private int viewIdx = -1;
+        /** Where the next probe begins searching. */
+        private int spanIdx;
+
+        private OverlapProbe(final RspArray<?> arr) {
+            this.arr = arr;
+        }
+
+        /**
+         * Whether the array holds any key in {@code [start, end]}.
+         * <p>
+         * Ranges must be presented in ascending order: the search resumes where the last one stopped.
+         */
+        public boolean overlapsRange(final long start, final long end) {
+            if (arr.size == 0) {
+                // Also keeps spanIdx at a real index: arr.size - 1 below would leave it negative, and the next probe
+                // would search from there.
+                return false;
+            }
+            final long startHighBits = highBits(start);
+            int i = arr.getSpanIndex(spanIdx, startHighBits);
+            if (i < 0) {
+                i = ~i;
+                if (i >= arr.size) {
+                    spanIdx = arr.size - 1;
+                    return false;
+                }
+            }
+            final long endHighBits = highBits(end);
+            long keyBlock = arr.getKey(i);
+            if (endHighBits < keyBlock) {
+                spanIdx = i;
+                return false;
+            }
+            while (true) {
+                final long sk = Math.max(start, keyBlock);
+                final long ek = Math.min(end, keyBlock + BLOCK_LAST);
+                if (sk == keyBlock && ek == keyBlock + BLOCK_LAST) {
+                    spanIdx = i;
+                    return true;
+                }
+                final SpanView v = viewAt(i);
+                if (v.isSingletonSpan()) {
+                    final long value = v.getSingletonSpanValue();
+                    if (start <= value && value <= end) {
+                        spanIdx = i;
+                        return true;
+                    }
+                } else {
+                    if (v.getFullBlockSpanLen() > 0) {
+                        spanIdx = i;
+                        return true;
+                    }
+                    final Container c = v.getContainer();
+                    if (c.overlapsRange(lowBitsAsInt(sk), lowBitsAsInt(ek) + 1)) {
+                        spanIdx = i;
+                        return true;
+                    }
+                }
+                ++i;
+                if (i >= arr.size) {
+                    spanIdx = arr.size - 1;
+                    return false;
+                }
+                keyBlock = arr.getKey(i);
+                if (endHighBits < keyBlock) {
+                    // Resume on the span just read, not on i: it can still hold keys above the range just tested.
+                    spanIdx = i - 1;
+                    return false;
+                }
+            }
+        }
+
+        /**
+         * The first key of the block the next probe will start on. Every key this array still has to offer is at or
+         * above it, so a caller that has just missed can skip its own keys below that point.
+         */
+        public long resumeBlockKey() {
+            return arr.size == 0 ? -1 : arr.getKey(spanIdx);
+        }
+
+        private SpanView viewAt(final int i) {
+            if (viewIdx != i) {
+                if (view == null) {
+                    view = new SpanView(null);
+                }
+                view.init(arr, i);
+                viewIdx = i;
+            }
+            return view;
+        }
+
+        @Override
+        public void close() {
+            if (view != null) {
+                view.reset();
+                viewIdx = -1;
+            }
+        }
+    }
+
+    /**
+     * Both sides of {@link #overlaps(RspArray, RspArray)} can search, and a miss tells the walked side where the probed
+     * side's next span begins. Every span of the walked side below that block ends beneath it and cannot match, so the
+     * walk skips them rather than borrowing a view and searching for each.
+     *
+     * @param r the array being walked
+     * @param fromIndex the span index to resume from, never below the one just read
+     * @param blockKey a block key, as {@link #getKey} returns
+     * @return the span index of {@code r} where the walk should continue: the first span at or after {@code fromIndex}
+     *         that reaches {@code blockKey}'s block, or {@code r.size} if it has none
+     */
+    private static int spanIndexAtOrAfter(final RspArray r, final int fromIndex, final long blockKey) {
+        if (fromIndex >= r.size || r.getKey(fromIndex) >= blockKey) {
+            // Nothing to skip: the next span already reaches that block. Sides that alternate span by span are here
+            // every time, and a search would cost more than the step it replaces.
+            return fromIndex;
+        }
+        final int j = r.getSpanIndex(fromIndex, blockKey);
+        return j >= 0 ? j : ~j;
     }
 
     /**
@@ -2986,7 +3205,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final WorkData wd) {
         final Object otherSpan = other.spans[otherIdx];
         final long otherSpanInfo = other.getSpanInfo(otherIdx) + shiftAmount;
-        try (SpanView otherView = wd.borrowSpanView(other, otherIdx, otherSpanInfo, otherSpan)) {
+        try (SpanView otherView = wd.borrowSpanView(otherSpanInfo, otherSpan)) {
             final long otherKey = otherView.getKey();
             final long otherflen = otherView.getFullBlockSpanLen();
             final int orIdx = getSpanIndex(startPos, otherKey);
@@ -3131,9 +3350,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return rspArraysBuf;
         }
 
-        public SpanView borrowSpanView(final RspArray arr, final int arrIdx, final long spanInfo, final Object span) {
+        public SpanView borrowSpanView(final long spanInfo, final Object span) {
             final SpanView sv = borrowSpanView();
-            sv.init(arr, arrIdx, spanInfo, span);
+            sv.init(spanInfo, span);
             return sv;
         }
 
@@ -3599,6 +3818,12 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (startPos >= size) {
                 break;
             }
+            // Our spans before startPos are settled, so other's spans that end before our next one begins have
+            // nothing left to remove. Jumping over them is what keeps the pass proportional to us rather than to
+            // other. The jump stops at the last span of other whose key is still at or below ours, which is the
+            // lowest one that can reach our next span: spans are disjoint and ascending, so any earlier one ends
+            // below that key.
+            andNotIdx = other.lastSpanIndexNotAbove(andNotIdx + 1, getKey(startPos)) - 1;
         }
         applyPendingSpanEdits(pending, madeNullSpansMu);
     }
@@ -4181,7 +4406,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             resultEnd = end;
         } else {
             if (resultStart == key) {
-                r.appendSharedContainerMaybePacked(this, i, key, span);
+                r.appendSharedContainerMaybePacked(this, i, spanInfo, span);
                 return;
             }
             resultEnd = blockLast;
@@ -4189,7 +4414,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         final int rStart = (int) (resultStart - key);
         final int rEndExclusive = (int) (resultEnd - key) + 1;
         final Container result;
-        try (SpanView view = workDataPerThread.get().borrowSpanView(this, i, spanInfo, span)) {
+        try (SpanView view = workDataPerThread.get().borrowSpanView(spanInfo, span)) {
             final Container c = view.getContainer();
             result = c.andRange(rStart, rEndExclusive);
             if (result.isEmpty()) {
@@ -4350,6 +4575,64 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return true;
     }
 
+    /**
+     * As {@link #forEachLongRangeInSpanWithOffsetAndMaxCardinality(int, long, long, LongRangeAbortableConsumer)},
+     * locating {@code offset} within the span's container through {@code rankCursor}, so consecutive calls for
+     * ascending offsets in one span do not each count from the start of the container.
+     */
+    boolean forEachLongRangeInSpanWithOffsetAndMaxCardinality(
+            final int i, final long offset, final long maxCardinality,
+            final LongRangeAbortableConsumer larc, final SpanRankCursor rankCursor) {
+        if (maxCardinality <= 0) {
+            return true;
+        }
+        try (SpanView view = workDataPerThread.get().borrowSpanView(this, i)) {
+            if (view.isSingletonSpan()) {
+                if (offset != 0) {
+                    throw new IllegalArgumentException("offset=" + offset + " and single key span.");
+                }
+                final long v = view.getSingletonSpanValue();
+                return larc.accept(v, v);
+            }
+            final long flen = view.getFullBlockSpanLen();
+            final long key = view.getKey();
+            if (flen > 0) {
+                final long start = key + offset;
+                long end = key + flen * BLOCK_SIZE - 1;
+                final long d = end - start + 1;
+                if (d > maxCardinality) {
+                    end = start + maxCardinality - 1;
+                }
+                return larc.accept(start, end);
+            }
+            long remaining = maxCardinality;
+            final int bufSz = 10;
+            final short[] buf = new short[bufSz];
+            final Container c = view.getContainer();
+            final SearchRangeIterator ri = c.getShortRangeIterator((int) offset, rankCursor.forSpan(i, c));
+            while (ri.hasNext()) {
+                final int nRanges = ri.next(buf, 0, bufSz / 2);
+                for (int j = 0; j < 2 * nRanges; j += 2) {
+                    final long start = key | unsignedShortToLong(buf[j]);
+                    long end = key | unsignedShortToLong(buf[j + 1]);
+                    long delta = end - start + 1;
+                    if (delta > remaining) {
+                        delta = remaining;
+                        end = start + remaining - 1;
+                    }
+                    if (!larc.accept(start, end)) {
+                        return false;
+                    }
+                    remaining -= delta;
+                    if (remaining <= 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     boolean forEachLongRangeInSpanWithOffset(final int i, final long offset,
             final LongRangeAbortableConsumer larc) {
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, i)) {
@@ -4370,6 +4653,45 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final short[] buf = new short[bufSz];
             final Container c = view.getContainer();
             final SearchRangeIterator ri = c.getShortRangeIterator((int) offset);
+            while (ri.hasNext()) {
+                final int nRanges = ri.next(buf, 0, bufSz / 2);
+                for (int j = 0; j < 2 * nRanges; j += 2) {
+                    final long start = key | unsignedShortToLong(buf[j]);
+                    final long end = key | unsignedShortToLong(buf[j + 1]);
+                    if (!larc.accept(start, end)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+    }
+
+    /**
+     * As {@link #forEachLongRangeInSpanWithOffset(int, long, LongRangeAbortableConsumer)}, locating {@code offset}
+     * through {@code rankCursor}; see
+     * {@link #forEachLongRangeInSpanWithOffsetAndMaxCardinality(int, long, long, LongRangeAbortableConsumer, SpanRankCursor)}.
+     */
+    boolean forEachLongRangeInSpanWithOffset(final int i, final long offset,
+            final LongRangeAbortableConsumer larc, final SpanRankCursor rankCursor) {
+        try (SpanView view = workDataPerThread.get().borrowSpanView(this, i)) {
+            if (view.isSingletonSpan()) {
+                if (offset != 0) {
+                    throw new IllegalArgumentException("offset=" + offset + " and single key span.");
+                }
+                final long v = view.getSingletonSpanValue();
+                return larc.accept(v, v);
+            }
+            final long flen = view.getFullBlockSpanLen();
+            final long key = view.getKey();
+            if (flen > 0) {
+                final long oneAfterLast = key + flen * BLOCK_SIZE;
+                return larc.accept(key + offset, oneAfterLast - 1);
+            }
+            final int bufSz = 10;
+            final short[] buf = new short[bufSz];
+            final Container c = view.getContainer();
+            final SearchRangeIterator ri = c.getShortRangeIterator((int) offset, rankCursor.forSpan(i, c));
             while (ri.hasNext()) {
                 final int nRanges = ri.next(buf, 0, bufSz / 2);
                 for (int j = 0; j < 2 * nRanges; j += 2) {
@@ -4555,7 +4877,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final PendingSpanInserts pending,
             final WorkData wd) {
         final Object span = spans[i];
-        try (SpanView view = wd.borrowSpanView(this, i, spanInfo, span)) {
+        try (SpanView view = wd.borrowSpanView(spanInfo, span)) {
             final long flen = view.getFullBlockSpanLen();
             if (flen > 0) {
                 final long sLastPlusOne = key + BLOCK_SIZE * flen;
@@ -4903,6 +5225,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                         if (c.isEmpty()) {
                             if (doAssert) {
                                 final String m = str + ": empty RB container found i=" + i + ", size=" + size;
+                                Assert.assertion(false, m);
+                            }
+                            return false;
+                        }
+                        if (s instanceof short[] && ((short[]) s).length <= c.getCardinality()) {
+                            if (doAssert) {
+                                final String m = str + ": packed ArrayContainer short[] has no reserved slot i=" + i
+                                        + ", length=" + ((short[]) s).length + ", cardinality=" + c.getCardinality();
                                 Assert.assertion(false, m);
                             }
                             return false;
@@ -5283,8 +5613,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         for (int i = 0; i < size; ++i) {
             final Object o = spans[i];
             if (o instanceof short[]) {
+                // The array's reserved last slot can never hold a value, so it is not capacity going spare.
                 used += spanInfos[i] & SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK;
-                allocated += ((short[]) o).length;
+                allocated += ((short[]) o).length - 1;
                 continue;
             }
             if (!(o instanceof Container)) {
@@ -5337,7 +5668,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 arrayContainersCardinality.accept(card);
                 final long allocated = ((short[]) o).length;
                 arrayContainersBytesAllocated.accept(allocated);
-                arrayContainersBytesUnused.accept(allocated - card);
+                // Unused is spare value capacity, which excludes the array's reserved last slot.
+                arrayContainersBytesUnused.accept(allocated - 1 - card);
                 continue;
             }
             if (!(o instanceof Container)) { // full block span

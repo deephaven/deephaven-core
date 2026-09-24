@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.testutil.testcase;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -24,8 +23,10 @@ import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,7 +36,7 @@ import java.util.Random;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-abstract public class RefreshingTableTestCase extends BaseArrayTestCase implements UpdateErrorReporter {
+abstract public class RefreshingTableTestCase implements UpdateErrorReporter {
     public static boolean printTableUpdates = Configuration.getInstance()
             .getBooleanForClassWithDefault(RefreshingTableTestCase.class, "printTableUpdates", false);
     private static final boolean ENABLE_QUERY_COMPILER_LOGGING = Configuration.getInstance()
@@ -58,10 +59,8 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         return TstUtils.scaleToDesiredTestLength(maxIter);
     }
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
-
         oldProcessEnvironment = ProcessEnvironment.tryGet();
         ProcessEnvironment.set(FakeProcessEnvironment.INSTANCE, true);
 
@@ -107,7 +106,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         return TestExecutionContext.createForUnitTests().withUpdateGraph(ug);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         // shutdown the UPT before we check for leaked chunks
         UpdatePerformanceTracker.resetForUnitTests();
@@ -122,7 +121,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
                         + new ExceptionDetails(delayedErrpr.getError()).getFullStackTrace());
                 sb.append("\n");
             }
-            TestCase.fail("ERROR: " + delayedErrors.size()
+            Assert.fail("ERROR: " + delayedErrors.size()
                     + " delayed error notifications were generated during the test: \n" + sb);
         }
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -141,15 +140,13 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         } else {
             ProcessEnvironment.set(oldProcessEnvironment, true);
         }
-
-        super.tearDown();
     }
 
     @Override
     public void reportUpdateError(Throwable t) throws IOException {
         if (!expectError) {
             System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
-            TestCase.fail(t.getMessage());
+            Assert.fail(t.getMessage());
         }
         if (errors == null) {
             errors = new ArrayList<>();
@@ -195,7 +192,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
             setExpectError(original);
         }
         if (errors != null && !errorsAcceptable.test(errors)) {
-            TestCase.fail("Unacceptable errors: " + errors);
+            Assert.fail("Unacceptable errors: " + errors);
         }
         return retval;
     }

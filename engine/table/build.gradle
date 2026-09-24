@@ -83,8 +83,6 @@ dependencies {
     testImplementation project(':extensions-suanshu')
 
     testImplementation libs.junit4
-
-    testImplementation platform(libs.junit.bom)
     testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j')
@@ -103,7 +101,6 @@ spotless {
 test {
     //  For now, if you apply @Category(ParallelTest.class) to tests which are not huge CPU/RAM hogs, you can get parallelism
     //  If you have CPU/RAM-heavy tasks that you don't want gumming up :engine-table:test runs, apply @Category(SerialTest.class) instead
-    //  (note that the above only works for junit 4 tests; see the documentation on SerialTest class and others for porting instructions)
 
     def props = project.properties.subMap(["jpy.pythonLib", "jpy.jpyLib", "jpy.jdlLib"])
     systemProperties props

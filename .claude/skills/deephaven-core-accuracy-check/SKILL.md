@@ -1,7 +1,8 @@
 ---
 name: deephaven-core-accuracy-check
-description: Review deephaven-core (Community) documentation for technical accuracy, style, and missing links. Use this whenever a developer asks you to review, check, proofread, or verify a doc against source for the deephaven-core repo specifically. Do not use for deephaven-ent/iris docs — that repo has a separate skill (deephaven-enterprise-accuracy-check) with different paths, pitfalls, and vocabulary.
-allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
+description: >
+  Review deephaven-core (Community) documentation for technical accuracy: verify claims against source code and validate internal links. **Invoke when:** reviewing or fact-checking a doc, confirming code examples work, verifying method signatures/config property names, or checking that described behavior matches implementation, for a full file or a change touching multiple sections or independent claims (use deephaven-core-accuracy-spot-check instead for one isolated snippet, sentence, or paragraph). Verifies against source in engine/, py/server/, server/, extensions/. **Do NOT use for:** deephaven-ent/iris docs (use deephaven-enterprise-accuracy-check), style/formatting (use deephaven-writing-style), or reorganization (use deephaven-doc-structure-review). For a full review covering accuracy+structure+style, use deephaven-docs-review-full.
+allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 ---
 
 > [!IMPORTANT]
@@ -16,7 +17,19 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
 
 2. Read the documentation file.
 
-3. **Technical accuracy review:**
+3. **Identify the doc's category.** Read `ref-deephaven-doc-categories` and determine which of
+   the four categories (Tutorial — Crash Course only, How-to guide, Concept guide, Reference
+   guide) this doc is — check that file's "Pages outside the four categories" section first if it
+   doesn't obviously fit one (e.g. `intro.md`, or a contributor-facing tooling README); don't
+   force-fit an out-of-taxonomy page into the nearest-sounding category. For a page that does fit
+   one of the four, carry that forward: a Reference guide gets harder scrutiny on enumerated-list
+   completeness below (a missing entry matters more when the reader is scanning for one fact than
+   in a narrative Concept guide) — except individual `reference/community-questions/*` Q&A pages,
+   which are one question and one answer per page, not an enumerable reference (`cq-index.md`
+   itself is the exception to that exception — see `ref-deephaven-doc-categories` — and stays on
+   the normal enumerable-reference path).
+
+4. **Technical accuracy review:**
    - **For EVERY code snippet**, search the source code FIRST. Never write or "correct" an example from memory.
      - Engine/server code: `engine/`, `server/`, `extensions/`
      - Python API: `py/server/deephaven/`, `py/client/pydeephaven/`
@@ -41,12 +54,22 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
    - Check docker-compose examples against real compose files in the repository.
    - Verify port numbers, volume mounts, and network configurations.
 
+   > [!CAUTION]
+   > **Stay in scope.** This skill checks accuracy and links ONLY. Do not comment on:
+   > - Prose style (backticks, capitalization, em dashes, link wording)
+   > - Document structure (heading order, topic flow, section placement)
+   > - Tone or voice
+   > 
+   > Those are `deephaven-writing-style` and `deephaven-doc-structure-review` concerns. If you catch yourself writing "consider capitalizing..." or "the link format differs...", stop — that's out of scope.
+
    **Common accuracy pitfalls to check specifically:**
-   - **Execution context:** Do `transform` callbacks on live partitioned tables capture and reopen an execution context? (Required because new constituents arrive on update threads.)
+   - **Mandatory claims ("must", "required", "necessary"):** When a doc says users "must" do something, verify that's actually true. Claims like "you must manually capture the execution context" or "this is required for X to work" are often overstated — the engine may handle it automatically. Check what happens if the user omits the supposedly required step. If the engine does it for them, the "must" is wrong.
+   - **Execution context in transform callbacks:** The engine automatically captures and reopens execution context for `transform`/`partitioned_transform` callbacks (see `PartitionedTable.java`'s default `transform` and `partitionedTransform` overloads, `TableTransformationColumn.java` for the unary path, and `BiTableTransformationColumn.java` for the binary path). Documentation claiming users "must" manually capture context is outdated — manual handling is only needed for advanced scenarios like frozen variables or non-default contexts.
    - **Materialization vs. direct access:** Does text claiming "direct access" actually involve a copy? (`toArray()`, `to_pandas()`, `to_numpy()` all materialize data.)
    - **Update graph semantics:** Are timing guarantees accurate? (1000ms is a target interval, not a deadline. Cycles can exceed it.)
    - **TableUpdate contract:** Does the description include row-shift and modified-column info? Are refilter scenarios acknowledged?
    - **Absolute statements:** Are comments like "this won't produce X" actually warnings? (Parallelism makes ordering non-deterministic, but serial execution can still produce sequential results.)
+   - **Overstated-guarantee wording:** When paraphrasing a method's documented contract (a javadoc guarantee, an interface contract), quote the source's exact wording and check every adjective/noun in your paraphrase against it — not just the overall gist. A paraphrase that adds a resource the source never names ("a single CPU core" when the javadoc says only "never invoked concurrently with itself"), or a granularity the source never promises ("one call per row" when the javadoc only promises row-set-order evaluation), is a defect even if the paraphrase "sounds like" a reasonable gloss. This is especially easy to miss for prose that predates the current review pass and reads as settled — re-verify it with the same rigor as new content, not with the confidence of your own earlier read.
    - **API per format:** Are different formats (Parquet vs. CSV) shown with their distinct APIs, not combined into one row?
    - **`ii` behavior:** Is `ii` described as providing row position, not as making execution sequential?
    - **Python properties vs. methods:** Check `@property` decorators in the source. Properties use `table.is_refreshing` (no parens); methods use `table.snapshot()` (with parens).
@@ -55,6 +78,14 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
    - **Incremental evaluation claims:** Filters can trigger broader re-evaluation (refilter path), not just changed rows. Avoid overstating "only changed rows."
    - **Update-cycle framing:** Avoid "instant" or claims of no micro-batching — the update cycle is effectively micro-batching. Avoid a blanket "work proportional to what changed" too: that holds for simple incremental paths, but operations like refilter can force broader or full-table re-evaluation. Frame it per-operation instead of with one universal claim.
    - **Repo scope:** Flag any feature described as available in deephaven-core if it's actually Enterprise-only (Persistent Query lifecycle, Controller/Worker/Dispatcher model, kv store/etcd config) — those live in deephaven-ent, not here.
+   - **Duplicate claim propagation:** A wrong claim is rarely stated only once. When you find and correct one, grep the whole file — and its cross-language sibling — for every other place asserting the same fact: quick-reference tables, "operation pattern" summaries, cheat-sheet bullets, a one-line callout that restates the prose above it in different words, or an inline comment inside a fenced code block that gives the same (now-outdated) rationale for a line of code. Code comments are prose too, and are easy to forget precisely because they read as "just code" — treat them as a first-class sweep target, not an afterthought. The same wrong claim two screens below the paragraph you just fixed is a near-certainty, not a hypothetical; leaving it is what turns one review round into three.
+   - **Self-contradiction radius:** After writing or reviewing any absolute claim ("all", "every", "only", "always", "never", "produces X"), scan the rest of its paragraph and section for an exception the doc's own text already names — e.g., asserting "transformations preserve refreshing behavior" right before describing `snapshot`, which deliberately returns a static result. An absolute claim sitting next to its own counterexample is a defect even when each sentence is individually defensible in isolation.
+   - **Exhaustive path enumeration:** For any "N implementation paths/categories" framing (formula compilation routes, parallelization mechanisms, RowSet/ColumnSource sharing rules), don't just verify the N items listed — independently derive the complete set from source (every branch of the dispatching method, every distinct code path) and confirm N is actually the right count, *and* that each item's own description holds under its real conditions rather than in only the common case. Don't round a conditional off to "always" or "never" from a single read of the code. Case in point: a claim about which code path in `DhFormulaColumn` compiles a Java class for a vectorizable Python UDF went through four rounds of review on this exact bullet, each fix removing one inaccuracy the previous fix had missed and, at least once, introducing a new one in the process — as of the fourth round it still isn't clear the claim is fully correct, only that three earlier versions of it were each independently wrong. (Deliberately not restating any version of that claim here, "final" or otherwise — see this bullet's own edit history if you want it, and verify it fresh yourself rather than inheriting anyone else's confidence.) Treat four-plus rounds as the realistic cost of exhaustive verification on a deeply-branching method, not an outlier, and don't treat your own correction as the end of the check — it needs the same skepticism you'd apply to the claim it replaced.
+   - **Runtime-behavior reproducibility:** If an example's entire point is to demonstrate specific runtime behavior (ordering, parallelism, timing, rows added per interval), trace the actual execution/scheduling path for that exact code — not just the general feature — to confirm the claimed behavior is genuinely reproducible as written, not merely plausible. Known traps in this repo: formula-parallelism eligibility gates (`isParallelizable`/`isStateless`) can make a "look, it's unordered!" example come back deterministic instead; `TimeTable.refresh` derives the row count from elapsed time and inserts a range, so "one row per cycle" isn't guaranteed.
+   - **Example-necessity check:** For a worked example whose whole point is demonstrating that API X is needed, verify X is actually load-bearing given everything else already active in that example — not just that the example's output is correct. Trace what would happen if X were removed, accounting for every *other* mechanism already in play (an implicit ordering guarantee a nearby `with_serial`/`withSerial` already provides, a default parallelization gate that keeps the operation single-threaded anyway, etc.), and reason from the guarantee, not from a single run's output: removing a barrier can still produce the same result on one execution while silently dropping the ordering guarantee, since a different, equally valid schedule could produce a different result on another run. An example is a defect if X isn't actually necessary to guarantee the claimed behavior, regardless of whether one observed run happens to match.
+   - **Now-redundant or superseded code patterns:** Before including boilerplate copied from another doc page, a prior PR, or an older review comment (e.g., manually capturing and reopening an `ExecutionContext` around a `transform` callback), check whether the current engine API already does that automatically. Another doc page is not an authoritative source on its own — it can be stale too. Verify directly against the current implementation, and if the other page turns out to be stale as well, flag it as a separate follow-up rather than silently propagating its pattern into new content.
+   - **Constants presented as universal:** Any specific technical number (chunk size, buffer size, timeout, cycle duration, a throughput multiplier) needs to be checked against every place it's actually defined in source — Configuration properties, per-class constants — not assumed to be a single value. Two different dispositions apply depending on what you find, so don't conflate them: if source shows the number genuinely varies by code path, you have a citation either way — state the variation (or name the specific path the doc is actually about) instead of one blanket figure. If instead there's no source backing the number at all (an invented or unverifiable benchmark multiplier like "4-8x throughput"), that's the sizing/performance-number case below — mark it "⚠️ Needs SME input" rather than silently deleting it.
+   - **Moved content is still in scope:** When a diff relocates a paragraph (deleted from one spot, added back verbatim elsewhere) rather than editing its wording, that text is touched by this PR and its factual claims are fair game for re-verification — a claim that was correct in its original context can go stale once moved (an internal link or cross-reference that no longer resolves after the move, a claim that depended on context — a preceding definition, a nearby caveat — that didn't move with it). Don't skip re-checking it just because the words themselves didn't change. (Whether a positional reference like "as shown above" still reads correctly after the move is `deephaven-doc-structure-review`'s concern, not this skill's; style implications are `deephaven-writing-style`'s.)
 
    - **For sizing recommendations, performance numbers, or "typical ranges":**
      - NEVER invent numbers. These require SME expertise or benchmarks.
@@ -62,15 +93,17 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
      - If no source exists, mark as "⚠️ Needs SME input" and suggest a reviewer from the SME matrix.
    - Flag any outdated or incorrect information.
 
-4. **Style guide proofreading:** Apply the `deephaven-writing-style` skill for the full style guide — tone, quotes, links, page structure, proper noun capitalization, code formatting conventions, backticks, prose quality (active voice, jargon, audience calibration). That skill is the single source of truth; don't maintain a separate proper-noun, formatting, or punctuation list here.
+   Style, prose, and page-structure concerns are out of scope — see the CAUTION box above.
 
-   **Mechanical pattern checks — run these as literal Grep searches, don't rely on catching them by eye.** These specific mistakes have recurred across many reviews of this doc set, so treat them as required searches, not optional style intuition:
-   - Search for `` `\.[a-z] `` (backtick, dot, lowercase letter) in the file. For every hit, confirm it's a genuine file extension or config key (`.parquet`, `.env`, `.yml`) and not a method/property reference in prose — a bare method name with **no leading dot** is this repo's actual convention (confirmed by corpus frequency: hundreds of bare mentions of `where`/`update`/`with_serial`/etc. vs. only isolated dot-prefixed outliers, each traceable to a specific bug). Flag every dot-prefixed method reference in prose (e.g. `.with_serial`, `.where`) for correction.
-   - Search for backticked method-shaped identifiers (`snake_case` or `camelCase`, especially ones matching `with_`, `is_`, `from_`, `agg_`, `update`, `select`, `where`, etc.) and confirm each one appears inside a markdown link (`` [`name`](...) ``) at least once in the file. Flag any that are only ever mentioned bare — first mention of a method should link to its reference page or pydoc/javadoc anchor.
-   - Search for a backticked identifier immediately followed by `()` outside of a fenced code block (e.g. `` `with_serial()` `` in prose) — flag it; parentheses belong in code, not prose.
-   - **If you're unsure whether a pattern is actually "the project standard"** (including when a prior comment or your own assumption asserts one), don't trust the assertion alone — verify by counting real occurrences of both forms across `docs/python` and `docs/groovy` (e.g. `grep -rc` for each candidate form). A stated convention — including one written into this skill or `deephaven-writing-style` — can itself be wrong; corpus frequency is the actual authority.
-
-   **Cross-language consistency check (when a sibling doc exists):** If reviewing `docs/python/.../X.md`, check whether `docs/groovy/.../X.md` exists, or vice versa. If so, diff the substantive claims between them — numeric thresholds, "cannot be used with..." restrictions, and any enumerated list ("N ways this works," "these methods are supported") — and flag any divergence that isn't explained by an actual language-level API difference. Verify each language's claims independently against that language's own source rather than assuming a claim already confirmed correct in one language's doc also holds for its sibling.
+4a. **Cross-language consistency check (mandatory when a sibling exists):**
+   - If reviewing `docs/python/.../X.md`, **immediately check** whether `docs/groovy/.../X.md` exists (or vice versa).
+   - If a sibling exists, diff substantive claims between them:
+     - Numeric thresholds, "cannot be used with..." restrictions
+     - Enumerated lists ("N ways this works," "these methods are supported")
+     - Mandatory claims ("must", "required") — if one says users must do X and the other doesn't, investigate
+   - Flag any divergence that isn't explained by an actual language-level API difference.
+   - Verify each language's claims independently against that language's own source — don't assume a claim confirmed in Python also holds for Groovy.
+   - **When fixing a shared claim, fix both siblings in the same pass.** Don't fix Python and leave Groovy broken for later.
 
    **Completeness check (for docs that enumerate a fixed set of things):** When a doc lists mechanisms, config properties, or methods ("Deephaven parallelizes in N ways," a table of filter functions, etc.), independently derive the exhaustive list from source (grep for all static factory methods on the relevant class, all properties in the config file, all mechanisms documented in the related conceptual doc) and diff it against what the doc actually lists. Flag missing entries, not just wrong ones — an omission that leaves out a real, user-relevant capability is as much a defect as a false claim.
 
@@ -78,8 +111,8 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
    - Identify methods, classes, or concepts mentioned without links.
    - Suggest links to appropriate reference pages in `docs/{python,groovy}/reference/`.
    - Check that existing links are valid and point to the correct pages.
-   - Ensure a "Related documentation" section exists (unless it's a landing page, overview, or blog).
    - **Before suggesting any new link:** confirm the target file actually exists in the repo (search/list the directory for it) rather than assuming a path is correct by pattern-matching similar pages.
+   - Whether a "Related documentation" section exists at all is `deephaven-writing-style`'s Page-structure rule, not this step's — don't duplicate that check here even though it's link-shaped.
 
 6. Report findings organized by category with specific suggestions for fixes.
 
@@ -88,7 +121,11 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
    - For any link additions, show what confirmed the target file's existence.
    - Do NOT batch fixes without verification — verify each one individually, even under time pressure.
 
+8. **Completeness sweep — do this before considering the review finished, not just once at the start:** For every issue you found — whether you applied the fix or only reported it (a review-only pass has just as much to sweep as one that edits the file) — re-grep the file and its cross-language sibling for the same claim, number, or pattern restated elsewhere (see **Duplicate claim propagation** above). A review that flags an issue in prose but misses the same issue in a table five lines away, or catches it in Python but not Groovy, isn't finished — it just guarantees the next review round finds the leftover. Only report the review as complete once this sweep turns up nothing new for every finding, applied or proposed. If you're reviewing in response to an external reviewer's comments (e.g., a bot leaving PR review comments), assume the same defect appears elsewhere in the file even if only one location was flagged, and check before moving on — don't wait for a follow-up comment to tell you.
+
 **Quick verification checklist:**
+- [ ] Cross-language sibling checked (if `docs/python/.../X.md`, check if `docs/groovy/.../X.md` exists)
+- [ ] Every "must"/"required"/"necessary" claim verified — does the engine actually require it, or does it handle it automatically?
 - [ ] Every method/function name verified against source
 - [ ] Every parameter name and type verified
 - [ ] Every import statement verified against actual package structure
@@ -97,3 +134,10 @@ allowed-tools: Read, Grep, Glob, Edit, Bash(git diff *)
 - [ ] Every CLI command verified against actual scripts
 - [ ] Every internal link target file exists
 - [ ] Every external link flagged for manual verification
+- [ ] Every absolute/universal claim checked against the rest of its own paragraph and section for a self-contradicting exception already in the text
+- [ ] Every corrected or proposed-but-not-yet-applied claim re-searched for duplicate occurrences — tables, cheat sheets, summaries, and code comments inside fenced blocks — in the cross-language sibling too, where one exists
+- [ ] Every enumerated "N categories/paths" list independently re-derived from source, not just spot-checked against what's listed
+- [ ] Every runtime-behavior example (ordering, parallelism, timing) traced against the actual execution path, not assumed from the general feature description
+- [ ] Every paraphrase of a method's documented contract checked word-by-word against the source's exact guarantee, including prose written earlier in this same review that wasn't re-verified when the review moved on
+- [ ] Every worked example demonstrating "you need X" checked for whether X is actually load-bearing, given every other mechanism already active in that example
+- [ ] No style or structure comments included (those are out of scope)

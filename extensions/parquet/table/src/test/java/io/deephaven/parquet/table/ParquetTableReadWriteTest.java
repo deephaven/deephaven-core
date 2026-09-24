@@ -79,7 +79,6 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.vector.Vector;
 import io.deephaven.vector.*;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -156,8 +155,6 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 import static org.apache.parquet.schema.Types.optional;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 @Category(OutOfBandTest.class)
 public final class ParquetTableReadWriteTest {
@@ -347,6 +344,53 @@ public final class ParquetTableReadWriteTest {
         writeTable(t, dest.getPath());
         final Table fromDisk = checkSingleTable(t, dest);
         assertEquals(t.getDefinition(), fromDisk.getDefinition());
+    }
+
+    /**
+     * DH-23627: writing an empty table must succeed for every {@link RowGroupInfo}; {@code maxRows} used to fail.
+     */
+    @Test
+    public void emptyTableWithRowGroupInfo() {
+        final Table t = newTable(intCol("Value"), stringCol("Key"));
+        final List<RowGroupInfo> rowGroupInfos = List.of(
+                RowGroupInfo.singleGroup(),
+                RowGroupInfo.maxRows(3),
+                RowGroupInfo.maxGroups(4),
+                RowGroupInfo.byGroups("Key"),
+                RowGroupInfo.byGroups(3, "Key"));
+
+        for (int ii = 0; ii < rowGroupInfos.size(); ii++) {
+            final RowGroupInfo rowGroupInfo = rowGroupInfos.get(ii);
+            final File dest = new File(rootFile, "ParquetTest_emptyRowGroupInfo_" + ii + "_test.parquet");
+            writeTable(t, dest.getPath(),
+                    new ParquetInstructions.Builder().setRowGroupInfo(rowGroupInfo).build());
+            final Table fromDisk = checkSingleTable(t, dest);
+            assertEquals(rowGroupInfo.toString(), t.getDefinition(), fromDisk.getDefinition());
+            assertEquals(rowGroupInfo.toString(), 0, fromDisk.size());
+        }
+    }
+
+    /**
+     * DH-23627 as originally reported: an empty table written beside populated ones in a flat-partitioned layout.
+     */
+    @Test
+    public void emptyTableBesidePopulatedTablesWithRowGroupInfo() {
+        final File destDir = new File(rootFile, "ParquetTest_emptyBesidePopulated_test");
+        assertTrue(destDir.mkdirs());
+        final ParquetInstructions instructions =
+                new ParquetInstructions.Builder().setRowGroupInfo(RowGroupInfo.maxRows(3)).build();
+
+        final Table first = newTable(intCol("Value", 1, 2, 3, 4, 5), stringCol("Key", "a", "a", "b", "b", "c"));
+        final Table empty = newTable(intCol("Value"), stringCol("Key"));
+        final Table last = newTable(intCol("Value", 6, 7), stringCol("Key", "d", "d"));
+
+        writeTable(first, new File(destDir, "table_00000.parquet").getPath(), instructions);
+        writeTable(empty, new File(destDir, "table_00001.parquet").getPath(), instructions);
+        writeTable(last, new File(destDir, "table_00002.parquet").getPath(), instructions);
+
+        final Table fromDisk = readTable(destDir.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
+        assertTableEquals(merge(first, last), fromDisk);
     }
 
     @Test
@@ -2604,7 +2648,7 @@ public final class ParquetTableReadWriteTest {
         assertEquals(nullPos, dict.add(null));
         try {
             dict.add("Never before seen key which should take us over the allowed dictionary size");
-            TestCase.fail("Exception expected for exceeding dictionary size");
+            fail("Exception expected for exceeding dictionary size");
         } catch (DictionarySizeExceededException expected) {
         }
     }
@@ -3510,7 +3554,7 @@ public final class ParquetTableReadWriteTest {
         DataIndexer.getOrCreateDataIndex(badTable, "InputString");
         try {
             writer.writeTable(badTable, destFile);
-            TestCase.fail("Exception expected for invalid formula");
+            fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
@@ -3557,7 +3601,7 @@ public final class ParquetTableReadWriteTest {
         // Read from unsupported URI
         try {
             ParquetTools.readTable("https://" + absolutePath);
-            TestCase.fail("Exception expected for invalid scheme");
+            fail("Exception expected for invalid scheme");
         } catch (final RuntimeException e) {
             assertTrue(e instanceof UnsupportedOperationException);
         }
@@ -3630,7 +3674,7 @@ public final class ParquetTableReadWriteTest {
         try {
             writeTables(tablesToSave, destinations,
                     ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
-            TestCase.fail("Exception expected for invalid formula");
+            fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
@@ -3661,7 +3705,7 @@ public final class ParquetTableReadWriteTest {
         try {
             writeTables(tablesToSave, new String[] {firstDestFile.getPath()},
                     ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
-            TestCase.fail("Exception expected becuase of mismatch in number of tables and destinations");
+            fail("Exception expected becuase of mismatch in number of tables and destinations");
         } catch (final IllegalArgumentException expected) {
         }
 
@@ -3691,7 +3735,7 @@ public final class ParquetTableReadWriteTest {
             writeTables(new Table[] {firstTable, thirdTable},
                     new String[] {firstDestFile.getPath(), thirdDestFile.getPath()},
                     ParquetInstructions.EMPTY);
-            TestCase.fail("Exception expected becuase of mismatch in table definitions");
+            fail("Exception expected becuase of mismatch in table definitions");
         } catch (final IllegalArgumentException expected) {
         }
 
@@ -4053,7 +4097,7 @@ public final class ParquetTableReadWriteTest {
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             writer.writeTable(badTable, destFile);
-            TestCase.fail("Exception expected for invalid formula");
+            fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
@@ -4376,7 +4420,7 @@ public final class ParquetTableReadWriteTest {
         // Read back fromDisk. Since the underlying file has changed, we expect this to fail.
         try {
             fromDisk.where("A % 2 == 0");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (RuntimeException ignored) {
             // expected
         }
@@ -4405,7 +4449,7 @@ public final class ParquetTableReadWriteTest {
                 fromDisk.view("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             writer.writeTable(badTable, destFile);
-            TestCase.fail();
+            fail();
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);

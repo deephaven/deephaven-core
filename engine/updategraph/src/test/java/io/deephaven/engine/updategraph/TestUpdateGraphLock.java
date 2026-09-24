@@ -6,7 +6,6 @@ package io.deephaven.engine.updategraph;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Rule;
 import org.junit.Test;
@@ -14,6 +13,8 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.function.Consumer;
+
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link UpdateGraphLock}.
@@ -30,31 +31,31 @@ public class TestUpdateGraphLock {
 
         lock.sharedLock().doLocked(() -> {
             try {
-                lock.exclusiveLock().doLocked(() -> TestCase.fail("Unexpectedly upgraded successfully"));
+                lock.exclusiveLock().doLocked(() -> fail("Unexpectedly upgraded successfully"));
             } catch (UnsupportedOperationException expected) {
             }
         });
 
         lock.sharedLock().doLockedInterruptibly(() -> {
             try {
-                lock.exclusiveLock().doLockedInterruptibly(() -> TestCase.fail("Unexpectedly upgraded successfully"));
+                lock.exclusiveLock().doLockedInterruptibly(() -> fail("Unexpectedly upgraded successfully"));
             } catch (UnsupportedOperationException expected) {
             }
         });
 
-        TestCase.assertTrue(lock.sharedLock().tryLock());
+        assertTrue(lock.sharedLock().tryLock());
         try {
             lock.exclusiveLock().tryLock();
-            TestCase.fail("Unexpectedly upgraded successfully");
+            fail("Unexpectedly upgraded successfully");
         } catch (UnsupportedOperationException expected) {
         } finally {
             lock.sharedLock().unlock();
         }
 
-        TestCase.assertTrue(lock.sharedLock().tryLock(1, TimeUnit.MILLISECONDS));
+        assertTrue(lock.sharedLock().tryLock(1, TimeUnit.MILLISECONDS));
         try {
             lock.exclusiveLock().tryLock(1, TimeUnit.MILLISECONDS);
-            TestCase.fail("Unexpectedly upgraded successfully");
+            fail("Unexpectedly upgraded successfully");
         } catch (UnsupportedOperationException expected) {
         } finally {
             lock.sharedLock().unlock();
@@ -69,51 +70,51 @@ public class TestUpdateGraphLock {
         lock.exclusiveLock().doLocked(() -> {
             final MutableBoolean success = new MutableBoolean(false);
             lock.sharedLock().doLocked(success::setTrue);
-            TestCase.assertTrue(success.getValue());
+            assertTrue(success.getValue());
         });
 
         lock.exclusiveLock().doLockedInterruptibly(() -> {
             final MutableBoolean success = new MutableBoolean(false);
             lock.sharedLock().doLockedInterruptibly(success::setTrue);
-            TestCase.assertTrue(success.getValue());
+            assertTrue(success.getValue());
         });
 
         lock.exclusiveLock().lock();
         lock.sharedLock().lock();
-        TestCase.assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
-        TestCase.assertTrue(lock.sharedLock().isHeldByCurrentThread());
+        assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
+        assertTrue(lock.sharedLock().isHeldByCurrentThread());
         lock.exclusiveLock().unlock();
-        TestCase.assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
+        assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
         lock.sharedLock().unlock();
-        TestCase.assertFalse(lock.sharedLock().isHeldByCurrentThread());
+        assertFalse(lock.sharedLock().isHeldByCurrentThread());
 
         lock.exclusiveLock().lockInterruptibly();
         lock.sharedLock().lockInterruptibly();
-        TestCase.assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
-        TestCase.assertTrue(lock.sharedLock().isHeldByCurrentThread());
+        assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
+        assertTrue(lock.sharedLock().isHeldByCurrentThread());
         lock.exclusiveLock().unlock();
-        TestCase.assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
+        assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
         lock.sharedLock().unlock();
-        TestCase.assertFalse(lock.sharedLock().isHeldByCurrentThread());
+        assertFalse(lock.sharedLock().isHeldByCurrentThread());
 
 
-        TestCase.assertTrue(lock.exclusiveLock().tryLock());
-        TestCase.assertTrue(lock.sharedLock().tryLock());
-        TestCase.assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
-        TestCase.assertTrue(lock.sharedLock().isHeldByCurrentThread());
+        assertTrue(lock.exclusiveLock().tryLock());
+        assertTrue(lock.sharedLock().tryLock());
+        assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
+        assertTrue(lock.sharedLock().isHeldByCurrentThread());
         lock.exclusiveLock().unlock();
-        TestCase.assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
+        assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
         lock.sharedLock().unlock();
-        TestCase.assertFalse(lock.sharedLock().isHeldByCurrentThread());
+        assertFalse(lock.sharedLock().isHeldByCurrentThread());
 
-        TestCase.assertTrue(lock.exclusiveLock().tryLock(1, TimeUnit.MILLISECONDS));
-        TestCase.assertTrue(lock.sharedLock().tryLock(1, TimeUnit.MILLISECONDS));
-        TestCase.assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
-        TestCase.assertTrue(lock.sharedLock().isHeldByCurrentThread());
+        assertTrue(lock.exclusiveLock().tryLock(1, TimeUnit.MILLISECONDS));
+        assertTrue(lock.sharedLock().tryLock(1, TimeUnit.MILLISECONDS));
+        assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
+        assertTrue(lock.sharedLock().isHeldByCurrentThread());
         lock.exclusiveLock().unlock();
-        TestCase.assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
+        assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
         lock.sharedLock().unlock();
-        TestCase.assertFalse(lock.sharedLock().isHeldByCurrentThread());
+        assertFalse(lock.sharedLock().isHeldByCurrentThread());
     }
 
     @Test
@@ -121,16 +122,16 @@ public class TestUpdateGraphLock {
         final UpdateGraphLock lock =
                 UpdateGraphLock.create(ExecutionContext.getContext().getUpdateGraph(), false);
         final Consumer<Runnable> checkHeld = (r) -> {
-            TestCase.assertTrue(lock.sharedLock().isHeldByCurrentThread());
+            assertTrue(lock.sharedLock().isHeldByCurrentThread());
             lock.sharedLock().doLocked(r::run);
-            TestCase.assertTrue(lock.sharedLock().isHeldByCurrentThread());
+            assertTrue(lock.sharedLock().isHeldByCurrentThread());
         };
         final MutableBoolean success = new MutableBoolean(false);
-        TestCase.assertFalse(lock.sharedLock().isHeldByCurrentThread());
+        assertFalse(lock.sharedLock().isHeldByCurrentThread());
         lock.sharedLock().doLocked(() -> checkHeld.accept(() -> checkHeld
                 .accept(() -> checkHeld.accept(() -> checkHeld.accept(() -> checkHeld.accept(success::setTrue))))));
-        TestCase.assertFalse(lock.sharedLock().isHeldByCurrentThread());
-        TestCase.assertTrue(success.getValue());
+        assertFalse(lock.sharedLock().isHeldByCurrentThread());
+        assertTrue(success.getValue());
     }
 
     @Test
@@ -138,15 +139,15 @@ public class TestUpdateGraphLock {
         final UpdateGraphLock lock =
                 UpdateGraphLock.create(ExecutionContext.getContext().getUpdateGraph(), false);
         final Consumer<Runnable> checkHeld = (r) -> {
-            TestCase.assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
+            assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
             lock.exclusiveLock().doLocked(r::run);
-            TestCase.assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
+            assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
         };
         final MutableBoolean success = new MutableBoolean(false);
-        TestCase.assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
+        assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
         lock.exclusiveLock().doLocked(() -> checkHeld.accept(() -> checkHeld
                 .accept(() -> checkHeld.accept(() -> checkHeld.accept(() -> checkHeld.accept(success::setTrue))))));
-        TestCase.assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
+        assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
     }
 
     @Test
@@ -155,7 +156,7 @@ public class TestUpdateGraphLock {
                 UpdateGraphLock.create(ExecutionContext.getContext().getUpdateGraph(), false);
         try {
             lock.sharedLock().newCondition();
-            TestCase.fail("Unexpectedly got shard lock condition successfully");
+            fail("Unexpectedly got shard lock condition successfully");
         } catch (UnsupportedOperationException expected) {
         }
 
@@ -170,7 +171,7 @@ public class TestUpdateGraphLock {
             }).start();
             condition.await(1, TimeUnit.SECONDS);
             // Technically, this is a random-failer, but I expect it to be fine.
-            TestCase.assertTrue(done.getValue());
+            assertTrue(done.getValue());
         });
     }
 
@@ -182,14 +183,14 @@ public class TestUpdateGraphLock {
         lock.sharedLock().lock();
         try {
             lock.reset();
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (UncheckedDeephavenException expected) {
             expected.printStackTrace();
         }
         lock.exclusiveLock().lock();
         try {
             lock.reset();
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (UncheckedDeephavenException expected) {
             expected.printStackTrace();
         }

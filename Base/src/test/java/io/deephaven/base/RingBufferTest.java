@@ -3,11 +3,13 @@
 //
 package io.deephaven.base;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
 
-public class RingBufferTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class RingBufferTest {
 
     private void assertEmpty(RingBuffer<Object> rb) {
         assertTrue(rb.isEmpty());
@@ -130,6 +132,7 @@ public class RingBufferTest extends TestCase {
     Object G = new String("G");
     Object H = new String("H");
 
+    @Test
     public void testAddRemove() {
 
         RingBuffer<Object> rb = new RingBuffer<>(3);
@@ -192,6 +195,7 @@ public class RingBufferTest extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testOfferPoll() {
         RingBuffer<Object> rb = new RingBuffer<>(3);
 
@@ -254,6 +258,7 @@ public class RingBufferTest extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testGrowSimple() {
         // In order to keep internal storage size as a power of 2, the following now applies: capacity =
         // 2^ceil(log2(requestedCapacity+1)) - 1
@@ -282,6 +287,7 @@ public class RingBufferTest extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testGrowComplex() {
         RingBuffer<Object> rb = new RingBuffer<>(5);
 
@@ -316,6 +322,7 @@ public class RingBufferTest extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testCircularArrayList() {
         RingBuffer<Object> rb = new RingBuffer<>(3);
 
@@ -350,6 +357,7 @@ public class RingBufferTest extends TestCase {
         assertContents(rb, G, E, C, F, B, D);
     }
 
+    @Test
     public void testOverwrite() {
         RingBuffer<Object> rb = new RingBuffer<>(3); // means array will be size 4, 1 always needs to be null
         assertAddOverwrite(rb, A, 1, A, null);
@@ -362,6 +370,7 @@ public class RingBufferTest extends TestCase {
         assertAddOverwrite(rb, H, 3, F, E);
     }
 
+    @Test
     public void testPeekLast() {
         RingBuffer<Object> rb = new RingBuffer<>(7); // means array will be size 8, 1 always needs to be null
         assertOffer(rb, A, 1, A);

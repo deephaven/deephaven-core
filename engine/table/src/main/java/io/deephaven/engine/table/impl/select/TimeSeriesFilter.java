@@ -267,10 +267,9 @@ public class TimeSeriesFilter
 
     @Override
     public boolean isRefreshing() {
-        if (isRefreshing == null) {
-            throw new IllegalStateException("isRefreshing must be set by beginOperation before calling isRefreshing()");
-        }
-        return isRefreshing;
+        // Before beginOperation we do not know the source table, so we cannot know; answer conservatively, as the
+        // interface requires. A filter over a refreshing source is refreshing, which is the common case anyway.
+        return isRefreshing == null || isRefreshing;
     }
 
     @Override

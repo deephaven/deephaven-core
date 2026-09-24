@@ -62,26 +62,12 @@ public class UnionChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Values>>
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final ChunkWriter.Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> {
-            if (objectChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final ChunkWriter.Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(objectChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(objectChunk.isNull((int) row)));
     }
 
     public final class Context extends ChunkWriter.Context {

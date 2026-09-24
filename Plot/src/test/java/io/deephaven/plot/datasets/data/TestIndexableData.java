@@ -19,9 +19,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.*;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.*;
 
 public class TestIndexableData {
 

@@ -3,20 +3,23 @@
 //
 package io.deephaven.numerics.movingaverages;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.io.*;
 import java.util.Random;
 
+import static org.junit.Assert.*;
+
 /**
  * Test Ema.
  */
-public class EmaTest extends TestCase {
+public class EmaTest {
     private final static long SECOND = 1000;
     private final static long MINUTE = 60 * SECOND;
     private final static long HOUR = 60 * MINUTE;
     public final static long DAY = 24 * HOUR;
 
+    @Test
     public void testLevelTick() {
         double timeScale = 3;
         double tol = 1e-10;
@@ -36,6 +39,7 @@ public class EmaTest extends TestCase {
         assertEquals(x1 * alpha + x2 * (1 - alpha), emas.getCurrent(), tol);
     }
 
+    @Test
     public void testLevelTime() {
         double timeScale = 3;
         double tol = 1e-10;
@@ -55,6 +59,7 @@ public class EmaTest extends TestCase {
         assertEquals(x1 * alpha + x2 * (1 - alpha), emas.getCurrent(), tol);
     }
 
+    @Test
     public void testDifferenceTick() {
         double timeScale = 3;
         double tol = 1e-10;
@@ -78,6 +83,7 @@ public class EmaTest extends TestCase {
      * Make sure that smaller timescales correspond to faster moving averages. The smallest double should correspond to
      * no averaging.
      */
+    @Test
     public void testTimescales() {
         double timeScale = Double.MIN_VALUE;
         double tol = 1e-10;
@@ -95,6 +101,7 @@ public class EmaTest extends TestCase {
         assertEquals(x2, emas.getCurrent(), tol);
     }
 
+    @Test
     public void testLastMillis() {
         double timeScale = 3;
 
@@ -109,7 +116,7 @@ public class EmaTest extends TestCase {
         assertEquals(2, emas.getLastTimestamp());
     }
 
-
+    @Test
     public void testSerialize() throws IOException, ClassNotFoundException {
         double timeScale = DAY;
         Ema stat = new Ema(Ema.Type.LEVEL, Ema.Mode.TICK, timeScale);

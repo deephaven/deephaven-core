@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
+import io.deephaven.base.testing.JMockRule.Expectations;
+import io.deephaven.base.testing.JMockRule;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LiveSupplier;
@@ -35,6 +37,7 @@ import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -46,13 +49,16 @@ import java.util.stream.IntStream;
 import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.intCol;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link PartitionAwareSourceTable}.
  */
-@SuppressWarnings({"AutoBoxing", "JUnit4AnnotatedMethodInJUnit3TestCase", "AnonymousInnerClassMayBeStatic"})
+@SuppressWarnings({"AutoBoxing", "AnonymousInnerClassMayBeStatic"})
 public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
+
+    @Rule
+    public final JMockRule jmock = new JMockRule();
 
     private static class TestKeySupplier extends ReferenceCountedLivenessNode
             implements LiveSupplier<ImmutableTableLocationKey> {
@@ -130,11 +136,11 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        componentFactory = mock(SourceTableComponentFactory.class);
-        columnSourceManager = mock(ColumnSourceManager.class);
+        componentFactory = jmock.mock(SourceTableComponentFactory.class);
+        columnSourceManager = jmock.mock(ColumnSourceManager.class);
         columnSources = TABLE_DEFINITION.getColumnStream().map(cd -> {
-            final ColumnSource<?> mocked = mock(ColumnSource.class, cd.getName());
-            checking(new Expectations() {
+            final ColumnSource<?> mocked = jmock.mock(ColumnSource.class, cd.getName());
+            jmock.checking(new Expectations() {
                 {
                     allowing(mocked).getType();
                     will(returnValue(cd.getDataType()));
@@ -148,8 +154,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             });
             return mocked;
         }).toArray(ColumnSource[]::new);
-        locationProvider = mock(TableLocationProvider.class);
-        checking(new Expectations() {
+        locationProvider = jmock.mock(TableLocationProvider.class);
+        jmock.checking(new Expectations() {
             {
                 allowing(locationProvider).getUpdateMode();
                 will(returnValue(TableUpdateMode.ADD_REMOVE));
@@ -165,14 +171,14 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             return new SimpleTableLocationKey(partitions);
         }).toArray(ImmutableTableLocationKey[]::new);
         tableLocations = new TableLocation[] {
-                mock(TableLocation.class, "TL0"),
-                mock(TableLocation.class, "TL1"),
-                mock(TableLocation.class, "TL2"),
-                mock(TableLocation.class, "TL3"),
-                mock(TableLocation.class, "TL4"),
-                mock(TableLocation.class, "TL5")
+                jmock.mock(TableLocation.class, "TL0"),
+                jmock.mock(TableLocation.class, "TL1"),
+                jmock.mock(TableLocation.class, "TL2"),
+                jmock.mock(TableLocation.class, "TL3"),
+                jmock.mock(TableLocation.class, "TL4"),
+                jmock.mock(TableLocation.class, "TL5")
         };
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 allowing(locationProvider).supportsSubscriptions();
                 will(returnValue(true));
@@ -187,9 +193,9 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 }
             }
         });
-        listener = mock(TableUpdateListener.class);
+        listener = jmock.mock(TableUpdateListener.class);
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
                         with(ColumnToCodecMappings.EMPTY),
@@ -211,7 +217,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
         SUT = new PartitionAwareSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider,
                 ExecutionContext.getContext().getUpdateGraph());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @After
@@ -229,7 +235,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     }
 
     private void allowLivenessRelease() {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 allowing(locationProvider).supportsSubscriptions();
                 allowing(locationProvider).unsubscribe(with(any(TableLocationProvider.Listener.class)));
@@ -312,7 +318,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 RowSetFactory.fromRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT).toTracking();
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(locationProvider).subscribe(with(any(TableLocationProvider.Listener.class)));
                 will(new CustomAction("Supply locations") {
@@ -334,7 +340,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 }
             }
         });
-        expectPassFilters.forEach(tl -> checking(new Expectations() {
+        expectPassFilters.forEach(tl -> jmock.checking(new Expectations() {
             {
                 oneOf(columnSourceManager).addLocation(tl);
             }
@@ -360,7 +366,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     throw exception;
                 }
             }
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
             assertRowSetEquals(expectedRowSet, SUT.getRowSet());
             if (ciType == ConcurrentInstantiationType.UpdatingClosed) {
                 ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
@@ -387,12 +393,12 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         final RowSet toAdd =
                 RowSetFactory.fromRange(expectedRowSet.lastRowKey() + 1,
                         expectedRowSet.lastRowKey() + INDEX_INCREMENT);
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
                 will(returnValue(new TableUpdateImpl(toAdd.copy(), RowSetFactory.empty(), RowSetFactory.empty(),
                         RowSetShiftData.EMPTY, ModifiedColumnSet.ALL)));
-                checking(new Expectations() {
+                jmock.checking(new Expectations() {
                     {
                         oneOf(listener).getNotification(with(any(TableUpdateImpl.class)));
                         will(new CustomAction("check added") {
@@ -421,14 +427,14 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         } finally {
             ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         notification.assertInvoked();
         expectedRowSet.insert(toAdd);
         assertRowSetEquals(expectedRowSet, SUT.getRowSet());
     }
 
     private void doRefreshUnchangedCheck() {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
                 will(returnValue(
@@ -440,7 +446,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         notification.reset();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(SUT::refresh);
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         notification.assertNotInvoked();
 
         assertRowSetEquals(expectedRowSet, SUT.getRowSet());
@@ -448,7 +454,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
     private void doRefreshExceptionCheck() {
         final TableDataException exception = new TableDataException("test");
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
                 will(throwException(exception));
@@ -473,7 +479,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             SUT.refresh();
             updateGraph.markSourcesRefreshedForUnitTests();
         }, false);
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         errorNotification.assertInvoked();
 
         assertRowSetEquals(expectedRowSet, SUT.getRowSet());
@@ -484,7 +490,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         Arrays.stream(tableLocationKeys).map(TestKeySupplier::new)
                 .forEach(subscriptionBuffer::handleTableLocationKeyAdded);
 
-        expectPassFilters.forEach(tl -> checking(new Expectations() {
+        expectPassFilters.forEach(tl -> jmock.checking(new Expectations() {
             {
                 oneOf(columnSourceManager).addLocation(tl);
             }
@@ -511,13 +517,13 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         final Map<Class, ColumnSource> dataTypeToColumnSource = new HashMap<>();
         includedColumns1.forEach((final ColumnDefinition columnDefinition) -> {
             final ColumnSource columnSource =
-                    mock(ColumnSource.class, "_CS_" + columnDefinition.getDataType().getSimpleName());
+                    jmock.mock(ColumnSource.class, "_CS_" + columnDefinition.getDataType().getSimpleName());
             dataTypeToColumnSource.put(columnDefinition.getDataType(), columnSource);
             final ChunkSource.FillContext mockFillContext =
-                    mock(ChunkSource.FillContext.class, "_FC_" + columnDefinition.getDataType().getSimpleName());
+                    jmock.mock(ChunkSource.FillContext.class, "_FC_" + columnDefinition.getDataType().getSimpleName());
             final ChunkSource.GetContext mockGetContext =
-                    mock(ChunkSource.GetContext.class, "_GC_" + columnDefinition.getDataType().getSimpleName());
-            checking(new Expectations() {
+                    jmock.mock(ChunkSource.GetContext.class, "_GC_" + columnDefinition.getDataType().getSimpleName());
+            jmock.checking(new Expectations() {
                 {
                     allowing(columnSource).getType();
                     will(returnValue(columnDefinition.getDataType()));
@@ -537,7 +543,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
         // Test 1: Drop a column
         // Setup the table
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
                         with(ColumnToCodecMappings.EMPTY),
@@ -546,10 +552,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             }
         });
         final Table dropColumnsResult1 = SUT.dropColumns(BOOLEAN_COLUMN_DEFINITION.getName());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         assertTrue(dropColumnsResult1 instanceof PartitionAwareSourceTable);
         // Force a coalesce and make sure it has the right columns
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(locationProvider).subscribe(with(any(TableLocationProvider.Listener.class)));
                 will(new CustomAction("Supply no locations") {
@@ -568,7 +574,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             }
         });
         assertEquals(NUM_COLUMNS - 1, dropColumnsResult1.getColumnSources().size());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         assertNotNull(dropColumnsResult1.getColumnSource(CHARACTER_COLUMN_DEFINITION.getName()));
         assertNotNull(dropColumnsResult1.getColumnSource(INTEGER_COLUMN_DEFINITION.getName()));
         assertNotNull(dropColumnsResult1.getColumnSource(DOUBLE_COLUMN_DEFINITION.getName()));
@@ -580,7 +586,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 INTEGER_COLUMN_DEFINITION,
                 DOUBLE_COLUMN_DEFINITION);
         final TableDefinition includedTableDefinition2 = TableDefinition.of(includedColumns2);
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
                         with(ColumnToCodecMappings.EMPTY),
@@ -589,10 +595,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             }
         });
         final Table dropColumnsResult2 = dropColumnsResult1.dropColumns(CHARACTER_COLUMN_DEFINITION.getName());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         assertTrue(dropColumnsResult2 instanceof PartitionAwareSourceTable);
         // Force a coalesce and make sure it has the right columns
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(locationProvider).subscribe(with(any(TableLocationProvider.Listener.class)));
                 will(new CustomAction("Supply no locations") {
@@ -611,18 +617,18 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             }
         });
         assertEquals(NUM_COLUMNS - 2, dropColumnsResult2.getColumnSources().size());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         assertNotNull(dropColumnsResult2.getColumnSource(INTEGER_COLUMN_DEFINITION.getName()));
         assertNotNull(dropColumnsResult2.getColumnSource(DOUBLE_COLUMN_DEFINITION.getName()));
 
         // Test 3: Rename a column
         // Nothing to setup for the table - the rename is deferred
         final Table renameColumnsResult1 = dropColumnsResult2.renameColumns("A=" + INTEGER_COLUMN_DEFINITION.getName());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         assertTrue(renameColumnsResult1 instanceof DeferredViewTable);
         // This will not force a coalesce, as dropColumnsResult2 is already coalesced.
         assertEquals(NUM_COLUMNS - 2, renameColumnsResult1.getColumnSources().size());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         assertNotNull(renameColumnsResult1.getColumnSource("A"));
         assertNotNull(renameColumnsResult1.getColumnSource(DOUBLE_COLUMN_DEFINITION.getName()));
 
@@ -632,7 +638,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 INTEGER_COLUMN_DEFINITION,
                 PARTITIONING_COLUMN_DEFINITION);
         final TableDefinition includedTableDefinition3 = TableDefinition.of(includedColumns3);
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(with(true), with(true),
                         with(ColumnToCodecMappings.EMPTY),
@@ -641,10 +647,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             }
         });
         final Table viewResult1 = dropColumnsResult2.view(INTEGER_COLUMN_DEFINITION.getName());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         assertTrue(viewResult1 instanceof DeferredViewTable);
         // Force a coalesce and make sure it has the right columns
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(locationProvider).subscribe(with(any(TableLocationProvider.Listener.class)));
                 will(new CustomAction("Supply no locations") {
@@ -663,7 +669,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             }
         });
         assertEquals(NUM_COLUMNS - 4, viewResult1.getColumnSources().size());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         assertNotNull(viewResult1.getColumnSource(INTEGER_COLUMN_DEFINITION.getName()));
 
         // Test 5: Add a new derived column on
@@ -674,19 +680,19 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         assertEquals(NUM_COLUMNS - 3, viewResult2.getColumnSources().size());
         assertNotNull(viewResult2.getColumnSource(INTEGER_COLUMN_DEFINITION.getName()));
         assertNotNull(viewResult2.getColumnSource("SizeSquared"));
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
 
         final Table viewResult3 = viewResult2.view("Result=SizeSquared");
         assertTrue(viewResult3 instanceof DeferredViewTable);
         assertEquals(NUM_COLUMNS - 4, viewResult3.getColumnSources().size());
         assertNotNull(viewResult3.getColumnSource("Result"));
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
 
         final Table viewResult4 = viewResult2.view("SizeSquared");
         assertTrue(viewResult4 instanceof DeferredViewTable);
         assertEquals(NUM_COLUMNS - 4, viewResult4.getColumnSources().size());
         assertNotNull(viewResult4.getColumnSource("SizeSquared"));
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @Test
@@ -695,7 +701,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         final String[] expectedDistinctDates =
                 IntStream.of(1, 3, 5).mapToObj(li -> COLUMN_PARTITIONS[li]).distinct().toArray(String[]::new);
         doInitializeCheck(locationKeysSlice(1, 3, 5), passedLocations, false, true);
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(columnSourceManager).locationTable();
                 will(returnValue(TableFactory.newTable(
@@ -704,7 +710,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             }
         });
         final Table result = SUT.selectDistinct(PARTITIONING_COLUMN_DEFINITION.getName());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
         final String columnName = PARTITIONING_COLUMN_DEFINITION.getName();
         final ObjectVector<String> distinctDatesVector = ColumnVectors.ofObject(result, columnName, String.class);
         assertEquals(expectedDistinctDates.length, distinctDatesVector.size());
@@ -752,7 +758,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
     @Test
     public void testSelectDistinctOther() {
-        checking(new org.jmock.Expectations() {
+        jmock.checking(new org.jmock.Expectations() {
             {
                 oneOf(locationProvider).subscribe(with(any(TableLocationSubscriptionBuffer.class)));
                 // noinspection resource
@@ -770,7 +776,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     @Test
     public void testWhereDate() {
         doInitializeCheck(locationKeysSlice(0, 2, 5), makePassingLocations(0, 2, 5), false, false);
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(true, true, ColumnToCodecMappings.EMPTY,
                         TABLE_DEFINITION);
@@ -778,7 +784,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             }
         });
         assertRowSetEquals(expectedRowSet, SUT.where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`").getRowSet());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     private static class DummyContext implements ColumnSource.GetContext, ColumnSource.FillContext {
@@ -798,7 +804,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     @Test
     public void testWhereSize() {
         doInitializeCheck(locationKeysSlice(1, 3), makePassingLocations(1, 3), false, true);
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 allowing(columnSources[3]).getInt(with(any(long.class)));
                 will(returnValue(1));
@@ -825,13 +831,13 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
         assertRowSetEquals(expectedRowSet, SUT.where(INTEGER_COLUMN_DEFINITION.getName() + ">0")
                 .where(ArrayTypeUtils.EMPTY_STRING_ARRAY).getRowSet());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @Test
     public void testWhereDateSize() {
         doInitializeCheck(tableLocationKeys, makePassingLocations(0, 2, 5), false, false);
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(true, true, ColumnToCodecMappings.EMPTY,
                         TABLE_DEFINITION);
@@ -862,6 +868,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         assertRowSetEquals(expectedRowSet, SUT
                 .where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`", INTEGER_COLUMN_DEFINITION.getName() + ">0")
                 .getRowSet());
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 }

@@ -57,24 +57,12 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
     }
 
     @Override
-    protected int computeNullCount(
+    protected void computeValidity(
             @NotNull final ChunkWriter.Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
+            @NotNull final RowSequence subset,
+            @NotNull final ValidityBuffer validity) {
         final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> {
-            if (objectChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(ChunkWriter.@NotNull Context context, @NotNull RowSequence subset,
-            @NotNull SerContext serContext) {
-        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(objectChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(objectChunk.isNull((int) row)));
     }
 
     public final class Context extends ChunkWriter.Context {
@@ -190,31 +178,30 @@ public class VarBinaryChunkWriter<T> extends BaseChunkWriter<ObjectChunk<T, Valu
             // write the validity buffer
             bytesWritten.add(writeValidityBuffer(dos));
 
-            // write offsets array
-            if (!subset.isEmpty()) {
-                dos.writeInt(0);
-            }
+            // Write the offsets array in bounded windows, flushing a full window with a single bulk write rather than
+            // one DataOutput int — i.e. four individual byte writes — per row.
+            long numRows = subset.size();
+            try (final BulkIntWriter offsetWriter = new BulkIntWriter(outputStream)) {
+                if (!subset.isEmpty()) {
+                    offsetWriter.write(0);
+                }
 
-            final MutableInt logicalSize = new MutableInt();
-            subset.forAllRowKeys((idx) -> {
-                try {
+                final MutableInt logicalSize = new MutableInt();
+                subset.forAllRowKeys((idx) -> {
                     logicalSize.add(LongSizedDataStructure.intSize("int cast",
                             context.byteStorage.getPayloadSize((int) idx, (int) idx)));
-                    dos.writeInt(logicalSize.get());
-                } catch (final IOException e) {
-                    throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
+                    offsetWriter.write(logicalSize.get());
+                });
+                if (numRows > 0) {
+                    numRows += 1;
                 }
-            });
-            long numRows = subset.size();
-            if (numRows > 0) {
-                numRows += 1;
-            }
-            bytesWritten.add(Integer.BYTES * numRows);
+                bytesWritten.add(Integer.BYTES * numRows);
 
-            if (!subset.isEmpty() && (subset.size() & 0x1) == 0) {
-                // then we must pad to align next buffer
-                dos.writeInt(0);
-                bytesWritten.add(Integer.BYTES);
+                if (!subset.isEmpty() && (subset.size() & 0x1) == 0) {
+                    // then we must pad to align next buffer
+                    offsetWriter.write(0);
+                    bytesWritten.add(Integer.BYTES);
+                }
             }
 
             subset.forAllRowKeyRanges((s, e) -> {

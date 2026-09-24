@@ -8,10 +8,12 @@ import io.deephaven.io.log.LogBufferPool;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StringsLoggerImpl;
-import junit.framework.TestCase;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.function.Supplier;
 
+import static org.junit.Assert.*;
 
 /**
  * TODO: This class never existed until the potential NPE bug when logging boxed primitives that are null was TODO:
@@ -19,14 +21,13 @@ import java.util.function.Supplier;
  * methods, and since StringsLoggerImpl can easily be instantiated with arbitrary LogEntry TODO: implenmentations, it
  * should also be made into an abstract base class with concrete subclasses for TODO: entry entry impl.
  */
-public class TestLogOutput extends TestCase {
+public class TestLogOutput {
     LogBufferPool buffers;
     LogOutput outputBuffer;
     StringsLoggerImpl<? extends LogEntry> logger;
 
-
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
         this.buffers = LogBufferPool.ofStrict(16, 256);
         this.outputBuffer = new LogOutputCsvImpl(buffers);
 
@@ -35,6 +36,7 @@ public class TestLogOutput extends TestCase {
         this.logger = new StringsLoggerImpl<>(entryFactory, 16, outputBuffer, LogLevel.INFO);
     }
 
+    @Test
     public void testInteger() {
         logger.info().append((Integer) null).end();
         logger.info().append((Integer) 123456).end();
@@ -49,6 +51,7 @@ public class TestLogOutput extends TestCase {
         assertEquals("123456", results[0]);
     }
 
+    @Test
     public void testBoolean() {
         logger.info().append((Boolean) null).end();
         logger.info().append((Boolean) true).end();
@@ -66,6 +69,7 @@ public class TestLogOutput extends TestCase {
         assertEquals("false", results[1]);
     }
 
+    @Test
     public void testPositiveDoubleToDecimalPlaces() {
         logger.info().appendDouble(1.2345, 3).end();
         logger.info().appendDouble(0.112255, 2).end();
@@ -115,6 +119,7 @@ public class TestLogOutput extends TestCase {
         assertEquals("111.2", results[c++]);
     }
 
+    @Test
     public void testNegativeDoubleToDecimalPlaces() {
         logger.info().appendDouble(-1.235, 2).end();
         logger.info().appendDouble(-1.234, 2).end();

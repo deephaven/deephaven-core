@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.util;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
@@ -12,7 +13,7 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import junit.framework.TestCase;
+import io.deephaven.util.function.ThrowingRunnable;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -26,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public final class TestJobScheduler {
 
@@ -416,6 +417,207 @@ public final class TestJobScheduler {
     }
 
     @Test
+    public void testParallelThrownError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(null, null, null);
+        final boolean[] completed = new boolean[50];
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        runExpectingUpdateGraphTermination(updateGraph, () -> {
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            scheduler.iterateParallel(
+                    ExecutionContext.getContext(),
+                    null,
+                    observer,
+                    0,
+                    50,
+                    (context, idx, nec) -> {
+                        assertNotNull(context);
+
+                        // throw before "doing work" to make verification easy
+                        if (idx == 10) {
+                            throw new TestError("Test error");
+                        }
+
+                        completed[idx] = true;
+                    },
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
+        });
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertDidNotCallComplete();
+        assertTestErrorDelivered(observer);
+        observer.assertNoOpenContexts();
+        Assert.eqFalse(completed[10], "completed[10]");
+
+        // The terminated cycle left its exclusive lock held; reset so that teardown gets a usable update graph back.
+        updateGraph.resetForUnitTests(false);
+    }
+
+    @Test
+    public void testSerialThrownError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(null, null, null);
+        final boolean[] completed = new boolean[100];
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        runExpectingUpdateGraphTermination(updateGraph, () -> {
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            scheduler.iterateSerial(
+                    ExecutionContext.getContext(),
+                    null,
+                    observer,
+                    0,
+                    50,
+                    (context, idx, nec, resume) -> {
+                        assertNotNull(context);
+
+                        completed[idx] = true;
+
+                        // throw after this is set to make verification easy
+                        if (idx == 10) {
+                            throw new TestError("Test error");
+                        }
+                        resume.run();
+                    },
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
+        });
+        observer.awaitFinished(Duration.ofSeconds(10));
+        observer.assertDidNotCallComplete();
+        assertTestErrorDelivered(observer);
+        observer.assertNoOpenContexts();
+        for (int i = 0; i < 100; ++i) {
+            if (i <= 10) {
+                Assert.eqTrue(completed[i], "completed[i]");
+            } else {
+                Assert.eqFalse(completed[i], "completed[i]");
+            }
+        }
+
+        // The terminated cycle left its exclusive lock held; reset so that teardown gets a usable update graph back.
+        updateGraph.resetForUnitTests(false);
+    }
+
+    @Test
+    public void testParallelOnCompleteThrownError() throws InterruptedException, TimeoutException {
+        final Observer observer = new Observer(() -> {
+            throw new TestError("Test error");
+        }, null, null);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        runExpectingUpdateGraphTermination(updateGraph, () -> {
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            scheduler.iterateParallel(
+                    ExecutionContext.getContext(),
+                    null,
+                    observer,
+                    0,
+                    50,
+                    (context, idx, nec) -> assertNotNull(context),
+                    observer::onComplete,
+                    observer::cleanup,
+                    observer::onError);
+        });
+        observer.awaitFinished(Duration.ofSeconds(10));
+        assertTestErrorDelivered(observer);
+        observer.assertNoOpenContexts();
+
+        // The terminated cycle left its exclusive lock held; reset so that teardown gets a usable update graph back.
+        updateGraph.resetForUnitTests(false);
+    }
+
+    /**
+     * {@link JobScheduler#submit} is also used directly, without the iteration machinery -- for example by a select
+     * column small enough to evaluate in one job. Its Error handling is the scheduler's own: deliver the failure to the
+     * error consumer, then report it as fatal and rethrow.
+     */
+    @Test
+    public void testSubmitThrownError() {
+        final AtomicReference<Exception> delivered = new AtomicReference<>();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false);
+        updateGraph.startCycleForUnitTests();
+        try {
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            scheduler.submit(
+                    ExecutionContext.getContext(),
+                    () -> {
+                        throw new TestError("Test error");
+                    },
+                    logOutput -> logOutput.append("TestSubmitThrownError"),
+                    delivered::set);
+
+            // Flushing the notification here runs the job and surfaces what the scheduler does after delivering: the
+            // fatal report, which the unit test error reporter turns into a FakeFatalException.
+            try {
+                updateGraph.flushOneNotificationForUnitTests();
+                fail("Expected exception");
+            } catch (UncheckedDeephavenException expected) {
+                assertTrue("FakeFatalException, but was " + expected.getCause().getCause(),
+                        expected.getCause().getCause() instanceof FakeProcessEnvironment.FakeFatalException);
+            }
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
+
+        // The failure has to reach the error consumer first; nothing waiting on this job has any other way to learn
+        // that it failed.
+        final Exception error = delivered.get();
+        Assert.neqNull(error, "delivered.get()");
+        assertTrue("TestError cause, but was " + error.getCause(), error.getCause() instanceof TestError);
+    }
+
+    /**
+     * An Error thrown by a job is delivered to the iteration's error handler and then rethrown, which takes down the
+     * notification processor running it; the update graph reports that when the cycle completes. That termination is
+     * the intended policy for an Error -- what these tests are about is that the failure was delivered first.
+     */
+    private static <T extends Exception> void runExpectingUpdateGraphTermination(
+            final ControlledUpdateGraph updateGraph,
+            final ThrowingRunnable<T> runnable) throws T {
+        try {
+            updateGraph.runWithinUnitTestCycle(runnable);
+            fail("Expected the update graph to terminate");
+        } catch (UncheckedDeephavenException expected) {
+        }
+    }
+
+    @Test
+    public void testAsDeliverableException() {
+        final Exception exception = new IllegalStateException("Test exception");
+        assertSame(exception, JobScheduler.asDeliverableException(exception));
+
+        final Error error = new TestError("Test error");
+        final Exception delivered = JobScheduler.asDeliverableException(error);
+        assertSame(error, delivered.getCause());
+        // The wrapper carries no stack trace of its own; the one that matters belongs to the Error, and filling in
+        // another is the largest allocation on a path that exists because the heap may be exhausted.
+        assertEquals(0, delivered.getStackTrace().length);
+    }
+
+    /**
+     * An Error cannot be handed to a {@code Consumer<Exception>}, so the scheduler wraps it; what matters is that the
+     * failure arrives at all, with the original Error intact.
+     */
+    private static void assertTestErrorDelivered(final Observer observer) {
+        final Exception error = observer.error();
+        Assert.neqNull(error, "observer.error()");
+        assertTrue("TestError cause, but was " + error.getCause(), error.getCause() instanceof TestError);
+    }
+
+    private static final class TestError extends Error {
+
+        private TestError(final String message) {
+            super(message);
+        }
+    }
+
+    @Test
     public void testNestedParallelError() throws InterruptedException, TimeoutException {
         final Observer observer = new Observer(null, null, null);
         final AtomicInteger openCount = new AtomicInteger(0);
@@ -585,9 +787,9 @@ public final class TestJobScheduler {
                         observer::cleanup,
                         observer::onError);
             });
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (FakeProcessEnvironment.FakeFatalException expected) {
-            TestCase.assertEquals("Intentional error failure", expected.getCause().getMessage());
+            assertEquals("Intentional error failure", expected.getCause().getMessage());
         }
     }
 
@@ -624,10 +826,10 @@ public final class TestJobScheduler {
                         observer::cleanup,
                         observer::onError);
             });
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (FakeProcessEnvironment.FakeFatalException expected) {
             // This actually goes through the FakeFatalErrorReporter twice; that's an artifact of the test design
-            TestCase.assertEquals("Intentional error failure", expected.getCause().getMessage());
+            assertEquals("Intentional error failure", expected.getCause().getMessage());
         }
     }
 

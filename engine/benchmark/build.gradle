@@ -66,6 +66,7 @@ createJmhTask('jmhRunSort', 'SortBenchmark')
 createJmhTask('jmhRunSortMulti', 'SortMultiBenchmark')
 createJmhTask('jmhRunRangeFilter', 'RangeFilterBenchmark')
 createJmhTask('jmhRunNaturalJoin', 'NaturalJoinBenchmark')
+createJmhTask('jmhRunNaturalJoinIncrementalUpdate', 'NaturalJoinIncrementalUpdateBenchmark')
 createJmhTask('jmhRunSparseSelect', 'SparseSelectBenchmark')
 createJmhTask('jmhRunRCS', 'RegionedColumnSourceBenchmark')
 createJmhTask('jmhRunBy', 'ByBenchmark')
@@ -75,6 +76,13 @@ createJmhTask('jmhRunMatchHistorical',
         ['MatchFilterHistoricalBenchmark',
          '-prof=io.deephaven.benchmark.db.ResultSizeProfiler'])
 createJmhTask('jmhRunRowSetGetFind', 'RowSetGetFindBench', ['-DMetricsManager.enabled=true'])
+createJmhTask('jmhRunRowSetIncrementalInsert', 'RowSetIncrementalInsertBench')
+createJmhTask('jmhRunRspSortedRangesInsertShape', 'RspSortedRangesInsertShapeBench')
+createJmhTask('jmhRunRowSetOverlaps', 'RowSetOverlapsBench')
+createJmhTask('jmhRunRowSetSubsetOf', 'RowSetSubsetOfBench')
+createJmhTask('jmhRunRowSetSmallInsert', 'RowSetSmallInsertBench')
+createJmhTask('jmhRunRowSetSmallRemove', 'RowSetSmallRemoveBench')
+createJmhTask('jmhRunRowSetSubsume', 'RowSetSubsumeBench')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->

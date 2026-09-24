@@ -176,8 +176,6 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             }
 
             if (subscribeToTableLocationProvider) {
-                resultLocationStates.startTrackingPrevValues();
-
                 sourceTableLocations = new TableLocationSubscriptionBuffer(tableLocationProvider);
                 manage(sourceTableLocations);
 
@@ -198,6 +196,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                         rawResult.getUpdateGraph(),
                         UnderlyingTableMaintainer::unmanageForRemovedLocationStates);
                 processBufferedLocationChanges(false);
+                resultLocationStates.startTrackingPrevValues();
             } else {
                 sourceTableLocations = null;
                 processLocationsUpdateRoot = null;
@@ -214,9 +213,9 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 tableLocationProvider.getTableLocationKeys(
                         lstlk -> locationStates.add(new LocationState(lstlk)),
                         locationKeyMatcher);
-                try (final RowSet added = sortAndAddLocations(locationStates.stream())) {
+                try (final WritableRowSet added = sortAndAddLocations(locationStates.stream())) {
                     if (added != null) {
-                        resultRows.insert(added);
+                        resultRows.subsume(added);
                     }
                 }
             }
@@ -246,7 +245,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             return result;
         }
 
-        private RowSet sortAndAddLocations(@NotNull final Stream<LocationState> locationStates) {
+        private WritableRowSet sortAndAddLocations(@NotNull final Stream<LocationState> locationStates) {
             final long initialLastRowKey = resultRows.lastRowKey();
             final MutableLong lastInsertedRowKey = new MutableLong(initialLastRowKey);
             locationStates.sorted(Comparator.comparing(LocationState::key)).forEach(ls -> {

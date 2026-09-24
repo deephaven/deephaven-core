@@ -7,14 +7,18 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
+import org.junit.Test;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static org.junit.Assert.*;
 
 /**
  * Test class for {@link RegionedColumnSourceFloat}.
  */
-@SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
+
 public class TestRegionedColumnSourceFloat extends
         TstRegionedColumnSourcePrimitive<Float, Values, ColumnRegionFloat<Values>, ColumnRegionFloat<Values>> {
 
@@ -28,7 +32,7 @@ public class TestRegionedColumnSourceFloat extends
             final float output,
             final boolean prev,
             final boolean boxed) {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(cr[expectedRegionIndex]).getFloat(elementIndex);
                 will(returnValue(output));
@@ -39,7 +43,7 @@ public class TestRegionedColumnSourceFloat extends
         } else {
             assertEquals(output, prev ? SUT.getPrevFloat(elementIndex) : SUT.getFloat(elementIndex));
         }
-        assertIsSatisfied();
+        jmock.assertIsSatisfied();
     }
 
     @Override
@@ -51,6 +55,7 @@ public class TestRegionedColumnSourceFloat extends
     }
 
     @Override
+    @Test
     public void testGet() {
         fillRegions();
 
@@ -71,6 +76,7 @@ public class TestRegionedColumnSourceFloat extends
     }
 
     @Override
+    @Test
     public void testGetPrev() {
         fillRegions();
 
@@ -91,6 +97,7 @@ public class TestRegionedColumnSourceFloat extends
     }
 
     @Override
+    @Test
     public void testGetFloat() {
         fillRegions();
 
@@ -111,6 +118,7 @@ public class TestRegionedColumnSourceFloat extends
     }
 
     @Override
+    @Test
     public void testGetPrevFloat() {
         fillRegions();
 

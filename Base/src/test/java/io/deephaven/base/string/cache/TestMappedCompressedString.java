@@ -6,14 +6,17 @@ package io.deephaven.base.string.cache;
 import io.deephaven.base.reference.HardSimpleReference;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.RequirementFailure;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-@SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
-public class TestMappedCompressedString extends TestCase {
+import static org.junit.Assert.*;
 
+@SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
+public class TestMappedCompressedString {
+
+    @Test
     public void testEquality() {
         MappedCompressedString mcs;
 
@@ -61,6 +64,7 @@ public class TestMappedCompressedString extends TestCase {
         assertTrue(Arrays.equals(mcs.getData(), "hog".getBytes()));
     }
 
+    @Test
     public void testMappingInvariants() {
         final MappedCompressedString mcs = new MappedCompressedString("");
         final SimpleReference<Object> key1 = new HardSimpleReference<>(new Object());
@@ -76,6 +80,7 @@ public class TestMappedCompressedString extends TestCase {
         }
     }
 
+    @Test
     public void testMapping() {
         final MappedCompressedString mcs = new MappedCompressedString("");
         final SimpleReference<Object> key1 = new HardSimpleReference<>(new Object());

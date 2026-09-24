@@ -22,6 +22,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import java.util.Random;
 
 import org.junit.Assert;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.col;
@@ -30,9 +31,11 @@ import static io.deephaven.engine.util.TableTools.charCol;
 import static io.deephaven.engine.util.TableTools.emptyTable;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableSliceTest extends QueryTableTestBase {
+    @Test
     public void testSliceIncremental() {
         final int[] sizes = {1, 10, 100};
         for (int size : sizes) {
@@ -359,6 +362,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testGrowthAppendUpdatePattern() {
         final long steps = 1024;
 
@@ -393,6 +397,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testGrowthPrependUpdatePattern() {
         final int numRowsToAdd = 10;
         final int tableSize = 50;
@@ -425,7 +430,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         }
     }
 
-
+    @Test
     public void testShrinkageUpdatePattern() {
         final int numRowsToDelete = 10;
         final int tableSize = 50;
@@ -455,12 +460,14 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testLongTail() {
         final Table bigTable = emptyTable(2 * (long) (Integer.MAX_VALUE)).updateView("I=i", "II=ii");
         final Table tailed = bigTable.tail(1);
         assertEquals(2L * Integer.MAX_VALUE - 1, tailed.getColumnSource("II").get(tailed.getRowSet().firstRowKey()));
     }
 
+    @Test
     public void testZeroHead() {
         final QueryTable table = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(10, 35).toTracking(),
@@ -473,6 +480,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         assertTrue(oneRow.isRefreshing());
     }
 
+    @Test
     public void testSlice() {
         final QueryTable table = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(10, 35).toTracking(),
@@ -504,6 +512,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         assertEquals(expected, result);
     }
 
+    @Test
     public void testSlicePct() {
         final QueryTable table = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(10, 19).toTracking(),
@@ -534,6 +543,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         assertEquals(expected, result);
     }
 
+    @Test
     public void testHeadTailPct() {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
@@ -576,6 +586,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testHeadTailPctIncremental() {
         final int[] sizes = {1, 10, 100};
         for (int size : sizes) {

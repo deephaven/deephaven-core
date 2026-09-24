@@ -4,17 +4,20 @@
 package io.deephaven.numerics.interpolation;
 
 import io.deephaven.util.QueryConstants;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import static org.junit.Assert.*;
+
 /**
  * Test Interpolator.
  */
-public class InterpolatorTest extends TestCase {
+public class InterpolatorTest {
 
+    @Test
     public void testNearest() {
         double tol = 5e-2;
         final double extrapolateDistance = 0.01;
@@ -25,6 +28,7 @@ public class InterpolatorTest extends TestCase {
         t1(tol, nSteps, nStepsInterp, extrapolateDistance, method);
     }
 
+    @Test
     public void testLinear() {
         double tol = 1e-2;
         final double extrapolateDistance = 0.1;
@@ -35,6 +39,7 @@ public class InterpolatorTest extends TestCase {
         t1(tol, nSteps, nStepsInterp, extrapolateDistance, method);
     }
 
+    @Test
     public void testPchip() {
         double tol = 1e-2;
         final double extrapolateDistance = 0.1;
@@ -45,6 +50,7 @@ public class InterpolatorTest extends TestCase {
         t1(tol, nSteps, nStepsInterp, extrapolateDistance, method);
     }
 
+    @Test
     public void testSpline() {
         double tol = 1e-2;
         final double extrapolateDistance = 0.1;
@@ -101,6 +107,7 @@ public class InterpolatorTest extends TestCase {
         }
     }
 
+    @Test
     public void testNonExtrapolation() {
         double[] x = new double[] {1, 2, 3, 4, 5};
         double[] y = new double[] {2, 3, 2, 1, 1};
@@ -110,6 +117,7 @@ public class InterpolatorTest extends TestCase {
         assertTrue(Double.isNaN(yi[3]));
     }
 
+    @Test
     public void testNulls() {
         double[] x = new double[] {1, 2, 3, 4, 5};
         double[] y = new double[] {2, 3, 2, 1, 1};

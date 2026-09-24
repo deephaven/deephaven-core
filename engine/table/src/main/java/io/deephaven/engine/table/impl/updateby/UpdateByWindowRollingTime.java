@@ -195,9 +195,9 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
             // consider the modifications only when input or timestamp columns were modified
             if (upstream.modified().isNonempty() && (ctx.timestampsModified || ctx.inputModified)) {
                 // recompute all windows that have the modified rows in their window
-                try (final RowSet modifiedAffected =
+                try (final WritableRowSet modifiedAffected =
                         computeAffectedRowsTime(ctx, tsContext, upstream.modified(), prevUnits, fwdUnits, false)) {
-                    tmpAffected.insert(modifiedAffected);
+                    tmpAffected.subsume(modifiedAffected);
                 }
 
                 if (ctx.timestampsModified) {
@@ -209,7 +209,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                         // we used the SSA (post-shift) to get these keys, no need to shift
                         // retain only the rows that still exist in the sourceRowSet
                         modifiedAffectedPrev.retain(ctx.timestampValidRowSet);
-                        tmpAffected.insert(modifiedAffectedPrev);
+                        tmpAffected.subsume(modifiedAffectedPrev);
                     }
 
                     // re-compute all modified rows, they have new windows after the timestamp modifications
@@ -221,9 +221,9 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                 // add the new rows and any cascading changes from inserting rows
                 final long prev = Math.max(0, prevUnits);
                 final long fwd = Math.max(0, fwdUnits);
-                try (final RowSet addedAffected =
+                try (final WritableRowSet addedAffected =
                         computeAffectedRowsTime(ctx, tsContext, upstream.added(), prev, fwd, false)) {
-                    tmpAffected.insert(addedAffected);
+                    tmpAffected.subsume(addedAffected);
                 }
                 // compute all new rows
                 tmpAffected.insert(upstream.added());
@@ -239,7 +239,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                     // retain only the rows that still exist in the sourceRowSet
                     removedAffected.retain(ctx.timestampValidRowSet);
 
-                    tmpAffected.insert(removedAffected);
+                    tmpAffected.subsume(removedAffected);
                 }
             }
 

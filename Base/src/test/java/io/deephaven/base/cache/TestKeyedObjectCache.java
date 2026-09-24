@@ -4,14 +4,15 @@
 package io.deephaven.base.cache;
 
 import io.deephaven.hash.KeyedObjectKey;
-import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.util.Random;
 import java.util.function.Consumer;
 
+import static org.junit.Assert.*;
+
 @SuppressWarnings({"RedundantStringConstructorCall", "JUnit4AnnotatedMethodInJUnit3TestCase"})
-public class TestKeyedObjectCache extends TestCase {
+public class TestKeyedObjectCache {
 
     private static final KeyedObjectKey<Object, Object> KEY = new KeyedObjectKey.Basic<>() {
         @Override
@@ -38,8 +39,8 @@ public class TestKeyedObjectCache extends TestCase {
     @Test
     public void testKeyedObjectCache() {
         final KeyedObjectCache<Object, Object> cache = new KeyedObjectCache<>(6, 2, KEY, POST, RANDOM);
-        TestCase.assertEquals(7, cache.getCapacity());
-        TestCase.assertEquals(2, cache.getProbeSequenceLength());
+        assertEquals(7, cache.getCapacity());
+        assertEquals(2, cache.getProbeSequenceLength());
 
         // A=65, hashes to 65, first bucket is 65 % 7 == 2, second bucket is 2 - (1 + (65 % (7 - 2))) == 1
         // B=66, hashes to 66, first bucket is 66 % 7 == 3, second bucket is 3 - (1 + (66 % (7 - 2))) == 1
@@ -53,55 +54,55 @@ public class TestKeyedObjectCache extends TestCase {
 
         // Fill bucket 2
         final String A = "A";
-        TestCase.assertNull(cache.get(A));
-        TestCase.assertSame(A, cache.putIfAbsent(A));
-        TestCase.assertSame(A, cache.get(A));
-        TestCase.assertSame(A, cache.get(new String("A")));
-        TestCase.assertSame(A, cache.putIfAbsent(new String("A")));
+        assertNull(cache.get(A));
+        assertSame(A, cache.putIfAbsent(A));
+        assertSame(A, cache.get(A));
+        assertSame(A, cache.get(new String("A")));
+        assertSame(A, cache.putIfAbsent(new String("A")));
 
         // 2 is filled, so fill bucket 6
         final String H = "H";
-        TestCase.assertNull(cache.get(H));
-        TestCase.assertSame(H, cache.putIfAbsent(H));
-        TestCase.assertSame(H, cache.get(H));
-        TestCase.assertSame(H, cache.get(new String("H")));
-        TestCase.assertSame(H, cache.putIfAbsent(new String("H")));
+        assertNull(cache.get(H));
+        assertSame(H, cache.putIfAbsent(H));
+        assertSame(H, cache.get(H));
+        assertSame(H, cache.get(new String("H")));
+        assertSame(H, cache.putIfAbsent(new String("H")));
 
         // 6 is filled, so fill bucket 1
         final String E = "E";
-        TestCase.assertNull(cache.get(E));
-        TestCase.assertSame(E, cache.putIfAbsent(E));
-        TestCase.assertSame(E, cache.get(E));
-        TestCase.assertSame(E, cache.get(new String("E")));
-        TestCase.assertSame(E, cache.putIfAbsent(new String("E")));
+        assertNull(cache.get(E));
+        assertSame(E, cache.putIfAbsent(E));
+        assertSame(E, cache.get(E));
+        assertSame(E, cache.get(new String("E")));
+        assertSame(E, cache.putIfAbsent(new String("E")));
 
         // 1 and 6 are filled, "randomly" select to evict E from 1
         nextInt = 0;
         final String G = "G";
-        TestCase.assertNull(cache.get(G));
-        TestCase.assertSame(G, cache.putIfAbsent(G));
-        TestCase.assertSame(G, cache.get(G));
-        TestCase.assertEquals(E, lastPost);
-        TestCase.assertNull(cache.get(E));
-        TestCase.assertSame(G, cache.get(new String("G")));
-        TestCase.assertSame(G, cache.putIfAbsent(new String("G")));
+        assertNull(cache.get(G));
+        assertSame(G, cache.putIfAbsent(G));
+        assertSame(G, cache.get(G));
+        assertEquals(E, lastPost);
+        assertNull(cache.get(E));
+        assertSame(G, cache.get(new String("G")));
+        assertSame(G, cache.putIfAbsent(new String("G")));
 
         // 6 and 1 are filled, "randomly" select to evict G from 1
         nextInt = 1;
-        TestCase.assertSame(E, cache.putIfAbsent(E));
-        TestCase.assertSame(E, cache.get(E));
-        TestCase.assertEquals(G, lastPost);
-        TestCase.assertNull(cache.get(G));
-        TestCase.assertSame(E, cache.get(new String("E")));
-        TestCase.assertSame(E, cache.putIfAbsent(new String("E")));
+        assertSame(E, cache.putIfAbsent(E));
+        assertSame(E, cache.get(E));
+        assertEquals(G, lastPost);
+        assertNull(cache.get(G));
+        assertSame(E, cache.get(new String("E")));
+        assertSame(E, cache.putIfAbsent(new String("E")));
 
         // 1 and 6 are filled, "randomly" select to evict H from 6
         nextInt = 1;
-        TestCase.assertSame(G, cache.putIfAbsent(G));
-        TestCase.assertSame(G, cache.get(G));
-        TestCase.assertEquals(H, lastPost);
-        TestCase.assertNull(cache.get(H));
-        TestCase.assertSame(G, cache.get(new String("G")));
-        TestCase.assertSame(G, cache.putIfAbsent(new String("G")));
+        assertSame(G, cache.putIfAbsent(G));
+        assertSame(G, cache.get(G));
+        assertEquals(H, lastPost);
+        assertNull(cache.get(H));
+        assertSame(G, cache.get(new String("G")));
+        assertSame(G, cache.putIfAbsent(new String("G")));
     }
 }
