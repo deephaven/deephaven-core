@@ -446,10 +446,10 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         // A tombstone keeps its key: probes and builds stop at a tombstone whose key matches, which is only correct
         // if a deleted slot cannot be mistaken for a live key's slot. The keys are released when a rehash drops the
         // tombstone or a new state reuses the slot.
+        freeOutputPositions.insert(removed);
         removed.forAllRowKeys(outputPosition -> {
             // we never actually delete anything from the output position table
             final int hashSlot = outputPositionToHashSlot.getInt(outputPosition);
-            freeOutputPositions.insert(outputPosition);
 
             final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
             if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
