@@ -5,7 +5,6 @@ plugins {
 import io.deephaven.tools.docker.Architecture
 
 evaluationDependsOn Docker.registryProject('localstack')
-evaluationDependsOn Docker.registryProject('minio')
 
 description 'Parquet Table: Integrating Engine tables with Parquet'
 
@@ -94,6 +93,3 @@ TestTools.addEngineOutOfBandTest(project)
 
 testOutOfBand.dependsOn Docker.registryTask(project, 'localstack')
 testOutOfBand.systemProperty 'testcontainers.localstack.image', Docker.localImageName('localstack')
-
-testOutOfBand.dependsOn Docker.registryTask(project, 'minio')
-testOutOfBand.systemProperty 'testcontainers.minio.image', Docker.localImageName('minio')

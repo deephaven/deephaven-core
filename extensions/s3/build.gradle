@@ -4,7 +4,6 @@ plugins {
 }
 
 evaluationDependsOn Docker.registryProject('localstack')
-evaluationDependsOn Docker.registryProject('minio')
 
 description 'Used to create a channel provider plugin for reading and writing files stored in S3.'
 
@@ -62,8 +61,5 @@ tasks.register('testOutOfBand', Test) {
 
     dependsOn Docker.registryTask(project, 'localstack')
     systemProperty 'testcontainers.localstack.image', Docker.localImageName('localstack')
-
-    dependsOn Docker.registryTask(project, 'minio')
-    systemProperty 'testcontainers.minio.image', Docker.localImageName('minio')
 }
 
