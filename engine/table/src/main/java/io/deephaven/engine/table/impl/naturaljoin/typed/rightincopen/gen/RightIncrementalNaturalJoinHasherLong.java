@@ -15,6 +15,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.LongChunkHasher;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -100,7 +101,7 @@ final class RightIncrementalNaturalJoinHasherLong extends RightIncrementalNatura
                         // we have a duplicate, how to handle it?;
                         if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
                             final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey();
-                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowKeyForState));
+                            throw new DuplicateRightKeyException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowKeyForState));
                         } else if (addOnly && joinType == NaturalJoinType.FIRST_MATCH) {
                             // nop, we already have the first match;
                         } else if (addOnly && joinType == NaturalJoinType.LAST_MATCH) {
@@ -200,7 +201,7 @@ final class RightIncrementalNaturalJoinHasherLong extends RightIncrementalNatura
                         final long inputKey = rowKeyChunk.get(chunkPosition);
                         if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
                             final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey();
-                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowKeyForState));
+                            throw new DuplicateRightKeyException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(leftRowKeyForState));
                         } else if (addOnly && joinType == NaturalJoinType.FIRST_MATCH) {
                             final long newKey = Math.min(rightRowKeyForState, inputKey);
                             if (newKey != rightRowKeyForState) {
