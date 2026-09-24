@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources.regioned.kernel;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
@@ -31,9 +32,11 @@ public class BinarySearchKernelHelper {
     }
 
     /**
-     * Types documented to have a natural ordering consistent with equals, seeded with those the engine knows and
-     * extended by {@link #registerConsistentType(Class)}. Boxed primitives are absent deliberately: sorted pushdown
-     * dispatches them to their primitive kernel, so they never reach the Object kernels.
+     * Types whose ordering is treated as consistent with equality, seeded with those the engine knows and extended by
+     * {@link #registerConsistentType(Class)}. Most are documented to have a natural ordering consistent with equals.
+     * {@link BigDecimal} is not, but its match filter matches by {@link BigDecimal#compareTo(BigDecimal)}, as the query
+     * language's {@code ==} does, so the ordering decides a BigDecimal match all the same. Boxed primitives are absent
+     * deliberately: sorted pushdown dispatches them to their primitive kernel, so they never reach the Object kernels.
      *
      * <p>
      * Copy-on-write, so reads need no synchronization: registration happens a handful of times at startup, while this
@@ -42,6 +45,7 @@ public class BinarySearchKernelHelper {
     private static volatile Set<Class<?>> consistentTypes = Set.of(
             String.class,
             BigInteger.class,
+            BigDecimal.class,
             Boolean.class,
             Instant.class,
             LocalDate.class,
@@ -91,11 +95,12 @@ public class BinarySearchKernelHelper {
      * {@link io.deephaven.util.compare.ObjectComparisons#eq(Object, Object)}, which is
      * {@link java.util.Objects#equals(Object, Object)} -- the same relation the chunk filter uses. When the two agree,
      * the ordering-equal run the search locates is exactly the set of matching rows and the search can answer the match
-     * outright. When they disagree -- {@link java.math.BigDecimal} at differing scales, for one -- that run is only a
-     * superset, and the matches have to be picked out of it by equality.
+     * outright. When they disagree that run is only a superset, and the matches have to be picked out of it by
+     * equality. {@link BigDecimal}, whose match filter matches by ordering, is answered {@code true} whatever its
+     * equals does.
      *
      * <p>
-     * Only this stronger both-ways guarantee is checked, and only where documented, since {@link java.math.BigDecimal}
+     * Only this stronger both-ways guarantee is checked, and only where documented, since {@link BigDecimal}'s equals
      * is a common counterexample. A {@code false} answer still assumes the weaker
      * {@code eq(a, b) implies compare(a, b) == 0}, which {@link Comparable} recommends and without which a type is
      * unusable in any sorted context. An enum qualifies because its ordering is by ordinal and its equality is

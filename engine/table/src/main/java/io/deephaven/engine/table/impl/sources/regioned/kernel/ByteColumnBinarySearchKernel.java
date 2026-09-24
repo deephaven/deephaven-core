@@ -366,7 +366,7 @@ public class ByteColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastPos) {
             final byte lowValue = usePrev ? source.getPrevByte(selection.get(low)) : source.getByte(selection.get(low));
-            if (ByteComparisons.eq(lowValue, min)) {
+            if (ByteComparisons.compare(lowValue, min) == 0) {
                 return low;
             }
         }
@@ -427,7 +427,7 @@ public class ByteColumnBinarySearchKernel {
         if (maxInc && high >= firstPos) {
             final byte highValue =
                     usePrev ? source.getPrevByte(selection.get(high)) : source.getByte(selection.get(high));
-            if (ByteComparisons.eq(highValue, max)) {
+            if (ByteComparisons.compare(highValue, max) == 0) {
                 return high;
             }
         }
@@ -486,7 +486,7 @@ public class ByteColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastPos) {
             final byte lowValue = usePrev ? source.getPrevByte(selection.get(low)) : source.getByte(selection.get(low));
-            if (ByteComparisons.eq(lowValue, max)) {
+            if (ByteComparisons.compare(lowValue, max) == 0) {
                 return low;
             }
         }
@@ -547,7 +547,7 @@ public class ByteColumnBinarySearchKernel {
         if (minInc && high >= firstPos) {
             final byte highValue =
                     usePrev ? source.getPrevByte(selection.get(high)) : source.getByte(selection.get(high));
-            if (ByteComparisons.eq(highValue, min)) {
+            if (ByteComparisons.compare(highValue, min) == 0) {
                 return high;
             }
         }
