@@ -43,8 +43,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
 
-    /* This is an invalid output position, so we can use it to represent a deleted state. */
-    protected static final int TOMBSTONE_STATE = -1;
+    /*
+     * This is an invalid output position, so we can use it to represent a deleted state. It must equal UNKNOWN_ROW: the
+     * generated findPositionForKey returns the state of the slot whose key matches, so a removed key reports unknown.
+     */
+    protected static final int TOMBSTONE_STATE = UNKNOWN_ROW;
 
     /** The number of slots in our table. */
     protected int tableSize;
@@ -252,18 +255,34 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             }
         }
 
-        int oldTableSize = tableSize;
-        while (rehashRequired(nextChunkSize)) {
+        if (!rehashRequired(nextChunkSize)) {
+            return false;
+        }
+
+        if (rehashPointer > 0) {
+            // A rehash is already migrating the alternate table. Let it continue unless the main table cannot take
+            // the next chunk, in which case finish the migration so that we can start another rehash.
+            if (numEntries + nextChunkSize <= tableSize * maximumLoadFactor) {
+                return false;
+            }
+            // the alternate may hold no entries while rehashPointer still has empty slots to pass, so do not bound
+            // the work by alternateEntries
+            rehashInternalPartial(Integer.MAX_VALUE);
+            clearAlternate();
+            if (!rehashRequired(nextChunkSize)) {
+                return false;
+            }
+        }
+
+        // Rehashing discards tombstones, so grow only as far as the live entries require. When tombstones alone
+        // exceed the load factor, we rehash at the same size.
+        final int oldTableSize = tableSize;
+        while (liveEntries + nextChunkSize > tableSize * maximumLoadFactor) {
             tableSize *= 2;
 
             if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
                 throw new UnsupportedOperationException("Hash table exceeds maximum size!");
             }
-        }
-
-
-        if (oldTableSize == tableSize) {
-            return false;
         }
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
@@ -272,6 +291,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         }
 
         if (fullRehash) {
+            // States are only removed once update cycles begin, so a full rehash never sees a tombstone and the table
+            // has grown above.
+            Assert.eq(numEntries, "numEntries", liveEntries, "liveEntries");
             // if we are doing a full rehash, we need to ditch the alternate
             if (rehashPointer > 0) {
                 // TODO: this change probably belongs in the non-tombstone version as well!
@@ -421,9 +443,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     @Override
     public void removeStates(RowSet removed) {
         liveEntries -= removed.intSize();
-        final RowSetBuilderRandom mainBuilder = RowSetFactory.builderRandom();
-        final RowSetBuilderRandom alternateBuilder = RowSetFactory.builderRandom();
-
+        // A tombstone keeps its key: probes and builds stop at a tombstone whose key matches, which is only correct
+        // if a deleted slot cannot be mistaken for a live key's slot. The keys are released when a rehash drops the
+        // tombstone or a new state reuses the slot.
         removed.forAllRowKeys(outputPosition -> {
             // we never actually delete anything from the output position table
             final int hashSlot = outputPositionToHashSlot.getInt(outputPosition);
@@ -431,16 +453,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
             final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
             if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
-                mainBuilder.addKey(slot);
                 mainOutputPosition.set(slot, TOMBSTONE_STATE);
             } else {
-                alternateBuilder.addKey(slot);
                 alternateOutputPosition.set(slot, TOMBSTONE_STATE);
             }
         });
-
-        maybeNullMain(mainBuilder.build());
-        maybeNullAlternate(alternateBuilder.build());
     }
 
     @Override
@@ -570,10 +587,6 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             freeOutputPositions.resetTo(toFree);
         }
     }
-
-    abstract protected void maybeNullMain(RowSet rows);
-
-    abstract protected void maybeNullAlternate(RowSet rows);
 
     @Override
     public void beginUpdateCycle() {

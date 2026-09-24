@@ -653,7 +653,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
             // eventually do better.
             if (source < dest && source + length >= dest) {
                 // we need to be careful about overwriting things
-                for (long ii = length - 1; ii >= 0;) {
+                for (long ii = length - 1; ii >= 0; --ii) {
                     final long sourceKey = source + ii;
                     final long destKey = dest + ii;
                     set(destKey, getUnsafe(sourceKey));

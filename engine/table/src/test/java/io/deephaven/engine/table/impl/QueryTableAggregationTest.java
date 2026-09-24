@@ -9,6 +9,7 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.base.FileUtils;
+import io.deephaven.chunk.util.hashing.ObjectChunkHasher;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -4401,6 +4402,89 @@ public class QueryTableAggregationTest {
         });
 
         assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+    }
+
+    @Test
+    public void testReclaimNullKeyAfterCollidingTombstone() {
+        // Find a key that hashes to the same slot as null for every table size up to 2^20. Inserted first, it takes
+        // the slot, so the null key's state lands later in the same probe sequence and its probes pass the
+        // colliding key's slot after that state is removed.
+        final int slotMask = (1 << 20) - 1;
+        final int nullSlot = ObjectChunkHasher.hashInitialSingle(null) & slotMask;
+        String colliding = null;
+        for (int ii = 0; colliding == null; ++ii) {
+            final String candidate = "K" + ii;
+            if ((ObjectChunkHasher.hashInitialSingle(candidate) & slotMask) == nullSlot) {
+                colliding = candidate;
+            }
+        }
+        final String collidingKey = colliding;
+
+        final QueryTable table = testRefreshingTable(i(0, 1, 2).toTracking(),
+                stringCol("Key", collidingKey, null, "Other"), intCol("x", 1, 2, 3));
+        final Table summed = table.sumBy("Key");
+
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testReclaimNullKeyAfterCollidingTombstone", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(0));
+            table.notifyListeners(i(), i(0), i());
+        });
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(1));
+            table.notifyListeners(i(), i(1), i());
+        });
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(3, 4), stringCol("Key", null, collidingKey), intCol("x", 4, 5));
+            table.notifyListeners(i(3, 4), i(), i());
+        });
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+    }
+
+    @Test
+    public void testInstantResultsWithReclaim() {
+        final QueryTable table = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                stringCol("Key", "A", "B", "C", "A"), longCol("N", 10, 20, 30, 40));
+        final Table formulas = table.aggBy(List.of(
+                AggFormula("Latest=epochNanosToInstant(max(N))"),
+                AggFormula("epochNanosToInstant(min(each))", "each", "Earliest=N")), "Key");
+        final Supplier<Table> expected = () -> table.groupBy("Key")
+                .update("Latest=epochNanosToInstant(max(N))", "Earliest=epochNanosToInstant(min(N))")
+                .dropColumns("N");
+
+        final QueryTable blink = testRefreshingTable(i(0, 1).toTracking(), stringCol("Key", "A", "B"),
+                instantCol("T", DateTimeUtils.epochNanosToInstant(1), DateTimeUtils.epochNanosToInstant(2)));
+        blink.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        final Table blinkLast = blink.lastBy("Key");
+
+        assertTableEquals(expected.get().sort("Key"), formulas.sort("Key"));
+        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "B"),
+                instantCol("T", DateTimeUtils.epochNanosToInstant(1), DateTimeUtils.epochNanosToInstant(2))),
+                blinkLast.sort("Key"));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(1, 2));
+            addToTable(table, i(4), stringCol("Key", "D"), longCol("N", 50));
+            table.notifyListeners(i(4), i(1, 2), i());
+
+            removeRows(blink, i(0, 1));
+            addToTable(blink, i(2), stringCol("Key", "B"), instantCol("T", DateTimeUtils.epochNanosToInstant(3)));
+            blink.notifyListeners(i(2), i(0, 1), i());
+        });
+
+        assertTableEquals(expected.get().sort("Key"), formulas.sort("Key"));
+        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "B"),
+                instantCol("T", DateTimeUtils.epochNanosToInstant(1), DateTimeUtils.epochNanosToInstant(3))),
+                blinkLast.sort("Key"));
     }
 
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {

@@ -39,7 +39,7 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
     /**
      * Result columns, parallel to {@link #inputColumns} and {@link #outputColumns}.
      */
-    private final Map<String, ArrayBackedColumnSource<?>> resultColumns;
+    private final Map<String, ShiftableColumnSource<?>> resultColumns;
     /**
      * <p>
      * Input columns, parallel to {@link #outputColumns} and {@link #resultColumns}.
@@ -70,13 +70,12 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
         numResultColumns = resultPairs.length;
         inputColumns = new ChunkSource.WithPrev[numResultColumns];
         outputColumns = new WritableColumnSource[numResultColumns];
-        final Map<String, ArrayBackedColumnSource<?>> resultColumnsMutable = new LinkedHashMap<>(numResultColumns);
+        final Map<String, ShiftableColumnSource<?>> resultColumnsMutable = new LinkedHashMap<>(numResultColumns);
         for (int ci = 0; ci < numResultColumns; ++ci) {
             final MatchPair resultPair = resultPairs[ci];
             final ColumnSource<?> streamSource = blinkTable.getColumnSource(resultPair.rightColumn());
-            final ArrayBackedColumnSource<?> resultSource =
-                    (ArrayBackedColumnSource<?>) ArrayBackedColumnSource.getMemoryColumnSource(0,
-                            streamSource.getType(), streamSource.getComponentType());
+            final ShiftableColumnSource<?> resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0,
+                    streamSource.getType(), streamSource.getComponentType());
             resultColumnsMutable.put(resultPair.leftColumn(), resultSource);
             inputColumns[ci] = SnapshotUtils.maybeWrapVector(ReinterpretUtils.maybeConvertToPrimitive(streamSource));
             // Note that ArrayBackedColumnSources implementations reinterpret very efficiently where applicable.

@@ -248,6 +248,7 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
     @Override
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         super.clear(firstOutputPosition, lastOutputPosition);
+        resultColumn.setNull(firstOutputPosition, lastOutputPosition);
         sumSource.setNull(firstOutputPosition, lastOutputPosition);
         sum2Source.setNull(firstOutputPosition, lastOutputPosition);
         nonNullCounter.clear(firstOutputPosition, lastOutputPosition);

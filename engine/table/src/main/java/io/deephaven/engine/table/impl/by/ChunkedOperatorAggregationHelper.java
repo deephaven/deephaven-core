@@ -695,11 +695,18 @@ public class ChunkedOperatorAggregationHelper {
             extractDownstreamModifiedColumnSet(downstream, resultModifiedColumnSet, modifiedOperators,
                     updateUpstreamModifiedColumnSet, resultModifiedColumnSetFactories);
 
+            final int outputPositionsBeforeReclaim = outputPosition.get();
             incrementalStateManager.reclaimFreedRows(resultRowset, downstream, outputPosition,
                     upstream.added().size() + upstream.modified().size() + upstream.removed().size(), ac.operators);
             if (downstream.shifted.nonempty()) {
                 for (ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
                     keyColumn.shift(downstream.shifted());
+                }
+            }
+            if (outputPosition.get() < outputPositionsBeforeReclaim) {
+                // release the keys of the positions past the end of the compacted result
+                for (ShiftableColumnSource<?> keyColumn : keyColumnsCopied) {
+                    keyColumn.setNull(outputPosition.get(), outputPositionsBeforeReclaim - 1);
                 }
             }
 
