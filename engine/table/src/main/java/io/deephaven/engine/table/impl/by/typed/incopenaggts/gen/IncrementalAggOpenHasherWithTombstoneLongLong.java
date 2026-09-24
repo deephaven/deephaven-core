@@ -15,7 +15,6 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.LongChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
@@ -322,13 +321,5 @@ final class IncrementalAggOpenHasherWithTombstoneLongLong extends IncrementalChu
             tableLocation = nextTableLocation(tableLocation);
             Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
         }
-    }
-
-    @Override
-    protected void maybeNullMain(RowSet rows) {
-    }
-
-    @Override
-    protected void maybeNullAlternate(final RowSet rows) {
     }
 }

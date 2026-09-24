@@ -18,6 +18,7 @@ import io.deephaven.engine.table.ChunkSource.GetContext;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.ShiftableColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectSingleValueSource;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.ObjectVector;
@@ -40,7 +41,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
     private GroupByOperator groupBy;
     private boolean delegateToBy;
     private final SelectColumn selectColumn;
-    private final ArrayBackedColumnSource<?> resultColumn;
+    private final ShiftableColumnSource<?> resultColumn;
     private final String[] inputKeyColumns;
     @Nullable
     private final ColumnSource<Integer> formulaDepthSource;
@@ -92,7 +93,7 @@ class FormulaMultiColumnChunkedOperator implements IterativeChunkedAggregationOp
         this.formulaDepthSource = formulaDepthSource;
         this.formulaKeyNameSource = formulaKeyNameSource;
 
-        resultColumn = (ArrayBackedColumnSource) ArrayBackedColumnSource.getMemoryColumnSource(
+        resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(
                 0, selectColumn.getReturnedType(), selectColumn.getReturnedComponentType());
     }
 

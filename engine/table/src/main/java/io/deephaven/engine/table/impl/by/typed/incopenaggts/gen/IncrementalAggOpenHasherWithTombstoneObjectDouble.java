@@ -18,7 +18,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.DoubleChunkHasher;
 import io.deephaven.chunk.util.hashing.ObjectChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource;
@@ -326,18 +325,6 @@ final class IncrementalAggOpenHasherWithTombstoneObjectDouble extends Incrementa
             }
             tableLocation = nextTableLocation(tableLocation);
             Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
-        }
-    }
-
-    @Override
-    protected void maybeNullMain(RowSet rows) {
-        this.mainKeySource0.setNull(rows);
-    }
-
-    @Override
-    protected void maybeNullAlternate(final RowSet rows) {
-        if (rows.isNonempty()) {
-            this.alternateKeySource0.setNull(rows);
         }
     }
 }

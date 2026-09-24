@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.ShiftableColumnSource;
 import io.deephaven.engine.table.ChunkSink.FillFromContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.SafeCloseable;
@@ -47,7 +48,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
     private final FormulaColumn[] formulaColumns;
     private final ChunkSource<Values>[] formulaDataSources;
-    private final ArrayBackedColumnSource<?>[] resultColumns;
+    private final ShiftableColumnSource<?>[] resultColumns;
     private final ModifiedColumnSet[] resultColumnModifiedColumnSets;
 
     /**
@@ -86,7 +87,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         formulaColumns = new DhFormulaColumn[resultColumnPairs.length];
         // noinspection unchecked
         formulaDataSources = new ChunkSource[resultColumnPairs.length]; // Not populated until propagateInitialState
-        resultColumns = new ArrayBackedColumnSource[resultColumnPairs.length];
+        resultColumns = new ShiftableColumnSource[resultColumnPairs.length];
         resultColumnModifiedColumnSets = new ModifiedColumnSet[resultColumnPairs.length]; // Not populated until
                                                                                           // initializeRefreshing
         final Map<String, ? extends ColumnSource<?>> byResultColumns = groupBy.getResultColumns();
@@ -101,7 +102,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
                             inputColumnSource.getComponentType());
             formulaColumn.initDef(Collections.singletonMap(inputColumnName, inputColumnDefinition),
                     compilationProcessor);
-            resultColumns[ci] = (ArrayBackedColumnSource<?>) ArrayBackedColumnSource.getMemoryColumnSource(
+            resultColumns[ci] = ArrayBackedColumnSource.getMemoryColumnSource(
                     0, formulaColumn.getReturnedType(), formulaColumn.getReturnedComponentType());
         }
     }
