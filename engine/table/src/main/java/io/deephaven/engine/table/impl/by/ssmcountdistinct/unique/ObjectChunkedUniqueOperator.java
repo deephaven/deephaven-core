@@ -453,12 +453,14 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
     @Override
     public void shift(RowSetShiftData shiftData) {
         internalResult.shift(shiftData);
+        singletonCount.shift(shiftData);
         ssms.shift(shiftData);
     }
 
     @Override
     public void clear(long firstOutputPosition, long lastOutputPosition) {
         internalResult.setNull(firstOutputPosition, lastOutputPosition);
+        singletonCount.setNull(firstOutputPosition, lastOutputPosition);
         ssms.clear(firstOutputPosition, lastOutputPosition);
     }
 }

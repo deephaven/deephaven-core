@@ -11,6 +11,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
@@ -555,5 +556,20 @@ public final class GroupByReaggregateOperator implements GroupByOperator {
             resultColumns.put(pair.output().name(), inputAggregatedColumns.get(inputName));
         }
         return new ResultExtractor(resultColumns, inputColumnNamesList.toArray(String[]::new));
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return false;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        throw new UnsupportedOperationException("rollups cannot reclaim deleted states!");
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        throw new UnsupportedOperationException("rollups cannot reclaim deleted states!");
     }
 }

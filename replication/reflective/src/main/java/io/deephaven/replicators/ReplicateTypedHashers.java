@@ -36,7 +36,7 @@ public class ReplicateTypedHashers {
     public static void main(String[] args) throws IOException {
         generatePackage(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
         generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
-        generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class, false);
+        generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class, true);
         generatePackage(StaticNaturalJoinStateManagerTypedBase.class, false);
         generatePackage(RightIncrementalNaturalJoinStateManagerTypedBase.class, false);
         generatePackage(IncrementalNaturalJoinStateManagerTypedBase.class, false);
