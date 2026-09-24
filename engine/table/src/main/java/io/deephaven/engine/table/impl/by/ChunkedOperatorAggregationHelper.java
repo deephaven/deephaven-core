@@ -193,7 +193,10 @@ public class ChunkedOperatorAggregationHelper {
         final MutableInt outputPosition = new MutableInt();
         final Supplier<OperatorAggregationStateManager> stateManagerSupplier =
                 () -> makeStateManager(control, input, keySources, reinterpretedKeySources, ac,
-                        useSymbolTable ? symbolTable : null, removeUnusedStates);
+                        useSymbolTable ? symbolTable : null,
+                        // Preserved empty groups are never removed, so there is nothing to reclaim. Initial groups
+                        // reserve output positions that are not in the result, which compaction does not model.
+                        removeUnusedStates && !preserveEmpty && initialKeys == null);
         final OperatorAggregationStateManager stateManager;
         if (initialKeys == null) {
             stateManager = stateManagerSupplier.get();

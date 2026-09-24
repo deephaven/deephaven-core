@@ -7,6 +7,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.QueryConstants;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -91,6 +92,41 @@ public class TestArraySourceShift {
      * Shift {@code source} and run {@code check}; with {@code trackPrev}, both happen within one update cycle, so that
      * previous values still hold the values from before the shift.
      */
+    @Test
+    public void testSetNullRange() {
+        for (final boolean trackPrev : new boolean[] {false, true}) {
+            final LongArraySource longs = new LongArraySource();
+            final ObjectArraySource<String> objects = new ObjectArraySource<>(String.class);
+            longs.ensureCapacity(SIZE);
+            objects.ensureCapacity(SIZE);
+            for (int ii = 0; ii < SIZE; ++ii) {
+                longs.set(ii, (long) ii);
+                objects.set(ii, Long.toString(ii));
+            }
+            final Runnable nullAndCheck = () -> {
+                longs.setNull(SHIFT_FIRST, SHIFT_LAST);
+                objects.setNull(SHIFT_FIRST, SHIFT_LAST);
+                for (long ii = 0; ii < SIZE; ++ii) {
+                    final boolean nulled = ii >= SHIFT_FIRST && ii <= SHIFT_LAST;
+                    assertEquals("ii=" + ii, nulled ? QueryConstants.NULL_LONG : ii, longs.getLong(ii));
+                    assertEquals("ii=" + ii, nulled ? null : Long.toString(ii), objects.get(ii));
+                    if (trackPrev) {
+                        assertEquals("ii=" + ii, ii, longs.getPrevLong(ii));
+                        assertEquals("ii=" + ii, Long.toString(ii), objects.getPrev(ii));
+                    }
+                }
+            };
+            if (trackPrev) {
+                longs.startTrackingPrevValues();
+                objects.startTrackingPrevValues();
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(nullAndCheck::run);
+            } else {
+                nullAndCheck.run();
+            }
+        }
+    }
+
     private static void shift(final ShiftableColumnSource<?> source, final boolean trackPrev, final long delta,
             final Runnable check) {
         final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();

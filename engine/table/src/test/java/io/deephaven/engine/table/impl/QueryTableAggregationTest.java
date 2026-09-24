@@ -4487,6 +4487,31 @@ public class QueryTableAggregationTest {
                 blinkLast.sort("Key"));
     }
 
+    @Test
+    public void testReclaimWithInitialGroups() {
+        final Table initialGroups = TableTools.newTable(stringCol("Key", "A", "B", "C"));
+        final QueryTable table = testRefreshingTable(i(0).toTracking(), stringCol("Key", "A"), intCol("x", 1));
+        final Table summed = table.aggBy(List.of(AggSum("x")), false, initialGroups, ColumnName.from("Key"));
+
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testReclaimWithInitialGroups", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(0));
+            table.notifyListeners(i(), i(0), i());
+        });
+        assertEquals(0, summed.size());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(1), stringCol("Key", "A"), intCol("x", 3));
+            table.notifyListeners(i(1), i(), i());
+        });
+        assertTableEquals(TableTools.newTable(stringCol("Key", "A"), longCol("x", 3)), summed);
+    }
+
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {
         final File directory = Files.createTempDirectory("QueryTableAggregationTest").toFile();
 
