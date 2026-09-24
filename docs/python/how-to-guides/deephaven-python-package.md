@@ -262,7 +262,7 @@ The [`execution_context`](/core/pydoc/code/deephaven.execution_context.html) sub
 
 ### `experimental`
 
-The [`experimental`](/core/pydoc/code/deephaven.experimental.html) submodule contains Deephaven features that don't yet have a stable interface, and may therefore change. Examples include [outer joins](../reference/table-operations/join/left-outer-join.md), [AWS S3 support](./data-import-export/parquet-import.md#from-s3), and [Iceberg integration](./data-import-export/iceberg.md).
+The [`experimental`](/core/pydoc/code/deephaven.experimental.html) submodule contains experimental Deephaven features. Their interfaces are not yet stable and are subject to change. Examples include [outer joins](../reference/table-operations/join/left-outer-join.md), [AWS S3 support](./data-import-export/parquet-import.md#from-s3), and [Iceberg integration](./data-import-export/iceberg.md).
 
 ### `filters`
 
