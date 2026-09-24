@@ -26,6 +26,7 @@ import io.deephaven.iceberg.layout.IcebergTableLocationProviderBase;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.SortedColumnsExclusion;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * This class manages an Iceberg {@link org.apache.iceberg.Table table} and provides methods to interact with it.
@@ -443,7 +445,8 @@ public final class IcebergTableAdapter {
         final IcebergBaseLayout keyFinder = keyFinder(
                 snapshot,
                 readInstructions.dataInstructions().orElse(null),
-                readInstructions.ignoreResolvingErrors());
+                readInstructions.ignoreResolvingErrors(),
+                readInstructions.sortedColumnsExclusions());
         if (readInstructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
             return new IcebergStaticTableLocationProvider<>(
                     tableKey,
@@ -480,7 +483,8 @@ public final class IcebergTableAdapter {
     private @NotNull IcebergBaseLayout keyFinder(
             @Nullable final Snapshot snapshot,
             @Nullable final Object dataInstructions,
-            final boolean ignoreResolvingErrors) {
+            final boolean ignoreResolvingErrors,
+            @NotNull final Set<SortedColumnsExclusion> sortedColumnsExclusions) {
         final Object specialInstructions = dataInstructions == null
                 ? dataInstructionsProviderLoader.load(locationUri.getScheme())
                 : dataInstructions;
@@ -489,6 +493,7 @@ public final class IcebergTableAdapter {
                 .setTableDefinition(resolver.definition())
                 .setColumnResolverFactory(new ResolverFactory(resolver, nameMapping, ignoreResolvingErrors))
                 .setSpecialInstructions(specialInstructions)
+                .addSortedColumnsExclusions(sortedColumnsExclusions.toArray(new SortedColumnsExclusion[0]))
                 .build();
         final Map<String, PartitionField> partitionFields = resolver.partitionFieldMap();
         if (partitionFields.isEmpty()) {

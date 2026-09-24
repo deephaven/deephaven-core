@@ -12,6 +12,8 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -38,6 +40,7 @@ import io.deephaven.iceberg.util.TypeInference;
 import io.deephaven.iceberg.util.UnboundResolver;
 import io.deephaven.parquet.table.CompletedParquetWrite;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.SortedColumnsExclusion;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.qst.type.GenericType;
@@ -2633,6 +2636,72 @@ public abstract class SqliteCatalogBase {
         final Table fromIceberg = tableAdapter.table();
         final Table expected = source.sort(expectedSortOrder);
         assertTableEquals(expected, fromIceberg);
+    }
+
+    /**
+     * Sortedness from the Iceberg sort order belongs to the Deephaven column bound to the sorted field's id, not to
+     * whichever Deephaven column happens to share the field's name.
+     */
+    @Test
+    void testSortedColumnsFollowFieldIds() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                intCol("A", 1, 2, 3, 4, 5, 6, 7, 8),
+                intCol("B", 50, 10, 70, 30, 80, 20, 60, 40));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.icebergTable().replaceSortOrder().asc("A").commit();
+        tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build())
+                .append(IcebergWriteInstructions.builder()
+                        .addTables(source)
+                        .build());
+
+        // Deephaven A reads Iceberg field B, and Deephaven B reads Iceberg field A
+        final Schema schema = tableAdapter.icebergTable().schema();
+        final IcebergTableAdapter swappedAdapter = catalogAdapter.loadTable(LoadTableOptions.builder()
+                .id(tableIdentifier)
+                .resolver(Resolver.builder()
+                        .definition(source.getDefinition())
+                        .schema(schema)
+                        .putColumnInstructions("A", schemaField(schema.findField("B").fieldId()))
+                        .putColumnInstructions("B", schemaField(schema.findField("A").fieldId()))
+                        .build())
+                .build());
+        final Table fromIceberg = swappedAdapter.table();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "A")).isEmpty();
+        assertThat(SortedColumnsAttribute.getOrderForColumn(fromIceberg.coalesce(), "B"))
+                .contains(SortingOrder.Ascending);
+        assertTableEquals(fromIceberg.select().where("A >= 50"), fromIceberg.where("A >= 50"));
+    }
+
+    @Test
+    void testSortedColumnsExclusions() {
+        final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
+        final Table source = TableTools.newTable(
+                stringCol("S", "d", "a", "c", "b"),
+                intCol("I", 4, 1, 3, 2));
+        final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        tableAdapter.icebergTable().replaceSortOrder().asc("S").commit();
+        tableAdapter.tableWriter(writerOptionsBuilder()
+                .tableDefinition(source.getDefinition())
+                .sortOrderProvider(SortOrderProvider.useTableDefault())
+                .build())
+                .append(IcebergWriteInstructions.builder()
+                        .addTables(source)
+                        .build());
+
+        assertThat(SortedColumnsAttribute.getOrderForColumn(tableAdapter.table().coalesce(), "S"))
+                .contains(SortingOrder.Ascending);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(tableAdapter.table(IcebergReadInstructions.builder()
+                .addSortedColumnsExclusions(SortedColumnsExclusion.FLOATING_POINT)
+                .build()).coalesce(), "S"))
+                .contains(SortingOrder.Ascending);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(tableAdapter.table(IcebergReadInstructions.builder()
+                .addSortedColumnsExclusions(SortedColumnsExclusion.STRING)
+                .build()).coalesce(), "S"))
+                .isEmpty();
     }
 
     @Test

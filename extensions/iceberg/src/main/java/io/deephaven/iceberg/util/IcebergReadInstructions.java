@@ -5,6 +5,7 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.parquet.table.SortedColumnsExclusion;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.mapping.NameMapping;
@@ -15,6 +16,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 
 /**
  * This class provides instructions intended for reading Iceberg catalogs and tables. The default values documented in
@@ -108,6 +110,15 @@ public abstract class IcebergReadInstructions {
         return false;
     }
 
+    /**
+     * The declared sortedness to ignore when reading. Deephaven takes the sort order of each data file from the table's
+     * sort order and does not verify it; where the writer's order differs from Deephaven's, filters on the sorted
+     * column and sorts by it can give wrong results. Empty by default.
+     *
+     * @see SortedColumnsExclusion
+     */
+    public abstract Set<SortedColumnsExclusion> sortedColumnsExclusions();
+
     public interface Builder {
 
         @Deprecated
@@ -134,6 +145,10 @@ public abstract class IcebergReadInstructions {
         Builder snapshot(Snapshot snapshot);
 
         Builder ignoreResolvingErrors(boolean ignoreResolvingErrors);
+
+        Builder addSortedColumnsExclusions(SortedColumnsExclusion... elements);
+
+        Builder addAllSortedColumnsExclusions(Iterable<SortedColumnsExclusion> elements);
 
         IcebergReadInstructions build();
     }

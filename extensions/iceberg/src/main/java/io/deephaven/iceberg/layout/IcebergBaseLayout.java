@@ -5,7 +5,6 @@ package io.deephaven.iceberg.layout;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
@@ -14,7 +13,9 @@ import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.util.IcebergReadInstructions;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
+import io.deephaven.iceberg.util.Resolver;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.SortedColumnsExclusion;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
@@ -22,6 +23,7 @@ import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.io.FileIO;
+import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -30,12 +32,15 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.BiFunction;
 
 import static io.deephaven.iceberg.base.IcebergUtils.dataFileUri;
 
@@ -113,7 +118,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             return new IcebergTableParquetLocationKey(catalogName, tableUuid, tableIdentifier, manifestPartitionSpec,
                     manifestFile, dataFile,
                     fileUri, 0, partitions, parquetInstructions, channelsProvider,
-                    computeSortedColumns(tableAdapter.icebergTable(), dataFile, parquetInstructions));
+                    sortedColumns(dataFile));
         }
         throw new UnsupportedOperationException(String.format("%s:%d - an unsupported file format %s for URI '%s'",
                 tableAdapter, snapshot.snapshotId(), format, fileUri));
@@ -169,6 +174,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             if (specialInstructions != null) {
                 builder.setSpecialInstructions(specialInstructions);
             }
+            builder.addSortedColumnsExclusions(
+                    instructions.sortedColumnsExclusions().toArray(new SortedColumnsExclusion[0]));
             this.parquetInstructions = builder.build();
         }
 
@@ -310,12 +317,82 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         snapshot = updateSnapshot;
     }
 
+    /**
+     * The Deephaven sort columns for {@code dataFile}. On the resolver path Deephaven columns are bound to Iceberg
+     * fields by id, so the sort order's fields are mapped by id; otherwise columns are bound by name, and so are the
+     * sort order's fields.
+     */
+    @NotNull
+    private List<SortColumn> sortedColumns(@NotNull final DataFile dataFile) {
+        final org.apache.iceberg.Table icebergTable = tableAdapter.icebergTable();
+        final List<SortColumn> sortedColumns;
+        if (tableDef != null) {
+            sortedColumns = computeSortedColumns(icebergTable, dataFile, parquetInstructions);
+        } else {
+            final Map<Integer, String> columnNamesByFieldId = columnNamesByFieldId(tableAdapter.resolver());
+            sortedColumns = computeSortedColumns(icebergTable, dataFile,
+                    (schema, fieldId) -> columnNamesByFieldId.get(fieldId));
+        }
+        return SortedColumnsExclusion.apply(
+                parquetInstructions.getSortedColumnsExclusions(),
+                sortedColumns,
+                parquetInstructions.getTableDefinition().orElse(null));
+    }
+
+    /**
+     * Maps the id of each Iceberg field read by exactly one Deephaven column to that column's name. A field read by
+     * several columns is omitted, since no single column can be identified as reading it.
+     */
+    @NotNull
+    private static Map<Integer, String> columnNamesByFieldId(@NotNull final Resolver resolver) {
+        final Map<Integer, String> columnNamesByFieldId = new HashMap<>();
+        final Set<Integer> readByMany = new HashSet<>();
+        for (final String columnName : resolver.definition().getColumnNames()) {
+            final List<Types.NestedField> fieldPath = resolver.resolve(columnName).orElse(List.of());
+            if (fieldPath.size() == 1
+                    && columnNamesByFieldId.putIfAbsent(fieldPath.get(0).fieldId(), columnName) != null) {
+                readByMany.add(fieldPath.get(0).fieldId());
+            }
+        }
+        columnNamesByFieldId.keySet().removeAll(readByMany);
+        return columnNamesByFieldId;
+    }
+
+    /**
+     * Computes the Deephaven sort columns for {@code dataFile}, mapping the sort order's fields to Deephaven columns by
+     * name, through the column renames in {@code readInstructions}.
+     */
     @VisibleForTesting
     @NotNull
     public static List<SortColumn> computeSortedColumns(
             @NotNull final org.apache.iceberg.Table icebergTable,
             @NotNull final DataFile dataFile,
             @NotNull final ParquetInstructions readInstructions) {
+        final TableDefinition tableDefinition = readInstructions.getTableDefinition().orElseThrow(
+                () -> new IllegalStateException("Table definition is required for reading from Iceberg tables"));
+        return computeSortedColumns(icebergTable, dataFile, (schema, fieldId) -> {
+            final String icebergColName = schema.findColumnName(fieldId);
+            if (icebergColName == null) {
+                return null;
+            }
+            final String dhColName = readInstructions.getColumnNameFromParquetColumnNameOrDefault(icebergColName);
+            // Table definition provided by the user may not have this column
+            return tableDefinition.getColumn(dhColName) == null ? null : dhColName;
+        });
+    }
+
+    /**
+     * Computes the Deephaven sort columns for {@code dataFile}. The sort is a prefix -- each field is sorted within
+     * runs of the fields before it -- so it stops at the first field that cannot be used.
+     *
+     * @param columnNameForField Given the sort order's schema and a field id, the name of the Deephaven column reading
+     *        that field, or {@code null} if there is none
+     */
+    @NotNull
+    private static List<SortColumn> computeSortedColumns(
+            @NotNull final org.apache.iceberg.Table icebergTable,
+            @NotNull final DataFile dataFile,
+            @NotNull final BiFunction<Schema, Integer, String> columnNameForField) {
         final Integer sortOrderId = dataFile.sortOrderId();
         // If sort order is missing or unknown, we cannot determine the sorted columns from the metadata and will
         // check the underlying parquet file for the sorted columns, when the user asks for them.
@@ -329,20 +406,15 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         if (sortOrder.isUnsorted()) {
             return Collections.emptyList();
         }
-        final Schema schema = sortOrder.schema();
         final List<SortColumn> sortColumns = new ArrayList<>(sortOrder.fields().size());
         for (final SortField field : sortOrder.fields()) {
             if (!field.transform().isIdentity()) {
                 // TODO (DH-18160): Improve support for handling non-identity transforms
                 break;
             }
-            final String icebergColName = schema.findColumnName(field.sourceId());
-            final String dhColName = readInstructions.getColumnNameFromParquetColumnNameOrDefault(icebergColName);
-            final TableDefinition tableDefinition = readInstructions.getTableDefinition().orElseThrow(
-                    () -> new IllegalStateException("Table definition is required for reading from Iceberg tables"));
-            final ColumnDefinition<?> columnDef = tableDefinition.getColumn(dhColName);
-            if (columnDef == null) {
-                // Table definition provided by the user doesn't have this column, so stop here
+            final String dhColName = columnNameForField.apply(sortOrder.schema(), field.sourceId());
+            if (dhColName == null) {
+                // No Deephaven column can be identified as reading this field, so stop here
                 break;
             }
             final SortColumn sortColumn;

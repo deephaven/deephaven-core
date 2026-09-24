@@ -26,6 +26,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -224,6 +225,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     public abstract Optional<ParquetColumnResolver.Factory> getColumnResolverFactory();
 
     /**
+     * @return The declared sortedness a read should ignore; empty by default. Only used when reading.
+     * @see Builder#addSortedColumnsExclusions(SortedColumnsExclusion...)
+     */
+    public abstract Set<SortedColumnsExclusion> getSortedColumnsExclusions();
+
+    /**
      * Whether the parquet writer should write row group statistics, enabled by default.
      */
     @InternalUseOnly
@@ -401,6 +408,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        public Set<SortedColumnsExclusion> getSortedColumnsExclusions() {
+            return Collections.emptySet();
+        }
+
+        @Override
         boolean writeRowGroupStatistics() {
             return DEFAULT_WRITE_ROW_GROUP_STATISTICS;
         }
@@ -423,7 +435,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
                     useLayout, useDefinition, null, getRowGroupInfo(), null, null, null,
-                    writeRowGroupStatistics());
+                    writeRowGroupStatistics(), getSortedColumnsExclusions());
         }
 
         @Override
@@ -432,7 +444,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
                     null, null, indexColumns, getRowGroupInfo(), null, null, null,
-                    writeRowGroupStatistics());
+                    writeRowGroupStatistics(), getSortedColumnsExclusions());
         }
 
         @Override
@@ -567,6 +579,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final ParquetColumnResolver.Factory columnResolver;
         private final SeekableChannelsProvider seekableChannelsProviderForWriting;
         private final boolean writeRowGroupStatistics;
+        private final Set<SortedColumnsExclusion> sortedColumnsExclusions;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -587,7 +600,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final OnWriteCompleted onWriteCompleted,
                 final ParquetColumnResolver.Factory columnResolver,
                 final SeekableChannelsProvider seekableChannelsProviderForWriting,
-                final boolean writeRowGroupStatistics) {
+                final boolean writeRowGroupStatistics,
+                final Set<SortedColumnsExclusion> sortedColumnsExclusions) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -615,6 +629,9 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             }
             validateUnsignedLongTargets(columnNameToInstructions, tableDefinition);
             this.seekableChannelsProviderForWriting = seekableChannelsProviderForWriting;
+            this.sortedColumnsExclusions = sortedColumnsExclusions.isEmpty()
+                    ? Collections.emptySet()
+                    : Collections.unmodifiableSet(EnumSet.copyOf(sortedColumnsExclusions));
             this.writeRowGroupStatistics = writeRowGroupStatistics;
         }
 
@@ -766,6 +783,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        public Set<SortedColumnsExclusion> getSortedColumnsExclusions() {
+            return sortedColumnsExclusions;
+        }
+
+        @Override
         public ParquetInstructions withTableDefinition(@Nullable final TableDefinition useDefinition) {
             return withTableDefinitionAndLayout(useDefinition, fileLayout);
         }
@@ -784,7 +806,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), useLayout, useDefinition,
                     indexColumns, rowGroupInfo, onWriteCompleted, columnResolver, seekableChannelsProviderForWriting,
-                    writeRowGroupStatistics);
+                    writeRowGroupStatistics, sortedColumnsExclusions);
         }
 
         @Override
@@ -795,7 +817,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), fileLayout,
                     tableDefinition, useIndexColumns, rowGroupInfo, onWriteCompleted, columnResolver,
                     seekableChannelsProviderForWriting,
-                    writeRowGroupStatistics);
+                    writeRowGroupStatistics, sortedColumnsExclusions);
         }
 
         @Override
@@ -903,6 +925,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private ParquetColumnResolver.Factory columnResolverFactory;
         private SeekableChannelsProvider seekableChannelsProviderForWriting;
         private boolean writeRowGroupStatistics = DEFAULT_WRITE_ROW_GROUP_STATISTICS;
+        private final Set<SortedColumnsExclusion> sortedColumnsExclusions =
+                EnumSet.noneOf(SortedColumnsExclusion.class);
 
         /**
          * For each additional field added, make sure to update the copy constructor builder
@@ -936,6 +960,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             seekableChannelsProviderForWriting =
                     readOnlyParquetInstructions.getSeekableChannelsProviderForWriting().orElse(null);
             writeRowGroupStatistics = readOnlyParquetInstructions.writeRowGroupStatistics();
+            sortedColumnsExclusions.addAll(readOnlyParquetInstructions.getSortedColumnsExclusions());
         }
 
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
@@ -1242,6 +1267,21 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        /**
+         * Adds declared sortedness for the read to ignore. Deephaven does not verify that data declared sorted is
+         * sorted, or sorted in Deephaven's order; if it is not, filters on the sorted column and sorts by it can give
+         * wrong results. Ignoring the sortedness makes them correct at the cost of scanning the column. The exclusions
+         * apply to the sortedness recorded in a parquet file's footer and to an Iceberg table's sort order, and to
+         * everything that uses it: filtering, sorting and predicate pushdown.
+         *
+         * @param exclusions The exclusions to add
+         * @see SortedColumnsExclusion
+         */
+        public Builder addSortedColumnsExclusions(final SortedColumnsExclusion... exclusions) {
+            Collections.addAll(sortedColumnsExclusions, exclusions);
+            return this;
+        }
+
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
@@ -1252,7 +1292,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
                     specialInstructions, generateMetadataFiles, baseNameForPartitionedParquetData, fileLayout,
                     tableDefinition, indexColumns, rowGroupInfo, onWriteCompleted, columnResolverFactory,
-                    seekableChannelsProviderForWriting, writeRowGroupStatistics);
+                    seekableChannelsProviderForWriting, writeRowGroupStatistics, sortedColumnsExclusions);
         }
     }
 

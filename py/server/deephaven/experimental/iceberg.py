@@ -15,6 +15,7 @@ from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.experimental import s3
 from deephaven.jcompat import j_hashmap
+from deephaven.parquet import SortedColumnsExclusion, _j_sorted_columns_exclusions
 from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
 if TYPE_CHECKING:
@@ -130,6 +131,7 @@ class IcebergReadInstructions(JObjectWrapper):
         update_mode: Optional[IcebergUpdateMode] = None,
         snapshot_id: Optional[int] = None,
         ignore_resolving_errors: bool = False,
+        sorted_columns_exclusions: Optional[SortedColumnsExclusion] = None,
     ):
         """
         Initializes the instructions using the provided parameters.
@@ -147,6 +149,9 @@ class IcebergReadInstructions(JObjectWrapper):
                 null data for columns that can't be resolved in DataFiles where they should be present. These errors may
                 be a sign of an incorrect resolver or name mapping; or an Iceberg metadata / data issue. By default, is
                 `False`.
+            sorted_columns_exclusions (Optional[SortedColumnsExclusion]): sortedness, declared by the table's sort
+                order, to ignore, for example ``SortedColumnsExclusion.STRING``. By default, None, which uses all
+                declared sortedness.
         Raises:
             DHError: If unable to build the instructions object.
         """
@@ -178,6 +183,11 @@ class IcebergReadInstructions(JObjectWrapper):
                 builder.snapshotId(snapshot_id)
 
             builder.ignoreResolvingErrors(ignore_resolving_errors)
+
+            if sorted_columns_exclusions:
+                builder.addSortedColumnsExclusions(
+                    _j_sorted_columns_exclusions(sorted_columns_exclusions)
+                )
 
             self._j_object = builder.build()
         except Exception as e:

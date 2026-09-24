@@ -43,6 +43,28 @@ class IcebergTestCase(BaseTestCase):
             iceberg_read_instructions.j_object.snapshotId().getAsLong() == 12345
         )
 
+    def test_instruction_create_with_sorted_columns_exclusions(self):
+        from deephaven.parquet import SortedColumnsExclusion
+
+        iceberg_read_instructions = iceberg.IcebergReadInstructions(
+            sorted_columns_exclusions=SortedColumnsExclusion.STRING
+            | SortedColumnsExclusion.FLOATING_POINT
+        )
+        exclusions = {
+            str(e.name())
+            for e in j_list_to_list(
+                jpy.get_type("java.util.ArrayList")(
+                    iceberg_read_instructions.j_object.sortedColumnsExclusions()
+                )
+            )
+        }
+        self.assertEqual(exclusions, {"STRING", "FLOATING_POINT"})
+        self.assertTrue(
+            iceberg.IcebergReadInstructions()
+            .j_object.sortedColumnsExclusions()
+            .isEmpty()
+        )
+
     def test_writer_options_create_default(self):
         writer_options = iceberg.TableParquetWriterOptions(
             table_definition={"x": dtypes.int32}
