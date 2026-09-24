@@ -7,8 +7,11 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import org.junit.Test;
 
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
 
 public class TestMoveColumns extends RefreshingTableTestCase {
 
@@ -22,6 +25,7 @@ public class TestMoveColumns extends RefreshingTableTestCase {
         numCols = table.numColumns();
     }
 
+    @Test
     public void testMoveColumns() {
         // Basic moving
         Table temp = table.moveColumns(0, "a");
@@ -78,6 +82,7 @@ public class TestMoveColumns extends RefreshingTableTestCase {
         checkColumnValueOrder(temp, "12345");
     }
 
+    @Test
     public void testMoveUpColumns() {
         // basic moving
         checkColumnOrder(table.moveColumnsUp("a"), "abcde");
@@ -96,6 +101,7 @@ public class TestMoveColumns extends RefreshingTableTestCase {
         checkColumnValueOrder(temp, "51234");
     }
 
+    @Test
     public void testMoveDownColumns() {
         checkColumnOrder(table.moveColumnsDown("a"), "bcdea");
 

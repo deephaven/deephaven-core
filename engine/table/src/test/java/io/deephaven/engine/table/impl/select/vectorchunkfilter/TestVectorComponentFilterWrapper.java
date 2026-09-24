@@ -15,7 +15,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,11 +41,11 @@ public class TestVectorComponentFilterWrapper {
         final WhereFilter[] vectorFilters =
                 WhereFilterFactory.expandQuickFilter(toFilter.getDefinition(), "e", Set.of("ToMatch"));
         assertEquals(1, vectorFilters.length);
-        TestCase.assertTrue(vectorFilters[0] instanceof VectorComponentFilterWrapper);
+        assertTrue(vectorFilters[0] instanceof VectorComponentFilterWrapper);
 
         final WhereFilter[] arrayFilters =
                 WhereFilterFactory.expandQuickFilter(toFilter.getDefinition(), "e", Set.of("Array"));
-        TestCase.assertTrue(arrayFilters[0] instanceof VectorComponentFilterWrapper);
+        assertTrue(arrayFilters[0] instanceof VectorComponentFilterWrapper);
         assertEquals(1, arrayFilters.length);
 
         final Table f1 = toFilter.where(Filter.or(vectorFilters));
@@ -145,7 +144,7 @@ public class TestVectorComponentFilterWrapper {
         final WhereFilter[] vectorFilters =
                 WhereFilterFactory.expandQuickFilter(toFilter.getDefinition(), "2025-08-20 NY", Set.of("ToMatch"));
         assertEquals(1, vectorFilters.length);
-        TestCase.assertTrue(vectorFilters[0] instanceof VectorComponentFilterWrapper);
+        assertTrue(vectorFilters[0] instanceof VectorComponentFilterWrapper);
 
         final Table f1 = toFilter.where(Filter.or(vectorFilters));
         assertTableEquals(toFilter.where("Group in 0, 1"), f1);

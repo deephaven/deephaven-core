@@ -3,11 +3,13 @@
 //
 package io.deephaven.configuration;
 
-import junit.framework.TestCase;
 import org.junit.After;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Objects;
+
+import static org.junit.Assert.*;
 
 /**
  * Test suite for Configuration.
@@ -15,7 +17,7 @@ import java.util.Objects;
  * Must provide a Configuration.rootFile property in the VM arguments when running from IntelliJ, even though we set
  * that in most of the tests. -ea -DConfiguration.rootFile=resources/lib-tests.prop -Dworkspace=/ -DcacheDir=/cache
  */
-public class TestConfiguration extends TestCase {
+public class TestConfiguration {
     private final String FILENAME_PROPERTY = ConfigDir.ROOT_FILE_PROP;
     private final String oldFileLocation = System.getProperty(FILENAME_PROPERTY);
 
@@ -33,6 +35,7 @@ public class TestConfiguration extends TestCase {
         System.out.println("-------------- Test complete -----------------");
     }
 
+    @Test
     public void testPrint() {
         Configuration.getInstance().properties.list(System.out);
     }
@@ -42,6 +45,7 @@ public class TestConfiguration extends TestCase {
      *
      * Make sure that there does not exist a file named /NoSuchFileExists.prop.
      */
+    @Test
     public void testFileExistenceCheck() {
         // Make sure it fails if we pass in a nonexistent resource
         try {
@@ -70,6 +74,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Verify expected normal operation
      */
+    @Test
     public void testSimple() {
         final String propertyValue = Configuration.getInstance().getProperty("measurement.per_thread_cpu");
         assertEquals("false", propertyValue);
@@ -80,6 +85,7 @@ public class TestConfiguration extends TestCase {
      * 
      * @throws Exception If the configuration cannot be loaded
      */
+    @Test
     public void testIncludes() throws Exception {
         System.setProperty(FILENAME_PROPERTY, "resources/test-include.prop");
         Configuration.getInstance().reloadProperties();
@@ -94,6 +100,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Verify that specific operations of Configuration other than named properties work properly
      */
+    @Test
     public void testProperties() {
         try {
             // noinspection SpellCheckingInspection
@@ -128,6 +135,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Test that the file will fail to load if a scope declaration has no scope items
      */
+    @Test
     public void testEmptyScope() {
         System.setProperty(FILENAME_PROPERTY, "test-empty-scope.prop");
         try {
@@ -143,6 +151,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Test that the file will fail to load if a scope declaration is malformed
      */
+    @Test
     public void testBadScope() {
         System.setProperty(FILENAME_PROPERTY, "test-bad-scope.prop");
         try {
@@ -158,6 +167,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Test that the file will fail to load if a '{' is included with no scope declaration before it.
      */
+    @Test
     public void testBadScopeOpen() {
         System.setProperty(FILENAME_PROPERTY, "test-bad-scope-open.prop");
         try {
@@ -173,6 +183,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Test that you can't use reserved keywords as declarations
      */
+    @Test
     public void testReservedKeywordAsDeclaration() {
         System.setProperty(FILENAME_PROPERTY, "test-reserved-keyword.prop");
         try {
@@ -191,6 +202,7 @@ public class TestConfiguration extends TestCase {
      * Verify that loading context-sensitive configuration files works correctly, both with a known system property and
      * an on-the-fly property
      */
+    @Test
     public void testContext() throws Exception {
         final String oldProcessName = System.getProperty(DefaultConfigurationContext.PROCESS_NAME_PROPERTY);
         final String testProp = "testproperty";
@@ -254,6 +266,7 @@ public class TestConfiguration extends TestCase {
 
     }
 
+    @Test
     public void testContextIgnoreScope() throws Exception {
         final String oldProcessName = System.getProperty(DefaultConfigurationContext.PROCESS_NAME_PROPERTY);
         final String testProp = "testproperty";
@@ -284,6 +297,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Test that 'final' declarations are handled properly
      */
+    @Test
     public void testFinalDeclaration() {
         runTestsOnFinalKeyword("resources/final-test.prop", "final", "", "foo", "foo");
     }
@@ -291,6 +305,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Test that the 'finalize' declarations are handled properly
      */
+    @Test
     public void testFinalizeDeclaration() {
         runTestsOnFinalKeyword("resources/final-test.prop", "finalize", "FAIL", "foo", "foo");
     }
@@ -298,6 +313,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Test that both 'final' and 'finalize' can operate together.
      */
+    @Test
     public void testFinalAndFinalizedDeclaration() {
         runTestsOnFinalKeyword("resources/final-test.prop", "finalmixed", "", "foo", "foo");
     }
@@ -305,6 +321,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Test that changing a value that was declared 'final' in an already-included file causes an error.
      */
+    @Test
     public void testIncludeFinal() {
         // This test should set some values, then fail immediately due to changing the value of 'includetest'
         runTestsOnFinalKeyword("resources/include-test.prop", "finalinclude", "", "bar", "bar");
@@ -366,10 +383,12 @@ public class TestConfiguration extends TestCase {
     /**
      * Test that an includefiles line must be the first line in the file
      */
+    @Test
     public void testIncludeInWrongPlace() {
         runTestsOnFinalKeyword("resources/test-include-wrong-place.prop", "finalinclude", "FAIL", "FAIL", "FAIL");
     }
 
+    @Test
     public void testFinalizedPropertyProgrammatic() {
         System.setProperty(FILENAME_PROPERTY, "resources/test-finalized-property-from-code.prop");
         try {
@@ -387,6 +406,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Test that the 'finalize' keyword can be used with an asterisk for a wildcard match.
      */
+    @Test
     public void testFinalizePatternDeclaration() {
         System.setProperty(FILENAME_PROPERTY, "resources/test-finalized-property-pattern.prop");
         try {
@@ -406,6 +426,7 @@ public class TestConfiguration extends TestCase {
     /**
      * Test that multiline files process properly, including Windows filepaths
      */
+    @Test
     public void testMultiline() {
         System.out.println("-------------- Multiline test -----------------");
         System.setProperty(FILENAME_PROPERTY, "resources/test-multiline.prop");
@@ -421,10 +442,14 @@ public class TestConfiguration extends TestCase {
         }
     }
 
+    @Test
     public void testShowHistory() {
         System.out.println("-------------- Show history -----------------");
         ParsedProperties properties = new ParsedProperties();
         properties.setProperty("someVal", "ABCD");
+        // the history records the caller's line, so derive it rather than hard-coding one that every
+        // edit above this point invalidates
+        final int setPropertyLine = new Throwable().getStackTrace()[0].getLineNumber() + 1;
         properties.setProperty("someVal", "EFGH");
         List<PropertyHistory> history = properties.getLineNumbers().get("someVal");
         assertEquals(2, history.size());
@@ -435,27 +460,31 @@ public class TestConfiguration extends TestCase {
         final String javaVersion = System.getProperty("java.specification.version");
         if ("11".equals(javaVersion)) {
             assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:"
+                            + setPropertyLine + ")\n"
                             +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
                     history.get(0).fileName);
         } else if ("17".equals(javaVersion)) {
             assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:"
+                            + setPropertyLine + ")\n"
                             +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)\n",
                     history.get(0).fileName);
         } else if ("21".equals(javaVersion)) {
             final String expected1 =
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:"
+                            + setPropertyLine + ")\n"
                             +
                             "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\n"
                             +
                             "java.base/java.lang.reflect.Method.invoke(Method.java:580)\n";
             final String expected2 =
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:"
+                            + setPropertyLine + ")\n"
                             +
                             "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)\n"
                             +
@@ -465,7 +494,8 @@ public class TestConfiguration extends TestCase {
                     expected1.equals(actual) || expected2.equals(actual));
         } else if ("25".equals(javaVersion)) {
             assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:428)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:"
+                            + setPropertyLine + ")\n"
                             +
                             "java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n"
                             +
@@ -477,6 +507,7 @@ public class TestConfiguration extends TestCase {
         System.out.println("-------------- End show history -----------------");
     }
 
+    @Test
     public void testNamedConfiguration() {
         System.setProperty(FILENAME_PROPERTY, "resources/lib-tests.prop");
         System.setProperty("Configuration.Test1.rootFile", "resources/test1.prop");
@@ -569,6 +600,7 @@ public class TestConfiguration extends TestCase {
         assertEquals("true", c3.getProperty("test2"));
     }
 
+    @Test
     public void testNamedConfigurationSimple() {
         System.setProperty(FILENAME_PROPERTY, "resources/lib-tests.prop");
         System.clearProperty("Configuration.Test1.rootFile");

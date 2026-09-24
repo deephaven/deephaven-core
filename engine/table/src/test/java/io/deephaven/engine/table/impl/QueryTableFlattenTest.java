@@ -12,8 +12,8 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
-import junit.framework.TestCase;
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Random;
@@ -22,6 +22,7 @@ import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static org.junit.Assert.*;
 
 public class QueryTableFlattenTest extends QueryTableTestBase {
 
@@ -62,6 +63,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testFlatten() {
         final int[] sizes = {10, 20, 30};
         for (int size : sizes) {
@@ -69,12 +71,14 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testSemiFlat() {
         final QueryTable semiflat = testTable(col("Sym", "cc", "dd"));
         TstUtils.validate("semiflat",
                 new EvalNuggetInterface[] {new SemiFlatToFlatChecker(semiflat, semiflat.flatten())});
     }
 
+    @Test
     public void testLegacyFlatten3() {
         final long[] data = new long[10];
         data[0] = 12;
@@ -98,10 +102,12 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }, indexByRange(10, 13), i(), indexByRange(2, 9));
     }
 
+    @Test
     public void testLegacyFlattenModifications() {
         QueryTableTest.testLegacyFlattenModifications(arg -> (QueryTable) arg.flatten());
     }
 
+    @Test
     public void testRemoveWithLowMod() {
         Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
@@ -119,6 +125,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }, i(), i(2), i(0), shiftDataByValues(3, 9, -1));
     }
 
+    @Test
     public void testLegacyRemoveWithLowMod() {
         Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
@@ -136,6 +143,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }, i(), i(9), i(0, 2, 3, 4, 5, 6, 7, 8));
     }
 
+    @Test
     public void testRemoveWithHighMod() {
         Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
@@ -153,6 +161,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }, i(), i(2), i(7), shiftDataByValues(3, 9, -1));
     }
 
+    @Test
     public void testLegacyRemoveWithHighMod() {
         Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
@@ -170,6 +179,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }, i(), i(9), i(2, 3, 4, 5, 6, 7, 8));
     }
 
+    @Test
     public void testFlatten3() {
         final long[] data = new long[10];
         data[0] = 12;
@@ -194,6 +204,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }, i(4, 5, 8, 9), i(), i(2, 3, 6, 10, 13), shiftDataByValues(4, 5, 2, 6, 9, 4));
     }
 
+    @Test
     public void testFlattenModifications() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
                 col("intCol", 10, 20, 40, 60));
@@ -248,7 +259,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
                         @Override
                         public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
-                            TestCase.fail(originalException.getMessage());
+                            fail(originalException.getMessage());
                         }
                     };
             validatorTable.addUpdateListener(validatorTableListener);
@@ -361,6 +372,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testFlattenFollowedBySumBy() {
         // TODO: Write a test that just makes a RedirectedColumnSource with a wrapper, and fill/query it.
         final QueryTable upstream = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 100_000).toTracking());

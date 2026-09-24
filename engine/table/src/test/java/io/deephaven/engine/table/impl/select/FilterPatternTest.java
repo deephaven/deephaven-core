@@ -14,6 +14,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import org.junit.Test;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -99,6 +100,7 @@ public class FilterPatternTest extends RefreshingTableTestCase {
         };
     }
 
+    @Test
     public void testMatches() {
         final String[] data = data();
         for (String regex : regex()) {
@@ -110,6 +112,7 @@ public class FilterPatternTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMatchesInverted() {
         final String[] data = data();
         for (String regex : regex()) {
@@ -121,6 +124,7 @@ public class FilterPatternTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testFind() {
         final String[] data = data();
         for (String regex : regex()) {
@@ -131,6 +135,7 @@ public class FilterPatternTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testFindInverted() {
         final String[] data = data();
         for (String regex : regex()) {
@@ -141,6 +146,7 @@ public class FilterPatternTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testBadColumnType() {
         final FilterPattern dotStar = FilterPattern.of(COLUMN, Pattern.compile(".*"), Mode.FIND, false);
         final Table table = TableTools.newTable(TableTools.intCol(COLUMN.name(), 1, 2, 3));

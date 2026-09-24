@@ -64,8 +64,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private int @Nullable [] tupleToIndexMap;
     private int @Nullable [] indexToTupleMap;
 
-    private RecomputeListener listener;
-    private QueryTable resultTable;
+    private volatile RecomputeListener listener;
 
     /**
      * Construct a DynamicWhereFilter with key values from given set table. The set table may be static or refreshing.
@@ -107,6 +106,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         if (sourceKeySource != null) {
             throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
         }
+        // The set may have failed, in which case no result built here could ever follow it. Refuse before any
+        // snapshot begins, so that the caller is told plainly rather than through a rejected snapshot attempt.
+        sharedSet.throwIfFailed();
         getUpdateGraph(this, sourceTable);
         final String[] keyColumnNames = MatchPair.getLeftColumns(sourceToSetColumnNamePairs);
         sourceKeyColumns = Arrays.stream(sourceToSetColumnNamePairs)
@@ -567,11 +569,21 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     @Override
     public void setRecomputeListener(RecomputeListener listener) {
         this.listener = listener;
-        this.resultTable = listener.getTable();
         if (isRefreshing()) {
             listener.setIsRefreshing(true);
-            // Only now can this filter act on a set change, so only now is it worth being told about one.
-            sharedSet.addFilter(this);
+        }
+    }
+
+    @Override
+    public boolean subscribe(final long requiredLastStateChangeStep) {
+        // A static set never changes, so there is nothing to follow and nothing to refuse.
+        return !isRefreshing() || sharedSet.addFilter(this, requiredLastStateChangeStep);
+    }
+
+    @Override
+    public void unsubscribe() {
+        if (isRefreshing()) {
+            sharedSet.removeFilter(this);
         }
     }
 
@@ -591,10 +603,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
      */
     void onSetChanged(final boolean added, final boolean removed) {
         final RecomputeListener localListener = listener;
-        final QueryTable localResult = resultTable;
-        if (localListener == null || localResult == null) {
+        if (localListener == null) {
             return;
         }
+        final QueryTable localResult = localListener.getTable();
         // Skip a result already known to be dead, to avoid queueing a notification that would only be dropped. This
         // is an early out, not the guard: a result released after this check is caught in WhereListener.process.
         if (!localResult.tryRetainReference()) {
@@ -621,11 +633,25 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     /**
-     * Called by {@link SharedSetKernel} when maintaining the shared keys fails, to fail this filter's result.
+     * Called by {@link SharedSetKernel} when maintaining the shared keys fails, to fail this filter's result. The
+     * listener fails it exactly once, which failing it here could not: several filters can share one result, and the
+     * result may already be notifying for this step.
      */
     void onSetError(final Throwable originalException, final TableListener.Entry sourceEntry) {
-        if (listener != null && resultTable != null) {
-            resultTable.notifyListenersOnError(originalException, sourceEntry);
+        final RecomputeListener localListener = listener;
+        if (localListener == null) {
+            return;
+        }
+        final QueryTable localResult = localListener.getTable();
+        // The same early out as onSetChanged: a result already released has nothing left to fail, and failing it would
+        // only report the set's error a second time, against a table that was never handed out.
+        if (!localResult.tryRetainReference()) {
+            return;
+        }
+        try {
+            localListener.requestFailure(originalException, sourceEntry);
+        } finally {
+            localResult.dropReference();
         }
     }
 
@@ -640,8 +666,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     @Override
-    public boolean stateChangedOnStep(final long step) {
-        return sharedSet.stateChangedOnStep(step);
+    public long lastStateChangeStep() {
+        return sharedSet.lastStateChangeStep();
     }
 
     @Override

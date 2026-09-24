@@ -3,9 +3,10 @@
 //
 package io.deephaven.util.datastructures.hash;
 
-import junit.framework.TestCase;
 import org.junit.Assume;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class TestKnVn {
     /**
@@ -78,7 +79,7 @@ public class TestKnVn {
                 break;
             }
         }
-        TestCase.assertTrue(String.format(
+        assertTrue(String.format(
                 "Expected hashtable to reject a 'put' as it got close to being full, but it accepted %d elements", ii),
                 putFailed);
 
@@ -89,10 +90,10 @@ public class TestKnVn {
         final HashMapBase base = (HashMapBase) ht;
         final int capacityAtMax = ht.capacity();
         ht.resetToNullRetainingCapacity();
-        TestCase.assertEquals(0, ht.capacity());
+        assertEquals(0, ht.capacity());
         ht.put(0, 0);
-        TestCase.assertEquals(capacityAtMax, ht.capacity());
-        TestCase.assertTrue(
+        assertEquals(capacityAtMax, ht.capacity());
+        assertTrue(
                 String.format("rehashThreshold (%d) > entriesAbsorbed (%d)", base.rehashThreshold, entriesAbsorbed),
                 base.rehashThreshold > entriesAbsorbed);
     }

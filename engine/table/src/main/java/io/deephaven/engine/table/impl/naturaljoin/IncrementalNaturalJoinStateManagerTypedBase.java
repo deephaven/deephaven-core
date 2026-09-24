@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.naturaljoin;
 
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
@@ -26,7 +27,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.util.SafeCloseableArray;
+import io.deephaven.engine.table.impl.join.ChangedKeyRows;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
@@ -70,10 +71,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected final WritableColumnSource[] mainKeySources;
     protected final WritableColumnSource[] alternateKeySources;
 
-    // per key-column equality kernels, used to detect which modified left rows actually changed key value
-    private final ChunkEquals[] keyChunkEquals;
-    // per key-column compaction kernels, used to compact previous key chunks down to the changed rows
-    private final CompactKernel[] keyCompactKernels;
+    // detects which modified rows actually changed key value, on either side
+    private final ChangedKeyRows changedKeyRows;
 
     /**
      * <p>
@@ -111,8 +110,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             NaturalJoinType joinType, boolean addOnly) {
         super(keySourcesForErrorMessages, joinType, addOnly);
 
-        // we start out with a chunk sized table, and will grow by rehashing as states are added
-        this.tableSize = CHUNK_SIZE;
+        // the caller sizes the table for the states it expects (from a data index when one exists); we grow by
+        // rehashing as further states are added
+        this.tableSize = tableSize;
         Require.leq(tableSize, "tableSize", MAX_TABLE_SIZE);
         Require.gtZero(tableSize, "tableSize");
         Require.eq(Integer.bitCount(tableSize), "Integer.bitCount(tableSize)", 1);
@@ -121,16 +121,13 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         mainKeySources = new WritableColumnSource[tableKeySources.length];
         alternateKeySources = new WritableColumnSource[tableKeySources.length];
         chunkTypes = new ChunkType[tableKeySources.length];
-        keyChunkEquals = new ChunkEquals[tableKeySources.length];
-        keyCompactKernels = new CompactKernel[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
             chunkTypes[ii] = tableKeySources[ii].getChunkType();
-            keyChunkEquals[ii] = ChunkEquals.makeEqual(chunkTypes[ii]);
-            keyCompactKernels[ii] = CompactKernel.makeCompact(chunkTypes[ii]);
             mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
                     tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
+        changedKeyRows = new ChangedKeyRows(chunkTypes);
 
         this.maximumLoadFactor = maximumLoadFactor;
 
@@ -372,12 +369,20 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
     }
 
+    /**
+     * Drop the alternate table once every live entry has migrated to the main table. Any tracker entry that referred to
+     * an alternate slot was moved to the slot's main location as it migrated, so nothing reads the alternate sources
+     * afterwards and their arrays are released.
+     */
     protected void clearAlternate() {
         alternateEntries = 0;
         rehashPointer = 0;
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
+        alternateRightRowKey = null;
+        alternateLeftRowSet = null;
+        alternateModifiedTrackerCookieSource = null;
     }
 
     public boolean rehashRequired(int nextChunkSize) {
@@ -445,19 +450,31 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         freeDuplicateValues.add(duplicateLocation);
     }
 
-    @Override
-    public long getRightRowKey(int slot) {
-        final long rightRowKey;
+    /**
+     * Read the right state of a slot that holds a live key. The empty and tombstone states are contract violations: the
+     * tombstone shares its value with {@link #DUPLICATE_RIGHT_VALUE}, so a caller that asked about a dead slot would
+     * misread it as a duplicate.
+     */
+    private long rightStateForLiveSlot(final int slot) {
+        final long rightState;
         if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             // slot needs to represent whether we are in the main or alternate using main insert mask!
-            rightRowKey = mainRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+            rightState = mainRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         } else {
-            rightRowKey = alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+            rightState = alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         }
-        if (rightRowKey <= FIRST_DUPLICATE) {
+        Assert.neq(rightState, "rightState", EMPTY_RIGHT_STATE, "EMPTY_RIGHT_STATE");
+        Assert.neq(rightState, "rightState", TOMBSTONE_RIGHT_STATE, "TOMBSTONE_RIGHT_STATE");
+        return rightState;
+    }
+
+    @Override
+    public long getRightRowKey(int slot) {
+        final long rightState = rightStateForLiveSlot(slot);
+        if (rightState <= FIRST_DUPLICATE) {
             return DUPLICATE_RIGHT_VALUE;
         }
-        return rightRowKey;
+        return rightState;
     }
 
     @Override
@@ -471,14 +488,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public RowSet getRightRowSet(int slot) {
-        final long rightRowKey;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
-            // slot needs to represent whether we are in the main or alternate using main insert mask!
-            rightRowKey = mainRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
-        } else {
-            rightRowKey = alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
-        }
-        return rightSideDuplicateRowSets.getUnsafe(duplicateLocationFromRowKey(rightRowKey));
+        return rightSideDuplicateRowSets.getUnsafe(duplicateLocationFromRowKey(rightStateForLiveSlot(slot)));
     }
 
     @Override
@@ -502,7 +512,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             return rightRowKeyForState;
         }
         if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-            throw new IllegalStateException("Natural Join found duplicate right key for "
+            throw new DuplicateRightKeyException("Natural Join found duplicate right key for "
                     + extractKeyStringFromSourceTable(leftRowKey));
         }
         final long location = duplicateLocationFromRowKey(rightRowKeyForState);
@@ -533,8 +543,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         Assert.eq(leftRowSet.size(), "leftRowSet.size()", 1);
                         // Load the row set from the index row set column.
                         final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
-                        // Reset mainLeftRowSet to contain the indexed row set.
+                        // Replace the single-key placeholder with the indexed row set.
                         mainLeftRowSet.set(ii, leftRowSetForKey.copy());
+                        leftRowSet.close();
                         final long leftRowKey = leftRowSetForKey.firstRowKey();
                         final long rightState = mainRightRowKey.getUnsafe(ii);
                         final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
@@ -554,8 +565,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         Assert.eq(leftRowSet.size(), "leftRowSet.size()", 1);
                         // Load the row set from the index row set column.
                         final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
-                        // Reset mainLeftRowSet to contain the indexed row set.
+                        // Replace the single-key placeholder with the indexed row set.
                         mainLeftRowSet.set(ii, leftRowSetForKey.copy());
+                        leftRowSet.close();
                         final long leftRowKey = leftRowSetForKey.firstRowKey();
                         final long rightState = mainRightRowKey.getUnsafe(ii);
                         final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
@@ -577,8 +589,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         Assert.eq(leftRowSet.size(), "leftRowSet.size()", 1);
                         // Load the row set from the index row set column.
                         final RowSet leftRowSetForKey = indexRowSets.get(leftRowSet.firstRowKey());
-                        // Reset mainLeftRowSet to contain the indexed row set.
+                        // Replace the single-key placeholder with the indexed row set.
                         mainLeftRowSet.set(ii, leftRowSetForKey.copy());
+                        leftRowSet.close();
                         final long leftRowKey = leftRowSetForKey.firstRowKey();
                         final long rightState = mainRightRowKey.getUnsafe(ii);
                         final long rightRowKey = getRightRowKeyFromState(leftRowKey, rightState);
@@ -736,7 +749,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     @Override
     public void addLeftSide(Context bc, RowSequence leftRowSet, ColumnSource<?>[] leftSources,
-            LongArraySource leftRedirections, @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+            LongArraySource leftRedirections, @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker,
+            boolean addedToTable) {
         if (leftRowSet.isEmpty()) {
             return;
         }
@@ -746,17 +760,18 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             redirectionOffset.add(chunkOk.size());
         }, modifiedSlotTracker);
         // Perform the accumulated additions to each slot's left row set in a single bulk insert per slot.
-        applyLeftAdditions(modifiedSlotTracker);
+        applyLeftAdditions(modifiedSlotTracker, addedToTable);
     }
 
     /**
      * Apply the left additions that were accumulated into the modified slot tracker by the generated
      * {@code addLeftSide} handler. Each slot's added keys are inserted into its left row set in a single bulk
      * {@link WritableRowSet#insert} call (rather than one key at a time). The tracker discards each slot's builder as
-     * it is processed.
+     * it is processed, and counts the keys as rows added to the left table when {@code addedToTable} is set.
      */
-    private void applyLeftAdditions(final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        modifiedSlotTracker.forAllLeftAdditions((slot, addedKeys) -> {
+    private void applyLeftAdditions(final NaturalJoinModifiedSlotTracker modifiedSlotTracker,
+            final boolean addedToTable) {
+        modifiedSlotTracker.forAllLeftAdditions(addedToTable, (slot, addedKeys) -> {
             final boolean main = (slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask;
             final long location = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
             final WritableRowSet leftRowSet = main
@@ -801,15 +816,29 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                         : alternateRightRowKey.getUnsafe(location);
                 if (rightState == RowSet.NULL_ROW_KEY) {
                     // the slot only existed because of left rows, and they are all gone now
-                    if (main) {
-                        mainRightRowKey.set(location, TOMBSTONE_RIGHT_STATE);
-                    } else {
-                        alternateRightRowKey.set(location, TOMBSTONE_RIGHT_STATE);
-                    }
-                    liveEntries--;
+                    tombstoneSlot(main, location, modifiedSlotTracker);
                 }
             }
         });
+    }
+
+    /**
+     * Mark a slot dead once its last left row and last right row are gone. Any modified slot tracker entry the slot
+     * holds this cycle describes the key that just died, so it is discarded rather than applied to the key that later
+     * reuses the slot. The slot's (now empty) left row set is released; a key that later reuses the slot builds a fresh
+     * one.
+     */
+    protected void tombstoneSlot(final boolean main, final long location,
+            final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        final ImmutableLongArraySource rightRowKey = main ? mainRightRowKey : alternateRightRowKey;
+        final ImmutableLongArraySource cookieSource =
+                main ? mainModifiedTrackerCookieSource : alternateModifiedTrackerCookieSource;
+        final ImmutableObjectArraySource<WritableRowSet> leftRowSetSource = main ? mainLeftRowSet : alternateLeftRowSet;
+        rightRowKey.set(location, TOMBSTONE_RIGHT_STATE);
+        modifiedSlotTracker.removeEntry(cookieSource.getUnsafe(location));
+        cookieSource.set(location, -1L);
+        ((WritableRowSet) leftRowSetSource.getAndSetUnsafe(location, null)).close();
+        liveEntries--;
     }
 
     @Override
@@ -818,83 +847,10 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             final RowSet modifiedPreShift, final RowSet modifiedPostShift,
             final RowSetBuilderSequential changedPreShift, final RowSetBuilderSequential changedPostShift,
             final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        if (modifiedPostShift.isEmpty()) {
-            return;
-        }
-        final int numColumns = leftSources.length;
-        final int chunkSize = (int) Math.min(CHUNK_SIZE, modifiedPostShift.size());
-
-        final ChunkSource.FillContext[] prevContexts = new ChunkSource.FillContext[numColumns];
-        final ChunkSource.GetContext[] currentContexts = new ChunkSource.GetContext[numColumns];
-        // noinspection unchecked
-        final WritableChunk<Values>[] prevKeys = new WritableChunk[numColumns];
-
-        try (
-                final SafeCloseableArray<ChunkSource.FillContext> ignored = new SafeCloseableArray<>(prevContexts);
-                final SafeCloseableArray<ChunkSource.GetContext> ignored2 = new SafeCloseableArray<>(currentContexts);
-                final SafeCloseableArray<WritableChunk<Values>> ignored3 = new SafeCloseableArray<>(prevKeys);
-                final WritableBooleanChunk<Any> comparisonResults = WritableBooleanChunk.makeWritableChunk(chunkSize);
-                final WritableLongChunk<OrderedRowKeys> compactedPreRowKeys =
-                        WritableLongChunk.makeWritableChunk(chunkSize);
-                final SharedContext prevShared = SharedContext.makeSharedContext();
-                final SharedContext currentShared = SharedContext.makeSharedContext();
-                final RowSequence.Iterator preIt = modifiedPreShift.getRowSequenceIterator();
-                final RowSequence.Iterator postIt = modifiedPostShift.getRowSequenceIterator()) {
-            for (int cc = 0; cc < numColumns; ++cc) {
-                prevContexts[cc] = leftSources[cc].makeFillContext(chunkSize, prevShared);
-                currentContexts[cc] = leftSources[cc].makeGetContext(chunkSize, currentShared);
-                prevKeys[cc] = chunkTypes[cc].makeWritableChunk(chunkSize);
-            }
-
-            while (postIt.hasMore()) {
-                final RowSequence preChunkRows = preIt.getNextRowSequenceWithLength(chunkSize);
-                final RowSequence postChunkRows = postIt.getNextRowSequenceWithLength(chunkSize);
-
-                // Initialize comparisonResults to true if previous and current are equal (the sense inverts later)
-                final int chunkRsSize = postChunkRows.intSize();
-                for (int cc = 0; cc < numColumns; ++cc) {
-                    leftSources[cc].fillPrevChunk(prevContexts[cc], prevKeys[cc], preChunkRows);
-                    final Chunk<? extends Values> currentValues =
-                            leftSources[cc].getChunk(currentContexts[cc], postChunkRows);
-                    if (cc == 0) {
-                        keyChunkEquals[cc].equal(prevKeys[cc], currentValues, comparisonResults);
-                    } else {
-                        keyChunkEquals[cc].andEqual(prevKeys[cc], currentValues, comparisonResults);
-                    }
-                }
-
-                final LongChunk<OrderedRowKeys> preKeys = preChunkRows.asRowKeyChunk();
-                final LongChunk<OrderedRowKeys> postKeys = postChunkRows.asRowKeyChunk();
-                int changedInChunk = 0;
-                for (int ii = 0; ii < chunkRsSize; ++ii) {
-                    final boolean changed = !comparisonResults.get(ii);
-                    // Note that comparisonResults inverts meaning for the chunk compaction.
-                    comparisonResults.set(ii, changed);
-                    if (changed) {
-                        changedPreShift.appendKey(preKeys.get(ii));
-                        changedPostShift.appendKey(postKeys.get(ii));
-                        compactedPreRowKeys.set(changedInChunk++, preKeys.get(ii));
-                    }
-                }
-                comparisonResults.setSize(chunkRsSize);
-
-                if (changedInChunk > 0) {
-                    for (int cc = 0; cc < numColumns; ++cc) {
-                        keyCompactKernels[cc].compact(prevKeys[cc], comparisonResults);
-                    }
-                    compactedPreRowKeys.setSize(changedInChunk);
-                    // Accumulate the changed rows' removals into the per-slot builders in the tracker, keyed by their
-                    // (previous-key) hash slots, reusing the previous key values we already read.
-                    try (final RowSequence removeRows =
-                            RowSequenceFactory.wrapRowKeysChunkAsRowSequence(compactedPreRowKeys)) {
-                        removeLeft(removeRows, prevKeys, modifiedSlotTracker);
-                    }
-                }
-
-                prevShared.reset();
-                currentShared.reset();
-            }
-        }
+        // The changed rows' removals accumulate into the per-slot builders in the tracker, keyed by their previous-key
+        // hash slots, reusing the previous key values read for the comparison.
+        changedKeyRows.findChanged(leftSources, modifiedPreShift, modifiedPostShift, changedPreShift, changedPostShift,
+                (changedRows, previousKeys) -> removeLeft(changedRows, previousKeys, modifiedSlotTracker));
         // Perform the accumulated removals from each slot's left row set in a single bulk remove per slot.
         applyLeftRemovals(modifiedSlotTracker);
     }
@@ -903,25 +859,38 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
-    public void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta) {
+    public void removeRightModifications(
+            final ColumnSource<?>[] rightSources,
+            final RowSet modifiedPreShift, final RowSet modifiedPostShift,
+            final RowSetBuilderSequential changedPreShift, final RowSetBuilderSequential changedPostShift,
+            @NotNull final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        changedKeyRows.findChanged(rightSources, modifiedPreShift, modifiedPostShift, changedPreShift,
+                changedPostShift,
+                (changedRows, previousKeys) -> removeRight(changedRows, previousKeys, modifiedSlotTracker));
+    }
+
+    @Override
+    public void applyLeftShift(Context pc, ColumnSource<?>[] leftSources, RowSet shiftedRowSet, long shiftDelta,
+            @NotNull NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (shiftedRowSet.isEmpty()) {
             return;
         }
-        final ProbeContext pc1 = (ProbeContext) pc;
-        pc1.startShifts(shiftDelta);
-        probeTable(pc1, shiftedRowSet, false, leftSources, (chunkOk, sourceKeyChunks) -> {
-            pc1.ensureShiftCapacity(shiftDelta, chunkOk.size());
-            applyLeftShift(chunkOk, sourceKeyChunks, shiftDelta, pc1);
-        });
-        for (int ii = pc1.pendingShiftPointer - 2; ii >= 0; ii -= 2) {
-            final long location = pc1.pendingShifts.getUnsafe(ii);
-            final long indexKey = pc1.pendingShifts.getUnsafe(ii + 1);
-            if ((location & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) != 0) {
-                shiftLeftIndexAlternate(location & AlternatingColumnSource.ALTERNATE_INNER_MASK, indexKey, shiftDelta);
-            } else {
-                shiftLeftIndexMain(location, indexKey, shiftDelta);
+        // The generated handler accumulates each shifted row's post-shift key into its slot's builder in the tracker;
+        // the slots' left row sets are then moved in bulk, one remove of the pre-shift keys and one insert of the
+        // post-shift keys per slot, rather than one key at a time.
+        probeTable((ProbeContext) pc, shiftedRowSet, false, leftSources,
+                (chunkOk, sourceKeyChunks) -> applyLeftShift(chunkOk, sourceKeyChunks, modifiedSlotTracker));
+        modifiedSlotTracker.forAllLeftShifts((slot, shiftedKeys) -> {
+            final boolean main = (slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask;
+            final long location = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+            final WritableRowSet leftRowSet = main
+                    ? mainLeftRowSet.getUnsafe(location)
+                    : alternateLeftRowSet.getUnsafe(location);
+            try (final WritableRowSet preShiftKeys = shiftedKeys.shift(-shiftDelta)) {
+                leftRowSet.remove(preShiftKeys);
             }
-        }
+            leftRowSet.insert(shiftedKeys);
+        });
     }
 
     @Override
@@ -949,20 +918,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         shiftOneKey(duplicate, shiftedKey, shiftDelta);
     }
 
-    private void shiftLeftIndexMain(long tableLocation, long shiftedKey, long shiftDelta) {
-        final WritableRowSet existingLeftRowSet = mainLeftRowSet.getUnsafe(tableLocation);
-        Assert.neqNull(existingLeftRowSet, "existingLeftRowSet");
-        shiftOneKey(existingLeftRowSet, shiftedKey, shiftDelta);
-    }
-
-    private void shiftLeftIndexAlternate(long tableLocation, long shiftedKey, long shiftDelta) {
-        final WritableRowSet existingLeftRowSet = alternateLeftRowSet.getUnsafe(tableLocation);
-        Assert.neqNull(existingLeftRowSet, "existingLeftRowSet");
-        shiftOneKey(existingLeftRowSet, shiftedKey, shiftDelta);
-    }
-
-    protected abstract void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks, long shiftDelta,
-            ProbeContext pc);
+    protected abstract void applyLeftShift(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            NaturalJoinModifiedSlotTracker modifiedSlotTracker);
 
     @Override
     public BothIncrementalNaturalJoinStateManager.InitialBuildContext makeInitialBuildContext() {

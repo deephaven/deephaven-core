@@ -16,6 +16,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ObjectChunkHasher;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -26,6 +27,9 @@ import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import java.lang.Object;
+import java.lang.Override;
+import java.util.Arrays;
+import java.util.function.LongUnaryOperator;
 
 final class StaticNaturalJoinHasherObject extends StaticNaturalJoinStateManagerTypedBase {
     private final ImmutableObjectArraySource mainKeySource0;
@@ -106,7 +110,8 @@ final class StaticNaturalJoinHasherObject extends StaticNaturalJoinStateManagerT
     }
 
     protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftRedirections, long redirectionOffset) {
+            LongArraySource leftRedirections, long redirectionOffset,
+            LongUnaryOperator probedRowKeyToErrorRowKey) {
         final ObjectChunk<Object, Values> keyChunk0 = sourceKeyChunks[0].asObjectChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -120,7 +125,7 @@ final class StaticNaturalJoinHasherObject extends StaticNaturalJoinStateManagerT
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (rightRowKey == DUPLICATE_RIGHT_STATE) {
                         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
-                        throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
+                        throw new DuplicateRightKeyException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(probedRowKeyToErrorRowKey.applyAsLong(rowKeyChunk.get(chunkPosition))));
                     }
                     leftRedirections.set(redirectionOffset++, rightRowKey);
                     found = true;
@@ -176,5 +181,35 @@ final class StaticNaturalJoinHasherObject extends StaticNaturalJoinStateManagerT
 
     private static boolean isStateEmpty(long state) {
         return state == EMPTY_RIGHT_STATE;
+    }
+
+    @Override
+    protected void rehashInternalFull(final int oldSize) {
+        final Object[] destKeyArray0 = new Object[tableSize];
+        final long[] destState = new long[tableSize];
+        Arrays.fill(destState, EMPTY_RIGHT_STATE);
+        final Object [] originalKeyArray0 = mainKeySource0.getArray();
+        mainKeySource0.setArray(destKeyArray0);
+        final long [] originalStateArray = mainRightRowKey.getArray();
+        mainRightRowKey.setArray(destState);
+        for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
+            final long currentStateValue = originalStateArray[sourceBucket];
+            if (isStateEmpty(currentStateValue)) {
+                continue;
+            }
+            final Object k0 = originalKeyArray0[sourceBucket];
+            final int hash = hash(k0);
+            final int firstDestinationTableLocation = hashToTableLocation(hash);
+            int destinationTableLocation = firstDestinationTableLocation;
+            while (true) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
+                    destKeyArray0[destinationTableLocation] = k0;
+                    destState[destinationTableLocation] = originalStateArray[sourceBucket];
+                    break;
+                }
+                destinationTableLocation = nextTableLocation(destinationTableLocation);
+                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
+            }
+        }
     }
 }

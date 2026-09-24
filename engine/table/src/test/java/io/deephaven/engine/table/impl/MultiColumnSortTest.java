@@ -22,7 +22,6 @@ import io.deephaven.test.types.SerialTest;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
-import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -33,6 +32,7 @@ import java.util.*;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
+import static org.junit.Assert.*;
 
 @Category(SerialTest.class)
 public class MultiColumnSortTest {
@@ -177,12 +177,12 @@ public class MultiColumnSortTest {
                 final Comparable current = (Comparable) rowData[jj];
                 if (sortColumns[jj].order() == SortSpec.Order.ASCENDING) {
                     if (!leq(last, current)) {
-                        TestCase.fail("Out of order[" + (ii - 1) + "]: !" + Arrays.toString(lastRow) + " <= [" + ii
+                        fail("Out of order[" + (ii - 1) + "]: !" + Arrays.toString(lastRow) + " <= [" + ii
                                 + "] " + Arrays.toString(rowData));
                     }
                 } else {
                     if (!geq(last, current)) {
-                        TestCase.fail("Out of order[" + (ii - 1) + "]: !" + Arrays.toString(lastRow) + " >= [" + ii
+                        fail("Out of order[" + (ii - 1) + "]: !" + Arrays.toString(lastRow) + " >= [" + ii
                                 + "] " + Arrays.toString(rowData));
                     }
                 }

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.naturaljoin;
 
 import io.deephaven.api.NaturalJoinType;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -39,6 +40,22 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
     public abstract void decorateLeftSide(
             final RowSet leftRowSet,
             final ColumnSource<?>[] leftSources,
+            final LongArraySource leftRedirections);
+
+    /**
+     * Probe the rows of a left data index table, storing one redirection per group. A duplicate right key error names
+     * the key of the offending group's first left row, since {@code keySourcesForErrorMessages} are columns of the left
+     * table rather than of the data index table.
+     *
+     * @param indexTableRowSet the data index table's row set
+     * @param indexSources the data index table's key columns
+     * @param indexRowSets the data index table's row set column, mapping each group to its left rows
+     * @param leftRedirections receives the right row key (or {@link RowSet#NULL_ROW_KEY}) for each group, by position
+     */
+    public abstract void decorateLeftSideIndexed(
+            final RowSet indexTableRowSet,
+            final ColumnSource<?>[] indexSources,
+            final ColumnSource<RowSet> indexRowSets,
             final LongArraySource leftRedirections);
 
     public abstract void decorateWithRightSide(
@@ -160,7 +177,7 @@ public abstract class StaticHashedNaturalJoinStateManager extends StaticNaturalJ
         for (int ii = 0; ii < size; ++ii) {
             final long rightSide = positionToRightSide.applyAsLong(ii);
             if (rightSide == DUPLICATE_RIGHT_VALUE) {
-                throw new IllegalStateException("Natural Join found duplicate right key for "
+                throw new DuplicateRightKeyException("Natural Join found duplicate right key for "
                         + extractKeyStringFromSourceTable(positionToErrorRowKey.applyAsLong(ii)));
             }
         }

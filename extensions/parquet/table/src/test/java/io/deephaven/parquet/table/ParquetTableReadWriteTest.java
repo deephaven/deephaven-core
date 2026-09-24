@@ -79,7 +79,6 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.vector.Vector;
 import io.deephaven.vector.*;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -157,8 +156,6 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 import static org.apache.parquet.schema.Types.optional;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 @Category(OutOfBandTest.class)
 public final class ParquetTableReadWriteTest {
@@ -2652,7 +2649,7 @@ public final class ParquetTableReadWriteTest {
         assertEquals(nullPos, dict.add(null));
         try {
             dict.add("Never before seen key which should take us over the allowed dictionary size");
-            TestCase.fail("Exception expected for exceeding dictionary size");
+            fail("Exception expected for exceeding dictionary size");
         } catch (DictionarySizeExceededException expected) {
         }
     }
@@ -3558,7 +3555,7 @@ public final class ParquetTableReadWriteTest {
         DataIndexer.getOrCreateDataIndex(badTable, "InputString");
         try {
             writer.writeTable(badTable, destFile);
-            TestCase.fail("Exception expected for invalid formula");
+            fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
@@ -3605,7 +3602,7 @@ public final class ParquetTableReadWriteTest {
         // Read from unsupported URI
         try {
             ParquetTools.readTable("https://" + absolutePath);
-            TestCase.fail("Exception expected for invalid scheme");
+            fail("Exception expected for invalid scheme");
         } catch (final RuntimeException e) {
             assertTrue(e instanceof UnsupportedOperationException);
         }
@@ -3678,7 +3675,7 @@ public final class ParquetTableReadWriteTest {
         try {
             writeTables(tablesToSave, destinations,
                     ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
-            TestCase.fail("Exception expected for invalid formula");
+            fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
@@ -3709,7 +3706,7 @@ public final class ParquetTableReadWriteTest {
         try {
             writeTables(tablesToSave, new String[] {firstDestFile.getPath()},
                     ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
-            TestCase.fail("Exception expected becuase of mismatch in number of tables and destinations");
+            fail("Exception expected becuase of mismatch in number of tables and destinations");
         } catch (final IllegalArgumentException expected) {
         }
 
@@ -3739,7 +3736,7 @@ public final class ParquetTableReadWriteTest {
             writeTables(new Table[] {firstTable, thirdTable},
                     new String[] {firstDestFile.getPath(), thirdDestFile.getPath()},
                     ParquetInstructions.EMPTY);
-            TestCase.fail("Exception expected becuase of mismatch in table definitions");
+            fail("Exception expected becuase of mismatch in table definitions");
         } catch (final IllegalArgumentException expected) {
         }
 
@@ -4101,7 +4098,7 @@ public final class ParquetTableReadWriteTest {
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             writer.writeTable(badTable, destFile);
-            TestCase.fail("Exception expected for invalid formula");
+            fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
@@ -4424,7 +4421,7 @@ public final class ParquetTableReadWriteTest {
         // Read back fromDisk. Since the underlying file has changed, we expect this to fail.
         try {
             fromDisk.where("A % 2 == 0");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (RuntimeException ignored) {
             // expected
         }
@@ -4453,7 +4450,7 @@ public final class ParquetTableReadWriteTest {
                 fromDisk.view("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             writer.writeTable(badTable, destFile);
-            TestCase.fail();
+            fail();
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);

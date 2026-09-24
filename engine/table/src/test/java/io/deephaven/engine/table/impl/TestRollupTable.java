@@ -51,6 +51,7 @@ import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.util.TableTools.byteCol;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestRollupTable extends RefreshingTableTestCase {
@@ -597,7 +598,6 @@ public class TestRollupTable extends RefreshingTableTestCase {
                         intCol("Sentinel", 5, 4, 5, 2, 1)),
                 snapshot.view("A", "Sentinel"));
         freeSnapshotTableChunks(snapshot);
-
 
         final NotSortableColumnException nse = Assert.assertThrows(NotSortableColumnException.class,
                 () -> rollup1.makeNodeOperationsRecorder(RollupTable.NodeType.Aggregated).sortDescending("ObjCol"));

@@ -7,21 +7,26 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.function.Supplier;
+
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link ColumnRegionDouble}.
  */
-@SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase"})
+
 public class TstColumnRegionDouble {
 
     @SuppressWarnings("unused")
@@ -61,30 +66,29 @@ public class TstColumnRegionDouble {
 
     public static class TestNull extends TstColumnRegionPrimative<ColumnRegionDouble<Values>> {
 
-        @Override
+        @Before
         public void setUp() throws Exception {
-            super.setUp();
             SUT = ColumnRegionDouble.createNull(Long.MAX_VALUE);
         }
 
         @Override
+        @Test
         public void testGet() {
-            TestCase.assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(0));
-            TestCase.assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(1));
-            TestCase.assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(Integer.MAX_VALUE));
-            TestCase.assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble((1L << 40) - 2));
-            TestCase.assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(Long.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(0));
+            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(1));
+            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(Integer.MAX_VALUE));
+            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble((1L << 40) - 2));
+            assertEquals(QueryConstants.NULL_DOUBLE, SUT.getDouble(Long.MAX_VALUE));
         }
     }
 
     public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionDouble<Values>> {
 
-        @Override
+        @Before
         public void setUp() throws Exception {
-            super.setUp();
             // noinspection unchecked
-            regionSupplier = mock(Supplier.class, "R1");
-            checking(new Expectations() {
+            regionSupplier = jmock.mock(Supplier.class, "R1");
+            jmock.checking(new Expectations() {
                 {
                     oneOf(regionSupplier).get();
                     will(returnValue(new Identity()));
@@ -94,11 +98,12 @@ public class TstColumnRegionDouble {
         }
 
         @Override
+        @Test
         public void testGet() {
             assertEquals((double) 8, SUT.getDouble(8));
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
             assertEquals((double) 272, SUT.getDouble(272));
-            assertIsSatisfied();
+            jmock.assertIsSatisfied();
         }
     }
 }

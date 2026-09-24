@@ -79,6 +79,7 @@ import org.apache.iceberg.mapping.NameMapping;
 import org.apache.iceberg.mapping.NameMappingParser;
 import org.apache.iceberg.types.Types;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.ColumnOrder;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
@@ -666,7 +667,7 @@ public abstract class SqliteCatalogBase {
                 Types.NestedField.optional(1, "floatCol", Types.FloatType.get()));
         final MessageType expectedParquetSchema =
                 buildMessage()
-                        .addField(optional(FLOAT).id(1).named("floatCol"))
+                        .addField(optional(FLOAT).columnOrder(ColumnOrder.typeDefined()).id(1).named("floatCol"))
                         .named("root");
 
         readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
@@ -687,7 +688,7 @@ public abstract class SqliteCatalogBase {
                 Types.NestedField.optional(1, "doubleCol", Types.DoubleType.get()));
         final MessageType expectedParquetSchema =
                 buildMessage()
-                        .addField(optional(DOUBLE).id(1).named("doubleCol"))
+                        .addField(optional(DOUBLE).columnOrder(ColumnOrder.typeDefined()).id(1).named("doubleCol"))
                         .named("root");
 
         readWriteTestHelper(id, source, expectedIcebergSchema, expectedParquetSchema);
@@ -1194,7 +1195,7 @@ public abstract class SqliteCatalogBase {
         final MessageType expectedParquetSchema =
                 buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
                         .addField(repeatedGroup()
-                                .addField(optional(FLOAT).named("element"))
+                                .addField(optional(FLOAT).columnOrder(ColumnOrder.typeDefined()).named("element"))
                                 .named("list"))
                         .named("floatList")).named("root");
 
@@ -1269,7 +1270,7 @@ public abstract class SqliteCatalogBase {
         final MessageType expectedParquetSchema =
                 buildMessage().addField(optionalGroup().id(1).as(LogicalTypeAnnotation.listType())
                         .addField(repeatedGroup()
-                                .addField(optional(DOUBLE).named("element"))
+                                .addField(optional(DOUBLE).named("element").withColumnOrder(ColumnOrder.typeDefined()))
                                 .named("list"))
                         .named("doubleList")).named("root");
 
@@ -1624,7 +1625,7 @@ public abstract class SqliteCatalogBase {
             final MessageType expectedSchema = buildMessage()
                     .addFields(
                             optional(INT32).id(1).as(intType(32, true)).named("intCol"),
-                            optional(DOUBLE).id(2).named("doubleCol"))
+                            optional(DOUBLE).columnOrder(ColumnOrder.typeDefined()).id(2).named("doubleCol"))
                     .named("root");
             verifySchema(parquetFiles.get(0), expectedSchema);
         }
@@ -1654,12 +1655,12 @@ public abstract class SqliteCatalogBase {
             final MessageType expectedSchema0 = buildMessage()
                     .addFields(
                             optional(INT32).id(1).as(intType(32, true)).named("newIntCol"),
-                            optional(DOUBLE).id(2).named("newDoubleCol"))
+                            optional(DOUBLE).columnOrder(ColumnOrder.typeDefined()).id(2).named("newDoubleCol"))
                     .named("root");
             final MessageType expectedSchema1 = buildMessage()
                     .addFields(
                             optional(INT32).id(1).as(intType(32, true)).named("intCol"),
-                            optional(DOUBLE).id(2).named("doubleCol"))
+                            optional(DOUBLE).columnOrder(ColumnOrder.typeDefined()).id(2).named("doubleCol"))
                     .named("root");
             verifySchema(parquetFiles.get(0), expectedSchema0);
             verifySchema(parquetFiles.get(1), expectedSchema1);

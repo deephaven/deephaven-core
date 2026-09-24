@@ -50,7 +50,6 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.IntVector;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -81,6 +80,7 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
+import static org.junit.Assert.*;
 
 public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTestCase {
     static final long UPDATE_INTERVAL = 1000; // arbitrary; we enforce coalescing on both sides
@@ -161,7 +161,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
             exceptions.add(originalException);
             final StringWriter errors = new StringWriter();
             originalException.printStackTrace(new PrintWriter(errors));
-            TestCase.fail(errors.toString());
+            fail(errors.toString());
         }
     }
 
@@ -703,7 +703,6 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
         abstract void maybeChangeSub(int step, int rt, int pt);
     }
 
-
     // ---- Growing full subscription tests ----
 
     public static class DummyObserver implements StreamObserver<BarrageMessageWriter.MessageView> {
@@ -718,6 +717,11 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
          * message-ordering invariants that a lenient reader would otherwise paper over.
          */
         final List<Byte> observedHeaderTypes = new ArrayList<>();
+        /**
+         * Every error the producer has sent this subscriber. Recorded because the producer delivers errors through
+         * {@code GrpcUtil.safelyError}, which swallows what {@link #onError} throws.
+         */
+        final List<Throwable> errors = new ArrayList<>();
 
         DummyObserver(final BarrageDataMarshaller marshaller, final Queue<BarrageMessage> receivedCommands) {
             this.marshaller = marshaller;
@@ -767,6 +771,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
 
         @Override
         public void onError(final Throwable throwable) {
+            errors.add(throwable);
             throw new IllegalStateException(throwable);
         }
 

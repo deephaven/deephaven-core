@@ -20,12 +20,11 @@ A table publisher uses the [`TablePublisher.of`](../reference/table-operations/c
 
 More sophisticated use cases will add steps but follow the same basic formula.
 
-### Construct the Table Publisher and its associated blink table
+### Construct the table publisher and its associated blink table
 
 The [`TablePublisher.of`](../reference/table-operations/create/TablePublisher.md) function returns a [`TablePublisher`](/core/pydoc/code/deephaven.stream.table_publisher.html#deephaven.stream.table_publisher.TablePublisher). The following code block creates a table publisher named `My publisher` that publishes to a [blink table](../conceptual/table-types.md#specialization-3-blink) with two columns, `X` and `Y`, which are `int` and `double` data types, respectively.
 
-```groovy order=source reset
-import io.deephaven.csv.util.MutableBoolean
+```groovy syntax
 import io.deephaven.engine.table.ColumnDefinition
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.stream.TablePublisher
@@ -37,21 +36,16 @@ definition = TableDefinition.of(
 
 shutDown = {println "Finished using My Publisher."}
 
-onShutdown = new MutableBoolean()
-
 publisher = TablePublisher.of("My Publisher", definition, null, shutDown)
 
 source = publisher.table()
 ```
-
-Note that since we have not called `add` yet, the `source` table is empty.
 
 ### Example: Getting started
 
 The following example creates a table with three columns (`X`, `Y`, and `Z`). The columns initially contain no data because `addTable` has not yet been called.
 
 ```groovy test-set=1 order=publishedTable
-import io.deephaven.csv.util.MutableBoolean
 import io.deephaven.engine.table.ColumnDefinition
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.stream.TablePublisher
@@ -71,9 +65,11 @@ publishedTable = publisher.table()
 
 Add data to the blink table by calling the [`add`](../reference/table-operations/create/TablePublisher.md#methods) method.
 
-```groovy test-set=1 order=publishedTable
+```groovy ticking-table test-set=1 order=null
 publisher.add(emptyTable(5).update("X = randomInt(0, 10)", "Y = randomDouble(0.0, 100.0)", "Z = randomDouble(0.0, 100.0)"))
 ```
+
+![The `publishedTable` blink table after data has been added](../assets/how-to/table-publisher-getting-started.png)
 
 The `TablePublisher` can be shut down by calling [`publishFailure`](../reference/table-operations/create/TablePublisher.md#methods).
 
@@ -83,14 +79,13 @@ publisher.publishFailure(new RuntimeException("Publisher shut down by user."))
 
 ### Example: threading
 
-The following example adds new data to the publisher with [`emptyTable`](./new-and-empty-table.md#emptytable) every second for 5 seconds in a separate thread. Note how the current [execution context](../conceptual/execution-context.md) is captured and used to add data to the publisher. Attempting to perform table operations in a separate thread without specifying an [execution context](../conceptual/execution-context.md) will raise an exception.
+The following example adds new data to the publisher with [`emptyTable`](../reference/table-operations/create/emptyTable.md) every second for 5 seconds in a separate thread. Note how the current [execution context](../conceptual/execution-context.md) is captured and used to add data to the publisher. Attempting to perform table operations in a separate thread without specifying an [execution context](../conceptual/execution-context.md) will raise an exception.
 
 > [!IMPORTANT]
 > A ticking table in a thread must be updated from within an [execution context](../conceptual/execution-context.md).
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.context.ExecutionContext
-import io.deephaven.csv.util.MutableBoolean
 import io.deephaven.engine.table.ColumnDefinition
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.stream.TablePublisher
@@ -102,8 +97,6 @@ definition = TableDefinition.of(
 )
 
 shutDown = { -> println "Finished."}
-
-onShutdown = new MutableBoolean()
 
 myPublisher = TablePublisher.of("My Publisher", definition, null, shutDown)
 
@@ -130,7 +123,7 @@ thread = new Thread(myFunc).start()
 
 ## Data history
 
-Table publishers create blink tables. Blink tables do not store any data history - data is gone forever at the start of a new update cycle. In most use cases, you will want to store some or all of the rows written during previous update cycles. There are two ways to do this:
+Table publishers create blink tables. Blink tables do not store any data history — data is gone forever at the start of a new update cycle. In most use cases, you want to store some or all of the rows written during previous update cycles. There are two ways to do this:
 
 - Store some data history by creating a downstream ring table with [`RingTableTools.of`](../reference/cheat-sheets/simple-table-constructors.md#ringtabletoolsof).
 - Store all data history by creating a downstream append-only table with [`blinkToAppendOnly`](../reference/table-operations/create/blink-to-append-only.md).
@@ -145,7 +138,6 @@ import io.deephaven.engine.table.impl.BlinkTableTools
 import io.deephaven.engine.context.ExecutionContext
 import io.deephaven.engine.table.ColumnDefinition
 import io.deephaven.engine.table.TableDefinition
-import io.deephaven.csv.util.MutableBoolean
 import io.deephaven.stream.TablePublisher
 import io.deephaven.util.SafeCloseable
 
@@ -155,8 +147,6 @@ definition = TableDefinition.of(
 )
 
 shutDown = { -> println 'Finished.'}
-
-onShutdown = new MutableBoolean()
 
 myPublisher = TablePublisher.of('My Publisher', definition, null, shutDown)
 
@@ -198,14 +188,14 @@ myAppendOnlyTable = BlinkTableTools.blinkToAppendOnly(myTable)
 
 ### Example: Getting started
 
-The following example creates a table with two columns (`A` and `B`). The columns contain randomly generated integers and strings, respectively. Every second, for ten seconds, a new row is added to the table.
+The following example creates a table with two columns (`A` and `B`). The columns contain randomly generated integers and characters, respectively. Every second, for ten seconds, a new row is added to the table.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.impl.util.DynamicTableWriter
 
 chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray()
 
-// Create a DynamicTableWriter with two columns: `A` (int) and `B` (String)
+// Create a DynamicTableWriter with two columns: `A` (int) and `B` (char)
 columnNames = ["A", "B"] as String[]
 columnTypes = [int.class, char.class] as Class[]
 tableWriter = new DynamicTableWriter(columnNames, columnTypes)
@@ -235,7 +225,7 @@ def thread = Thread.start {
 
 <LoopedVideo src='../assets/how-to/DynamicTableWriter_Video1.mp4' />
 
-### Example: Trig Functions
+### Example: Trig functions
 
 The following example writes rows containing `X`, `sin(X)`, `cos(X)`, and `tan(X)` and plots the functions as the table updates.
 
@@ -316,7 +306,7 @@ All table updates emanate from the [Periodic Update Graph](../conceptual/periodi
 
 ## Related documentation
 
-- [Create new tables](./new-and-empty-table.md#newtable)
+- [Create new tables](./new-and-empty-table.md#emptytable)
 - [Deephaven data types](./data-types.md)
 - [Deephaven's table update model](../conceptual/table-update-model.md)
 - [DynamicTableWriter](../reference/table-operations/create/DynamicTableWriter.md)

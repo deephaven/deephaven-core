@@ -3,20 +3,22 @@
 //
 package io.deephaven.plot.colors;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.plot.util.Range;
 import groovy.lang.Closure;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class TestColorMap extends BaseArrayTestCase {
+import static org.junit.Assert.*;
 
+public class TestColorMap {
+
+    @Test
     public void testHeatMap() {
         Function<Double, Color> map = ColorMaps.heatMap(0, 100, new Color(254, 0, 0), new Color(0, 0, 254));
         Color c = map.apply(0.0);
@@ -39,6 +41,7 @@ public class TestColorMap extends BaseArrayTestCase {
 
     }
 
+    @Test
     public void testRangeColor() {
         Range r1 = new Range(0, 50, true, false);
         Range r2 = new Range(50, 100);
@@ -67,15 +70,15 @@ public class TestColorMap extends BaseArrayTestCase {
         assertEquals(p, new Color(0, 0, 255));
         assertNull(map.apply(null));
 
-
         try {
             ColorMaps.rangeMap(null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RequirementFailure e) {
             assertTrue(e.getMessage().contains("map == null"));
         }
     }
 
+    @Test
     public void testPredicateColor() {
         Color c1 = new Color(255, 0, 0);
         Color c2 = new Color(0, 255, 0);
@@ -97,15 +100,15 @@ public class TestColorMap extends BaseArrayTestCase {
         assertEquals(p, new Color(0, 0, 255));
         assertNull(map.apply(null));
 
-
         try {
             ColorMaps.rangeMap(null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RequirementFailure e) {
             assertTrue(e.getMessage().contains("map == null"));
         }
     }
 
+    @Test
     public void testClosureColor() {
         Closure<Boolean> r1 = new Closure<Boolean>(null) {
             @Override
@@ -151,10 +154,9 @@ public class TestColorMap extends BaseArrayTestCase {
         assertEquals(p, new Color(0, 0, 255));
         assertNull(map.apply(null));
 
-
         try {
             ColorMaps.rangeMap(null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RequirementFailure e) {
             assertTrue(e.getMessage().contains("map == null"));
         }

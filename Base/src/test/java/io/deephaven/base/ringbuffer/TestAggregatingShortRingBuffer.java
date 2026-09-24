@@ -7,12 +7,15 @@
 // @formatter:off
 package io.deephaven.base.ringbuffer;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-public class TestAggregatingShortRingBuffer extends TestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class TestAggregatingShortRingBuffer {
 
     private void assertEmpty(AggregatingShortRingBuffer rb) {
         assertTrue(rb.isEmpty());
@@ -33,6 +36,7 @@ public class TestAggregatingShortRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testLargeAmounts() {
         final AggregatingShortRingBuffer rb = new AggregatingShortRingBuffer(3, (short) 0, (a, b) -> (short) (a + b));
 
@@ -55,6 +59,7 @@ public class TestAggregatingShortRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMinLargeAmounts() {
         final AggregatingShortRingBuffer rb =
                 new AggregatingShortRingBuffer(3, Short.MAX_VALUE, (a, b) -> (short) Math.min(a, b));
@@ -71,6 +76,7 @@ public class TestAggregatingShortRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMaxLargeAmounts() {
         final AggregatingShortRingBuffer rb =
                 new AggregatingShortRingBuffer(3, Short.MIN_VALUE, (a, b) -> (short) Math.max(a, b));
@@ -89,6 +95,7 @@ public class TestAggregatingShortRingBuffer extends TestCase {
 
     // region non-byte-tests
 
+    @Test
     public void testEvaluateSumLargeAmounts() {
         final AggregatingShortRingBuffer rb = new AggregatingShortRingBuffer(3, (short) 0, (a, b) -> (short) (a + b));
         short runningSum = (short) 0;
@@ -123,6 +130,7 @@ public class TestAggregatingShortRingBuffer extends TestCase {
         return (short) (n * (n - 1) / 2);
     }
 
+    @Test
     public void testEvaluationEdgeCase() {
         AggregatingShortRingBuffer rb = new AggregatingShortRingBuffer(512, (short) 0, (a, b) -> (short) (a + b));
 
@@ -201,7 +209,6 @@ public class TestAggregatingShortRingBuffer extends TestCase {
             assertEquals((short) 0, rb.evaluate());
         }
 
-
         rb = new AggregatingShortRingBuffer(512, (short) 0, (a, b) -> (short) (a + b));
         // need to get the buffer to state where we have clean pushes and a wrapped pop
 
@@ -232,6 +239,7 @@ public class TestAggregatingShortRingBuffer extends TestCase {
     }
     // endregion non-byte-tests
 
+    @Test
     public void testPushPopUnsafe() {
         final AggregatingShortRingBuffer rb =
                 new AggregatingShortRingBuffer(3, (short) -Short.MAX_VALUE, (a, b) -> (short) Math.max(a, b));
@@ -264,6 +272,7 @@ public class TestAggregatingShortRingBuffer extends TestCase {
         assertEquals((short) 99, rb.evaluate()); // last value added is max
     }
 
+    @Test
     public void testPopMultiple() {
         final AggregatingShortRingBuffer rb = new AggregatingShortRingBuffer(3, (short) 0, (a, b) -> (short) (a + b));
 
@@ -292,6 +301,7 @@ public class TestAggregatingShortRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testSpecialCaseA() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingShortRingBuffer rb = new AggregatingShortRingBuffer(4, (short) 0, (a, b) -> (short) (a + b));
@@ -302,6 +312,7 @@ public class TestAggregatingShortRingBuffer extends TestCase {
         assertEquals((short) 5, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseB() {
         // push the full capacity while wrapped
         final AggregatingShortRingBuffer rb = new AggregatingShortRingBuffer(64, (short) 0, (a, b) -> (short) (a + b));
@@ -314,6 +325,7 @@ public class TestAggregatingShortRingBuffer extends TestCase {
         assertEquals((short) 64, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseC() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingShortRingBuffer rb = new AggregatingShortRingBuffer(16, (short) 0, (a, b) -> (short) (a + b));

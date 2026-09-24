@@ -4,11 +4,14 @@
 package io.deephaven.stats;
 
 import io.deephaven.base.stats.*;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.io.File;
 
-public class TestStatsCPUCollector extends TestCase {
+import static org.junit.Assert.*;
+
+public class TestStatsCPUCollector {
+    @Test
     public void testProcFD() {
         synchronized (Stats.class) {
             Stats.clearAll();

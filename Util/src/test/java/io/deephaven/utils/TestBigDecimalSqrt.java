@@ -4,11 +4,14 @@
 package io.deephaven.utils;
 
 import io.deephaven.util.BigDecimalUtils;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.math.BigDecimal;
 
-public class TestBigDecimalSqrt extends TestCase {
+import static org.junit.Assert.*;
+
+public class TestBigDecimalSqrt {
+    @Test
     public void testSqrt() {
         /*
          * x = √10; eps = 1e-11 => (x + / -eps)^2 = x^2 +/- 2*eps*x + eps^2 Therefore the sqrt squared is accurate to
@@ -25,6 +28,7 @@ public class TestBigDecimalSqrt extends TestCase {
                 200);
     }
 
+    @Test
     public void testSqrtExceptionals() {
         final BigDecimal sqrt = BigDecimalUtils.sqrt(null, 10);
         System.out.println("sqrt(null): " + sqrt);
@@ -34,17 +38,17 @@ public class TestBigDecimalSqrt extends TestCase {
         int scale = 10;
         try {
             BigDecimalUtils.sqrt(value, scale);
-            TestCase.fail("Expected : " + IllegalArgumentException.class);
+            fail("Expected : " + IllegalArgumentException.class);
         } catch (final IllegalArgumentException negativeValExc) {
-            TestCase.assertTrue(value.signum() < 0);
+            assertTrue(value.signum() < 0);
         }
 
         scale = -10;
         try {
             BigDecimalUtils.sqrt(BigDecimal.TEN, scale);
-            TestCase.fail("Expected : " + IllegalArgumentException.class);
+            fail("Expected : " + IllegalArgumentException.class);
         } catch (final IllegalArgumentException negativeScaleExc) {
-            TestCase.assertTrue(negativeScaleExc.getMessage().contains("scale"));
+            assertTrue(negativeScaleExc.getMessage().contains("scale"));
         }
     }
 
@@ -60,7 +64,7 @@ public class TestBigDecimalSqrt extends TestCase {
     private void check(final BigDecimal expected, final BigDecimal actual, final int scale) {
         final BigDecimal difference = expected.subtract(actual).abs();
         if (difference.compareTo(BigDecimal.ONE.scaleByPowerOfTen(-scale)) > 0) {
-            TestCase.assertEquals(expected, actual);
+            assertEquals(expected, actual);
         }
     }
 }

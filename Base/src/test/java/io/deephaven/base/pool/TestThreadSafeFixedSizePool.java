@@ -5,13 +5,15 @@ package io.deephaven.base.pool;
 
 import io.deephaven.base.MockFactory;
 import io.deephaven.base.verify.RequirementFailure;
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 // --------------------------------------------------------------------
 /**
  * Tests for {@link ThreadSafeFixedSizePool}.
  */
-public class TestThreadSafeFixedSizePool extends TestCase {
+public class TestThreadSafeFixedSizePool {
 
     private MockFactory<Object> m_mockObjectFactory;
     private MockClearingProcedure<Object> m_mockClearingProcedure;
@@ -25,10 +27,10 @@ public class TestThreadSafeFixedSizePool extends TestCase {
     };
 
     // ----------------------------------------------------------------
+    @Test
     public void testThreadSafeFixedSizePool() {
         m_mockObjectFactory = new MockFactory<Object>();
         m_mockClearingProcedure = new MockClearingProcedure<Object>();
-
 
         // create pool
         for (Object object : OBJECTS) {
@@ -80,6 +82,7 @@ public class TestThreadSafeFixedSizePool extends TestCase {
     }
 
     // ----------------------------------------------------------------
+    @Test
     public void testThreadSafeFixedSizePoolNoClearingProcedure() {
         m_mockObjectFactory = new MockFactory<Object>();
         m_mockClearingProcedure = new MockClearingProcedure<Object>();
@@ -109,6 +112,7 @@ public class TestThreadSafeFixedSizePool extends TestCase {
     }
 
     // ----------------------------------------------------------------
+    @Test
     public void testThreadSafeFixedSizePoolNoFactory() {
         m_mockObjectFactory = new MockFactory<Object>();
         m_mockClearingProcedure = new MockClearingProcedure<Object>();

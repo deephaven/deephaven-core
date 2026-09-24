@@ -4,9 +4,12 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.impl.select.FormulaUtil;
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class FormulaUtilTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class FormulaUtilTest {
+    @Test
     public void testReplace() {
         assertEquals("a a bc ab a", FormulaUtil.replaceFormulaTokens("b b bc ab b", "b", "a"));
         assertEquals("bb bb bc ab bb", FormulaUtil.replaceFormulaTokens("b b bc ab b", "b", "bb"));

@@ -9,7 +9,6 @@ import io.deephaven.util.channel.CachedChannelProvider;
 import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
-import junit.framework.TestCase;
 import org.junit.Assume;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -138,7 +137,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
             outputStream.flush();
             try {
                 outputStream.write(contentBytes);
-                TestCase.fail("Failure expected on writing since the stream is marked as done.");
+                fail("Failure expected on writing since the stream is marked as done.");
             } catch (IOException expected) {
             }
 

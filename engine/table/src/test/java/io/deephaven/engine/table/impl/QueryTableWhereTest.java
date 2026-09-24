@@ -47,7 +47,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 import io.deephaven.util.datastructures.CachingSupplier;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -71,6 +70,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongConsumer;
+import java.util.function.LongSupplier;
+import java.util.function.LongUnaryOperator;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
@@ -78,7 +79,6 @@ import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simu
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public abstract class QueryTableWhereTest {
     private final Logger log = LoggerFactory.getLogger(QueryTableWhereTest.class);
@@ -323,7 +323,7 @@ public abstract class QueryTableWhereTest {
                 validate(en);
             }
         } catch (Exception e) {
-            TestCase.fail(e.getMessage());
+            fail(e.getMessage());
         }
     }
 
@@ -419,15 +419,26 @@ public abstract class QueryTableWhereTest {
     }
 
     private static class TestChunkFilter implements ChunkFilter {
-        final CountDownLatch latch = new CountDownLatch(1);
         final ChunkFilter actualFilter;
-        final long sleepDurationNanos;
+        /** The invocation, counting from one, that interrupts the filtering thread; zero never interrupts. */
+        final long interruptAtInvocation;
         long invokes;
         long invokedValues;
 
-        private TestChunkFilter(ChunkFilter actualFilter, long sleepDurationNanos) {
+        private TestChunkFilter(ChunkFilter actualFilter) {
+            this(actualFilter, 0);
+        }
+
+        private TestChunkFilter(ChunkFilter actualFilter, long interruptAtInvocation) {
             this.actualFilter = actualFilter;
-            this.sleepDurationNanos = sleepDurationNanos;
+            this.interruptAtInvocation = interruptAtInvocation;
+        }
+
+        private void beforeFilter(final int size) {
+            if (++invokes == interruptAtInvocation) {
+                Thread.currentThread().interrupt();
+            }
+            invokedValues += size;
         }
 
         @Override
@@ -435,17 +446,7 @@ public abstract class QueryTableWhereTest {
                 final Chunk<? extends Values> values,
                 final LongChunk<OrderedRowKeys> keys,
                 final WritableLongChunk<OrderedRowKeys> results) {
-            if (++invokes == 1) {
-                latch.countDown();
-            }
-            invokedValues += values.size();
-            if (sleepDurationNanos > 0) {
-                long nanos = sleepDurationNanos * values.size();
-                final long start = System.nanoTime();
-                final long end = start + nanos;
-                // noinspection StatementWithEmptyBody
-                while (System.nanoTime() < end);
-            }
+            beforeFilter(values.size());
             actualFilter.filter(values, keys, results);
         }
 
@@ -453,17 +454,7 @@ public abstract class QueryTableWhereTest {
         public int filter(
                 final Chunk<? extends Values> values,
                 final WritableBooleanChunk<Values> results) {
-            if (++invokes == 1) {
-                latch.countDown();
-            }
-            invokedValues += values.size();
-            if (sleepDurationNanos > 0) {
-                long nanos = sleepDurationNanos * values.size();
-                final long timeStart = System.nanoTime();
-                final long timeEnd = timeStart + nanos;
-                // noinspection StatementWithEmptyBody
-                while (System.nanoTime() < timeEnd);
-            }
+            beforeFilter(values.size());
             return actualFilter.filter(values, results);
         }
 
@@ -471,17 +462,7 @@ public abstract class QueryTableWhereTest {
         public int filterAnd(
                 final Chunk<? extends Values> values,
                 final WritableBooleanChunk<Values> results) {
-            if (++invokes == 1) {
-                latch.countDown();
-            }
-            invokedValues += values.size();
-            if (sleepDurationNanos > 0) {
-                long nanos = sleepDurationNanos * values.size();
-                final long timeStart = System.nanoTime();
-                final long timeEnd = timeStart + nanos;
-                // noinspection StatementWithEmptyBody
-                while (System.nanoTime() < timeEnd);
-            }
+            beforeFilter(values.size());
             return actualFilter.filterAnd(values, results);
         }
 
@@ -578,58 +559,91 @@ public abstract class QueryTableWhereTest {
     @Test
     public void testChunkFilterInterruption() {
         final Table tableToFilter = TableTools.emptyTable(2_000_000).update("X=i");
+        final ColumnSource<?> columnSource = tableToFilter.getColumnSource("X");
 
-        final TestChunkFilter slowCounter =
-                new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1_000_000, true, false), 100);
+        final TestChunkFilter counter =
+                new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1_000_000, true, false));
+        try (final RowSet result =
+                ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), columnSource, false, counter)) {
+            assertEquals(RowSetFactory.fromRange(0, 999_999), result);
+        }
+        assertEquals(2_000_000, counter.invokedValues);
 
-        QueryScope.addParam("slowCounter", slowCounter);
+        // The filter interrupts its own thread while filtering the first chunk, which the first interruption
+        // check observes one INITIAL_INTERRUPTION_SIZE of rows later.
+        final TestChunkFilter interrupting =
+                new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1_000_000, true, false), 1);
+        assertThrows(CancellationException.class,
+                () -> ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), columnSource, false, interrupting));
 
-        final long start = System.currentTimeMillis();
-        final RowSet result =
-                ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"),
-                        false, slowCounter);
-        final long end = System.currentTimeMillis();
-        log.debug().append("Duration: " + (end - start)).endl();
+        System.out.println("Invoked Values: " + interrupting.invokedValues);
+        assertEquals(ChunkFilter.INITIAL_INTERRUPTION_SIZE, interrupting.invokedValues);
+    }
 
-        assertEquals(RowSetFactory.fromRange(0, 999_999), result);
+    private static final long FIRST_WINDOW_CHUNKS =
+            ChunkFilter.INITIAL_INTERRUPTION_SIZE / ChunkFilter.FILTER_CHUNK_SIZE;
 
-        assertEquals(2_000_000, slowCounter.invokedValues);
-        slowCounter.reset();
+    /**
+     * Filter {@code totalChunks} chunks of rows, against a clock that reports {@code chunksToMillis} of the chunks
+     * filtered so far, and return the number of chunks filtered between successive interruption checks.
+     */
+    private static long[] interruptionWindows(final long totalChunks, final LongUnaryOperator chunksToMillis) {
+        // Nothing reads the values, so an empty column source and a filter that rejects everything suffice.
+        final TestChunkFilter counter = new TestChunkFilter(IntRangeComparator.makeIntFilter(0, 1, true, false));
 
-        final MutableObject<Exception> caught = new MutableObject<>();
-        final ExecutionContext executionContext = ExecutionContext.getContext();
-        final Thread t = new Thread(() -> {
-            final long start1 = System.currentTimeMillis();
-            try (final SafeCloseable ignored = executionContext.open()) {
-                ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"), false,
-                        slowCounter);
-            } catch (Exception e) {
-                caught.setValue(e);
-            }
-            final long end1 = System.currentTimeMillis();
-            log.debug().append("Duration: " + (end1 - start1)).endl();
-        });
-        t.start();
+        // The clock is read once before filtering begins, and once per interruption check.
+        final LongArrayList checkedAfterChunks = new LongArrayList();
+        final LongSupplier clockMillis = () -> {
+            checkedAfterChunks.add(counter.invokes);
+            return chunksToMillis.applyAsLong(counter.invokes);
+        };
 
-        waitForLatch(slowCounter.latch);
-
-        t.interrupt();
-
-        try {
-            t.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        try (final RowSet selection = RowSetFactory.flat(totalChunks * ChunkFilter.FILTER_CHUNK_SIZE);
+                final RowSet result = ChunkFilter.applyChunkFilter(selection,
+                        NullValueColumnSource.getInstance(int.class, null), false, counter, clockMillis)) {
+            assertTrue(result.isEmpty());
+            assertEquals(totalChunks, counter.invokes);
         }
 
-        log.debug().append("Invoked Values: " + slowCounter.invokedValues).endl();
-        log.debug().append("Invokes: " + slowCounter.invokes).endl();
+        final long[] windows = new long[checkedAfterChunks.size() - 1];
+        for (int ii = 0; ii < windows.length; ++ii) {
+            windows[ii] = checkedAfterChunks.getLong(ii + 1) - checkedAfterChunks.getLong(ii);
+        }
+        return windows;
+    }
 
-        assertTrue(slowCounter.invokedValues < 2_000_000L);
-        assertEquals(1 << 20, slowCounter.invokedValues);
-        assertNotNull(caught.getValue());
-        assertEquals(CancellationException.class, caught.getValue().getClass());
+    @Test
+    public void testInterruptionIntervalDoublesWhenChecksAreInstantaneous() {
+        // A clock that never advances leaves nothing to measure, so the interval simply doubles.
+        final long[] windows = interruptionWindows(7 * FIRST_WINDOW_CHUNKS + 1, chunks -> 0);
+        assertArrayEquals(
+                new long[] {FIRST_WINDOW_CHUNKS, 2 * FIRST_WINDOW_CHUNKS, 4 * FIRST_WINDOW_CHUNKS},
+                windows);
+    }
 
-        QueryScope.addParam("slowCounter", null);
+    @Test
+    public void testInterruptionIntervalGrowthIsCappedAtDoubling() {
+        // The first window takes a quarter of the goal duration, which asks for four times as many chunks; the
+        // interval may only double.
+        final long[] windows = interruptionWindows(3 * FIRST_WINDOW_CHUNKS + 1,
+                chunks -> chunks * ChunkFilter.INTERRUPTION_GOAL_MILLIS / (4 * FIRST_WINDOW_CHUNKS));
+        assertArrayEquals(new long[] {FIRST_WINDOW_CHUNKS, 2 * FIRST_WINDOW_CHUNKS}, windows);
+    }
+
+    @Test
+    public void testInterruptionIntervalConvergesOnTheGoalDuration() {
+        // A millisecond per chunk: the first window overshoots the goal, and one retune lands on it exactly.
+        final long[] windows = interruptionWindows(
+                FIRST_WINDOW_CHUNKS + 2 * ChunkFilter.INTERRUPTION_GOAL_MILLIS + 1, chunks -> chunks);
+        assertArrayEquals(new long[] {FIRST_WINDOW_CHUNKS, ChunkFilter.INTERRUPTION_GOAL_MILLIS,
+                ChunkFilter.INTERRUPTION_GOAL_MILLIS}, windows);
+    }
+
+    @Test
+    public void testInterruptionIntervalNeverShrinksBelowOneChunk() {
+        // A second per chunk: a single chunk already overshoots the goal, so the interval bottoms out at one.
+        final long[] windows = interruptionWindows(FIRST_WINDOW_CHUNKS + 3, chunks -> chunks * 1000);
+        assertArrayEquals(new long[] {FIRST_WINDOW_CHUNKS, 1, 1}, windows);
     }
 
     @ReflexiveUse(referrers = "QueryTableWhereTest.class")
@@ -1055,6 +1069,188 @@ public abstract class QueryTableWhereTest {
         // The where result should have failed, because the filter expression is invalid for the new data.
         Assert.eqTrue(whereResult.isFailed(), "whereResult.isFailed()");
     }
+
+    // region Set table failures (DH-23666)
+
+    /**
+     * Assert that every error reported to the async client error notifier is one of {@code expected}, that is, one of
+     * the failures the test itself caused. An engine error raised while propagating them is not acceptable.
+     */
+    private void assertOnlyReportedErrors(final Throwable... expected) {
+        final Set<Throwable> allowed = Collections.newSetFromMap(new IdentityHashMap<>());
+        allowed.addAll(Arrays.asList(expected));
+        for (final Throwable reported : base.getUpdateErrors()) {
+            assertTrue("unexpected error reported: " + reported, allowed.contains(reported));
+        }
+    }
+
+    private static DynamicWhereFilter keyIn(final Table setTable) {
+        return new DynamicWhereFilter(setTable, true, new MatchPair("Key", "Key"));
+    }
+
+    /**
+     * When a set table fails, every result filtered by it fails, exactly once, with the set's own error. Two filters in
+     * one {@code where} share a result, and a second {@code where} over the same set shares the set's listener, so the
+     * failure must reach each of those results once and only once.
+     */
+    @Test
+    public void testSetFailureFailsEveryResultOnceWithTwoFiltersSharingOneResult() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        // Copies of one filter share a single set listener; independent filters over the same table would not.
+        final DynamicWhereFilter filter = keyIn(setTable);
+        final Table twoFilters = source.where(Filter.and(filter.copy(), filter.copy()));
+        final Table oneFilter = source.where(filter.copy());
+        final FailureRecordingListener twoFiltersFailures = new FailureRecordingListener(twoFilters);
+        final FailureRecordingListener oneFilterFailures = new FailureRecordingListener(oneFilter);
+        assertFalse(twoFilters.isFailed());
+        assertFalse(oneFilter.isFailed());
+
+        final RuntimeException setError = new RuntimeException("set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> setTable.notifyListenersOnError(setError, null));
+        }
+
+        assertTrue("the result with two filters over the set must fail", twoFilters.isFailed());
+        assertTrue("the result with one filter over the set must fail", oneFilter.isFailed());
+        twoFiltersFailures.assertFailedOnceWith(setError);
+        oneFilterFailures.assertFailedOnceWith(setError);
+        assertOnlyReportedErrors(setError);
+    }
+
+    /**
+     * When two set tables fail on the same cycle, a result filtered by both fails exactly once, and a result filtered
+     * by only the second set still fails. The first failure to arrive fails the shared result; the second must not
+     * disturb it, and must still reach every other result of its own set.
+     */
+    @Test
+    public void testSetFailuresFailEveryResultOnceWhenTwoSetsFailInOneCycle() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable firstSet = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+        final QueryTable secondSet = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        // Copies of one filter share a single set listener, so both results hear about the second set from it.
+        final DynamicWhereFilter secondSetFilter = keyIn(secondSet);
+        final Table bothSets = source.where(Filter.and(keyIn(firstSet), secondSetFilter.copy()));
+        final Table secondSetOnly = source.where(secondSetFilter.copy());
+        final FailureRecordingListener bothSetsFailures = new FailureRecordingListener(bothSets);
+        final FailureRecordingListener secondSetOnlyFailures = new FailureRecordingListener(secondSetOnly);
+        assertFalse(bothSets.isFailed());
+        assertFalse(secondSetOnly.isFailed());
+
+        final RuntimeException firstError = new RuntimeException("first set table failure");
+        final RuntimeException secondError = new RuntimeException("second set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                firstSet.notifyListenersOnError(firstError, null);
+                secondSet.notifyListenersOnError(secondError, null);
+            });
+        }
+
+        assertTrue("the result over both sets must fail", bothSets.isFailed());
+        assertTrue("the result over the second set alone must fail", secondSetOnly.isFailed());
+        // Whichever set's failure arrives first is the one the shared result fails with; there must be only one.
+        assertEquals(1, bothSetsFailures.failureCount());
+        secondSetOnlyFailures.assertFailedOnceWith(secondError);
+        assertOnlyReportedErrors(firstError, secondError);
+    }
+
+    /**
+     * When a set table fails on the same cycle its source ticks, the result fails exactly once, on that cycle, with the
+     * set's error. The source update must not be applied to a result whose set is gone, and it must not produce a
+     * second notification of any kind.
+     */
+    @Test
+    public void testSetFailureWhileSourceTicksFailsResultOnce() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final Table result = source.where(keyIn(setTable));
+        final FailureRecordingListener failures = new FailureRecordingListener(result);
+        assertFalse(result.isFailed());
+
+        final RuntimeException setError = new RuntimeException("set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                setTable.notifyListenersOnError(setError, null);
+                addToTable(source, i(8), intCol("Key", 1));
+                source.notifyListeners(i(8), i(), i());
+            });
+        }
+
+        assertTrue("the result must fail on the cycle its set failed", result.isFailed());
+        failures.assertFailedOnceWith(setError);
+        assertOnlyReportedErrors(setError);
+    }
+
+    /**
+     * A {@code where} over a static source with a refreshing set is driven by a where listener with no recorder, which
+     * hears only from its filters. When the set fails, that listener must fail the result exactly once, with the set's
+     * error.
+     */
+    @Test
+    public void testStaticSourceSetFailureFailsResultOnce() {
+        final QueryTable source = testTable(i(2, 4, 6).toTracking(), intCol("Key", 1, 2, 3));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final Table result = source.where(keyIn(setTable));
+        assertTrue("a static source filtered by a refreshing set is refreshing", result.isRefreshing());
+        final FailureRecordingListener failures = new FailureRecordingListener(result);
+        assertFalse(result.isFailed());
+
+        final RuntimeException setError = new RuntimeException("set table failure");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> setTable.notifyListenersOnError(setError, null));
+        }
+
+        assertTrue("the result must fail on the cycle its set failed", result.isFailed());
+        failures.assertFailedOnceWith(setError);
+        assertOnlyReportedErrors(setError);
+    }
+
+    /**
+     * A filter error fails the result from outside its listener's notification. When the set table fails afterwards,
+     * the failure request that reaches the listener must leave the already-failed result alone, rather than failing it
+     * a second time, and must not surface as an engine error.
+     */
+    @Test
+    public void testSetFailureAfterAFilterErrorLeavesTheFailedResultAlone() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(),
+                intCol("Key", 1, 2, 3), col("y", "a", "b", "c"));
+        final QueryTable setTable = testRefreshingTable(i(0).toTracking(), intCol("Key", 1));
+
+        final Table result =
+                source.where(Filter.and(keyIn(setTable), WhereFilterFactory.getExpression("y.length() > 0")));
+        final FailureRecordingListener failures = new FailureRecordingListener(result);
+        assertFalse(result.isFailed());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final RuntimeException setError = new RuntimeException("set table failure");
+        try (final SafeCloseable ignored = base.new ErrorExpectation()) {
+            // A null y makes the formula filter throw, which fails the result through the filter error path.
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(source, i(8), intCol("Key", 1), col("y", (String) null));
+                source.notifyListeners(i(8), i(), i());
+            });
+            assertTrue("the filter error must fail the result", result.isFailed());
+            assertEquals(1, failures.failureCount());
+
+            updateGraph.runWithinUnitTestCycle(() -> setTable.notifyListenersOnError(setError, null));
+        }
+
+        assertEquals("the set failure must not fail the result a second time", 1, failures.failureCount());
+        for (final Throwable reported : base.getUpdateErrors()) {
+            assertTrue("unexpected error reported: " + reported,
+                    reported == setError || reported instanceof FormulaEvaluationException);
+        }
+    }
+
+    // endregion Set table failures (DH-23666)
 
     @Test
     public void testMatchFilterFallback() {
