@@ -10,9 +10,13 @@ import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,7 +28,11 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.util.TableTools.stringCol;
+import static io.deephaven.engine.testutil.TstUtils.addToTable;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.i;
+import static io.deephaven.engine.testutil.TstUtils.removeRows;
+import static io.deephaven.engine.testutil.TstUtils.testRefreshingTable;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -108,5 +116,73 @@ public class ChunkFilterFilterAndTest {
         final Table allMatch =
                 source.aggBy(AggCountWhere("N", Filter.and(RawString.of("X > 0"), notInNothing)), "K");
         assertTableEquals(newTable(stringCol("K", "a", "b"), longCol("N", 2, 1)), allMatch);
+    }
+
+    /**
+     * Without group-by columns, count where takes its count from the return value of the last filter rather than from
+     * the results chunk, so a wrong {@code filterAnd} count is visible only here.
+     */
+    @Test
+    public void ungroupedCountWhereWithConstantLaterFilter() {
+        final Table source = newTable(intCol("X", 1, 2, -3, 4), intCol("Y", 1, 2, 3, 4));
+
+        final MatchFilter inNothing = new MatchFilter(MatchOptions.REGULAR, "Y");
+        inNothing.init(source.getDefinition());
+        assertTableEquals(newTable(longCol("N", 0)),
+                source.aggBy(AggCountWhere("N", Filter.and(RawString.of("X > 0"), inNothing))));
+
+        final MatchFilter notInNothing = new MatchFilter(MatchOptions.INVERTED, "Y");
+        notInNothing.init(source.getDefinition());
+        assertTableEquals(newTable(longCol("N", 3)),
+                source.aggBy(AggCountWhere("N", Filter.and(RawString.of("X > 0"), notInNothing))));
+    }
+
+    @Test
+    public void ungroupedCountWhereWithConditionLaterFilter() {
+        final Table source = newTable(intCol("X", 1, 2, -3, 4), intCol("Y", 1, 2, 3, 4));
+        assertTableEquals(newTable(longCol("N", 2)),
+                source.aggBy(AggCountWhere("N", Filter.and(RawString.of("X > 0"), RawString.of("Y % 2 == 0")))));
+    }
+
+    /**
+     * On a refreshing source, the ungrouped count where adds and removes the {@code filterAnd} counts of the current
+     * and previous values, so a modify needs both to be right.
+     */
+    @Test
+    public void ungroupedCountWhereWithConstantLaterFilterRefreshing() {
+        final QueryTable source = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                intCol("X", 1, 2, -3, 4), intCol("Y", 1, 2, 3, 4));
+        final MatchFilter notInNothing = new MatchFilter(MatchOptions.INVERTED, "Y");
+        notInNothing.init(source.getDefinition());
+        final Table counted = source.aggBy(AggCountWhere("N", Filter.and(RawString.of("X > 0"), notInNothing)));
+        assertTableEquals(newTable(longCol("N", 3)), counted);
+
+        final ControlledUpdateGraph cug = source.getUpdateGraph().cast();
+
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(4, 5), intCol("X", 5, -6), intCol("Y", 5, 6));
+            source.notifyListeners(i(4, 5), i(), i());
+        });
+        assertTableEquals(newTable(longCol("N", 4)), counted);
+
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(0, 2), intCol("X", -1, 3), intCol("Y", 1, 3));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(0, 2), RowSetShiftData.EMPTY,
+                    source.newModifiedColumnSet("X")));
+        });
+        assertTableEquals(newTable(longCol("N", 4)), counted);
+
+        cug.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(5), intCol("X", 6), intCol("Y", 6));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(5), RowSetShiftData.EMPTY,
+                    source.newModifiedColumnSet("X")));
+        });
+        assertTableEquals(newTable(longCol("N", 5)), counted);
+
+        cug.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(1, 3));
+            source.notifyListeners(i(), i(1, 3), i());
+        });
+        assertTableEquals(newTable(longCol("N", 3)), counted);
     }
 }
