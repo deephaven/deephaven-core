@@ -1,0 +1,69 @@
+name: 'Gradle suite'
+description: 'Sets up a JDK and Gradle, then runs one gradle task and uploads its test results.'
+
+inputs:
+  gradle-task:
+    description: 'The gradle task to run (check, testSerial, testParallel, testOutOfBand, ...).'
+    required: true
+  java-version:
+    description: 'The JDK to install and register as a gradle toolchain.'
+    required: false
+    default: '21'
+
+runs:
+  using: 'composite'
+  steps:
+    # Runs after the checkout because a local action cannot be resolved before one, which is still
+    # well ahead of the build.
+    - name: Free Disk Space
+      uses: endersonmenezes/free-disk-space@v2
+      with:
+        remove_haskell: true
+        remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"
+        testing: false
+
+    - name: Starting available disk space
+      shell: bash
+      run: df -h
+
+    - name: Setup JDKs
+      uses: actions/setup-java@v5
+      with:
+        distribution: 'temurin'
+        java-version: ${{ inputs.java-version }}
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v5
+
+    - name: Setup gradle properties
+      shell: bash
+      run: |
+        .github/scripts/gradle-properties.sh ${{ inputs.java-version }} >> gradle.properties
+        cat gradle.properties
+
+    - name: Run gradle ${{ inputs.gradle-task }}
+      shell: bash
+      run: ./gradlew --scan --continue ${{ inputs.gradle-task }}
+
+    - name: Run df -h after build
+      shell: bash
+      run: df -h
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: check-ci-${{ inputs.gradle-task }}-results
+        path: |
+          **/build/test-results/**
+          **/build/reports/tests/**
+
+    - name: Upload JVM Error Logs
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: check-ci-${{ inputs.gradle-task }}-jvm-err
+        path: |
+          **/*_pid*.log
+          **/core.*
+        if-no-files-found: ignore
