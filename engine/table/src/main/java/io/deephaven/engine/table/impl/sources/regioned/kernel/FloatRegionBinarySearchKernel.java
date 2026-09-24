@@ -344,7 +344,7 @@ public class FloatRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastKey) {
-            if (FloatComparisons.eq(region.getFloat(low), min)) {
+            if (FloatComparisons.compare(region.getFloat(low), min) == 0) {
                 return low;
             }
         }
@@ -394,7 +394,7 @@ public class FloatRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (maxInc && high >= firstKey) {
-            if (FloatComparisons.eq(region.getFloat(high), max)) {
+            if (FloatComparisons.compare(region.getFloat(high), max) == 0) {
                 return high;
             }
         }
@@ -444,7 +444,7 @@ public class FloatRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastKey) {
-            if (FloatComparisons.eq(region.getFloat(low), max)) {
+            if (FloatComparisons.compare(region.getFloat(low), max) == 0) {
                 return low;
             }
         }
@@ -494,7 +494,7 @@ public class FloatRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (minInc && high >= firstKey) {
-            if (FloatComparisons.eq(region.getFloat(high), min)) {
+            if (FloatComparisons.compare(region.getFloat(high), min) == 0) {
                 return high;
             }
         }

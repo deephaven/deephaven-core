@@ -366,7 +366,7 @@ public class ShortColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastPos) {
             final short lowValue = usePrev ? source.getPrevShort(selection.get(low)) : source.getShort(selection.get(low));
-            if (ShortComparisons.eq(lowValue, min)) {
+            if (ShortComparisons.compare(lowValue, min) == 0) {
                 return low;
             }
         }
@@ -427,7 +427,7 @@ public class ShortColumnBinarySearchKernel {
         if (maxInc && high >= firstPos) {
             final short highValue =
                     usePrev ? source.getPrevShort(selection.get(high)) : source.getShort(selection.get(high));
-            if (ShortComparisons.eq(highValue, max)) {
+            if (ShortComparisons.compare(highValue, max) == 0) {
                 return high;
             }
         }
@@ -486,7 +486,7 @@ public class ShortColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastPos) {
             final short lowValue = usePrev ? source.getPrevShort(selection.get(low)) : source.getShort(selection.get(low));
-            if (ShortComparisons.eq(lowValue, max)) {
+            if (ShortComparisons.compare(lowValue, max) == 0) {
                 return low;
             }
         }
@@ -547,7 +547,7 @@ public class ShortColumnBinarySearchKernel {
         if (minInc && high >= firstPos) {
             final short highValue =
                     usePrev ? source.getPrevShort(selection.get(high)) : source.getShort(selection.get(high));
-            if (ShortComparisons.eq(highValue, min)) {
+            if (ShortComparisons.compare(highValue, min) == 0) {
                 return high;
             }
         }

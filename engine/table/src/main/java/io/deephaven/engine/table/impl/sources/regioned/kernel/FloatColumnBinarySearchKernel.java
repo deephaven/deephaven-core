@@ -368,7 +368,7 @@ public class FloatColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastPos) {
             final float lowValue = usePrev ? source.getPrevFloat(selection.get(low)) : source.getFloat(selection.get(low));
-            if (FloatComparisons.eq(lowValue, min)) {
+            if (FloatComparisons.compare(lowValue, min) == 0) {
                 return low;
             }
         }
@@ -429,7 +429,7 @@ public class FloatColumnBinarySearchKernel {
         if (maxInc && high >= firstPos) {
             final float highValue =
                     usePrev ? source.getPrevFloat(selection.get(high)) : source.getFloat(selection.get(high));
-            if (FloatComparisons.eq(highValue, max)) {
+            if (FloatComparisons.compare(highValue, max) == 0) {
                 return high;
             }
         }
@@ -488,7 +488,7 @@ public class FloatColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastPos) {
             final float lowValue = usePrev ? source.getPrevFloat(selection.get(low)) : source.getFloat(selection.get(low));
-            if (FloatComparisons.eq(lowValue, max)) {
+            if (FloatComparisons.compare(lowValue, max) == 0) {
                 return low;
             }
         }
@@ -549,7 +549,7 @@ public class FloatColumnBinarySearchKernel {
         if (minInc && high >= firstPos) {
             final float highValue =
                     usePrev ? source.getPrevFloat(selection.get(high)) : source.getFloat(selection.get(high));
-            if (FloatComparisons.eq(highValue, min)) {
+            if (FloatComparisons.compare(highValue, min) == 0) {
                 return high;
             }
         }
