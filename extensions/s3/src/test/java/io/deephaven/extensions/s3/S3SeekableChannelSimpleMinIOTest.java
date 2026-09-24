@@ -8,10 +8,12 @@ import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
 import io.deephaven.base.OSUtil;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 @Tag("testcontainers")
+@Disabled("The MinIO container is disabled")
 public class S3SeekableChannelSimpleMinIOTest extends S3SeekableChannelSimpleTestBase {
 
     @BeforeAll
