@@ -205,13 +205,16 @@ final class IncrementalAggOpenHasherWithTombstoneObject extends IncrementalChunk
 
     @Override
     protected int rehashInternalPartial(int entriesToRehash) {
-        int rehashedEntries = 0;
-        while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer, false)) {
-                rehashedEntries++;
-            }
+        final long slotsToExamine = (long) entriesToRehash * 3;
+        long examinedSlots = 0;
+        while (rehashPointer > 0 && examinedSlots < slotsToExamine) {
+            migrateOneLocation(--rehashPointer, false);
+            ++examinedSlots;
         }
-        return rehashedEntries;
+        if (rehashPointer == 0) {
+            return entriesToRehash;
+        }
+        return (int) (examinedSlots / 3);
     }
 
     @Override
