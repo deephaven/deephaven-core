@@ -505,7 +505,7 @@ abstract class AbstractFilterExecution {
         final PushdownFilterContext context = executor.makePushdownFilterContext(filter, filterSources);
         try {
             return new StatelessFilter(filterIdx, filter, executor, context, barrierDependencies);
-        } catch (final RuntimeException | Error e) {
+        } catch (final Throwable e) {
             // The constructor hashes the filter's barriers, which are arbitrary user objects, so it can fail; nothing
             // owns the context until it returns.
             SafeCloseable.closeAllDuringFailure(e, context);
