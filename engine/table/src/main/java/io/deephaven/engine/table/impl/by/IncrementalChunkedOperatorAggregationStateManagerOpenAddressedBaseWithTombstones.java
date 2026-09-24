@@ -189,6 +189,12 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
+                if ((long) nextOutputPosition.get() + nextChunkSize > Integer.MAX_VALUE) {
+                    // output positions are never reused, so a long-lived aggregation whose keys churn can run out
+                    throw new UnsupportedOperationException(
+                            "Aggregation output positions exhausted: " + nextOutputPosition.get()
+                                    + " states have been created");
+                }
                 outputPositionToHashSlot.ensureCapacity(nextOutputPosition.get() + nextChunkSize, false);
                 while (doRehash(bc.rehashCredits, nextChunkSize)) {
                     migrateFront();
@@ -277,12 +283,13 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             return false;
         }
 
-        // Every slot in the main table is filled by a migration or an insert, and each insert is preceded by at least
-        // one migration of a live entry, so while the alternate has live entries the main table holds at most twice
-        // as many entries as have been inserted since the rehash began. Tombstones do not change that: a tombstone
-        // marks a slot that was already counted, and the migration skips tombstones in the alternate. Choosing a size
-        // at which the live entries fill at most half of the permitted load therefore guarantees that the alternate
-        // is drained before the main table needs another rehash. When tombstones alone crossed the load factor, that
+        // Every slot in the main table is filled by a migration or an insert, so it holds at most the live entries plus
+        // the entries inserted since the rehash began; a tombstone marks a slot that was already counted. Choosing a
+        // size at which the live entries fill at most half of the permitted load means the main table cannot need
+        // another rehash until the inserts alone reach half of the permitted load. Each insert is preceded by
+        // examining three alternate slots (see the generated rehashInternalPartial), so by then the whole alternate,
+        // which is at most the size of the main table, has been migrated. When tombstones alone crossed the load
+        // factor, that
         // may be the current size, and the rehash simply leaves the tombstones behind. A full rehash, used while
         // building the initial state, completes immediately, so it only needs room for the live entries.
         final double targetLoadFactor = fullRehash ? maximumLoadFactor : maximumLoadFactor / 2;
