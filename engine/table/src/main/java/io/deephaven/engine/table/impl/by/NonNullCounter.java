@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 
@@ -84,5 +86,15 @@ public final class NonNullCounter {
 
     void startTrackingPrevValues() {
         nonNullCount.startTrackingPrevValues();
+    }
+
+    public void shift(RowSetShiftData shiftData) {
+        nonNullCount.shift(shiftData);
+    }
+
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        for (long ii = firstOutputPosition; ii <= lastOutputPosition; ++ii) {
+            nonNullCount.set(ii, 0L);
+        }
     }
 }

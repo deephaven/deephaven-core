@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -364,4 +365,15 @@ public interface IterativeChunkedAggregationOperator {
      */
     interface SingletonContext extends SafeCloseable {
     }
+
+    /**
+     * Can this operator reclaim states (i.e. does it support shift and clear).
+     * 
+     * @return true if this operator can reclaim states, false otherwise
+     */
+    boolean canReclaimStates();
+
+    void shift(RowSetShiftData shiftData);
+
+    void clear(long firstOutputPosition, long lastOutputPosition);
 }

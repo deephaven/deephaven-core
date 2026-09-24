@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.util.hashing.ToLongCast;
 import io.deephaven.chunk.util.hashing.ToLongFunctor;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -129,5 +130,20 @@ class LongWeightRecordingInternalOperator implements IterativeChunkedAggregation
     @Override
     public SingletonContext makeSingletonContext(int size) {
         return new Context(chunkType, size);
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        // nothing to do
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        // nothing to do
     }
 }

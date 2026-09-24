@@ -176,6 +176,60 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
                     true, TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
+        } else if (baseClass
+                .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class)) {
+            configureAggregation(builder);
+            builder.supportTombstones(true);
+            builder.tombstoneStateName("TOMBSTONE_STATE");
+            builder.classPrefix("IncrementalAggOpenHasherWithTombstone").packageMiddle("incopenaggts");
+            builder.overflowOrAlternateStateName("alternateOutputPosition");
+            builder.moveMainFull(TypedAggregationFactory::incAggMoveMain);
+            builder.moveMainAlternate(TypedAggregationFactory::incAggMoveMain);
+            builder.alwaysMoveMain(true);
+            builder.addExtraMethod((hc, cts) -> {
+                final MethodSpec.Builder mb = MethodSpec.methodBuilder("maybeNullMain");
+                mb.addModifiers(Modifier.PROTECTED);
+                mb.addParameter(ParameterSpec.builder(RowSet.class, "rows").build());
+                mb.addAnnotation(Override.class);
+                for (int ii = 0; ii < cts.length; ++ii) {
+                    if (cts[ii] == ChunkType.Object) {
+                        mb.addStatement("this.mainKeySource$L.setNull(rows)", ii);
+                    }
+                }
+                return mb.build();
+            });
+            builder.addExtraMethod((hc, cts) -> {
+                final MethodSpec.Builder mb = MethodSpec.methodBuilder("maybeNullAlternate");
+                mb.addModifiers(Modifier.PROTECTED);
+                mb.addAnnotation(Override.class);
+                mb.addParameter(ParameterSpec.builder(RowSet.class, "rows", Modifier.FINAL).build());
+                boolean first = true;
+                for (int ii = 0; ii < cts.length; ++ii) {
+                    if (cts[ii] == ChunkType.Object) {
+                        if (first) {
+                            mb.beginControlFlow("if (rows.isNonempty())", ii);
+                            first = false;
+                        }
+                        mb.addStatement("this.alternateKeySource$L.setNull(rows)", ii);
+                    }
+                }
+                if (!first) {
+                    mb.endControlFlow();
+                }
+                return mb.build();
+            });
+
+            // final ParameterSpec nextOutputPosition = ParameterSpec.builder(MutableInt.class,
+            // "nextOutputPosition").build();
+            // final ParameterSpec outputPositions =
+            // ParameterSpec.builder(ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class),
+            // TypeName.get(RowKeys.class)), "outputPositions").build();
+
+            builder.addProbe(new HasherConfig.ProbeSpec("probe", "outputPosition", false,
+                    TypedAggregationFactory::probeFound, TypedAggregationFactory::probeMissing));
+
+            builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
+                    true, TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
         } else if (baseClass.equals(StaticNaturalJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticNaturalJoinHasher").packageGroup("naturaljoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)

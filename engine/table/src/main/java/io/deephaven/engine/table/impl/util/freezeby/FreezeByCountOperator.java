@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util.freezeby;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
@@ -105,5 +106,20 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
         }
         final byte prevByte = rowCount.getPrevByte(destination);
         return prevByte == 0 || prevByte == QueryConstants.NULL_BYTE;
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        rowCount.shift(shiftData);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        rowCount.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

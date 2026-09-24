@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
@@ -760,5 +761,75 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
         public boolean providesFillUnordered() {
             return true;
         }
+    }
+
+    public void move(long source, long dest, long length) {
+        if (source == dest) {
+            return;
+        }
+        if (((source - dest) & INDEX_MASK) == 0 && (source & INDEX_MASK) == 0) {
+            // TODO (#3359): we can move full blocks!
+        }
+        if (prevBlocks != null) {
+            // This is a slower path that is doing one element at a time, but handles the previous values. We can
+            // eventually do better.
+            if (source < dest && source + length >= dest) {
+                // we need to be careful about overwriting things
+                for (long ii = length - 1; ii >= 0;) {
+                    final long sourceKey = source + ii;
+                    final long destKey = dest + ii;
+                    set(destKey, getUnsafe(sourceKey));
+                }
+            } else {
+                for (long ii = 0; ii < length; ++ii) {
+                    final long sourceKey = source + ii;
+                    final long destKey = dest + ii;
+                    set(destKey, getUnsafe(sourceKey));
+                }
+            }
+            return;
+        }
+        if (source < dest && source + length >= dest) {
+            for (long ii = length - 1; ii >= 0;) {
+                final long sourceKey = source + ii;
+                final long destKey = dest + ii;
+                final int sourceBlock = (int) (sourceKey >> LOG_BLOCK_SIZE);
+                final int sourceIndexWithinBlock = (int) (sourceKey & INDEX_MASK);
+
+                final int destBlock = (int) (destKey >> LOG_BLOCK_SIZE);
+                final int destIndexWithinBlock = (int) (destKey & INDEX_MASK);
+
+                final int valuesInBothBlocks = Math.min(destIndexWithinBlock + 1, sourceIndexWithinBlock + 1);
+                final int toMove = (ii + 1) < valuesInBothBlocks ? (int) (ii + 1) : valuesInBothBlocks;
+
+                System.arraycopy(blocks[sourceBlock], sourceIndexWithinBlock - toMove + 1, blocks[destBlock],
+                        destIndexWithinBlock - toMove + 1, toMove);
+                ii -= toMove;
+            }
+        } else {
+            for (long ii = 0; ii < length;) {
+                final long sourceKey = source + ii;
+                final long destKey = dest + ii;
+                final int sourceBlock = (int) (sourceKey >> LOG_BLOCK_SIZE);
+                final int sourceIndexWithinBlock = (int) (sourceKey & INDEX_MASK);
+
+                final int destBlock = (int) (destKey >> LOG_BLOCK_SIZE);
+                final int destIndexWithinBlock = (int) (destKey & INDEX_MASK);
+
+                final int valuesInBothBlocks = BLOCK_SIZE - Math.max(destIndexWithinBlock, sourceIndexWithinBlock);
+                final int toMove = (length - ii < valuesInBothBlocks) ? (int) (length - ii) : valuesInBothBlocks;
+
+                System.arraycopy(blocks[sourceBlock], sourceIndexWithinBlock, blocks[destBlock], destIndexWithinBlock,
+                        toMove);
+                ii += toMove;
+            }
+        }
+    }
+
+    public void shift(RowSetShiftData shiftData) {
+        if (shiftData.empty()) {
+            return;
+        }
+        shiftData.apply((s, e, d) -> move(s, s + d, e - s + 1));
     }
 }

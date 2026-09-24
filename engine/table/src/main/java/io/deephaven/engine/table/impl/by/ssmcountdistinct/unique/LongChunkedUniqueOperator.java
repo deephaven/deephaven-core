@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.InstantSsmSourceWrapper;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
@@ -451,4 +452,21 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         ssms.clear(destination);
     }
     // endregion
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        internalResult.shift(shiftData);
+        ssms.shift(shiftData);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        internalResult.setNull(firstOutputPosition, lastOutputPosition);
+        ssms.clear(firstOutputPosition, lastOutputPosition);
+    }
 }

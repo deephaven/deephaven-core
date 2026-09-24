@@ -437,6 +437,8 @@ public final class GroupByChunkedOperator implements GroupByOperator {
         // NB: We don't need previous tracking on the rowSets ColumnSource, even if it's exposed. It's in destination
         // space, and we never move anything. Nothing should be asking for previous values if they didn't exist
         // previously.
+        // TODO: rowsets needs to startTrackingPrevValues, which will mean we can't just write through to the backing
+        // chunk below
         // NB: These are usually (always, as of now) instances of AggregateColumnSource, meaning
         // startTrackingPrevValues() is a no-op.
         resultAggregatedColumns.values().forEach(ColumnSource::startTrackingPrevValues);
@@ -729,5 +731,21 @@ public final class GroupByChunkedOperator implements GroupByOperator {
             resultColumns.put(pair.output().name(), inputAggregatedColumns.get(inputName));
         }
         return new ResultExtractor(resultColumns, inputColumnNamesList.toArray(String[]::new));
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        // TODO: need to fix the previous tracking here
+        return false;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        rowSets.shift(shiftData);
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        rowSets.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

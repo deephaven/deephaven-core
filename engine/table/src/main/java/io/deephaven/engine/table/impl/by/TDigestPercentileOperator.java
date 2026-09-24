@@ -10,6 +10,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
@@ -376,5 +377,38 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         private void updateDestination(final long destination) {
             resultColumn.set(destination, digestForSlot(destination).quantile(percentile));
         }
+
+        @Override
+        public boolean canReclaimStates() {
+            return true;
+        }
+
+        @Override
+        public void shift(RowSetShiftData shiftData) {
+            resultColumn.shift(shiftData);
+        }
+
+        @Override
+        public void clear(long firstOutputPosition, long lastOutputPosition) {
+            resultColumn.setNull(firstOutputPosition, lastOutputPosition);
+        }
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        digests.shift(shiftData);
+        for (final DoubleArraySource resultColumn : resultColumns) {
+            resultColumn.shift(shiftData);
+        }
+    }
+
+    @Override
+    public void clear(long firstOutputPosition, long lastOutputPosition) {
+        digests.setNull(firstOutputPosition, lastOutputPosition);
     }
 }

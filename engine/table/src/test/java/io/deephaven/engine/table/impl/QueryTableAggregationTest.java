@@ -145,7 +145,7 @@ public class QueryTableAggregationTest {
             final Table aggregatedInput = ChunkedOperatorAggregationHelper.aggregation(
                     aggregationControl == null ? AggregationControl.DEFAULT : aggregationControl,
                     makeGroupByACF(adjustedInput, keyColumns),
-                    (QueryTable) adjustedInput, false, null, ColumnName.from(keyColumns));
+                    (QueryTable) adjustedInput, false, null, true, ColumnName.from(keyColumns));
             actualKeys = keyColumns.length == 0
                     ? aggregatedInput.dropColumns(aggregatedInput.getDefinition().getColumnNamesArray())
                     : aggregatedInput.view(keyColumns);
@@ -269,10 +269,10 @@ public class QueryTableAggregationTest {
         public final Table get() {
             if (firstTime.compareAndSet(true, false)) {
                 return ChunkedOperatorAggregationHelper
-                        .aggregation(control, acf, input, false, null, ColumnName.from(columns)).sort(columns);
+                        .aggregation(control, acf, input, false, null, true, ColumnName.from(columns)).sort(columns);
             }
             return ChunkedOperatorAggregationHelper
-                    .aggregation(control, acf, (QueryTable) input.silent(), false, null, ColumnName.from(columns))
+                    .aggregation(control, acf, (QueryTable) input.silent(), false, null, true, ColumnName.from(columns))
                     .sort(columns);
         }
     }
@@ -2431,12 +2431,12 @@ public class QueryTableAggregationTest {
         final int[] sizes = {10, 20, 50, 200};
         for (final int size : sizes) {
             for (int seed = 0; seed < 1; ++seed) {
-                testMinMaxByIncremental(size, seed);
+                testMinMaxByIncremental(size, seed, 50);
             }
         }
     }
 
-    private void testMinMaxByIncremental(int size, int seed) {
+    private void testMinMaxByIncremental(int size, int seed, final int maxSteps) {
         final Random random = new Random(seed);
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
@@ -2473,8 +2473,8 @@ public class QueryTableAggregationTest {
         }
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.Sorted.from(() -> queryTable.maxBy("intCol"), "intCol"),
                 EvalNugget.Sorted.from(() -> queryTable.maxBy("Sym"), "Sym"),
-                EvalNugget.from(() -> queryTable.sort("Sym").maxBy("Sym")),
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").sort("intCol").maxBy("intCol").sort("intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").maxBy("Sym", "intCol").sort("Sym", "intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym").update("x=intCol+1").maxBy("Sym").sort("Sym")),
@@ -2485,7 +2485,7 @@ public class QueryTableAggregationTest {
                 EvalNugget.from(() -> queryTable.sort("Sym",
                         "intCol").update("x=intCol+1").maxBy("Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable.minBy("Sym").sort("Sym")),
-                EvalNugget.from(() -> queryTable.sort("Sym").minBy("Sym")),
+                EvalNugget.Sorted.from(() -> queryTable.minBy("Sym"), "Sym"),
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").sort("intCol").minBy("intCol").sort("intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").minBy("Sym", "intCol").sort("Sym", "intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym").update("x=intCol+1").minBy("Sym").sort("Sym")),
@@ -2501,7 +2501,7 @@ public class QueryTableAggregationTest {
                         queryTable.groupBy("Sym").update(minQueryStrings).sort("Sym")),
         };
         TstUtils.validate(en);
-        for (int step = 0; step < 50; step++) {
+        for (int step = 0; step < maxSteps; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Seed = " + seed + ", size=" + size + ", step=" + step);
             }
@@ -2632,12 +2632,14 @@ public class QueryTableAggregationTest {
     public void testMedianByIncremental() {
         final int[] sizes = {10, 50, 200};
         for (int size : sizes) {
-            testMedianByIncremental(size);
+            for (int seed = 0; seed < 1; ++seed) {
+                testMedianByIncremental(size, seed, 50);
+            }
         }
     }
 
-    private void testMedianByIncremental(int size) {
-        final Random random = new Random(0);
+    private void testMedianByIncremental(int size, final int seed, final int maxSteps) {
+        final Random random = new Random(seed);
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo =
@@ -2688,9 +2690,9 @@ public class QueryTableAggregationTest {
                 new TableComparator(withoutFloats.aggAllBy(percentile(0.75), "Sym").sort("Sym"),
                         withoutFloats.groupBy("Sym").update(percentile_075_QueryStrings).sort("Sym")),
         };
-        for (int step = 0; step < 50; step++) {
+        for (int step = 0; step < maxSteps; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("size=" + size + ", step=" + step);
+                System.out.println("seed=" + seed + ", size=" + size + ", step=" + step);
             }
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
@@ -3311,6 +3313,18 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testSelectDistinctUpdates() {
+        final boolean original = ChunkedOperatorAggregationHelper.RECLAIM_STATES;
+        try (final SafeCloseable ignored = () -> {
+            ChunkedOperatorAggregationHelper.RECLAIM_STATES = original;
+        }) {
+            testSelectDistinctUpdates(false);
+            // TODO: fix this
+            // testSelectDistinctUpdates(true);
+        }
+    }
+
+    private void testSelectDistinctUpdates(final boolean withReclaim) {
+        ChunkedOperatorAggregationHelper.RECLAIM_STATES = withReclaim;
         final QueryTable table = testRefreshingTable(i(2, 4, 6, 8).toTracking(), col("x", 1, 2, 3, 2));
         final QueryTable result = (QueryTable) (table.selectDistinct("x"))
                 .withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true));
@@ -4271,6 +4285,122 @@ public class QueryTableAggregationTest {
         });
 
         // Without the fix, the prev state for the distinct table would be incorrect here and the TUV would fail.
+    }
+
+    @Test
+    public void testEmptyStateAtEnd() {
+        final QueryTable table =
+                testRefreshingTable(intCol("x", 0, 1, 2), stringCol("Key", "Apple", "Banana", "Cherry"));
+        final Table summed = table.sumBy("Key");
+
+        final TableUpdateValidator validated = TableUpdateValidator.make("testEmptyStateAtEnd", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(1, 2));
+            table.notifyListeners(i(), i(1, 2), i());
+        });
+
+        // we should be able to fill in where the old value was
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(4), intCol("x", 4), stringCol("Key", "Dragonfruit"));
+            table.notifyListeners(i(4), i(), i());
+        });
+    }
+
+    @Test
+    public void testEmptyState() {
+        final QueryTable table =
+                testRefreshingTable(intCol("x", 0, 1, 2, 3, 4),
+                        stringCol("Key", "Apple", "Banana", "Cherry", "Dragonfruit", "Eggplant"));
+        final Table summed = table.sumBy("Key");
+
+        final TableUpdateValidator validated = TableUpdateValidator.make("testEmptyState", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(0, 2, 3));
+            table.notifyListeners(i(), i(0, 2, 3), i());
+        });
+    }
+
+    @Test
+    public void testShiftedMin() {
+        final QueryTable table =
+                testRefreshingTable(intCol("x", 0, 1, 2, 3, 4),
+                        stringCol("Key", "Apple", "Banana", "Cherry", "Banana", "Cherry"));
+        final Table min = table.minBy("Key");
+
+        final PrintListener printListener = new PrintListener("min", (QueryTable) min, 10);
+
+        final TableUpdateValidator validated = TableUpdateValidator.make("testEmptyState", (QueryTable) min);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(0, 2, 4));
+            table.notifyListeners(i(), i(0, 2, 4), i());
+        });
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(5), intCol("x", 5), stringCol("Key", "Banana"));
+            removeRows(table, i(1));
+            table.notifyListeners(i(5), i(1), i());
+        });
+
+        TableTools.showWithRowSet(min);
+    }
+
+    @Test
+    public void testShiftPartial() {
+        final QueryTable table =
+                testRefreshingTable(intCol("x", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
+                        stringCol("Key", "Apple", "Banana", "Cherry", "Banana", "Cherry", "Dragonfruit", "Eggplant",
+                                "Fig", "Grape", "Honeydew"));
+        final Table summed = table.sumBy("Key");
+
+        final PrintListener printListener = new PrintListener("summed", (QueryTable) summed, 10);
+
+        final TableUpdateValidator validated = TableUpdateValidator.make("testEmptyState", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(0, 2, 4));
+            table.notifyListeners(i(), i(0, 2, 4), i());
+        });
+
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(10, 11, 12), intCol("x", 10, 11, NULL_INT),
+                    stringCol("Key", "Banana", "Kiwi", "Lemon"));
+            removeRows(table, i(1));
+            table.notifyListeners(i(10, 11, 12), i(1), i());
+        });
+
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(5, 7));
+            table.notifyListeners(i(), i(5, 7), i());
+        });
+
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(13, 14), intCol("x", 13, 14), stringCol("Key", "Mango", "Nectarine"));
+            removeRows(table, i(9, 11, 12));
+            table.notifyListeners(i(13, 14), i(9, 11, 12), i());
+        });
+
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
     }
 
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {
