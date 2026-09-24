@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.NaturalJoinType;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
+import io.deephaven.engine.exceptions.ExactJoinMissingKeyException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableIntChunk;
@@ -553,24 +555,16 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         // build from right
         final Table left = testTable(col("Symbol", "A", "B", "C", "D"), col("LeftSentinel", 1, 2, 3, 4));
         final Table right = newTable(col("Symbol", "A", "A"), col("RightSentinel", 10, 11));
-        try {
-            final Table cj = left.naturalJoin(right, "Symbol");
-            TableTools.showWithRowSet(cj);
-            fail("Expected exception.");
-        } catch (IllegalStateException e) {
-            assertEquals(dupMsg + "A", e.getMessage());
-        }
+        final DuplicateRightKeyException buildRightError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "Symbol"));
+        assertEquals(dupMsg + "A", buildRightError.getMessage());
 
         // build from left
         final Table left2 = testTable(col("Symbol", "A", "B"), col("LeftSentinel", 1, 2));
         final Table right2 = newTable(col("Symbol", "A", "A", "B", "C", "D"), col("RightSentinel", 10, 11, 12, 13, 14));
-        try {
-            final Table cj2 = left2.naturalJoin(right2, "Symbol");
-            TableTools.showWithRowSet(cj2);
-            fail("Expected exception");
-        } catch (IllegalStateException e) {
-            assertEquals(dupMsg + "A", e.getMessage());
-        }
+        final DuplicateRightKeyException buildLeftError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left2.naturalJoin(right2, "Symbol"));
+        assertEquals(dupMsg + "A", buildLeftError.getMessage());
     }
 
     @Test
@@ -594,25 +588,17 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 testTable(col("JK1", true, true), col("JK2", instantA, instantA), col("RightSentinel", 10, 11));
         right.setRefreshing(rightRefreshing);
 
-        try {
-            final Table cj = left.naturalJoin(right, "JK1, JK2");
-            TableTools.showWithRowSet(cj);
-            fail("Expected exception.");
-        } catch (IllegalStateException e) {
-            assertEquals(dupMsg + "[true, " + instantA + "]", e.getMessage());
-        }
+        final DuplicateRightKeyException buildRightError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "JK1, JK2"));
+        assertEquals(dupMsg + "[true, " + instantA + "]", buildRightError.getMessage());
 
         // build from left
         final Table left2 = testTable(col("DT", instantA, instantB), col("LeftSentinel", 1, 2));
         final Table right2 = newTable(col("DT", instantA, instantA, instantB, instantC, instantD),
                 col("RightSentinel", 10, 11, 12, 13, 14));
-        try {
-            final Table cj2 = left2.naturalJoin(right2, "DT");
-            TableTools.showWithRowSet(cj2);
-            fail("Expected exception");
-        } catch (IllegalStateException e) {
-            assertEquals(dupMsg + instantA, e.getMessage());
-        }
+        final DuplicateRightKeyException buildLeftError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left2.naturalJoin(right2, "DT"));
+        assertEquals(dupMsg + instantA, buildLeftError.getMessage());
     }
 
     private final static String dupMsg = "Natural Join found duplicate right key for ";
@@ -650,13 +636,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TableTools.showWithRowSet(right.meta());
         TableTools.showWithRowSet(right);
 
-        try {
-            final Table cj = left.naturalJoin(right, "Symbol");
-            TableTools.showWithRowSet(cj);
-            fail("Expected exception.");
-        } catch (IllegalStateException rte) {
-            assertEquals(dupMsg + a, rte.getMessage());
-        }
+        final DuplicateRightKeyException duplicateError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "Symbol"));
+        assertEquals(dupMsg + a, duplicateError.getMessage());
 
         // bad right key added
         final QueryTable right2 = testRefreshingTable(col("Symbol", a), col("RightSentinel", 10));
@@ -695,13 +677,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table left = castSymbol(clazz, testRefreshingTable(col("Symbol", a, b), col("LeftSentinel", 1, 2)));
         final Table right = castSymbol(clazz, testRefreshingTable(col("Symbol", a, a), col("RightSentinel", 10, 11)));
 
-        try {
-            final Table cj = left.naturalJoin(right, "Symbol");
-            TableTools.showWithRowSet(cj);
-            fail("Expected exception.");
-        } catch (IllegalStateException rte) {
-            assertEquals(dupMsg + a, rte.getMessage());
-        }
+        final DuplicateRightKeyException duplicateError =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "Symbol"));
+        assertEquals(dupMsg + a, duplicateError.getMessage());
 
         // bad right key added
         final QueryTable right2 = testRefreshingTable(col("Symbol", a), col("RightSentinel", 10));
@@ -1641,7 +1619,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         // a plain natural join tolerates the unmatched key
         assertEquals(3, leftTable.naturalJoin(rightTable, "String").size());
 
-        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+        final ExactJoinMissingKeyException e = assertThrowsExactly(ExactJoinMissingKeyException.class,
                 () -> leftTable.exactJoin(rightTable, "String"));
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
@@ -1656,7 +1634,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table rightTable = testTable(col("String", "c", "e", "q", "r"), col("v", 1, 2, 3, 4));
 
-        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+        final ExactJoinMissingKeyException e = assertThrowsExactly(ExactJoinMissingKeyException.class,
                 () -> leftTable.exactJoin(rightTable, "String"));
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
@@ -1669,7 +1647,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table rightTable = testTable(col("String", "c", "e", "q", "r"), col("v", 1, 2, 3, 4));
 
-        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+        final ExactJoinMissingKeyException e = assertThrowsExactly(ExactJoinMissingKeyException.class,
                 () -> leftTable.exactJoin(rightTable, "String"));
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
@@ -1684,7 +1662,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table rightTable = testTable(col("String", "c", "e", "h", "j"), col("v", 1, 2, 3, 4));
 
-        final RuntimeException e = assertThrowsExactly(RuntimeException.class,
+        final ExactJoinMissingKeyException e = assertThrowsExactly(ExactJoinMissingKeyException.class,
                 () -> leftTable.exactJoin(rightTable, "String"));
         assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
     }
@@ -2656,6 +2634,34 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     /**
+     * An exact join of a static left table to a refreshing right table fails with an ExactJoinMissingKeyException when
+     * the right row of a matched key is removed.
+     */
+    public void testExactJoinRightRemovalStaticLeft() {
+        final Table left = testTable(col("Key", "a", "b"), intCol("L", 1, 2));
+        final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), col("Key", "a", "b"), intCol("R", 10, 20));
+
+        final Table result = left.exactJoin(right, "Key");
+        assertTableEquals(newTable(col("Key", "a", "b"), intCol("L", 1, 2), intCol("R", 10, 20)), result);
+
+        final ErrorListener listener = new ErrorListener(result);
+        result.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(right, i(1));
+                right.notifyListeners(i(), i(1), i());
+            });
+        }
+
+        final Throwable failure = listener.originalException();
+        assertNotNull(failure);
+        assertEquals(failure.toString(), ExactJoinMissingKeyException.class, failure.getClass());
+        assertEquals("Tables don't have one-to-one mapping - no mappings for key b.", failure.getMessage());
+    }
+
+    /**
      * exactJoin a two-row refreshing left table to a static right table with the same keys, apply {@code leftUpdate}
      * within a cycle, and return the message of the resulting failure of the join.
      */
@@ -2686,8 +2692,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         DataIndexer.getOrCreateDataIndex(left, "Key");
         final Table right = testTable(col("Key", "a", "a", "b", "c", "d", "e"), intCol("R", 10, 11, 20, 30, 40, 50));
 
-        final IllegalStateException e =
-                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key"));
+        final DuplicateRightKeyException e =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "Key"));
         assertEquals(dupMsg + "a", e.getMessage());
     }
 
@@ -2958,8 +2964,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table left = testTable(col("Key", true, false), intCol("L", 1, 2));
         final Table right = testTable(col("Key", true, true, false), intCol("R", 10, 11, 20));
 
-        final IllegalStateException e =
-                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key"));
+        final DuplicateRightKeyException e =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "Key"));
         assertEquals(dupMsg + "true", e.getMessage());
     }
 
@@ -3003,8 +3009,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         DataIndexer.getOrCreateDataIndex(left, "Key");
         final QueryTable right = testRefreshingTable(col("Key", "a", "a"), intCol("R", 10, 11));
 
-        final IllegalStateException e =
-                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key"));
+        final DuplicateRightKeyException e =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "Key"));
         assertEquals(dupMsg + "a", e.getMessage());
     }
 
@@ -3407,7 +3413,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         for (final NaturalJoinType joinType : new NaturalJoinType[] {NaturalJoinType.ERROR_ON_DUPLICATE,
                 NaturalJoinType.EXACTLY_ONE_MATCH}) {
-            final IllegalStateException e = assertThrowsExactly(IllegalStateException.class,
+            final DuplicateRightKeyException e = assertThrowsExactly(DuplicateRightKeyException.class,
                     () -> left.naturalJoin(right, "Key", "R", joinType));
             assertEquals("Natural Join found duplicate right key for a", e.getMessage());
         }
@@ -3426,15 +3432,15 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         DataIndexer.getOrCreateDataIndex(left, "Key");
         final Table right = testTable(col("Key", "c", "c", "b"), intCol("R", 10, 11, 20));
 
-        final IllegalStateException e =
-                assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(right, "Key", "R"));
+        final DuplicateRightKeyException e =
+                assertThrowsExactly(DuplicateRightKeyException.class, () -> left.naturalJoin(right, "Key", "R"));
         assertEquals("Natural Join found duplicate right key for c", e.getMessage());
     }
 
     /**
      * A zero-key join fails the same way as a keyed join when the right side has several rows under a join type that
-     * rejects duplicates: an IllegalStateException, at construction and from the listener alike. A missing exact match
-     * remains a plain RuntimeException, as it is for a keyed exact join.
+     * rejects duplicates (a DuplicateRightKeyException) or no row under an exact join (an
+     * ExactJoinMissingKeyException), at construction and from the listener alike.
      */
     @Test
     public void testNaturalJoinZeroKeysDuplicateRightRowsExceptionType() {
@@ -3442,9 +3448,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table twoRightRows = testTable(intCol("C", 100, 200));
         for (final NaturalJoinType joinType : new NaturalJoinType[] {NaturalJoinType.ERROR_ON_DUPLICATE,
                 NaturalJoinType.EXACTLY_ONE_MATCH}) {
-            assertThrowsExactly(IllegalStateException.class, () -> left.naturalJoin(twoRightRows, "", "C", joinType));
+            assertThrowsExactly(DuplicateRightKeyException.class,
+                    () -> left.naturalJoin(twoRightRows, "", "C", joinType));
         }
-        assertThrowsExactly(RuntimeException.class,
+        assertThrowsExactly(ExactJoinMissingKeyException.class,
                 () -> left.naturalJoin(testTable(intCol("C")), "", "C", NaturalJoinType.EXACTLY_ONE_MATCH));
 
         final QueryTable right = testRefreshingTable(i(0).toTracking(), intCol("C", 100));
@@ -3460,7 +3467,42 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 right.notifyListeners(i(1), i(), i());
             });
         }
-        assertEquals(IllegalStateException.class, listener.originalException().getClass());
+        assertEquals(DuplicateRightKeyException.class, listener.originalException().getClass());
+
+        // the right side of an exact join loses its only row
+        final QueryTable exactRight = testRefreshingTable(i(0).toTracking(), intCol("C", 100));
+        final Table exactResult = left.naturalJoin(exactRight, "", "C", NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(newTable(intCol("L", 1, 2), intCol("C", 100, 100)), exactResult);
+
+        final ErrorListener exactListener = new ErrorListener(exactResult);
+        exactResult.addUpdateListener(exactListener);
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(exactRight, i(0));
+                exactRight.notifyListeners(i(), i(0), i());
+            });
+        }
+        assertEquals(ExactJoinMissingKeyException.class, exactListener.originalException().getClass());
+        assertEquals("exactJoin with zero key columns must have exactly one row in the right hand side table!",
+                exactListener.originalException().getMessage());
+
+        // the left side of an exact join gains its first row while the static right side is empty
+        final QueryTable emptyLeft = testRefreshingTable(i().toTracking(), intCol("L"));
+        final Table leftArrives = emptyLeft.naturalJoin(testTable(intCol("C")), "", "C",
+                NaturalJoinType.EXACTLY_ONE_MATCH);
+        assertTableEquals(newTable(intCol("L"), intCol("C")), leftArrives);
+
+        final ErrorListener leftListener = new ErrorListener(leftArrives);
+        leftArrives.addUpdateListener(leftListener);
+        try (final ErrorExpectation ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(emptyLeft, i(0), intCol("L", 1));
+                emptyLeft.notifyListeners(i(0), i(), i());
+            });
+        }
+        assertEquals(ExactJoinMissingKeyException.class, leftListener.originalException().getClass());
+        assertEquals("exactJoin with zero key columns must have exactly one row in the right hand side table!",
+                leftListener.originalException().getMessage());
     }
 
     @Test
@@ -3864,5 +3906,47 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTrue("R is not marked modified although the left row's R changed from 10 to 11: "
                 + update.modifiedColumnSet(), update.modifiedColumnSet().containsAny(rightColumn));
         listener.close();
+    }
+
+    /**
+     * An exact join reports its two invariant violations with dedicated exceptions: a duplicate right key is a
+     * {@link DuplicateRightKeyException} and a left row without a match an {@link ExactJoinMissingKeyException}. A
+     * right update that removes the only row of one key and adds a duplicate row of another key violates both at once.
+     * A static left detects the duplicate while hashing the added row; a refreshing left records the duplicate and
+     * reaches the unmatched key first when it applies the modified slots, so each path reports the violation it meets
+     * first, with that violation's exception.
+     */
+    public void testExactJoinSameCycleRemoveAndDuplicateReportDedicatedExceptions() {
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            final QueryTable left = leftRefreshing
+                    ? testRefreshingTable(i(0, 1).toTracking(), longCol("K", 1, 2), intCol("L", 1, 2))
+                    : testTable(i(0, 1).toTracking(), longCol("K", 1, 2), intCol("L", 1, 2));
+            final QueryTable right =
+                    testRefreshingTable(i(0, 1).toTracking(), longCol("K", 1, 2), intCol("R", 10, 20));
+            final Table result = left.naturalJoin(right, "K", "R", NaturalJoinType.EXACTLY_ONE_MATCH);
+            assertTableEquals(newTable(longCol("K", 1, 2), intCol("L", 1, 2), intCol("R", 10, 20)), result);
+
+            final ErrorListener listener = new ErrorListener(result);
+            result.addUpdateListener(listener);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            try (final ErrorExpectation ignored = new ErrorExpectation()) {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    removeRows(right, i(0));
+                    addToTable(right, i(2), longCol("K", 2), intCol("R", 21));
+                    right.notifyListeners(i(2), i(0), i());
+                });
+            }
+
+            final Throwable failure = listener.originalException();
+            assertNotNull(failure);
+            if (leftRefreshing) {
+                assertEquals(failure.toString(), ExactJoinMissingKeyException.class, failure.getClass());
+                assertEquals("Tables don't have one-to-one mapping - no mappings for key 1.", failure.getMessage());
+            } else {
+                assertEquals(failure.toString(), DuplicateRightKeyException.class, failure.getClass());
+                assertEquals("Natural Join found duplicate right key for 2", failure.getMessage());
+            }
+        }
     }
 }
