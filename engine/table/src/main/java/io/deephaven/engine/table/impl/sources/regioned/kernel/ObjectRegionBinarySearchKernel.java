@@ -356,7 +356,7 @@ public class ObjectRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastKey) {
-            if (ObjectComparisons.eq(region.getObject(low), min)) {
+            if (ObjectComparisons.compare(region.getObject(low), min) == 0) {
                 return low;
             }
         }
@@ -406,7 +406,7 @@ public class ObjectRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (maxInc && high >= firstKey) {
-            if (ObjectComparisons.eq(region.getObject(high), max)) {
+            if (ObjectComparisons.compare(region.getObject(high), max) == 0) {
                 return high;
             }
         }
@@ -456,7 +456,7 @@ public class ObjectRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastKey) {
-            if (ObjectComparisons.eq(region.getObject(low), max)) {
+            if (ObjectComparisons.compare(region.getObject(low), max) == 0) {
                 return low;
             }
         }
@@ -506,7 +506,7 @@ public class ObjectRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (minInc && high >= firstKey) {
-            if (ObjectComparisons.eq(region.getObject(high), min)) {
+            if (ObjectComparisons.compare(region.getObject(high), min) == 0) {
                 return high;
             }
         }

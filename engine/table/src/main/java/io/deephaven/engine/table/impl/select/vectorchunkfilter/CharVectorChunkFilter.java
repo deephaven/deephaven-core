@@ -53,6 +53,10 @@ class CharVectorChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final CharVector vector = objectChunk.get(indexOfVector);
+            if (vector == null) {
+                // a null vector has no elements, so none can match
+                continue;
+            }
             try (final ValueIteratorOfChar vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final char element = vi.next();
@@ -80,6 +84,10 @@ class CharVectorChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final CharVector vector = objectChunk.get(indexOfVector);
+            if (vector == null) {
+                // a null vector has no elements, so none can match
+                continue;
+            }
             try (final ValueIteratorOfChar vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final char element = vi.next();

@@ -104,13 +104,13 @@ class FilterKernelPythonChunkedFunction implements FilterKernel<FilterKernel.Con
             throw new IllegalStateException(
                     "FilterKernelPythonChunkedFunction returned results are not the proper size");
         }
-        // Count values that changed from true to false
+        // Count the values that remain true
         int count = 0;
         for (int i = 0; i < chunkSize; ++i) {
             boolean result = results.get(i);
             boolean newResult = result & pyResults[i];
             results.set(i, newResult);
-            count += result == newResult ? 0 : 1;
+            count += newResult ? 1 : 0;
         }
         return count;
     }

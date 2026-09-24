@@ -57,6 +57,10 @@ class FloatVectorChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final FloatVector vector = objectChunk.get(indexOfVector);
+            if (vector == null) {
+                // a null vector has no elements, so none can match
+                continue;
+            }
             try (final ValueIteratorOfFloat vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final float element = vi.next();
@@ -84,6 +88,10 @@ class FloatVectorChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final FloatVector vector = objectChunk.get(indexOfVector);
+            if (vector == null) {
+                // a null vector has no elements, so none can match
+                continue;
+            }
             try (final ValueIteratorOfFloat vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final float element = vi.next();

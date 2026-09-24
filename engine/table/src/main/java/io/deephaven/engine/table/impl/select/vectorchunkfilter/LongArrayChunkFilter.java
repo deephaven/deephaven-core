@@ -57,6 +57,10 @@ class LongArrayChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final long[] array = objectChunk.get(indexOfVector);
+            if (array == null) {
+                // a null array has no elements, so none can match
+                continue;
+            }
             for (int ii = 0; ii < array.length; ++ii) {
                 final long element = array[ii];
                 srcPos.set(fillPos, indexOfVector);
@@ -80,6 +84,10 @@ class LongArrayChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final long[] array = objectChunk.get(indexOfVector);
+            if (array == null) {
+                // a null array has no elements, so none can match
+                continue;
+            }
             for (int ii = 0; ii < array.length; ++ii) {
                 final long element = array[ii];
                 if (elementFilter.matches(element)) {

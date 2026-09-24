@@ -366,7 +366,7 @@ public class CharColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastPos) {
             final char lowValue = usePrev ? source.getPrevChar(selection.get(low)) : source.getChar(selection.get(low));
-            if (CharComparisons.eq(lowValue, min)) {
+            if (CharComparisons.compare(lowValue, min) == 0) {
                 return low;
             }
         }
@@ -427,7 +427,7 @@ public class CharColumnBinarySearchKernel {
         if (maxInc && high >= firstPos) {
             final char highValue =
                     usePrev ? source.getPrevChar(selection.get(high)) : source.getChar(selection.get(high));
-            if (CharComparisons.eq(highValue, max)) {
+            if (CharComparisons.compare(highValue, max) == 0) {
                 return high;
             }
         }
@@ -486,7 +486,7 @@ public class CharColumnBinarySearchKernel {
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastPos) {
             final char lowValue = usePrev ? source.getPrevChar(selection.get(low)) : source.getChar(selection.get(low));
-            if (CharComparisons.eq(lowValue, max)) {
+            if (CharComparisons.compare(lowValue, max) == 0) {
                 return low;
             }
         }
@@ -547,7 +547,7 @@ public class CharColumnBinarySearchKernel {
         if (minInc && high >= firstPos) {
             final char highValue =
                     usePrev ? source.getPrevChar(selection.get(high)) : source.getChar(selection.get(high));
-            if (CharComparisons.eq(highValue, min)) {
+            if (CharComparisons.compare(highValue, min) == 0) {
                 return high;
             }
         }

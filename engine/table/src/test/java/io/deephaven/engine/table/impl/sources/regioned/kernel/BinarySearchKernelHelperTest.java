@@ -71,8 +71,8 @@ public class BinarySearchKernelHelperTest {
         assertTrue(compareConsistentWithEquality(Instant.class));
         // Ordered by ordinal, compared by identity.
         assertTrue(compareConsistentWithEquality(AnEnum.class));
-        // The counterexample the distinction exists for.
-        assertFalse(compareConsistentWithEquality(BigDecimal.class));
+        // Its equals is inconsistent with its ordering, but its match filter matches by compareTo.
+        assertTrue(compareConsistentWithEquality(BigDecimal.class));
     }
 
     /**
@@ -88,7 +88,6 @@ public class BinarySearchKernelHelperTest {
 
         // Registering one type says nothing about any other.
         assertFalse(compareConsistentWithEquality(UnregisteredType.class));
-        assertFalse(compareConsistentWithEquality(BigDecimal.class));
         // And the seeded types survive the set being rebuilt.
         assertTrue(compareConsistentWithEquality(String.class));
     }

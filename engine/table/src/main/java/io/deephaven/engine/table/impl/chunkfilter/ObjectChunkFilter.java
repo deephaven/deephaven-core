@@ -45,7 +45,7 @@ public abstract class ObjectChunkFilter<T> implements ChunkFilter {
         final ObjectChunk<T, ? extends Values> objectChunk = values.asObjectChunk();
         final int len = values.size();
         int count = 0;
-        // Count the values that changed from true to false
+        // Count the values that remain true
         for (int ii = 0; ii < len; ++ii) {
             final boolean result = results.get(ii);
             if (!result) {
