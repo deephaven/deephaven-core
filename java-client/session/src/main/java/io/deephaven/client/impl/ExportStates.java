@@ -5,6 +5,7 @@ package io.deephaven.client.impl;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.deephaven.client.impl.ExportRequest.Listener;
+import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
@@ -43,21 +44,20 @@ final class ExportStates implements ExportService {
     private final ExportTicketCreator exportTicketCreator;
     private final Lock lock;
 
-    ExportStates(SessionImpl session, SessionServiceStub sessionStub, TableServiceStub tableStub,
-            ExportTicketCreator exportTicketCreator) {
+    ExportStates(SessionImpl session, ExportTicketCreator exportTicketCreator) {
         this.session = Objects.requireNonNull(session);
-        this.sessionStub = Objects.requireNonNull(sessionStub);
-        this.tableStub = Objects.requireNonNull(tableStub);
+        this.sessionStub = session.channel().session();
+        this.tableStub = session.channel().table();
         this.exportTicketCreator = Objects.requireNonNull(exportTicketCreator);
         this.exports = new HashMap<>();
         this.lock = new ReentrantLock();
     }
 
     @VisibleForTesting
-    ExportStates(SessionServiceStub sessionStub, TableServiceStub tableStub, ExportTicketCreator exportTicketCreator) {
+    ExportStates(DeephavenChannel channel, ExportTicketCreator exportTicketCreator) {
         this.session = null;
-        this.sessionStub = Objects.requireNonNull(sessionStub);
-        this.tableStub = Objects.requireNonNull(tableStub);
+        this.sessionStub = channel.session();
+        this.tableStub = channel.table();
         this.exportTicketCreator = Objects.requireNonNull(exportTicketCreator);
         this.exports = new HashMap<>();
         this.lock = new ReentrantLock();

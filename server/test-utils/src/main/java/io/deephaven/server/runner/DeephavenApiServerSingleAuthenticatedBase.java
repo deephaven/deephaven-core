@@ -35,8 +35,7 @@ public abstract class DeephavenApiServerSingleAuthenticatedBase extends Deephave
         final Key<String> sessionHeaderKey = Metadata.Key.of(sessionHeader, Metadata.ASCII_STRING_MARSHALLER);
         final Metadata extraHeaders = new Metadata();
         extraHeaders.put(sessionHeaderKey, sessionToken);
-        this.channel = DeephavenChannel.withClientInterceptors(channel,
-                MetadataUtils.newAttachHeadersInterceptor(extraHeaders));
+        this.channel = channel.withInterceptors(MetadataUtils.newAttachHeadersInterceptor(extraHeaders));
     }
 
     public SessionState authenticatedSessionState() {
