@@ -32,7 +32,7 @@ services:
 The following Docker command modifies the one-liner in our [quickstart](../../getting-started/quickstart.md#1-install-and-launch-deephaven) to set the default timezone to `America/New_York`:
 
 ```sh
-docker run --rm --name deephaven -p 10000:10000 --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE -Duser.timezone="America/New_York" ghcr.io/deephaven/server:latest
+docker run --rm --name deephaven -p 10000:10000 --env START_OPTS="-Dauthentication.psk=YOUR_PASSWORD_HERE -Duser.timezone=America/New_York" ghcr.io/deephaven/server:latest
 ```
 
 The following Python code starts a Deephaven server [from Python](../../getting-started/pip-install.md) with the default timezone set to `America/New_York`:

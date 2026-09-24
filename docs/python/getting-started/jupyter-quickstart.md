@@ -3,14 +3,14 @@ title: Deephaven Community Core Quickstart for Jupyter
 sidebar_label: Jupyter Quickstart
 ---
 
-Deephaven Community Core + [Jupyter](https://jupyter.org) is a powerful real-time data science workflow that few frameworks can hope to match. You can start and use a Deephaven server directly from Jupyter with [pip-installed Deephaven](../getting-started/pip-install.md). Alternatively, you can use the [Deephaven Python client](/core/client-api/python/) from Jupyter to connect to an already-running Deephaven server.
+Deephaven Community Core and [Jupyter](https://jupyter.org) together make a powerful workflow for real-time data science. You can start and use a Deephaven server directly from Jupyter with [pip-installed Deephaven](../getting-started/pip-install.md). Alternatively, you can use the [Deephaven Python client](/core/client-api/python/) from Jupyter to connect to an already-running Deephaven server. This guide covers pip-installed Deephaven. For the Python client, see [Use Deephaven in Jupyter](../how-to-guides/jupyter.md#the-python-client).
 
-## 0. Install Jupyter
+## 1. Install Jupyter
 
 > [!NOTE]
 > We recommend using a Python [virtual environment](https://docs.python.org/3/library/venv.html) to decouple and isolate Python installs and associated packages.
 
-Deephaven can operate in [JupyterLab](https://jupyter.org) or [Jupyter Notebook](https://jupyter.org) - the choice is yours! Both are installed with `pip`:
+Deephaven can operate in [JupyterLab](https://jupyterlab.readthedocs.io/en/latest/) or [Jupyter Notebook](https://jupyter-notebook.readthedocs.io/en/latest/) — the choice is yours! Both are installed with `pip`:
 
 ```bash
 # install JupyterLab
@@ -19,12 +19,12 @@ pip install jupyterlab
 pip install notebook
 ```
 
-## 1. Install and Launch Deephaven
+## 2. Install and launch Deephaven
 
 > [!NOTE]
-> To run Deephaven with Python, you must have Java installed on your computer. See [this guide](../getting-started/launch-build.md#prerequisites) for OS-specific instructions.
+> pip-installed Deephaven requires Java 17 or later and Python 3.9 or later, and your `JAVA_HOME` environment variable must point to your Java installation. See the [pip installation prerequisites](../getting-started/pip-install.md#prerequisites) for details.
 
-The [`deephaven-server`](https://pypi.org/project/deephaven-server/) package enables you to use Deephaven directly from Jupyter. Additionally, the [`deephaven-ipywidgets`](https://pypi.org/project/deephaven-ipywidgets/) package allows Deephaven tables and plots to be rendered in a Jupyter notebook. Install them both in the same environment as your Jupyter installation:
+The [`deephaven-server`](https://pypi.org/project/deephaven-server/) package enables you to use Deephaven directly from Jupyter. Additionally, the [`deephaven-ipywidgets`](https://pypi.org/project/deephaven-ipywidgets/) package allows Deephaven tables and plots to be rendered in Jupyter. Install them both in the same environment as your Jupyter installation:
 
 ```sh
 pip install deephaven-server deephaven-ipywidgets
@@ -35,12 +35,12 @@ Now, start an instance of Jupyter:
 ```sh
 # start JupyterLab
 jupyter lab
-# or start Jupyter notebook
+# or start Jupyter Notebook
 jupyter notebook
 ```
 
 > [!CAUTION]
-> When using Deephaven from Jupyter, you **must** start a Deephaven server **before** importing any Deephaven packages. If you import Deephaven packages before starting the server, you will encounter errors.
+> When using Deephaven from Jupyter, you **must** create a `deephaven_server.Server` **before** importing the `deephaven` package. If you import `deephaven` first, the import raises a `RuntimeError`.
 
 The following code block starts a Deephaven server on port `10000` with 4GB of heap memory and anonymous authentication. Run it in your Jupyter instance:
 
@@ -59,15 +59,18 @@ s = Server(
 s.start()
 ```
 
-For more advanced configuration options, see our [pip installation guide](../getting-started/pip-install.md). This includes [an additional instruction](../getting-started/pip-install.md#m2-macs) for users on an M2 Mac.
+> [!NOTE]
+> Anonymous authentication provides no application security.
 
-## 2. Import static and streaming data
+For more advanced configuration options, see the [pip installation guide](../getting-started/pip-install.md). It includes [extra instructions for M2 Macs](../getting-started/pip-install.md#m2-macs).
+
+## 3. Import static and streaming data
 
 Deephaven empowers users to wrangle static and streaming data with ease. It supports ingesting data from [CSV files](../how-to-guides/data-import-export/csv-import.md), [Parquet files](../how-to-guides/data-import-export/parquet-import.md), and [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md).
 
 ### Load a CSV
 
-Run the command below inside a Deephaven console to ingest a million-row CSV of crypto trades. All you need is a path or URL for the data:
+Run the code below in a Jupyter cell to ingest a million-row CSV of crypto trades. All you need is a path or URL for the data:
 
 ```python test-set=1 order=crypto_from_csv skip-test
 from deephaven import read_csv
@@ -95,22 +98,21 @@ The table widget now in view is highly interactive:
 
 ![Animated GIF showing interactive Deephaven table widget rendered inside a Jupyter notebook](../assets/tutorials/quickstart-jupyter/jquickstart-1.gif)
 
-### Replay Historical Data
+### Replay historical data
 
-Ingesting real-time data is one of Deephaven's superpowers, and you can learn more about supported formats from the links at the end of this guide. However, streaming pipelines can be complicated to set up and are outside the scope of this discussion. For a streaming data example, we'll use Deephaven's [Table Replayer](../reference/table-operations/create/Replayer.md) to replay historical cryptocurrency data back in real time.
+Ingesting real-time data is one of Deephaven's core strengths, and you can learn more about supported formats from the links in the section above. However, streaming pipelines can be complicated to set up and are outside the scope of this discussion. For a streaming data example, this guide uses Deephaven's [`TableReplayer`](../reference/table-operations/create/Replayer.md) to replay historical cryptocurrency data back in real time.
 
 The following code takes fake historical crypto trade data from a CSV file and replays it in real time based on timestamps. This is only one of multiple ways to create real-time data in just a few lines of code. Replaying historical data is a great way to test real-time algorithms before deployment into production.
 
 ```python test-set=1 order=null ticking-table skip-test
 from deephaven import TableReplayer, read_csv
-from deephaven.time import to_j_instant
 
 fake_crypto_data = read_csv(
     "https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/FakeCryptoTrades_20230209.csv"
 )
 
-start_time = to_j_instant("2023-02-09T12:09:18 ET")
-end_time = to_j_instant("2023-02-09T12:58:09 ET")
+start_time = "2023-02-09T12:09:18 ET"
+end_time = "2023-02-09T12:58:09 ET"
 
 replayer = TableReplayer(start_time, end_time)
 
@@ -123,17 +125,17 @@ display(DeephavenWidget(crypto_streaming))
 
 ![Animated GIF showing live streaming cryptocurrency trades table updating in real time](../assets/tutorials/quickstart-jupyter/jquickstart-2.gif)
 
-## 3. Working with Deephaven Tables
+## 4. Work with Deephaven tables
 
 In Deephaven, static and dynamic data are represented as tables. New tables can be derived from parent tables, and data efficiently flows from parents to their dependents. See the concept guide on the [table update model](../conceptual/table-update-model.md) if you're interested in what's under the hood.
 
-Deephaven represents data transformations as operations on tables. This is a familiar paradigm for data scientists using [Pandas](https://pandas.pydata.org), [Polars](https://pola.rs), [R](https://www.r-project.org/), [Matlab](https://www.mathworks.com/) and more. Deephaven's table operations are special - **they are indifferent to whether the underlying data sources are static or streaming!** This means that code written for static data will work seamlessly on live data.
+Deephaven represents data transformations as operations on tables. This is a familiar paradigm for data scientists using [pandas](https://pandas.pydata.org), [Polars](https://pola.rs), [R](https://www.r-project.org/), [MATLAB](https://www.mathworks.com/) and more. Deephaven's table operations are special — **they are indifferent to whether the underlying data sources are static or streaming!** This means that code written for static data works seamlessly on live data.
 
-There are a ton of table operations to cover, so we'll keep it short and give you the highlights.
+There are many table operations to cover, so this guide keeps it short and gives you the highlights.
 
 ### Manipulating data
 
-First, reverse the ticking table with [`reverse`](../reference/table-operations/sort/reverse.md) so that the newest data appears at the top:
+First, reverse the ticking (live-updating) table with [`reverse`](../reference/table-operations/sort/reverse.md) so that the newest data appears at the top:
 
 ```python test-set=1 order=null ticking-table skip-test
 crypto_streaming_rev = crypto_streaming.reverse()
@@ -148,7 +150,7 @@ display(DeephavenWidget(crypto_streaming_rev))
 Add a column with [`update`](../reference/table-operations/select/update.md):
 
 ```python test-set=1 order=null ticking-table skip-test
-# Note the enclosing [] - this is optional when there is a single argument
+# Note the enclosing [] — this is optional when there is a single argument
 crypto_streaming_rev = crypto_streaming_rev.update(["TransactionTotal = Price * Size"])
 display(DeephavenWidget(crypto_streaming_rev))
 ```
@@ -158,7 +160,7 @@ display(DeephavenWidget(crypto_streaming_rev))
 Use [`select`](../reference/table-operations/select/select.md) or [`view`](../reference/table-operations/select/view.md) to pick out particular columns:
 
 ```python test-set=1 order=null ticking-table skip-test
-# Note the enclosing [] - this is not optional, since there are multiple arguments
+# Note the enclosing [] — this is not optional, since there are multiple arguments
 crypto_streaming_prices = crypto_streaming_rev.view(["Instrument", "Price"])
 display(DeephavenWidget(crypto_streaming_prices))
 ```
@@ -168,7 +170,7 @@ display(DeephavenWidget(crypto_streaming_prices))
 Remove columns with [`drop_columns`](../reference/table-operations/select/drop-columns.md):
 
 ```python test-set=1 order=null ticking-table skip-test
-# Note the lack of [] - this is permissible since there is only a single argument
+# Note the lack of [] — this is permissible since there is only a single argument
 crypto_streaming_rev = crypto_streaming_rev.drop_columns("TransactionTotal")
 display(DeephavenWidget(crypto_streaming_rev))
 ```
@@ -181,10 +183,10 @@ The following code uses [`where`](../reference/table-operations/filter/where.md)
 
 ```python test-set=1 order=null ticking-table skip-test
 btc_streaming = crypto_streaming_rev.where("Instrument == `BTC/USD`")
-etc_btc_streaming = crypto_streaming_rev.where_one_of(
+eth_btc_streaming = crypto_streaming_rev.where_one_of(
     ["Instrument == `BTC/USD`", "Instrument == `ETH/USD`"]
 )
-display(DeephavenWidget(etc_btc_streaming))
+display(DeephavenWidget(eth_btc_streaming))
 ```
 
 ![Animated GIF filtering table to show Bitcoin and Ethereum trades](../assets/tutorials/quickstart-jupyter/jquickstart-7.gif)
@@ -232,7 +234,7 @@ First, use [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md
 from deephaven import agg
 
 summary_prices = crypto_streaming.agg_by(
-    [agg.avg("AvgPrice=Price"), agg.std("StdPrice=Price")],
+    [agg.avg("AvgPrice = Price"), agg.std("StdPrice = Price")],
     by=["Instrument", "Exchange"],
 ).sort(["Instrument", "Exchange"])
 display(DeephavenWidget(summary_prices))
@@ -249,17 +251,17 @@ display(DeephavenWidget(summary_prices))
 
 ![Animated GIF showing summary table updated with percentage variation column](../assets/tutorials/quickstart-jupyter/jquickstart-12.gif)
 
-Finally, create a minute-by-minute Open-High-Low-Close table using the [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) [built-in function](../reference/query-language/query-library/auto-imported/index.md) along with [`first`](../reference/table-operations/group-and-aggregate/AggFirst.md), [`max_`](../reference/table-operations/group-and-aggregate/AggMax.md), [`min_`](../reference/table-operations/group-and-aggregate/AggMin.md), and [`last`](../reference/table-operations/group-and-aggregate/AggLast.md):
+Finally, create a minute-by-minute Open-High-Low-Close table using the [`lowerBin`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) [built-in function](../reference/query-language/query-library/auto-imported/index.md) along with [`first`](../reference/table-operations/group-and-aggregate/AggFirst.md), [`max_`](../reference/table-operations/group-and-aggregate/AggMax.md), [`min_`](../reference/table-operations/group-and-aggregate/AggMin.md), and [`last`](../reference/table-operations/group-and-aggregate/AggLast.md):
 
 ```python test-set=1 order=null ticking-table skip-test
 ohlc_by_minute = (
     crypto_streaming.update("BinnedTimestamp = lowerBin(Timestamp, MINUTE)")
     .agg_by(
         [
-            agg.first("Open=Price"),
-            agg.max_("High=Price"),
-            agg.min_("Low=Price"),
-            agg.last("Close=Price"),
+            agg.first("Open = Price"),
+            agg.max_("High = Price"),
+            agg.min_("Low = Price"),
+            agg.last("Close = Price"),
         ],
         by=["Instrument", "BinnedTimestamp"],
     )
@@ -279,10 +281,10 @@ import deephaven.updateby as uby
 
 instrument_rolling_stats = crypto_streaming.update_by(
     [
-        uby.rolling_avg_time("Timestamp", "AvgPrice30Sec=Price", "PT30s"),
-        uby.rolling_avg_time("Timestamp", "AvgPrice5Min=Price", "PT5m"),
-        uby.rolling_std_time("Timestamp", "StdPrice30Sec=Price", "PT30s"),
-        uby.rolling_std_time("Timestamp", "StdPrice5Min=Price", "PT5m"),
+        uby.rolling_avg_time("Timestamp", "AvgPrice30Sec = Price", "PT30s"),
+        uby.rolling_avg_time("Timestamp", "AvgPrice5Min = Price", "PT5m"),
+        uby.rolling_std_time("Timestamp", "StdPrice30Sec = Price", "PT30s"),
+        uby.rolling_std_time("Timestamp", "StdPrice5Min = Price", "PT5m"),
     ],
     by="Instrument",
 ).reverse()
@@ -291,14 +293,14 @@ display(DeephavenWidget(instrument_rolling_stats))
 
 ![Animated GIF showing rolling averages and standard deviations calculated with update_by](../assets/tutorials/quickstart-jupyter/jquickstart-14.gif)
 
-These statistics can be used to determine "extreme" instrument prices, where the instrument's price is significantly higher or lower than the average of the prices preceding it in the window:
+These statistics can be used to determine "extreme" instrument prices, where the instrument's price is significantly higher or lower than the rolling average over the window that ends at that row's timestamp:
 
 ```python test-set=1 order=null ticking-table skip-test
 instrument_extremity = instrument_rolling_stats.update(
     [
         "Z30Sec = (Price - AvgPrice30Sec) / StdPrice30Sec",
         "Z5Min = (Price - AvgPrice5Min) / StdPrice5Min",
-        "Extreme30Sec = Math.abs(Z30Sec) > 1.645 ? true : false",
+        "Extreme30Sec = Math.abs(Z30Sec) > 1.645",
         "Extreme5Min = Math.abs(Z5Min) > 1.645 ? true : false",
     ]
 ).view(
@@ -321,7 +323,7 @@ There's a lot more to [`update_by`](../reference/table-operations/update-by-oper
 
 ### Combining tables
 
-Combining datasets can often yield powerful insights. Deephaven offers two primary ways to combine tables - the _merge_ and _join_ operations.
+Combining datasets can often yield powerful insights. Deephaven offers two primary ways to combine tables — the _merge_ and _join_ operations.
 
 The [`merge`](../reference/table-operations/merge/merge.md) operation stacks tables on top of one another. This is ideal when several tables have the same schema. They can be static, ticking, or a mix of both:
 
@@ -344,17 +346,17 @@ more_crypto = read_csv(
 )
 
 more_summary_prices = more_crypto.agg_by(
-    [agg.avg("AvgPrice=Price"), agg.std("StdPrice=Price")],
+    [agg.avg("AvgPrice = Price"), agg.std("StdPrice = Price")],
     by=["Instrument", "Exchange"],
 ).sort(["Instrument", "Exchange"])
 
 price_comparison = (
     summary_prices.drop_columns("PctVariation")
-    .rename_columns(["AvgPriceFeb2023=AvgPrice", "StdPriceFeb2023=StdPrice"])
+    .rename_columns(["AvgPriceFeb2023 = AvgPrice", "StdPriceFeb2023 = StdPrice"])
     .join(
         more_summary_prices,
         on=["Instrument", "Exchange"],
-        joins=["AvgPriceSep2021=AvgPrice", "StdPriceSep2021=StdPrice"],
+        joins=["AvgPriceSep2021 = AvgPrice", "StdPriceSep2021 = StdPrice"],
     )
 )
 display(DeephavenWidget(price_comparison))
@@ -366,9 +368,9 @@ In many real-time data applications, data must be combined based on timestamps. 
 
 Here's an example where [`aj`](../reference/table-operations/join/aj.md) is used to find the Ethereum price at or immediately preceding a Bitcoin price:
 
-```python test-set=1  order=null ticking-table skip-test
-crypto_btc = crypto_streaming.where(filters=["Instrument = `BTC/USD`"])
-crypto_eth = crypto_streaming.where(filters=["Instrument = `ETH/USD`"])
+```python test-set=1 order=null ticking-table skip-test
+crypto_btc = crypto_streaming.where(filters=["Instrument == `BTC/USD`"])
+crypto_eth = crypto_streaming.where(filters=["Instrument == `ETH/USD`"])
 
 time_series_join = (
     crypto_btc.view(["Timestamp", "Price"])
@@ -382,7 +384,7 @@ display(DeephavenWidget(time_series_join))
 
 To learn more about our join methods, see the guides on [exact and relational joins](../how-to-guides/joins-exact-relational.md) and [time-series and range joins](../how-to-guides/joins-timeseries-range.md).
 
-## 5. Plot data via query or the UI
+## 5. Plot data
 
 Deephaven has a rich plotting API that supports _updating, real-time plots_. It can be called programmatically:
 
@@ -402,34 +404,32 @@ display(DeephavenWidget(btc_plot))
 
 ![Animated GIF showing real-time line plot of Bitcoin prices and rolling average](../assets/tutorials/quickstart-jupyter/jquickstart-19.gif)
 
-Additionally, Deephaven supports an integration with the popular [plotly-express library](https://plotly.com/python/) that enables real-time plotly-express plots.
-
-<!--TODO: Link out to deephaven-plotly-express documentation -->
+Deephaven also supports real-time plots through Deephaven Express, which is built on top of the popular [Plotly Express](https://plotly.com/python/) library. See the [plotting overview](../how-to-guides/plotting/overview.md) to compare Deephaven's plotting options.
 
 ## 6. Export data to popular formats
 
 It's easy to export your data out of Deephaven to popular open formats.
 
-To export a table to a CSV file, use the [`write_csv`](../reference/data-import-export/CSV/readCsv.md) method with the table name and the location to which you want to save the file. The file path should be absolute. This code writes the CSV to the current working directory:
+To export a table to a CSV file, use the [`write_csv`](../reference/data-import-export/CSV/writeCsv.md) method with the table and the path where you want to save the file. Code in a Jupyter cell doesn't run under the update graph lock the way code in the Deephaven IDE console does, so export a ticking table by first taking a static [`snapshot`](../reference/table-operations/snapshot/snapshot.md) of it. This code writes the CSV to the current working directory:
 
 ```python test-set=1 order=null skip-test
 import os
 from deephaven import write_csv
 
-write_csv(instrument_rolling_stats, os.getcwd() + "/crypto_prices_stats.csv")
+stats_snapshot = instrument_rolling_stats.snapshot()
+
+write_csv(stats_snapshot, os.getcwd() + "/crypto_prices_stats.csv")
 ```
 
-If the table is dynamically updating, Deephaven will automatically snapshot the data before writing it to the file.
-
-Similarly, for Parquet:
+Similarly, use [`write`](../reference/data-import-export/Parquet/writeTable.md) for Parquet:
 
 ```python test-set=1 order=null skip-test
 from deephaven.parquet import write
 
-write(instrument_rolling_stats, os.getcwd() + "/crypto_prices_stats.parquet")
+write(stats_snapshot, os.getcwd() + "/crypto_prices_stats.parquet")
 ```
 
-To create a static [pandas DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html), use the [`to_pandas`](../how-to-guides/use-pandas.md) method:
+To create a static [pandas DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html), use the [`to_pandas`](../reference/pandas/to-pandas.md) method. See the [pandas guide](../how-to-guides/use-pandas.md) for more details:
 
 ```python test-set=1 skip-test
 from deephaven.pandas import to_pandas

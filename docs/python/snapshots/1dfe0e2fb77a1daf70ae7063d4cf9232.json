@@ -1,0 +1,1 @@
+{"file":"getting-started/pyclient-quickstart.md","objects":{"local_df":{"type":"pandas.DataFrame","data":{"columns":[{"name":"Group","type":"java.lang.String"},{"name":"AvgX","type":"double"},{"name":"StdX","type":"double"}],"rows":[[{"value":"B"},{"value":"9.9942"},{"value":"1.0127"}],[{"value":"A"},{"value":"0.0227"},{"value":"0.9941"}]]}}}}

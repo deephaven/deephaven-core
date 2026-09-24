@@ -7,10 +7,10 @@ In this guide, you'll learn how to create a basic web page with embedded tables 
 
 ```groovy ticking-table order=null
 // Create a ticking table with x and y values showing a sin wave
-sinTable = timeTable("PT1s").update("x=i", "y=Math.sin(x)")
+sinTable = timeTable("PT1s").update("x = i", "y = Math.sin(x)")
 
 // Create a plot displaying the sinTable data
-sinChart = plot("Sin wave", sinTable, x="x", y="y").show()
+sinChart = plot("Sin wave", sinTable, "x", "y").show()
 ```
 
 ## Display tables in an IFrame
@@ -21,7 +21,7 @@ Assuming your server is running at `http://localhost:10000/ide/`, the URL for re
 http://localhost:10000/iframe/widget/?name=TABLE_NAME
 ```
 
-For example, to show the `sin_table` from the code above, the IFrame URL is `http://localhost:10000/iframe/widget/?name=sin_table`.
+For example, to show the `sinTable` from the code above, the IFrame URL is `http://localhost:10000/iframe/widget/?name=sinTable`.
 
 Here is a basic HTML page embedding an IFrame table:
 
@@ -30,7 +30,7 @@ Here is a basic HTML page embedding an IFrame table:
   <body>
     <h1>Sin Table</h1>
     <iframe
-      src="http://localhost:10000/iframe/widget/?name=sin_table"
+      src="http://localhost:10000/iframe/widget/?name=sinTable"
       width="800"
       height="500"
     ></iframe>
@@ -38,7 +38,7 @@ Here is a basic HTML page embedding an IFrame table:
 </html>
 ```
 
-![The `sin_table` from the code above, embedded in an IFrame](../assets/how-to/iframe-table-basic.gif)
+![The `sinTable` from the code above, embedded in an IFrame](../assets/how-to/iframe-table-basic.gif)
 
 ## Display charts in an IFrame
 
@@ -48,7 +48,7 @@ Assuming your server is running at `http://localhost:10000/ide/`, the URL for re
 http://localhost:10000/iframe/widget/?name=CHART_NAME
 ```
 
-For example, to show the `sin_chart` from the code above, the IFrame URL is `http://localhost:10000/iframe/widget/?name=sin_chart`.
+For example, to show the `sinChart` from the code above, the IFrame URL is `http://localhost:10000/iframe/widget/?name=sinChart`.
 
 Here is a basic HTML page embedding an IFrame chart:
 
@@ -57,7 +57,7 @@ Here is a basic HTML page embedding an IFrame chart:
   <body>
     <h1>Sin Chart</h1>
     <iframe
-      src="http://localhost:10000/iframe/widget/?name=sin_chart"
+      src="http://localhost:10000/iframe/widget/?name=sinChart"
       width="800"
       height="500"
     ></iframe>
@@ -65,7 +65,7 @@ Here is a basic HTML page embedding an IFrame chart:
 </html>
 ```
 
-![The `sin_chart` from the code above embedded in an IFrame](../assets/how-to/iframe-chart-basic.gif)
+![The `sinChart` from the code above embedded in an IFrame](../assets/how-to/iframe-chart-basic.gif)
 
 ## Authentication
 
@@ -135,7 +135,7 @@ When embedding in IFrames, you may want to provide authentication details from t
      -->
     <iframe
       id="tableIframe"
-      src="http://localhost:10000/iframe/widget/?name=sin_table&authProvider=parent"
+      src="http://localhost:10000/iframe/widget/?name=sinTable&authProvider=parent"
       width="800"
       height="500"
     ></iframe>
@@ -145,7 +145,7 @@ When embedding in IFrames, you may want to provide authentication details from t
       The IFrame for our chart. We also specify `authProvider=parent` here, and this parent window will authenticate both IFrames.
     -->
     <iframe
-      src="http://localhost:10000/iframe/widget/?name=sin_chart&authProvider=parent"
+      src="http://localhost:10000/iframe/widget/?name=sinChart&authProvider=parent"
       width="800"
       height="500"
     ></iframe>
